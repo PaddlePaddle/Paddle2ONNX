@@ -40,7 +40,7 @@ TBD
 We aim to at least support all the models from our model bank. During our preliminary stage, we plan to support the models generated from:
 
 - [fit_a_line](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_fit_a_line.py)
-- [fit_a_line](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_fit_a_line.py)
+- [machine_translation](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_machine_translation.py)
 
 ## License
 Provided under the [Apache-2.0 license](LICENSE).
