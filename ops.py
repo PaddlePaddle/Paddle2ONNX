@@ -1,3 +1,17 @@
+# Copyright (c) 2016 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -35,129 +49,6 @@ test_machine_translation.py
 - increment
 """
 
-# Based on the ONNX 1.0 operator list generated on March 26th, 2018.
-# Reference for paddle operator availability taken from:
-#     https://github.com/PaddlePaddle/Paddle/issues/8028
-
-# ONNX Ops that use multiple Paddle ops are keyed by '<op1>,<op2>' fed into the
-# modifier.
-
-PADDLE_TO_ONNX = {
-    # Paddle op name : (ONNX op name, modifier)
-    'abs': ('Abs', abs_op),
-    'elementwise_add': ('Add', add_op),
-
-    # '': 'And', # ?
-    # 'ArgMax', NEEDS ATTENTION.
-    # 'ArgMin', NEEDS ATTENTION.
-    '': ('AveragePool', averagepool_op),
-    'batch_norm': ('BatchNormalization', batchnorm_op),
-    'cast': ('Cast', cast_op),
-    # 'Ceil', NEEDS ATTENTION.
-    'cast': ('Clip', clip_op),
-    'concat': ('Concat', concat_op),
-
-    ',': ('Constant', constant_op),
-    'conv': ('Conv', conv_op),
-
-    # Need to continue the mapping below.
-    'ConvTranspose',
-    'DepthToSpace',
-    'Div',
-    'Dropout',
-    'Elu',
-    'Equal',
-    'Exp',
-    'Flatten',
-    # 'Floor', NEEDS ATTENTION.
-    'GRU',
-    'Gather',
-    'Gemm',
-    'GlobalAveragePool',
-    'GlobalLpPool',
-    'GlobalMaxPool',
-    'Greater',
-    'HardSigmoid',
-    # 'Hardmax', NEEDS ATTENTION.
-    # 'InstanceNormalization', NEEDS ATTENTION.
-    'LRN',
-    'LSTM',
-    'LeakyRelu',
-    'Less',
-    'Log',
-    ',': 'LogSoftmax',
-    'LpNormalization',
-    'LpPool',
-    'MatMul',
-    'Max',
-    # 'MaxPool', NEEDS ATTENTION.
-    'MaxRoiPool',
-    'mean': ('Mean', mean_op),
-    'Min',
-    'mul': ('Mul', mul_op),
-    ',': 'Neg',
-    'Not',
-    'Or',
-    'PRelu',
-    'Pad',
-    'Pow',
-    ',': 'RNN',
-    'RandomNormal',
-    # 'RandomNormalLike', NEEDS ATTENTION.
-    # 'RandomUniform', NEEDS ATTENTION.
-    # 'RandomUniformLike', NEEDS ATTENTION.
-    'Reciprocal',
-    'ReduceL1',
-    'ReduceL2',
-    ',': 'ReduceLogSum',
-    ',': 'ReduceLogSumExp',
-    'ReduceMax',
-    'ReduceMean',
-    'ReduceMin',
-    # 'ReduceProd', NEEDS ATTENTION.
-    'ReduceSum',
-    ',': 'ReduceSumSquare',
-    'Relu',
-    'Reshape',
-    # 'Selu', NEEDS ATTENTION.
-    'Shape',
-    'Sigmoid',
-    'Size',
-    # 'Slice', NEEDS ATTENTION.
-    'Softmax',
-    'Softplus',
-    'Softsign',
-    'SpaceToDepth',
-    'Split',
-    'Sqrt',
-    # 'Squeeze', NEEDS ATTENTION.
-    'elementwise_sub': ('Sub', sub_op),
-    'Sum',
-    'Tanh',
-    'Tile',
-    'TopK',
-    'Transpose',
-    # 'Unsqueeze', NEEDS ATTENTION.
-    'Xor',
-    # 'experimental ATen'
-    # ',': 'experimental Affine'
-    # 'experimental ConstantFill'
-    # 'experimental Crop'
-    # 'experimental FC'
-    # 'experimental GRUUnit'
-    # 'experimental GivenTensorFill'
-    # 'assign': 'experimental Identity'
-    # 'experimental If'
-    # ',': 'experimental ImageScaler'
-    # 'experimental Loop'
-    # 'experimental LoopIndexTensor'
-    # 'experimental MeanVarianceNormalization'
-    # 'experimental ParametricSoftplus'
-    # 'experimental Scale'
-    # 'experimental ScaledTanh'
-    # 'experimental ThresholdedRelu'
-    # 'experimental Upsample'
-}
 
 def abs_op():
     pass
@@ -546,3 +437,128 @@ def xor_op():
     Need to support broadcast.
     """
     pass
+
+
+# Based on the ONNX 1.0 operator list generated on March 26th, 2018.
+# Reference for paddle operator availability taken from:
+#     https://github.com/PaddlePaddle/Paddle/issues/8028
+
+# ONNX Ops that use multiple Paddle ops are keyed by '<op1>,<op2>' fed into the
+# modifier.
+
+PADDLE_TO_ONNX = {
+    # Paddle op name : (ONNX op name, modifier)
+    'abs': ('Abs', abs_op),
+    'elementwise_add': ('Add', add_op),
+
+    # '': 'And', # ?
+    # 'ArgMax', NEEDS ATTENTION.
+    # 'ArgMin', NEEDS ATTENTION.
+    '': ('AveragePool', averagepool_op),
+    'batch_norm': ('BatchNormalization', batchnorm_op),
+    'cast': ('Cast', cast_op),
+    # 'Ceil', NEEDS ATTENTION.
+    'cast': ('Clip', clip_op),
+    'concat': ('Concat', concat_op),
+
+    ',': ('Constant', constant_op),
+    'conv': ('Conv', conv_op),
+
+    # Need to continue the mapping below.
+    '': 'ConvTranspose',
+    '': 'DepthToSpace',
+    '': 'Div',
+    '': 'Dropout',
+    '': 'Elu',
+    '': 'Equal',
+    '': 'Exp',
+    '': 'Flatten',
+    # 'Floor', NEEDS ATTENTION.
+    '': 'GRU',
+    '': 'Gather',
+    '': 'Gemm',
+    '': 'GlobalAveragePool',
+    '': 'GlobalLpPool',
+    '': 'GlobalMaxPool',
+    '': 'Greater',
+    '': 'HardSigmoid',
+    # 'Hardmax', NEEDS ATTENTION.
+    # 'InstanceNormalization', NEEDS ATTENTION.
+    '': 'LRN',
+    '': 'LSTM',
+    '': 'LeakyRelu',
+    '': 'Less',
+    '': 'Log',
+    ',': 'LogSoftmax',
+    '': 'LpNormalization',
+    '': 'LpPool',
+    '': 'MatMul',
+    '': 'Max',
+    # 'MaxPool', NEEDS ATTENTION.
+    '': 'MaxRoiPool',
+    'mean': ('Mean', mean_op),
+    '': 'Min',
+    'mul': ('Mul', mul_op),
+    ',': 'Neg',
+    '': 'Not',
+    '': 'Or',
+    '': 'PRelu',
+    '': 'Pad',
+    '': 'Pow',
+    ',': 'RNN',
+    '': 'RandomNormal',
+    # 'RandomNormalLike', NEEDS ATTENTION.
+    # 'RandomUniform', NEEDS ATTENTION.
+    # 'RandomUniformLike', NEEDS ATTENTION.
+    '': 'Reciprocal',
+    '': 'ReduceL1',
+    '': 'ReduceL2',
+    ',': 'ReduceLogSum',
+    ',': 'ReduceLogSumExp',
+    '': 'ReduceMax',
+    '': 'ReduceMean',
+    '': 'ReduceMin',
+    # 'ReduceProd', NEEDS ATTENTION.
+    '': 'ReduceSum',
+    ',': 'ReduceSumSquare',
+    '': 'Relu',
+    '': 'Reshape',
+    # 'Selu', NEEDS ATTENTION.
+    '': 'Shape',
+    '': 'Sigmoid',
+    '': 'Size',
+    # 'Slice', NEEDS ATTENTION.
+    '': 'Softmax',
+    '': 'Softplus',
+    '': 'Softsign',
+    '': 'SpaceToDepth',
+    '': 'Split',
+    '': 'Sqrt',
+    # 'Squeeze', NEEDS ATTENTION.
+    'elementwise_sub': ('Sub', sub_op),
+    '': 'Sum',
+    '': 'Tanh',
+    '': 'Tile',
+    '': 'TopK',
+    '': 'Transpose',
+    # 'Unsqueeze', NEEDS ATTENTION.
+    '': 'Xor',
+    # 'experimental ATen'
+    # ',': 'experimental Affine'
+    # 'experimental ConstantFill'
+    # 'experimental Crop'
+    # 'experimental FC'
+    # 'experimental GRUUnit'
+    # 'experimental GivenTensorFill'
+    # 'assign': 'experimental Identity'
+    # 'experimental If'
+    # ',': 'experimental ImageScaler'
+    # 'experimental Loop'
+    # 'experimental LoopIndexTensor'
+    # 'experimental MeanVarianceNormalization'
+    # 'experimental ParametricSoftplus'
+    # 'experimental Scale'
+    # 'experimental ScaledTanh'
+    # 'experimental ThresholdedRelu'
+    # 'experimental Upsample'
+}
