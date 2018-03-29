@@ -29,7 +29,7 @@ Create a virtual environment and install ONNX using PIP.
 ```
 virtualenv venv
 source venv/bin/activate
-pip install onnx==1.1
+pip install -r requirements.txt
 ```
 
 Build PaddlePaddle's `develop` branch from source using info here:
