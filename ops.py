@@ -1,4 +1,4 @@
-# Copyright (c) 2016 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -460,7 +459,6 @@ PADDLE_TO_ONNX = {
     # 'Ceil', NEEDS ATTENTION.
     'cast': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
-
     ',': ('Constant', constant_op),
     'conv': ('Conv', conv_op),
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2016 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,14 +30,16 @@ def convert(dirname):
     inference_scope = fluid.core.Scope()
     with fluid.scope_guard(inference_scope):
         [inference_program, feed_target_names,
-            fetch_targets] = fluid.io.load_inference_model(dirname, exe)
+         fetch_targets] = fluid.io.load_inference_model(dirname, exe)
 
         # Using blocks in programs, create nodes using:
         onnx_nodes = []
         all_inputs = []
         for block in inference_program.blocks:
-            all_inputs += [paddle_variable_to_onnx_tensor(
-                v, block) for v in block.vars if v not in ['feed', 'fetch']]
+            all_inputs += [
+                paddle_variable_to_onnx_tensor(v, block) for v in block.vars
+                if v not in ['feed', 'fetch']
+            ]
 
             for op in block.ops:
                 if op.type in ops.PADDLE_TO_ONNX:
@@ -45,8 +47,8 @@ def convert(dirname):
                     # TODO(varunarora): Use the modifier function to make the
                     # transformation.
                     node_proto = helper.make_node(
-                        ops.PADDLE_TO_ONNX[op.type][0],
-                        op.input_arg_names, op.output_arg_names)
+                        ops.PADDLE_TO_ONNX[op.type][0], op.input_arg_names,
+                        op.output_arg_names)
 
                     onnx_nodes.append(node_proto)
                 else:
@@ -59,8 +61,9 @@ def convert(dirname):
         # Nodes, name of graph, inputs, outputs.
         if dirname[-1] == '/':
             dirname = dirname[:-1]
-        graph = helper.make_graph(onnx_nodes, os.path.basename(
-            dirname).split('.')[0], all_inputs, [])
+        graph = helper.make_graph(onnx_nodes,
+                                  os.path.basename(dirname).split('.')[0],
+                                  all_inputs, [])
 
         print graph
 
@@ -70,7 +73,7 @@ def convert(dirname):
 if __name__ == "__main__":
     # Read arguments: path to model.
     parser = argparse.ArgumentParser()
-    parser.add_argument("--modeldir", required=True,
-        help="Input PaddlePaddle model")
+    parser.add_argument(
+        "--modeldir", required=True, help="Input PaddlePaddle model")
     args = parser.parse_args()
     convert(args.modeldir)
