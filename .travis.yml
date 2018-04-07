@@ -16,6 +16,7 @@ addons:
       - python
       - python-pip
       - python2.7-dev
+      - clang-format-3.8
 
 before_install:
   -  sudo pip install -U virtualenv pre-commit pip
@@ -23,6 +24,7 @@ before_install:
 
 script:
   - exit_code=0
+  - sudo ln -s /usr/bin/clang-format-3.8 /usr/bin/clang-format
   - .travis/precommit.sh || exit_code=$(( exit_code | $? ))
   - docker run -i --rm -v "$PWD:/py_unittest" paddlepaddle/paddle:latest /bin/bash -c
     'cd /py_unittest; sh .travis/unittest.sh' || exit_code=$(( exit_code | $? ))
