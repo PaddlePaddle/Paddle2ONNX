@@ -15,14 +15,24 @@
 import os
 import argparse
 
-from onnx import helper
+from onnx import helper, checker
 import paddle.fluid as fluid
 
 import ops
-from variables import paddle_variable_to_onnx_tensor
+from fluid_onnx.variables import paddle_variable_to_onnx_tensor
+from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 
+def parse_args():
+    # Read arguments: path to model.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fluid_model", required=True,
+        help="Input PaddlePaddle Fluid model")
+    parser.add_argument("--onnx_model", required=False,
+        help="Output ONNX model")
+    args = parser.parse_args()
+    return args
 
-def convert(dirname):
+def convert(args):
     # Read the model files.
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -30,15 +40,38 @@ def convert(dirname):
     inference_scope = fluid.core.Scope()
     with fluid.scope_guard(inference_scope):
         [inference_program, feed_target_names,
-            fetch_targets] = fluid.io.load_inference_model(dirname, exe)
+            fetch_targets] = fluid.io.load_inference_model(args.fluid_model, exe)
 
         # Using blocks in programs, create nodes using:
         onnx_nodes = []
-        all_inputs = []
-        for block in inference_program.blocks:
-            all_inputs += [paddle_variable_to_onnx_tensor(
-                v, block) for v in block.vars if v not in ['feed', 'fetch']]
 
+        # Load parameters
+        global_block = inference_program.global_block()
+        for var_name in global_block.vars:
+            var = global_block.var(var_name)
+            if var_name not in ['feed', 'fetch'] and var.persistable:
+                param = fluid.executor.fetch_var(var_name, inference_scope)
+                param_node = helper.make_node('Constant', 
+                             inputs=[], 
+                             outputs=[var_name], 
+                             value=helper.make_tensor(
+                                 name=var_name,
+                                 dims=var.shape, 
+                                 data_type=PADDLE_TO_ONNX_DTYPE[var.dtype],
+                                 vals=param.flatten().tolist())
+                             )
+                onnx_nodes.append(param_node)
+
+        # Create inputs
+        inputs = [paddle_variable_to_onnx_tensor(
+                 v, global_block) for v in feed_target_names]
+
+        # Create outputs
+        fetch_target_names = [fetch_target.name for fetch_target in fetch_targets]
+        outputs = [paddle_variable_to_onnx_tensor(
+                 v, global_block) for v in fetch_target_names]
+
+        for block in inference_program.blocks:
             for op in block.ops:
                 if op.type in ops.PADDLE_TO_ONNX:
                     # TODO(varunarora): Attributes.
@@ -50,27 +83,23 @@ def convert(dirname):
 
                     onnx_nodes.append(node_proto)
                 else:
-                    # Not valid to skip any op, so after all edge cases have
-                    # been accounted for, this exception raising to be
-                    # re-enabled.
-                    # raise NameError(op.type)
-                    pass
+                    if op.type not in ['feed', 'fetch']:
+                        raise NotImplementedError("OP[%s] is not supported in "
+                                "the converter!" % op.type)
 
-        # Nodes, name of graph, inputs, outputs.
-        if dirname[-1] == '/':
-            dirname = dirname[:-1]
-        graph = helper.make_graph(onnx_nodes, os.path.basename(
-            dirname).split('.')[0], all_inputs, [])
+        # make graph
+        model_name = os.path.basename(args.fluid_model.strip('/')).split('.')[0]
+        graph = helper.make_graph(onnx_nodes, model_name, inputs, outputs)
 
-        print graph
+        # make model
+        model = helper.make_model(graph, producer_name='PaddlePaddle')
 
-        # TODO(varunarora): Plug in parameters.
+        # model check
+        checker.check_model(model)
 
+        # output readable model
+        print("The converted model is:\n{}".format(model))
 
 if __name__ == "__main__":
-    # Read arguments: path to model.
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--modeldir", required=True,
-        help="Input PaddlePaddle model")
-    args = parser.parse_args()
-    convert(args.modeldir)
+    args = parse_args()
+    convert(args)
