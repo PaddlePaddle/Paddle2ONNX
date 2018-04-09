@@ -1,4 +1,4 @@
-# Copyright (c) 2016 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +15,13 @@
 from onnx import helper, onnx_pb2, TensorProto
 import paddle.fluid.core as core
 
+
 def paddle_variable_to_onnx_tensor(paddle_var_name, block):
     # TODO(varunarora): Need to do this only in the case of VarType.LOD_TENSOR.
     paddle_var = block.var(paddle_var_name)
-    return helper.make_tensor_value_info(
-        paddle_var_name, PADDLE_TO_ONNX_DTYPE[paddle_var.dtype],
-        paddle_var.shape)
+    return helper.make_tensor_value_info(paddle_var_name,
+                                         PADDLE_TO_ONNX_DTYPE[paddle_var.dtype],
+                                         paddle_var.shape)
 
 
 PADDLE_TO_ONNX_DTYPE = {
@@ -36,5 +37,5 @@ PADDLE_TO_ONNX_DTYPE = {
     # '': onnx_pb2.TensorProto.STRING,
     # '': onnx_pb2.TensorProto.COMPLEX64,
     # '': onnx_pb2.TensorProto.COMPLEX128,
-    core.VarDesc.VarType.BOOL: onnx_pb2.TensorProto.BOOL,
+    core.VarDesc.VarType.BOOL: onnx_pb2.TensorProto.BOOL
 }
