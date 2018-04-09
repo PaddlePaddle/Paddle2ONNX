@@ -81,15 +81,16 @@ def convert(args):
             for v in fetch_target_names
         ]
 
+        # Create nodes
         for block in inference_program.blocks:
             for op in block.ops:
-                if op.type in ops.PADDLE_TO_ONNX:
-                    # TODO(varunarora): Attributes.
-                    # TODO(varunarora): Use the modifier function to make the
-                    # transformation.
-                    node_proto = helper.make_node(
-                        ops.PADDLE_TO_ONNX[op.type][0], op.input_arg_names,
-                        op.output_arg_names)
+                if op.type in ops.node_maker:
+                    # TODO(kuke): deal with the corner case that vars in 
+                    #     different blocks have the same name
+                    node_proto = ops.node_maker[op.type](
+                        inputs=op.input_arg_names,
+                        attrs=op.attr_names,
+                        outputs=op.output_arg_names)
 
                     onnx_nodes.append(node_proto)
                 else:
@@ -110,13 +111,14 @@ def convert(args):
         # Output readable model
         print("The converted model is:\n{}".format(onnx_model))
 
+        # Save converted model
         if args.onnx_model_dir is not None:
             if os.path.isdir(args.onnx_model_dir):
                 model_path = os.path.join(args.onnx_model_dir,
                                           model_name + ".onnx")
                 with open(model_path, 'wb') as f:
                     f.write(onnx_model.SerializeToString())
-                print("Saved model to path: %s" % model_path)
+                print("Saved converted model to path: %s" % model_path)
             else:
                 raise IOError("Invalid directory: %s" % args.onnx_model_dir)
 
