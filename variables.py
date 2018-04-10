@@ -19,9 +19,9 @@ import paddle.fluid.core as core
 def paddle_variable_to_onnx_tensor(paddle_var_name, block):
     # TODO(varunarora): Need to do this only in the case of VarType.LOD_TENSOR.
     paddle_var = block.var(paddle_var_name)
-    return helper.make_tensor_value_info(
-        paddle_var_name, PADDLE_TO_ONNX_DTYPE[paddle_var.dtype],
-        paddle_var.shape)
+    return helper.make_tensor_value_info(paddle_var_name,
+                                         PADDLE_TO_ONNX_DTYPE[paddle_var.dtype],
+                                         paddle_var.shape)
 
 
 PADDLE_TO_ONNX_DTYPE = {
