@@ -99,7 +99,6 @@ def main(argv=None):
 
     retv = 0
     for filename in args.filenames:
-        if(os.path.basename(filename) == "__init__.py"): continue
         fd = io.open(filename, encoding="utf-8")
         first_line = fd.readline()
         second_line = fd.readline()
