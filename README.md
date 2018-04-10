@@ -25,11 +25,11 @@ Then, run `convert.py` by providing the generated model directory to the argumen
 
 If you don't already have protobuf installed on your computer, install it from here: https://github.com/google/protobuf. On Mac, to get the development version, use `brew install protobuf`.
 
-Create a virtual environment and install ONNX using PIP.
+Create a virtual environment and install dependencies.
 ```
 virtualenv venv
 source venv/bin/activate
-pip install -r requirements.txt
+sh setup.sh
 ```
 
 Build PaddlePaddle's `develop` branch from source using info here:
