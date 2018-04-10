@@ -29,9 +29,7 @@ def parse_args():
     parser.add_argument(
         "--fluid_model", required=True, help="Input PaddlePaddle Fluid model.")
     parser.add_argument(
-        "--onnx_model_dir",
-        required=False,
-        help="The output directory for ONNX model.")
+        "--onnx_model", required=False, help="The path to save ONNX model.")
     args = parser.parse_args()
     return args
 
@@ -112,15 +110,13 @@ def convert(args):
         print("The converted model is:\n{}".format(onnx_model))
 
         # Save converted model
-        if args.onnx_model_dir is not None:
-            if os.path.isdir(args.onnx_model_dir):
-                model_path = os.path.join(args.onnx_model_dir,
-                                          model_name + ".onnx")
-                with open(model_path, 'wb') as f:
+        if args.onnx_model is not None:
+            try:
+                with open(args.onnx_model, 'wb') as f:
                     f.write(onnx_model.SerializeToString())
-                print("Saved converted model to path: %s" % model_path)
-            else:
-                raise IOError("Invalid directory: %s" % args.onnx_model_dir)
+                print("Saved converted model to path: %s" % args.onnx_model)
+            except (IOError), e:
+                print("Invalid ONNX model saving path: %s" % args.onnx_model)
 
 
 if __name__ == "__main__":
