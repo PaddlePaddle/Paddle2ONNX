@@ -34,6 +34,13 @@ def parse_args():
     return args
 
 
+def print_arguments(args):
+    print('-----------  Configuration Arguments -----------')
+    for arg, value in sorted(vars(args).iteritems()):
+        print('%s: %s' % (arg, value))
+    print('------------------------------------------------')
+
+
 def convert(args):
     # Read the model files.
     place = fluid.CPUPlace()
@@ -121,4 +128,5 @@ def convert(args):
 
 if __name__ == "__main__":
     args = parse_args()
+    print_arguments(args)
     convert(args)
