@@ -27,7 +27,8 @@ from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 
 def parse_args():
     # Read arguments: path to model.
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("Use dummy data in the interval [a, b] "
+                                     "as inputs to verify the conversion.")
     parser.add_argument(
         "--fluid_model",
         required=True,
@@ -35,9 +36,25 @@ def parse_args():
     parser.add_argument(
         "--onnx_model", required=True, help="The path to ONNX model.")
     parser.add_argument(
+        "--a",
+        type=float,
+        default=0.0,
+        help="Left boundary of dummy data. (default: %(default)f)")
+    parser.add_argument(
+        "--b",
+        type=float,
+        default=1.0,
+        help="Right boundary of dummy data. (default: %(default)f)")
+    parser.add_argument(
         "--batch_size",
         type=int,
-        default=10, )
+        default=10,
+        help="Batch size. (default: %(default)d)")
+    parser.add_argument(
+        "--expected_decimal",
+        type=int,
+        default=5,
+        help="The expected decimal accuracy. (default: %(default)d)")
     args = parser.parse_args()
     return args
 
@@ -67,7 +84,8 @@ def validate(args):
 
     # Generate dummy data as inputs
     inputs = [
-        np.random.random(shape).astype("float32") for shape in input_shapes
+        (args.b - args.a) * np.random.random(shape).astype("float32") + args.a
+        for shape in input_shapes
     ]
 
     # Fluid inference 
@@ -88,11 +106,10 @@ def validate(args):
     print(onnx_results)
     print('\n')
 
-    expected_decimal = 5
     for ref, hyp in zip(fluid_results, onnx_results):
-        np.testing.assert_almost_equal(ref, hyp, decimal=expected_decimal)
+        np.testing.assert_almost_equal(ref, hyp, decimal=args.expected_decimal)
     print("The exported model achieves {}-decimal precision.".format(
-        expected_decimal))
+        args.expected_decimal))
 
 
 if __name__ == "__main__":
