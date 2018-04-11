@@ -56,7 +56,11 @@ def abs_op():
 
 
 def add_op(inputs, attrs, outputs):
-    return make_node('Add', inputs=inputs, outputs=outputs, broadcast=1)
+    return make_node(
+        'Add',
+        inputs=inputs['X'] + inputs['Y'],
+        outputs=outputs['Out'],
+        broadcast=1)
 
 
 def and_op():
@@ -105,7 +109,7 @@ def constant_op():
     pass
 
 
-def conv_op():
+def conv_op(inputs, attrs, outputs):
     """
     Need to support broadcast.
     """
@@ -225,7 +229,8 @@ def lppool_op():
 
 
 def matmul_op(inputs, attrs, outputs):
-    return make_node('MatMul', inputs=inputs, outputs=outputs)
+    return make_node(
+        'MatMul', inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
 
 
 def max_op():
@@ -462,7 +467,7 @@ node_maker = {
     'cast': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
     ',': ('Constant', constant_op),
-    'conv': ('Conv', conv_op),
+    'conv2d': ('Conv', conv_op),
 
     # Need to continue the mapping below.
     '': 'ConvTranspose',

@@ -92,10 +92,17 @@ def convert(args):
                 if op.type in ops.node_maker:
                     # TODO(kuke): deal with the corner case that vars in 
                     #     different blocks have the same name
-                    node_proto = ops.node_maker[op.type](
-                        inputs=op.input_arg_names,
-                        attrs=op.attr_names,
-                        outputs=op.output_arg_names)
+                    op_attrs = dict([(name, op.attr(name))
+                                     for name in op.attr_names
+                                     ]) if op.attr_names is not None else None
+                    op_inputs = dict([(name, op.input(name))
+                                      for name in op.input_names])
+                    op_outputs = dict([(name, op.output(name))
+                                       for name in op.output_names])
+
+                    node_proto = ops.node_maker[op.type](inputs=op_inputs,
+                                                         attrs=op_attrs,
+                                                         outputs=op_outputs)
 
                     onnx_nodes.append(node_proto)
                 else:
