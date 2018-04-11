@@ -85,8 +85,19 @@ def averagepool_op():
     pass
 
 
-def batchnorm_op():
-    pass
+def batchnorm_op(inputs, attrs, outputs):
+    outputs['MeanOut'] = [outputs['MeanOut'][0] + '@out']
+    outputs['VarianceOut'] = [outputs['VarianceOut'][0] + '@out']
+    bn_op = make_node(
+        'BatchNormalization',
+        inputs=inputs['X'] + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
+        inputs['Variance'],
+        outputs=outputs['Y'] + outputs['MeanOut'] + outputs['VarianceOut'] +
+        outputs['SavedMean'] + outputs['SavedVariance'],
+        is_test=attrs['is_test'],
+        epsilon=attrs['epsilon'],
+        momentum=attrs['momentum'])
+    return bn_op
 
 
 def cast_op():
@@ -110,10 +121,15 @@ def constant_op():
 
 
 def conv_op(inputs, attrs, outputs):
-    """
-    Need to support broadcast.
-    """
-    pass
+    conv2d = make_node(
+        'Conv',
+        inputs=inputs['Input'] + inputs['Filter'],
+        outputs=outputs['Output'],
+        dilations=attrs['dilations'],
+        strides=attrs['strides'],
+        group=attrs['groups'],
+        pads=attrs['paddings'] + attrs['paddings'])
+    return conv2d
 
 
 def convtranspose_op():
@@ -286,6 +302,25 @@ def pad_op():
     pass
 
 
+def pool2d_op(inputs, attrs, outputs):
+    if attrs['global_pooling'] is False:
+        op_type = {'max': 'MaxPool', 'ave': 'AveragePool'}
+        pool2d = make_node(
+            op_type[attrs['pooling_type']],
+            inputs=inputs['X'],
+            outputs=outputs['Out'],
+            kernel_shape=attrs['ksize'],
+            strides=attrs['strides'],
+            pads=attrs['paddings'] + attrs['paddings'], )
+    else:
+        op_type = {'max': 'GlobalMaxPool', 'ave': 'GlobalAveragePool'}
+        pool2d = make_node(
+            op_type[attrs['pooling_type']],
+            inputs=inputs['X'],
+            outputs=outputs['Out'])
+    return pool2d
+
+
 def pow_op():
     pass
 
@@ -354,8 +389,8 @@ def reducesumsquare_op():
     pass
 
 
-def relu_op():
-    pass
+def relu_op(inputs, attrs, outputs):
+    return make_node('Relu', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def reshape_op():
@@ -382,8 +417,8 @@ def slice_op():
     pass
 
 
-def softmax_op():
-    pass
+def softmax_op(inputs, attrs, outputs):
+    return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def softplus_op():
@@ -449,9 +484,6 @@ def xor_op():
 # Reference for paddle operator availability taken from:
 #     https://github.com/PaddlePaddle/Paddle/issues/8028
 
-# ONNX Ops that use multiple Paddle ops are keyed by '<op1>,<op2>' fed into the
-# modifier.
-
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': ('Abs', abs_op),
@@ -461,13 +493,13 @@ node_maker = {
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     '': ('AveragePool', averagepool_op),
-    'batch_norm': ('BatchNormalization', batchnorm_op),
+    'batch_norm': batchnorm_op,
     'cast': ('Cast', cast_op),
     # 'Ceil', NEEDS ATTENTION.
     'cast': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
     ',': ('Constant', constant_op),
-    'conv2d': ('Conv', conv_op),
+    'conv2d': conv_op,
 
     # Need to continue the mapping below.
     '': 'ConvTranspose',
@@ -509,6 +541,7 @@ node_maker = {
     '': 'Or',
     '': 'PRelu',
     '': 'Pad',
+    'pool2d': pool2d_op,
     '': 'Pow',
     ',': 'RNN',
     '': 'RandomNormal',
@@ -526,14 +559,14 @@ node_maker = {
     # 'ReduceProd', NEEDS ATTENTION.
     '': 'ReduceSum',
     ',': 'ReduceSumSquare',
-    '': 'Relu',
+    'relu': relu_op,
     '': 'Reshape',
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
     '': 'Sigmoid',
     '': 'Size',
     # 'Slice', NEEDS ATTENTION.
-    '': 'Softmax',
+    'softmax': softmax_op,
     '': 'Softplus',
     '': 'Softsign',
     '': 'SpaceToDepth',
