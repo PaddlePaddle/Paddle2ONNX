@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from onnx.helper import make_node
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -53,8 +55,8 @@ def abs_op():
     pass
 
 
-def add_op():
-    pass
+def add_op(inputs, attrs, outputs):
+    return make_node('Add', inputs=inputs, outputs=outputs, broadcast=1)
 
 
 def and_op():
@@ -222,8 +224,8 @@ def lppool_op():
     pass
 
 
-def matmul_op():
-    pass
+def matmul_op(inputs, attrs, outputs):
+    return make_node('MatMul', inputs=inputs, outputs=outputs)
 
 
 def max_op():
@@ -445,10 +447,10 @@ def xor_op():
 # ONNX Ops that use multiple Paddle ops are keyed by '<op1>,<op2>' fed into the
 # modifier.
 
-PADDLE_TO_ONNX = {
+node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': ('Abs', abs_op),
-    'elementwise_add': ('Add', add_op),
+    'elementwise_add': add_op,
 
     # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
@@ -496,7 +498,7 @@ PADDLE_TO_ONNX = {
     '': 'MaxRoiPool',
     'mean': ('Mean', mean_op),
     '': 'Min',
-    'mul': ('Mul', mul_op),
+    'mul': matmul_op,
     ',': 'Neg',
     '': 'Not',
     '': 'Or',
