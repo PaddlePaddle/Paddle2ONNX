@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 from onnx import helper, onnx_pb2, TensorProto
 import paddle.fluid.core as core
 
@@ -19,9 +20,18 @@ import paddle.fluid.core as core
 def paddle_variable_to_onnx_tensor(paddle_var_name, block):
     # TODO(varunarora): Need to do this only in the case of VarType.LOD_TENSOR.
     paddle_var = block.var(paddle_var_name)
-    return helper.make_tensor_value_info(paddle_var_name,
-                                         PADDLE_TO_ONNX_DTYPE[paddle_var.dtype],
-                                         paddle_var.shape)
+    shape = paddle_onnx_shape(paddle_var.shape)
+    return helper.make_tensor_value_info(
+        paddle_var_name, PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
+
+
+def paddle_onnx_shape(paddle_shape):
+    """ Convert shape info from paddle to onnx
+    """
+
+    onnx_shape = np.array(list(paddle_shape))
+    onnx_shape[onnx_shape < 0] = 0
+    return tuple(onnx_shape)
 
 
 PADDLE_TO_ONNX_DTYPE = {
