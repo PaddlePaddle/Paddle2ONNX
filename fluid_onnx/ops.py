@@ -60,6 +60,7 @@ def add_op(inputs, attrs, outputs):
         'Add',
         inputs=inputs['X'] + inputs['Y'],
         outputs=outputs['Out'],
+        axis=attrs['axis'],
         broadcast=1)
 
 
@@ -86,14 +87,11 @@ def averagepool_op():
 
 
 def batchnorm_op(inputs, attrs, outputs):
-    outputs['MeanOut'] = [outputs['MeanOut'][0] + '@out']
-    outputs['VarianceOut'] = [outputs['VarianceOut'][0] + '@out']
     bn_op = make_node(
         'BatchNormalization',
         inputs=inputs['X'] + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
         inputs['Variance'],
-        outputs=outputs['Y'] + outputs['MeanOut'] + outputs['VarianceOut'] +
-        outputs['SavedMean'] + outputs['SavedVariance'],
+        outputs=outputs['Y'],
         is_test=attrs['is_test'],
         epsilon=attrs['epsilon'],
         momentum=attrs['momentum'])
@@ -126,9 +124,10 @@ def conv_op(inputs, attrs, outputs):
         inputs=inputs['Input'] + inputs['Filter'],
         outputs=outputs['Output'],
         dilations=attrs['dilations'],
+        kernel_shape=attrs['kernel_shape'][2:],
         strides=attrs['strides'],
         group=attrs['groups'],
-        pads=attrs['paddings'] + attrs['paddings'])
+        pads=attrs['paddings'])
     return conv2d
 
 
