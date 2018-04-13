@@ -14,6 +14,8 @@
 
 import sys
 from onnx.helper import make_node
+from paddle.fluid.executor import fetch_var
+from fluid.utils import get_op_io_info
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -56,7 +58,8 @@ def abs_op():
     pass
 
 
-def add_op(inputs, attrs, outputs):
+def add_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
     return make_node(
         'Add',
         inputs=inputs['X'] + inputs['Y'],
@@ -87,7 +90,8 @@ def averagepool_op():
     pass
 
 
-def batchnorm_op(inputs, attrs, outputs):
+def batchnorm_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
     bn_op = make_node(
         'BatchNormalization',
         inputs=inputs['X'] + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
@@ -119,13 +123,17 @@ def constant_op():
     pass
 
 
-def conv2d_op(inputs, attrs, outputs):
+def conv2d_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
+    kernel_shape = fetch_var(
+        operator.input('Filter')[0].decode('string_escape'), scope).shape
+
     conv2d = make_node(
         'Conv',
         inputs=inputs['Input'] + inputs['Filter'],
         outputs=outputs['Output'],
         dilations=attrs['dilations'],
-        kernel_shape=attrs['kernel_shape'][2:],
+        kernel_shape=kernel_shape[-2:],
         strides=attrs['strides'],
         group=attrs['groups'],
         pads=attrs['paddings'])
@@ -244,7 +252,9 @@ def lppool_op():
     pass
 
 
-def mul_op(inputs, attrs, outputs):
+def mul_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
+
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
@@ -350,7 +360,8 @@ def pad_op():
     pass
 
 
-def pool2d_op(inputs, attrs, outputs):
+def pool2d_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
     if attrs['global_pooling'] is False:
         op_type = {'max': 'MaxPool', 'ave': 'AveragePool'}
         pool2d = make_node(
@@ -437,7 +448,8 @@ def reducesumsquare_op():
     pass
 
 
-def relu_op(inputs, attrs, outputs):
+def relu_op(operator, scope):
+    inputs, _, outputs = get_op_io_info(operator)
     return make_node('Relu', inputs=inputs['X'], outputs=outputs['Out'])
 
 
@@ -465,7 +477,8 @@ def slice_op():
     pass
 
 
-def softmax_op(inputs, attrs, outputs):
+def softmax_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
     return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
 
 

@@ -90,26 +90,11 @@ def convert(args):
         for block in inference_program.blocks:
             for op in block.ops:
                 if op.type in ops.node_maker:
-                    op_attrs = dict([(name, op.attr(name))
-                                     for name in op.attr_names
-                                     ]) if op.attr_names is not None else None
-                    op_inputs = dict([(name, op.input(name))
-                                      for name in op.input_names])
-                    op_outputs = dict([(name, op.output(name))
-                                       for name in op.output_names])
-
-                    # Append some customized arguments of the node maker here
-                    if op.type == 'conv2d':
-                        kernel_shape = fluid.executor.fetch_var(
-                            op.input('Filter')[0].decode('string_escape'),
-                            inference_scope).shape
-                        op_attrs['kernel_shape'] = kernel_shape
-
                     # TODO(kuke): deal with the corner case that vars in 
                     #     different blocks have the same name
-                    node_proto = ops.node_maker[op.type](inputs=op_inputs,
-                                                         attrs=op_attrs,
-                                                         outputs=op_outputs)
+                    node_proto = ops.node_maker[op.type](operator=op,
+                                                         scope=inference_scope)
+
                     if isinstance(node_proto, tuple):
                         onnx_nodes.extend(list(node_proto))
                     else:
