@@ -136,7 +136,7 @@ def conv2d_op(operator, scope):
         kernel_shape=kernel_shape[-2:],
         strides=attrs['strides'],
         group=attrs['groups'],
-        pads=attrs['paddings'])
+        pads=attrs['paddings'] + attrs['paddings'])
     return conv2d
 
 
