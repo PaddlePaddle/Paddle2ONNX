@@ -110,8 +110,10 @@ def convert(args):
                     node_proto = ops.node_maker[op.type](inputs=op_inputs,
                                                          attrs=op_attrs,
                                                          outputs=op_outputs)
-
-                    onnx_nodes.append(node_proto)
+                    if isinstance(node_proto, tuple):
+                        onnx_nodes.extend(list(node_proto))
+                    else:
+                        onnx_nodes.append(node_proto)
                 else:
                     if op.type not in ['feed', 'fetch']:
                         raise NotImplementedError("OP[%s] is not supported in "

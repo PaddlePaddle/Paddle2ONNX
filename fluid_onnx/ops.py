@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from onnx.helper import make_node
 """
 Priority of ops (uniques) to figure out support for.
@@ -118,7 +119,7 @@ def constant_op():
     pass
 
 
-def conv_op(inputs, attrs, outputs):
+def conv2d_op(inputs, attrs, outputs):
     conv2d = make_node(
         'Conv',
         inputs=inputs['Input'] + inputs['Filter'],
@@ -243,9 +244,61 @@ def lppool_op():
     pass
 
 
-def matmul_op(inputs, attrs, outputs):
-    return make_node(
-        'MatMul', inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
+def mul_op(inputs, attrs, outputs):
+    # Flatten input(X) and input(Y) into 2-D matries
+    x_flat_out = [inputs['X'][0] + '@flatten_0']
+    y_flat_out = [inputs['Y'][0] + '@flatten_0']
+    flatten_x_node = make_node(
+        'Flatten',
+        inputs=inputs['X'],
+        outputs=x_flat_out,
+        axis=attrs['x_num_col_dims'])
+    flatten_y_node = make_node(
+        'Flatten',
+        inputs=inputs['Y'],
+        outputs=y_flat_out,
+        axis=attrs['y_num_col_dims'])
+
+    # Mat mul 
+    matmul_out = [outputs['Out'][0] + '@matmul_0']
+    matmul_node = make_node(
+        'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
+
+    # Get the shape of input(X) and input(Y)
+    x_shape_out = [inputs['X'][0] + '@shape_0']
+    y_shape_out = [inputs['Y'][0] + '@shape_0']
+    x_shape_node = make_node('Shape', inputs=inputs['X'], outputs=x_shape_out)
+    y_shape_node = make_node('Shape', inputs=inputs['Y'], outputs=y_shape_out)
+
+    # Get the real shape of output(Out)
+    x_shape_slice_out = [inputs['X'][0] + '@shape_slice_0']
+    y_shape_slice_out = [inputs['Y'][0] + '@shape_slice_0']
+    output_shape = [outputs['Out'][0] + '@shape_concat_0']
+    x_shape_slice_node = make_node(
+        'Slice',
+        inputs=x_shape_out,
+        outputs=x_shape_slice_out,
+        starts=[0],
+        ends=[attrs['x_num_col_dims']])
+    y_shape_slice_node = make_node(
+        'Slice',
+        inputs=y_shape_out,
+        outputs=y_shape_slice_out,
+        starts=[attrs['y_num_col_dims']],
+        ends=[sys.maxint])
+    output_shape_node = make_node(
+        'Concat',
+        inputs=x_shape_slice_out + y_shape_slice_out,
+        outputs=output_shape,
+        axis=0)
+
+    # Reshpe output
+    output_node = make_node(
+        'Reshape', inputs=matmul_out + output_shape, outputs=outputs['Out'])
+
+    return (flatten_x_node, flatten_y_node, matmul_node, x_shape_node,
+            y_shape_node, x_shape_slice_node, y_shape_slice_node,
+            output_shape_node, output_node)
 
 
 def max_op():
@@ -268,10 +321,6 @@ def mean_op():
 
 
 def min_op():
-    pass
-
-
-def mul_op():
     pass
 
 
@@ -498,7 +547,7 @@ node_maker = {
     'cast': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
     ',': ('Constant', constant_op),
-    'conv2d': conv_op,
+    'conv2d': conv2d_op,
 
     # Need to continue the mapping below.
     '': 'ConvTranspose',
@@ -534,7 +583,7 @@ node_maker = {
     '': 'MaxRoiPool',
     'mean': ('Mean', mean_op),
     '': 'Min',
-    'mul': matmul_op,
+    'mul': mul_op,
     ',': 'Neg',
     '': 'Not',
     '': 'Or',
