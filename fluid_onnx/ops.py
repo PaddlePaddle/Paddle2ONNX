@@ -60,6 +60,7 @@ def abs_op():
 
 def add_op(operator, scope):
     inputs, attrs, outputs = get_op_io_info(operator)
+    print(inputs, attrs, outputs)
     return make_node(
         'Add',
         inputs=inputs['X'] + inputs['Y'],
@@ -254,6 +255,7 @@ def lppool_op():
 
 def mul_op(operator, scope):
     inputs, attrs, outputs = get_op_io_info(operator)
+    print(inputs, attrs, outputs)
 
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
@@ -514,8 +516,9 @@ def sum_op():
     pass
 
 
-def tanh_op():
-    pass
+def tanh_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
+    return make_node('Tanh', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def tile_op():
@@ -636,7 +639,7 @@ node_maker = {
     # 'Squeeze', NEEDS ATTENTION.
     'elementwise_sub': ('Sub', sub_op),
     '': 'Sum',
-    '': 'Tanh',
+    'tanh': tanh_op,
     '': 'Tile',
     '': 'TopK',
     '': 'Transpose',
