@@ -37,6 +37,14 @@ http://paddlepaddle.org/docs/develop/documentation/en/build_and_install/build_fr
 
 NOTE: Make sure your virtual environment has the new Protobuf used by this project and the `onnx` dependency, as Paddle installation may try to downgrade it.
 
+## Running
+
+In order to convert a simple Paddle model to an onnx model, the repo contains a trained model (`extras/fit_a_line.inference.model`). The `convert.py` script can be used as follows to convert this sample model:
+
+```
+python convert.py --fluid_model extras/fit_a_line.inference.model/ --onnx_model sample_onnx
+```
+
 ## Testing
 
 TBD
