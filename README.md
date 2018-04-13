@@ -43,10 +43,10 @@ TBD
 
 ## Supported models
 
-We aim to at least support all the models from our model bank. During our preliminary stage, we plan to support the models generated from:
+We aim to at least support all the models from our model bank. During our preliminary stage, we have validated the inference model's conversion on following models:
 
 - [fit_a_line](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_fit_a_line.py)
-- [machine_translation](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_machine_translation.py)
+- [recognize_digits](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_recognize_digits.py)
 
 ## License
 Provided under the [Apache-2.0 license](LICENSE).
