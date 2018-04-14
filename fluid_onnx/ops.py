@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import sys
-from onnx.helper import make_node
+from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
 from fluid.utils import get_op_io_info
+from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -60,7 +61,6 @@ def abs_op():
 
 def add_op(operator, scope):
     inputs, attrs, outputs = get_op_io_info(operator)
-    print(inputs, attrs, outputs)
     return make_node(
         'Add',
         inputs=inputs['X'] + inputs['Y'],
@@ -120,8 +120,18 @@ def concat_op():
     pass
 
 
-def constant_op():
-    pass
+def constant_op(var, scope):
+    data = fetch_var(var.name, scope)
+    constant_node = make_node(
+        'Constant',
+        inputs=[],
+        outputs=[var.name],
+        value=make_tensor(
+            name=var.name,
+            dims=var.shape,
+            data_type=PADDLE_TO_ONNX_DTYPE[var.dtype],
+            vals=data.flatten().tolist()))
+    return constant_node
 
 
 def conv2d_op(operator, scope):
@@ -255,7 +265,6 @@ def lppool_op():
 
 def mul_op(operator, scope):
     inputs, attrs, outputs = get_op_io_info(operator)
-    print(inputs, attrs, outputs)
 
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
@@ -562,7 +571,7 @@ node_maker = {
     # 'Ceil', NEEDS ATTENTION.
     'cast': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
-    ',': ('Constant', constant_op),
+    'constant': constant_op,
     'conv2d': conv2d_op,
 
     # Need to continue the mapping below.
