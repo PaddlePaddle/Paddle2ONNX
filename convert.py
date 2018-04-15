@@ -18,7 +18,8 @@ import argparse
 from onnx import helper, checker
 import paddle.fluid as fluid
 
-import fluid_onnx.ops as ops
+from fluid_onnx.ops import get_fluid_op_converter
+from fluid_onnx.utils import unify_onnx_model_path
 from fluid_onnx.variables import paddle_variable_to_onnx_tensor
 from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 
@@ -89,19 +90,9 @@ def convert(args):
         # Create nodes
         for block in inference_program.blocks:
             for op in block.ops:
-                if op.type in ops.node_maker:
-                    # TODO(kuke): deal with the corner case that vars in 
-                    #     different blocks have the same name
-                    node_proto = ops.node_maker[op.type](
-                        inputs=op.input_arg_names,
-                        attrs=op.attr_names,
-                        outputs=op.output_arg_names)
-
-                    onnx_nodes.append(node_proto)
-                else:
-                    if op.type not in ['feed', 'fetch']:
-                        raise NotImplementedError("OP[%s] is not supported in "
-                                                  "the converter!" % op.type)
+                if op.type not in ['feed', 'fetch']:
+                    converter = get_fluid_op_converter(op.type)
+                    onnx_nodes.append(converter(op))
 
         # Make graph
         model_name = os.path.basename(args.fluid_model.strip('/')).split('.')[0]
@@ -118,12 +109,10 @@ def convert(args):
 
         # Save converted model
         if args.onnx_model is not None:
-            try:
-                with open(args.onnx_model, 'wb') as f:
-                    f.write(onnx_model.SerializeToString())
-                print("Saved converted model to path: %s" % args.onnx_model)
-            except (IOError), e:
-                print("Invalid ONNX model saving path: %s" % args.onnx_model)
+            args.onnx_model = unify_onnx_model_path(args.onnx_model)
+            with open(args.onnx_model, 'wb') as f:
+                f.write(onnx_model.SerializeToString())
+            print("Saved converted model to path: %s" % args.onnx_model)
 
 
 if __name__ == "__main__":
