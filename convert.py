@@ -20,7 +20,6 @@ import paddle.fluid as fluid
 
 import fluid_onnx.ops as ops
 from fluid_onnx.variables import paddle_variable_to_onnx_tensor
-from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 
 
 def parse_args():
@@ -59,16 +58,8 @@ def convert(args):
         for var_name in global_block.vars:
             var = global_block.var(var_name)
             if var_name not in ['feed', 'fetch'] and var.persistable:
-                param = fluid.executor.fetch_var(var_name, inference_scope)
-                param_node = helper.make_node(
-                    'Constant',
-                    inputs=[],
-                    outputs=[var_name],
-                    value=helper.make_tensor(
-                        name=var_name,
-                        dims=var.shape,
-                        data_type=PADDLE_TO_ONNX_DTYPE[var.dtype],
-                        vals=param.flatten().tolist()))
+                param_node = ops.node_maker['constant'](var=var,
+                                                        scope=inference_scope)
                 onnx_nodes.append(param_node)
 
         # Create inputs
@@ -92,12 +83,13 @@ def convert(args):
                 if op.type in ops.node_maker:
                     # TODO(kuke): deal with the corner case that vars in 
                     #     different blocks have the same name
-                    node_proto = ops.node_maker[op.type](
-                        inputs=op.input_arg_names,
-                        attrs=op.attr_names,
-                        outputs=op.output_arg_names)
+                    node_proto = ops.node_maker[op.type](operator=op,
+                                                         scope=inference_scope)
 
-                    onnx_nodes.append(node_proto)
+                    if isinstance(node_proto, tuple):
+                        onnx_nodes.extend(list(node_proto))
+                    else:
+                        onnx_nodes.append(node_proto)
                 else:
                     if op.type not in ['feed', 'fetch']:
                         raise NotImplementedError("OP[%s] is not supported in "
@@ -113,7 +105,7 @@ def convert(args):
         # Model check
         checker.check_model(onnx_model)
 
-        # Output readable model
+        # Print model
         print("The converted model is:\n{}".format(onnx_model))
 
         # Save converted model
