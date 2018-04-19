@@ -9,3 +9,4 @@ if [ $? != 0 ]; then
     echo "Install python dependencies failed !!!"
     exit 1
 fi
+
