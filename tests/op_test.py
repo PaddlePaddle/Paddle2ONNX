@@ -44,6 +44,8 @@ def append_input_output(block, op_proto, np_list, persistable_list, is_input):
         block:
         op_proto: The matching C++ operator type.
         np_list: Dict of value names -> values.
+        persistable_list: List of variables to be persisted.
+        is_input: Boolean of if this is a set of inputs.
 
     Returns:
         A dict of variable names -> Paddle variable instances.
