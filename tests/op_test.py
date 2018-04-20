@@ -16,7 +16,8 @@ import sys
 import unittest
 import numpy as np
 
-from onnx.helper import make_node, make_tensor, make_graph, make_model
+from onnx.helper import make_node, make_graph, make_model
+from onnx.checker import check_node
 import paddle.fluid.core as core
 from paddle.fluid import scope_guard
 from paddle.fluid.backward import append_backward
@@ -160,9 +161,12 @@ class OpTest(unittest.TestCase):
 
         onnx_node = node_maker[self.op_type](operator=self.op, scope=self.scope)
 
-        onnx_graph = make_graph(
-            list(onnx_node) if isinstance(onnx_node, tuple) else [onnx_node],
-            self.op_type, inputs, outputs)
+        node_list = list(onnx_node) if isinstance(onnx_node,
+                                                  tuple) else [onnx_node]
+        for node in node_list:
+            check_node(node)
+
+        onnx_graph = make_graph(node_list, self.op_type, inputs, outputs)
 
         onnx_model = make_model(onnx_graph, producer_name='unittest')
 

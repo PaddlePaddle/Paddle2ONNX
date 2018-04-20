@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 import numpy as np
 from op_test import OpTest
 
@@ -111,3 +112,7 @@ class TestPool2dOp4(TestPool2dOp1):
 class TestPool2dOp5(TestPool2dOp2):
     def init_pool_type(self):
         self.pool_type = "max"
+
+
+if __name__ == '__main__':
+    unittest.main()
