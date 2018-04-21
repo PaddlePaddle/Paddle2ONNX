@@ -24,6 +24,6 @@ unittest(){
 trap 'abort' 0
 set -e
 
-unittest .
+# unittest .
 
 trap : 0

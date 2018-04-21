@@ -374,7 +374,7 @@ def pad_op():
 def pool2d_op(operator, scope):
     inputs, attrs, outputs = get_op_io_info(operator)
     if attrs['global_pooling'] is False:
-        op_type = {'max': 'MaxPool', 'ave': 'AveragePool'}
+        op_type = {'max': 'MaxPool', 'avg': 'AveragePool'}
         pool2d = make_node(
             op_type[attrs['pooling_type']],
             inputs=inputs['X'],
@@ -383,7 +383,7 @@ def pool2d_op(operator, scope):
             strides=attrs['strides'],
             pads=attrs['paddings'] + attrs['paddings'], )
     else:
-        op_type = {'max': 'GlobalMaxPool', 'ave': 'GlobalAveragePool'}
+        op_type = {'max': 'GlobalMaxPool', 'avg': 'GlobalAveragePool'}
         pool2d = make_node(
             op_type[attrs['pooling_type']],
             inputs=inputs['X'],
