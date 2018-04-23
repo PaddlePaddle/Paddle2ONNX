@@ -163,8 +163,23 @@ def div_op():
     pass
 
 
-def dropout_op():
-    pass
+def dropout_op(operator, scope):
+    inputs, attrs, outputs = get_op_io_info(operator)
+    scale_input = [outputs['Out'][0] + '@dropout']
+    dropout_op = make_node(
+        'Dropout',
+        inputs=inputs['X'],
+        outputs=scale_input + outputs['Mask'],
+        is_test=attrs['is_test'],
+        ratio=attrs['dropout_prob'])
+
+    # Fluid and ONNX use different dropout formula
+    scale_op = make_node(
+        'Scale',
+        inputs=scale_input,
+        outputs=outputs['Out'],
+        scale=1.0 - attrs['dropout_prob'])
+    return (dropout_op, scale_op)
 
 
 def elu_op():
@@ -172,10 +187,6 @@ def elu_op():
 
 
 def equal_op():
-    pass
-
-
-def dropout_op():
     pass
 
 
@@ -578,7 +589,7 @@ node_maker = {
     '': 'ConvTranspose',
     '': 'DepthToSpace',
     '': 'Div',
-    '': 'Dropout',
+    'dropout': dropout_op,
     '': 'Elu',
     '': 'Equal',
     '': 'Exp',
