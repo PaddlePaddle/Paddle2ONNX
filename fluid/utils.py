@@ -16,7 +16,8 @@ from compiler.ast import flatten
 
 
 class UniqOpIOs():
-    """Return unique input/output argument names for a operator.
+    """Return input/output information for an operator, and resolve potential 
+       name conflicts in ONNX graph.
     """
 
     def __init__(self):
@@ -24,14 +25,14 @@ class UniqOpIOs():
         self._renamed_cnt = 0
 
     def get_new_name(self, arg):
-        """Get the new name for the an argument.
+        """Get the new name for an argument.
         """
 
         self._renamed_cnt += 1
         return arg + '@dup_' + str(self._renamed_cnt)
 
     def rename_input_args(self):
-        """Rename input arguments if their previous output arugments has been 
+        """Rename input arguments if their previous output arugments have been 
            renamed.
         """
 
@@ -41,7 +42,7 @@ class UniqOpIOs():
                     in_name][0]]
 
     def rename_output_args(self):
-        """Rename output arguments if they have same name with the input 
+        """Rename output arguments if they have same names with the input 
            arguments.
         """
 

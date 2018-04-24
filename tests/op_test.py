@@ -184,9 +184,9 @@ class OpTest(unittest.TestCase):
         # Create a new paddle scope and program.
         place = core.CPUPlace()
         exe = Executor(place)
-        self.scope = core.Scope()
+        scope = core.Scope()
 
-        with scope_guard(self.scope):
+        with scope_guard(scope):
             program = Program()
             self.block = program.global_block()
 
@@ -227,7 +227,6 @@ class OpTest(unittest.TestCase):
 
             outs = exe.run(program,
                            feed=self.feed_map,
-                           scope=self.scope,
                            fetch_list=self.fetch_list,
                            return_numpy=True)
         return outs
@@ -255,7 +254,7 @@ class OpTest(unittest.TestCase):
         ]
 
         # Construct the ONNX model using paddle-onnx.
-        onnx_node = node_maker[self.op_type](operator=self.op, scope=self.scope)
+        onnx_node = node_maker[self.op_type](operator=self.op, block=self.block)
         node_list = list(onnx_node) if isinstance(onnx_node,
                                                   tuple) else [onnx_node]
         for node in node_list:
