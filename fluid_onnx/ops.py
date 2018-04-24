@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
 from fluid.utils import get_op_io_info
@@ -59,7 +60,7 @@ def abs_op():
     pass
 
 
-def add_op(operator, scope):
+def add_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
     return make_node(
         'Add',
@@ -91,17 +92,40 @@ def averagepool_op():
     pass
 
 
-def batchnorm_op(operator, scope):
+def batch_norm_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
-    bn_op = make_node(
+
+    x_shape = block.vars[inputs['X'][0]].shape
+    reshape_node = None
+    if len(x_shape) == 2:
+        reshaped_x = [inputs['X'][0] + '@reshape_0']
+        new_shape = [0, x_shape[1], 1, 1]
+        new_shape_name = [inputs['X'][0] + '@shape_tensor_0']
+        new_shape_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=new_shape_name,
+            value=make_tensor(
+                name=new_shape_name[0],
+                data_type=TensorProto.INT64,
+                dims=(4, ),
+                vals=new_shape))
+        reshape_node = make_node(
+            'Reshape', inputs=inputs['X'] + new_shape_name, outputs=reshaped_x)
+    else:
+        reshaped_x = inputs['X']
+
+    bn_node = make_node(
         'BatchNormalization',
-        inputs=inputs['X'] + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
+        inputs=reshaped_x + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
         inputs['Variance'],
         outputs=outputs['Y'],
         is_test=attrs['is_test'],
         epsilon=attrs['epsilon'],
         momentum=attrs['momentum'])
-    return bn_op
+
+    return bn_node if reshape_node is None else (new_shape_node, reshape_node,
+                                                 bn_node)
 
 
 def cast_op():
@@ -134,11 +158,10 @@ def constant_op(var, scope):
     return constant_node
 
 
-def conv2d_op(operator, scope):
+def conv2d_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
-    kernel_shape = fetch_var(
-        operator.input('Filter')[0].decode('string_escape'), scope).shape
 
+    kernel_shape = block.vars[inputs['Filter'][0]].shape
     conv2d = make_node(
         'Conv',
         inputs=inputs['Input'] + inputs['Filter'],
@@ -163,7 +186,7 @@ def div_op():
     pass
 
 
-def dropout_op(operator, scope):
+def dropout_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
     dropout_op = make_node(
@@ -274,7 +297,7 @@ def lppool_op():
     pass
 
 
-def mul_op(operator, scope):
+def mul_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
 
     # Flatten input(X) and input(Y) into 2-D matries
@@ -382,7 +405,7 @@ def pad_op():
     pass
 
 
-def pool2d_op(operator, scope):
+def pool2d_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
     if attrs['global_pooling'] is False:
         op_type = {'max': 'MaxPool', 'avg': 'AveragePool'}
@@ -470,7 +493,7 @@ def reducesumsquare_op():
     pass
 
 
-def relu_op(operator, scope):
+def relu_op(operator, block):
     inputs, _, outputs = get_op_io_info(operator)
     return make_node('Relu', inputs=inputs['X'], outputs=outputs['Out'])
 
@@ -499,7 +522,7 @@ def slice_op():
     pass
 
 
-def softmax_op(operator, scope):
+def softmax_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
     return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
 
@@ -536,7 +559,7 @@ def sum_op():
     pass
 
 
-def tanh_op(operator, scope):
+def tanh_op(operator, block):
     inputs, attrs, outputs = get_op_io_info(operator)
     return make_node('Tanh', inputs=inputs['X'], outputs=outputs['Out'])
 
@@ -577,7 +600,7 @@ node_maker = {
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     '': ('AveragePool', averagepool_op),
-    'batch_norm': batchnorm_op,
+    'batch_norm': batch_norm_op,
     'cast': ('Cast', cast_op),
     # 'Ceil', NEEDS ATTENTION.
     'cast': ('Clip', clip_op),

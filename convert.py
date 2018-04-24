@@ -84,7 +84,7 @@ def convert(args):
                     # TODO(kuke): deal with the corner case that vars in 
                     #     different blocks have the same name
                     node_proto = ops.node_maker[op.type](operator=op,
-                                                         scope=inference_scope)
+                                                         block=block)
 
                     if isinstance(node_proto, tuple):
                         onnx_nodes.extend(list(node_proto))
