@@ -20,8 +20,8 @@ This should output an ONNX model (current version of opset: 6) which can be run 
 
 # How it works
 
-- A (design document of the underlying ideas)[https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/onnx/onnx_convertor.md] behind how this program converts the model from PaddlePaddle to ONNX.
-- Understand (PaddlePaddle's (non-)graph way of representing a deep learning program)[https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/concepts/program.md], a `ProgramDesc`.
+- A [design document of the underlying ideas](https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/onnx/onnx_convertor.md) behind how this program converts the model from PaddlePaddle to ONNX.
+- Understand [PaddlePaddle's (non-)graph way of representing a deep learning program](https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/concepts/program.md), a `ProgramDesc`.
 
 
 ## Status
