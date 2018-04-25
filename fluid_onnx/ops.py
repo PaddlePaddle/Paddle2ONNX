@@ -60,16 +60,6 @@ def abs_op():
     pass
 
 
-def add_op(operator, block):
-    inputs, attrs, outputs = op_io_info(operator)
-    return make_node(
-        'Add',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'],
-        axis=attrs['axis'],
-        broadcast=1)
-
-
 def and_op():
     """
     Need to support broadcast.
@@ -203,6 +193,26 @@ def dropout_op(operator, block):
         outputs=outputs['Out'],
         scale=1.0 - attrs['dropout_prob'])
     return (dropout_op, scale_op)
+
+
+def elementwise_add_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Add',
+        inputs=inputs['X'] + inputs['Y'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'],
+        broadcast=1)
+
+
+def elementwise_mul_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Mul',
+        inputs=inputs['X'] + inputs['Y'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'],
+        broadcast=1)
 
 
 def elu_op():
@@ -510,8 +520,9 @@ def shape_op():
     pass
 
 
-def sigmoid_op():
-    pass
+def sigmoid_op(operator, block):
+    inputs, _, outputs = op_io_info(operator)
+    return make_node('Sigmoid', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def size_op():
@@ -594,7 +605,8 @@ def xor_op():
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': ('Abs', abs_op),
-    'elementwise_add': add_op,
+    'elementwise_add': elementwise_add_op,
+    'elementwise_mul': elementwise_mul_op,
 
     # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
@@ -670,7 +682,7 @@ node_maker = {
     '': 'Reshape',
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
-    '': 'Sigmoid',
+    'sigmoid': sigmoid_op,
     '': 'Size',
     # 'Slice', NEEDS ATTENTION.
     'softmax': softmax_op,
