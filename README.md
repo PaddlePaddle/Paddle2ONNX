@@ -1,22 +1,34 @@
-### WORK-IN-PROGRESS
-
 # PaddlePaddle to ONNX model convertor
 
-Converts a PaddlePaddle model (`ProgramDesc` + parameters) into an ONNX graph. Uses the ONNX pip library and targets PaddlePaddle **Fluid**. Built in Python 2.7 (and underneath the hood, ONNX does a Pybind to their C++ libraries).
+Converts a PaddlePaddle model (`ProgramDesc` + parameters) into an ONNX model, with a goal to support inference of PaddlePaddle models across hardware platforms. Uses the ONNX pip helper library and targets models constructed with PaddlePaddle's **Fluid** API. Written in Python 2.7 (and underneath the hood, ONNX binds its Python helpers to their C++ packages).
 
-To understand PaddlePaddle's (non-)graph way of representing a deep learning program, a `ProgramDesc`, refer to: https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/concepts/program.md.
+# Usage
+
+Before running the convertor,
+- Install all the necessary dependencies (see "Installation" section below)
+- Generate/save a PaddlePaddle Fluid model using the generate model directory by running any fluid test / example and write the model using the `fluid.io.save_inference_model` API (see [some of the examples](https://github.com/PaddlePaddle/Paddle/tree/develop/python/paddle/fluid/tests/book) that you can plug this into).
+  - A simple model for `fit_a_line` has been provided within the `extras` directory of this repo, to help you skip this step if you just wish to test it out.
+
+Then, run the following:
+
+```Python
+python fluid_to_onnx.py --fluid_model <path_to_paddlepaddle_fluid.model> --onnx_model <path_to_where_you_want_to_output_model.onnx>
+```
+
+This should output an ONNX model (current version of opset: 6) which can be run on an ONNX backend for inference.
+
+
+# How it works
+
+- A (design document of the underlying ideas)[https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/onnx/onnx_convertor.md] behind how this program converts the model from PaddlePaddle to ONNX.
+- Understand (PaddlePaddle's (non-)graph way of representing a deep learning program)[https://github.com/PaddlePaddle/Paddle/blob/develop/doc/fluid/design/concepts/program.md], a `ProgramDesc`.
+
 
 ## Status
 
 Targets Paddle->ONNX conversion for now, and will consequently support the reverse too.
 
 Currently a work-in-progress tool since there a features in PaddlePaddle not supported in ONNX today and vice-versa.
-
-## Usage
-
-First, generate model directory by running any fluid test / example and write the model using the `fluid.io.save_inference_model` API.
-
-Then, run `convert.py` by providing the generated model directory to the argument `---modeldir`.
 
 
 ## Installation
@@ -37,9 +49,10 @@ http://paddlepaddle.org/docs/develop/documentation/en/build_and_install/build_fr
 
 NOTE: Make sure your virtual environment has the new Protobuf used by this project and the `onnx` dependency, as Paddle installation may try to downgrade it.
 
-## Testing
+## Testing / validation
 
 TBD
+
 
 ## Supported models
 
