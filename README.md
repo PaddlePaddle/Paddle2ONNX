@@ -11,7 +11,7 @@ Before running the convertor,
 
 Then, run the following:
 
-```Python
+```
 python fluid_to_onnx.py --fluid_model <path_to_paddlepaddle_fluid.model> --onnx_model <path_to_where_you_want_to_output_model.onnx>
 ```
 
