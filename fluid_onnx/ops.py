@@ -16,7 +16,7 @@ import sys
 from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
-from fluid.utils import get_op_io_info
+from fluid.utils import op_io_info
 from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 """
 Priority of ops (uniques) to figure out support for.
@@ -61,7 +61,7 @@ def abs_op():
 
 
 def add_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
     return make_node(
         'Add',
         inputs=inputs['X'] + inputs['Y'],
@@ -93,7 +93,7 @@ def averagepool_op():
 
 
 def batch_norm_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
 
     x_shape = block.vars[inputs['X'][0]].shape
     reshape_node = None
@@ -159,7 +159,7 @@ def constant_op(var, scope):
 
 
 def conv2d_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
 
     kernel_shape = block.vars[inputs['Filter'][0]].shape
     conv2d = make_node(
@@ -187,7 +187,7 @@ def div_op():
 
 
 def dropout_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
     dropout_op = make_node(
         'Dropout',
@@ -298,7 +298,7 @@ def lppool_op():
 
 
 def mul_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
 
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
@@ -406,7 +406,7 @@ def pad_op():
 
 
 def pool2d_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
     if attrs['global_pooling'] is False:
         op_type = {'max': 'MaxPool', 'avg': 'AveragePool'}
         pool2d = make_node(
@@ -494,7 +494,7 @@ def reducesumsquare_op():
 
 
 def relu_op(operator, block):
-    inputs, _, outputs = get_op_io_info(operator)
+    inputs, _, outputs = op_io_info(operator)
     return make_node('Relu', inputs=inputs['X'], outputs=outputs['Out'])
 
 
@@ -523,7 +523,7 @@ def slice_op():
 
 
 def softmax_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
     return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
 
 
@@ -560,7 +560,7 @@ def sum_op():
 
 
 def tanh_op(operator, block):
-    inputs, attrs, outputs = get_op_io_info(operator)
+    inputs, attrs, outputs = op_io_info(operator)
     return make_node('Tanh', inputs=inputs['X'], outputs=outputs['Out'])
 
 

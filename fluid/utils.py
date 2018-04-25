@@ -15,8 +15,8 @@
 from compiler.ast import flatten
 
 
-class UniqOpIOs():
-    """Return input/output information for an operator, and resolve potential 
+class OpIOsInfo():
+    """Return inputs/outputs information for an operator, and resolve potential 
        name conflicts in ONNX graph.
     """
 
@@ -24,14 +24,14 @@ class UniqOpIOs():
         self._all_renamed_outputs = {}
         self._renamed_cnt = 0
 
-    def get_new_name(self, arg):
+    def __get_new_name(self, arg):
         """Get the new name for an argument.
         """
 
         self._renamed_cnt += 1
         return arg + '@dup_' + str(self._renamed_cnt)
 
-    def rename_input_args(self):
+    def __rename_input_args(self):
         """Rename input arguments if their previous output arugments have been 
            renamed.
         """
@@ -41,7 +41,7 @@ class UniqOpIOs():
                 self.inputs[in_name][0] = self._all_renamed_outputs[self.inputs[
                     in_name][0]]
 
-    def rename_output_args(self):
+    def __rename_output_args(self):
         """Rename output arguments if they have same names with the input 
            arguments.
         """
@@ -49,9 +49,15 @@ class UniqOpIOs():
         input_args = flatten(self.inputs.values())
         for out_name in self.outputs:
             if self.outputs[out_name][0] in input_args:
-                new_name = self.get_new_name(self.outputs[out_name][0])
+                new_name = self.__get_new_name(self.outputs[out_name][0])
                 self._all_renamed_outputs[self.outputs[out_name][0]] = new_name
                 self.outputs[out_name][0] = new_name
+
+    def get_all_renamed_outputs(self):
+        """Get all the renamed outputs in history.
+        """
+
+        return self._all_renamed_outputs
 
     def __call__(self, op):
         self.inputs = dict([(name, op.input(name)) for name in op.input_names])
@@ -61,10 +67,11 @@ class UniqOpIOs():
         self.outputs = dict(
             [(name, op.output(name)) for name in op.output_names])
 
-        self.rename_input_args()
-        self.rename_output_args()
+        self.__rename_input_args()
+        self.__rename_output_args()
 
         return self.inputs, self.attrs, self.outputs
 
 
-get_op_io_info = UniqOpIOs()
+# Instantiate the class to a callable object
+op_io_info = OpIOsInfo()

@@ -15,6 +15,7 @@
 import os
 import argparse
 
+from fluid.utils import op_io_info
 from onnx import helper, checker
 import paddle.fluid as fluid
 
@@ -68,15 +69,6 @@ def convert(args):
             for v in feed_target_names
         ]
 
-        # Create outputs
-        fetch_target_names = [
-            fetch_target.name for fetch_target in fetch_targets
-        ]
-        outputs = [
-            paddle_variable_to_onnx_tensor(v, global_block)
-            for v in fetch_target_names
-        ]
-
         # Create nodes
         for block in inference_program.blocks:
             for op in block.ops:
@@ -94,6 +86,21 @@ def convert(args):
                     if op.type not in ['feed', 'fetch']:
                         raise NotImplementedError("OP[%s] is not supported in "
                                                   "the converter!" % op.type)
+
+        # Create outputs
+        fetch_target_names = [
+            fetch_target.name for fetch_target in fetch_targets
+        ]
+        # Get the new names for outputs if they've renamed in nodes' making
+        renamed_outputs = op_io_info.get_all_renamed_outputs()
+        fetch_target_names = [
+            name if name not in renamed_outputs else renamed_outputs[name]
+            for name in fetch_target_names
+        ]
+        outputs = [
+            paddle_variable_to_onnx_tensor(v, global_block)
+            for v in fetch_target_names
+        ]
 
         # Make graph
         model_name = os.path.basename(args.fluid_model.strip('/')).split('.')[0]
