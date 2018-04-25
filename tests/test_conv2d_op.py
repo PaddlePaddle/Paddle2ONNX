@@ -19,7 +19,7 @@ from op_test import OpTest
 
 class TestConv2dOp(OpTest):
     def setUp(self):
-        self.op_type = "conv2d"
+        self.init_conv_type()
         self.use_cudnn = False
         self.use_mkldnn = False
         self.dtype = np.float32
@@ -56,8 +56,16 @@ class TestConv2dOp(OpTest):
         output = np.zeros((1, 1, 1, 1))
         self.outputs = {'Output': output}
 
+    def init_conv_type(self):
+        self.op_type = "conv2d"
+
     def test_check_output(self):
         self.check_output(decimal=5)
+
+
+class TestDepthwiseConv2dOp(TestConv2dOp):
+    def init_conv_type(self):
+        self.op_type = "depthwise_conv2d"
 
 
 if __name__ == '__main__':

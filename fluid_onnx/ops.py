@@ -623,6 +623,7 @@ node_maker = {
     # Need to continue the mapping below.
     '': 'ConvTranspose',
     '': 'DepthToSpace',
+    'depthwise_conv2d': conv2d_op,
     '': 'Div',
     'dropout': dropout_op,
     '': 'Elu',
