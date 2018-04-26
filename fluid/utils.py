@@ -24,14 +24,14 @@ class OpIOsInfo():
         self._all_renamed_outputs = {}
         self._renamed_cnt = 0
 
-    def __get_new_name(self, arg):
+    def _get_new_name(self, arg):
         """Get the new name for an argument.
         """
 
         self._renamed_cnt += 1
         return arg + '@dup_' + str(self._renamed_cnt)
 
-    def __rename_input_args(self):
+    def _rename_input_args(self):
         """Rename input arguments if their previous output arugments have been 
            renamed.
         """
@@ -41,7 +41,7 @@ class OpIOsInfo():
                 self.inputs[in_name][0] = self._all_renamed_outputs[self.inputs[
                     in_name][0]]
 
-    def __rename_output_args(self):
+    def _rename_output_args(self):
         """Rename output arguments if they have same names with the input 
            arguments.
         """
@@ -49,7 +49,7 @@ class OpIOsInfo():
         input_args = flatten(self.inputs.values())
         for out_name in self.outputs:
             if self.outputs[out_name][0] in input_args:
-                new_name = self.__get_new_name(self.outputs[out_name][0])
+                new_name = self._get_new_name(self.outputs[out_name][0])
                 self._all_renamed_outputs[self.outputs[out_name][0]] = new_name
                 self.outputs[out_name][0] = new_name
 
@@ -67,8 +67,8 @@ class OpIOsInfo():
         self.outputs = dict(
             [(name, op.output(name)) for name in op.output_names])
 
-        self.__rename_input_args()
-        self.__rename_output_args()
+        self._rename_input_args()
+        self._rename_output_args()
 
         return self.inputs, self.attrs, self.outputs
 

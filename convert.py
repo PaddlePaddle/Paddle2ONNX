@@ -29,7 +29,11 @@ def parse_args():
     parser.add_argument(
         "--fluid_model", required=True, help="Input PaddlePaddle Fluid model.")
     parser.add_argument(
-        "--onnx_model", required=False, help="The path to save ONNX model.")
+        "--onnx_model", required=True, help="The path to save ONNX model.")
+    parser.add_argument(
+        "--to_print_model",
+        action='store_true',
+        help="To print converted ONNX model.")
     args = parser.parse_args()
     return args
 
@@ -113,7 +117,8 @@ def convert(args):
         checker.check_model(onnx_model)
 
         # Print model
-        print("The converted model is:\n{}".format(onnx_model))
+        if args.to_print_model:
+            print("The converted model is:\n{}".format(onnx_model))
 
         # Save converted model
         if args.onnx_model is not None:
