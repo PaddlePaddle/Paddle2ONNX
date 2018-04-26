@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import sys
+from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
-from fluid.utils import get_op_io_info
+from fluid.utils import op_io_info
 from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 """
 Priority of ops (uniques) to figure out support for.
@@ -59,16 +60,6 @@ def abs_op():
     pass
 
 
-def add_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
-    return make_node(
-        'Add',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'],
-        axis=attrs['axis'],
-        broadcast=1)
-
-
 def and_op():
     """
     Need to support broadcast.
@@ -91,17 +82,40 @@ def averagepool_op():
     pass
 
 
-def batchnorm_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
-    bn_op = make_node(
+def batch_norm_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+
+    x_shape = block.vars[inputs['X'][0]].shape
+    reshape_node = None
+    if len(x_shape) == 2:
+        reshaped_x = [inputs['X'][0] + '@reshape_0']
+        new_shape = [0, x_shape[1], 1, 1]
+        new_shape_name = [inputs['X'][0] + '@shape_tensor_0']
+        new_shape_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=new_shape_name,
+            value=make_tensor(
+                name=new_shape_name[0],
+                data_type=TensorProto.INT64,
+                dims=(4, ),
+                vals=new_shape))
+        reshape_node = make_node(
+            'Reshape', inputs=inputs['X'] + new_shape_name, outputs=reshaped_x)
+    else:
+        reshaped_x = inputs['X']
+
+    bn_node = make_node(
         'BatchNormalization',
-        inputs=inputs['X'] + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
+        inputs=reshaped_x + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
         inputs['Variance'],
         outputs=outputs['Y'],
         is_test=attrs['is_test'],
         epsilon=attrs['epsilon'],
         momentum=attrs['momentum'])
-    return bn_op
+
+    return bn_node if reshape_node is None else (new_shape_node, reshape_node,
+                                                 bn_node)
 
 
 def cast_op():
@@ -134,11 +148,10 @@ def constant_op(var, scope):
     return constant_node
 
 
-def conv2d_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
-    kernel_shape = fetch_var(
-        operator.input('Filter')[0].decode('string_escape'), scope).shape
+def conv2d_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
 
+    kernel_shape = block.vars[inputs['Filter'][0]].shape
     conv2d = make_node(
         'Conv',
         inputs=inputs['Input'] + inputs['Filter'],
@@ -163,8 +176,43 @@ def div_op():
     pass
 
 
-def dropout_op():
-    pass
+def dropout_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    scale_input = [outputs['Out'][0] + '@dropout']
+    dropout_op = make_node(
+        'Dropout',
+        inputs=inputs['X'],
+        outputs=scale_input + outputs['Mask'],
+        is_test=attrs['is_test'],
+        ratio=attrs['dropout_prob'])
+
+    # Fluid and ONNX use different dropout formula
+    scale_op = make_node(
+        'Scale',
+        inputs=scale_input,
+        outputs=outputs['Out'],
+        scale=1.0 - attrs['dropout_prob'])
+    return (dropout_op, scale_op)
+
+
+def elementwise_add_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Add',
+        inputs=inputs['X'] + inputs['Y'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'],
+        broadcast=1)
+
+
+def elementwise_mul_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Mul',
+        inputs=inputs['X'] + inputs['Y'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'],
+        broadcast=1)
 
 
 def elu_op():
@@ -172,10 +220,6 @@ def elu_op():
 
 
 def equal_op():
-    pass
-
-
-def dropout_op():
     pass
 
 
@@ -263,8 +307,8 @@ def lppool_op():
     pass
 
 
-def mul_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
+def mul_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
 
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
@@ -371,8 +415,8 @@ def pad_op():
     pass
 
 
-def pool2d_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
+def pool2d_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
     if attrs['global_pooling'] is False:
         op_type = {'max': 'MaxPool', 'avg': 'AveragePool'}
         pool2d = make_node(
@@ -459,8 +503,8 @@ def reducesumsquare_op():
     pass
 
 
-def relu_op(operator, scope):
-    inputs, _, outputs = get_op_io_info(operator)
+def relu_op(operator, block):
+    inputs, _, outputs = op_io_info(operator)
     return make_node('Relu', inputs=inputs['X'], outputs=outputs['Out'])
 
 
@@ -476,8 +520,9 @@ def shape_op():
     pass
 
 
-def sigmoid_op():
-    pass
+def sigmoid_op(operator, block):
+    inputs, _, outputs = op_io_info(operator)
+    return make_node('Sigmoid', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def size_op():
@@ -488,8 +533,8 @@ def slice_op():
     pass
 
 
-def softmax_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
+def softmax_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
     return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
 
 
@@ -525,8 +570,8 @@ def sum_op():
     pass
 
 
-def tanh_op(operator, scope):
-    inputs, attrs, outputs = get_op_io_info(operator)
+def tanh_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
     return make_node('Tanh', inputs=inputs['X'], outputs=outputs['Out'])
 
 
@@ -560,13 +605,14 @@ def xor_op():
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': ('Abs', abs_op),
-    'elementwise_add': add_op,
+    'elementwise_add': elementwise_add_op,
+    'elementwise_mul': elementwise_mul_op,
 
     # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     '': ('AveragePool', averagepool_op),
-    'batch_norm': batchnorm_op,
+    'batch_norm': batch_norm_op,
     'cast': ('Cast', cast_op),
     # 'Ceil', NEEDS ATTENTION.
     'cast': ('Clip', clip_op),
@@ -577,8 +623,9 @@ node_maker = {
     # Need to continue the mapping below.
     '': 'ConvTranspose',
     '': 'DepthToSpace',
+    'depthwise_conv2d': conv2d_op,
     '': 'Div',
-    '': 'Dropout',
+    'dropout': dropout_op,
     '': 'Elu',
     '': 'Equal',
     '': 'Exp',
@@ -636,7 +683,7 @@ node_maker = {
     '': 'Reshape',
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
-    '': 'Sigmoid',
+    'sigmoid': sigmoid_op,
     '': 'Size',
     # 'Slice', NEEDS ATTENTION.
     'softmax': softmax_op,
