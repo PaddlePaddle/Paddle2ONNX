@@ -421,6 +421,31 @@ def randomuniformlike_op():
     pass
 
 
+def reduce_ops(op_type, operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    rank = len(block.vars[inputs['X'][0]].shape)
+    dim = attrs['dim']
+    axes = [dim if dim >= 0 else rank + dim]
+    reduce_out = [outputs['Out'][0] + '@reduce_0'] if attrs[
+        'reduce_all'] else outputs
+    reduce_node = make_node(
+        op_type,
+        inputs=inputs['X'],
+        outputs=reduce_out,
+        axes=axes,
+        keepdims=attrs['keep_dim'])
+    if attrs['reduce_all'] is True:
+        axes = range(rank) if attrs['keep_dim'] else range(rank - 1)
+        reduce_all_node = make_node(
+            op_type,
+            inputs=reduce_out,
+            outputs=outputs,
+            axes=axes,
+            keepdims=attrs['keep_dim'])
+        return (reduce_node, reduce_all_node)
+    return reduce_node
+
+
 def reducel1_op():
     pass
 
@@ -437,23 +462,7 @@ def reducelogsumexp_op():
     pass
 
 
-def reducemax_op():
-    pass
-
-
-def reducemean_op():
-    pass
-
-
-def reducemin_op():
-    pass
-
-
 def reduceprod_op():
-    pass
-
-
-def reducesum_op():
     pass
 
 
@@ -540,19 +549,13 @@ def xor_op():
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': partial(activation_ops, 'Abs'),
-    'elementwise_add': partial(elementwise_ops, 'Add'),
-    'elementwise_div': partial(elementwise_ops, 'Div'),
-    'elementwise_mul': partial(elementwise_ops, 'Mul'),
-    'elementwise_pow': partial(elementwise_ops, 'Pow'),
-    'elementwise_sub': partial(elementwise_ops, 'Sub'),
     # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     'batch_norm': batch_norm_op,
     'cast': ('Cast', cast_op),
-    # 'Ceil', NEEDS ATTENTION.
-    'cast': ('Clip', clip_op),
     'ceil': partial(activation_ops, 'Ceil'),
+    'clip': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
     'constant': constant_op,
     'conv2d': conv2d_op,
@@ -561,8 +564,12 @@ node_maker = {
     '': 'ConvTranspose',
     '': 'DepthToSpace',
     'depthwise_conv2d': conv2d_op,
-    '': 'Div',
     'dropout': dropout_op,
+    'elementwise_add': partial(elementwise_ops, 'Add'),
+    'elementwise_div': partial(elementwise_ops, 'Div'),
+    'elementwise_mul': partial(elementwise_ops, 'Mul'),
+    'elementwise_pow': partial(elementwise_ops, 'Pow'),
+    'elementwise_sub': partial(elementwise_ops, 'Sub'),
     '': 'Elu',
     '': 'Equal',
     'exp': partial(activation_ops, 'Exp'),
@@ -597,7 +604,6 @@ node_maker = {
     '': 'PRelu',
     '': 'Pad',
     'pool2d': pool2d_op,
-    '': 'Pow',
     ',': 'RNN',
     '': 'RandomNormal',
     # 'RandomNormalLike', NEEDS ATTENTION.
@@ -608,11 +614,11 @@ node_maker = {
     '': 'ReduceL2',
     ',': 'ReduceLogSum',
     ',': 'ReduceLogSumExp',
-    '': 'ReduceMax',
-    '': 'ReduceMean',
-    '': 'ReduceMin',
-    # 'ReduceProd', NEEDS ATTENTION.
-    '': 'ReduceSum',
+    'reduce_max': partial(reduce_ops, 'ReduceMax'),
+    'reduce_mean': partial(reduce_ops, 'ReduceMean'),
+    'reduce_min': partial(reduce_ops, 'ReduceMin'),
+    '': partial(reduce_ops, 'ReduceProd'),  # Caffe2 error
+    'reduce_sum': partial(reduce_ops, 'ReduceSum'),
     ',': 'ReduceSumSquare',
     'relu': partial(activation_ops, 'Relu'),
     '': 'Reshape',
