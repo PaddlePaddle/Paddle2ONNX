@@ -164,10 +164,6 @@ def depthtospace_op():
     pass
 
 
-def div_op():
-    pass
-
-
 def dropout_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
@@ -187,20 +183,10 @@ def dropout_op(operator, block):
     return (dropout_op, scale_op)
 
 
-def elementwise_add_op(operator, block):
+def elementwise_ops(op_type, operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node(
-        'Add',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'],
-        axis=attrs['axis'],
-        broadcast=1)
-
-
-def elementwise_mul_op(operator, block):
-    inputs, attrs, outputs = op_io_info(operator)
-    return make_node(
-        'Mul',
+        op_type,
         inputs=inputs['X'] + inputs['Y'],
         outputs=outputs['Out'],
         axis=attrs['axis'],
@@ -554,9 +540,11 @@ def xor_op():
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': partial(activation_ops, 'Abs'),
-    'elementwise_add': elementwise_add_op,
-    'elementwise_mul': elementwise_mul_op,
-
+    'elementwise_add': partial(elementwise_ops, 'Add'),
+    'elementwise_div': partial(elementwise_ops, 'Div'),
+    'elementwise_mul': partial(elementwise_ops, 'Mul'),
+    'elementwise_pow': partial(elementwise_ops, 'Pow'),
+    'elementwise_sub': partial(elementwise_ops, 'Sub'),
     # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
@@ -640,7 +628,6 @@ node_maker = {
     '': 'Split',
     'sqrt': partial(activation_ops, 'Sqrt'),
     # 'Squeeze', NEEDS ATTENTION.
-    'elementwise_sub': ('Sub', sub_op),
     '': 'Sum',
     'tanh': partial(activation_ops, 'Tanh'),
     '': 'Tile',
