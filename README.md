@@ -48,6 +48,8 @@ We aim to at least support all the models from our model bank. During our prelim
 - [fit_a_line](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_fit_a_line.py)
 - [recognize_digits](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_recognize_digits.py)
 - [VGG16 & ResNet50](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_image_classification.py)
+- [MobileNet](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/mobilenet.py)
+- [SE_ResNeXt](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/se_resnext.py)
 
 ## License
 Provided under the [Apache-2.0 license](LICENSE).
