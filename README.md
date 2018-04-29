@@ -24,15 +24,15 @@ This should output an ONNX model (current version of opset: 6) which can be run 
 2. Install the external dependencies.
     1. Create a virtual environment to isolate dependencies (Optional).
 
-    ```virtualenv venv```
+        ```virtualenv venv```
 
     2. If you are running on Ubuntu, run `./setup.sh` and move to the next step.
 
-      On other systems, you need to install [protobuf](https://github.com/google/protobuf) manually before installing the Python package dependencies. On Mac, to get the development version, use `brew install protobuf`.
+        On other systems, you need to install [protobuf](https://github.com/google/protobuf) manually before installing the Python package dependencies. On Mac, to get the development version, use `brew install protobuf`.
 
     3. If you created a virtual environment, activate it using:
 
-    ```source venv/bin/activate```
+        ```source venv/bin/activate```
 
 3. We now need to make sure that we have a built PaddlePaddle package available for us. If you have this setup during your model building process, and have the `PYTHONPATH` of PaddlePaddle already set in the environment (this should be setup if you followed the right instructions or used Docker), you are all set and continue to use the converter!
 
@@ -51,7 +51,7 @@ This should output an ONNX model (current version of opset: 6) which can be run 
 
 ## Status
 
-Targets Paddle->ONNX conversion for now (or what's called `frontend` in the ONNX world), and will consequently support the reverse too.
+Targets Paddle->ONNX conversion for now (or what's called **frontend** in the ONNX world), and will consequently support the reverse too.
 
 Currently aimed at a wider coverage of models and operators. There are several PaddlePaddle model features not available in ONNX and some vice-versa, so will also aim to resolve these in near future. See the design document in the `How it works` section above for more details.
 
@@ -60,7 +60,13 @@ Currently aimed at a wider coverage of models and operators. There are several P
 
 ## Testing / validation
 
-TBD
+To validate the similarity of the PaddlePaddle Fluid model and the exported ONNX model, run the following:
+
+```
+python validate.py --fluid_model <path_to_paddlepaddle_fluid.model> --onnx_model <path_to_exported_model.onnx>
+```
+
+This validation aims for an output tensor comparison precision at 5-decimal places.
 
 
 ## Supported models
