@@ -51,7 +51,7 @@ This should output an ONNX model (current version of opset: 6) which can be run 
 
 ## Status
 
-Targets Paddle->ONNX conversion for now (or what's called **frontend** in the ONNX world), and will consequently support the reverse too.
+The current release targets Paddle->ONNX conversion for now (or what's called **frontend** in the ONNX world), and will consequently support the reverse too.
 
 Currently aimed at a wider coverage of models and operators. There are several PaddlePaddle model features not available in ONNX and some vice-versa, so will also aim to resolve these in near future. See the design document in the `How it works` section above for more details.
 
