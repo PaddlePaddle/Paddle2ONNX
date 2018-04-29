@@ -28,7 +28,6 @@ from caffe2.python.onnx.backend import Caffe2Backend
 
 from fluid_onnx.ops import node_maker
 from fluid_onnx.variables import paddle_variable_to_onnx_tensor
-
 """
 NOTE (varunarora): Some of the code snippets below have been inspired from
 op_test.py in /python/paddle/fluid/tests/unittests/ in the original
@@ -36,6 +35,7 @@ Paddle repository (https://github.com/PaddlePaddle/Paddle/).
 
 When in doubt, keep in sync with it's counterparts.
 """
+
 
 def append_input_output(block, op_proto, np_list, persistable_list, is_input):
     """Returns a list of Paddle variables associated with a block.
@@ -50,12 +50,14 @@ def append_input_output(block, op_proto, np_list, persistable_list, is_input):
     Returns:
         A dict of variable names -> Paddle variable instances.
     """
+
     # A list of expected inputs and outputs, as desired by Paddle's
     # C++ runtime.
     proto_list = op_proto.inputs if is_input else op_proto.outputs
 
     def create_var(block, name, np_list, var_proto):
-        """Creates a Paddle var in the given block and C++ proto type"""
+        """Creates a Paddle var in the given block and C++ proto type.
+        """
 
         # If the expected variable is not found is in the provided list
         # of variables, make an assertion. Else, determine the shape and
@@ -87,10 +89,9 @@ def append_input_output(block, op_proto, np_list, persistable_list, is_input):
         var_name = str(var_proto.name)
 
         # If these are inputs, and the expected input is not necessary
-        # are is not provided in the list of inputs, we move on to the next
-        # expected. input.
-        # If not, we make sure it the expected input is provided, or that it
-        # is unnecessary.
+        # and not provided in the list of inputs, we move on to the next
+        # expected input. If not, we make sure it the expected input is 
+        # provided, or that it is unnecessary.
         if is_input:
             if (var_name not in np_list) and var_proto.dispensable:
                 continue
@@ -113,6 +114,27 @@ def append_input_output(block, op_proto, np_list, persistable_list, is_input):
     return var_dict
 
 
+def create_tensor(np_value, place):
+    """Create a LoDTensor initialized by the numpy ndarray.
+
+    Args: 
+        np_value (ndarray|tuple): The numpy ndarry to initialize the tensor, 
+                                  in tuple (value, LoD) when LoD is given.
+        place (CPUPlace|CUDAPlace): The place for the tensor.
+    Return:
+        The created LoDTensor.
+    """
+
+    tensor = core.LoDTensor()
+    if isinstance(np_value, tuple):
+        tensor.set(np_value[0], place)
+        tensor.set_lod(np_value[1])
+    else:
+        tensor.set(np_value, place)
+
+    return tensor
+
+
 class OpTest(unittest.TestCase):
     """Evaluates an op maker's validity.
 
@@ -131,30 +153,22 @@ class OpTest(unittest.TestCase):
 
         Additionally, custom attributes to the op.
     """
+
     def feed_var(self, input_vars, place):
         """Returns a dictionary of variable names -> initialized tensors.
 
         It sets tensors' execution place set (CPU or GPU), and Level of
         Details (LoD) using this info from the numpy values.
         """
+
         feed_map = {}
         for var_name in input_vars:
             if isinstance(input_vars[var_name], list):
                 for name, np_value in self.inputs[var_name]:
-                    tensor = core.LoDTensor()
-                    if isinstance(np_value, tuple):
-                        tensor.set(np_value[0], place)
-                        tensor.set_lod(np_value[1])
-                    else:
-                        tensor.set(np_value, place)
+                    tensor = create_tensor(np_value, place)
                     feed_map[name] = tensor
             else:
-                tensor = core.LoDTensor()
-                if isinstance(self.inputs[var_name], tuple):
-                    tensor.set(self.inputs[var_name][0], place)
-                    tensor.set_lod(self.inputs[var_name][1])
-                else:
-                    tensor.set(self.inputs[var_name], place)
+                tensor = create_tensor(self.inputs[var_name], place)
                 feed_map[var_name] = tensor
 
         return feed_map
@@ -164,14 +178,15 @@ class OpTest(unittest.TestCase):
 
         Returns the output values after running.
         """
+
         op_proto = OpProtoHolder.instance().get_op_proto(self.op_type)
 
         # Create a new paddle scope and program.
         place = core.CPUPlace()
         exe = Executor(place)
-        self.scope = core.Scope()
+        scope = core.Scope()
 
-        with scope_guard(self.scope):
+        with scope_guard(scope):
             program = Program()
             self.block = program.global_block()
 
@@ -212,7 +227,6 @@ class OpTest(unittest.TestCase):
 
             outs = exe.run(program,
                            feed=self.feed_map,
-                           scope=self.scope,
                            fetch_list=self.fetch_list,
                            return_numpy=True)
         return outs
@@ -224,6 +238,7 @@ class OpTest(unittest.TestCase):
         ONNX ops and prepare the inputs and output values based on ONNX
         compatibility.
         """
+
         # Convert inputs and outputs to ONNX tensors.
         # Use the Paddle fetch_list to prepare the outputs.
         inputs = [
@@ -239,7 +254,7 @@ class OpTest(unittest.TestCase):
         ]
 
         # Construct the ONNX model using paddle-onnx.
-        onnx_node = node_maker[self.op_type](operator=self.op, scope=self.scope)
+        onnx_node = node_maker[self.op_type](operator=self.op, block=self.block)
         node_list = list(onnx_node) if isinstance(onnx_node,
                                                   tuple) else [onnx_node]
         for node in node_list:
@@ -261,6 +276,7 @@ class OpTest(unittest.TestCase):
 
         Compares accuracy at a precision of 5 decimal places by default.
         """
+
         fluid_result = self.eval_fluid_op()
         onnx_result = self.eval_onnx_node()
 

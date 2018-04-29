@@ -15,6 +15,7 @@
 import os
 import argparse
 
+from fluid.utils import op_io_info
 from onnx import helper, checker
 import paddle.fluid as fluid
 
@@ -28,7 +29,11 @@ def parse_args():
     parser.add_argument(
         "--fluid_model", required=True, help="Input PaddlePaddle Fluid model.")
     parser.add_argument(
-        "--onnx_model", required=False, help="The path to save ONNX model.")
+        "--onnx_model", required=True, help="The path to save ONNX model.")
+    parser.add_argument(
+        "--to_print_model",
+        action='store_true',
+        help="To print converted ONNX model.")
     args = parser.parse_args()
     return args
 
@@ -68,15 +73,6 @@ def convert(args):
             for v in feed_target_names
         ]
 
-        # Create outputs
-        fetch_target_names = [
-            fetch_target.name for fetch_target in fetch_targets
-        ]
-        outputs = [
-            paddle_variable_to_onnx_tensor(v, global_block)
-            for v in fetch_target_names
-        ]
-
         # Create nodes
         for block in inference_program.blocks:
             for op in block.ops:
@@ -84,7 +80,7 @@ def convert(args):
                     # TODO(kuke): deal with the corner case that vars in 
                     #     different blocks have the same name
                     node_proto = ops.node_maker[op.type](operator=op,
-                                                         scope=inference_scope)
+                                                         block=block)
 
                     if isinstance(node_proto, tuple):
                         onnx_nodes.extend(list(node_proto))
@@ -94,6 +90,21 @@ def convert(args):
                     if op.type not in ['feed', 'fetch']:
                         raise NotImplementedError("OP[%s] is not supported in "
                                                   "the converter!" % op.type)
+
+        # Create outputs
+        fetch_target_names = [
+            fetch_target.name for fetch_target in fetch_targets
+        ]
+        # Get the new names for outputs if they've renamed in nodes' making
+        renamed_outputs = op_io_info.get_all_renamed_outputs()
+        fetch_target_names = [
+            name if name not in renamed_outputs else renamed_outputs[name]
+            for name in fetch_target_names
+        ]
+        outputs = [
+            paddle_variable_to_onnx_tensor(v, global_block)
+            for v in fetch_target_names
+        ]
 
         # Make graph
         model_name = os.path.basename(args.fluid_model.strip('/')).split('.')[0]
@@ -106,7 +117,8 @@ def convert(args):
         checker.check_model(onnx_model)
 
         # Print model
-        print("The converted model is:\n{}".format(onnx_model))
+        if args.to_print_model:
+            print("The converted model is:\n{}".format(onnx_model))
 
         # Save converted model
         if args.onnx_model is not None:
