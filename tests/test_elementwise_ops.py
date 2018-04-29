@@ -17,29 +17,43 @@ import numpy as np
 from op_test import OpTest
 
 
-class TestElementwiseMulOp(OpTest):
+class TestElementwiseAddOp(OpTest):
     def setUp(self):
-        self.op_type = "elementwise_mul"
+        self.init_op_type()
+        self.attrs = {"axis": 1}
+
         self.inputs = {
-            'X': np.random.uniform(0.1, 1, [11, 13]).astype(np.float32),
-            'Y': np.random.uniform(0.1, 1, [11, 13]).astype(np.float32)
+            'X': np.random.random((4, 2)).astype(np.float32),
+            'Y': np.random.random((2, )).astype(np.float32)
         }
+
         self.outputs = {'Out': np.zeros((1, 1))}
+
+    def init_op_type(self):
+        self.op_type = "elementwise_add"
 
     def test_check_output(self):
         self.check_output()
 
 
-class TestElementwiseMulOp_broadcast(TestElementwiseMulOp):
-    def setUp(self):
-        self.op_type = "elementwise_mul"
-        self.inputs = {
-            'X': np.random.rand(2, 3, 4, 5).astype(np.float64),
-            'Y': np.random.rand(3, 4).astype(np.float64)
-        }
+class TestElementwiseSubOp(TestElementwiseAddOp):
+    def init_op_type(self):
+        self.op_type = "elementwise_sub"
 
-        self.attrs = {'axis': 1}
-        self.outputs = {'Out': np.zeros((1, 1))}
+
+class TestElementwiseMulOp(TestElementwiseAddOp):
+    def init_op_type(self):
+        self.op_type = "elementwise_mul"
+
+
+class TestElementwiseDivOp(TestElementwiseAddOp):
+    def init_op_type(self):
+        self.op_type = "elementwise_div"
+
+
+class TestElementwisePowOp(TestElementwiseAddOp):
+    def init_op_type(self):
+        self.op_type = "elementwise_pow"
 
 
 if __name__ == '__main__':

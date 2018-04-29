@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+from functools import partial
 from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
@@ -56,8 +57,10 @@ test_machine_translation.py
 """
 
 
-def abs_op():
-    pass
+def activation_ops(act_type, operator, block):
+    inputs, _, outputs = op_io_info(operator)
+    return make_node(
+        act_type, inputs=inputs.values()[0], outputs=outputs.values()[0])
 
 
 def and_op():
@@ -72,13 +75,6 @@ def argmax_op():
 
 
 def argmin_op():
-    pass
-
-
-def averagepool_op():
-    """
-    Need to support more pad mode.
-    """
     pass
 
 
@@ -119,10 +115,6 @@ def batch_norm_op(operator, block):
 
 
 def cast_op():
-    pass
-
-
-def ceil_op():
     pass
 
 
@@ -172,10 +164,6 @@ def depthtospace_op():
     pass
 
 
-def div_op():
-    pass
-
-
 def dropout_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
@@ -195,20 +183,10 @@ def dropout_op(operator, block):
     return (dropout_op, scale_op)
 
 
-def elementwise_add_op(operator, block):
+def elementwise_ops(op_type, operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node(
-        'Add',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'],
-        axis=attrs['axis'],
-        broadcast=1)
-
-
-def elementwise_mul_op(operator, block):
-    inputs, attrs, outputs = op_io_info(operator)
-    return make_node(
-        'Mul',
+        op_type,
         inputs=inputs['X'] + inputs['Y'],
         outputs=outputs['Out'],
         axis=attrs['axis'],
@@ -223,15 +201,7 @@ def equal_op():
     pass
 
 
-def exp_op():
-    pass
-
-
 def flatten_op():
-    pass
-
-
-def floor_op():
     pass
 
 
@@ -247,15 +217,7 @@ def gemm_op():
     pass
 
 
-def globalaveragepool_op():
-    pass
-
-
 def globallppool_op():
-    pass
-
-
-def globalmaxpool_op():
     pass
 
 
@@ -263,7 +225,14 @@ def greater_op():
     pass
 
 
-def hardsigmoid_op():
+def hardsigmoid_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'HardSigmoid',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=0.2,
+        beta=0.5)
     pass
 
 
@@ -370,13 +339,6 @@ def max_op():
     pass
 
 
-def maxpool_op():
-    """
-    Need to support broadcast.
-    """
-    pass
-
-
 def maxroipool_op():
     pass
 
@@ -459,8 +421,29 @@ def randomuniformlike_op():
     pass
 
 
-def reciprocal_op():
-    pass
+def reduce_ops(op_type, operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    rank = len(block.vars[inputs['X'][0]].shape)
+    dim = attrs['dim']
+    axes = [dim if dim >= 0 else rank + dim]
+    reduce_out = [outputs['Out'][0] + '@reduce_0'] if attrs[
+        'reduce_all'] else outputs
+    reduce_node = make_node(
+        op_type,
+        inputs=inputs['X'],
+        outputs=reduce_out,
+        axes=axes,
+        keepdims=attrs['keep_dim'])
+    if attrs['reduce_all'] is True:
+        axes = range(rank) if attrs['keep_dim'] else range(rank - 1)
+        reduce_all_node = make_node(
+            op_type,
+            inputs=reduce_out,
+            outputs=outputs,
+            axes=axes,
+            keepdims=attrs['keep_dim'])
+        return (reduce_node, reduce_all_node)
+    return reduce_node
 
 
 def reducel1_op():
@@ -479,33 +462,12 @@ def reducelogsumexp_op():
     pass
 
 
-def reducemax_op():
-    pass
-
-
-def reducemean_op():
-    pass
-
-
-def reducemin_op():
-    pass
-
-
 def reduceprod_op():
-    pass
-
-
-def reducesum_op():
     pass
 
 
 def reducesumsquare_op():
     pass
-
-
-def relu_op(operator, block):
-    inputs, _, outputs = op_io_info(operator)
-    return make_node('Relu', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def reshape_op():
@@ -520,11 +482,6 @@ def shape_op():
     pass
 
 
-def sigmoid_op(operator, block):
-    inputs, _, outputs = op_io_info(operator)
-    return make_node('Sigmoid', inputs=inputs['X'], outputs=outputs['Out'])
-
-
 def size_op():
     pass
 
@@ -536,14 +493,6 @@ def slice_op():
 def softmax_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
-
-
-def softplus_op():
-    pass
-
-
-def softsign_op():
-    pass
 
 
 def spacetodepth_op():
@@ -568,11 +517,6 @@ def sub_op():
 
 def sum_op():
     pass
-
-
-def tanh_op(operator, block):
-    inputs, attrs, outputs = op_io_info(operator)
-    return make_node('Tanh', inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def tile_op():
@@ -604,18 +548,14 @@ def xor_op():
 
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
-    'abs': ('Abs', abs_op),
-    'elementwise_add': elementwise_add_op,
-    'elementwise_mul': elementwise_mul_op,
-
+    'abs': partial(activation_ops, 'Abs'),
     # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
-    '': ('AveragePool', averagepool_op),
     'batch_norm': batch_norm_op,
     'cast': ('Cast', cast_op),
-    # 'Ceil', NEEDS ATTENTION.
-    'cast': ('Clip', clip_op),
+    'ceil': partial(activation_ops, 'Ceil'),
+    'clip': ('Clip', clip_op),
     'concat': ('Concat', concat_op),
     'constant': constant_op,
     'conv2d': conv2d_op,
@@ -624,28 +564,30 @@ node_maker = {
     '': 'ConvTranspose',
     '': 'DepthToSpace',
     'depthwise_conv2d': conv2d_op,
-    '': 'Div',
     'dropout': dropout_op,
+    'elementwise_add': partial(elementwise_ops, 'Add'),
+    'elementwise_div': partial(elementwise_ops, 'Div'),
+    'elementwise_mul': partial(elementwise_ops, 'Mul'),
+    'elementwise_pow': partial(elementwise_ops, 'Pow'),
+    'elementwise_sub': partial(elementwise_ops, 'Sub'),
     '': 'Elu',
     '': 'Equal',
-    '': 'Exp',
+    'exp': partial(activation_ops, 'Exp'),
     '': 'Flatten',
-    # 'Floor', NEEDS ATTENTION.
+    'floor': partial(activation_ops, 'Floor'),
     '': 'GRU',
     '': 'Gather',
     '': 'Gemm',
-    '': 'GlobalAveragePool',
     '': 'GlobalLpPool',
-    '': 'GlobalMaxPool',
     '': 'Greater',
-    '': 'HardSigmoid',
+    'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
     '': 'LRN',
     '': 'LSTM',
     '': 'LeakyRelu',
     '': 'Less',
-    '': 'Log',
+    'log': partial(activation_ops, 'Log'),
     ',': 'LogSoftmax',
     '': 'LpNormalization',
     '': 'LpPool',
@@ -662,40 +604,38 @@ node_maker = {
     '': 'PRelu',
     '': 'Pad',
     'pool2d': pool2d_op,
-    '': 'Pow',
     ',': 'RNN',
     '': 'RandomNormal',
     # 'RandomNormalLike', NEEDS ATTENTION.
     # 'RandomUniform', NEEDS ATTENTION.
     # 'RandomUniformLike', NEEDS ATTENTION.
-    '': 'Reciprocal',
+    'reciprocal': partial(activation_ops, 'Reciprocal'),
     '': 'ReduceL1',
     '': 'ReduceL2',
     ',': 'ReduceLogSum',
     ',': 'ReduceLogSumExp',
-    '': 'ReduceMax',
-    '': 'ReduceMean',
-    '': 'ReduceMin',
-    # 'ReduceProd', NEEDS ATTENTION.
-    '': 'ReduceSum',
+    'reduce_max': partial(reduce_ops, 'ReduceMax'),
+    'reduce_mean': partial(reduce_ops, 'ReduceMean'),
+    'reduce_min': partial(reduce_ops, 'ReduceMin'),
+    '': partial(reduce_ops, 'ReduceProd'),  # Caffe2 error
+    'reduce_sum': partial(reduce_ops, 'ReduceSum'),
     ',': 'ReduceSumSquare',
-    'relu': relu_op,
+    'relu': partial(activation_ops, 'Relu'),
     '': 'Reshape',
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
-    'sigmoid': sigmoid_op,
+    'sigmoid': partial(activation_ops, 'Sigmoid'),
     '': 'Size',
     # 'Slice', NEEDS ATTENTION.
     'softmax': softmax_op,
-    '': 'Softplus',
-    '': 'Softsign',
+    'softplus': partial(activation_ops, 'Softplus'),
+    'softsign': partial(activation_ops, 'Softsign'),
     '': 'SpaceToDepth',
     '': 'Split',
-    '': 'Sqrt',
+    'sqrt': partial(activation_ops, 'Sqrt'),
     # 'Squeeze', NEEDS ATTENTION.
-    'elementwise_sub': ('Sub', sub_op),
     '': 'Sum',
-    'tanh': tanh_op,
+    'tanh': partial(activation_ops, 'Tanh'),
     '': 'Tile',
     '': 'TopK',
     '': 'Transpose',
