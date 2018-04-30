@@ -66,7 +66,11 @@ To validate the similarity of the PaddlePaddle Fluid model and the exported ONNX
 python validate.py --fluid_model <path_to_paddlepaddle_fluid.model> --onnx_model <path_to_exported_model.onnx>
 ```
 
-This validation aims for an output tensor comparison precision at 5-decimal places.
+This validation aims for an output tensor comparison precision at 5-decimal places. TO discover the other arguments to validation, run:
+
+```
+python validate.py --help
+```
 
 
 ## Supported models
@@ -92,7 +96,7 @@ In the highest spirits of open-source, we welcome your contributions! The philos
 - Read the documents in the `How it works` section above.
 - (Optional) Create an issue sharing need for support for a new model. Assign to yourself.
 - Add the necessary operator conversion logic in `fluid_onnx/ops.py`.
-- Write tests for the newly introduce operator convertors.
+- Write tests for the newly introduced operator convertor functions.
 - Add the model to the list of supported models in this root `README.md` file.
 - Open a new PR for the model(s) that resolves your issue. In your tests, post the output of your validation process.
 
