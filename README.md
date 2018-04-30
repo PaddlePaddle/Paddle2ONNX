@@ -66,7 +66,7 @@ To validate the similarity of the PaddlePaddle Fluid model and the exported ONNX
 python validate.py --fluid_model <path_to_paddlepaddle_fluid.model> --onnx_model <path_to_exported_model.onnx>
 ```
 
-This validation aims for an output tensor comparison precision at 5-decimal places. TO discover the other arguments to validation, run:
+This validation aims for an output tensor comparison precision at 5-decimal places. To discover the other arguments to validation, run:
 
 ```
 python validate.py --help
