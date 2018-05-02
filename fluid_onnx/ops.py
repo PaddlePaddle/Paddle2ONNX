@@ -300,8 +300,21 @@ def less_op():
     pass
 
 
-def log_op():
-    pass
+def binary_logical_ops(op_type, operator, block):
+    """Convert binary logical operators, i.e. 'And', 'Or' and 'Xor'.
+    """
+
+    inputs, _, outputs = op_io_info(operator)
+    return make_node(
+        op_type, inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
+
+
+def unary_logical_ops(op_type, operator, block):
+    """Convert unary logical operators, i.e. 'Not'.
+    """
+
+    inputs, _, outputs = op_io_info(operator)
+    return make_node(op_type, inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def logsoftmax_op():
@@ -594,7 +607,6 @@ def xor_op():
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': partial(activation_ops, 'Abs'),
-    # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     'batch_norm': batch_norm_op,
@@ -604,7 +616,6 @@ node_maker = {
     'concat': concat_op,
     'constant': constant_op,
     'conv2d': conv2d_op,
-
     # Need to continue the mapping below.
     'conv2d_transpose': conv2d_transpose_op,
     '': 'DepthToSpace',
@@ -633,6 +644,10 @@ node_maker = {
     '': 'LeakyRelu',
     '': 'Less',
     'log': partial(activation_ops, 'Log'),
+    'logical_and': partial(binary_logical_ops, 'And'),
+    'logical_or': partial(binary_logical_ops, 'Or'),
+    'logical_not': partial(unary_logical_ops, 'Not'),
+    'logical_xor': partial(binary_logical_ops, 'Xor'),
     ',': 'LogSoftmax',
     '': 'LpNormalization',
     '': 'LpPool',
@@ -644,8 +659,6 @@ node_maker = {
     '': 'Min',
     'mul': mul_op,
     ',': 'Neg',
-    '': 'Not',
-    '': 'Or',
     '': 'PRelu',
     '': 'Pad',
     'pool2d': pool2d_op,
@@ -685,7 +698,6 @@ node_maker = {
     '': 'TopK',
     '': 'Transpose',
     # 'Unsqueeze', NEEDS ATTENTION.
-    '': 'Xor',
     # 'experimental ATen'
     # ',': 'experimental Affine'
     # 'experimental ConstantFill'
