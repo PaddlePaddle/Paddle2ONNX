@@ -58,6 +58,11 @@ test_machine_translation.py
 
 
 def activation_ops(act_type, operator, block):
+    """ Convert common activations with type specified by 'act_type', including
+        'abs', 'ceil', 'exp', 'floor', 'log', 'reciprocal', 'relu', 'sigmoid',
+        'softplus', 'softsign', 'sqrt' and 'tanh'.
+    """
+
     inputs, _, outputs = op_io_info(operator)
     return make_node(
         act_type, inputs=inputs.values()[0], outputs=outputs.values()[0])
@@ -184,12 +189,19 @@ def dropout_op(operator, block):
 
 
 def elementwise_ops(op_type, operator, block):
+    """Convert elementwise operators From to ONNX. Supported elementwise 
+       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'. 
+    """
+
     inputs, attrs, outputs = op_io_info(operator)
+    rank_x = len(block.vars[inputs['X'][0]].shape)
+    rank_y = len(block.vars[inputs['Y'][0]].shape)
+    axis = rank_x - rank_y if attrs['axis'] == -1 else attrs['axis']
     return make_node(
         op_type,
         inputs=inputs['X'] + inputs['Y'],
         outputs=outputs['Out'],
-        axis=attrs['axis'],
+        axis=axis,
         broadcast=1)
 
 
@@ -422,6 +434,11 @@ def randomuniformlike_op():
 
 
 def reduce_ops(op_type, operator, block):
+    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the 
+       target ONNX operator type, supporting 'Reduce{Max, Mean, Min, Sum}'
+       right now.
+    """
+
     inputs, attrs, outputs = op_io_info(operator)
     rank = len(block.vars[inputs['X'][0]].shape)
     dim = attrs['dim']

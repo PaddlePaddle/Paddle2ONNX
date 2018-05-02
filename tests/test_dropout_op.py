@@ -19,8 +19,8 @@ from op_test import OpTest
 
 class TestDropoutOp(OpTest):
     def setUp(self):
-        self.op_type = "dropout"
-        self.inputs = {'X': np.random.random((32, 64, 2)).astype("float32")}
+        self.op_type = 'dropout'
+        self.inputs = {'X': np.random.random((32, 64, 2)).astype('float32')}
         self.attrs = {'dropout_prob': 0.8, 'is_test': True}
         self.outputs = {'Out': np.zeros((1, 1))}
 

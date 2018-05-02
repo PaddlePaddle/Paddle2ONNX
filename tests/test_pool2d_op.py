@@ -19,7 +19,7 @@ from op_test import OpTest
 
 class TestPool2dOp(OpTest):
     def setUp(self):
-        self.op_type = "pool2d"
+        self.op_type = 'pool2d'
         self.use_cudnn = False
         self.use_mkldnn = False
         self.dtype = np.float32
@@ -79,7 +79,7 @@ class TestPool2dOp1(TestPool2dOp):
         self.paddings = [0, 0]
 
     def init_pool_type(self):
-        self.pool_type = "avg"
+        self.pool_type = 'avg'
 
     def init_global_pool(self):
         self.global_pool = False
@@ -93,7 +93,7 @@ class TestPool2dOp2(TestPool2dOp):
         self.paddings = [1, 1]
 
     def init_pool_type(self):
-        self.pool_type = "avg"
+        self.pool_type = 'avg'
 
     def init_global_pool(self):
         self.global_pool = False
@@ -101,17 +101,17 @@ class TestPool2dOp2(TestPool2dOp):
 
 class TestPool2dOp3(TestPool2dOp):
     def init_pool_type(self):
-        self.pool_type = "max"
+        self.pool_type = 'max'
 
 
 class TestPool2dOp4(TestPool2dOp1):
     def init_pool_type(self):
-        self.pool_type = "max"
+        self.pool_type = 'max'
 
 
 class TestPool2dOp5(TestPool2dOp2):
     def init_pool_type(self):
-        self.pool_type = "max"
+        self.pool_type = 'max'
 
 
 if __name__ == '__main__':

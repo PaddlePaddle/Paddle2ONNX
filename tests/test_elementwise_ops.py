@@ -19,41 +19,47 @@ from op_test import OpTest
 
 class TestElementwiseAddOp(OpTest):
     def setUp(self):
-        self.init_op_type()
-        self.attrs = {"axis": 1}
+        self.attrs = {'axis': 2}
+        self.init()
 
         self.inputs = {
-            'X': np.random.random((4, 2)).astype(np.float32),
-            'Y': np.random.random((2, )).astype(np.float32)
+            'X': np.random.random((2, 3, 4, 5)).astype(np.float32),
+            'Y': np.random.random((4, 5)).astype(np.float32)
         }
 
         self.outputs = {'Out': np.zeros((1, 1))}
 
-    def init_op_type(self):
-        self.op_type = "elementwise_add"
+    def init(self):
+        self.op_type = 'elementwise_add'
 
     def test_check_output(self):
         self.check_output()
 
 
+class TestElementwiseAddOpNegAxis(OpTest):
+    def init(self):
+        self.op_type = 'elementwise_add'
+        self.attrs = {'axis': -1}
+
+
 class TestElementwiseSubOp(TestElementwiseAddOp):
-    def init_op_type(self):
-        self.op_type = "elementwise_sub"
+    def init(self):
+        self.op_type = 'elementwise_sub'
 
 
 class TestElementwiseMulOp(TestElementwiseAddOp):
-    def init_op_type(self):
-        self.op_type = "elementwise_mul"
+    def init(self):
+        self.op_type = 'elementwise_mul'
 
 
 class TestElementwiseDivOp(TestElementwiseAddOp):
-    def init_op_type(self):
-        self.op_type = "elementwise_div"
+    def init(self):
+        self.op_type = 'elementwise_div'
 
 
 class TestElementwisePowOp(TestElementwiseAddOp):
-    def init_op_type(self):
-        self.op_type = "elementwise_pow"
+    def init(self):
+        self.op_type = 'elementwise_pow'
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ class TestReduceSumOp(OpTest):
         self.init_op_type()
         self.init_keep_dim()
         self.init_reduce_all()
-        self.inputs = {'X': np.random.random((5, 6, 7, 8)).astype("float32")}
+        self.inputs = {'X': np.random.random((5, 6, 7, 8)).astype('float32')}
         self.attrs = {
             'dim': 2,
             'keep_dim': self.keep_dim,
@@ -31,7 +31,7 @@ class TestReduceSumOp(OpTest):
         self.outputs = {'Out': np.zeros((1, 1))}
 
     def init_op_type(self):
-        self.op_type = "reduce_sum"
+        self.op_type = 'reduce_sum'
 
     def init_keep_dim(self):
         self.keep_dim = True
@@ -45,7 +45,7 @@ class TestReduceSumOp(OpTest):
 
 class TestReduceMeanOp(TestReduceSumOp):
     def init_op_type(self):
-        self.op_type = "reduce_mean"
+        self.op_type = 'reduce_mean'
 
     def init_reduce_all(self):
         self.reduce_all = True
@@ -53,7 +53,7 @@ class TestReduceMeanOp(TestReduceSumOp):
 
 class TestReduceMaxOp(TestReduceSumOp):
     def init_op_type(self):
-        self.op_type = "reduce_max"
+        self.op_type = 'reduce_max'
 
     def init_keep_dim(self):
         self.keep_dim = False
@@ -64,7 +64,7 @@ class TestReduceMaxOp(TestReduceSumOp):
 
 class TestReduceMinOp(TestReduceSumOp):
     def init_op_type(self):
-        self.op_type = "reduce_min"
+        self.op_type = 'reduce_min'
 
     def init_keep_dim(self):
         self.keep_dim = False

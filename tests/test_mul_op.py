@@ -19,10 +19,10 @@ from op_test import OpTest
 
 class TestMulOp(OpTest):
     def setUp(self):
-        self.op_type = "mul"
+        self.op_type = 'mul'
         self.inputs = {
-            'X': np.random.random((15, 4, 12, 10)).astype("float32"),
-            'Y': np.random.random((4, 30, 8, 2, 9)).astype("float32")
+            'X': np.random.random((15, 4, 12, 10)).astype('float32'),
+            'Y': np.random.random((4, 30, 8, 2, 9)).astype('float32')
         }
         self.attrs = {'x_num_col_dims': 2, 'y_num_col_dims': 2}
         result = np.dot(self.inputs['X'].reshape(15 * 4, 12 * 10),

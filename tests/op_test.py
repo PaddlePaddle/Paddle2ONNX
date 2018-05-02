@@ -77,7 +77,7 @@ def append_input_output(block, op_proto, np_list, persistable_list, is_input):
 
         persistable = True if name in persistable_list else False
         return block.create_var(
-            dtype="float32",
+            dtype='float32',
             shape=shape,
             persistable=persistable,
             lod_level=lod_level,
