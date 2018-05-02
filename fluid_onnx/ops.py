@@ -177,8 +177,20 @@ def conv2d_op(operator, block):
     return conv2d
 
 
-def convtranspose_op():
-    pass
+def conv2d_transpose_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+
+    kernel_shape = block.vars[inputs['Filter'][0]].shape
+    conv2d_transpose = make_node(
+        'ConvTranspose',
+        inputs=inputs['Input'] + inputs['Filter'],
+        outputs=outputs['Output'],
+        dilations=attrs['dilations'],
+        kernel_shape=kernel_shape[-2:],
+        strides=attrs['strides'],
+        group=1,
+        pads=attrs['paddings'] + attrs['paddings'])
+    return conv2d_transpose
 
 
 def depthtospace_op():
@@ -594,7 +606,7 @@ node_maker = {
     'conv2d': conv2d_op,
 
     # Need to continue the mapping below.
-    '': 'ConvTranspose',
+    'conv2d_transpose': conv2d_transpose_op,
     '': 'DepthToSpace',
     'depthwise_conv2d': conv2d_op,
     'dropout': dropout_op,
