@@ -119,8 +119,13 @@ def batch_norm_op(operator, block):
                                                  bn_node)
 
 
-def cast_op():
-    pass
+def cast_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Cast',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        to=PADDLE_TO_ONNX_DTYPE[attrs['out_dtype']])
 
 
 def clip_op(operator, block):
@@ -581,7 +586,7 @@ node_maker = {
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     'batch_norm': batch_norm_op,
-    'cast': ('Cast', cast_op),
+    'cast': cast_op,
     'ceil': partial(activation_ops, 'Ceil'),
     'clip': clip_op,
     'concat': concat_op,
