@@ -263,9 +263,17 @@ class OpTest(unittest.TestCase):
         onnx_graph = make_graph(node_list, self.op_type, inputs, outputs)
         onnx_model = make_model(onnx_graph, producer_name='unittest')
 
+        # Expand input dictionary if there are tensor arrays
+        input_map = {}
+        for v in self.inputs:
+            if isinstance(self.inputs[v], list):
+                input_map.update(self.inputs[v])
+            else:
+                input_map[v] = self.inputs[v]
+
         # Run the Caffe2Backend with the ONNX model.
         rep = Caffe2Backend.prepare(onnx_model, device='CPU')
-        in_vals = [self.inputs[input.name] for input in inputs]
+        in_vals = [input_map[input.name] for input in inputs]
         outs = rep.run(in_vals)
 
         return outs

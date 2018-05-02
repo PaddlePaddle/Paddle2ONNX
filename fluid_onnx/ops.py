@@ -123,12 +123,23 @@ def cast_op():
     pass
 
 
-def clip_op():
-    pass
+def clip_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Clip',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        min=attrs['min'],
+        max=attrs['max'])
 
 
-def concat_op():
-    pass
+def concat_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Concat',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'])
 
 
 def constant_op(var, scope):
@@ -572,8 +583,8 @@ node_maker = {
     'batch_norm': batch_norm_op,
     'cast': ('Cast', cast_op),
     'ceil': partial(activation_ops, 'Ceil'),
-    'clip': ('Clip', clip_op),
-    'concat': ('Concat', concat_op),
+    'clip': clip_op,
+    'concat': concat_op,
     'constant': constant_op,
     'conv2d': conv2d_op,
 
