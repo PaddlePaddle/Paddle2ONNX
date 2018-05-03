@@ -52,10 +52,12 @@ def convert(args):
 
     inference_scope = fluid.core.Scope()
     with fluid.scope_guard(inference_scope):
+
+        # Load inference program and other target attributes
         [inference_program, feed_target_names,
          fetch_targets] = fluid.io.load_inference_model(args.fluid_model, exe)
 
-        # Using blocks in programs, create nodes using:
+        # Create nodes using blocks in inference_program
         onnx_nodes = []
 
         # Load parameters
