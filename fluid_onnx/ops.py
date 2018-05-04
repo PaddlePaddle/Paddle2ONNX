@@ -17,7 +17,7 @@ from functools import partial
 from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
-from fluid.utils import op_io_info
+from fluid.utils import op_io_info, get_old_name
 from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
 """
 Priority of ops (uniques) to figure out support for.
@@ -86,7 +86,7 @@ def argmin_op():
 def batch_norm_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
-    x_shape = block.vars[inputs['X'][0]].shape
+    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     reshape_node = None
     if len(x_shape) == 2:
         reshaped_x = [inputs['X'][0] + '@reshape_0']
@@ -164,7 +164,7 @@ def constant_op(var, scope):
 def conv2d_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
-    kernel_shape = block.vars[inputs['Filter'][0]].shape
+    kernel_shape = block.vars[get_old_name(inputs['Filter'][0])].shape
     conv2d = make_node(
         'Conv',
         inputs=inputs['Input'] + inputs['Filter'],
@@ -180,7 +180,7 @@ def conv2d_op(operator, block):
 def conv2d_transpose_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
-    kernel_shape = block.vars[inputs['Filter'][0]].shape
+    kernel_shape = block.vars[get_old_name(inputs['Filter'][0])].shape
     conv2d_transpose = make_node(
         'ConvTranspose',
         inputs=inputs['Input'] + inputs['Filter'],
@@ -222,8 +222,8 @@ def elementwise_ops(op_type, operator, block):
     """
 
     inputs, attrs, outputs = op_io_info(operator)
-    rank_x = len(block.vars[inputs['X'][0]].shape)
-    rank_y = len(block.vars[inputs['Y'][0]].shape)
+    rank_x = len(block.vars[get_old_name(inputs['X'][0])].shape)
+    rank_y = len(block.vars[get_old_name(inputs['Y'][0])].shape)
     axis = rank_x - rank_y if attrs['axis'] == -1 else attrs['axis']
     return make_node(
         op_type,
@@ -481,7 +481,7 @@ def reduce_ops(op_type, operator, block):
     """
 
     inputs, attrs, outputs = op_io_info(operator)
-    rank = len(block.vars[inputs['X'][0]].shape)
+    rank = len(block.vars[get_old_name(inputs['X'][0])].shape)
     dim = attrs['dim']
     axes = [dim if dim >= 0 else rank + dim]
     reduce_out = [outputs['Out'][0] + '@reduce_0'] if attrs[
