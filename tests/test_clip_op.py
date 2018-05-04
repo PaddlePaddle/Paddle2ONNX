@@ -1,4 +1,4 @@
-#   Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@ import numpy as np
 from op_test import OpTest
 
 
-class TestDropoutOp(OpTest):
+class TestClipOp(OpTest):
     def setUp(self):
-        self.op_type = 'dropout'
-        self.inputs = {'X': np.random.random((32, 64, 2)).astype('float32')}
-        self.attrs = {'dropout_prob': 0.8, 'is_test': True}
-        self.outputs = {'Out': np.zeros((1, 1))}
+        input = np.random.random((4, 5, 6)).astype('float32')
+        self.op_type = 'clip'
+        self.inputs = {'X': input}
+        self.attrs = {'min': 0.2, 'max': 0.8}
+        self.outputs = {'Out': np.zeros((1, 1)).astype('float32')}
 
     def test_check_output(self):
         self.check_output()

@@ -14,15 +14,20 @@
 
 import unittest
 import numpy as np
+import paddle.fluid.core as core
 from op_test import OpTest
 
 
-class TestDropoutOp(OpTest):
+class TestCastOp(OpTest):
     def setUp(self):
-        self.op_type = 'dropout'
-        self.inputs = {'X': np.random.random((32, 64, 2)).astype('float32')}
-        self.attrs = {'dropout_prob': 0.8, 'is_test': True}
-        self.outputs = {'Out': np.zeros((1, 1))}
+        input = np.random.random((10, 10))
+        self.inputs = {'X': input.astype('float32')}
+        self.outputs = {'Out': input.astype('float64')}
+        self.attrs = {
+            'in_dtype': int(core.VarDesc.VarType.FP32),
+            'out_dtype': int(core.VarDesc.VarType.FP64)
+        }
+        self.op_type = 'cast'
 
     def test_check_output(self):
         self.check_output()

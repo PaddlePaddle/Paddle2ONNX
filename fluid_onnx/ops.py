@@ -58,6 +58,11 @@ test_machine_translation.py
 
 
 def activation_ops(act_type, operator, block):
+    """ Convert common activations with type specified by 'act_type', including
+        'abs', 'ceil', 'exp', 'floor', 'log', 'reciprocal', 'relu', 'sigmoid',
+        'softplus', 'softsign', 'sqrt' and 'tanh'.
+    """
+
     inputs, _, outputs = op_io_info(operator)
     return make_node(
         act_type, inputs=inputs.values()[0], outputs=outputs.values()[0])
@@ -114,16 +119,32 @@ def batch_norm_op(operator, block):
                                                  bn_node)
 
 
-def cast_op():
-    pass
+def cast_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Cast',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        to=PADDLE_TO_ONNX_DTYPE[attrs['out_dtype']])
 
 
-def clip_op():
-    pass
+def clip_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Clip',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        min=attrs['min'],
+        max=attrs['max'])
 
 
-def concat_op():
-    pass
+def concat_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Concat',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'])
 
 
 def constant_op(var, scope):
@@ -156,8 +177,20 @@ def conv2d_op(operator, block):
     return conv2d
 
 
-def convtranspose_op():
-    pass
+def conv2d_transpose_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+
+    kernel_shape = block.vars[inputs['Filter'][0]].shape
+    conv2d_transpose = make_node(
+        'ConvTranspose',
+        inputs=inputs['Input'] + inputs['Filter'],
+        outputs=outputs['Output'],
+        dilations=attrs['dilations'],
+        kernel_shape=kernel_shape[-2:],
+        strides=attrs['strides'],
+        group=1,
+        pads=attrs['paddings'] + attrs['paddings'])
+    return conv2d_transpose
 
 
 def depthtospace_op():
@@ -184,12 +217,19 @@ def dropout_op(operator, block):
 
 
 def elementwise_ops(op_type, operator, block):
+    """Convert elementwise operators From to ONNX. Supported elementwise 
+       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'. 
+    """
+
     inputs, attrs, outputs = op_io_info(operator)
+    rank_x = len(block.vars[inputs['X'][0]].shape)
+    rank_y = len(block.vars[inputs['Y'][0]].shape)
+    axis = rank_x - rank_y if attrs['axis'] == -1 else attrs['axis']
     return make_node(
         op_type,
         inputs=inputs['X'] + inputs['Y'],
         outputs=outputs['Out'],
-        axis=attrs['axis'],
+        axis=axis,
         broadcast=1)
 
 
@@ -260,8 +300,21 @@ def less_op():
     pass
 
 
-def log_op():
-    pass
+def binary_logical_ops(op_type, operator, block):
+    """Convert binary logical operators, i.e. 'And', 'Or' and 'Xor'.
+    """
+
+    inputs, _, outputs = op_io_info(operator)
+    return make_node(
+        op_type, inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
+
+
+def unary_logical_ops(op_type, operator, block):
+    """Convert unary logical operators, i.e. 'Not'.
+    """
+
+    inputs, _, outputs = op_io_info(operator)
+    return make_node(op_type, inputs=inputs['X'], outputs=outputs['Out'])
 
 
 def logsoftmax_op():
@@ -422,6 +475,11 @@ def randomuniformlike_op():
 
 
 def reduce_ops(op_type, operator, block):
+    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the 
+       target ONNX operator type, supporting 'Reduce{Max, Mean, Min, Sum}'
+       right now.
+    """
+
     inputs, attrs, outputs = op_io_info(operator)
     rank = len(block.vars[inputs['X'][0]].shape)
     dim = attrs['dim']
@@ -549,19 +607,17 @@ def xor_op():
 node_maker = {
     # Paddle op name : (ONNX op name, modifier)
     'abs': partial(activation_ops, 'Abs'),
-    # '': 'And', # ?
     # 'ArgMax', NEEDS ATTENTION.
     # 'ArgMin', NEEDS ATTENTION.
     'batch_norm': batch_norm_op,
-    'cast': ('Cast', cast_op),
+    'cast': cast_op,
     'ceil': partial(activation_ops, 'Ceil'),
-    'clip': ('Clip', clip_op),
-    'concat': ('Concat', concat_op),
+    'clip': clip_op,
+    'concat': concat_op,
     'constant': constant_op,
     'conv2d': conv2d_op,
-
     # Need to continue the mapping below.
-    '': 'ConvTranspose',
+    'conv2d_transpose': conv2d_transpose_op,
     '': 'DepthToSpace',
     'depthwise_conv2d': conv2d_op,
     'dropout': dropout_op,
@@ -588,6 +644,10 @@ node_maker = {
     '': 'LeakyRelu',
     '': 'Less',
     'log': partial(activation_ops, 'Log'),
+    'logical_and': partial(binary_logical_ops, 'And'),
+    'logical_or': partial(binary_logical_ops, 'Or'),
+    'logical_not': partial(unary_logical_ops, 'Not'),
+    'logical_xor': partial(binary_logical_ops, 'Xor'),
     ',': 'LogSoftmax',
     '': 'LpNormalization',
     '': 'LpPool',
@@ -599,8 +659,6 @@ node_maker = {
     '': 'Min',
     'mul': mul_op,
     ',': 'Neg',
-    '': 'Not',
-    '': 'Or',
     '': 'PRelu',
     '': 'Pad',
     'pool2d': pool2d_op,
@@ -640,7 +698,6 @@ node_maker = {
     '': 'TopK',
     '': 'Transpose',
     # 'Unsqueeze', NEEDS ATTENTION.
-    '': 'Xor',
     # 'experimental ATen'
     # ',': 'experimental Affine'
     # 'experimental ConstantFill'

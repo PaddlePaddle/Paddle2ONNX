@@ -19,9 +19,9 @@ from op_test import OpTest
 
 class TestAbsOp(OpTest):
     def setUp(self):
-        X = np.random.random((13, 15)).astype("float32")
+        X = np.random.random((13, 15)).astype('float32')
         self.inputs = {'X': X}
-        self.outputs = {'Out': np.zeros((1, 1)).astype("float32")}
+        self.outputs = {'Out': np.zeros((1, 1)).astype('float32')}
         self.init_op_type()
 
     def init_op_type(self):

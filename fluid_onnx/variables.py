@@ -36,7 +36,7 @@ def paddle_onnx_shape(paddle_shape):
 
 PADDLE_TO_ONNX_DTYPE = {
     core.VarDesc.VarType.FP32: onnx_pb2.TensorProto.FLOAT,
-    core.VarDesc.VarType.FP64: onnx_pb2.TensorProto.FLOAT16,
+    core.VarDesc.VarType.FP64: onnx_pb2.TensorProto.DOUBLE,
     # '': onnx_pb2.TensorProto.DOUBLE,
     core.VarDesc.VarType.INT32: onnx_pb2.TensorProto.INT32,
     core.VarDesc.VarType.INT16: onnx_pb2.TensorProto.INT16,
