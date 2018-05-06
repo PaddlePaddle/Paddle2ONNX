@@ -75,3 +75,14 @@ class OpIOsInfo():
 
 # Instantiate the class to a callable object
 op_io_info = OpIOsInfo()
+
+
+def get_old_name(arg):
+    """Get the old rame for a possible renamed argument
+    """
+
+    idx = arg.find('@')
+    if idx == -1:
+        return arg
+    else:
+        return arg[:idx]
