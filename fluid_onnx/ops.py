@@ -18,7 +18,7 @@ from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
 from fluid.utils import op_io_info, get_old_name
-from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
+from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE, paddle_onnx_shape
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -351,41 +351,32 @@ def mul_op(operator, block):
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
 
-    # Get the shape of input(X) and input(Y)
-    x_shape_out = [inputs['X'][0] + '@shape_0']
-    y_shape_out = [inputs['Y'][0] + '@shape_0']
-    x_shape_node = make_node('Shape', inputs=inputs['X'], outputs=x_shape_out)
-    y_shape_node = make_node('Shape', inputs=inputs['Y'], outputs=y_shape_out)
-
-    # Get the real shape of output(Out)
-    x_shape_slice_out = [inputs['X'][0] + '@shape_slice_0']
-    y_shape_slice_out = [inputs['Y'][0] + '@shape_slice_0']
-    output_shape = [outputs['Out'][0] + '@shape_concat_0']
-    x_shape_slice_node = make_node(
-        'Slice',
-        inputs=x_shape_out,
-        outputs=x_shape_slice_out,
-        starts=[0],
-        ends=[attrs['x_num_col_dims']])
-    y_shape_slice_node = make_node(
-        'Slice',
-        inputs=y_shape_out,
-        outputs=y_shape_slice_out,
-        starts=[attrs['y_num_col_dims']],
-        ends=[sys.maxint])
-    output_shape_node = make_node(
-        'Concat',
-        inputs=x_shape_slice_out + y_shape_slice_out,
-        outputs=output_shape,
-        axis=0)
+    # Get shape of inputs 
+    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
+    x_shape = paddle_onnx_shape(x_shape)
+    y_shape = paddle_onnx_shape(y_shape)
+    out_shape = x_shape[:attrs['x_num_col_dims']] + y_shape[attrs[
+        'y_num_col_dims']:]
 
     # Reshpe output
+    output_shape_name = [outputs['Out'][0] + '@shape_0']
+    output_shape_node = make_node(
+        'Constant',
+        inputs=[],
+        outputs=output_shape_name,
+        value=make_tensor(
+            name=output_shape_name[0],
+            data_type=TensorProto.INT64,
+            dims=(len(out_shape), ),
+            vals=out_shape))
     output_node = make_node(
-        'Reshape', inputs=matmul_out + output_shape, outputs=outputs['Out'])
+        'Reshape',
+        inputs=matmul_out + output_shape_name,
+        outputs=outputs['Out'])
 
-    return (flatten_x_node, flatten_y_node, matmul_node, x_shape_node,
-            y_shape_node, x_shape_slice_node, y_shape_slice_node,
-            output_shape_node, output_node)
+    return (flatten_x_node, flatten_y_node, matmul_node, output_shape_node,
+            output_node)
 
 
 def max_op():
