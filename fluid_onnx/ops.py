@@ -239,7 +239,7 @@ def dropout_op(operator, block):
             broadcast=1)
         nodes = (dropout_node, constant_node, mul_node)
     else:
-        scale_op = make_node(
+        scale_node = make_node(
             'Scale',
             inputs=scale_input,
             outputs=outputs['Out'],
@@ -428,7 +428,7 @@ def mul_op(operator, block):
             value=make_tensor(
                 name=output_shape_name[0],
                 data_type=TensorProto.INT64,
-                dims=(1, len(out_shape)),
+                dims=(len(out_shape), ),
                 vals=out_shape))
         output_node = make_node(
             'Reshape',
