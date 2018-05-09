@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import sys
+import onnx
+import numpy as np
 from functools import partial
 from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
@@ -56,6 +58,8 @@ test_machine_translation.py
 - increment
 """
 
+__onnx_ver__ = onnx.version.version
+
 
 def activation_ops(act_type, operator, block):
     """ Convert common activations with type specified by 'act_type', including
@@ -87,22 +91,33 @@ def batch_norm_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
-    reshape_node = None
+    nodes = ()
     if len(x_shape) == 2:
-        reshaped_x = [inputs['X'][0] + '@reshape_0']
         new_shape = [0, x_shape[1], 1, 1]
-        new_shape_name = [inputs['X'][0] + '@shape_tensor_0']
-        new_shape_node = make_node(
-            'Constant',
-            inputs=[],
-            outputs=new_shape_name,
-            value=make_tensor(
-                name=new_shape_name[0],
-                data_type=TensorProto.INT64,
-                dims=(4, ),
-                vals=new_shape))
-        reshape_node = make_node(
-            'Reshape', inputs=inputs['X'] + new_shape_name, outputs=reshaped_x)
+        reshaped_x = [inputs['X'][0] + '@reshape_0']
+        if __onnx_ver__ == u'1.0.1':
+            reshape_node = make_node(
+                'Reshape',
+                inputs=inputs['X'],
+                shape=new_shape,
+                outputs=reshaped_x)
+        else:
+            new_shape_name = [inputs['X'][0] + '@shape_tensor_0']
+            new_shape_node = make_node(
+                'Constant',
+                inputs=[],
+                outputs=new_shape_name,
+                value=make_tensor(
+                    name=new_shape_name[0],
+                    data_type=TensorProto.INT64,
+                    dims=(4, ),
+                    vals=new_shape))
+            reshape_node = make_node(
+                'Reshape',
+                inputs=inputs['X'] + new_shape_name,
+                outputs=reshaped_x)
+            nodes = (new_shape_node, )
+        nodes += (reshape_node, )
     else:
         reshaped_x = inputs['X']
 
@@ -115,8 +130,7 @@ def batch_norm_op(operator, block):
         epsilon=attrs['epsilon'],
         momentum=attrs['momentum'])
 
-    return bn_node if reshape_node is None else (new_shape_node, reshape_node,
-                                                 bn_node)
+    return nodes + (bn_node, )
 
 
 def cast_op(operator, block):
@@ -332,51 +346,79 @@ def lppool_op():
 def mul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
+    # Get shape of inputs 
+    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
+    x_shape = paddle_onnx_shape(x_shape)
+    y_shape = paddle_onnx_shape(y_shape)
+    x_num_col_dims, y_num_col_dims = attrs['x_num_col_dims'], attrs[
+        'y_num_col_dims']
+    out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
+
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
-    flatten_x_node = make_node(
-        'Flatten',
-        inputs=inputs['X'],
-        outputs=x_flat_out,
-        axis=attrs['x_num_col_dims'])
-    flatten_y_node = make_node(
-        'Flatten',
-        inputs=inputs['Y'],
-        outputs=y_flat_out,
-        axis=attrs['y_num_col_dims'])
+    if __onnx_ver__ == '1.0.1':
+        flatten_x_node = make_node(
+            'Reshape',
+            inputs=inputs['X'],
+            outputs=x_flat_out,
+            shape=[
+                np.prod(x_shape[:x_num_col_dims]),
+                np.prod(x_shape[x_num_col_dims:])
+            ])
+        flatten_y_node = make_node(
+            'Reshape',
+            inputs=inputs['Y'],
+            outputs=y_flat_out,
+            shape=[
+                np.prod(y_shape[:y_num_col_dims]),
+                np.prod(y_shape[y_num_col_dims:])
+            ])
+    else:
+        flatten_x_node = make_node(
+            'Flatten',
+            inputs=inputs['X'],
+            outputs=x_flat_out,
+            axis=attrs['x_num_col_dims'])
+        flatten_y_node = make_node(
+            'Flatten',
+            inputs=inputs['Y'],
+            outputs=y_flat_out,
+            axis=attrs['y_num_col_dims'])
 
     # Mat mul 
     matmul_out = [outputs['Out'][0] + '@matmul_0']
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
 
-    # Get shape of inputs 
-    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
-    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
-    x_shape = paddle_onnx_shape(x_shape)
-    y_shape = paddle_onnx_shape(y_shape)
-    out_shape = x_shape[:attrs['x_num_col_dims']] + y_shape[attrs[
-        'y_num_col_dims']:]
-
+    nodes = (flatten_x_node, flatten_y_node, matmul_node)
     # Reshpe output
-    output_shape_name = [outputs['Out'][0] + '@shape_0']
-    output_shape_node = make_node(
-        'Constant',
-        inputs=[],
-        outputs=output_shape_name,
-        value=make_tensor(
-            name=output_shape_name[0],
-            data_type=TensorProto.INT64,
-            dims=(len(out_shape), ),
-            vals=out_shape))
-    output_node = make_node(
-        'Reshape',
-        inputs=matmul_out + output_shape_name,
-        outputs=outputs['Out'])
+    if __onnx_ver__ == u'1.0.1':
+        output_node = make_node(
+            'Reshape',
+            inputs=matmul_out,
+            shape=out_shape,
+            outputs=outputs['Out'])
+        nodes += (output_node, )
+    else:
+        output_shape_name = [outputs['Out'][0] + '@shape_0']
+        output_shape_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=output_shape_name,
+            value=make_tensor(
+                name=output_shape_name[0],
+                data_type=TensorProto.INT64,
+                dims=(1, len(out_shape)),
+                vals=out_shape))
+        output_node = make_node(
+            'Reshape',
+            inputs=matmul_out + output_shape_name,
+            outputs=outputs['Out'])
+        nodes += (output_shape_node, output_node)
 
-    return (flatten_x_node, flatten_y_node, matmul_node, output_shape_node,
-            output_node)
+    return nodes
 
 
 def max_op():

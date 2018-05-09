@@ -15,6 +15,7 @@
 import numpy as np
 from onnx import helper, onnx_pb2, TensorProto
 import paddle.fluid.core as core
+from paddle.fluid.executor import fetch_var
 
 
 def paddle_variable_to_onnx_tensor(paddle_var_name, block):
@@ -32,6 +33,18 @@ def paddle_onnx_shape(paddle_shape):
     onnx_shape = np.array(list(paddle_shape))
     onnx_shape[onnx_shape < 0] = 0
     return tuple(onnx_shape)
+
+
+def paddle_onnx_weight(var, scope):
+    data = fetch_var(var.name, scope)
+    weight = helper.make_tensor(
+        name=var.name,
+        dims=var.shape,
+        data_type=PADDLE_TO_ONNX_DTYPE[var.dtype],
+        vals=data.flatten().tolist())
+    value_info = helper.make_tensor_value_info(
+        var.name, PADDLE_TO_ONNX_DTYPE[var.dtype], var.shape)
+    return weight, value_info
 
 
 PADDLE_TO_ONNX_DTYPE = {

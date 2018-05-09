@@ -20,7 +20,7 @@ from onnx import helper, checker
 import paddle.fluid as fluid
 
 import fluid_onnx.ops as ops
-from fluid_onnx.variables import paddle_variable_to_onnx_tensor
+from fluid_onnx.variables import paddle_variable_to_onnx_tensor, paddle_onnx_weight
 
 
 def parse_args():
@@ -57,17 +57,15 @@ def convert(args):
         [inference_program, feed_target_names,
          fetch_targets] = fluid.io.load_inference_model(args.fluid_model, exe)
 
-        # Create nodes using blocks in inference_program
-        onnx_nodes = []
-
         # Load parameters
+        weights, value_info = [], []
         global_block = inference_program.global_block()
         for var_name in global_block.vars:
             var = global_block.var(var_name)
             if var_name not in ['feed', 'fetch'] and var.persistable:
-                param_node = ops.node_maker['constant'](var=var,
-                                                        scope=inference_scope)
-                onnx_nodes.append(param_node)
+                weight, val_info = paddle_onnx_weight(
+                    var=var, scope=inference_scope)
+                weights.append(weight), value_info.append(val_info)
 
         # Create inputs
         inputs = [
@@ -75,7 +73,8 @@ def convert(args):
             for v in feed_target_names
         ]
 
-        # Create nodes
+        # Create nodes using blocks in inference_program
+        onnx_nodes = []
         for block in inference_program.blocks:
             for op in block.ops:
                 if op.type in ops.node_maker:
@@ -110,7 +109,12 @@ def convert(args):
 
         # Make graph
         model_name = os.path.basename(args.fluid_model.strip('/')).split('.')[0]
-        onnx_graph = helper.make_graph(onnx_nodes, model_name, inputs, outputs)
+        onnx_graph = helper.make_graph(
+            nodes=onnx_nodes,
+            name=model_name,
+            initializer=weights,
+            inputs=inputs + value_info,
+            outputs=outputs)
 
         # Make model
         onnx_model = helper.make_model(onnx_graph, producer_name='PaddlePaddle')
