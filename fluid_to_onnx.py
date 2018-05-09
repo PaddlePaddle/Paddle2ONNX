@@ -58,14 +58,14 @@ def convert(args):
          fetch_targets] = fluid.io.load_inference_model(args.fluid_model, exe)
 
         # Load parameters
-        weights, value_info = [], []
+        weights, weights_value_info = [], []
         global_block = inference_program.global_block()
         for var_name in global_block.vars:
             var = global_block.var(var_name)
             if var_name not in ['feed', 'fetch'] and var.persistable:
                 weight, val_info = paddle_onnx_weight(
                     var=var, scope=inference_scope)
-                weights.append(weight), value_info.append(val_info)
+                weights.append(weight), weights_value_info.append(val_info)
 
         # Create inputs
         inputs = [
@@ -113,7 +113,7 @@ def convert(args):
             nodes=onnx_nodes,
             name=model_name,
             initializer=weights,
-            inputs=inputs + value_info,
+            inputs=inputs + weights_value_info,
             outputs=outputs)
 
         # Make model

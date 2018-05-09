@@ -72,13 +72,6 @@ def activation_ops(act_type, operator, block):
         act_type, inputs=inputs.values()[0], outputs=outputs.values()[0])
 
 
-def and_op():
-    """
-    Need to support broadcast.
-    """
-    pass
-
-
 def argmax_op():
     pass
 
@@ -121,14 +114,20 @@ def batch_norm_op(operator, block):
     else:
         reshaped_x = inputs['X']
 
+    kwargs = {
+        'is_test': attrs['is_test'],
+        'epsilon': attrs['epsilon'],
+        'momentum': attrs['momentum']
+    }
+    if __onnx_ver__ == u'1.0.1':
+        kwargs['consumed_inputs'] = [0, 0, 0, 1, 1]
+
     bn_node = make_node(
         'BatchNormalization',
         inputs=reshaped_x + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
         inputs['Variance'],
         outputs=outputs['Y'],
-        is_test=attrs['is_test'],
-        epsilon=attrs['epsilon'],
-        momentum=attrs['momentum'])
+        **kwargs)
 
     return nodes + (bn_node, )
 
@@ -214,7 +213,7 @@ def depthtospace_op():
 def dropout_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
-    dropout_op = make_node(
+    dropout_node = make_node(
         'Dropout',
         inputs=inputs['X'],
         outputs=scale_input + outputs['Mask'],
@@ -222,12 +221,31 @@ def dropout_op(operator, block):
         ratio=attrs['dropout_prob'])
 
     # Fluid and ONNX use different dropout formula
-    scale_op = make_node(
-        'Scale',
-        inputs=scale_input,
-        outputs=outputs['Out'],
-        scale=1.0 - attrs['dropout_prob'])
-    return (dropout_op, scale_op)
+    if __onnx_ver__ == '1.0.1':
+        scale_val = [outputs['Out'][0] + '@scale']
+        constant_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=scale_val,
+            value=make_tensor(
+                name=scale_val[0],
+                dims=(),
+                data_type=TensorProto.FLOAT,
+                vals=[1.0 - attrs['dropout_prob']]))
+        mul_node = make_node(
+            'Mul',
+            inputs=scale_input + scale_val,
+            outputs=outputs['Out'],
+            broadcast=1)
+        nodes = (dropout_node, constant_node, mul_node)
+    else:
+        scale_op = make_node(
+            'Scale',
+            inputs=scale_input,
+            outputs=outputs['Out'],
+            scale=1.0 - attrs['dropout_prob'])
+        nodes = (dropout_node, scale_node)
+    return nodes
 
 
 def elementwise_ops(op_type, operator, block):
