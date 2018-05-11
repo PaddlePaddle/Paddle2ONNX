@@ -316,8 +316,16 @@ def instancenormalization_op():
     pass
 
 
-def lrn_op():
-    pass
+def lrn_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'LRN',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=attrs['alpha'],
+        beta=attrs['beta'],
+        bias=attrs['k'],
+        size=attrs['n'])
 
 
 def lstm_op():
@@ -690,7 +698,7 @@ node_maker = {
     'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
-    '': 'LRN',
+    'lrn': lrn_op,
     '': 'LSTM',
     '': 'LeakyRelu',
     '': 'Less',

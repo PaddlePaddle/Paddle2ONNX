@@ -213,10 +213,15 @@ class OpTest(unittest.TestCase):
             self.op.desc.infer_var_type(self.block.desc)
             self.op.desc.infer_shape(self.block.desc)
 
+            # A list containing outputs that wouldn't be used as outputs 
+            # of ONNX node
+            ignored_outputs = self.ignored_outputs if hasattr(
+                self, "ignored_outputs") else []
+
             # Construct a unique list of outputs to fetch.
             self.fetch_list = []
             for var_name, var in outputs.iteritems():
-                if var_name in self.outputs:
+                if var_name in self.outputs and var_name not in ignored_outputs:
                     if isinstance(var, list):
                         for v in var:
                             self.fetch_list.append(v)
