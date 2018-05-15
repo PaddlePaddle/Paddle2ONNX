@@ -60,6 +60,17 @@ Currently aimed at a wider coverage of models and operators. There are several P
 
 ## Testing / validation
 
+### Install dependencies
+
+You may use either Caffe2 or TensorRT backends (basically platforms where the ONNX models are executed) to test your models.
+
+Please refer to each library/platforms' installation instructions pages (and make them available in the current Python virtual environment, if you created one):
+- [Caffe2](https://caffe2.ai/docs/getting-started.html)
+- [ONNX-TensorRT](https://github.com/onnx/onnx-tensorrt)
+
+
+### Validate a model
+
 To validate the similarity of the PaddlePaddle Fluid model and the exported ONNX model, run the following:
 
 ```
