@@ -62,9 +62,9 @@ Currently aimed at a wider coverage of models and operators. There are several P
 
 ### Install dependencies
 
-You may use either Caffe2 or TensorRT backends (basically platforms where the ONNX models are executed) to test your models.
+You may use either the Caffe2 or the ONNX-TensorRT backend (basically platforms where the ONNX models are executed) to test your models.
 
-Please refer to each library/platforms' installation instructions pages (and make them available in the current Python virtual environment, if you created one):
+Please refer to each library / platforms' installation instructions pages (and make them available in the current Python virtual environment, if you created one):
 - [Caffe2](https://caffe2.ai/docs/getting-started.html)
 - [ONNX-TensorRT](https://github.com/onnx/onnx-tensorrt)
 
