@@ -85,10 +85,12 @@ def batch_norm_op(operator, block):
 
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     nodes = ()
+    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with 
+    # dim. == 2 supported by Fluid, reshape it into dim. == 4.
     if len(x_shape) == 2:
         new_shape = [0, x_shape[1], 1, 1]
         reshaped_x = [inputs['X'][0] + '@reshape_0']
-        if __onnx_ver__ == u'1.0.1':
+        if __onnx_ver__ == '1.0.1':
             reshape_node = make_node(
                 'Reshape',
                 inputs=inputs['X'],
@@ -119,7 +121,9 @@ def batch_norm_op(operator, block):
         'epsilon': attrs['epsilon'],
         'momentum': attrs['momentum']
     }
-    if __onnx_ver__ == u'1.0.1':
+    # In v1.0.1, need to set input(Mean) and input(Variance) to be consumed 
+    # explicitly. 
+    if __onnx_ver__ == '1.0.1':
         kwargs['consumed_inputs'] = [0, 0, 0, 1, 1]
 
     bn_node = make_node(
@@ -220,7 +224,8 @@ def dropout_op(operator, block):
         is_test=attrs['is_test'],
         ratio=attrs['dropout_prob'])
 
-    # Fluid and ONNX use different dropout formula
+    ## Fluid and ONNX use different dropout formula
+    # ONNX 1.0.1 doesn't support Scale op
     if __onnx_ver__ == '1.0.1':
         scale_val = [outputs['Out'][0] + '@scale']
         constant_node = make_node(
@@ -384,7 +389,12 @@ def mul_op(operator, block):
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
+
+    # Because in TensorRT backend, Flatten op only accepts input tensor with 
+    # dimension 3, here we use Reshape op to flatten the input tensor when 
+    # ONNX is v1.0.1. 
     if __onnx_ver__ == '1.0.1':
+        # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
         flatten_x_node = make_node(
             'Reshape',
             inputs=inputs['X'],
@@ -420,7 +430,7 @@ def mul_op(operator, block):
 
     nodes = (flatten_x_node, flatten_y_node, matmul_node)
     # Reshpe output
-    if __onnx_ver__ == u'1.0.1':
+    if __onnx_ver__ == '1.0.1':
         output_node = make_node(
             'Reshape',
             inputs=matmul_out,

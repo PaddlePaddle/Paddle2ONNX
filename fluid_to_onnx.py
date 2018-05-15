@@ -65,7 +65,8 @@ def convert(args):
             if var_name not in ['feed', 'fetch'] and var.persistable:
                 weight, val_info = paddle_onnx_weight(
                     var=var, scope=inference_scope)
-                weights.append(weight), weights_value_info.append(val_info)
+                weights.append(weight)
+                weights_value_info.append(val_info)
 
         # Create inputs
         inputs = [
@@ -96,7 +97,7 @@ def convert(args):
         fetch_target_names = [
             fetch_target.name for fetch_target in fetch_targets
         ]
-        # Get the new names for outputs if they've renamed in nodes' making
+        # Get the new names for outputs if they've been renamed in nodes' making
         renamed_outputs = op_io_info.get_all_renamed_outputs()
         fetch_target_names = [
             name if name not in renamed_outputs else renamed_outputs[name]
