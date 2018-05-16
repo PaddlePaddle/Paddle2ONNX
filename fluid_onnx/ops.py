@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import sys
+import onnx
+import numpy as np
 from functools import partial
 from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import fetch_var
 from fluid.utils import op_io_info, get_old_name
-from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE
+from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE, paddle_onnx_shape
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -56,6 +58,8 @@ test_machine_translation.py
 - increment
 """
 
+__onnx_ver__ = onnx.version.version
+
 
 def activation_ops(act_type, operator, block):
     """ Convert common activations with type specified by 'act_type', including
@@ -66,13 +70,6 @@ def activation_ops(act_type, operator, block):
     inputs, _, outputs = op_io_info(operator)
     return make_node(
         act_type, inputs=inputs.values()[0], outputs=outputs.values()[0])
-
-
-def and_op():
-    """
-    Need to support broadcast.
-    """
-    pass
 
 
 def argmax_op():
@@ -87,36 +84,56 @@ def batch_norm_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
-    reshape_node = None
+    nodes = ()
+    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with 
+    # dim. == 2 supported by Fluid, reshape it into dim. == 4.
     if len(x_shape) == 2:
-        reshaped_x = [inputs['X'][0] + '@reshape_0']
         new_shape = [0, x_shape[1], 1, 1]
-        new_shape_name = [inputs['X'][0] + '@shape_tensor_0']
-        new_shape_node = make_node(
-            'Constant',
-            inputs=[],
-            outputs=new_shape_name,
-            value=make_tensor(
-                name=new_shape_name[0],
-                data_type=TensorProto.INT64,
-                dims=(4, ),
-                vals=new_shape))
-        reshape_node = make_node(
-            'Reshape', inputs=inputs['X'] + new_shape_name, outputs=reshaped_x)
+        reshaped_x = [inputs['X'][0] + '@reshape_0']
+        if __onnx_ver__ == '1.0.1':
+            reshape_node = make_node(
+                'Reshape',
+                inputs=inputs['X'],
+                shape=new_shape,
+                outputs=reshaped_x)
+        else:
+            new_shape_name = [inputs['X'][0] + '@shape_tensor_0']
+            new_shape_node = make_node(
+                'Constant',
+                inputs=[],
+                outputs=new_shape_name,
+                value=make_tensor(
+                    name=new_shape_name[0],
+                    data_type=TensorProto.INT64,
+                    dims=(4, ),
+                    vals=new_shape))
+            reshape_node = make_node(
+                'Reshape',
+                inputs=inputs['X'] + new_shape_name,
+                outputs=reshaped_x)
+            nodes = (new_shape_node, )
+        nodes += (reshape_node, )
     else:
         reshaped_x = inputs['X']
+
+    kwargs = {
+        'is_test': attrs['is_test'],
+        'epsilon': attrs['epsilon'],
+        'momentum': attrs['momentum']
+    }
+    # In v1.0.1, need to set input(Mean) and input(Variance) to be consumed 
+    # explicitly. 
+    if __onnx_ver__ == '1.0.1':
+        kwargs['consumed_inputs'] = [0, 0, 0, 1, 1]
 
     bn_node = make_node(
         'BatchNormalization',
         inputs=reshaped_x + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
         inputs['Variance'],
         outputs=outputs['Y'],
-        is_test=attrs['is_test'],
-        epsilon=attrs['epsilon'],
-        momentum=attrs['momentum'])
+        **kwargs)
 
-    return bn_node if reshape_node is None else (new_shape_node, reshape_node,
-                                                 bn_node)
+    return nodes + (bn_node, )
 
 
 def cast_op(operator, block):
@@ -200,20 +217,40 @@ def depthtospace_op():
 def dropout_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
-    dropout_op = make_node(
+    dropout_node = make_node(
         'Dropout',
         inputs=inputs['X'],
         outputs=scale_input + outputs['Mask'],
         is_test=attrs['is_test'],
         ratio=attrs['dropout_prob'])
 
-    # Fluid and ONNX use different dropout formula
-    scale_op = make_node(
-        'Scale',
-        inputs=scale_input,
-        outputs=outputs['Out'],
-        scale=1.0 - attrs['dropout_prob'])
-    return (dropout_op, scale_op)
+    ## Fluid and ONNX use different dropout formula
+    # ONNX 1.0.1 doesn't support Scale op
+    if __onnx_ver__ == '1.0.1':
+        scale_val = [outputs['Out'][0] + '@scale']
+        constant_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=scale_val,
+            value=make_tensor(
+                name=scale_val[0],
+                dims=(),
+                data_type=TensorProto.FLOAT,
+                vals=[1.0 - attrs['dropout_prob']]))
+        mul_node = make_node(
+            'Mul',
+            inputs=scale_input + scale_val,
+            outputs=outputs['Out'],
+            broadcast=1)
+        nodes = (dropout_node, constant_node, mul_node)
+    else:
+        scale_node = make_node(
+            'Scale',
+            inputs=scale_input,
+            outputs=outputs['Out'],
+            scale=1.0 - attrs['dropout_prob'])
+        nodes = (dropout_node, scale_node)
+    return nodes
 
 
 def elementwise_ops(op_type, operator, block):
@@ -284,8 +321,16 @@ def instancenormalization_op():
     pass
 
 
-def lrn_op():
-    pass
+def lrn_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'LRN',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=attrs['alpha'],
+        beta=attrs['beta'],
+        bias=attrs['k'],
+        size=attrs['n'])
 
 
 def lstm_op():
@@ -332,60 +377,84 @@ def lppool_op():
 def mul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
+    # Get shape of inputs 
+    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
+    x_shape = paddle_onnx_shape(x_shape)
+    y_shape = paddle_onnx_shape(y_shape)
+    x_num_col_dims, y_num_col_dims = attrs['x_num_col_dims'], attrs[
+        'y_num_col_dims']
+    out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
+
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
-    flatten_x_node = make_node(
-        'Flatten',
-        inputs=inputs['X'],
-        outputs=x_flat_out,
-        axis=attrs['x_num_col_dims'])
-    flatten_y_node = make_node(
-        'Flatten',
-        inputs=inputs['Y'],
-        outputs=y_flat_out,
-        axis=attrs['y_num_col_dims'])
+
+    # Because in TensorRT backend, Flatten op only accepts input tensor with 
+    # dimension 3, here we use Reshape op to flatten the input tensor when 
+    # ONNX is v1.0.1. 
+    if __onnx_ver__ == '1.0.1':
+        # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
+        flatten_x_node = make_node(
+            'Reshape',
+            inputs=inputs['X'],
+            outputs=x_flat_out,
+            shape=[
+                np.prod(x_shape[:x_num_col_dims]),
+                np.prod(x_shape[x_num_col_dims:])
+            ])
+        flatten_y_node = make_node(
+            'Reshape',
+            inputs=inputs['Y'],
+            outputs=y_flat_out,
+            shape=[
+                np.prod(y_shape[:y_num_col_dims]),
+                np.prod(y_shape[y_num_col_dims:])
+            ])
+    else:
+        flatten_x_node = make_node(
+            'Flatten',
+            inputs=inputs['X'],
+            outputs=x_flat_out,
+            axis=attrs['x_num_col_dims'])
+        flatten_y_node = make_node(
+            'Flatten',
+            inputs=inputs['Y'],
+            outputs=y_flat_out,
+            axis=attrs['y_num_col_dims'])
 
     # Mat mul 
     matmul_out = [outputs['Out'][0] + '@matmul_0']
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
 
-    # Get the shape of input(X) and input(Y)
-    x_shape_out = [inputs['X'][0] + '@shape_0']
-    y_shape_out = [inputs['Y'][0] + '@shape_0']
-    x_shape_node = make_node('Shape', inputs=inputs['X'], outputs=x_shape_out)
-    y_shape_node = make_node('Shape', inputs=inputs['Y'], outputs=y_shape_out)
-
-    # Get the real shape of output(Out)
-    x_shape_slice_out = [inputs['X'][0] + '@shape_slice_0']
-    y_shape_slice_out = [inputs['Y'][0] + '@shape_slice_0']
-    output_shape = [outputs['Out'][0] + '@shape_concat_0']
-    x_shape_slice_node = make_node(
-        'Slice',
-        inputs=x_shape_out,
-        outputs=x_shape_slice_out,
-        starts=[0],
-        ends=[attrs['x_num_col_dims']])
-    y_shape_slice_node = make_node(
-        'Slice',
-        inputs=y_shape_out,
-        outputs=y_shape_slice_out,
-        starts=[attrs['y_num_col_dims']],
-        ends=[sys.maxint])
-    output_shape_node = make_node(
-        'Concat',
-        inputs=x_shape_slice_out + y_shape_slice_out,
-        outputs=output_shape,
-        axis=0)
-
+    nodes = (flatten_x_node, flatten_y_node, matmul_node)
     # Reshpe output
-    output_node = make_node(
-        'Reshape', inputs=matmul_out + output_shape, outputs=outputs['Out'])
+    if __onnx_ver__ == '1.0.1':
+        output_node = make_node(
+            'Reshape',
+            inputs=matmul_out,
+            shape=out_shape,
+            outputs=outputs['Out'])
+        nodes += (output_node, )
+    else:
+        output_shape_name = [outputs['Out'][0] + '@shape_0']
+        output_shape_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=output_shape_name,
+            value=make_tensor(
+                name=output_shape_name[0],
+                data_type=TensorProto.INT64,
+                dims=(len(out_shape), ),
+                vals=out_shape))
+        output_node = make_node(
+            'Reshape',
+            inputs=matmul_out + output_shape_name,
+            outputs=outputs['Out'])
+        nodes += (output_shape_node, output_node)
 
-    return (flatten_x_node, flatten_y_node, matmul_node, x_shape_node,
-            y_shape_node, x_shape_slice_node, y_shape_slice_node,
-            output_shape_node, output_node)
+    return nodes
 
 
 def max_op():
@@ -639,7 +708,7 @@ node_maker = {
     'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
-    '': 'LRN',
+    'lrn': lrn_op,
     '': 'LSTM',
     '': 'LeakyRelu',
     '': 'Less',

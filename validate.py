@@ -18,7 +18,6 @@ import numpy as np
 
 import paddle.fluid as fluid
 from onnx import helper, checker, load
-from caffe2.python.onnx.backend import Caffe2Backend
 
 import fluid_onnx.ops as ops
 from fluid_onnx.variables import paddle_variable_to_onnx_tensor
@@ -55,6 +54,12 @@ def parse_args():
         type=int,
         default=5,
         help="The expected decimal accuracy. (default: %(default)d)")
+    parser.add_argument(
+        "--backend",
+        type=str,
+        choices=['caffe2', 'tensorrt'],
+        default='caffe2',
+        help="The ONNX backend used for validation. (default: %(default)s)")
     args = parser.parse_args()
     return args
 
@@ -100,8 +105,14 @@ def validate(args):
 
     # ONNX inference, using caffe2 as the backend
     onnx_model = load(args.onnx_model)
-    rep = Caffe2Backend.prepare(onnx_model, device='CPU')
+    if args.backend == 'caffe2':
+        from caffe2.python.onnx.backend import Caffe2Backend
+        rep = Caffe2Backend.prepare(onnx_model, device='CPU')
+    else:
+        import onnx_tensorrt.backend as backend
+        rep = backend.prepare(onnx_model, device='CUDA:0')
     onnx_results = rep.run(inputs)
+
     print("Inference results for ONNX model:")
     print(onnx_results)
     print('\n')
