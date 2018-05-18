@@ -93,6 +93,7 @@ We aim to at least support all the models from our model bank. During our prelim
 - [VGG16 & ResNet50](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_image_classification.py)
 - [MobileNet](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/mobilenet.py)
 - [SE_ResNeXt](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/se_resnext.py)
+- [Inception-v4](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/inception_v4.py)
 
 
 ## Got feedback or issues?

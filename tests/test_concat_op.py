@@ -35,7 +35,7 @@ class TestConcatOp(OpTest):
         self.axis = 1
 
 
-class TestConcatOp2(OpTest):
+class TestConcatOp2(TestConcatOp):
     def init_test_data(self):
         self.x0 = np.random.random((2, 3, 4, 5)).astype('float32')
         self.x1 = np.random.random((2, 3, 4, 5)).astype('float32')
