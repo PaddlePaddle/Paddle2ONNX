@@ -155,6 +155,14 @@ def clip_op(operator, block):
         max=attrs['max'])
 
 
+def compare_ops(op_type, operator, block):
+    ''' Conversion for compare ops, including 'Less', 'Equal', 'Greater'
+    '''
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        op_type, inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
+
+
 def concat_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node(
@@ -696,7 +704,7 @@ node_maker = {
     'elementwise_pow': partial(elementwise_ops, 'Pow'),
     'elementwise_sub': partial(elementwise_ops, 'Sub'),
     '': 'Elu',
-    '': 'Equal',
+    'equal': partial(compare_ops, 'Equal'),
     'exp': partial(activation_ops, 'Exp'),
     '': 'Flatten',
     'floor': partial(activation_ops, 'Floor'),
@@ -704,14 +712,14 @@ node_maker = {
     '': 'Gather',
     '': 'Gemm',
     '': 'GlobalLpPool',
-    '': 'Greater',
+    'greater_than': partial(compare_ops, 'Greater'),
     'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
+    'less_than': partial(compare_ops, 'Less'),
     'lrn': lrn_op,
     '': 'LSTM',
     '': 'LeakyRelu',
-    '': 'Less',
     'log': partial(activation_ops, 'Log'),
     'logical_and': partial(binary_logical_ops, 'And'),
     'logical_or': partial(binary_logical_ops, 'Or'),
