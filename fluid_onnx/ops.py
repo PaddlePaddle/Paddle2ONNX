@@ -294,8 +294,10 @@ def gru_op():
     pass
 
 
-def gather_op():
-    pass
+def gather_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Gather', inputs=inputs['X'] + inputs['Index'], outputs=outputs['Out'])
 
 
 def gemm_op():
@@ -303,10 +305,6 @@ def gemm_op():
 
 
 def globallppool_op():
-    pass
-
-
-def greater_op():
     pass
 
 
@@ -709,7 +707,7 @@ node_maker = {
     '': 'Flatten',
     'floor': partial(activation_ops, 'Floor'),
     '': 'GRU',
-    '': 'Gather',
+    'gather': gather_op,
     '': 'Gemm',
     '': 'GlobalLpPool',
     'greater_than': partial(compare_ops, 'Greater'),
