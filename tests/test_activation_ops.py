@@ -98,5 +98,11 @@ class TestLeakyReluOp(TestAbsOp):
         self.attrs = {'alpha': 0.1}
 
 
+class TestThresholdedReluOp(TestAbsOp):
+    def init_op_type(self):
+        self.op_type = 'thresholded_relu'
+        self.attrs = {'alpha': 0.1}
+
+
 if __name__ == '__main__':
     unittest.main()

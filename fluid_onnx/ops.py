@@ -655,6 +655,15 @@ def unsqueeze_op():
     pass
 
 
+def thresholded_relu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'ThresholdedRelu',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=attrs['threshold'])
+
+
 # Based on the ONNX 1.0 operator list generated on March 26th, 2018.
 # Reference for paddle operator availability taken from:
 #     https://github.com/PaddlePaddle/Paddle/issues/8028
@@ -771,6 +780,6 @@ node_maker = {
     # 'experimental ParametricSoftplus'
     # 'experimental Scale'
     # 'experimental ScaledTanh'
-    # 'experimental ThresholdedRelu'
+    'thresholded_relu': thresholded_relu_op,
     # 'experimental Upsample'
 }
