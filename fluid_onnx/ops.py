@@ -278,8 +278,10 @@ def elementwise_ops(op_type, operator, block):
         broadcast=1)
 
 
-def elu_op():
-    pass
+def elu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Elu', inputs=inputs['X'], outputs=outputs['Out'], alpha=attrs['alpha'])
 
 
 def equal_op():
@@ -343,12 +345,13 @@ def lstm_op():
     pass
 
 
-def leakyrelu_op():
-    pass
-
-
-def less_op():
-    pass
+def leaky_relu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'LeakyRelu',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=attrs['alpha'])
 
 
 def binary_logical_ops(op_type, operator, block):
@@ -693,6 +696,7 @@ node_maker = {
     'conv2d': conv2d_op,
     # Need to continue the mapping below.
     'conv2d_transpose': conv2d_transpose_op,
+    # 'cos': partial(activation_ops, 'Cos'),
     '': 'DepthToSpace',
     'depthwise_conv2d': conv2d_op,
     'dropout': dropout_op,
@@ -701,7 +705,7 @@ node_maker = {
     'elementwise_mul': partial(elementwise_ops, 'Mul'),
     'elementwise_pow': partial(elementwise_ops, 'Pow'),
     'elementwise_sub': partial(elementwise_ops, 'Sub'),
-    '': 'Elu',
+    'elu': elu_op,
     'equal': partial(compare_ops, 'Equal'),
     'exp': partial(activation_ops, 'Exp'),
     '': 'Flatten',
@@ -717,7 +721,7 @@ node_maker = {
     'less_than': partial(compare_ops, 'Less'),
     'lrn': lrn_op,
     '': 'LSTM',
-    '': 'LeakyRelu',
+    'leaky_relu': leaky_relu_op,
     'log': partial(activation_ops, 'Log'),
     'logical_and': partial(binary_logical_ops, 'And'),
     'logical_or': partial(binary_logical_ops, 'Or'),
@@ -758,6 +762,7 @@ node_maker = {
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
     'sigmoid': partial(activation_ops, 'Sigmoid'),
+    # 'sin': partial(activation_ops, 'Sin'),
     '': 'Size',
     # 'Slice', NEEDS ATTENTION.
     'softmax': softmax_op,
