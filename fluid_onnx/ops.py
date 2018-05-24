@@ -486,22 +486,10 @@ def neg_op():
     pass
 
 
-def not_op():
-    """
-    Need to support broadcast.
-    """
-    pass
-
-
-def or_op():
-    """
-    Need to support broadcast.
-    """
-    pass
-
-
-def prelu_op():
-    pass
+def prelu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'PRelu', inputs=inputs['X'] + inputs['Alpha'], outputs=outputs['Out'])
 
 
 def pad_op():
@@ -639,10 +627,6 @@ def split_op():
     pass
 
 
-def sqrt_op():
-    pass
-
-
 def squeeze_op():
     pass
 
@@ -668,13 +652,6 @@ def transpose_op():
 
 
 def unsqueeze_op():
-    pass
-
-
-def xor_op():
-    """
-    Need to support broadcast.
-    """
     pass
 
 
@@ -738,7 +715,7 @@ node_maker = {
     '': 'Min',
     'mul': mul_op,
     ',': 'Neg',
-    '': 'PRelu',
+    'prelu': prelu_op,
     '': 'Pad',
     'pool2d': pool2d_op,
     ',': 'RNN',
