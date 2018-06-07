@@ -86,5 +86,23 @@ class TestTanhOp(TestAbsOp):
         self.op_type = 'tanh'
 
 
+class TestEluOp(TestAbsOp):
+    def init_op_type(self):
+        self.op_type = 'elu'
+        self.attrs = {'alpha': 2.0}
+
+
+class TestLeakyReluOp(TestAbsOp):
+    def init_op_type(self):
+        self.op_type = 'leaky_relu'
+        self.attrs = {'alpha': 0.1}
+
+
+class TestThresholdedReluOp(TestAbsOp):
+    def init_op_type(self):
+        self.op_type = 'thresholded_relu'
+        self.attrs = {'alpha': 0.1}
+
+
 if __name__ == '__main__':
     unittest.main()

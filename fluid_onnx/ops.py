@@ -155,6 +155,14 @@ def clip_op(operator, block):
         max=attrs['max'])
 
 
+def compare_ops(op_type, operator, block):
+    ''' Conversion for compare ops, including 'Less', 'Equal', 'Greater'
+    '''
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        op_type, inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
+
+
 def concat_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node(
@@ -270,8 +278,10 @@ def elementwise_ops(op_type, operator, block):
         broadcast=1)
 
 
-def elu_op():
-    pass
+def elu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Elu', inputs=inputs['X'], outputs=outputs['Out'], alpha=attrs['alpha'])
 
 
 def equal_op():
@@ -286,8 +296,10 @@ def gru_op():
     pass
 
 
-def gather_op():
-    pass
+def gather_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'Gather', inputs=inputs['X'] + inputs['Index'], outputs=outputs['Out'])
 
 
 def gemm_op():
@@ -295,10 +307,6 @@ def gemm_op():
 
 
 def globallppool_op():
-    pass
-
-
-def greater_op():
     pass
 
 
@@ -337,12 +345,13 @@ def lstm_op():
     pass
 
 
-def leakyrelu_op():
-    pass
-
-
-def less_op():
-    pass
+def leaky_relu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'LeakyRelu',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=attrs['alpha'])
 
 
 def binary_logical_ops(op_type, operator, block):
@@ -477,22 +486,10 @@ def neg_op():
     pass
 
 
-def not_op():
-    """
-    Need to support broadcast.
-    """
-    pass
-
-
-def or_op():
-    """
-    Need to support broadcast.
-    """
-    pass
-
-
-def prelu_op():
-    pass
+def prelu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'PRelu', inputs=inputs['X'] + inputs['Alpha'], outputs=outputs['Out'])
 
 
 def pad_op():
@@ -630,10 +627,6 @@ def split_op():
     pass
 
 
-def sqrt_op():
-    pass
-
-
 def squeeze_op():
     pass
 
@@ -662,11 +655,13 @@ def unsqueeze_op():
     pass
 
 
-def xor_op():
-    """
-    Need to support broadcast.
-    """
-    pass
+def thresholded_relu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'ThresholdedRelu',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        alpha=attrs['threshold'])
 
 
 # Based on the ONNX 1.0 operator list generated on March 26th, 2018.
@@ -687,6 +682,7 @@ node_maker = {
     'conv2d': conv2d_op,
     # Need to continue the mapping below.
     'conv2d_transpose': conv2d_transpose_op,
+    # 'cos': partial(activation_ops, 'Cos'),
     '': 'DepthToSpace',
     'depthwise_conv2d': conv2d_op,
     'dropout': dropout_op,
@@ -695,23 +691,23 @@ node_maker = {
     'elementwise_mul': partial(elementwise_ops, 'Mul'),
     'elementwise_pow': partial(elementwise_ops, 'Pow'),
     'elementwise_sub': partial(elementwise_ops, 'Sub'),
-    '': 'Elu',
-    '': 'Equal',
+    'elu': elu_op,
+    'equal': partial(compare_ops, 'Equal'),
     'exp': partial(activation_ops, 'Exp'),
     '': 'Flatten',
     'floor': partial(activation_ops, 'Floor'),
     '': 'GRU',
-    '': 'Gather',
+    'gather': gather_op,
     '': 'Gemm',
     '': 'GlobalLpPool',
-    '': 'Greater',
+    'greater_than': partial(compare_ops, 'Greater'),
     'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
+    'less_than': partial(compare_ops, 'Less'),
     'lrn': lrn_op,
     '': 'LSTM',
-    '': 'LeakyRelu',
-    '': 'Less',
+    'leaky_relu': leaky_relu_op,
     'log': partial(activation_ops, 'Log'),
     'logical_and': partial(binary_logical_ops, 'And'),
     'logical_or': partial(binary_logical_ops, 'Or'),
@@ -728,7 +724,7 @@ node_maker = {
     '': 'Min',
     'mul': mul_op,
     ',': 'Neg',
-    '': 'PRelu',
+    'prelu': prelu_op,
     '': 'Pad',
     'pool2d': pool2d_op,
     ',': 'RNN',
@@ -752,6 +748,7 @@ node_maker = {
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
     'sigmoid': partial(activation_ops, 'Sigmoid'),
+    # 'sin': partial(activation_ops, 'Sin'),
     '': 'Size',
     # 'Slice', NEEDS ATTENTION.
     'softmax': softmax_op,
@@ -783,6 +780,6 @@ node_maker = {
     # 'experimental ParametricSoftplus'
     # 'experimental Scale'
     # 'experimental ScaledTanh'
-    # 'experimental ThresholdedRelu'
+    'thresholded_relu': thresholded_relu_op,
     # 'experimental Upsample'
 }
