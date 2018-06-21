@@ -22,8 +22,6 @@ def paddle_variable_to_onnx_tensor(paddle_var_name, block):
     # TODO(varunarora): Need to do this only in the case of VarType.LOD_TENSOR.
     paddle_var = block.var(paddle_var_name)
     shape = paddle_onnx_shape(paddle_var.shape)
-    if shape[0] == 0:
-	shape = (1,) + shape[1::]
     return helper.make_tensor_value_info(
         paddle_var_name, PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
 
