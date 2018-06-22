@@ -31,7 +31,7 @@ def paddle_onnx_shape(paddle_shape):
     """
 
     onnx_shape = np.array(list(paddle_shape))
-    onnx_shape[onnx_shape < 0] = 0
+    onnx_shape[onnx_shape < 0] = 1
     return tuple(onnx_shape)
 
 
