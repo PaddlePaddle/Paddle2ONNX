@@ -23,11 +23,7 @@ class TestReduceSumOp(OpTest):
         self.init_keep_dim()
         self.init_reduce_all()
         self.inputs = {'X': np.random.random((5, 6, 7, 8)).astype('float32')}
-        self.attrs = {
-            'dim': 2,
-            'keep_dim': self.keep_dim,
-            'reduce_all': self.reduce_all
-        }
+        self.attrs = {'dim': [2], }
         self.outputs = {'Out': np.zeros((1, 1))}
 
     def init_op_type(self):

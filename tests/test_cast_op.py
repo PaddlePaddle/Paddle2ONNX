@@ -22,10 +22,10 @@ class TestCastOp(OpTest):
     def setUp(self):
         input = np.random.random((10, 10))
         self.inputs = {'X': input.astype('float32')}
-        self.outputs = {'Out': input.astype('float64')}
+        self.outputs = {'Out': input.astype('int32')}
         self.attrs = {
             'in_dtype': int(core.VarDesc.VarType.FP32),
-            'out_dtype': int(core.VarDesc.VarType.FP64)
+            'out_dtype': int(core.VarDesc.VarType.INT32)
         }
         self.op_type = 'cast'
 
