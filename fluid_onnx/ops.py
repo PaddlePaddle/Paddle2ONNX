@@ -347,20 +347,9 @@ def lppool_op():
 
 def mul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-
-    # Get shape of inputs 
-    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
-    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
-    x_shape = paddle_onnx_shape(x_shape)
-    y_shape = paddle_onnx_shape(y_shape)
-    x_num_col_dims, y_num_col_dims = attrs['x_num_col_dims'], attrs[
-        'y_num_col_dims']
-    out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
-
     # Flatten input(X) and input(Y) into 2-D matries
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
-
     flatten_x_node = make_node(
         'Flatten',
         inputs=inputs['X'],
@@ -377,25 +366,41 @@ def mul_op(operator, block):
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
 
-    nodes = (flatten_x_node, flatten_y_node, matmul_node)
-    # Reshpe output
-    output_shape_name = [outputs['Out'][0] + '@shape_0']
-    output_shape_node = make_node(
-        'Constant',
-        inputs=[],
-        outputs=output_shape_name,
-        value=make_tensor(
-            name=output_shape_name[0],
-            data_type=TensorProto.INT64,
-            dims=(len(out_shape), ),
-            vals=out_shape))
-    output_node = make_node(
-        'Reshape',
-        inputs=matmul_out + output_shape_name,
-        outputs=outputs['Out'])
-    nodes += (output_shape_node, output_node)
+    # Get the shape of input(X) and input(Y)
+    x_shape_out = [inputs['X'][0] + '@shape_0']
+    y_shape_out = [inputs['Y'][0] + '@shape_0']
+    x_shape_node = make_node('Shape', inputs=inputs['X'], outputs=x_shape_out)
+    y_shape_node = make_node('Shape', inputs=inputs['Y'], outputs=y_shape_out)
 
-    return nodes
+    # Get the real shape of output(Out)
+    x_shape_slice_out = [inputs['X'][0] + '@shape_slice_0']
+    y_shape_slice_out = [inputs['Y'][0] + '@shape_slice_0']
+    output_shape = [outputs['Out'][0] + '@shape_concat_0']
+    x_shape_slice_node = make_node(
+        'Slice',
+        inputs=x_shape_out,
+        outputs=x_shape_slice_out,
+        starts=[0],
+        ends=[attrs['x_num_col_dims']])
+    y_shape_slice_node = make_node(
+        'Slice',
+        inputs=y_shape_out,
+        outputs=y_shape_slice_out,
+        starts=[attrs['y_num_col_dims']],
+        ends=[sys.maxint])
+    output_shape_node = make_node(
+        'Concat',
+        inputs=x_shape_slice_out + y_shape_slice_out,
+        outputs=output_shape,
+        axis=0)
+
+    # Reshpe output
+    output_node = make_node(
+        'Reshape', inputs=matmul_out + output_shape, outputs=outputs['Out'])
+
+    return (flatten_x_node, flatten_y_node, matmul_node, x_shape_node,
+            y_shape_node, x_shape_slice_node, y_shape_slice_node,
+            output_shape_node, output_node)
 
 
 def max_op():
