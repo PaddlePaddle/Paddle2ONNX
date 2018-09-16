@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import numpy as np
-from onnx import helper, onnx_pb2, TensorProto
+from onnx import helper, TensorProto
 import paddle.fluid.core as core
 from paddle.fluid.executor import fetch_var
 
@@ -48,17 +48,17 @@ def paddle_onnx_weight(var, scope):
 
 
 PADDLE_TO_ONNX_DTYPE = {
-    core.VarDesc.VarType.FP32: onnx_pb2.TensorProto.FLOAT,
-    core.VarDesc.VarType.FP64: onnx_pb2.TensorProto.DOUBLE,
-    # '': onnx_pb2.TensorProto.DOUBLE,
-    core.VarDesc.VarType.INT32: onnx_pb2.TensorProto.INT32,
-    core.VarDesc.VarType.INT16: onnx_pb2.TensorProto.INT16,
-    # '': onnx_pb2.TensorProto.INT8,
-    # '': onnx_pb2.TensorProto.UINT8,
-    core.VarDesc.VarType.INT16: onnx_pb2.TensorProto.UINT16,
-    core.VarDesc.VarType.INT64: onnx_pb2.TensorProto.INT64,
-    # '': onnx_pb2.TensorProto.STRING,
-    # '': onnx_pb2.TensorProto.COMPLEX64,
-    # '': onnx_pb2.TensorProto.COMPLEX128,
-    core.VarDesc.VarType.BOOL: onnx_pb2.TensorProto.BOOL
+    core.VarDesc.VarType.FP32: TensorProto.FLOAT,
+    core.VarDesc.VarType.FP64: TensorProto.DOUBLE,
+    # '': TensorProto.DOUBLE,
+    core.VarDesc.VarType.INT32: TensorProto.INT32,
+    core.VarDesc.VarType.INT16: TensorProto.INT16,
+    # '': TensorProto.INT8,
+    # '': TensorProto.UINT8,
+    core.VarDesc.VarType.INT16: TensorProto.UINT16,
+    core.VarDesc.VarType.INT64: TensorProto.INT64,
+    # '': TensorProto.STRING,
+    # '': TensorProto.COMPLEX64,
+    # '': TensorProto.COMPLEX128,
+    core.VarDesc.VarType.BOOL: TensorProto.BOOL
 }

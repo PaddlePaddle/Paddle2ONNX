@@ -37,7 +37,8 @@ class OpIOsInfo():
         """
 
         for in_name in self.inputs:
-            if self.inputs[in_name][0] in self._all_renamed_outputs:
+            if (len(self.inputs[in_name]) > 0) and (
+                    self.inputs[in_name][0] in self._all_renamed_outputs):
                 self.inputs[in_name][0] = self._all_renamed_outputs[self.inputs[
                     in_name][0]]
 
@@ -48,7 +49,8 @@ class OpIOsInfo():
 
         input_args = flatten(self.inputs.values())
         for out_name in self.outputs:
-            if self.outputs[out_name][0] in input_args:
+            if len(self.outputs[out_name]) > 0 and self.outputs[out_name][
+                    0] in input_args:
                 new_name = self._get_new_name(self.outputs[out_name][0])
                 self._all_renamed_outputs[self.outputs[out_name][0]] = new_name
                 self.outputs[out_name][0] = new_name

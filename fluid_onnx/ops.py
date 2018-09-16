@@ -106,11 +106,7 @@ def batch_norm_op(operator, block):
     else:
         reshaped_x = inputs['X']
 
-    kwargs = {
-        'is_test': attrs['is_test'],
-        'epsilon': attrs['epsilon'],
-        'momentum': attrs['momentum']
-    }
+    kwargs = {'epsilon': attrs['epsilon'], 'momentum': attrs['momentum']}
 
     bn_node = make_node(
         'BatchNormalization',
@@ -516,8 +512,27 @@ def reducesumsquare_op():
     pass
 
 
-def reshape_op():
-    pass
+def reshape_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    nodes = ()
+    if len(inputs['Shape']) > 0:
+        shape_name = inputs['Shape']
+    else:
+        shape_name = [inputs['X'][0] + '@shape']
+        new_shape_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=shape_name,
+            value=make_tensor(
+                name=shape_name[0],
+                data_type=TensorProto.INT64,
+                dims=(len(attrs['shape']), ),
+                vals=attrs['shape']))
+        nodes += (new_shape_node, )
+    reshape_node = make_node(
+        'Reshape', inputs=inputs['X'] + shape_name, outputs=outputs['Out'])
+    nodes += (reshape_node, )
+    return nodes
 
 
 def selu_op():
@@ -666,7 +681,7 @@ node_maker = {
     'reduce_sum': partial(reduce_ops, 'ReduceSum'),
     ',': 'ReduceSumSquare',
     'relu': partial(activation_ops, 'Relu'),
-    '': 'Reshape',
+    'reshape': reshape_op,
     # 'Selu', NEEDS ATTENTION.
     '': 'Shape',
     'sigmoid': partial(activation_ops, 'Sigmoid'),
