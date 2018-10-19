@@ -103,15 +103,24 @@ class TestPool2dOp3(TestPool2dOp):
     def init_pool_type(self):
         self.pool_type = 'max'
 
+    def init_ceil_mode(self):
+        self.ceil_mode = True
+
 
 class TestPool2dOp4(TestPool2dOp1):
     def init_pool_type(self):
         self.pool_type = 'max'
 
+    def init_ceil_mode(self):
+        self.ceil_mode = True
+
 
 class TestPool2dOp5(TestPool2dOp2):
     def init_pool_type(self):
         self.pool_type = 'max'
+
+    def init_ceil_mode(self):
+        self.ceil_mode = True
 
 
 if __name__ == '__main__':

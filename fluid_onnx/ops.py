@@ -433,13 +433,23 @@ def pool2d_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     if attrs['global_pooling'] is False:
         op_type = {'max': 'MaxPool', 'avg': 'AveragePool'}
+
+        pads = attrs['paddings']
+        if attrs['ceil_mode'] is True:
+            pads += [
+                attrs['paddings'][0] + attrs['strides'][0] - 1,
+                attrs['paddings'][1] + attrs['strides'][1] - 1
+            ]
+        else:
+            pads += attrs['paddings']
+
         pool2d = make_node(
             op_type[attrs['pooling_type']],
             inputs=inputs['X'],
             outputs=outputs['Out'],
             kernel_shape=attrs['ksize'],
             strides=attrs['strides'],
-            pads=attrs['paddings'] + attrs['paddings'], )
+            pads=pads, )
     else:
         op_type = {'max': 'GlobalMaxPool', 'avg': 'GlobalAveragePool'}
         pool2d = make_node(
