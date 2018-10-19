@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument(
         "--backend",
         type=str,
-        choices=['caffe2', 'tensorrt'],
+        choices=['caffe2', 'tensorrt', 'tensorflow'],
         default='caffe2',
         help="The ONNX backend used for validation. (default: %(default)s)")
     args = parser.parse_args()
@@ -108,9 +108,12 @@ def validate(args):
     if args.backend == 'caffe2':
         from caffe2.python.onnx.backend import Caffe2Backend
         rep = Caffe2Backend.prepare(onnx_model, device='CPU')
-    else:
+    elif args.backend == 'tensorrt':
         import onnx_tensorrt.backend as backend
         rep = backend.prepare(onnx_model, device='CUDA:0')
+    else:
+        import onnx_tf.backend as backend
+        rep = backend.prepare(onnx_model, device='CPU')
     onnx_results = rep.run(inputs)
 
     print("Inference results for ONNX model:")
