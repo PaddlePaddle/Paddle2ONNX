@@ -37,9 +37,10 @@ class OpIOsInfo():
         """
 
         for in_name in self.inputs:
-            if self.inputs[in_name][0] in self._all_renamed_outputs:
-                self.inputs[in_name][0] = self._all_renamed_outputs[self.inputs[
-                    in_name][0]]
+            for i in range(len(self.inputs[in_name])):
+                if self.inputs[in_name][i] in self._all_renamed_outputs:
+                    self.inputs[in_name][i] = self._all_renamed_outputs[
+                        self.inputs[in_name][i]]
 
     def _rename_output_args(self):
         """Rename output arguments if they have same names with the input 
