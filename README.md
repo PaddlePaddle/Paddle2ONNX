@@ -38,7 +38,7 @@ This should output an ONNX model (current version of opset: 6) which can be run 
 
     The way you can test this is by opening up the Python shell by running `python` on your main shell. And then, if you can `import paddle`, you are all set.
 
-    If not, [build PaddlePaddle's `develop` branch from source](http://paddlepaddle.org/docs/develop/documentation/en/build_and_install/build_from_source_en.html). Make the `paddle/python` available in the execution environment's PYTHONPATH, or `pip install` the wheel after building the target `paddle_python`.
+    If not, [build PaddlePaddle's `develop` branch from source](http://www.paddlepaddle.org/documentation/docs/en/1.4/beginners_guide/install/compile/fromsource_en.html). Make the `paddle/python` available in the execution environment's PYTHONPATH, or `pip install` the wheel after building the target `paddle_python`.
 
     *NOTE*: Make sure your virtual environment has the new Protobuf and the correct `onnx` dependency used by this project (see the version in the `requirements.txt` file), as the PaddlePaddle installation may try to downgrade it without asking you.
 
@@ -91,9 +91,9 @@ We aim to at least support all the models from our model bank. During our prelim
 - [fit_a_line](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_fit_a_line.py)
 - [recognize_digits](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_recognize_digits.py)
 - [VGG16 & ResNet50](https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/fluid/tests/book/test_image_classification.py)
-- [MobileNet](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/models/mobilenet.py)
-- [SE_ResNeXt](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/models/se_resnext.py)
-- [Inception-v4](https://github.com/PaddlePaddle/models/blob/develop/fluid/image_classification/models/inception_v4.py)
+- [MobileNet](https://github.com/PaddlePaddle/models/blob/release/1.4/PaddleCV/image_classification/models/mobilenet.py)
+- [SE_ResNeXt](https://github.com/PaddlePaddle/models/blob/release/1.4/PaddleCV/image_classification/models/se_resnext.py)
+- [Inception-v4](https://github.com/PaddlePaddle/models/blob/release/1.4/PaddleCV/image_classification/models/inception_v4.py)
 
 
 ## Got feedback or issues?
