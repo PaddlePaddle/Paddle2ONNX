@@ -3,7 +3,7 @@
 # install dependencies
 apt-get install -y protobuf-compiler libprotoc-dev
 
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 if [ $? != 0 ]; then
     echo "Install python dependencies failed !!!"

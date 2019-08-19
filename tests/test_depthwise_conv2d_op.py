@@ -57,15 +57,10 @@ class TestConv2dOp(OpTest):
         self.outputs = {'Output': output}
 
     def init_conv_type(self):
-        self.op_type = 'conv2d'
+        self.op_type = 'depthwise_conv2d'
 
     def test_check_output(self):
         self.check_output(decimal=5)
-
-
-class TestDepthwiseConv2dOp(TestConv2dOp):
-    def init_conv_type(self):
-        self.op_type = 'depthwise_conv2d'
 
 
 if __name__ == '__main__':

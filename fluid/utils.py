@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from compiler.ast import flatten
+import numpy
+
+name_prefix = ""
+
+
+def init_name_prefix(prefix):
+    global name_prefix
+    name_prefix = prefix
 
 
 class OpIOsInfo():
@@ -47,7 +54,7 @@ class OpIOsInfo():
            arguments.
         """
 
-        input_args = flatten(self.inputs.values())
+        input_args = list(numpy.array(self.inputs.values()).flat)
         for out_name in self.outputs:
             if self.outputs[out_name][0] in input_args:
                 new_name = self._get_new_name(self.outputs[out_name][0])
@@ -81,9 +88,13 @@ op_io_info = OpIOsInfo()
 def get_old_name(arg):
     """Get the old rame for a possible renamed argument
     """
+    prefix_index = arg.find(name_prefix)
 
-    idx = arg.find('@')
-    if idx == -1:
-        return arg
+    if prefix_index != -1:
+        last_prefix = arg[len(name_prefix):]
     else:
-        return arg[:idx]
+        last_prefix = arg
+    idx = last_prefix.find('@')
+    if idx != -1:
+        last_prefix = last_prefix[:idx]
+    return name_prefix + last_prefix
