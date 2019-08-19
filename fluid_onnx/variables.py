@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import numpy as np
-from onnx import helper, onnx_pb2, TensorProto
+from onnx import helper, onnx_pb, TensorProto
 import paddle.fluid.core as core
-from paddle.fluid.executor import fetch_var
+from paddle.fluid.executor import _fetch_var as fetch_var
+import sys
 
 
 def paddle_variable_to_onnx_tensor(paddle_var_name, block):
@@ -32,11 +33,16 @@ def paddle_onnx_shape(paddle_shape):
 
     onnx_shape = np.array(list(paddle_shape))
     onnx_shape[onnx_shape < 0] = 1
-    return tuple(onnx_shape)
+    output_shape = tuple(onnx_shape)
+    # python3 do not have the int64
+    python_version = sys.version
+    if int(python_version[0]) == 3:
+        output_shape = [int(sp) for sp in output_shape]
+    return output_shape
 
 
 def paddle_onnx_weight(var, scope):
-    data = fetch_var(var.name, scope)
+    data = fetch_var(str(var.name), scope)
     weight = helper.make_tensor(
         name=var.name,
         dims=var.shape,
@@ -48,17 +54,17 @@ def paddle_onnx_weight(var, scope):
 
 
 PADDLE_TO_ONNX_DTYPE = {
-    core.VarDesc.VarType.FP32: onnx_pb2.TensorProto.FLOAT,
-    core.VarDesc.VarType.FP64: onnx_pb2.TensorProto.DOUBLE,
-    # '': onnx_pb2.TensorProto.DOUBLE,
-    core.VarDesc.VarType.INT32: onnx_pb2.TensorProto.INT32,
-    core.VarDesc.VarType.INT16: onnx_pb2.TensorProto.INT16,
-    # '': onnx_pb2.TensorProto.INT8,
-    # '': onnx_pb2.TensorProto.UINT8,
-    core.VarDesc.VarType.INT16: onnx_pb2.TensorProto.UINT16,
-    core.VarDesc.VarType.INT64: onnx_pb2.TensorProto.INT64,
-    # '': onnx_pb2.TensorProto.STRING,
-    # '': onnx_pb2.TensorProto.COMPLEX64,
-    # '': onnx_pb2.TensorProto.COMPLEX128,
-    core.VarDesc.VarType.BOOL: onnx_pb2.TensorProto.BOOL
+    core.VarDesc.VarType.FP32: onnx_pb.TensorProto.FLOAT,
+    core.VarDesc.VarType.FP64: onnx_pb.TensorProto.DOUBLE,
+    # '': onnx_pb.TensorProto.DOUBLE,
+    core.VarDesc.VarType.INT32: onnx_pb.TensorProto.INT32,
+    core.VarDesc.VarType.INT16: onnx_pb.TensorProto.INT16,
+    # '': onnx_pb.TensorProto.INT8,
+    # '': onnx_pb.TensorProto.UINT8,
+    core.VarDesc.VarType.INT16: onnx_pb.TensorProto.UINT16,
+    core.VarDesc.VarType.INT64: onnx_pb.TensorProto.INT64,
+    # '': onnx_pb.TensorProto.STRING,
+    # '': onnx_pb.TensorProto.COMPLEX64,
+    # '': onnx_pb.TensorProto.COMPLEX128,
+    core.VarDesc.VarType.BOOL: onnx_pb.TensorProto.BOOL
 }

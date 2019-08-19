@@ -42,24 +42,22 @@ class TestElementwiseAddOpNegAxis(OpTest):
         self.attrs = {'axis': -1}
 
 
-class TestElementwiseSubOp(TestElementwiseAddOp):
+class TestElementwiseAddO1(OpTest):
     def init(self):
-        self.op_type = 'elementwise_sub'
+        self.op_type = 'elementwise_add'
 
+    def setUp(self):
+        self.attrs = {'axis': 1}
+        self.init()
 
-class TestElementwiseMulOp(TestElementwiseAddOp):
-    def init(self):
-        self.op_type = 'elementwise_mul'
+        self.inputs = {
+            'X': np.random.random((1, 12, 19, 19)).astype(np.float32),
+            'Y': np.random.random((12)).astype(np.float32)
+        }
+        self.outputs = {'Out': np.zeros((1, 1))}
 
-
-class TestElementwiseDivOp(TestElementwiseAddOp):
-    def init(self):
-        self.op_type = 'elementwise_div'
-
-
-class TestElementwisePowOp(TestElementwiseAddOp):
-    def init(self):
-        self.op_type = 'elementwise_pow'
+    def test_check_output(self):
+        self.check_output()
 
 
 if __name__ == '__main__':

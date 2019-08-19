@@ -18,9 +18,10 @@ import numpy as np
 from functools import partial
 from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
-from paddle.fluid.executor import fetch_var
+from paddle.fluid.executor import _fetch_var as fetch_var
 from fluid.utils import op_io_info, get_old_name
 from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE, paddle_onnx_shape
+from fluid_onnx.detection_ops import *
 """
 Priority of ops (uniques) to figure out support for.
 
@@ -60,6 +61,12 @@ test_machine_translation.py
 
 __onnx_ver__ = onnx.version.version
 
+__name_prefix__ = ""
+
+
+def init_name_prefix(name_prefix=""):
+    gloab
+
 
 def activation_ops(act_type, operator, block):
     """ Convert common activations with type specified by 'act_type', including
@@ -69,7 +76,9 @@ def activation_ops(act_type, operator, block):
 
     inputs, _, outputs = op_io_info(operator)
     return make_node(
-        act_type, inputs=inputs.values()[0], outputs=outputs.values()[0])
+        act_type,
+        inputs=list(inputs.values())[0],
+        outputs=list(outputs.values())[0])
 
 
 def argmax_op():
@@ -116,16 +125,7 @@ def batch_norm_op(operator, block):
     else:
         reshaped_x = inputs['X']
 
-    kwargs = {
-        'is_test': attrs['is_test'],
-        'epsilon': attrs['epsilon'],
-        'momentum': attrs['momentum']
-    }
-    # In v1.0.1, need to set input(Mean) and input(Variance) to be consumed 
-    # explicitly. 
-    if __onnx_ver__ == '1.0.1':
-        kwargs['consumed_inputs'] = [0, 0, 0, 1, 1]
-
+    kwargs = {'epsilon': attrs['epsilon'], 'momentum': attrs['momentum']}
     bn_node = make_node(
         'BatchNormalization',
         inputs=reshaped_x + inputs['Scale'] + inputs['Bias'] + inputs['Mean'] +
@@ -267,15 +267,48 @@ def elementwise_ops(op_type, operator, block):
     """
 
     inputs, attrs, outputs = op_io_info(operator)
-    rank_x = len(block.vars[get_old_name(inputs['X'][0])].shape)
-    rank_y = len(block.vars[get_old_name(inputs['Y'][0])].shape)
-    axis = rank_x - rank_y if attrs['axis'] == -1 else attrs['axis']
-    return make_node(
-        op_type,
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'],
-        axis=axis,
-        broadcast=1)
+    node_list = []
+    Y_shape_name = inputs['Y']
+    if 'axis' in attrs and attrs['axis'] != -1:
+        shape_x = block.vars[get_old_name(inputs['X'][0])].shape
+        shape_y = block.vars[get_old_name(inputs['Y'][0])].shape
+        rank_x = len(shape_x)
+        rank_y = len(shape_y)
+        axis = rank_x - rank_y if attrs['axis'] == -1 else attrs['axis']
+        shape = list(shape_y)
+        pre_shape = []
+        post_shape = []
+        if axis > 0:
+            for i in range(0, axis):
+                pre_shape.append(1)
+        if axis + len(shape) < rank_x:
+            for i in range(axis + len(shape), rank_x):
+                post_shape.append(1)
+        pre_shape.extend(shape)
+        pre_shape.extend(post_shape)
+        final_shape = [i if i > 0 else 1 for i in pre_shape]
+        shape_name = outputs['Out'][0] + "@shape_var"
+        output_const_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=[shape_name],
+            value=make_tensor(
+                name=shape_name + "@const",
+                data_type=TensorProto.INT64,
+                dims=[len(final_shape)],
+                vals=final_shape))
+
+        output_shape_name = [outputs['Out'][0] + "@reshape_y"]
+        output_shape_node = make_node(
+            'Reshape',
+            inputs=[inputs['Y'][0], shape_name],
+            outputs=output_shape_name)
+        node_list.extend([output_const_node, output_shape_node])
+        Y_shape_name = output_shape_name
+    node_type = make_node(
+        op_type, inputs=inputs['X'] + Y_shape_name, outputs=outputs['Out'])
+    node_list.append(node_type)
+    return tuple(node_list)
 
 
 def elu_op(operator, block):
@@ -288,8 +321,11 @@ def equal_op():
     pass
 
 
-def flatten_op():
-    pass
+def flatten_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    axis = attrs['axis']
+    return make_node(
+        'Flatten', inputs=inputs['X'], outputs=outputs['Out'], axis=axis)
 
 
 def gru_op():
@@ -594,8 +630,44 @@ def reducesumsquare_op():
     pass
 
 
-def reshape_op():
-    pass
+def reshape_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    shape_name = ""
+    if 'Shape' in inputs and inputs['Shape'] is not None and len(inputs[
+            'Shape']) > 0:
+        shape_name = inputs['Shape'][0]
+        # cast the shape to int64 
+        shape_name_cast = [shape_name + "@cast"]
+        cast_node = make_node(
+            'Cast', inputs=inputs['Shape'], outputs=shape_name_cast, to=7)
+        reshape_node = make_node(
+            'Reshape',
+            inputs=[inputs['X'][0], shape_name_cast[0]],
+            outputs=outputs['Out'])
+        return (cast_node, reshape_node)
+    elif 'ShapeTensor' in inputs and inputs['ShapeTensor'] is not None and len(
+            inputs['ShapeTensor']) > 0:
+        shape_name = inputs['ShapeTensor']
+        return make_node(
+            'Reshape',
+            inputs=[inputs['X'][0], shape_name],
+            outputs=outputs['Out'])
+    else:
+        shape_name = outputs['Out'][0] + "@shape_var"
+        output_shape_node = make_node(
+            'Constant',
+            inputs=[],
+            outputs=[shape_name],
+            value=make_tensor(
+                name=shape_name,
+                data_type=TensorProto.INT64,
+                dims=[len(attrs['shape'])],
+                vals=attrs['shape']))
+        reshape_node = make_node(
+            'Reshape',
+            inputs=[inputs['X'][0], shape_name],
+            outputs=outputs['Out'])
+        return (output_shape_node, reshape_node)
 
 
 def selu_op():
@@ -616,15 +688,34 @@ def slice_op():
 
 def softmax_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    return make_node('Softmax', inputs=inputs['X'], outputs=outputs['Out'])
+    paddle_var = block.var(inputs["X"][0])
+    axis = attrs['axis']
+    #if axis < 0:
+    #   axis = axis + len(paddle_var.shape)
+    return make_node(
+        'Softmax', inputs=inputs['X'], outputs=outputs['Out'], axis=axis)
 
 
 def spacetodepth_op():
     pass
 
 
-def split_op():
-    pass
+def split_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    len_sec = len(attrs['sections'])
+    if len_sec > 0:
+        return make_node(
+            'Split',
+            inputs=inputs['X'],
+            outputs=outputs['Out'],
+            axis=attrs['axis'],
+            split=attrs['sections'])
+    else:
+        return make_node(
+            'Split',
+            inputs=inputs['X'],
+            outputs=outputs['Out'],
+            axis=attrs['axis'])
 
 
 def squeeze_op():
@@ -647,8 +738,14 @@ def topk_op():
     pass
 
 
-def transpose_op():
-    pass
+def transpose_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    node = make_node(
+        'Transpose',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        perm=attrs['axis'])
+    return node
 
 
 def unsqueeze_op():
@@ -662,6 +759,143 @@ def thresholded_relu_op(operator, block):
         inputs=inputs['X'],
         outputs=outputs['Out'],
         alpha=attrs['threshold'])
+
+
+def scale_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    scale_var_name = [outputs['Out'][0] + "@scale"]
+    node_scale = onnx.helper.make_node(
+        'Constant',
+        inputs=[],
+        outputs=scale_var_name,
+        value=onnx.helper.make_tensor(
+            name=scale_var_name[0] + "@const",
+            data_type=onnx.TensorProto.FLOAT,
+            dims=(),
+            vals=[attrs['scale']]))
+    bais_var_name = [outputs['Out'][0] + "@bais"]
+    bais = 0.0
+    if 'bais' in attrs:
+        bais = float(attrs['bais'])
+    node_bais = onnx.helper.make_node(
+        'Constant',
+        inputs=[],
+        outputs=bais_var_name,
+        value=onnx.helper.make_tensor(
+            name=bais_var_name[0] + "@const",
+            data_type=onnx.TensorProto.FLOAT,
+            dims=(),
+            vals=[bais]))
+    paddle_var = block.var(inputs["X"][0])
+    tmp_var_name = outputs['Out'][0] + "@tmp"
+    shape = paddle_onnx_shape(paddle_var.shape)
+    tmp_var = onnx.helper.make_tensor_value_info(
+        tmp_var_name, PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
+    nodes = (node_scale, node_bais)
+    if attrs['bias_after_scale'] == True:
+        node_output_mul = onnx.helper.make_node(
+            'Mul',
+            inputs=[scale_var_name[0], inputs["X"][0]],
+            outputs=[tmp_var_name])
+        node_output_scale = onnx.helper.make_node(
+            'Add',
+            inputs=[bais_var_name[0], tmp_var_name],
+            outputs=outputs["Out"])
+        nodes += (node_output_mul, node_output_scale)
+    else:
+        node_output_add = onnx.helper.make_node(
+            'Add',
+            inputs=[bais_var_name[0], inputs["X"][0]],
+            outputs=[tmp_var_name])
+        node_output_mul = onnx.helper.make_node(
+            'Mul',
+            inputs=[scale_var_name[0], tmp_var_name],
+            outputs=outputs["Out"])
+        nodes += (node_output_add, node_output_mul)
+
+    return nodes
+
+
+def swish_op(operator, block):
+    """
+    The activation swish, x / (1 + exp(-beta * x))
+    """
+    inputs, attrs, outputs = op_io_info(operator)
+    paddle_var = block.var(inputs["X"][0])
+    shape = paddle_onnx_shape(paddle_var.shape)
+
+    if 'beta' in attrs:
+        beta = attrs['beta']
+    if 'slope' in attrs:
+        beta = attrs['slope']
+
+    name_beta = [outputs['Out'][0] + "@swish_beta"]
+    node_beta = onnx.helper.make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_beta,
+        value=onnx.helper.make_tensor(
+            name=name_beta[0] + "@const",
+            data_type=onnx.TensorProto.FLOAT,
+            dims=(),
+            vals=[beta]))
+
+    # var and node for beta * x 
+    name_beta_x = [outputs['Out'][0] + "@beta_x"]
+    var_beta_x = onnx.helper.make_tensor_value_info(
+        name_beta_x[0], PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
+    node_beta_x = onnx.helper.make_node(
+        'Mul', inputs=[name_beta[0], inputs['X'][0]], outputs=name_beta_x)
+
+    # var and node sigmoid(beta*x)
+    name_sigmoid_x = [outputs['Out'][0] + "@sigmoid_x"]
+    var_sigmoid_x = onnx.helper.make_tensor_value_info(
+        name_sigmoid_x[0], PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
+    node_sigmoid_x = onnx.helper.make_node(
+        'Sigmoid', inputs=name_beta_x, outputs=name_sigmoid_x)
+
+    node_swish = onnx.helper.make_node(
+        'Mul', inputs=inputs['X'] + name_sigmoid_x, outputs=outputs['Out'])
+    return (node_beta, node_beta_x, node_sigmoid_x, node_swish)
+
+
+def relu6_op(operator, block):
+    """
+    The activation function relu6, out=min(max(0,x),6) 
+    And you can set the threshold of activation.
+    """
+    inputs, attrs, outputs = op_io_info(operator)
+    threshold = attrs['threshold']
+    relu6_node = onnx.helper.make_node(
+        'Clip',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        max=threshold,
+        min=0.0)
+    return relu6_node
+
+
+def assign_value_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    values = None
+    data_type = None
+    if 'fp32_values' in attrs and len(attrs['fp32_values']) > 0:
+        values = attrs['fp32_values']
+        data_type = onnx.TensorProto.FLOAT
+    if 'int32_values' in attrs and len(attrs['int32_values']) > 0:
+        values = attrs['int32_values']
+        data_type = onnx.TensorProto.INT32
+
+    node = onnx.helper.make_node(
+        'Constant',
+        inputs=[],
+        outputs=outputs['Out'],
+        value=onnx.helper.make_tensor(
+            name=outputs['Out'][0] + "@const",
+            data_type=data_type,
+            dims=(),
+            vals=values))
+    return node
 
 
 # Based on the ONNX 1.0 operator list generated on March 26th, 2018.
@@ -781,5 +1015,16 @@ node_maker = {
     # 'experimental Scale'
     # 'experimental ScaledTanh'
     'thresholded_relu': thresholded_relu_op,
+    'scale': scale_op,
+    'split': split_op,
+    'reshape2': reshape_op,
+    'transpose2': transpose_op,
+    'swish': swish_op,
+    'relu6': relu6_op,
+    'multiclass_nms': multiclass_nms_op,
+    'prior_box': prior_box_op,
+    'box_coder': box_coder_op,
+    'flatten2': flatten_op,
+    'assign_value': assign_value_op
     # 'experimental Upsample'
 }
