@@ -223,7 +223,11 @@ def convert(args):
                 sys.exit(-1)
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     print_arguments(args)
     convert(args)
+
+
+if __name__ == "__main__":
+    main()
