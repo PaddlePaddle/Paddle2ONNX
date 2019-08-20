@@ -1,5 +1,4 @@
 # paddle2onnx
-![License](https://img.shields.io/badge/license-Apache%202-blue.svg)
 paddle2onnx支持将**PaddlePaddle**框架下产出的模型转化到**ONNX**模型格式.
 paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
 
@@ -49,5 +48,6 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 |check_task| [可选]在debug模式中，根据不同配置项选择不同的执行器和数据构造器 |
 |image_path | [可选]在debug模式中，可以选择加载不同的图片进行精度验证 |
 ##  相关文档
+[paddle2onnx测试模型库](docs/model_zoo.md)
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
