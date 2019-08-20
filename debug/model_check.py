@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from caffe2.python.onnx.backend import Caffe2Backend
 import sys
 import os
 import pickle
@@ -192,6 +191,7 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
     user_define_fetch_list(fluid_infer_program,
                            fluid_intermedidate_target_names, fetch_var_name)
     if runner_type == "caffe2":
+        from caffe2.python.onnx.backend import Caffe2Backend
         runner = Caffe2Backend.prepare(onnx_model, device='CPU')
 
     for inputs in reader(fluid_infer_program,\
