@@ -13,6 +13,7 @@
 
 # 图像检测
 目前paddle2onnx支持的模型是有SSD模型，目前ONNX对检测模型不能完全支持，受限于这个原因，paddle2onnx对检测模型也不能完全支持。后续我们计划增加对其它检测模型的支持，基于ONNX目前对检测模型支持的现状，将会集中于一阶段检测模型。
+
 | 模型 | 来源 | operator version|
 |-------|--------|---------|
-|SSD| [ssd_mobilenet_v1_pascal](https://www.paddlepaddle.org.cn/hubdetail?name=ssd_mobilenet_v1_pascal&en_category=ObjectDetection) |9|
+|SSD|[ssd_mobilenet_v1_pascal](https://www.paddlepaddle.org.cn/hubdetail?name=ssd_mobilenet_v1_pascal&en_category=ObjectDetection) |9|
