@@ -1,6 +1,6 @@
-# paddle2onnx
-paddle2onnx支持将**PaddlePaddle**框架下产出的模型转化到**ONNX**模型格式.
-paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
+# Paddle2ONNX
+Paddle2ONNX支持将**PaddlePaddle**框架下产出的模型转化到**ONNX**模型格式.
+Paddle2ONNX is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
 
 ## 更新记录
 2109.08.20
@@ -21,9 +21,11 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
      onnx >= 1.5
      torch >= 1.1
      onnxruntime >= 0.4.0
+     
 ##  安装
 ###  安装方式1
      pip install paddle2onnx
+     
 ### 安装方式2
      git clone https://github.com/PaddlePaddle/paddle-onnx.git
      python setup.py install
@@ -32,6 +34,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 > 如果用户只是想将paddle模型转化成onnx模型，可以使用下面的命令进行操作。
 
     paddle2onnx --fluid_model src_dir  --onnx_model dist_name
+    
 ###  开发者使用方式
 > 如果用户有一个新的模型要转成onnx模型，想验证模型的精确度，可以使用下面的方式来进行验证。
 
@@ -49,7 +52,9 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 |return_variable| [可选]在debug模式中，如果paddle模型返回的结果是LoDTensor,需要打开此开关
 |check_task| [可选]在debug模式中，根据不同配置项选择不同的执行器和数据构造器 |
 |image_path | [可选]在debug模式中，可以选择加载不同的图片进行精度验证 |
+
 ##  相关文档
 [paddle2onnx测试模型库](docs/model_zoo.md)
+
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
