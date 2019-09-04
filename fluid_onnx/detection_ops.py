@@ -599,29 +599,29 @@ def yolo_box_op(operator, block):
         axis=2)
     node_list.append(node_pred_box_split)
 
-    name_number_2 = [model_name + "@number_2"]
-    node_number_2 = onnx.helper.make_node(
+    name_number_two = [model_name + "@number_two"]
+    node_number_two = onnx.helper.make_node(
         "Constant",
         inputs=[],
-        outputs=name_number_2,
+        outputs=name_number_two,
         value=onnx.helper.make_tensor(
-            name=name_number_2[0] + "@const",
+            name=name_number_two[0] + "@const",
             data_type=onnx.TensorProto.FLOAT,
             dims=(),
             vals=[2]))
-    node_list.append(node_number_2)
+    node_list.append(node_number_two)
 
     outputs_half_w = [model_name + "@half_w"]
     node_half_w = onnx.helper.make_node(
         "Div",
-        inputs=outputs_pred_box_w + name_number_2,
+        inputs=outputs_pred_box_w + name_number_two,
         outputs=outputs_half_w)
     node_list.append(node_half_w)
 
     outputs_half_h = [model_name + "@half_h"]
     node_half_h = onnx.helper.make_node(
         "Div",
-        inputs=outputs_pred_box_h + name_number_2,
+        inputs=outputs_pred_box_h + name_number_two,
         outputs=outputs_half_h)
     node_list.append(node_half_h)
 
