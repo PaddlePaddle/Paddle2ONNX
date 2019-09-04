@@ -20,7 +20,7 @@ from onnx import shape_inference
 import pickle
 import time
 from sys import argv
-_, is_slice, is_nearest, _ = argv
+_, is_slice, is_nearest = argv
 
 if is_slice == "True":
     sess = onnxruntime.InferenceSession("tests/slice_test.onnx")

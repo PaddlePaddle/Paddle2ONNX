@@ -360,8 +360,8 @@ class OpTest(unittest.TestCase):
         in_vals = [input_map[input.name] for input in inputs]
         with open("tests/inputs_test.pkl", "wb") as f:
             pickle.dump(input_map, f)
-        ret = os.system("python tests/onnx_runtime.py %s %s %s" %
-                        (is_slice, is_nearest_interp, False))
+        ret = os.system("python tests/onnx_runtime.py %s %s" %
+                        (is_slice, is_nearest_interp))
         #if is_slice:
         #    ret = os.system("python tests/slice_onnx_runtime.py")
         #elif is_nearest_interp:

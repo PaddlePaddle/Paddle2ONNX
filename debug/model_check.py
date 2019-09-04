@@ -145,7 +145,8 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
         runner_type = "onnxruntime"
     else:
         raise Exception(
-            "Now just support the image_classification and image_detection task")
+            "Now just support the image_classification and image_detection_ssd and image_detection_yolo task"
+        )
 
     feed_var_name = args.name_prefix + "feed"
     fetch_var_name = args.name_prefix + "fetch"
@@ -229,8 +230,8 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
             with open("tests/inputs_test.pkl", 'wb') as f:
                 pickle.dump(dict(zip(feed_target_names, inputs)), f)
             f.close()
-            ret = os.system("python tests/onnx_runtime.py %s %s %s" %
-                            (False, False, False))
+            ret = os.system("python tests/onnx_runtime.py %s %s" %
+                            (False, False))
             with open("tests/outputs_test.pkl", "rb") as f:
                 onnx_results = pickle.load(f)
             f.close()
@@ -240,5 +241,5 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
         err_ratio = compare_fluid_onnx_results(fluid_results, onnx_results,
                                                fluid_intermedidate_target_names,
                                                nms_outputs, return_numpy, args)
-    if err_ratio < 0.01:
+    if err_ratio > 0.01:
         raise Exception("The result between onnx and paddle has difference")
