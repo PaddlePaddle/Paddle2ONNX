@@ -15,7 +15,7 @@
 import unittest
 import numpy as np
 from op_test import OpTest
-from test_elementwise_add import TestElementwiseAddOp
+from test_elementwise_add_op import TestElementwiseAddOp
 
 
 class TestElementwiseDivOp(TestElementwiseAddOp):

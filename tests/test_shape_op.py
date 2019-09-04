@@ -12,25 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import unittest
 import numpy as np
-import paddle.fluid.core as core
 from op_test import OpTest
 
 
-class TestCastOp(OpTest):
+class TestShapeOp(OpTest):
     def setUp(self):
-        input = np.random.random((10, 10))
-        self.inputs = {'X': input.astype('int64')}
-        self.outputs = {'Out': input.astype('float32')}
-        self.attrs = {
-            'in_dtype': int(core.VarDesc.VarType.INT64),
-            'out_dtype': int(core.VarDesc.VarType.FP32)
-        }
-        self.op_type = 'cast'
+        self.op_type = "shape"
+        self.config()
+        self.shape = [2, 3]
+        input = np.zeros(self.shape)
+        self.inputs = {'Input': input}
+        self.outputs = {'Out': np.array(self.shape)}
+
+    def config(self):
+        self.shape = [2, 3]
 
     def test_check_output(self):
         self.check_output()
+
+
+class case1(TestShapeOp):
+    def config(self):
+        self.shape = [2]
+
+
+class case2(TestShapeOp):
+    def config(self):
+        self.shape = [1, 2, 3]
 
 
 if __name__ == '__main__':

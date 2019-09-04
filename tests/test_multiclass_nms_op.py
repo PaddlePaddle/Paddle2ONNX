@@ -221,14 +221,14 @@ class TestMulticlassNMSOp(OpTest):
             exps = np.exp(shiftx)
             return exps / np.sum(exps)
 
-        scores = np.apply_along_axis(softmax, 1, scores)
-        scores = np.reshape(scores, (N, M, C))
-        scores = np.transpose(scores, (0, 2, 1))
-
-        boxes = np.random.random((N, M, BOX_SIZE)).astype('float32')
-        boxes[:, :, 0:2] = boxes[:, :, 0:2] * 0.5
-        boxes[:, :, 2:4] = boxes[:, :, 2:4] * 0.5 + 0.5
-
+        #scores = np.apply_along_axis(softmax, 1, scores)
+        #scores = np.reshape(scores, (N, M, C))
+        #scores = np.transpose(scores, (0, 2, 1))
+        scores = np.load("/paddle/onnx/new/paddle-onnx/Scores.npy")
+        #boxes = np.random.random((N, M, BOX_SIZE)).astype('float32')
+        #boxes[:, :, 0:2] = boxes[:, :, 0:2] * 0.5
+        #boxes[:, :, 2:4] = boxes[:, :, 2:4] * 0.5 + 0.5
+        boxes = np.load('/paddle/onnx/new/paddle-onnx/BBoxes.npy')
         nmsed_outs, lod = batched_multiclass_nms(boxes, scores, background,
                                                  score_threshold, nms_threshold,
                                                  nms_top_k, keep_top_k)
@@ -239,7 +239,7 @@ class TestMulticlassNMSOp(OpTest):
         self.inputs = {'BBoxes': boxes, 'Scores': scores}
         self.outputs = {'Out': (nmsed_outs, [lod])}
         self.attrs = {
-            'background_label': 0,
+            'background_label': -1,
             'nms_threshold': nms_threshold,
             'nms_top_k': nms_top_k,
             'keep_top_k': keep_top_k,

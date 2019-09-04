@@ -68,3 +68,11 @@ PADDLE_TO_ONNX_DTYPE = {
     # '': onnx_pb.TensorProto.COMPLEX128,
     core.VarDesc.VarType.BOOL: onnx_pb.TensorProto.BOOL
 }
+
+PADDLE_DTYPE_DICT = {
+    'float32': core.VarDesc.VarType.FP32,
+    'float64': core.VarDesc.VarType.FP64,
+    'int32': core.VarDesc.VarType.INT32,
+    'int64': core.VarDesc.VarType.INT64,
+    'bool': core.VarDesc.VarType.BOOL
+}

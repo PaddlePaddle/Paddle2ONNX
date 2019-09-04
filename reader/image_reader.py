@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import os
+import cv2
 import numpy as np
 from PIL import Image
 
 DATA_DIM = 224
-img_mean = np.array([0.485, 0.456, 0.406]).reshape((3, 1, 1))
-img_std = np.array([0.229, 0.224, 0.225]).reshape((3, 1, 1))
+img_mean = np.array([0.485, 0.456, 0.406]).reshape((1, 1, 3))
+img_std = np.array([0.229, 0.224, 0.225]).reshape((1, 1, 3))
 
 
-class ImageDetectionReader():
+class SSDReader():
     """
     The reader for testing image detection model, reader the voc data
     """
@@ -56,4 +57,46 @@ class ImageDetectionReader():
                 img = img * 0.007843
                 img = np.expand_dims(img, axis=0)
                 outputs.append(img)
+                yield outputs
+
+
+class YoloReader():
+    """
+    The reader for testing image detection model, reader the voc data
+    """
+
+    def __init__(self, image_path):
+        self.image_path = image_path
+        self._resize_height = 608
+        self._resize_width = 608
+
+    def reader(self, program, feed_target_names):
+        walk_list = os.walk(self.image_path)
+        for path, list_dir, file_list in walk_list:
+            for file_name in file_list:
+                outputs = []
+                file_path = os.path.join(path, file_name)
+                with open(file_path, 'rb') as f:
+                    im = f.read()
+                data = np.frombuffer(im, dtype='uint8')
+                im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mod
+                img = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+                im_height, im_width, _ = img.shape
+                img = cv2.resize(
+                    img, (self._resize_height, self._resize_width),
+                    interpolation=2)
+                img = np.array(img)
+                img = img / 255.0
+                img = img.astype('float32')
+                img -= img_mean
+                img = img / img_std
+                if len(img.shape) == 3:
+                    img = np.swapaxes(img, 1, 2)
+                    img = np.swapaxes(img, 1, 0)
+                img = np.expand_dims(img, axis=0)
+                img_size = np.array([im_height, im_width]).reshape(
+                    -1, 2).astype('int32')
+                img = img.astype('float32')
+                outputs.append(img)
+                outputs.append(img_size)
                 yield outputs

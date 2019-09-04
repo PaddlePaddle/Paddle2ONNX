@@ -19,12 +19,25 @@ from onnxruntime.backend import prepare
 from onnx import shape_inference
 import pickle
 import time
+from sys import argv
+_, is_slice, is_nearest, _ = argv
 
-sess = onnxruntime.InferenceSession("tests/nms_test.onnx")
+if is_slice == "True":
+    sess = onnxruntime.InferenceSession("tests/slice_test.onnx")
+elif is_nearest == "True":
+    sess = onnxruntime.InferenceSession("tests/nearest_interp_test.onnx")
+else:
+    sess = onnxruntime.InferenceSession("tests/nms_test.onnx")
 with open("tests/inputs_test.pkl", "rb") as f:
     np_images = pickle.load(f)
 f.close()
-result = sess.run([], np_images)
+if is_nearest == "True":
+    tmp = {}
+    tmp['X'] = np_images['X'].astype('float32')
+    tmp['OutSize'] = np_images['OutSize'].astype('float32')
+    result = sess.run([], tmp)
+else:
+    result = sess.run([], np_images)
 value_len = 0
 with open("tests/outputs_test.pkl", "wb") as f:
     pickle.dump(result, f)
