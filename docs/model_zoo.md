@@ -7,7 +7,7 @@
 | 模型 | 来源 | operator version|
 |-------|--------|---------|
 | ResNet | [resnet_v2_50_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=resnet_v2_50_imagenet&en_category=ImageClassification) |9|
-| DenseNet | [densenet_121](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
+| DenseNet | [densenet_121](https://paddle-imagenet-models-name.bj.bcebos.com/DenseNet121_pretrained.tar) |9|
 | ShuffleNet | [shufflenet_v2_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=shufflenet_v2_imagenet&en_category=ImageClassification) |9|
 | MobileNet| [mobilenet_v2_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=mobilenet_v2_imagenet&en_category=FeatureExtraction) |9|
 
