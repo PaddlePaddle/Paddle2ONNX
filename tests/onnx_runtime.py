@@ -23,9 +23,10 @@ from sys import argv
 _, is_slice, is_nearest = argv
 
 if is_slice == "True":
-    sess = onnxruntime.InferenceSession("tests/slice_test.onnx")
+    sess = onnxruntime.InferenceSession("tests/onnx_op/slice_test.onnx")
 elif is_nearest == "True":
-    sess = onnxruntime.InferenceSession("tests/nearest_interp_test.onnx")
+    sess = onnxruntime.InferenceSession(
+        "tests/onnx_op/nearest_interp_test.onnx")
 else:
     sess = onnxruntime.InferenceSession("tests/nms_test.onnx")
 with open("tests/inputs_test.pkl", "rb") as f:

@@ -341,10 +341,10 @@ class OpTest(unittest.TestCase):
         onnx_graph = make_graph(node_list, self.op_type, inputs, outputs)
         onnx_model = make_model(onnx_graph, producer_name='unittest')
         if is_slice:
-            with open("tests/slice_test.onnx", 'wb') as f:
+            with open("tests/onnx_op/slice_test.onnx", 'wb') as f:
                 f.write(onnx_model.SerializeToString())
         elif is_nearest_interp:
-            with open("tests/nearest_interp_test.onnx", 'wb') as f:
+            with open("tests/onnx_op/nearest_interp_test.onnx", 'wb') as f:
                 f.write(onnx_model.SerializeToString())
         else:
             with open("tests/nms_test.onnx", 'wb') as f:
