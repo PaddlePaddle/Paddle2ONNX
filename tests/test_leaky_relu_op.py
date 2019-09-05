@@ -1,4 +1,4 @@
-#   Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,19 @@
 
 import unittest
 import numpy as np
-import paddle.fluid.core as core
 from op_test import OpTest
 
 
-class TestCastOp(OpTest):
+class TestLeakyReluOp(OpTest):
     def setUp(self):
-        input = np.random.random((10, 10))
-        self.inputs = {'X': input.astype('int64')}
-        self.outputs = {'Out': input.astype('float32')}
-        self.attrs = {
-            'in_dtype': int(core.VarDesc.VarType.INT64),
-            'out_dtype': int(core.VarDesc.VarType.FP32)
-        }
-        self.op_type = 'cast'
+        X = np.random.random((13, 15)).astype('float32')
+        self.inputs = {'X': X}
+        self.outputs = {'Out': np.zeros((1, 1)).astype('float32')}
+        self.init_op_type()
+
+    def init_op_type(self):
+        self.op_type = 'leaky_relu'
+        self.attrs = {'alpha': 0.1}
 
     def test_check_output(self):
         self.check_output()

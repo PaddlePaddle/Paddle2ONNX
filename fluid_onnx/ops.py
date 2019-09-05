@@ -20,7 +20,7 @@ from onnx import TensorProto
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import _fetch_var as fetch_var
 from fluid.utils import op_io_info, get_old_name
-from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE, paddle_onnx_shape
+from fluid_onnx.variables import PADDLE_TO_ONNX_DTYPE, PADDLE_DTYPE_DICT, paddle_onnx_shape
 from fluid_onnx.detection_ops import *
 """
 Priority of ops (uniques) to figure out support for.
@@ -326,6 +326,52 @@ def flatten_op(operator, block):
     axis = attrs['axis']
     return make_node(
         'Flatten', inputs=inputs['X'], outputs=outputs['Out'], axis=axis)
+
+
+def fill_constant_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    shape = attrs['shape']
+    dtype = attrs['dtype']
+    value = attrs['value']
+    mat = np.ones(np.array(shape)) * value
+    if dtype == 5:
+        dtype = 'float32'
+        mat = list(mat.reshape(-1).astype('float32'))
+    elif dtype == 2:
+        dtype = 'int32'
+        mat = list(mat.reshape(-1).astype('int32'))
+    value_dtype = PADDLE_DTYPE_DICT[dtype]
+    node_list = []
+    outputs_fill_constant_value = [outputs['Out'][0] + "@fill_constant_value"]
+    node_fill_constant_value = make_node(
+        'Constant',
+        inputs=[],
+        outputs=outputs_fill_constant_value,
+        value=make_tensor(
+            name=outputs_fill_constant_value[0],
+            dims=[len(mat)],
+            data_type=PADDLE_TO_ONNX_DTYPE[value_dtype],
+            vals=mat))
+    node_list.append(node_fill_constant_value)
+
+    outputs_value_shape = [outputs['Out'][0] + "@value_shape"]
+    node_value_shape = make_node(
+        'Constant',
+        inputs=[],
+        outputs=outputs_value_shape,
+        value=make_tensor(
+            name=outputs_value_shape[0],
+            dims=[len(shape)],
+            data_type=TensorProto.INT64,
+            vals=shape))
+    node_list.append(node_value_shape)
+
+    node_constant_reshape = make_node(
+        'Reshape',
+        inputs=outputs_fill_constant_value + outputs_value_shape,
+        outputs=outputs['Out'])
+    node_list.append(node_constant_reshape)
+    return tuple(node_list)
 
 
 def gru_op():
@@ -674,16 +720,141 @@ def selu_op():
     pass
 
 
-def shape_op():
-    pass
+def shape_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    im_outputs = []
+    node_list = []
+    outputs_shape = [outputs['Out'][0] + "@shape"]
+    node_shape = make_node(
+        'Shape', inputs=inputs['Input'], outputs=outputs_shape)
+    node_list.append(node_shape)
+    node_cast = make_node(
+        'Cast',
+        inputs=outputs_shape,
+        outputs=outputs['Out'],
+        to=PADDLE_TO_ONNX_DTYPE[core.VarDesc.VarType.FP32])
+    node_list.append(node_cast)
+    im_outputs.append(
+        helper.make_tensor_value_info('Out', PADDLE_TO_ONNX_DTYPE[
+            core.VarDesc.VarType.INT64], [2]))
+    return tuple(node_list)
 
 
 def size_op():
     pass
 
 
-def slice_op():
-    pass
+def slice_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    axes = attrs['axes']
+    starts = attrs['starts']
+    ends = attrs['ends']
+    node_list = []
+
+    name_starts = [outputs['Out'][0] + "@starts"]
+    node_starts = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_starts,
+        value=make_tensor(
+            name=name_starts[0],
+            data_type=TensorProto.INT64,
+            dims=[len(starts)],
+            vals=starts))
+    node_list.append(node_starts)
+
+    name_ends = [outputs['Out'][0] + "@ends"]
+    node_ends = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_ends,
+        value=make_tensor(
+            name=name_ends[0],
+            data_type=TensorProto.INT64,
+            dims=[len(ends)],
+            vals=ends))
+    node_list.append(node_ends)
+
+    name_axes = [outputs['Out'][0] + "@axes"]
+    node_axes = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_axes,
+        value=make_tensor(
+            name=name_axes[0],
+            data_type=TensorProto.INT64,
+            dims=[len(axes)],
+            vals=axes))
+    node_list.append(node_axes)
+
+    node_output = make_node(
+        'Slice',
+        inputs=inputs['Input'] + name_starts + name_ends + name_axes,
+        outputs=outputs['Out'])
+    node_list.append(node_output)
+    return tuple(node_list)
+
+
+def nearest_interp_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    input_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    batch_size = input_shape[0]
+    channels = input_shape[1]
+    height = input_shape[2]
+    width = input_shape[3]
+    node_list = []
+    im_outputs = []
+
+    outputs_out_size_f = [outputs['Out'][0] + "@out_size_f"]
+    node_out_size_f = make_node(
+        'Cast', inputs=inputs['OutSize'], outputs=outputs_out_size_f, to=1)
+    node_list.append(node_out_size_f)
+
+    name_h_w = [outputs['Out'][0] + "@h_w"]
+    node_h_w = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_h_w,
+        value=make_tensor(
+            name=name_h_w[0],
+            data_type=TensorProto.FLOAT,
+            dims=[2],
+            vals=[height, width]))
+    node_list.append(node_h_w)
+
+    outputs_h_w_scales = [outputs['Out'][0] + "@h_w_scales"]
+    node_h_w_scales = make_node(
+        'Div', inputs=outputs_out_size_f + name_h_w, outputs=outputs_h_w_scales)
+    node_list.append(node_h_w_scales)
+
+    name_b_c_scales = [outputs['Out'][0] + "@b_c_scales"]
+    node_b_c_scales = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_b_c_scales,
+        value=make_tensor(
+            name=name_b_c_scales[0],
+            data_type=TensorProto.FLOAT,
+            dims=[2],
+            vals=[1, 1]))
+    node_list.append(node_b_c_scales)
+
+    outputs_scales = [outputs['Out'][0] + "@scales"]
+    node_scales = make_node(
+        'Concat',
+        inputs=name_b_c_scales + outputs_h_w_scales,
+        outputs=outputs_scales,
+        axis=0)
+    node_list.append(node_scales)
+
+    outputs_resize = [outputs['Out'][0] + "@resize"]
+    node_resize = make_node(
+        'Resize',
+        inputs=inputs['X'] + outputs_scales,
+        outputs=outputs['Out'],
+        mode='nearest')
+    node_list.append(node_resize)
+    return tuple(node_list)
 
 
 def softmax_op(operator, block):
@@ -1025,6 +1196,11 @@ node_maker = {
     'prior_box': prior_box_op,
     'box_coder': box_coder_op,
     'flatten2': flatten_op,
-    'assign_value': assign_value_op
+    'assign_value': assign_value_op,
+    'yolo_box': yolo_box_op,
+    'slice': slice_op,
+    'nearest_interp': nearest_interp_op,
+    'shape': shape_op,
+    'fill_constant': fill_constant_op
     # 'experimental Upsample'
 }

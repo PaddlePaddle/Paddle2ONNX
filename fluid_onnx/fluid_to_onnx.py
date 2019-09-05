@@ -58,7 +58,8 @@ def parse_args():
         "--check_task",
         type=str,
         default="image_classification",
-        help="Use the different reader and backend to run the program")
+        help="Use the different reader and backend to run the program, including image_classification, image_detection_ssd and image_detection_yolo"
+    )
     parser.add_argument(
         "--image_path",
         type=str,

@@ -20,11 +20,13 @@ import paddle.fluid.core as core
 import numpy as np
 from onnx import helper, checker, load
 from reader.random_reader import image_classification_random_reader
-from reader.image_reader import ImageDetectionReader
+from reader.image_reader import YoloReader, SSDReader
 from debug.onnx_model_helper import split_model, onnx_user_define_fetch_list
 
 TEST = "./tests/test_"
 PY = "_op.py"
+total_boxes = 0
+err_boxes = 0
 
 
 class Tracker:
@@ -83,10 +85,12 @@ def split_onnx_model_to_get_intermedidate(onnx_model, feed_target_names, inputs,
 
 
 def compare_fluid_onnx_results(fluid_results, onnx_results, feed_target_names,
-                               nms_outputs, return_numpy):
+                               nms_outputs, return_numpy, args):
     """
     Compare the fluid and onnx model layer output data, check decimal of two different models
     """
+    global total_boxes
+    global err_boxes
     if len(fluid_results) != len(onnx_results):
         raise Exception(
             "The length of fluid_results and onnx_results is not same\
@@ -104,11 +108,23 @@ def compare_fluid_onnx_results(fluid_results, onnx_results, feed_target_names,
         for ref, hyp in zip(fluid_result, onnx_result):
             ref = ref.flatten()
             hyp = hyp.flatten()
-            try:
-                np.testing.assert_almost_equal(ref, hyp, decimal=5)
-            except:
-                print("layer err {}".format(feed_target_names[i]))
-                break
+            total_boxes += 1
+            if args.check_task == "image_classification":
+                try:
+                    np.testing.assert_almost_equal(ref, hyp, decimal=5)
+                except:
+                    print("layer err {}".format(feed_target_names[i]))
+                    break
+            else:
+                try:
+                    np.testing.assert_almost_equal(ref, hyp, decimal=4)
+                except:
+                    print("layer err {}".format(feed_target_names[i]))
+                    print("ref:", ref)
+                    print("hyp:", hyp)
+                    err_boxes += 1
+
+    return err_boxes / total_boxes
 
 
 def debug_model(op_list, op_trackers, nms_outputs, args):
@@ -119,13 +135,18 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
     runner = None
     if args.check_task == "image_classification":
         reader = image_classification_random_reader
-    elif args.check_task == "image_detection":
-        detection = ImageDetectionReader(args.image_path)
+    elif args.check_task == "image_detection_yolo":
+        detection = YoloReader(args.image_path)
+        reader = detection.reader
+        runner_type = "onnxruntime"
+    elif args.check_task == "image_detection_ssd":
+        detection = SSDReader(args.image_path)
         reader = detection.reader
         runner_type = "onnxruntime"
     else:
         raise Exception(
-            "Now just support the image_classification and image_detection task")
+            "Now just support the image_classification and image_detection_ssd and image_detection_yolo task"
+        )
 
     feed_var_name = args.name_prefix + "feed"
     fetch_var_name = args.name_prefix + "fetch"
@@ -156,7 +177,7 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
             out2op[output] = tracker
         fluid_intermedidate_target_names.extend(outputs)
 
-    #fluid_intermedidate_target_names = fluid_intermedidate_target_names[:-10]
+    #fluid_intermedidate_target_names = fluid_intermedidate_target_names[:]
     # load the paddle and onnx model 
     # init the fluid executor 
 
@@ -171,7 +192,6 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
     else:
         [fluid_infer_program, feed_target_names,
          fetch_targets] = fluid.io.load_inference_model(args.fluid_model, exe)
-
     fetch_target_names = [target.name for target in fetch_targets]
     fluid_intermedidate_target_names = []
     fluid_intermedidate_target_names.extend(fetch_target_names)
@@ -181,7 +201,6 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
     fetch_list = [global_block.var(name) for name in fluid_intermedidate_target_names\
                  if global_block.has_var(name)]
     fluid_intermedidate_target_names = [var.name for var in fetch_list]
-    print("the fetch list len %d" % (len(fetch_list)))
 
     # load the onnx model and init the onnx executor  
     onnx_model = load(args.onnx_model)
@@ -193,7 +212,6 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
     if runner_type == "caffe2":
         from caffe2.python.onnx.backend import Caffe2Backend
         runner = Caffe2Backend.prepare(onnx_model, device='CPU')
-
     for inputs in reader(fluid_infer_program,\
         feed_target_names):
         fluid_results = exe.run(fluid_infer_program,
@@ -211,13 +229,16 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
             with open("tests/inputs_test.pkl", 'wb') as f:
                 pickle.dump(dict(zip(feed_target_names, inputs)), f)
             f.close()
-            ret = os.system("python tests/onnx_runtime.py")
+            ret = os.system("python tests/onnx_runtime.py %s %s" %
+                            (False, False))
             with open("tests/outputs_test.pkl", "rb") as f:
                 onnx_results = pickle.load(f)
             f.close()
         else:
             onnx_results = runner.run(inputs)
         print("the onnx_results len:%d" % (len(onnx_results)))
-        compare_fluid_onnx_results(fluid_results, onnx_results,
-                                   fluid_intermedidate_target_names,
-                                   nms_outputs, return_numpy)
+        err_ratio = compare_fluid_onnx_results(fluid_results, onnx_results,
+                                               fluid_intermedidate_target_names,
+                                               nms_outputs, return_numpy, args)
+    if err_ratio > 0.01:
+        raise Exception("The result between onnx and paddle has difference")

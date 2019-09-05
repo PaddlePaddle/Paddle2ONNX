@@ -278,15 +278,16 @@ class OpTest(unittest.TestCase):
             paddle_variable_to_onnx_tensor(v, self.block)
             for v in fetch_target_names
         ]
-
         # Construct the ONNX model using paddle-onnx.
         onnx_node = ops.node_maker[self.op_type](operator=self.op,
                                                  block=self.block)
+
         node_list = list(onnx_node) if isinstance(onnx_node,
                                                   tuple) else [onnx_node]
+
         for node in node_list:
             check_node(node)
-
+        #onnx_graph = make_graph(node_list, self.op_type, inputs, vars)
         onnx_graph = make_graph(node_list, self.op_type, inputs, outputs)
         onnx_model = make_model(onnx_graph, producer_name='unittest')
 
@@ -304,7 +305,10 @@ class OpTest(unittest.TestCase):
         outs = rep.run(in_vals)
         return outs
 
-    def check_onnx_with_onnxruntime(self, no_check_set=[]):
+    def check_onnx_with_onnxruntime(self,
+                                    no_check_set=[],
+                                    is_slice=False,
+                                    is_nearest_interp=False):
         """Run a Caffe2 program using their ONNX backend.
 
         Prior to running the backend, use the Paddle scope to construct
@@ -328,15 +332,23 @@ class OpTest(unittest.TestCase):
         # Construct the ONNX model using paddle-onnx.
         onnx_node = ops.node_maker[self.op_type](operator=self.op,
                                                  block=self.block)
+        #onnx_node, vars = ops.node_maker[self.op_type](operator=self.op,
+        #                                         block=self.block)
         node_list = list(onnx_node) if isinstance(onnx_node,
                                                   tuple) else [onnx_node]
         for node in node_list:
             check_node(node)
-
         onnx_graph = make_graph(node_list, self.op_type, inputs, outputs)
         onnx_model = make_model(onnx_graph, producer_name='unittest')
-        with open("tests/nms_test.onnx", 'wb') as f:
-            f.write(onnx_model.SerializeToString())
+        if is_slice:
+            with open("tests/onnx_op/slice_test.onnx", 'wb') as f:
+                f.write(onnx_model.SerializeToString())
+        elif is_nearest_interp:
+            with open("tests/onnx_op/nearest_interp_test.onnx", 'wb') as f:
+                f.write(onnx_model.SerializeToString())
+        else:
+            with open("tests/nms_test.onnx", 'wb') as f:
+                f.write(onnx_model.SerializeToString())
         checker.check_model(onnx_model)
         # Expand input dictionary if there are tensor arrays
         input_map = {}
@@ -348,19 +360,26 @@ class OpTest(unittest.TestCase):
         in_vals = [input_map[input.name] for input in inputs]
         with open("tests/inputs_test.pkl", "wb") as f:
             pickle.dump(input_map, f)
-        ret = os.system("python tests/onnx_runtime.py")
-
+        ret = os.system("python tests/onnx_runtime.py %s %s" %
+                        (is_slice, is_nearest_interp))
+        #if is_slice:
+        #    ret = os.system("python tests/slice_onnx_runtime.py")
+        #elif is_nearest_interp:
+        #    ret = os.system("python tests/nearest_onnx_runtime.py")
+        #else:
+        #    ret = os.system("python tests/onnx_runtime.py")
         with open("tests/outputs_test.pkl", "rb") as f:
             outputs_val = pickle.load(f)
         f.close()
         return outputs_val
 
-        #return outs
     def check_output(self,
                      no_check_set=[],
                      decimal=6,
                      return_numpy=True,
-                     is_nms=False):
+                     is_nms=False,
+                     is_slice=False,
+                     is_nearest_interp=False):
         """Compares the outputs from the Paddle program and the Caffe2
         backend using the ONNX model constructed by paddle-onnx.
 
@@ -369,7 +388,11 @@ class OpTest(unittest.TestCase):
         """
 
         fluid_result = self.eval_fluid_op(no_check_set, return_numpy)
-        if is_nms:
+        if is_slice or is_nearest_interp:
+            onnx_result = self.check_onnx_with_onnxruntime(
+                is_slice=is_slice, is_nearest_interp=is_nearest_interp)
+
+        elif is_nms:
             onnx_result = self.check_onnx_with_onnxruntime()
             onnx_result = onnx_result[0]
             onnx_result = np.squeeze(onnx_result, axis=0)
@@ -379,6 +402,8 @@ class OpTest(unittest.TestCase):
             onnx_result = self.eval_onnx_node(no_check_set)
         for ref, hyp in zip(fluid_result, onnx_result):
             # Compare the values using numpy's almost_equal comparator.
+            #print("ref:", ref)
+            #print("hyp:", hyp)
             np.testing.assert_almost_equal(ref, hyp, decimal=decimal)
 
     def check_onnx_result(self, node_message, fetch_targets, return_numpy=True):
