@@ -177,7 +177,7 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
             out2op[output] = tracker
         fluid_intermedidate_target_names.extend(outputs)
 
-    fluid_intermedidate_target_names = fluid_intermedidate_target_names[:]
+    #fluid_intermedidate_target_names = fluid_intermedidate_target_names[:]
     # load the paddle and onnx model 
     # init the fluid executor 
 
@@ -193,14 +193,13 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
         [fluid_infer_program, feed_target_names,
          fetch_targets] = fluid.io.load_inference_model(args.fluid_model, exe)
     fetch_target_names = [target.name for target in fetch_targets]
-    #fluid_intermedidate_target_names = []
+    fluid_intermedidate_target_names = []
     fluid_intermedidate_target_names.extend(fetch_target_names)
     # in this section, wo will set the varaiable we want to get 
     global_block = fluid_infer_program.global_block()
 
     fetch_list = [global_block.var(name) for name in fluid_intermedidate_target_names\
                  if global_block.has_var(name)]
-    fetch_list = fetch_list[-5:-2]
     fluid_intermedidate_target_names = [var.name for var in fetch_list]
 
     # load the onnx model and init the onnx executor  
