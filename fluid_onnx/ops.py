@@ -229,7 +229,6 @@ def dropout_op(operator, block):
         'Dropout',
         inputs=inputs['X'],
         outputs=scale_input + outputs['Mask'],
-        is_test=attrs['is_test'],
         ratio=attrs['dropout_prob'])
 
     ## Fluid and ONNX use different dropout formula
