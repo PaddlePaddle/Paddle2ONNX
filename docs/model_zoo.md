@@ -10,6 +10,12 @@
 | DenseNet | [densenet_121](https://paddle-imagenet-models-name.bj.bcebos.com/DenseNet121_pretrained.tar) |9|
 | ShuffleNet | [shufflenet_v2_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=shufflenet_v2_imagenet&en_category=ImageClassification) |9|
 | MobileNet| [mobilenet_v2_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=mobilenet_v2_imagenet&en_category=FeatureExtraction) |9|
+| VGG16| [vgg16_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=vgg16_imagenet&en_category=ImageClassification) |9|
+| SE_ResNext50| [se_resnext50_32x4d_imagenet](https://www.paddlepaddle.org.cn/hubdetail?name=se_resnext50_32x4d_imagenet&en_category=ImageClassification) |9|
+| InceptionV4| [InceptionV4_imagenet](https://paddle-imagenet-models-name.bj.bcebos.com/InceptionV4_pretrained.tar) |9|
+| SE_ResNet50_vd| [SE_ResNet50_vd_imagenet](https://paddle-imagenet-models-name.bj.bcebos.com/SE_ResNet50_vd_pretrained.tar) |9|
+| SqueezeNet1_0| [SqueezeNet1_0_imagenet](https://paddle-imagenet-models-name.bj.bcebos.com/SqueezeNet1_0_pretrained.tar) |9|
+| Xception41| [Xception41_imagenet](https://paddle-imagenet-models-name.bj.bcebos.com/Xception41_pretrained.tar) |9|
 
 # 图像检测
 目前paddle2onnx支持的模型是有SSD、YoloV3模型，目前ONNX对检测模型不能完全支持，受限于这个原因，paddle2onnx对检测模型也不能完全支持。后续我们计划增加对其它检测模型的支持，基于ONNX目前对检测模型支持的现状，将会集中于一阶段检测模型。
