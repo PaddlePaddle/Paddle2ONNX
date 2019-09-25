@@ -483,66 +483,67 @@ def mul_op(operator, block):
     # Because in TensorRT backend, Flatten op only accepts input tensor with 
     # dimension 3, here we use Reshape op to flatten the input tensor when 
     # ONNX is v1.0.1. 
-    if __onnx_ver__ == '1.0.1':
-        # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
-        flatten_x_node = make_node(
-            'Reshape',
-            inputs=inputs['X'],
-            outputs=x_flat_out,
-            shape=[
+
+    output_x_shape_1 = [outputs['Out'][0] + '@x_shape_1']
+    output_x_shape_2 = [outputs['Out'][0] + '@x_shape_2']
+
+    x_shape_1_node = make_node(
+        'Constant',
+        inputs=[],
+        outputs=output_x_shape_1,
+        value=make_tensor(
+            name=output_x_shape_1[0],
+            dims=[2],
+            data_type=onnx.TensorProto.INT64,
+            vals=[
                 np.prod(x_shape[:x_num_col_dims]),
                 np.prod(x_shape[x_num_col_dims:])
-            ])
-        flatten_y_node = make_node(
-            'Reshape',
-            inputs=inputs['Y'],
-            outputs=y_flat_out,
-            shape=[
+        ]))
+
+    x_shape_2_node = make_node(
+        'Constant',
+        inputs=[],
+        outputs=output_x_shape_2,
+        value=make_tensor(
+            name=output_x_shape_2[0],
+            dims=[2],
+            data_type=onnx.TensorProto.INT64,
+            vals=[
                 np.prod(y_shape[:y_num_col_dims]),
                 np.prod(y_shape[y_num_col_dims:])
-            ])
-    else:
-        flatten_x_node = make_node(
-            'Flatten',
-            inputs=inputs['X'],
-            outputs=x_flat_out,
-            axis=attrs['x_num_col_dims'])
-        flatten_y_node = make_node(
-            'Flatten',
-            inputs=inputs['Y'],
-            outputs=y_flat_out,
-            axis=attrs['y_num_col_dims'])
+        ]))
+
+    flatten_x_node = make_node(
+        'Reshape',
+        inputs=inputs['X'] + output_x_shape_1,
+        outputs=x_flat_out)#,
+
+    flatten_y_node = make_node(
+        'Reshape',
+        inputs=inputs['Y'] + output_x_shape_2,
+        outputs=y_flat_out)#,
 
     # Mat mul 
     matmul_out = [outputs['Out'][0] + '@matmul_0']
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
 
-    nodes = (flatten_x_node, flatten_y_node, matmul_node)
-    # Reshpe output
-    if __onnx_ver__ == '1.0.1':
-        output_node = make_node(
-            'Reshape',
-            inputs=matmul_out,
-            shape=out_shape,
-            outputs=outputs['Out'])
-        nodes += (output_node, )
-    else:
-        output_shape_name = [outputs['Out'][0] + '@shape_0']
-        output_shape_node = make_node(
-            'Constant',
-            inputs=[],
-            outputs=output_shape_name,
-            value=make_tensor(
-                name=output_shape_name[0],
-                data_type=TensorProto.INT64,
-                dims=(len(out_shape), ),
-                vals=out_shape))
-        output_node = make_node(
+    nodes = (x_shape_1_node, x_shape_2_node, flatten_x_node, flatten_y_node, matmul_node)
+    output_shape_name = [outputs['Out'][0] + '@shape_0']
+    output_shape_node = make_node(
+        'Constant',
+        inputs=[],
+        outputs=output_shape_name,
+        value=make_tensor(
+            name=output_shape_name[0],
+            data_type=TensorProto.INT64,
+            dims=(len(out_shape), ),
+            vals=out_shape))
+    output_node = make_node(
             'Reshape',
             inputs=matmul_out + output_shape_name,
             outputs=outputs['Out'])
-        nodes += (output_shape_node, output_node)
+    nodes += (output_shape_node, output_node)
 
     return nodes
 
