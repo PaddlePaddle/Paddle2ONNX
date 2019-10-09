@@ -22,5 +22,7 @@
 
 | 模型 | 来源 | operator version|
 |-------|--------|---------|
-|SSD|[ssd_mobilenet_v1_pascal](https://www.paddlepaddle.org.cn/hubdetail?name=ssd_mobilenet_v1_pascal&en_category=ObjectDetection) |9|
-|YoloV3|[yolov3_darknet_voc](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) |9|
+|SSD_MobileNet|[ssd_mobilenet_v1_pascal](https://www.paddlepaddle.org.cn/hubdetail?name=ssd_mobilenet_v1_pascal&en_category=ObjectDetection) |9|
+|YoloV3_DarkNet53|[yolov3_darknet_voc](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) |9|
+|YoloV3_ResNet34|[yolov3_r34_voc](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |9|
+|YoloV3_MobileNet-V1|[yolov3_mobilenet_v1_voc](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |9|
