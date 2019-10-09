@@ -1019,9 +1019,14 @@ def transpose_op(operator, block):
     return node
 
 
-def unsqueeze_op():
-    pass
-
+def unsqueeze_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    axes = attrs['axes']
+    return make_node(
+        'Unsqueeze',
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        axes=axes)
 
 def thresholded_relu_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
@@ -1303,6 +1308,7 @@ node_maker = {
     'shape': shape_op,
     'fill_constant': fill_constant_op,
     'bilinear_interp': bilinear_interp_op,
-    'arg_max': arg_max_op
+    'arg_max': arg_max_op,
+    'unsqueeze2': unsqueeze_op
     # 'experimental Upsample'
 }
