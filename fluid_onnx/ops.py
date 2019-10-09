@@ -85,8 +85,6 @@ def arg_max_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     node_list = []
     axis = attrs['axis']
-    #print(type(axis))
-
     outputs_argmax = [outputs['Out'][0] + '@argmax']
     argmax_node = make_node(
         'ArgMax',
