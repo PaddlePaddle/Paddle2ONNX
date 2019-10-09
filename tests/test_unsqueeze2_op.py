@@ -34,7 +34,6 @@ class TestUnsqueezeOp(OpTest):
     def test_check_output(self):
         self.check_output(no_check_set=["XShape"])
 
-
     def init_test_case(self):
         self.ori_shape = (3, 5)
         self.axes = (2, 3)
