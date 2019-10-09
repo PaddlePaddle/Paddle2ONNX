@@ -20,7 +20,6 @@ import numpy as np
 from op_test import OpTest
 
 
-# Correct: General.
 class TestUnsqueezeOp(OpTest):
     def setUp(self):
         self.init_test_case()
@@ -35,8 +34,6 @@ class TestUnsqueezeOp(OpTest):
     def test_check_output(self):
         self.check_output(no_check_set=["XShape"])
 
-    #def test_check_grad(self):
-    #    self.check_grad(["X"], "Out")
 
     def init_test_case(self):
         self.ori_shape = (3, 5)
