@@ -81,8 +81,27 @@ def activation_ops(act_type, operator, block):
         outputs=list(outputs.values())[0])
 
 
-def argmax_op():
-    pass
+def arg_max_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    node_list = []
+    axis = attrs['axis']
+    outputs_argmax = [outputs['Out'][0] + '@argmax']
+    argmax_node = make_node(
+        'ArgMax',
+        inputs=inputs['X'],
+        outputs=outputs_argmax,
+        axis=axis,
+        keepdims=0)
+    node_list.append(argmax_node)
+
+    cast_node = make_node(
+        'Cast',
+        inputs=outputs_argmax,
+        outputs=outputs['Out'],
+        to=1)
+
+    node_list.append(cast_node)
+    return tuple(node_list)
 
 
 def argmin_op():
@@ -134,6 +153,88 @@ def batch_norm_op(operator, block):
         **kwargs)
 
     return nodes + (bn_node, )
+
+
+def bilinear_interp_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    input_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    batch_size = input_shape[0]
+    channels = input_shape[1]
+    height = input_shape[2]
+    width = input_shape[3]
+    node_list = []
+    im_outputs = []
+
+    if inputs['OutSize'] == []:
+        out_h_w = [attrs['out_h'], attrs['out_w']]
+        name_out_h_w = [outputs['Out'][0] + "@out_h_w"]
+        node_out_h_w = make_node(
+            'Constant',
+            inputs=[],
+            outputs=name_out_h_w,
+            value=make_tensor(
+                name=name_out_h_w[0],
+                data_type=TensorProto.FLOAT,
+                dims=[2],
+                vals=out_h_w))
+        node_list.append(node_out_h_w)
+
+        outputs_out_size_f = [outputs['Out'][0] + "@out_size_f"]
+        node_out_size_f = make_node(
+            'Cast', inputs=name_out_h_w, outputs=outputs_out_size_f, to=1)
+        node_list.append(node_out_size_f)
+    else:
+        outputs_out_size_f = [outputs['Out'][0] + "@out_size_f"]
+        node_out_size_f = make_node(
+            'Cast', inputs=inputs['OutSize'], outputs=outputs_out_size_f, to=1)
+        node_list.append(node_out_size_f)
+
+    name_h_w = [outputs['Out'][0] + "@h_w"]
+    node_h_w = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_h_w,
+        value=make_tensor(
+            name=name_h_w[0],
+            data_type=TensorProto.FLOAT,
+            dims=[2],
+            vals=[height, width]))
+    node_list.append(node_h_w)
+
+    outputs_h_w_scales = [outputs['Out'][0] + "@h_w_scales"]
+    node_h_w_scales = make_node(
+        'Div', inputs=outputs_out_size_f + name_h_w, outputs=outputs_h_w_scales)
+    node_list.append(node_h_w_scales)
+
+    name_b_c_scales = [outputs['Out'][0] + "@b_c_scales"]
+    node_b_c_scales = make_node(
+        'Constant',
+        inputs=[],
+        outputs=name_b_c_scales,
+        value=make_tensor(
+            name=name_b_c_scales[0],
+            data_type=TensorProto.FLOAT,
+            dims=[2],
+            vals=[1, 1]))
+    node_list.append(node_b_c_scales)
+
+    outputs_scales = [outputs['Out'][0] + "@scales"]
+
+    node_scales = make_node(
+        'Concat',
+        inputs=name_b_c_scales + outputs_h_w_scales,
+        outputs=outputs_scales,
+        axis=0)
+    node_list.append(node_scales)
+
+    outputs_resize = [outputs['Out'][0] + "@resize"]
+    node_resize = make_node(
+        'Resize',
+        inputs=inputs['X'] + outputs_scales,
+        outputs=outputs['Out'],
+        mode='linear')
+    node_list.append(node_resize)
+    return tuple(node_list)
 
 
 def cast_op(operator, block):
@@ -1200,6 +1301,8 @@ node_maker = {
     'slice': slice_op,
     'nearest_interp': nearest_interp_op,
     'shape': shape_op,
-    'fill_constant': fill_constant_op
+    'fill_constant': fill_constant_op,
+    'bilinear_interp': bilinear_interp_op,
+    'arg_max': arg_max_op
     # 'experimental Upsample'
 }

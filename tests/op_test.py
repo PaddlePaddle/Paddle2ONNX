@@ -308,7 +308,8 @@ class OpTest(unittest.TestCase):
     def check_onnx_with_onnxruntime(self,
                                     no_check_set=[],
                                     is_slice=False,
-                                    is_nearest_interp=False):
+                                    is_nearest_interp=False,
+                                    is_bilinear=False):
         """Run a Caffe2 program using their ONNX backend.
 
         Prior to running the backend, use the Paddle scope to construct
@@ -329,6 +330,7 @@ class OpTest(unittest.TestCase):
             paddle_variable_to_onnx_tensor(v, self.block)
             for v in fetch_target_names
         ]
+
         # Construct the ONNX model using paddle-onnx.
         onnx_node = ops.node_maker[self.op_type](operator=self.op,
                                                  block=self.block)
@@ -346,6 +348,9 @@ class OpTest(unittest.TestCase):
         elif is_nearest_interp:
             with open("tests/onnx_op/nearest_interp_test.onnx", 'wb') as f:
                 f.write(onnx_model.SerializeToString())
+        elif is_bilinear:
+            with open("tests/onnx_op/bilinear_interp_test.onnx", 'wb') as f:
+                f.write(onnx_model.SerializeToString())
         else:
             with open("tests/nms_test.onnx", 'wb') as f:
                 f.write(onnx_model.SerializeToString())
@@ -360,8 +365,8 @@ class OpTest(unittest.TestCase):
         in_vals = [input_map[input.name] for input in inputs]
         with open("tests/inputs_test.pkl", "wb") as f:
             pickle.dump(input_map, f)
-        ret = os.system("python tests/onnx_runtime.py %s %s" %
-                        (is_slice, is_nearest_interp))
+        ret = os.system("python tests/onnx_runtime.py %s %s %s" %
+                        (is_slice, is_nearest_interp, is_bilinear))
         #if is_slice:
         #    ret = os.system("python tests/slice_onnx_runtime.py")
         #elif is_nearest_interp:
@@ -379,7 +384,8 @@ class OpTest(unittest.TestCase):
                      return_numpy=True,
                      is_nms=False,
                      is_slice=False,
-                     is_nearest_interp=False):
+                     is_nearest_interp=False,
+                     is_bilinear=False):
         """Compares the outputs from the Paddle program and the Caffe2
         backend using the ONNX model constructed by paddle-onnx.
 
@@ -388,9 +394,9 @@ class OpTest(unittest.TestCase):
         """
 
         fluid_result = self.eval_fluid_op(no_check_set, return_numpy)
-        if is_slice or is_nearest_interp:
+        if is_slice or is_nearest_interp or is_bilinear:
             onnx_result = self.check_onnx_with_onnxruntime(
-                is_slice=is_slice, is_nearest_interp=is_nearest_interp)
+                is_slice=is_slice, is_nearest_interp=is_nearest_interp, is_bilinear=is_bilinear)
 
         elif is_nms:
             onnx_result = self.check_onnx_with_onnxruntime()
