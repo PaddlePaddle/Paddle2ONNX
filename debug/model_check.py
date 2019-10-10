@@ -229,8 +229,8 @@ def debug_model(op_list, op_trackers, nms_outputs, args):
             with open("tests/inputs_test.pkl", 'wb') as f:
                 pickle.dump(dict(zip(feed_target_names, inputs)), f)
             f.close()
-            ret = os.system("python tests/onnx_runtime.py %s %s %s" %
-                            (False, False, False))
+            ret = os.system("python tests/onnx_runtime.py %s %s" %
+                            (False, False))
             with open("tests/outputs_test.pkl", "rb") as f:
                 onnx_results = pickle.load(f)
             f.close()
