@@ -116,7 +116,7 @@ class TestBilinearInterpOp(OpTest):
         self.outputs = {'Out': output_np}
 
     def test_check_output(self):
-        self.check_output(is_bilinear=True)
+        self.check_output(is_interp=True)
 
     def init_test_case(self):
         self.interp_method = 'bilinear'

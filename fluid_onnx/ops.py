@@ -663,9 +663,22 @@ def mean_op():
 def min_op():
     pass
 
+def matmul_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'MatMul',
+        inputs=inputs['X'] + inputs['Y'],
+        outputs=outputs['Out'])
 
 def neg_op():
     pass
+
+
+def norm_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    return make_node(
+        'LpNormalization',
+        inputs=inputs['X'], outputs=outputs['Out'], axis=attrs['axis'])
 
 
 def prelu_op(operator, block):
@@ -1309,6 +1322,8 @@ node_maker = {
     'fill_constant': fill_constant_op,
     'bilinear_interp': bilinear_interp_op,
     'arg_max': arg_max_op,
-    'unsqueeze2': unsqueeze_op
+    'unsqueeze2': unsqueeze_op,
+    'norm': norm_op,
+    'matmul': matmul_op
     # 'experimental Upsample'
 }

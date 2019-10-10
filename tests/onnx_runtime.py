@@ -20,20 +20,18 @@ from onnx import shape_inference
 import pickle
 import time
 from sys import argv
-_, is_slice, is_nearest, is_bilinear = argv
+_, is_onnxruntime, is_interp = argv
 
-if is_slice == "True":
-    sess = onnxruntime.InferenceSession("tests/onnx_op/slice_test.onnx")
-elif is_nearest == "True":
-    sess = onnxruntime.InferenceSession("tests/onnx_op/nearest_interp_test.onnx")
-elif is_bilinear == "True":
-    sess = onnxruntime.InferenceSession("tests/onnx_op/bilinear_interp_test.onnx")
+if is_onnxruntime == "True":
+    sess = onnxruntime.InferenceSession("tests/onnx_op/onnxruntime_test.onnx")
+elif is_interp == "True":
+    sess = onnxruntime.InferenceSession("tests/onnx_op/interp_test.onnx")
 else:
     sess = onnxruntime.InferenceSession("tests/nms_test.onnx")
 with open("tests/inputs_test.pkl", "rb") as f:
     np_images = pickle.load(f)
 f.close()
-if is_nearest == "True" or is_bilinear  == "True":
+if is_interp == "True":
     tmp = {}
     tmp['X'] = np_images['X'].astype('float32')
     tmp['OutSize'] = np_images['OutSize'].astype('float32')

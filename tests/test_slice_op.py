@@ -40,7 +40,7 @@ class TestSliceOp(OpTest):
         self.out = self.input[:, :, 3:4]
 
     def test_check_output(self):
-        self.check_output(is_slice=True)
+        self.check_output(is_onnxruntime=True)
 
 
 class TestSliceOp_decs_dim(OpTest):
@@ -64,7 +64,7 @@ class TestSliceOp_decs_dim(OpTest):
         self.out = self.input[1, 0:3, 2:4, :]
 
     def test_check_output(self):
-        self.check_output(is_slice=True)
+        self.check_output(is_onnxruntime=True)
 
 
 class TestSliceOp_decs_dim_2(OpTest):
@@ -88,7 +88,7 @@ class TestSliceOp_decs_dim_2(OpTest):
         self.out = self.input[1, 0, 2:4, :]
 
     def test_check_output(self):
-        self.check_output(is_slice=True)
+        self.check_output(is_onnxruntime=True)
 
 
 class TestSliceOp_decs_dim_3(OpTest):
@@ -112,7 +112,7 @@ class TestSliceOp_decs_dim_3(OpTest):
         self.out = self.input[-1, 0, 2:4, :]
 
     def test_check_output(self):
-        self.check_output(is_slice=True)
+        self.check_output(is_onnxruntime=True)
 
 
 if __name__ == '__main__':

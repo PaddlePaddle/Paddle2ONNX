@@ -97,7 +97,7 @@ class TestNearestInterpOp(OpTest):
         self.outputs = {'Out': output_np}
 
     def test_check_output(self):
-        self.check_output(is_nearest_interp=True)
+        self.check_output(is_interp=True)
 
 #    def test_check_grad(self):
 #        self.check_grad(['X'], 'Out', in_place=True)
