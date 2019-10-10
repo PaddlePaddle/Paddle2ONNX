@@ -52,12 +52,12 @@ def parse_args():
     parser.add_argument(
         "--return_variable",
         action="store_true",
-        default=True,
+        default=False,
         help="If output is LoDTensor, the model outputs need to be variable.")
     parser.add_argument(
         "--check_task",
         type=str,
-        default="image_detection_ssd",
+        default="image_classification",
         help="Use the different reader and backend to run the program, including image_classification, image_detection_ssd and image_detection_yolo"
     )
     parser.add_argument(
