@@ -3,6 +3,9 @@ paddle2onnx支持将**PaddlePaddle**框架下产出的模型转化到**ONNX**模
 paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
 
 ## 更新记录
+2019.11.15
+1、新增支持SE_ResNet50_vd、SqueezeNet1_0、SE_ResNext50_32x4d、Xception41、VGG16、InceptionV4、YoloV3模型转换
+2、修复一些转换OP接口，适配onnx1.5.0
 2109.08.20
 1. 解决preview版本无法适配最新的PaddlePaddle和ONNX版本问题。
 2. 功能上支持主流的图像分类模型和部分图像检测模型。
