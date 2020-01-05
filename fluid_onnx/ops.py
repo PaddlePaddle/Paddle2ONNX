@@ -15,8 +15,10 @@
 import sys
 import onnx
 import numpy as np
+from collections import namedtuple
 from functools import partial
 from onnx import TensorProto
+from onnx.numpy_helper import from_array
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import _fetch_var as fetch_var
 from fluid.utils import op_io_info, get_old_name
@@ -35,11 +37,9 @@ test_fit_a_line.py
 ^ Try to make this run before proceeding.
 
 test_machine_translation.py
-- lookup_table
 - tanh
 - lstm
 - sequence_pool
-- lookup_table
 - lod_rank_table
 - max_sequence_len
 - less_than
@@ -66,6 +66,30 @@ __name_prefix__ = ""
 
 def init_name_prefix(name_prefix=""):
     gloab
+
+
+def global_const(value, block, node_name=None):
+    global _prev_program_
+    # maybe some better way to do this?
+    if block.program != _prev_program_:
+        _global_constants_.clear()
+        _prev_program_ = block.program
+    np_val = np.array(value)
+    if len(np_val.shape) != 0 and node_name is None:
+        raise KeyError('value must be a scala or the node_name must be given. it has a shape of ' + str(np_val.shape))
+    if node_name is None:
+        node_name = '_C_' + str(value)
+    node = _global_constants_.get(node_name, None)
+    if node:
+        return ScalaConstantNode(node_name, None)
+    else:
+        node = onnx.helper.make_node(
+            'Constant',
+            inputs=[],
+            outputs=[node_name],
+            value=from_array(np_val, name=node_name + '_const_tensor'))
+        _global_constants_[node_name] = node
+        return ScalaConstantNode(node_name, node)
 
 
 def activation_ops(act_type, operator, block):
@@ -484,6 +508,43 @@ def gather_op(operator, block):
         'Gather', inputs=inputs['X'] + inputs['Index'], outputs=outputs['Out'])
 
 
+def gelu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    name_x_div_sqrt2 = _tmp_name(inputs['X'][0], 'div_sqrt2')
+    name_x_erf = _tmp_name(inputs['X'][0], 'erf')
+    name_erf_plus_one = outputs['Out'][0] + '@erf_plus'
+    name_x_mul_erf = outputs['Out'][0] + '@x_mul_erf'
+
+    sqrt2 = np.sqrt(np.array(2.0, dtype=np.float32))
+    sqrt2_node = global_const(sqrt2, block)
+    one_node = global_const(np.array(1.0, dtype=np.float32), block)
+    two_node = global_const(np.array(2.0, dtype=np.float32), block)
+    node_list = [node.node for node in [sqrt2_node, one_node, two_node] if node.node]
+    node_list.extend([
+        make_node(
+            'Div',
+            inputs=[inputs['X'][0], sqrt2_node.name],
+            outputs=[name_x_div_sqrt2]),
+        make_node(
+            'Erf',
+            inputs=[name_x_div_sqrt2],
+            outputs=[name_x_erf]),
+        make_node(
+            'Add',
+            inputs=[name_x_erf, one_node.name],
+            outputs=[name_erf_plus_one]),
+        make_node(
+            'Mul',
+            inputs=[inputs['X'][0], name_erf_plus_one],
+            outputs=[name_x_mul_erf]),
+        make_node(
+            'Div',
+            inputs=[name_x_mul_erf, two_node.name],
+            outputs=outputs['Out'])
+    ])
+    return tuple(node_list)
+
+
 def gemm_op():
     pass
 
@@ -509,6 +570,96 @@ def hardmax_op():
 
 def instancenormalization_op():
     pass
+
+
+def layer_norm_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    name_x = inputs['X'][0]
+    name_bias = inputs['Bias'][0]
+    name_scale = inputs['Scale'][0]
+    name_mean = outputs['Mean'][0]
+    name_variance = outputs['Variance'][0]
+    name_y = outputs['Y'][0]
+    norm_axis = attrs['begin_norm_axis']
+    norm_epsilon = np.array(attrs['epsilon'], dtype=np.float32)
+    name_x_sub_mean = _tmp_name(name_x, 'sub_mean')
+    name_x_sub_mean_sq = _tmp_name(name_x, 'sub_mean_sq')
+    name_x_stddev = _tmp_name(name_x, 'stddev')
+    name_x_norm = _tmp_name(name_x, 'norm')
+    name_x_norm_scaled = _tmp_name(name_x, 'norm_scaled')
+    name_mean_unflatten = _tmp_name(name_mean, 'unflatten')
+    name_variance_unflatten = _tmp_name(name_variance, 'unflatten')
+    name_mean_flatten2d = _tmp_name(name_mean, 'flatten2d')
+    name_variance_flatten2d = _tmp_name(name_variance, 'flatten2d')
+    epsilon_node = global_const(norm_epsilon, block)
+    node_list = []
+    if epsilon_node.node:
+        node_list.append(epsilon_node.node)
+    node_list.extend([
+        onnx.helper.make_node(
+            'ReduceMean',
+            inputs=[name_x],
+            outputs=[name_mean_unflatten],
+            axes=[norm_axis],
+            keepdims=1),
+        onnx.helper.make_node(
+            'Sub',
+            inputs=[name_x, name_mean_unflatten],
+            outputs=[name_x_sub_mean],
+        ),
+        onnx.helper.make_node(
+            'Mul',
+            inputs=[name_x_sub_mean, name_x_sub_mean],
+            outputs=[name_x_sub_mean_sq],
+        ),
+        onnx.helper.make_node(
+            'ReduceMean',
+            inputs=[name_x_sub_mean_sq],
+            outputs=[name_variance_unflatten],
+            axes=[norm_axis],
+            keepdims=1),
+        onnx.helper.make_node(
+            'Add',
+            inputs=[name_variance_unflatten, epsilon_node.name],
+            outputs=[(name_variance + '@add_epsilon')]),
+        onnx.helper.make_node(
+            'Sqrt',
+            inputs=[(name_variance + '@add_epsilon')],
+            outputs=[name_x_stddev]),
+        onnx.helper.make_node(
+            'Div',
+            inputs=[name_x_sub_mean, name_x_stddev],
+            outputs=[name_x_norm]),
+        onnx.helper.make_node(
+            'Mul',
+            inputs=[name_x_norm, name_scale],
+            outputs=[name_x_norm_scaled]),
+        onnx.helper.make_node(
+            'Add',
+            inputs=[name_x_norm_scaled, name_bias],
+            outputs=[name_y]),
+        onnx.helper.make_node(
+            'Flatten',
+            inputs=[name_mean_unflatten],
+            outputs=[name_mean_flatten2d],
+            axis=0),
+        onnx.helper.make_node(
+            'Flatten',
+            inputs=[name_variance_unflatten],
+            outputs=[name_variance_flatten2d],
+            axis=0),
+        onnx.helper.make_node(
+            'Squeeze',
+            inputs=[name_mean_flatten2d],
+            outputs=[name_mean],
+            axes=[0]),
+        onnx.helper.make_node(
+            'Squeeze',
+            inputs=[name_variance_flatten2d],
+            outputs=[name_variance],
+            axes=[0]),
+    ])
+    return tuple(node_list)
 
 
 def lrn_op(operator, block):
@@ -555,6 +706,34 @@ def unary_logical_ops(op_type, operator, block):
 
 def logsoftmax_op():
     pass
+
+
+def lookup_table_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    out_shape = block.vars[get_old_name(outputs['Out'][0])].shape
+    name_out_shape = _tmp_name(outputs['Out'][0], 'shape')
+    name_out_gathered = _tmp_name(outputs['Out'][0], 'gathered')
+    node_list = [
+        make_node(
+            'Constant',
+            inputs=[],
+            outputs=[name_out_shape],
+            value=make_tensor(
+                name=name_out_shape + '_const_tensor',
+                data_type=TensorProto.INT64,
+                dims=(len(out_shape),),
+                vals=out_shape)),
+        make_node(
+            'Gather',
+            inputs=[inputs['W'][0], inputs['Ids'][0]],
+            outputs=[name_out_gathered],
+            axis=0),
+        make_node(
+            'Reshape',
+            inputs=[name_out_gathered, name_out_shape],
+            outputs=outputs['Out'])
+    ]
+    return tuple(node_list)
 
 
 def lpnormalization_op():
@@ -1004,6 +1183,24 @@ def split_op(operator, block):
 
 def squeeze_op():
     pass
+
+
+def stack_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    name_y_seq = _tmp_name(outputs['Y'][0], 'seq')
+    node_list = [
+        make_node(
+            'SequenceConstruct',
+            inputs=inputs['X'],
+            outputs=[name_y_seq]),
+        make_node(
+            'ConcatFromSequence',
+            inputs=[name_y_seq],
+            outputs=outputs['Y'],
+            axis=attrs['axis'],
+            new_axis=1)
+    ]
+    return tuple(node_list)
 
 
 def sub_op():
