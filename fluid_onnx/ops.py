@@ -1203,19 +1203,22 @@ def squeeze_op():
 
 def stack_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    name_y_seq = _tmp_name(outputs['Y'][0], 'seq')
-    node_list = [
-        make_node(
-            'SequenceConstruct',
-            inputs=inputs['X'],
-            outputs=[name_y_seq]),
-        make_node(
-            'ConcatFromSequence',
-            inputs=[name_y_seq],
-            outputs=outputs['Y'],
-            axis=attrs['axis'],
-            new_axis=1)
-    ]
+    axis = attrs['axis']
+    concat_inputs = []
+    node_list = []
+    for input in inputs['X']:
+        name_unsqueezed = _tmp_name(input, 'unsqueezed')
+        concat_inputs.append(name_unsqueezed)
+        node_list.append(make_node(
+            'Unsqueeze',
+            inputs=[input],
+            outputs=[name_unsqueezed],
+            axes=[axis]))
+    node_list.append(make_node(
+        'Concat',
+        inputs=concat_inputs,
+        outputs=outputs['Y'],
+        axis=axis))
     return tuple(node_list)
 
 
