@@ -427,7 +427,7 @@ def elementwise_ops(op_type, operator, block):
         pre_shape.extend(shape)
         pre_shape.extend(post_shape)
         final_shape = [i if i > 0 else 1 for i in pre_shape]
-        shape_name = outputs['Out'][0] + "@shape_var"
+        shape_name = _tmp_name(outputs['Out'][0], "@shape_var")
         output_const_node = make_node(
             'Constant',
             inputs=[],
@@ -773,7 +773,7 @@ def mul_op(operator, block):
     out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
 
     # Flatten input(X) and input(Y) into 2-D matries
-    x_flat_out = [inputs['X'][0] + '@flatten_0']
+    x_flat_out = [_tmp_name(inputs['X'][0], 'flatten')]
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
 
     # Because in TensorRT backend, Flatten op only accepts input tensor with
@@ -1007,7 +1007,7 @@ def reshape_op(operator, block):
             inputs=[inputs['X'][0], shape_name],
             outputs=outputs['Out'])
     else:
-        shape_name = outputs['Out'][0] + "@shape_var"
+        shape_name = _tmp_name(outputs['Out'][0], "shape_var")
         output_shape_node = make_node(
             'Constant',
             inputs=[],
@@ -1032,7 +1032,7 @@ def shape_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     im_outputs = []
     node_list = []
-    outputs_shape = [outputs['Out'][0] + "@shape"]
+    outputs_shape = [_tmp_name(outputs['Out'][0], "shape")]
     node_shape = make_node(
         'Shape', inputs=inputs['Input'], outputs=outputs_shape)
     node_list.append(node_shape)
