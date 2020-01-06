@@ -62,6 +62,21 @@ test_machine_translation.py
 __onnx_ver__ = onnx.version.version
 
 __name_prefix__ = ""
+_prev_program_ = None
+_global_constants_ = dict()
+_unique_name_index_ = dict()
+_ConstantNode = namedtuple('_ConstantNode', ['name', 'node'])
+
+def _tmp_name(name, suffix):
+    """
+    Create a unique temporary tensor name in the form of `{name}@{suffix}{index}` where `index` is blank if the
+    `{name}@{suffix}` is used for the first time, else the index is the number of times the base name has been created.
+    """
+    suffix = suffix.replace('@', '')
+    name = name + '@' + suffix
+    current = _unique_name_index_.get(name, 0)
+    _unique_name_index_[name] = (current + 1)
+    return name if current == 0 else name + str(current)
 
 
 def init_name_prefix(name_prefix=""):
@@ -73,6 +88,7 @@ def global_const(value, block, node_name=None):
     # maybe some better way to do this?
     if block.program != _prev_program_:
         _global_constants_.clear()
+        _unique_name_index_.clear()
         _prev_program_ = block.program
     np_val = np.array(value)
     if len(np_val.shape) != 0 and node_name is None:
@@ -81,7 +97,7 @@ def global_const(value, block, node_name=None):
         node_name = '_C_' + str(value)
     node = _global_constants_.get(node_name, None)
     if node:
-        return ScalaConstantNode(node_name, None)
+        return _ConstantNode(node_name, None)
     else:
         node = onnx.helper.make_node(
             'Constant',
@@ -89,7 +105,7 @@ def global_const(value, block, node_name=None):
             outputs=[node_name],
             value=from_array(np_val, name=node_name + '_const_tensor'))
         _global_constants_[node_name] = node
-        return ScalaConstantNode(node_name, node)
+        return _ConstantNode(node_name, node)
 
 
 def activation_ops(act_type, operator, block):
@@ -137,7 +153,7 @@ def batch_norm_op(operator, block):
 
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     nodes = ()
-    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with 
+    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with
     # dim. == 2 supported by Fluid, reshape it into dim. == 4.
     if len(x_shape) == 2:
         new_shape = [0, x_shape[1], 1, 1]
@@ -386,8 +402,8 @@ def dropout_op(operator, block):
 
 
 def elementwise_ops(op_type, operator, block):
-    """Convert elementwise operators From to ONNX. Supported elementwise 
-       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'. 
+    """Convert elementwise operators From to ONNX. Supported elementwise
+       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'.
     """
 
     inputs, attrs, outputs = op_io_info(operator)
@@ -747,7 +763,7 @@ def lppool_op():
 def mul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
-    # Get shape of inputs 
+    # Get shape of inputs
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
     x_shape = paddle_onnx_shape(x_shape)
@@ -760,9 +776,9 @@ def mul_op(operator, block):
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
 
-    # Because in TensorRT backend, Flatten op only accepts input tensor with 
-    # dimension 3, here we use Reshape op to flatten the input tensor when 
-    # ONNX is v1.0.1. 
+    # Because in TensorRT backend, Flatten op only accepts input tensor with
+    # dimension 3, here we use Reshape op to flatten the input tensor when
+    # ONNX is v1.0.1.
     if __onnx_ver__ == '1.0.1':
         # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
         flatten_x_node = make_node(
@@ -793,7 +809,7 @@ def mul_op(operator, block):
             outputs=y_flat_out,
             axis=attrs['y_num_col_dims'])
 
-    # Mat mul 
+    # Mat mul
     matmul_out = [outputs['Out'][0] + '@matmul_0']
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
@@ -915,7 +931,7 @@ def randomuniformlike_op():
 
 
 def reduce_ops(op_type, operator, block):
-    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the 
+    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the
        target ONNX operator type, supporting 'Reduce{Max, Mean, Min, Sum}'
        right now.
     """
@@ -974,7 +990,7 @@ def reshape_op(operator, block):
     if 'Shape' in inputs and inputs['Shape'] is not None and len(inputs[
             'Shape']) > 0:
         shape_name = inputs['Shape'][0]
-        # cast the shape to int64 
+        # cast the shape to int64
         shape_name_cast = [shape_name + "@cast"]
         cast_node = make_node(
             'Cast', inputs=inputs['Shape'], outputs=shape_name_cast, to=7)
@@ -1326,7 +1342,7 @@ def swish_op(operator, block):
             dims=(),
             vals=[beta]))
 
-    # var and node for beta * x 
+    # var and node for beta * x
     name_beta_x = [outputs['Out'][0] + "@beta_x"]
     var_beta_x = onnx.helper.make_tensor_value_info(
         name_beta_x[0], PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
@@ -1347,7 +1363,7 @@ def swish_op(operator, block):
 
 def relu6_op(operator, block):
     """
-    The activation function relu6, out=min(max(0,x),6) 
+    The activation function relu6, out=min(max(0,x),6)
     And you can set the threshold of activation.
     """
     inputs, attrs, outputs = op_io_info(operator)
@@ -1418,12 +1434,14 @@ node_maker = {
     'floor': partial(activation_ops, 'Floor'),
     '': 'GRU',
     'gather': gather_op,
+    'gelu': gelu_op,
     '': 'Gemm',
     '': 'GlobalLpPool',
     'greater_than': partial(compare_ops, 'Greater'),
     'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
+    'layer_norm': layer_norm_op,
     'less_than': partial(compare_ops, 'Less'),
     'lrn': lrn_op,
     '': 'LSTM',
@@ -1434,6 +1452,7 @@ node_maker = {
     'logical_not': partial(unary_logical_ops, 'Not'),
     'logical_xor': partial(binary_logical_ops, 'Xor'),
     ',': 'LogSoftmax',
+    'lookup_table': lookup_table_op,
     '': 'LpNormalization',
     '': 'LpPool',
     '': 'MatMul',
@@ -1477,6 +1496,7 @@ node_maker = {
     '': 'SpaceToDepth',
     '': 'Split',
     'sqrt': partial(activation_ops, 'Sqrt'),
+    'stack': stack_op,
     # 'Squeeze', NEEDS ATTENTION.
     '': 'Sum',
     'tanh': partial(activation_ops, 'Tanh'),
