@@ -83,6 +83,12 @@ def init_name_prefix(name_prefix=""):
     gloab
 
 
+def _to_node_tuple(node_or_list):
+    if not isinstance(node_or_list, list):
+        node_or_list = [node_or_list]
+    return tuple(node for node in node_or_list if node is not None)
+
+
 def global_const(value, block, node_name=None):
     global _prev_program_
     # maybe some better way to do this?
@@ -363,6 +369,16 @@ def depthtospace_op():
     pass
 
 
+def _scale_op(input, output, scale):
+    scale_const_node = global_const(scale)
+    return [
+        scale_const_node.node,
+        make_node(
+            'Mul',
+            inputs=[input, scale_const_node.name],
+            outputs=[output])
+    ]
+
 def dropout_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     scale_input = [outputs['Out'][0] + '@dropout']
@@ -373,32 +389,17 @@ def dropout_op(operator, block):
         ratio=attrs['dropout_prob'])
 
     ## Fluid and ONNX use different dropout formula
-    # ONNX 1.0.1 doesn't support Scale op
-    if __onnx_ver__ == '1.0.1':
-        scale_val = [outputs['Out'][0] + '@scale']
-        constant_node = make_node(
-            'Constant',
-            inputs=[],
-            outputs=scale_val,
-            value=make_tensor(
-                name=scale_val[0],
-                dims=(),
-                data_type=TensorProto.FLOAT,
-                vals=[1.0 - attrs['dropout_prob']]))
-        mul_node = make_node(
+    # onnx version >= 1.4.1 supports ai.onnx ver 9 which has no `broadcast` attr for Mul
+    scale_mul_attrs = {'broadcast': 1} if __onnx_ver__ < '1.4.1' else {}
+    scale_const_node = global_const(np.array(1.0 - attrs['dropout_prob'], dtype=np.float32), block)
+    return _to_node_tuple([
+        dropout_node,
+        scale_const_node.node,
+        make_node(
             'Mul',
-            inputs=scale_input + scale_val,
+            inputs=scale_input + [scale_const_node.name],
             outputs=outputs['Out'],
-            broadcast=1)
-        nodes = (dropout_node, constant_node, mul_node)
-    else:
-        scale_node = make_node(
-            'Scale',
-            inputs=scale_input,
-            outputs=outputs['Out'],
-            scale=1.0 - attrs['dropout_prob'])
-        nodes = (dropout_node, scale_node)
-    return nodes
+            **scale_mul_attrs)])
 
 
 def elementwise_ops(op_type, operator, block):
@@ -860,10 +861,65 @@ def min_op():
 
 def matmul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    return make_node(
+    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
+    name_matmul_x = inputs['X'][0]
+    name_matmul_y = inputs['Y'][0]
+    node_list = []
+    if attrs.get('transpose_X', False):
+        name_matmul_x, transposed_node = _matmul_transpose_op(name_matmul_x, block)
+        node_list.append(transposed_node)
+    if attrs.get('transpose_Y', False):
+        name_matmul_y, transposed_node = _matmul_transpose_op(name_matmul_y, block)
+        node_list.append(transposed_node)
+    name_matmul_out = outputs['Out'][0]
+    name_mul_out = name_matmul_out
+    need_unsqueeze = len(x_shape) == 1 and len(y_shape) == 1
+    need_to_scale = attrs.get('alpha', None) != 1.0
+    unsqueeze_inputs = []
+    if need_to_scale or need_unsqueeze:
+        name_matmul_out = _tmp_name(name_matmul_out, 'matmul')
+    if need_to_scale and need_unsqueeze:
+        name_mul_out = name_matmul_out + '_scaled'
+        unsqueeze_inputs = [name_mul_out]
+    elif not need_to_scale and need_unsqueeze:
+        name_mul_out = _tmp_name(outputs['Out'][0], 'scaled')
+        unsqueeze_inputs = [name_matmul_out]
+    node_list.append(make_node(
         'MatMul',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'])
+        inputs=[name_matmul_x, name_matmul_y],
+        outputs=[name_matmul_out]))
+    if need_to_scale:
+        scale_const_node = global_const(np.array(attrs['alpha'], dtype=np.float32), block)
+        node_list.extend([
+            scale_const_node.node,
+            make_node(
+                'Mul',
+                inputs=[name_matmul_out, scale_const_node.name],
+                outputs=[name_mul_out])
+        ])
+    if need_unsqueeze:
+        rank1_shape_const = global_const(np.array([1], dtype=np.int64), block, node_name='rank1_shape')
+        node_list.append(rank1_shape_const.node)
+        node_list.append(onnx.helper.make_node(
+            'Reshape',
+            inputs=unsqueeze_inputs + [rank1_shape_const.name],
+            outputs=outputs['Out']))
+    return _to_node_tuple(node_list)
+
+
+def _matmul_transpose_op(x, block):
+    x_shape = block.vars[get_old_name(x)].shape
+    name_x_transposed = _tmp_name(x, 'transposed')
+    axes = np.arange(len(x_shape))
+    axes = list(axes[:-2]) + [axes[-1], axes[-2]]
+    node = make_node(
+        'Transpose',
+        inputs=[x],
+        outputs=[name_x_transposed],
+        perm=axes)
+    return name_x_transposed, node
+
 
 def neg_op():
     pass
