@@ -15,6 +15,7 @@
 import sys
 import onnx
 import numpy as np
+import re
 from collections import namedtuple
 from functools import partial
 from onnx import TensorProto
@@ -66,14 +67,16 @@ _prev_program_ = None
 _global_constants_ = dict()
 _unique_name_index_ = dict()
 _ConstantNode = namedtuple('_ConstantNode', ['name', 'node'])
+_invalid_name_re = re.compile(r'[^A-Za-z0-9_./>]')
+
 
 def _tmp_name(name, suffix):
     """
-    Create a unique temporary tensor name in the form of `{name}@{suffix}{index}` where `index` is blank if the
-    `{name}@{suffix}` is used for the first time, else the index is the number of times the base name has been created.
+    Create a unique temporary tensor name in the form of `{name}/{suffix}{index}` where `index` is blank if the
+    `{name}/{suffix}` is used for the first time, else the index is the number of times the base name has been created.
     """
-    suffix = suffix.replace('@', '')
-    name = name + '@' + suffix
+    suffix = suffix.replace('/', '')
+    name = name + '_' + suffix
     current = _unique_name_index_.get(name, 0)
     _unique_name_index_[name] = (current + 1)
     return name if current == 0 else name + str(current)
@@ -100,7 +103,8 @@ def global_const(value, block, node_name=None):
     if len(np_val.shape) != 0 and node_name is None:
         raise KeyError('value must be a scala or the node_name must be given. it has a shape of ' + str(np_val.shape))
     if node_name is None:
-        node_name = '_C_' + str(value)
+        node_name = 'C_' + str(value)
+    node_name = _invalid_name_re.sub('_', node_name)
     node = _global_constants_.get(node_name, None)
     if node:
         return _ConstantNode(node_name, None)
@@ -1324,6 +1328,7 @@ def thresholded_relu_op(operator, block):
 
 def scale_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
+    print('scale', outputs, {k: v for k, v in attrs.items() if not k.startswith('op_')})
     scale_var_name = [outputs['Out'][0] + "@scale"]
     node_scale = onnx.helper.make_node(
         'Constant',
