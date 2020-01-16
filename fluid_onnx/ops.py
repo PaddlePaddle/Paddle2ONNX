@@ -63,18 +63,28 @@ test_machine_translation.py
 __onnx_ver__ = onnx.version.version
 
 __name_prefix__ = ""
-_prev_program_ = None
+_prev_program_id_ = None
 _global_constants_ = dict()
 _unique_name_index_ = dict()
 _ConstantNode = namedtuple('_ConstantNode', ['name', 'node'])
 _invalid_name_re = re.compile(r'[^A-Za-z0-9_./>]')
 
 
-def _tmp_name(name, suffix):
+def _check_and_reset_block_name_space(block):
+    global _prev_program_id_
+    # maybe some better way to do this?
+    if id(block.program) != _prev_program_id_:
+        _global_constants_.clear()
+        _unique_name_index_.clear()
+        _prev_program_id_ = id(block.program)
+
+
+def _tmp_name(name, suffix, block):
     """
     Create a unique temporary tensor name in the form of `{name}/{suffix}{index}` where `index` is blank if the
     `{name}/{suffix}` is used for the first time, else the index is the number of times the base name has been created.
     """
+    _check_and_reset_block_name_space(block)
     suffix = suffix.replace('/', '')
     name = name + '_' + suffix
     current = _unique_name_index_.get(name, 0)
@@ -82,23 +92,16 @@ def _tmp_name(name, suffix):
     return name if current == 0 else name + str(current)
 
 
-def init_name_prefix(name_prefix=""):
-    gloab
-
-
 def _to_node_tuple(node_or_list):
+    if isinstance(node_or_list, tuple):
+        node_or_list = list(node_or_list)
     if not isinstance(node_or_list, list):
         node_or_list = [node_or_list]
     return tuple(node for node in node_or_list if node is not None)
 
 
 def global_const(value, block, node_name=None):
-    global _prev_program_
-    # maybe some better way to do this?
-    if block.program != _prev_program_:
-        _global_constants_.clear()
-        _unique_name_index_.clear()
-        _prev_program_ = block.program
+    _check_and_reset_block_name_space(block)
     np_val = np.array(value)
     if len(np_val.shape) != 0 and node_name is None:
         raise KeyError('value must be a scala or the node_name must be given. it has a shape of ' + str(np_val.shape))
@@ -113,6 +116,7 @@ def global_const(value, block, node_name=None):
             'Constant',
             inputs=[],
             outputs=[node_name],
+            name=node_name,
             value=from_array(np_val, name=node_name + '_const_tensor'))
         _global_constants_[node_name] = node
         return _ConstantNode(node_name, node)
@@ -432,7 +436,7 @@ def elementwise_ops(op_type, operator, block):
         pre_shape.extend(shape)
         pre_shape.extend(post_shape)
         final_shape = [i if i > 0 else 1 for i in pre_shape]
-        shape_name = _tmp_name(outputs['Out'][0], "@shape_var")
+        shape_name = _tmp_name(outputs['Out'][0], "@shape_var", block)
         output_const_node = make_node(
             'Constant',
             inputs=[],
@@ -531,8 +535,8 @@ def gather_op(operator, block):
 
 def gelu_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    name_x_div_sqrt2 = _tmp_name(inputs['X'][0], 'div_sqrt2')
-    name_x_erf = _tmp_name(inputs['X'][0], 'erf')
+    name_x_div_sqrt2 = _tmp_name(inputs['X'][0], 'div_sqrt2', block)
+    name_x_erf = _tmp_name(inputs['X'][0], 'erf', block)
     name_erf_plus_one = outputs['Out'][0] + '@erf_plus'
     name_x_mul_erf = outputs['Out'][0] + '@x_mul_erf'
 
@@ -603,15 +607,15 @@ def layer_norm_op(operator, block):
     name_y = outputs['Y'][0]
     norm_axis = attrs['begin_norm_axis']
     norm_epsilon = np.array(attrs['epsilon'], dtype=np.float32)
-    name_x_sub_mean = _tmp_name(name_x, 'sub_mean')
-    name_x_sub_mean_sq = _tmp_name(name_x, 'sub_mean_sq')
-    name_x_stddev = _tmp_name(name_x, 'stddev')
-    name_x_norm = _tmp_name(name_x, 'norm')
-    name_x_norm_scaled = _tmp_name(name_x, 'norm_scaled')
-    name_mean_unflatten = _tmp_name(name_mean, 'unflatten')
-    name_variance_unflatten = _tmp_name(name_variance, 'unflatten')
-    name_mean_flatten2d = _tmp_name(name_mean, 'flatten2d')
-    name_variance_flatten2d = _tmp_name(name_variance, 'flatten2d')
+    name_x_sub_mean = _tmp_name(name_x, 'sub_mean', block)
+    name_x_sub_mean_sq = _tmp_name(name_x, 'sub_mean_sq', block)
+    name_x_stddev = _tmp_name(name_x, 'stddev', block)
+    name_x_norm = _tmp_name(name_x, 'norm', block)
+    name_x_norm_scaled = _tmp_name(name_x, 'norm_scaled', block)
+    name_mean_unflatten = _tmp_name(name_mean, 'unflatten', block)
+    name_variance_unflatten = _tmp_name(name_variance, 'unflatten', block)
+    name_mean_flatten2d = _tmp_name(name_mean, 'flatten2d', block)
+    name_variance_flatten2d = _tmp_name(name_variance, 'flatten2d', block)
     epsilon_node = global_const(norm_epsilon, block)
     node_list = []
     if epsilon_node.node:
@@ -680,7 +684,7 @@ def layer_norm_op(operator, block):
             outputs=[name_variance],
             axes=[0]),
     ])
-    return tuple(node_list)
+    return _to_node_tuple(node_list)
 
 
 def lrn_op(operator, block):
@@ -731,19 +735,17 @@ def logsoftmax_op():
 
 def lookup_table_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    out_shape = block.vars[get_old_name(outputs['Out'][0])].shape
-    name_out_shape = _tmp_name(outputs['Out'][0], 'shape')
-    name_out_gathered = _tmp_name(outputs['Out'][0], 'gathered')
-    node_list = [
-        make_node(
-            'Constant',
-            inputs=[],
-            outputs=[name_out_shape],
-            value=make_tensor(
-                name=name_out_shape + '_const_tensor',
-                data_type=TensorProto.INT64,
-                dims=(len(out_shape),),
-                vals=out_shape)),
+    ids_shape = block.vars[get_old_name(inputs['Ids'][0])].shape
+    W_shape = block.vars[get_old_name(inputs['W'][0])].shape
+    out_shape = ids_shape[:-1] + W_shape[-1:]
+
+    name_out_gathered = _tmp_name(outputs['Out'][0], 'gathered', block)
+
+    node_list = []
+    out_shape_node = global_const(np.array(out_shape), block,
+                                  node_name='shape_'+'x'.join(str(d) if d > 0 else 'N' for d in out_shape))
+    node_list.extend([
+        out_shape_node.node,
         make_node(
             'Gather',
             inputs=[inputs['W'][0], inputs['Ids'][0]],
@@ -751,10 +753,10 @@ def lookup_table_op(operator, block):
             axis=0),
         make_node(
             'Reshape',
-            inputs=[name_out_gathered, name_out_shape],
+            inputs=[name_out_gathered, out_shape_node.name],
             outputs=outputs['Out'])
-    ]
-    return tuple(node_list)
+    ])
+    return _to_node_tuple(node_list)
 
 
 def lpnormalization_op():
@@ -771,14 +773,12 @@ def mul_op(operator, block):
     # Get shape of inputs
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
-    x_shape = paddle_onnx_shape(x_shape)
-    y_shape = paddle_onnx_shape(y_shape)
     x_num_col_dims, y_num_col_dims = attrs['x_num_col_dims'], attrs[
         'y_num_col_dims']
     out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
 
     # Flatten input(X) and input(Y) into 2-D matries
-    x_flat_out = [_tmp_name(inputs['X'][0], 'flatten')]
+    x_flat_out = [_tmp_name(inputs['X'][0], 'flatten', block)]
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
 
     # Because in TensorRT backend, Flatten op only accepts input tensor with
@@ -786,6 +786,8 @@ def mul_op(operator, block):
     # ONNX is v1.0.1.
     if __onnx_ver__ == '1.0.1':
         # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
+        x_shape = paddle_onnx_shape(x_shape)
+        y_shape = paddle_onnx_shape(y_shape)
         flatten_x_node = make_node(
             'Reshape',
             inputs=inputs['X'],
@@ -869,11 +871,14 @@ def matmul_op(operator, block):
     y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
     name_matmul_x = inputs['X'][0]
     name_matmul_y = inputs['Y'][0]
+    transposed = False
     node_list = []
     if attrs.get('transpose_X', False):
+        transposed = True
         name_matmul_x, transposed_node = _matmul_transpose_op(name_matmul_x, block)
         node_list.append(transposed_node)
     if attrs.get('transpose_Y', False):
+        transposed = True
         name_matmul_y, transposed_node = _matmul_transpose_op(name_matmul_y, block)
         node_list.append(transposed_node)
     name_matmul_out = outputs['Out'][0]
@@ -882,12 +887,12 @@ def matmul_op(operator, block):
     need_to_scale = attrs.get('alpha', None) != 1.0
     unsqueeze_inputs = []
     if need_to_scale or need_unsqueeze:
-        name_matmul_out = _tmp_name(name_matmul_out, 'matmul')
+        name_matmul_out = _tmp_name(name_matmul_out, 'matmul', block)
     if need_to_scale and need_unsqueeze:
         name_mul_out = name_matmul_out + '_scaled'
         unsqueeze_inputs = [name_mul_out]
     elif not need_to_scale and need_unsqueeze:
-        name_mul_out = _tmp_name(outputs['Out'][0], 'scaled')
+        name_mul_out = _tmp_name(outputs['Out'][0], 'scaled', block)
         unsqueeze_inputs = [name_matmul_out]
     node_list.append(make_node(
         'MatMul',
@@ -902,8 +907,10 @@ def matmul_op(operator, block):
                 inputs=[name_matmul_out, scale_const_node.name],
                 outputs=[name_mul_out])
         ])
-    if need_unsqueeze:
-        rank1_shape_const = global_const(np.array([1], dtype=np.int64), block, node_name='rank1_shape')
+    if need_unsqueeze and not transposed:
+        # According to: Also note that if the raw tensor x or y is rank-1 and nontransposed, the prepended or appended
+        # dimension 1 will be removed after matrix multiplication.
+        rank1_shape_const = global_const(np.array([-1], dtype=np.int64), block, node_name='rank1_shape')
         node_list.append(rank1_shape_const.node)
         node_list.append(onnx.helper.make_node(
             'Reshape',
@@ -914,7 +921,7 @@ def matmul_op(operator, block):
 
 def _matmul_transpose_op(x, block):
     x_shape = block.vars[get_old_name(x)].shape
-    name_x_transposed = _tmp_name(x, 'transposed')
+    name_x_transposed = _tmp_name(x, 'transposed', block)
     axes = np.arange(len(x_shape))
     axes = list(axes[:-2]) + [axes[-1], axes[-2]]
     node = make_node(
@@ -1067,7 +1074,7 @@ def reshape_op(operator, block):
             inputs=[inputs['X'][0], shape_name],
             outputs=outputs['Out'])
     else:
-        shape_name = _tmp_name(outputs['Out'][0], "shape_var")
+        shape_name = _tmp_name(outputs['Out'][0], "shape_var", block)
         output_shape_node = make_node(
             'Constant',
             inputs=[],
@@ -1092,7 +1099,7 @@ def shape_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     im_outputs = []
     node_list = []
-    outputs_shape = [_tmp_name(outputs['Out'][0], "shape")]
+    outputs_shape = [_tmp_name(outputs['Out'][0], "shape", block)]
     node_shape = make_node(
         'Shape', inputs=inputs['Input'], outputs=outputs_shape)
     node_list.append(node_shape)
@@ -1267,7 +1274,7 @@ def stack_op(operator, block):
     concat_inputs = []
     node_list = []
     for input in inputs['X']:
-        name_unsqueezed = _tmp_name(input, 'unsqueezed')
+        name_unsqueezed = _tmp_name(input, 'unsqueezed', block)
         concat_inputs.append(name_unsqueezed)
         node_list.append(make_node(
             'Unsqueeze',
@@ -1328,7 +1335,6 @@ def thresholded_relu_op(operator, block):
 
 def scale_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    print('scale', outputs, {k: v for k, v in attrs.items() if not k.startswith('op_')})
     scale_var_name = [outputs['Out'][0] + "@scale"]
     node_scale = onnx.helper.make_node(
         'Constant',

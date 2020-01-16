@@ -28,7 +28,7 @@ class TestMulOp(OpTest):
         self.outputs = {'Out': np.zeros((1, 1))}
 
     def test_check_output(self):
-        self.check_output()
+        self.check_output(decimal=4)
 
 
 if __name__ == '__main__':
