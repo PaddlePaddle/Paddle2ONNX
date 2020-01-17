@@ -113,7 +113,7 @@ def batch_norm_op(operator, block):
 
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     nodes = ()
-    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with 
+    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with
     # dim. == 2 supported by Fluid, reshape it into dim. == 4.
     if len(x_shape) == 2:
         new_shape = [0, x_shape[1], 1, 1]
@@ -362,8 +362,8 @@ def dropout_op(operator, block):
 
 
 def elementwise_ops(op_type, operator, block):
-    """Convert elementwise operators From to ONNX. Supported elementwise 
-       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'. 
+    """Convert elementwise operators From to ONNX. Supported elementwise
+       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'.
     """
 
     inputs, attrs, outputs = op_io_info(operator)
@@ -386,7 +386,7 @@ def elementwise_ops(op_type, operator, block):
                 post_shape.append(1)
         pre_shape.extend(shape)
         pre_shape.extend(post_shape)
-        final_shape = [i if i > 0 else 1 for i in pre_shape]
+        final_shape = [i if i > 0 else -1 for i in pre_shape]
         shape_name = outputs['Out'][0] + "@shape_var"
         output_const_node = make_node(
             'Constant',
@@ -568,7 +568,7 @@ def lppool_op():
 def mul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
-    # Get shape of inputs 
+    # Get shape of inputs
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
     x_shape = paddle_onnx_shape(x_shape)
@@ -581,9 +581,9 @@ def mul_op(operator, block):
     x_flat_out = [inputs['X'][0] + '@flatten_0']
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
 
-    # Because in TensorRT backend, Flatten op only accepts input tensor with 
-    # dimension 3, here we use Reshape op to flatten the input tensor when 
-    # ONNX is v1.0.1. 
+    # Because in TensorRT backend, Flatten op only accepts input tensor with
+    # dimension 3, here we use Reshape op to flatten the input tensor when
+    # ONNX is v1.0.1.
     if __onnx_ver__ == '1.0.1':
         # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
         flatten_x_node = make_node(
@@ -614,7 +614,7 @@ def mul_op(operator, block):
             outputs=y_flat_out,
             axis=attrs['y_num_col_dims'])
 
-    # Mat mul 
+    # Mat mul
     matmul_out = [outputs['Out'][0] + '@matmul_0']
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
@@ -736,7 +736,7 @@ def randomuniformlike_op():
 
 
 def reduce_ops(op_type, operator, block):
-    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the 
+    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the
        target ONNX operator type, supporting 'Reduce{Max, Mean, Min, Sum}'
        right now.
     """
@@ -795,7 +795,7 @@ def reshape_op(operator, block):
     if 'Shape' in inputs and inputs['Shape'] is not None and len(inputs[
             'Shape']) > 0:
         shape_name = inputs['Shape'][0]
-        # cast the shape to int64 
+        # cast the shape to int64
         shape_name_cast = [shape_name + "@cast"]
         cast_node = make_node(
             'Cast', inputs=inputs['Shape'], outputs=shape_name_cast, to=7)
@@ -1129,7 +1129,7 @@ def swish_op(operator, block):
             dims=(),
             vals=[beta]))
 
-    # var and node for beta * x 
+    # var and node for beta * x
     name_beta_x = [outputs['Out'][0] + "@beta_x"]
     var_beta_x = onnx.helper.make_tensor_value_info(
         name_beta_x[0], PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
@@ -1150,7 +1150,7 @@ def swish_op(operator, block):
 
 def relu6_op(operator, block):
     """
-    The activation function relu6, out=min(max(0,x),6) 
+    The activation function relu6, out=min(max(0,x),6)
     And you can set the threshold of activation.
     """
     inputs, attrs, outputs = op_io_info(operator)

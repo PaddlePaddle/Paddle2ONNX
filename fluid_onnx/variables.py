@@ -32,12 +32,7 @@ def paddle_onnx_shape(paddle_shape):
     """
 
     onnx_shape = np.array(list(paddle_shape))
-    onnx_shape[onnx_shape < 0] = 1
-    output_shape = tuple(onnx_shape)
-    # python3 do not have the int64
-    python_version = sys.version
-    if int(python_version[0]) == 3:
-        output_shape = [int(sp) for sp in output_shape]
+    output_shape = tuple([int(dim) if dim >= 0 else u'?' for dim in onnx_shape])
     return output_shape
 
 
