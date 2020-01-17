@@ -17,18 +17,28 @@ import numpy as np
 from op_test import OpTest
 
 
-class TestMulOp(OpTest):
+class TestStackOp(OpTest):
     def setUp(self):
-        self.op_type = 'mul'
-        self.inputs = {
-            'X': np.random.random((15, 4, 12, 10)).astype('float32'),
-            'Y': np.random.random((30, 4, 4, 9)).astype('float32')
-        }
-        self.attrs = {'x_num_col_dims': 2, 'y_num_col_dims': 2}
-        self.outputs = {'Out': np.zeros((1, 1))}
+        self.op_type = 'stack'
+        self.x0 = np.ones((1, 2, 3), dtype=np.int32)
+        self.x1 = np.ones((1, 2, 3), dtype=np.int32)
+        self.x2 = np.ones((1, 2, 3), dtype=np.int32)
+        self.inputs = {'X': [('x0', self.x0), ('x1', self.x1), ('x2', self.x2)]}
+        self.attrs = {'axis': 0}
+        self.outputs = {'Y': np.zeros((3, 1, 2, 3), dtype=np.int32)}
 
     def test_check_output(self):
-        self.check_output(decimal=4)
+        self.check_output()
+
+
+class TestStackOp2(TestStackOp):
+    def setUp(self):
+        super().setUp()
+        self.attrs = {'axis': 1}
+        self.outputs = {'Y': np.zeros((1, 3, 2, 3), dtype=np.int32)}
+
+    def test_check_output(self):
+        self.check_output()
 
 
 if __name__ == '__main__':

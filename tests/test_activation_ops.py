@@ -46,6 +46,11 @@ class TestFloorOp(TestAbsOp):
         self.op_type = 'floor'
 
 
+class TestGeluOp(TestAbsOp):
+    def init_op_type(self):
+        self.op_type = 'gelu'
+
+
 class TestLogOp(TestAbsOp):
     def init_op_type(self):
         self.op_type = 'log'

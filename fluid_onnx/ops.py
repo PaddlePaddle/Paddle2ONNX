@@ -15,8 +15,11 @@
 import sys
 import onnx
 import numpy as np
+import re
+from collections import namedtuple
 from functools import partial
 from onnx import TensorProto
+from onnx.numpy_helper import from_array
 from onnx.helper import make_node, make_tensor
 from paddle.fluid.executor import _fetch_var as fetch_var
 from fluid.utils import op_io_info, get_old_name
@@ -35,11 +38,9 @@ test_fit_a_line.py
 ^ Try to make this run before proceeding.
 
 test_machine_translation.py
-- lookup_table
 - tanh
 - lstm
 - sequence_pool
-- lookup_table
 - lod_rank_table
 - max_sequence_len
 - less_than
@@ -62,10 +63,63 @@ test_machine_translation.py
 __onnx_ver__ = onnx.version.version
 
 __name_prefix__ = ""
+_prev_program_id_ = None
+_global_constants_ = dict()
+_unique_name_index_ = dict()
+_ConstantNode = namedtuple('_ConstantNode', ['name', 'node'])
+_invalid_name_re = re.compile(r'[^A-Za-z0-9_./>]')
 
 
-def init_name_prefix(name_prefix=""):
-    gloab
+def _check_and_reset_block_name_space(block):
+    global _prev_program_id_
+    # maybe some better way to do this?
+    if id(block.program) != _prev_program_id_:
+        _global_constants_.clear()
+        _unique_name_index_.clear()
+        _prev_program_id_ = id(block.program)
+
+
+def _tmp_name(name, suffix, block):
+    """
+    Create a unique temporary tensor name in the form of `{name}/{suffix}{index}` where `index` is blank if the
+    `{name}/{suffix}` is used for the first time, else the index is the number of times the base name has been created.
+    """
+    _check_and_reset_block_name_space(block)
+    suffix = suffix.replace('/', '')
+    name = name + '_' + suffix
+    current = _unique_name_index_.get(name, 0)
+    _unique_name_index_[name] = (current + 1)
+    return name if current == 0 else name + str(current)
+
+
+def _to_node_tuple(node_or_list):
+    if isinstance(node_or_list, tuple):
+        node_or_list = list(node_or_list)
+    if not isinstance(node_or_list, list):
+        node_or_list = [node_or_list]
+    return tuple(node for node in node_or_list if node is not None)
+
+
+def global_const(value, block, node_name=None):
+    _check_and_reset_block_name_space(block)
+    np_val = np.array(value)
+    if len(np_val.shape) != 0 and node_name is None:
+        raise KeyError('value must be a scala or the node_name must be given. it has a shape of ' + str(np_val.shape))
+    if node_name is None:
+        node_name = 'C_' + str(value)
+    node_name = _invalid_name_re.sub('_', node_name)
+    node = _global_constants_.get(node_name, None)
+    if node:
+        return _ConstantNode(node_name, None)
+    else:
+        node = onnx.helper.make_node(
+            'Constant',
+            inputs=[],
+            outputs=[node_name],
+            name=node_name,
+            value=from_array(np_val, name=node_name + '_const_tensor'))
+        _global_constants_[node_name] = node
+        return _ConstantNode(node_name, node)
 
 
 def activation_ops(act_type, operator, block):
@@ -113,7 +167,7 @@ def batch_norm_op(operator, block):
 
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     nodes = ()
-    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with 
+    # Batch norm in ONNX only supports input dim. >= 3, for input tensor with
     # dim. == 2 supported by Fluid, reshape it into dim. == 4.
     if len(x_shape) == 2:
         new_shape = [0, x_shape[1], 1, 1]
@@ -333,37 +387,22 @@ def dropout_op(operator, block):
         ratio=attrs['dropout_prob'])
 
     ## Fluid and ONNX use different dropout formula
-    # ONNX 1.0.1 doesn't support Scale op
-    if __onnx_ver__ == '1.0.1':
-        scale_val = [outputs['Out'][0] + '@scale']
-        constant_node = make_node(
-            'Constant',
-            inputs=[],
-            outputs=scale_val,
-            value=make_tensor(
-                name=scale_val[0],
-                dims=(),
-                data_type=TensorProto.FLOAT,
-                vals=[1.0 - attrs['dropout_prob']]))
-        mul_node = make_node(
+    # onnx version >= 1.4.1 supports ai.onnx ver 9 which has no `broadcast` attr for Mul
+    scale_mul_attrs = {'broadcast': 1} if __onnx_ver__ < '1.4.1' else {}
+    scale_const_node = global_const(np.array(1.0 - attrs['dropout_prob'], dtype=np.float32), block)
+    return _to_node_tuple([
+        dropout_node,
+        scale_const_node.node,
+        make_node(
             'Mul',
-            inputs=scale_input + scale_val,
+            inputs=scale_input + [scale_const_node.name],
             outputs=outputs['Out'],
-            broadcast=1)
-        nodes = (dropout_node, constant_node, mul_node)
-    else:
-        scale_node = make_node(
-            'Scale',
-            inputs=scale_input,
-            outputs=outputs['Out'],
-            scale=1.0 - attrs['dropout_prob'])
-        nodes = (dropout_node, scale_node)
-    return nodes
+            **scale_mul_attrs)])
 
 
 def elementwise_ops(op_type, operator, block):
-    """Convert elementwise operators From to ONNX. Supported elementwise 
-       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'. 
+    """Convert elementwise operators From to ONNX. Supported elementwise
+       'op_type' includes 'Add', 'Div', 'Mul', 'Pow' and 'Sub'.
     """
 
     inputs, attrs, outputs = op_io_info(operator)
@@ -387,7 +426,7 @@ def elementwise_ops(op_type, operator, block):
         pre_shape.extend(shape)
         pre_shape.extend(post_shape)
         final_shape = [i if i > 0 else 1 for i in pre_shape]
-        shape_name = outputs['Out'][0] + "@shape_var"
+        shape_name = _tmp_name(outputs['Out'][0], "@shape_var", block)
         output_const_node = make_node(
             'Constant',
             inputs=[],
@@ -484,6 +523,43 @@ def gather_op(operator, block):
         'Gather', inputs=inputs['X'] + inputs['Index'], outputs=outputs['Out'])
 
 
+def gelu_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    name_x_div_sqrt2 = _tmp_name(inputs['X'][0], 'div_sqrt2', block)
+    name_x_erf = _tmp_name(inputs['X'][0], 'erf', block)
+    name_erf_plus_one = outputs['Out'][0] + '@erf_plus'
+    name_x_mul_erf = outputs['Out'][0] + '@x_mul_erf'
+
+    sqrt2 = np.sqrt(np.array(2.0, dtype=np.float32))
+    sqrt2_node = global_const(sqrt2, block)
+    one_node = global_const(np.array(1.0, dtype=np.float32), block)
+    two_node = global_const(np.array(2.0, dtype=np.float32), block)
+    node_list = [node.node for node in [sqrt2_node, one_node, two_node] if node.node]
+    node_list.extend([
+        make_node(
+            'Div',
+            inputs=[inputs['X'][0], sqrt2_node.name],
+            outputs=[name_x_div_sqrt2]),
+        make_node(
+            'Erf',
+            inputs=[name_x_div_sqrt2],
+            outputs=[name_x_erf]),
+        make_node(
+            'Add',
+            inputs=[name_x_erf, one_node.name],
+            outputs=[name_erf_plus_one]),
+        make_node(
+            'Mul',
+            inputs=[inputs['X'][0], name_erf_plus_one],
+            outputs=[name_x_mul_erf]),
+        make_node(
+            'Div',
+            inputs=[name_x_mul_erf, two_node.name],
+            outputs=outputs['Out'])
+    ])
+    return tuple(node_list)
+
+
 def gemm_op():
     pass
 
@@ -509,6 +585,96 @@ def hardmax_op():
 
 def instancenormalization_op():
     pass
+
+
+def layer_norm_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    name_x = inputs['X'][0]
+    name_bias = inputs['Bias'][0]
+    name_scale = inputs['Scale'][0]
+    name_mean = outputs['Mean'][0]
+    name_variance = outputs['Variance'][0]
+    name_y = outputs['Y'][0]
+    norm_axis = attrs['begin_norm_axis']
+    norm_epsilon = np.array(attrs['epsilon'], dtype=np.float32)
+    name_x_sub_mean = _tmp_name(name_x, 'sub_mean', block)
+    name_x_sub_mean_sq = _tmp_name(name_x, 'sub_mean_sq', block)
+    name_x_stddev = _tmp_name(name_x, 'stddev', block)
+    name_x_norm = _tmp_name(name_x, 'norm', block)
+    name_x_norm_scaled = _tmp_name(name_x, 'norm_scaled', block)
+    name_mean_unflatten = _tmp_name(name_mean, 'unflatten', block)
+    name_variance_unflatten = _tmp_name(name_variance, 'unflatten', block)
+    name_mean_flatten2d = _tmp_name(name_mean, 'flatten2d', block)
+    name_variance_flatten2d = _tmp_name(name_variance, 'flatten2d', block)
+    epsilon_node = global_const(norm_epsilon, block)
+    node_list = []
+    if epsilon_node.node:
+        node_list.append(epsilon_node.node)
+    node_list.extend([
+        onnx.helper.make_node(
+            'ReduceMean',
+            inputs=[name_x],
+            outputs=[name_mean_unflatten],
+            axes=[norm_axis],
+            keepdims=1),
+        onnx.helper.make_node(
+            'Sub',
+            inputs=[name_x, name_mean_unflatten],
+            outputs=[name_x_sub_mean],
+        ),
+        onnx.helper.make_node(
+            'Mul',
+            inputs=[name_x_sub_mean, name_x_sub_mean],
+            outputs=[name_x_sub_mean_sq],
+        ),
+        onnx.helper.make_node(
+            'ReduceMean',
+            inputs=[name_x_sub_mean_sq],
+            outputs=[name_variance_unflatten],
+            axes=[norm_axis],
+            keepdims=1),
+        onnx.helper.make_node(
+            'Add',
+            inputs=[name_variance_unflatten, epsilon_node.name],
+            outputs=[(name_variance + '@add_epsilon')]),
+        onnx.helper.make_node(
+            'Sqrt',
+            inputs=[(name_variance + '@add_epsilon')],
+            outputs=[name_x_stddev]),
+        onnx.helper.make_node(
+            'Div',
+            inputs=[name_x_sub_mean, name_x_stddev],
+            outputs=[name_x_norm]),
+        onnx.helper.make_node(
+            'Mul',
+            inputs=[name_x_norm, name_scale],
+            outputs=[name_x_norm_scaled]),
+        onnx.helper.make_node(
+            'Add',
+            inputs=[name_x_norm_scaled, name_bias],
+            outputs=[name_y]),
+        onnx.helper.make_node(
+            'Flatten',
+            inputs=[name_mean_unflatten],
+            outputs=[name_mean_flatten2d],
+            axis=0),
+        onnx.helper.make_node(
+            'Flatten',
+            inputs=[name_variance_unflatten],
+            outputs=[name_variance_flatten2d],
+            axis=0),
+        onnx.helper.make_node(
+            'Squeeze',
+            inputs=[name_mean_flatten2d],
+            outputs=[name_mean],
+            axes=[0]),
+        onnx.helper.make_node(
+            'Squeeze',
+            inputs=[name_variance_flatten2d],
+            outputs=[name_variance],
+            axes=[0]),
+    ])
+    return _to_node_tuple(node_list)
 
 
 def lrn_op(operator, block):
@@ -557,6 +723,32 @@ def logsoftmax_op():
     pass
 
 
+def lookup_table_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    ids_shape = block.vars[get_old_name(inputs['Ids'][0])].shape
+    W_shape = block.vars[get_old_name(inputs['W'][0])].shape
+    out_shape = ids_shape[:-1] + W_shape[-1:]
+
+    name_out_gathered = _tmp_name(outputs['Out'][0], 'gathered', block)
+
+    node_list = []
+    out_shape_node = global_const(np.array(out_shape), block,
+                                  node_name='shape_'+'x'.join(str(d) if d > 0 else 'N' for d in out_shape))
+    node_list.extend([
+        out_shape_node.node,
+        make_node(
+            'Gather',
+            inputs=[inputs['W'][0], inputs['Ids'][0]],
+            outputs=[name_out_gathered],
+            axis=0),
+        make_node(
+            'Reshape',
+            inputs=[name_out_gathered, out_shape_node.name],
+            outputs=outputs['Out'])
+    ])
+    return _to_node_tuple(node_list)
+
+
 def lpnormalization_op():
     pass
 
@@ -568,24 +760,24 @@ def lppool_op():
 def mul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
 
-    # Get shape of inputs 
+    # Get shape of inputs
     x_shape = block.vars[get_old_name(inputs['X'][0])].shape
     y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
-    x_shape = paddle_onnx_shape(x_shape)
-    y_shape = paddle_onnx_shape(y_shape)
     x_num_col_dims, y_num_col_dims = attrs['x_num_col_dims'], attrs[
         'y_num_col_dims']
     out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
 
     # Flatten input(X) and input(Y) into 2-D matries
-    x_flat_out = [inputs['X'][0] + '@flatten_0']
+    x_flat_out = [_tmp_name(inputs['X'][0], 'flatten', block)]
     y_flat_out = [inputs['Y'][0] + '@flatten_0']
 
-    # Because in TensorRT backend, Flatten op only accepts input tensor with 
-    # dimension 3, here we use Reshape op to flatten the input tensor when 
-    # ONNX is v1.0.1. 
+    # Because in TensorRT backend, Flatten op only accepts input tensor with
+    # dimension 3, here we use Reshape op to flatten the input tensor when
+    # ONNX is v1.0.1.
     if __onnx_ver__ == '1.0.1':
         # In v1.0.1, shape is the attribute of Reshape op, not an input tensor.
+        x_shape = paddle_onnx_shape(x_shape)
+        y_shape = paddle_onnx_shape(y_shape)
         flatten_x_node = make_node(
             'Reshape',
             inputs=inputs['X'],
@@ -614,7 +806,7 @@ def mul_op(operator, block):
             outputs=y_flat_out,
             axis=attrs['y_num_col_dims'])
 
-    # Mat mul 
+    # Mat mul
     matmul_out = [outputs['Out'][0] + '@matmul_0']
     matmul_node = make_node(
         'MatMul', inputs=x_flat_out + y_flat_out, outputs=matmul_out)
@@ -665,10 +857,70 @@ def min_op():
 
 def matmul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
-    return make_node(
+    x_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    y_shape = block.vars[get_old_name(inputs['Y'][0])].shape
+    name_matmul_x = inputs['X'][0]
+    name_matmul_y = inputs['Y'][0]
+    transposed = False
+    node_list = []
+    if attrs.get('transpose_X', False):
+        transposed = True
+        name_matmul_x, transposed_node = _matmul_transpose_op(name_matmul_x, block)
+        node_list.append(transposed_node)
+    if attrs.get('transpose_Y', False):
+        transposed = True
+        name_matmul_y, transposed_node = _matmul_transpose_op(name_matmul_y, block)
+        node_list.append(transposed_node)
+    name_matmul_out = outputs['Out'][0]
+    name_mul_out = name_matmul_out
+    need_unsqueeze = len(x_shape) == 1 and len(y_shape) == 1
+    need_to_scale = attrs.get('alpha', None) != 1.0
+    unsqueeze_inputs = []
+    if need_to_scale or need_unsqueeze:
+        name_matmul_out = _tmp_name(name_matmul_out, 'matmul', block)
+    if need_to_scale and need_unsqueeze:
+        name_mul_out = name_matmul_out + '_scaled'
+        unsqueeze_inputs = [name_mul_out]
+    elif not need_to_scale and need_unsqueeze:
+        name_mul_out = _tmp_name(outputs['Out'][0], 'scaled', block)
+        unsqueeze_inputs = [name_matmul_out]
+    node_list.append(make_node(
         'MatMul',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'])
+        inputs=[name_matmul_x, name_matmul_y],
+        outputs=[name_matmul_out]))
+    if need_to_scale:
+        scale_const_node = global_const(np.array(attrs['alpha'], dtype=np.float32), block)
+        node_list.extend([
+            scale_const_node.node,
+            make_node(
+                'Mul',
+                inputs=[name_matmul_out, scale_const_node.name],
+                outputs=[name_mul_out])
+        ])
+    if need_unsqueeze and not transposed:
+        # According to: Also note that if the raw tensor x or y is rank-1 and nontransposed, the prepended or appended
+        # dimension 1 will be removed after matrix multiplication.
+        rank1_shape_const = global_const(np.array([-1], dtype=np.int64), block, node_name='rank1_shape')
+        node_list.append(rank1_shape_const.node)
+        node_list.append(onnx.helper.make_node(
+            'Reshape',
+            inputs=unsqueeze_inputs + [rank1_shape_const.name],
+            outputs=outputs['Out']))
+    return _to_node_tuple(node_list)
+
+
+def _matmul_transpose_op(x, block):
+    x_shape = block.vars[get_old_name(x)].shape
+    name_x_transposed = _tmp_name(x, 'transposed', block)
+    axes = np.arange(len(x_shape))
+    axes = list(axes[:-2]) + [axes[-1], axes[-2]]
+    node = make_node(
+        'Transpose',
+        inputs=[x],
+        outputs=[name_x_transposed],
+        perm=axes)
+    return name_x_transposed, node
+
 
 def neg_op():
     pass
@@ -736,7 +988,7 @@ def randomuniformlike_op():
 
 
 def reduce_ops(op_type, operator, block):
-    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the 
+    """Convert reduce operators in Fluid to ONNX. 'op_type' specifies the
        target ONNX operator type, supporting 'Reduce{Max, Mean, Min, Sum}'
        right now.
     """
@@ -795,7 +1047,7 @@ def reshape_op(operator, block):
     if 'Shape' in inputs and inputs['Shape'] is not None and len(inputs[
             'Shape']) > 0:
         shape_name = inputs['Shape'][0]
-        # cast the shape to int64 
+        # cast the shape to int64
         shape_name_cast = [shape_name + "@cast"]
         cast_node = make_node(
             'Cast', inputs=inputs['Shape'], outputs=shape_name_cast, to=7)
@@ -812,7 +1064,7 @@ def reshape_op(operator, block):
             inputs=[inputs['X'][0], shape_name],
             outputs=outputs['Out'])
     else:
-        shape_name = outputs['Out'][0] + "@shape_var"
+        shape_name = _tmp_name(outputs['Out'][0], "shape_var", block)
         output_shape_node = make_node(
             'Constant',
             inputs=[],
@@ -837,7 +1089,7 @@ def shape_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     im_outputs = []
     node_list = []
-    outputs_shape = [outputs['Out'][0] + "@shape"]
+    outputs_shape = [_tmp_name(outputs['Out'][0], "shape", block)]
     node_shape = make_node(
         'Shape', inputs=inputs['Input'], outputs=outputs_shape)
     node_list.append(node_shape)
@@ -1006,6 +1258,27 @@ def squeeze_op():
     pass
 
 
+def stack_op(operator, block):
+    inputs, attrs, outputs = op_io_info(operator)
+    axis = attrs['axis']
+    concat_inputs = []
+    node_list = []
+    for input in inputs['X']:
+        name_unsqueezed = _tmp_name(input, 'unsqueezed', block)
+        concat_inputs.append(name_unsqueezed)
+        node_list.append(make_node(
+            'Unsqueeze',
+            inputs=[input],
+            outputs=[name_unsqueezed],
+            axes=[axis]))
+    node_list.append(make_node(
+        'Concat',
+        inputs=concat_inputs,
+        outputs=outputs['Y'],
+        axis=axis))
+    return tuple(node_list)
+
+
 def sub_op():
     pass
 
@@ -1129,7 +1402,7 @@ def swish_op(operator, block):
             dims=(),
             vals=[beta]))
 
-    # var and node for beta * x 
+    # var and node for beta * x
     name_beta_x = [outputs['Out'][0] + "@beta_x"]
     var_beta_x = onnx.helper.make_tensor_value_info(
         name_beta_x[0], PADDLE_TO_ONNX_DTYPE[paddle_var.dtype], shape)
@@ -1150,7 +1423,7 @@ def swish_op(operator, block):
 
 def relu6_op(operator, block):
     """
-    The activation function relu6, out=min(max(0,x),6) 
+    The activation function relu6, out=min(max(0,x),6)
     And you can set the threshold of activation.
     """
     inputs, attrs, outputs = op_io_info(operator)
@@ -1221,12 +1494,14 @@ node_maker = {
     'floor': partial(activation_ops, 'Floor'),
     '': 'GRU',
     'gather': gather_op,
+    'gelu': gelu_op,
     '': 'Gemm',
     '': 'GlobalLpPool',
     'greater_than': partial(compare_ops, 'Greater'),
     'hard_sigmoid': 'HardSigmoid',  # Caffe2 error
     # 'Hardmax', NEEDS ATTENTION.
     # 'InstanceNormalization', NEEDS ATTENTION.
+    'layer_norm': layer_norm_op,
     'less_than': partial(compare_ops, 'Less'),
     'lrn': lrn_op,
     '': 'LSTM',
@@ -1237,6 +1512,7 @@ node_maker = {
     'logical_not': partial(unary_logical_ops, 'Not'),
     'logical_xor': partial(binary_logical_ops, 'Xor'),
     ',': 'LogSoftmax',
+    'lookup_table': lookup_table_op,
     '': 'LpNormalization',
     '': 'LpPool',
     '': 'MatMul',
@@ -1280,6 +1556,7 @@ node_maker = {
     '': 'SpaceToDepth',
     '': 'Split',
     'sqrt': partial(activation_ops, 'Sqrt'),
+    'stack': stack_op,
     # 'Squeeze', NEEDS ATTENTION.
     '': 'Sum',
     'tanh': partial(activation_ops, 'Tanh'),
