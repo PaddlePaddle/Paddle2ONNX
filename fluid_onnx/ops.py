@@ -578,8 +578,8 @@ def mul_op(operator, block):
     out_shape = x_shape[:x_num_col_dims] + y_shape[y_num_col_dims:]
 
     # Flatten input(X) and input(Y) into 2-D matries
-    x_flat_out = [inputs['X'][0] + '@flatten_0']
-    y_flat_out = [inputs['Y'][0] + '@flatten_0']
+    x_flat_out = [inputs['X'][0] + "@" + inputs['Y'][0] + '@flatten_0']
+    y_flat_out = [inputs['Y'][0] + "@" + inputs['X'][0] + '@flatten_0']
 
     # Because in TensorRT backend, Flatten op only accepts input tensor with 
     # dimension 3, here we use Reshape op to flatten the input tensor when 
