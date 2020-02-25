@@ -940,7 +940,6 @@ def nearest_interp_op(operator, block):
             inputs=outputs_out_size_f + name_h_w,
             outputs=outputs_h_w_scales)
         node_list.append(node_h_w_scales)
-        print("3333333333333333333333333")
         name_b_c_scales = [outputs['Out'][0] + "@b_c_scales"]
         node_b_c_scales = make_node(
             'Constant',
