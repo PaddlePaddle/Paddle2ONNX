@@ -95,10 +95,7 @@ def arg_max_op(operator, block):
     node_list.append(argmax_node)
 
     cast_node = make_node(
-        'Cast',
-        inputs=outputs_argmax,
-        outputs=outputs['Out'],
-        to=1)
+        'Cast', inputs=outputs_argmax, outputs=outputs['Out'], to=1)
 
     node_list.append(cast_node)
     return tuple(node_list)
@@ -663,12 +660,12 @@ def mean_op():
 def min_op():
     pass
 
+
 def matmul_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node(
-        'MatMul',
-        inputs=inputs['X'] + inputs['Y'],
-        outputs=outputs['Out'])
+        'MatMul', inputs=inputs['X'] + inputs['Y'], outputs=outputs['Out'])
+
 
 def neg_op():
     pass
@@ -678,7 +675,9 @@ def norm_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     return make_node(
         'LpNormalization',
-        inputs=inputs['X'], outputs=outputs['Out'], axis=attrs['axis'])
+        inputs=inputs['X'],
+        outputs=outputs['Out'],
+        axis=attrs['axis'])
 
 
 def prelu_op(operator, block):
@@ -917,48 +916,62 @@ def nearest_interp_op(operator, block):
     width = input_shape[3]
     node_list = []
     im_outputs = []
+    scale = attrs['scale']
+    if scale == 0.0 or scale is None:
+        outputs_out_size_f = [outputs['Out'][0] + "@out_size_f"]
+        node_out_size_f = make_node(
+            'Cast', inputs=inputs['OutSize'], outputs=outputs_out_size_f, to=1)
+        node_list.append(node_out_size_f)
 
-    outputs_out_size_f = [outputs['Out'][0] + "@out_size_f"]
-    node_out_size_f = make_node(
-        'Cast', inputs=inputs['OutSize'], outputs=outputs_out_size_f, to=1)
-    node_list.append(node_out_size_f)
+        name_h_w = [outputs['Out'][0] + "@h_w"]
+        node_h_w = make_node(
+            'Constant',
+            inputs=[],
+            outputs=name_h_w,
+            value=make_tensor(
+                name=name_h_w[0],
+                data_type=TensorProto.FLOAT,
+                dims=[2],
+                vals=[height, width]))
+        node_list.append(node_h_w)
+        outputs_h_w_scales = [outputs['Out'][0] + "@h_w_scales"]
+        node_h_w_scales = make_node(
+            'Div',
+            inputs=outputs_out_size_f + name_h_w,
+            outputs=outputs_h_w_scales)
+        node_list.append(node_h_w_scales)
+        name_b_c_scales = [outputs['Out'][0] + "@b_c_scales"]
+        node_b_c_scales = make_node(
+            'Constant',
+            inputs=[],
+            outputs=name_b_c_scales,
+            value=make_tensor(
+                name=name_b_c_scales[0],
+                data_type=TensorProto.FLOAT,
+                dims=[2],
+                vals=[1, 1]))
+        node_list.append(node_b_c_scales)
 
-    name_h_w = [outputs['Out'][0] + "@h_w"]
-    node_h_w = make_node(
-        'Constant',
-        inputs=[],
-        outputs=name_h_w,
-        value=make_tensor(
-            name=name_h_w[0],
-            data_type=TensorProto.FLOAT,
-            dims=[2],
-            vals=[height, width]))
-    node_list.append(node_h_w)
-
-    outputs_h_w_scales = [outputs['Out'][0] + "@h_w_scales"]
-    node_h_w_scales = make_node(
-        'Div', inputs=outputs_out_size_f + name_h_w, outputs=outputs_h_w_scales)
-    node_list.append(node_h_w_scales)
-
-    name_b_c_scales = [outputs['Out'][0] + "@b_c_scales"]
-    node_b_c_scales = make_node(
-        'Constant',
-        inputs=[],
-        outputs=name_b_c_scales,
-        value=make_tensor(
-            name=name_b_c_scales[0],
-            data_type=TensorProto.FLOAT,
-            dims=[2],
-            vals=[1, 1]))
-    node_list.append(node_b_c_scales)
-
-    outputs_scales = [outputs['Out'][0] + "@scales"]
-    node_scales = make_node(
-        'Concat',
-        inputs=name_b_c_scales + outputs_h_w_scales,
-        outputs=outputs_scales,
-        axis=0)
-    node_list.append(node_scales)
+        outputs_scales = [outputs['Out'][0] + "@scales"]
+        node_scales = make_node(
+            'Concat',
+            inputs=name_b_c_scales + outputs_h_w_scales,
+            outputs=outputs_scales,
+            axis=0)
+        node_list.append(node_scales)
+    else:
+        outputs_scales = [outputs['Out'][0] + "@scales"]
+        node_scales = make_node(
+            'Constant',
+            inputs=[],
+            outputs=outputs_scales,
+            value=make_tensor(
+                name=outputs_scales[0],
+                data_type=TensorProto.FLOAT,
+                dims=[4],
+                vals=[1, 1, scale, scale]))
+        node_list.append(node_scales)
+        outputs_roi = [outputs['Out'][0] + "@roi"]
 
     outputs_resize = [outputs['Out'][0] + "@resize"]
     node_resize = make_node(
@@ -1036,10 +1049,8 @@ def unsqueeze_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
     axes = attrs['axes']
     return make_node(
-        'Unsqueeze',
-        inputs=inputs['X'],
-        outputs=outputs['Out'],
-        axes=axes)
+        'Unsqueeze', inputs=inputs['X'], outputs=outputs['Out'], axes=axes)
+
 
 def thresholded_relu_op(operator, block):
     inputs, attrs, outputs = op_io_info(operator)
