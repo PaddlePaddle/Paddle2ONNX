@@ -29,7 +29,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ###  安装方式1
      pip install paddle2onnx
 ### 安装方式2
-     git clone https://github.com/PaddlePaddle/paddle-onnx.git
+     git clone https://github.com/PaddlePaddle/paddle2onnx.git
      python setup.py install
 ##  使用方式
 ###  普通用户使用方式
@@ -39,7 +39,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ###  开发者使用方式
 > 如果用户有一个新的模型要转成onnx模型，想验证模型的精确度，可以使用下面的方式来进行验证。
 
-    git clone https://github.com/PaddlePaddle/paddle-onnx.git
+    git clone https://github.com/PaddlePaddle/paddle2onnx.git
     python fluid_onnx/fluid_to_onnx.py --fluid_model src --onnx_model dist --debug
 ### 参数选项
 | 参数 |参数说明 |
