@@ -1,4 +1,25 @@
-# paddle2onnx
+# 关于Paddle2ONNX迁移至X2Paddle的说明
+Paddle2ONNX目前整体功能已经迁移至X2Paddle，用户按照如下方式安装X2Paddle，即可转换Paddle模型至ONNX
+
+X2Paddle项目地址： https://github.com/PaddlePaddle/X2Paddle
+```
+git clone https://github.com/PaddlePaddle/X2Paddle
+cd X2Paddle
+python setup.py install
+```
+转换命令
+```
+x2paddle -f paddle2onnx -m paddle_infer_model_dir -s save_onnx_dir
+```
+其中`paddle_infer_model_dir`为Paddle模型目录路径，里面需包含`__model__`和`__params__`两个文件，且文件名得严格一致。
+
+由于Paddle框架和PaddleDetection的升级，目前YOLOv3等检测模型暂无法支持，目前支持模型如下
+- 支持[PaddleX](https://github.com/PaddlePaddle/PaddleX)和[PaddleClas](https://github.com/PaddlePaddle/PaddleCLAS)中的所有分类模型
+- 支持[PaddleX](https://github.com/PaddlePaddle/PaddleX)和[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)中的UNet/DeepLabV3/HRNet语义分割模型
+- 支持[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)中的文字检测模型（文字识别模型暂不支持)
+
+
+## Legacy
 paddle2onnx支持将**PaddlePaddle**框架下产出的模型转化到**ONNX**模型格式.
 paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
 
