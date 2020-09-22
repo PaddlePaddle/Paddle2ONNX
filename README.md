@@ -24,8 +24,8 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ### 用户环境配置
 
      python >= 3.5  
-     paddlepaddle >= 1.5.0
-     onnx >= 1.5
+     paddlepaddle >= 1.6.0
+     onnx >= 1.6
 
 ##  安装
 ###  安装方式1
