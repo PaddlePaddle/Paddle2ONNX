@@ -1,4 +1,4 @@
-#   Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,28 +13,27 @@
 # limitations under the License.
 
 import setuptools
-import fluid_onnx
+import paddle2onnx
 
-long_description = "paddle-onnx is a toolkit for converting trained model to onnx from PaddlePaddle framework.\n\n"
-long_description += "Usage: paddle2onnx --fluid_model src --onnx_model dist  --debug --image_path dataset\n"
-long_description += "GitHub: https://github.com/PaddlePaddle/paddle-onnx\n"
+long_description = "paddle2onnx is a toolkit for converting trained model of PaddlePaddle to ONNX.\n\n"
+long_description += "Usage: paddle2onnx --model src --save_dir dist\n"
+long_description += "GitHub: https://github.com/PaddlePaddle/X2Paddle\n"
 long_description += "Email: dltp-sz@baidu.com"
 
 setuptools.setup(
     name="paddle2onnx",
-    version=0.1,
+    version=paddle2onnx.__version__,
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
-    description=\
-    "is a toolkit for converting trained model to onnx from PaddlePaddle frameworks.",
+    description="a toolkit for converting trained model of PaddlePaddle to ONNX.",
     long_description=long_description,
     long_description_content_type="text/plain",
-    url="https://github.com/PaddlePaddle/paddle-onnx",
+    url="https://github.com/PaddlePaddle/paddle2onnx",
     packages=setuptools.find_packages(),
     classifiers=[
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
     ],
     license='Apache 2.0',
-    entry_points={'console_scripts': ['paddle2onnx=fluid_onnx.fluid_to_onnx:main']})
+    entry_points={'console_scripts': ['paddle2onnx=paddle2onnx.convert:main']})
