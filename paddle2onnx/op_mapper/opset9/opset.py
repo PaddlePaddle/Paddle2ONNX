@@ -109,6 +109,13 @@ class OpSet9(object):
             'Relu', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def prelu(self, op, block):
+        node = helper.make_node(
+            'PRelu',
+            inputs=[op.input('X')[0], op.input('Alpha')[0]],
+            outputs=op.output('Out'))
+        return node
+
     def tanh(self, op, block):
         node = helper.make_node(
             'Tanh', inputs=op.input('X'), outputs=op.output('Out'))

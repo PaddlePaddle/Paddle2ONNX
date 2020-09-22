@@ -101,8 +101,8 @@ class PaddleOpMapper(object):
                 else:
                     break
         print(
-            'Now, onnpaddle2onnx support convert onnx model opset_verison {},'
-            'opset_verison of your onnx model is {}, automatically treated as op_set: {}.'
+            'Now, paddle2onnx support convert paddle model to onnx opset_verison {}, '
+            'opset_verison be seted as {}, automatically treated as opset_version: {}.'
             .format(self.support_opsets, opset_version, run_opset))
         opset = 'OpSet' + str(run_opset)
         return eval(opset)()

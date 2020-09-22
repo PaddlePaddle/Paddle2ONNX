@@ -36,6 +36,4 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     license='Apache 2.0',
-    entry_points={
-        'console_scripts': ['paddle2onnx=paddle2onnx.convert:main', ]
-    })
+    entry_points={'console_scripts': ['paddle2onnx=paddle2onnx.convert:main']})
