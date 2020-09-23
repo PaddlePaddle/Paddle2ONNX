@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import setuptools
-import paddle2onnx
 
 long_description = "paddle2onnx is a toolkit for converting trained model of PaddlePaddle to ONNX.\n\n"
 long_description += "Usage: paddle2onnx --model src --save_dir dist\n"
-long_description += "GitHub: https://github.com/PaddlePaddle/X2Paddle\n"
+long_description += "GitHub: https://github.com/PaddlePaddle/paddle2onnx\n"
 long_description += "Email: dltp-sz@baidu.com"
 
 setuptools.setup(
     name="paddle2onnx",
-    version=paddle2onnx.__version__,
+    version='0.3.1',
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
     description="a toolkit for converting trained model of PaddlePaddle to ONNX.",
