@@ -1,4 +1,4 @@
-## Legacy
+## Paddle2ONNX
 
 paddle2onnx支持将**PaddlePaddle**框架下产出的模型转化到**ONNX**模型格式.
 paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
