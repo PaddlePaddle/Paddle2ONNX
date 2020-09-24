@@ -79,7 +79,7 @@ class PaddleOpMapper(object):
             outputs=output_nodes)
         opset_imports = [helper.make_opsetid("", opset_version)]
         model = helper.make_model(
-            graph, producer_name='X2Paddle', opset_imports=opset_imports)
+            graph, producer_name='paddle2onnx', opset_imports=opset_imports)
         onnx.checker.check_model(model)
 
         if not os.path.isdir(save_dir):

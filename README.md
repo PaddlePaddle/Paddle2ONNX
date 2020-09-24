@@ -41,7 +41,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ###  普通用户使用方式
 > 如果用户只是想将paddle模型转化成onnx模型，可以使用下面的命令进行操作。
 
-    paddle2onnx --model src_dir  --save_dir dist_name
+    paddle2onnx --model src_dir  --save_dir dist_dir
 
 ### 参数选项
 | 参数 |参数说明 |

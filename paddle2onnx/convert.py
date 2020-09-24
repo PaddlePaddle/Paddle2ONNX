@@ -24,25 +24,25 @@ def arg_parser():
         "-m",
         type=_text_type,
         default=None,
-        help="define model file path for tensorflow or onnx")
+        help="Define model file path for tensorflow or onnx")
     parser.add_argument(
         "--save_dir",
         "-s",
         type=_text_type,
         default=None,
-        help="path to save translated model")
+        help="Path to save translated model")
     parser.add_argument(
         "--version",
         "-v",
         action="store_true",
         default=False,
-        help="get version of paddle2onnx")
+        help="Get version of paddle2onnx")
     parser.add_argument(
         "--onnx_opset",
         "-oo",
         type=int,
         default=10,
-        help="when paddle2onnx set onnx opset version to export")
+        help="Set onnx opset version to export")
     return parser
 
 
