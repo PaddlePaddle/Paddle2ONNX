@@ -147,6 +147,14 @@ class OpSet9(object):
             'Exp', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def norm(self, op, block):
+        node = helper.make_node(
+            'LpNormalization',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            axis=op.attr('axis'))
+        return node
+
     def abs(self, op, block):
         node = helper.make_node(
             'Abs', inputs=op.input('X'), outputs=op.output('Out'))
