@@ -15,4 +15,9 @@
 __version__ = "0.3.1"
 
 from . import convert
+from .op_mapper import paddle_op_mapper
+from .decoder import paddle_decoder
+
+PaddleOpMapper = paddle_op_mapper.PaddleOpMapper
+PaddleDecoder = paddle_decoder.PaddleDecoder
 convert = convert.convert
