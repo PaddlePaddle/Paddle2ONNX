@@ -46,7 +46,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
-|--model | 指定包含Paddle模型和参数：'__model__', '__params__'的路径 |
+|--model | 指定包含Paddle模型和参数：'\_\_model\_\_', '\_\_params\_\_'的路径 |
 |--save_dir | 指定转换后的模型保存目录路径 |
 |--onnx_opset | **[可选]** 该参数可设置转换为ONNX的OpSet版本，目前支持9、10、11，默认为10 |
 

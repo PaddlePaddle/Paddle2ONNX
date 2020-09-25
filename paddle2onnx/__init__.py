@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 from . import convert
 from .op_mapper import paddle_op_mapper
