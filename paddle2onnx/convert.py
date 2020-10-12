@@ -237,7 +237,6 @@ def convert_dygraph_to_onnx(layer,
 
     print("Converting PaddlePaddle to ONNX...\n")
 
-    print(opset_version)
     onnx_graphs = graph_to_onnx(graph, opset_version)
 
     onnx_graph = onnx_graphs[0]

@@ -175,7 +175,6 @@ class Graph(object):
         if op_type not in ['feed', 'fetch']:
             self.node_map.pop(node.layer_name)
             self.node_map[node.layer_name] = node
-            #self.node_map.move_to_end(node.layer_name)
         return node
 
     @property
