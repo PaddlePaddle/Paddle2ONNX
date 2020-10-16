@@ -1,4 +1,4 @@
-# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -15,17 +15,15 @@
 from __future__ import absolute_import
 
 import os
-import six
 import onnx
 import paddle
 import numpy as np
+from paddle.nn import Layer
 from paddle.fluid import core
-from paddle.fluid.framework import Program, Variable
-from paddle.fluid.dygraph.layers import Layer
-import paddle.fluid.dygraph.base as base
-import paddle.fluid.dygraph.dygraph_to_static.program_translator as program_translator
-import paddle.fluid.dygraph.layers as layers
-import paddle.fluid.dygraph.io as io
+from paddle.fluid.framework import Variable
+from paddle.fluid.dygraph.dygraph_to_static import program_translator
+from paddle.fluid import dygraph
+from paddle2onnx.constant import PRODUCER
 from paddle2onnx.graph import graph_to_onnx, build_graph
 
 
@@ -107,10 +105,10 @@ def prune_input_output(concrete_program, input_spec, output_spec):
     return concrete_program
 
 
-@base.switch_to_static_graph
+@dygraph.base.switch_to_static_graph
 def get_concrete_program(layer):
     paddle.jit.set_verbosity(0)
-    if isinstance(layer, layers.Layer):
+    if isinstance(layer, Layer):
         if isinstance(layer.forward, program_translator.StaticFunction):
             return layer.forward.concrete_program
         else:
@@ -144,9 +142,9 @@ def get_inout_spec(all_vars, target_vars, return_name=False):
     return result_list
 
 
-@base.switch_to_static_graph
+@dygraph.base.switch_to_static_graph
 def build_graph_from_dygraph(layer, input_spec=None, output_spec=None):
-    if isinstance(layer, io.TranslatedLayer):
+    if isinstance(layer, dygraph.TranslatedLayer):
         program = layer.program()
         parameters_dict = {}
         pruned_vars = program.global_block().vars
@@ -164,7 +162,7 @@ def build_graph_from_dygraph(layer, input_spec=None, output_spec=None):
         graph = build_graph(program, parameters_dict,
                             layer._input_spec(), layer._output_spec())
         return graph
-    elif isinstance(layer, layers.Layer):
+    elif isinstance(layer, Layer):
 
         concrete_program = get_concrete_program(layer)
 
@@ -207,7 +205,7 @@ def convert_dygraph_to_onnx(layer,
     if input_spec is not None:
         if not isinstance(input_spec, list):
             raise TypeError(
-                "The input input_spec should be 'list', but received input_spec's type is %s."
+                "The input input_spec should be 'list', but received type is %s."
                 % type(input_spec))
         inner_input_spec = []
         for var in input_spec:
@@ -220,30 +218,38 @@ def convert_dygraph_to_onnx(layer,
                 raise TypeError(
                     "The element in input_spec list should be 'Variable' or `paddle.static.InputSpec`, but received element's type is %s."
                     % type(var))
+
     output_spec = None
     if 'output_spec' in kwargs:
         output_spec = kwargs['output_spec']
         if not isinstance(output_spec, list):
             raise TypeError(
-                "The output_spec should be 'list', but received input type is %s."
-                % type(output_spec))
+                "The output_spec should be 'list', but received type is %s." %
+                type(output_spec))
             for var in output_spec:
                 if not isinstance(var, core.VarBase):
                     raise TypeError(
                         "The element in output_spec list should be 'Variable', but received element's type is %s."
                         % type(var))
+    verbose = False
+    if 'verbose' in kwargs:
+        if isinstance(kwargs['verbose'], bool):
+            verbose = kwargs['verbose']
+        else:
+            raise TypeError(
+                "The verbose should be 'bool', but received type is %s." %
+                type(kwargs['verbose']))
 
     graph = build_graph_from_dygraph(layer, inner_input_spec, output_spec)
 
-    print("Converting PaddlePaddle to ONNX...\n")
-
-    onnx_graphs = graph_to_onnx(graph, opset_version)
+    onnx_graphs = graph_to_onnx(graph, opset_version, verbose=verbose)
 
     onnx_graph = onnx_graphs[0]
 
     opset_imports = [onnx.helper.make_opsetid("", opset_version)]
     onnx_model = onnx.helper.make_model(
-        onnx_graph, producer_name='PaddlePaddle', opset_imports=opset_imports)
+        onnx_graph, producer_name=PRODUCER, opset_imports=opset_imports)
+
     onnx.checker.check_model(onnx_model)
 
     path, _ = os.path.split(save_dir)
@@ -252,4 +258,4 @@ def convert_dygraph_to_onnx(layer,
     with open(save_dir, 'wb') as f:
         f.write(onnx_model.SerializeToString())
 
-    print("\nONNX model saved in {}".format(save_dir))
+    print("ONNX model saved in {}".format(save_dir))

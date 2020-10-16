@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import
+
 import inspect
 from paddle2onnx.constant.op_mapping_status import *
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def get_max_support_version(versions, opset_version):
@@ -59,9 +57,10 @@ class OpMapper(object):
         mapper_func, kw = opsets[convert_version]
         try:
             mapper_func(graph, node, **kw)
+            # mapped node should be remove from graph 
+            graph.remove_node(node)
             return OP_MAPPING_SUCCESSED
-        except Exception as e:
-            error_info = "Error happened when mapping node ['{}'] to onnx, which op_type is ['{}'] with inputs: {} and outputs: {}\n".format(
-                node.layer_name, node.type, node.inputs, node.outputs)
-            logger.fatal(error_info)
-            raise e
+        except:
+            raise Exception(
+                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}\n".
+                format(node.layer_name, node.type, node.inputs, node.outputs))

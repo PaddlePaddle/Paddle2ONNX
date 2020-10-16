@@ -18,3 +18,6 @@ from . import activation
 from . import tensor
 from .detection import yolo_box
 from .detection import multiclass_nms
+from .detection import prior_box
+from .detection import box_coder
+from .sequence import im2sequence

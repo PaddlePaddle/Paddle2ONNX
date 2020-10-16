@@ -13,21 +13,17 @@
 # limitations under the License.
 
 from __future__ import absolute_import
-import sys
+
 import numpy as np
 import onnx
 import copy
-import logging
-from onnx import helper, onnx_pb
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper
 from paddle2onnx.constant.op_mapping_status import *
 
-logger = logging.getLogger(__name__)
-
 
 def make_value_info(name, shape, dtype):
-    tensor_info = helper.make_tensor_value_info(
+    tensor_info = onnx.helper.make_tensor_value_info(
         name=name, shape=shape, elem_type=dtypes.DTYPE_PADDLE_ONNX_MAP[dtype])
     return tensor_info
 
@@ -58,12 +54,12 @@ def weights_to_onnx(parameters=None):
         weight = param['data']
         if weight is not np.ndarray:
             weight = np.array(weight)
-        tensor = helper.make_tensor(
+        tensor = onnx.helper.make_tensor(
             name=name,
             dims=param['shape'],
             data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
             vals=weight.flatten().tolist())
-        node = helper.make_node(
+        node = onnx.helper.make_node(
             'Constant', inputs=[], outputs=[name], value=tensor)
         nodes.append(node)
     return nodes
@@ -86,9 +82,9 @@ def make_onnx_constant_node(node):
 
     tensor = onnx.helper.make_tensor(
         name=node.layer_name, data_type=dtype, dims=dims, vals=value)
-    node = onnx.helper.make_node(
-        'Constant', inputs=[], outputs=[node.layer_name], value=tensor)
-    return node
+    onnx_node = onnx.helper.make_node(
+        'Constant', inputs=[], outputs=node.outputs, value=tensor)
+    return onnx_node
 
 
 def make_onnx_node(node):
@@ -100,7 +96,7 @@ def make_onnx_node(node):
         return onnx_node
 
 
-def check_op_mapping_satus(mapping_status, opset_version):
+def check_op_mapping_status(mapping_status, opset_version):
     if len(mapping_status[OP_MAPPING_NO_REGISTER]) > 0:
         unsupported_op_types = set(
             [node.type for node in mapping_status[OP_MAPPING_NO_REGISTER]])
@@ -121,7 +117,7 @@ def check_op_mapping_satus(mapping_status, opset_version):
         raise NotImplementedError(error_info)
 
 
-def nodes_to_onnx(graph, opset_version):
+def nodes_to_onnx(graph, opset_version, verbose=False):
     mapping_status = {
         OP_MAPPING_NO_REGISTER: [],
         OP_MAPPING_NO_VERSION: [],
@@ -129,30 +125,31 @@ def nodes_to_onnx(graph, opset_version):
         OP_MAPPING_FAILED: [],
     }
 
-    for i, node in enumerate(graph.topo_sort):
-        sys.stdout.write("\rTotal node:{}, Current mapping node:{} : {} ".
-                         format(len(graph.topo_sort), i + 1, node.type))
-        sys.stdout.flush()
+    for name, node in list(graph.node_map.items()):
         status = OpMapper.mapping(graph, node, opset_version)
         mapping_status[status].append(node)
 
-    check_op_mapping_satus(mapping_status, opset_version)
+    check_op_mapping_status(mapping_status, opset_version)
 
     onnx_nodes = []
-    for name, node in graph.node_map.items():
+
+    if verbose:
+        print(graph)
+    for name, node in list(graph.node_map.items()):
         onnx_node = make_onnx_node(node)
         onnx_nodes.append(onnx_node)
+
     return onnx_nodes
 
 
-def graph_to_onnx(graph, opset_version):
+def graph_to_onnx(graph, opset_version, verbose=False):
     onnx_graphs = {}
     graph = copy.copy(graph)
     input_nodes = inputs_to_onnx(graph.input_nodes)
     output_nodes = outputs_to_onnx(graph.output_nodes)
     weight_nodes = weights_to_onnx(graph.parameters)
 
-    op_nodes = nodes_to_onnx(graph, opset_version)
+    op_nodes = nodes_to_onnx(graph, opset_version, verbose=verbose)
 
     onnx_graph = onnx.helper.make_graph(
         nodes=weight_nodes + op_nodes,
@@ -161,7 +158,7 @@ def graph_to_onnx(graph, opset_version):
         inputs=input_nodes,
         outputs=output_nodes)
 
-    onnx_graphs[graph.idx] = onnx_graph
+    onnx_graphs[graph.id] = onnx_graph
 
     for graph in graph.sub_graphs:
         return onnx_graphs.update(graph_to_onnx(graph, opset_version))

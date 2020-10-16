@@ -11,5 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .constant import PRODUCER
-from .constant import NodeDomain
+
+from enum import Enum, unique
+
+PRODUCER = 'PaddlePaddle'
+
+
+@unique
+class NodeDomain(Enum):
+    ONNX = 'onnx'
+    PADDLE = 'paddle'

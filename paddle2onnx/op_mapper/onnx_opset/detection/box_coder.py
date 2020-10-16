@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import math
-import onnx
-import warnings
+from __future__ import absolute_import
+
 import numpy as np
-from functools import partial
-from onnx import TensorProto
-from onnx.helper import make_node, make_tensor
-from onnx import onnx_pb
-from paddle.fluid.executor import _fetch_var as fetch_var
-from onnx import helper
-import paddle.fluid as fluid
-import paddle.fluid.core as core
-from paddle2onnx.utils import DTYPE_PADDLE_ONNX_MAP, DTYPE_ONNX_NUMPY_MAP
+from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
@@ -37,8 +27,7 @@ class BoxCoder():
     """
 
     @classmethod
-    def opset_9(cls, node, **kw):
-        node_list = []
+    def opset_9(cls, graph, node, **kw):
         input_names = node.input_names
 
         prior_var = node.input_var('PriorBox', 0)
@@ -46,7 +35,7 @@ class BoxCoder():
         p_size = prior_var.shape
 
         # get the outout_name
-        result_name = node.output_shape('OutputBox', 0)
+        result_name = node.output('OutputBox', 0)
         # n is size of batch, m is boxes num of targe_boxes
         n = t_size[0]
         m = t_size[0]
@@ -70,16 +59,13 @@ class BoxCoder():
 
         # create the range(0, 4) const data to slice
         for i in range(1, 3):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Constant',
                 inputs=[],
                 outputs=name_slice_indices[i - 1],
-                value=onnx.helper.make_tensor(
-                    name=name_slice_indices[i - 1][0] + "@const",
-                    data_type=onnx.TensorProto.FLOAT,
-                    dims=(),
-                    vals=[i]))
-            node_list.append(node)
+                dtype=dtypes.ONNX.FLOAT,
+                dims=(),
+                value=[i])
         # make node split data
         name_box_split = [
             name_slice_x1, name_slice_y1, name_slice_x2, name_slice_y2
@@ -87,12 +73,11 @@ class BoxCoder():
         split_shape = list(p_size)
         split_shape[-1] = 1
 
-        node_split_prior_node = onnx.helper.make_node(
+        node_split_prior_node = graph.make_onnx_node(
             'Split',
             inputs=node.input('PriorBox'),
             outputs=name_box_split,
             axis=1)
-        node_list.append(node_split_prior_node)
 
         # make node get centor node for decode
         final_outputs_vars = []
@@ -106,11 +91,10 @@ class BoxCoder():
 
             count = 2
             for (name, node) in zip(name_centor_tmp_list, node_centor_tmp_list):
-                node = onnx.helper.make_node('Add',
+                tmp_node = graph.make_onnx_node('Add',
                        inputs=[node.output('OutputBox')[0] + "@slice_" + str(1)]\
                            + [name_box_split[count]],
                        outputs=name)
-                node_list.append(node)
                 count = count + 1
         if not norm:
             inputs_sub = [[name_centor_w_tmp[0], name_box_split[0]],
@@ -120,30 +104,25 @@ class BoxCoder():
                           [name_box_split[3], name_box_split[1]]]
         outputs_sub = [result_name + "@pb_w", result_name + "@pb_h"]
         for i in range(0, 2):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Sub', inputs=inputs_sub[i], outputs=[outputs_sub[i]])
-            node_list.append(node)
         # according to prior_box height and weight to get centor x, y
         name_half_value = [result_name + "@half_value"]
-        node_half_value = onnx.helper.make_node(
+        node_half_value = graph.make_onnx_node(
             'Constant',
             inputs=[],
             outputs=name_half_value,
-            value=onnx.helper.make_tensor(
-                name=name_slice_indices[i][0] + "@const",
-                data_type=onnx.TensorProto.FLOAT,
-                dims=(),
-                vals=[0.5]))
-        node_list.append(node_half_value)
+            dtype=dtypes.ONNX.FLOAT,
+            dims=(),
+            value=[0.5])
         outputs_half_wh = [[result_name + "@pb_w_half"],
                            [result_name + "@pb_h_half"]]
         inputs_half_wh = [[result_name + "@pb_w", name_half_value[0]],
                           [result_name + "@pb_h", name_half_value[0]]]
 
         for i in range(0, 2):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Mul', inputs=inputs_half_wh[i], outputs=outputs_half_wh[i])
-            node_list.append(node)
 
         inputs_centor_xy = [[outputs_half_wh[0][0], name_slice_x1],
                             [outputs_half_wh[1][0], name_slice_y1]]
@@ -152,9 +131,8 @@ class BoxCoder():
 
         # final calc the centor x ,y
         for i in range(0, 2):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Add', inputs=inputs_centor_xy[i], outputs=outputs_centor_xy[i])
-            node_list.append(node)
         # reshape the data
         shape = (1, split_shape[0]) if axis == 0 else (split_shape[0], 1)
 
@@ -175,11 +153,10 @@ class BoxCoder():
             name_reshape_pb = [result_name + "@pb_transpose"]
             # reshape the data
             for i in range(0, 4):
-                node = onnx.helper.make_node(
+                tmp_node = graph.make_onnx_node(
                     'Transpose',
                     inputs=inputs_transpose_pb[i],
                     outputs=outputs_transpose_pb[i])
-                node_list.append(node)
         # decoder the box according to the target_box and variacne
         name_variance_raw = [result_name + "@variance_raw"]
         name_variance_unsqueeze = [result_name + "@variance_unsqueeze"]
@@ -195,26 +172,22 @@ class BoxCoder():
             prior_variance_var = node.input_var('PriorBoxVar', 0)
             axes = []
             var_split_inputs_name = [result_name + "@variance_split"]
-            onnx_node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Transpose',
                 inputs=node.input('PriorBoxVar'),
                 outputs=var_split_inputs_name)
-            node_list.append(onnx_node)
             var_split_axis = 0
         else:
             variances = [1.0, 1.0, 1.0, 1.0]
             if 'variance' in node.attrs and len(node.attr('variance')) > 0:
                 variances = [float(var) for var in node.attr('variance')]
-            node_variance_create = onnx.helper.make_node(
+            node_variance_create = graph.make_onnx_node(
                 'Constant',
                 inputs=[],
                 outputs=name_variance_raw,
-                value=onnx.helper.make_tensor(
-                    name=name_variance_raw[0] + "@const",
-                    data_type=onnx.TensorProto.FLOAT,
-                    dims=[len(variances)],
-                    vals=variances))
-            node_list.append(node_variance_create)
+                dtype=dtypes.ONNX.FLOAT,
+                dims=[len(variances)],
+                value=variances)
             var_split_axis = 0
             var_split_inputs_name = name_variance_raw
 
@@ -225,27 +198,25 @@ class BoxCoder():
         outputs_split_targebox = [
             result_name + "@targebox_split" + str(i) for i in range(0, 4)
         ]
-        node_split_var = onnx.helper.make_node(
+        node_split_var = graph.make_onnx_node(
             'Split',
             inputs=var_split_inputs_name,
             outputs=outputs_split_variance,
             axis=var_split_axis)
-        node_split_target = onnx.helper.make_node(
+        node_split_target = graph.make_onnx_node(
             'Split',
             inputs=node.input('TargetBox'),
             outputs=outputs_split_targebox,
             axis=2)
-        node_list.extend([node_split_var, node_split_target])
 
         outputs_squeeze_targebox = [
             result_name + "@targebox_squeeze" + str(i) for i in range(0, 4)
         ]
         for (input_name, output_name) in zip(outputs_split_targebox,
                                              outputs_squeeze_targebox):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Squeeze', inputs=[input_name], outputs=[output_name],
                 axes=[2])
-            node_list.append(node)
 
         output_shape_step1 = list(t_size)[:-1]
 
@@ -262,9 +233,8 @@ class BoxCoder():
 
         for input_step1, output_step_1 in zip(inputs_tb_step1,
                                               outputs_tb_step1):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Mul', inputs=input_step1, outputs=output_step_1)
-            node_list.append(node)
         if axis == 0:
             inputs_tbxy_step2 = [[
                 outputs_tb_step1[0][0], outputs_transpose_pb[0][0]
@@ -279,9 +249,8 @@ class BoxCoder():
 
         for input_step2, output_step_2 in zip(inputs_tbxy_step2,
                                               outputs_tbxy_step2):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Mul', inputs=input_step2, outputs=output_step_2)
-            node_list.append(node)
         if axis == 0:
             inputs_tbxy_step3 = [[
                 outputs_tbxy_step2[0][0], outputs_transpose_pb[2][0]
@@ -296,9 +265,8 @@ class BoxCoder():
 
         for input_step3, output_step_3 in zip(inputs_tbxy_step3,
                                               outputs_tbxy_step3):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Add', inputs=input_step3, outputs=output_step_3)
-            node_list.append(node)
 
         # deal with width & height
         inputs_tbwh_step2 = [outputs_tb_step1[2], outputs_tb_step1[3]]
@@ -307,9 +275,8 @@ class BoxCoder():
 
         for input_name, output_name in zip(inputs_tbwh_step2,
                                            outputs_tbwh_step2):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Exp', inputs=input_name, outputs=output_name)
-            node_list.append(node)
 
         if axis == 0:
             inputs_tbwh_step3 = [[
@@ -325,9 +292,8 @@ class BoxCoder():
 
         for input_name, output_name in zip(inputs_tbwh_step3,
                                            outputs_tbwh_step3):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Mul', inputs=input_name, outputs=output_name)
-            node_list.append(node)
 
         # final step to calc the result, and concat the result to output
         # return the output box, [(x1, y1), (x2, y2)]
@@ -340,9 +306,8 @@ class BoxCoder():
                                    [result_name + "@decode_half_h_step4"]]
         for inputs_name, outputs_name in zip(inputs_half_tbwh_step4,
                                              outputs_half_tbwh_step4):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Div', inputs=inputs_name, outputs=outputs_name)
-            node_list.append(node)
         inputs_output_point1 = [[
             outputs_tbxy_step3[0][0], outputs_half_tbwh_step4[0][0]
         ], [outputs_tbxy_step3[1][0], outputs_half_tbwh_step4[1][0]]]
@@ -351,9 +316,8 @@ class BoxCoder():
                                  [result_name + "@output_y1"]]
         for input_name, output_name in zip(inputs_output_point1,
                                            outputs_output_point1):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Sub', inputs=input_name, outputs=output_name)
-            node_list.append(node)
 
         inputs_output_point2 = [[
             outputs_tbxy_step3[0][0], outputs_half_tbwh_step4[0][0]
@@ -364,9 +328,8 @@ class BoxCoder():
 
         for input_name, output_name in zip(inputs_output_point2,
                                            outputs_output_point2):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Add', inputs=input_name, outputs=output_name)
-            node_list.append(node)
         if not norm:
             inputs_unnorm_point2 = [[
                 outputs_output_point2[0][0], result_name + "@slice_1"
@@ -376,9 +339,8 @@ class BoxCoder():
 
             for input_name, output_name in zip(inputs_unnorm_point2,
                                                outputs_unnorm_point2):
-                node = onnx.helper.make_node(
+                tmp_node = graph.make_onnx_node(
                     'Sub', inputs=input_name, outputs=output_name)
-                node_list.append(node)
             outputs_output_point2 = outputs_unnorm_point2
 
         outputs_output_point1.extend(outputs_output_point2)
@@ -389,19 +351,16 @@ class BoxCoder():
 
         for input_name, output_name in zip(outputs_output_point1,
                                            ouputs_points_unsqueeze):
-            node = onnx.helper.make_node(
+            tmp_node = graph.make_onnx_node(
                 'Unsqueeze',
                 inputs=input_name,
                 outputs=output_name,
                 axes=[len(output_shape_step1)])
-            node_list.append(node)
         outputs_points_unsqueeze_list = [
             output[0] for output in ouputs_points_unsqueeze
         ]
-        node_point_final = onnx.helper.make_node(
+        node_point_final = graph.make_onnx_node(
             'Concat',
             inputs=outputs_points_unsqueeze_list,
             outputs=node.output('OutputBox'),
             axis=len(output_shape_step1))
-        node_list.append(node_point_final)
-        return node_list

@@ -17,10 +17,9 @@ from __future__ import absolute_import
 import os
 import six
 import onnx
-import paddle
 import numpy as np
-from paddle.fluid import core
-from paddle.fluid.framework import Program, Variable
+from paddle.fluid.framework import Variable
+from paddle2onnx.constant import PRODUCER
 from paddle2onnx.graph import graph_to_onnx, build_graph
 
 
@@ -71,15 +70,13 @@ def convert_program_to_onnx(program,
     graph = build_graph_from_program(program, feeded_var_names, target_vars,
                                      scope)
 
-    print("Converting PaddlePaddle to ONNX...\n")
-
     onnx_graphs = graph_to_onnx(graph, opset_version)
 
     onnx_graph = onnx_graphs[0]
 
     opset_imports = [onnx.helper.make_opsetid("", opset_version)]
     onnx_model = onnx.helper.make_model(
-        onnx_graph, producer_name='PaddlePaddle', opset_imports=opset_imports)
+        onnx_graph, producer_name=PRODUCER, opset_imports=opset_imports)
 
     onnx.checker.check_model(onnx_model)
     path, _ = os.path.split(save_dir)
@@ -88,4 +85,4 @@ def convert_program_to_onnx(program,
     with open(save_dir, 'wb') as f:
         f.write(onnx_model.SerializeToString())
 
-    print("\nONNX model saved in {}".format(save_dir))
+    print("ONNX model saved in {}".format(save_dir))

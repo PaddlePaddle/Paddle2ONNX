@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
-import sys
-import os
+from __future__ import absolute_import
+
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
@@ -25,8 +24,7 @@ class Conv():
     @classmethod
     def opset_9(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
-        graph.update_node(
-            node,
+        graph.make_onnx_node(
             'Conv',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
@@ -42,8 +40,7 @@ class ConvTranspose():
     @classmethod
     def opset_9(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
-        node = graph.update_node(
-            node,
+        node = graph.make_onnx_node(
             'ConvTranspose',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
@@ -63,8 +60,7 @@ class Pool():
             'avg': ('AveragePool', 'GlobalAveragePool')
         }
         if node.attr('global_pooling'):
-            onnx_node = graph.update_node(
-                node,
+            onnx_node = graph.make_onnx_node(
                 pool_type[node.attr('pooling_type')][1],
                 inputs=node.input('X'),
                 outputs=node.output('Out'), )
@@ -78,14 +74,24 @@ class Pool():
                 k_size[0] = input_shape[2] + paddings[0]
             if input_shape[3] > 0 and input_shape[3] + paddings[1] < k_size[1]:
                 k_size[1] = input_shape[3] + paddings[1]
-            onnx_node = graph.update_node(
-                node,
+            onnx_node = graph.make_onnx_node(
                 pool_type[node.attr('pooling_type')][0],
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
                 kernel_shape=k_size,
                 strides=node.attr('strides'),
                 pads=node.attr('paddings') + node.attr('paddings'))
+
+
+@op_mapper('norm')
+class BatchNorm():
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        node = graph.make_onnx_node(
+            'LpNormalization',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            axis=node.attr('axis'))
 
 
 @op_mapper('batch_norm')
@@ -98,8 +104,7 @@ class BatchNorm():
         }
         inputs = node.input('X') + node.input('Scale') + node.input(
             'Bias') + node.input('Mean') + node.input('Variance')
-        onnx_node = graph.update_node(
-            node,
+        onnx_node = graph.make_onnx_node(
             'BatchNormalization',
             inputs=inputs,
             outputs=node.output('Y'),
@@ -112,8 +117,7 @@ class InstanceNorm():
     def opset_9(cls, graph, node, **kw):
         onnx_attr = {'epsilon': node.attr('epsilon'), }
         inputs = node.input('X') + node.input('Scale') + node.input('Bias')
-        onnx_node = graph.update_node(
-            node,
+        onnx_node = graph.make_onnx_node(
             'InstanceNormalization',
             inputs=inputs,
             outputs=node.output('Y'),
@@ -127,18 +131,14 @@ class Dropout():
         dropout_mode = node.attr('dropout_implementation')
         dropout_prob = node.attr('dropout_prob')
         if dropout_mode == 'upscale_in_train':
-            onnx_node = graph.update_node(
-                node,
-                'Identity',
-                inputs=node.input('X'),
-                outputs=node.output('Out'))
+            onnx_node = graph.make_onnx_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         elif dropout_mode == 'downgrade_in_infer':
-            scale_node = graph.make_node(
+            scale_node = graph.make_onnx_node(
                 'Constant',
                 attrs={'dtype': dtypes.ONNX.FLOAT,
                        'value': 1 - dropout_prob})
-            graph.update_node(
-                node,
+            graph.make_onnx_node(
                 "Mul",
                 inputs=[node.input('X')[0], scale_node],
                 outputs=node.output('Out'))

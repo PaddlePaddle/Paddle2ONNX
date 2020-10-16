@@ -13,23 +13,45 @@
 # limitations under the License.
 
 from __future__ import absolute_import
+
 import os
-import pickle
-import warnings
-import inspect
 import copy
 import collections
-import numpy as np
+from paddle2onnx.constant import NodeDomain
 
 
 class Node(object):
-    def __init__(self, op_type, layer_name, inputs, outputs, attrs, block):
+    """
+    Args:
+        op_type (str): Operator type, such as 'Conv'.
+        layer_name (str): Name of node, the name of node in graph is unique. 
+        inputs (list|dict): Inputs of node with domain=NodeDomain.ONNX, which stored by list.
+            Inputs of node in node with domain=NodeDomain.PADDLE, which stored by key-value format. 
+        outputs (list|dict): Outputs of node with domain=NodeDomain.ONNX, which stored by list 
+            Outputs of node with domain=NodeDomain.PADDLE, which stored by key-value format 
+        attrs (dict): Attributes of node.
+        block (paddle.fluid.framework.Block): The block that node belongs to. 
+        domain (str):  Domain of node.  
+
+    Returns:
+        Node: An Node.
+    """
+
+    def __init__(self,
+                 op_type,
+                 layer_name,
+                 inputs,
+                 outputs,
+                 attrs,
+                 block,
+                 domain=NodeDomain.PADDLE):
+        self.domain = domain
         self.block = block
-        self.inputs = inputs
-        self.outputs = outputs
         self.type = op_type
         self.attrs = attrs
         self.layer_name = layer_name
+        self.set_inputs(inputs)
+        self.set_outputs(outputs)
 
     def __hash__(self):
         return hash(self.layer_name)
@@ -58,7 +80,7 @@ class Node(object):
             return self.inputs[idx]
         return self.inputs[name][idx]
 
-    def output(self, name, idx=None):
+    def output(self, name=None, idx=None):
         if idx is None:
             return self.outputs[name]
         if name is None:
@@ -77,24 +99,93 @@ class Node(object):
     def attr(self, name):
         return self.attrs[name]
 
+    def set_inputs(self, inputs):
+        if isinstance(inputs, list):
+            # input of node in onnx, which stored by list 
+            self.inputs = [
+                ipt.layer_name if isinstance(ipt, Node) else ipt
+                for ipt in inputs
+            ]
+        elif isinstance(inputs, dict):
+            # input of node in paddle, which stored by key-value format 
+            self.inputs = inputs
+        else:
+            raise TypeError(
+                'Inputs of node must be type: list, dict, but got {}'.format(
+                    type(inputs)))
+
+    def set_outputs(self, outputs):
+        if isinstance(outputs, list):
+            # output of node in onnx, which stored by list 
+            self.outputs = [
+                opt.layer_name if isinstance(opt, Node) else opt
+                for opt in outputs
+            ]
+        elif isinstance(outputs, dict):
+            # output of node in paddle, which stored by key-value format 
+            self.outputs = outputs
+        else:
+            raise TypeError(
+                'Outputs of node must be type: list, dict, but got {}'.format(
+                    type(outputs)))
+
 
 class Graph(object):
-    def __init__(self, idx, parameters=None):
-        self.parameters = parameters
+    """
+    Args:
+        id (int): the id of graph.
+    Returns:
+        Graph: A Graph.
+    """
+
+    def __init__(self, id):
+        self.id = id
+        self.parameters = {}
         self.node_map = collections.OrderedDict()
         self.input_nodes = list()
         self.output_nodes = list()
-        self.topo_sort = list()
         self.op_type_count = dict()
-        self.idx = idx
         self.sub_graphs = list()
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if self.id == other.id:
+            return True
+        return False
+
+    def __str__(self):
+        graph_str = 'graph { \n'
+        for node in self.input_nodes:
+            graph_str += " input: {} \n".format(node.layer_name)
+        for node in self.output_nodes:
+            graph_str += " output: {} \n \n".format(node.layer_name)
+        for name, node in self.node_map.items():
+            if node.domain == NodeDomain.PADDLE:
+                node.attrs.pop('op_callstack')
+            attrs = ''
+            for key, value in node.attrs.items():
+                attrs += ', ' + key + '=' + str(value)
+            graph_str += "  {} = {}::{}(inputs={}{}) \n".format(
+                node.outputs, node.domain, node.type, node.inputs, attrs)
+        graph_str += ' }'
+        return graph_str
+
+    def set_parameters(self, parameters):
+        if isinstance(parameters, dict):
+            self.parameters = parameters
+        else:
+            raise TypeError(
+                'parameters of Graph must be type: dict, but got {}'.format(
+                    type(parametes)))
 
     def generate_node_name(self, op_type):
         if op_type in self.op_type_count:
             self.op_type_count[op_type] += 1
         else:
             self.op_type_count[op_type] = 1
-        layer_name = op_type + '@block_' + str(self.idx) + '@' + str(
+        layer_name = op_type + '@block_' + str(self.id) + '@' + str(
             self.op_type_count[op_type])
         return layer_name
 
@@ -105,84 +196,75 @@ class Graph(object):
                   attrs=None,
                   block=None,
                   layer_name=None,
+                  domain='paddle',
                   **kw):
         if layer_name is None:
             layer_name = self.generate_node_name(op_type)
 
-        if isinstance(inputs, list):
-            inputs = [
-                ipt.layer_name if isinstance(ipt, Node) else ipt
-                for ipt in inputs
-            ]
-        else:
-            assert 'inputs for node must be type: list, but got {}'.format(
-                type(inputs))
-
-        if isinstance(outputs, list):
-            outputs = [
-                opt.layer_name if isinstance(opt, Node) else opt
-                for opt in outputs
-            ]
-        elif outputs == None:
-            outputs = [layer_name]
-        else:
-            assert 'outputs for node must be type: list, but got {}'.format(
-                type(outputs))
-
         if attrs is None:
             attrs = kw
         attrs.update(kw)
 
-        node = Node(op_type, layer_name, inputs, outputs, attrs, block)
+        if inputs is None:
+            inputs = []
+        if outputs is None:
+            outputs = [layer_name]
+
+        node = Node(op_type, layer_name, inputs, outputs, attrs, block, domain)
 
         if op_type not in ['feed', 'fetch']:
             self.node_map[node.layer_name] = node
+        return node
+
+    def make_onnx_node(self,
+                       op_type,
+                       layer_name=None,
+                       inputs=None,
+                       outputs=None,
+                       attrs=None,
+                       block=None,
+                       **kw):
+        domain = NodeDomain.ONNX
+        node = self.make_node(
+            op_type,
+            layer_name=layer_name,
+            inputs=inputs,
+            outputs=outputs,
+            attrs=attrs,
+            block=block,
+            domain=domain,
+            **kw)
         return node
 
     def update_node(self,
                     node,
-                    op_type,
-                    inputs,
-                    outputs,
+                    op_type=None,
+                    inputs=None,
+                    outputs=None,
                     attrs=None,
                     block=None,
+                    move_to_end=True,
+                    domain=None,
                     **kw):
-        if isinstance(inputs, list):
-            inputs = [
-                ipt.layer_name if isinstance(ipt, Node) else ipt
-                for ipt in inputs
-            ]
-        else:
-            assert 'inputs for node must be type: list, but got {}'.format(
-                type(inputs))
-
-        if isinstance(outputs, list):
-            outputs = [
-                opt.layer_name if isinstance(opt, Node) else opt
-                for opt in outputs
-            ]
-        else:
-            assert 'outputs for node must be type: list, but got {}'.format(
-                type(outputs))
-
-        node.inputs = inputs
-        node.outputs = outputs
         node.type = op_type
+        if inputs is not None:
+            node.set_inputs(inputs)
+        if outputs is not None:
+            node.set_outputs(outputs)
         if attrs is None:
             attrs = kw
         attrs.update(kw)
         node.attrs = attrs
-        if op_type not in ['feed', 'fetch']:
+        if domain is not None:
+            node.domain = domain
+        if move_to_end:
             self.node_map.pop(node.layer_name)
             self.node_map[node.layer_name] = node
         return node
 
-    @property
-    def get_topo_sort(self):
-        # TODO add method to get topo from node_map
-        pass
-
     def get_node(self, name, copy=False):
+        if name not in self.node_map:
+            raise TypeError('Node with name:{} not in graph'.format(name))
         if copy:
             node = copy.copy(self.node_map[name])
         else:
@@ -193,7 +275,7 @@ class Graph(object):
         if name in self.node_map:
             node = self.node_map.pop(name)
             return node
-        assert 'node with name:{} not in graph'.format(name)
+        raise TypeError('Node with name:{} not in graph'.format(name))
 
     def remove_node(self, node):
         if isinstance(node, Node):
@@ -203,4 +285,5 @@ class Graph(object):
             node = self.remove_node_by_name(node)
             return node
         else:
-            assert 'remove node by str or Node, but got type: {}'.format(node)
+            raise TypeError(
+                'Remove node by str or Node, but got type: {}'.format(node))

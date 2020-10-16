@@ -6,12 +6,12 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ## 更新记录
 
 2020.10.14
-1. 支持有限数量的Paddle动态图模型导出为ONNX。是用方法见:[API:paddle.onnx.export](), 目前测试支持的模型列表见：[动态图支持列表]()
+1. 支持Paddle动态图模型导出为ONNX。
 2. 重构代码结构以更好地支持不同Paddle版本，以及动态图和静态图的转换。
 
 2020.9.21
 1. 支持ONNX Opset 9, 10, 11三个版本的导出。
-2. 新增支持转换的OP: swish ,floor, uniform_random, abs, instance_norm, clip, tanh, log和pad2d。
+2. 新增支持转换的OP: swish, floor, uniform_random, abs, instance_norm, clip, tanh, log, norm和pad2d。
 
 2019.09.25
 1. 新增支持SE_ResNet50_vd、SqueezeNet1_0、SE_ResNext50_32x4d、Xception41、VGG16、InceptionV4、YoloV3模型转换。

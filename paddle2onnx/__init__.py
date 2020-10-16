@@ -11,19 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from __future__ import absolute_import
 
-try:
-    import paddle
-    v0, v1, v2 = paddle.__version__.split('.')
-    if v0 == '0' and v1 == '0' and v2 == '0':
-        from .convert import convert_dygraph_to_onnx
-    elif int(v0) > 2:
-        from .convert import convert_dygraph_to_onnx
-except:
-    print(
-        "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\"")
+__version__ = "0.4"
+
+import paddle
+v0, v1, v2 = paddle.__version__.split('.')
+if v0 == '0' and v1 == '0' and v2 == '0':
+    from .convert import convert_dygraph_to_onnx
+elif int(v0) > 2:
+    from .convert import convert_dygraph_to_onnx
 
 from . import graph
 from .op_mapper import onnx_opset
