@@ -179,9 +179,6 @@ class ArgMax():
 class Scale():
     support_opset_verison_range = (9, 12)
 
-    def check_opset_version():
-        pass
-
     @classmethod
     def opset_7(cls, graph, node, **kw):
         scale = node.attr('scale')
