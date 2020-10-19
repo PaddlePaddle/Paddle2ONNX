@@ -95,8 +95,6 @@ def build_single_graph(block,
 
 
 def build_graph(program, parameters, input_spec=None, output_spec=None):
-
-    # reserve for subgraph 
     graphs = {}
 
     if len(program.blocks) > 1:
@@ -114,4 +112,5 @@ def build_graph(program, parameters, input_spec=None, output_spec=None):
 
         if block.parent_idx in graphs:
             graphs[block.parent_idx].sub_graphs.append(graph)
+
     return graphs[0]
