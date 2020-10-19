@@ -442,7 +442,6 @@ class YOLOBox():
             'Reshape',
             inputs=[cls.node_score, node_score_shape],
             outputs=node.output('Scores'))
-        graph.remove_node(node)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
