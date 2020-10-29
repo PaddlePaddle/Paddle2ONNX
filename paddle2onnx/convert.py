@@ -91,7 +91,7 @@ def main():
             "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
         )
 
-    assert args.model is not None, "--model should be defined while translating paddle model to onnx"
+    assert args.model is None, "--model should be defined while translating paddle model to onnx"
     convert(args.model, args.save_dir, opset_version=args.onnx_opset)
 
 
