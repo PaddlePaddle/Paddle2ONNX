@@ -5,7 +5,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 
 ## 更新记录
 
-2020.11.5
+2020.11.4
 1. 支持Paddle动态图模型导出为ONNX。
 2. 重构代码结构以更好地支持不同Paddle版本，以及动态图和静态图的转换。
 
@@ -49,60 +49,22 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 
 ### 动态图模型导出
 
-```
-import paddle
-import numpy as np
-
-class Model(paddle.nn.Layer):
-    def __init__(self):
-        super(Model, self).__init__()
-
-    def forward(self, x, y, z=False):
-        if z:
-            return x + y, x - y
-        else:
-            return x * y, x / y
-
-def export_with_input_spec():
-    paddle.enable_dygraph()
-    model = Model()
-    x_spec = paddle.static.InputSpec(shape=[None, 4], dtype='float32', name='x')
-    y_spec = paddle.static.InputSpec(shape=[None, 4], dtype='float32', name='y')
-    paddle.onnx.export(model, 'dynamic_input.onnx', input_spec=[x_spec, y_spec])
-
-def export_with_input_variable():
-    paddle.enable_dygraph()
-    model = Model()
-    x =  paddle.to_tensor(np.array([1]).astype('float32'), name='x')
-    y =  paddle.to_tensor(np.array([1]).astype('float32'), name='y')
-    model = paddle.jit.to_static(model)
-    out = model(x, y, z=True)
-    paddle.onnx.export(model, 'pruned.onnx', input_spec=[x, y], output_spec=[out[0]])
-
-#export model with InputSpec, which supports set dynamic shape for input.
-export_with_input_spec()
-
-#export model with Variable, which supports prune model by set 'output_spec' with output of model.
-export_with_input_variable()
-```  
+处于实验状态，Paddle 2.0正式版发布后，会提供详细使用教程。
 
 ### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
-|--model_dir | 指定包含Paddle模型'\_\_model\_\_'和参数'\_\_params\_\_'的路径 |
+|--model_dir | 指定包含Paddle模型'\_\_model\_\_'和参数'\_\_params\_\_'的路径, 由`paddle.fluid.io.save_inference_model`保存得到|
 |--save_file | 指定转换后的模型保存目录路径 |
 |--onnx_opset | **[可选]** 该参数可设置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为10 |
 |--enable_onnx_checker| **[可选]**  是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 pip install onnx==1.7.0, 默认为False|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
 ##  相关文档
-[paddle2onnx测试模型库](docs/model_zoo.md)
-[paddle2onnx支持准换算子列表](docs/op_list.md)
 
-## 注意事项
-1. 默认情况下，paddle2onnx工具是不提供Paddle模型进行转换的。PaddleHub提供了较多标准的模型供使用，用户可以拉取PaddleHub中的模型进行转化，安装PaddleHub的模型后会有提示模型安装位置，例如ssd模型安装位置在/root/paddle/paddle-onnx/ssd_mobilenet_v1_pascal，不同的PaddleHub的安装环境安装位置会有不同，用户请注意PaddleHub模型的安装位置。
-2. 工具参数name_prefix的使用方式。使用paddle2onnx工具前最好观察一下Paddle模型的参数名字是否带有前缀，例如@HUB_mobilenet_v2_imagenet@conv6_2_expand_bn_scale，那么使用paddle2onnx需要加上参数 --name_prefix  @HUB_mobilenet_v2_imagenet@。默认情况下是不带前缀。
-3. Model zoo的使用方式。Model zoo大部分是提供了PaddleHub模型的链接地址，用户可以通过安装PaddleHub模型来获取标准模型。目前PaddleHub没有集成densenet_121、InceptionV4、SE_ResNet50_vd、Xception41这四个模型，我们提供了PaddleCV库的下载地址，该模型不可以直接进行转化，用户需要使用save_inference_model接口来保存模型和参数。
+- [paddle2onnx测试模型库](docs/model_zoo.md)
+- [paddle2onnx支持准换算子列表](docs/op_list.md)
+
 
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
