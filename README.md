@@ -63,7 +63,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ##  相关文档
 
 - [paddle2onnx测试模型库](docs/model_zoo.md)
-- [paddle2onnx支持准换算子列表](docs/op_list.md)
+- [paddle2onnx支持转换算子列表](docs/op_list.md)
 
 
 ## License
