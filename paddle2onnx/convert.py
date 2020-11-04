@@ -49,21 +49,7 @@ def program2onnx(program,
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
-    if isinstance(program, str):
-        # convert model save with 'paddle.fluid.io.save_inference_model'
-        exe = fluid.Executor(fluid.CPUPlace())
-        [program, feed, fetchs] = fluid.io.load_inference_model(
-            program,
-            exe,
-            model_filename='__model__',
-            params_filename='__params__')
-        program2onnx(
-            program,
-            save_file,
-            scope=scope,
-            opset_version=opset_version,
-            enable_onnx_checker=enable_onnx_checker)
-    elif isinstance(program, paddle.fluid.framework.Program):
+    if isinstance(program, paddle.fluid.framework.Program):
         if feeded_var_names is not None:
             if isinstance(feeded_var_names, six.string_types):
                 feeded_var_names = [feeded_var_names]

@@ -73,8 +73,17 @@ def program2onnx(model_dir,
         logging.error(
             "paddlepaddle not installed, use \"pip install paddlepaddle\"")
     import paddle2onnx as p2o
-    p2o.program2onnx(
+    # convert model save with 'paddle.fluid.io.save_inference_model'
+    if hasattr(paddle, 'enable_static'):
+        paddle.enable_static()
+    exe = fluid.Executor(fluid.CPUPlace())
+    [program, feed, fetchs] = fluid.io.load_inference_model(
         model_dir,
+        exe,
+        model_filename='__model__',
+        params_filename='__params__')
+    p2o.program2onnx(
+        program,
         save_file,
         scope=fluid.global_scope(),
         opset_version=opset_version,

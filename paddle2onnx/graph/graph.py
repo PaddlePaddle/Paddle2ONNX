@@ -224,12 +224,9 @@ class Graph(object):
         if isinstance(node, Node):
             node = self.remove_node_by_name(node.layer_name)
             return node
-        elif isinstance(node, str):
+        else:
             node = self.remove_node_by_name(node)
             return node
-        else:
-            raise TypeError(
-                'Remove node by str or Node, but got type: {}'.format(node))
 
     def get_output_nodes_of_node(self, node):
         if node in self.edge_map:
