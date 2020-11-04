@@ -11,3 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from .graph import Graph, Node
+from .paddle_graph import PaddleGraph, PaddleNode
+from .onnx_graph import ONNXGraph, ONNXNode

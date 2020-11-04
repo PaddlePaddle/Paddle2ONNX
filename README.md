@@ -5,9 +5,13 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 
 ## 更新记录
 
+2020.11.4
+1. 支持Paddle动态图模型导出为ONNX。
+2. 重构代码结构以更好地支持不同Paddle版本，以及动态图和静态图的转换。
+
 2020.9.21
 1. 支持ONNX Opset 9, 10, 11三个版本的导出。
-2. 新增支持转换的OP: swish ,floor, uniform_random, abs, instance_norm, clip, tanh, log和pad2d。
+2. 新增支持转换的OP: swish, floor, uniform_random, abs, instance_norm, clip, tanh, log, norm和pad2d。
 
 2019.09.25
 1. 新增支持SE_ResNet50_vd、SqueezeNet1_0、SE_ResNext50_32x4d、Xception41、VGG16、InceptionV4、YoloV3模型转换。
@@ -23,9 +27,10 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 
 ### 用户环境配置
 
-     python >= 3.5  
-     paddlepaddle >= 1.6.0
-     onnx >= 1.6
+     python >= 2.7  
+     静态图: paddlepaddle >= 1.8.0
+     动态图: paddlepaddle >= 2.0.0
+     onnx == 1.7.0 | 可选
 
 ##  安装
 ###  安装方式1
@@ -38,33 +43,28 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
      python setup.py install
 
 ##  使用方式
-###  普通用户使用方式
-> 如果用户只是想将paddle模型转化成onnx模型，可以使用下面的命令进行操作。
+### 静态图模型导出
 
-    paddle2onnx --model src_dir  --save_dir dist_dir
+    paddle2onnx --model_dir paddle_model  --save_file onnx_file --onnx_opset 10 --enable_onnx_checker True
+
+### 动态图模型导出
+
+处于实验状态，Paddle 2.0正式版发布后，会提供详细使用教程。
 
 ### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
-|--model | 指定包含Paddle模型和参数：'__model__', '__params__'的路径 |
-|--save_dir | 指定转换后的模型保存目录路径 |
-|--onnx_opset | **[可选]** 该参数可设置转换为ONNX的OpSet版本，目前支持9、10、11，默认为10 |
-
+|--model_dir | 指定包含Paddle模型'\_\_model\_\_'和参数'\_\_params\_\_'的路径, 由`paddle.fluid.io.save_inference_model`保存得到|
+|--save_file | 指定转换后的模型保存目录路径 |
+|--onnx_opset | **[可选]** 该参数可设置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为10 |
+|--enable_onnx_checker| **[可选]**  是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 pip install onnx==1.7.0, 默认为False|
+|--version |**[可选]** 查看paddle2onnx版本 |
 
 ##  相关文档
-[paddle2onnx测试模型库](docs/model_zoo.md)
 
-## 注意事项
-1. 默认情况下，paddle2onnx工具是不提供Paddle模型进行转换的。PaddleHub提供了较多标准的模型供使用，用户可以拉取PaddleHub中的模型进行转化，安装PaddleHub的模型后会有提示模型安装位置，例如ssd模型安装位置在/root/paddle/paddle-onnx/ssd_mobilenet_v1_pascal，不同的PaddleHub的安装环境安装位置会有不同，用户请注意PaddleHub模型的安装位置。
-2. 工具参数name_prefix的使用方式。使用paddle2onnx工具前最好观察一下Paddle模型的参数名字是否带有前缀，例如@HUB_mobilenet_v2_imagenet@conv6_2_expand_bn_scale，那么使用paddle2onnx需要加上参数 --name_prefix  @HUB_mobilenet_v2_imagenet@。默认情况下是不带前缀。
-3. Model zoo的使用方式。Model zoo大部分是提供了PaddleHub模型的链接地址，用户可以通过安装PaddleHub模型来获取标准模型。目前PaddleHub没有集成densenet_121、InceptionV4、SE_ResNet50_vd、Xception41这四个模型，我们提供了PaddleCV库的下载地址，该模型不可以直接进行转化，用户需要使用save_inference_model接口来保存模型和参数。
+- [paddle2onnx测试模型库](docs/model_zoo.md)
+- [paddle2onnx支持准换算子列表](docs/op_list.md)
 
-PaddleX, PaddleClas, PaddleSeg和PaddleOCR目前支持模型如下:
-
-- 支持[PaddleX](https://github.com/PaddlePaddle/PaddleX)和[PaddleClas](https://github.com/PaddlePaddle/PaddleCLAS)中的所有分类模型
-- 支持[PaddleX](https://github.com/PaddlePaddle/PaddleX)和[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)中的UNet/DeepLabV3/HRNet语义分割模型
-- 支持[PaddleX](https://github.com/PaddlePaddle/PaddleX)中YOLOv3的检测模型
-- 支持[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)中的文字检测模型（文字识别模型暂不支持)
 
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).

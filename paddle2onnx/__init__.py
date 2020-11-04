@@ -11,13 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import absolute_import
 
-__version__ = "0.3.1"
+__version__ = "0.4"
 
-from . import convert
-from .op_mapper import paddle_op_mapper
-from .decoder import paddle_decoder
-
-PaddleOpMapper = paddle_op_mapper.PaddleOpMapper
-PaddleDecoder = paddle_decoder.PaddleDecoder
-convert = convert.convert
+from .convert import dygraph2onnx, program2onnx

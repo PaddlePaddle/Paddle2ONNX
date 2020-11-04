@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from . import box_coder
-from . import im2sequence
-from . import multiclass_nms
-from . import prior_box
-from . import yolo_box
+
+OP_MAPPING_WAITTING = 0
+OP_MAPPING_NO_REGISTER = 1
+OP_MAPPING_NO_VERSION = 2
+OP_MAPPING_SUCCESSED = 3
+OP_MAPPING_FAILED = 4

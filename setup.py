@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
 import setuptools
 
 long_description = "paddle2onnx is a toolkit for converting trained model of PaddlePaddle to ONNX.\n\n"
-long_description += "Usage: paddle2onnx --model src --save_dir dist\n"
+long_description += "Usage: paddle2onnx --model_dir src --save_file dist\n"
 long_description += "GitHub: https://github.com/PaddlePaddle/paddle2onnx\n"
 long_description += "Email: dltp-sz@baidu.com"
 
 setuptools.setup(
     name="paddle2onnx",
-    version='0.3.1',
+    version=0.4,
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
     description="a toolkit for converting trained model of PaddlePaddle to ONNX.",
@@ -35,4 +36,4 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     license='Apache 2.0',
-    entry_points={'console_scripts': ['paddle2onnx=paddle2onnx.convert:main']})
+    entry_points={'console_scripts': ['paddle2onnx=paddle2onnx.command:main']})
