@@ -15,22 +15,22 @@
 from __future__ import absolute_import
 from six import text_type as _text_type
 import argparse
+import ast
 import sys
 import os
 import paddle.fluid as fluid
+from paddle2onnx.utils import logging
 
 
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model",
+        "--model_dir",
         "-m",
         type=_text_type,
         default=None,
         help="paddle model path, '__model__' and '__params__' files need under this path, which saved by 'paddle.fluid.io.save_inference_model'."
     )
-    parser.add_argument(
-        "--mode_type", "-mt", type=_text_type, default='program', help="")
     parser.add_argument(
         "--save_file",
         "-s",
@@ -49,27 +49,44 @@ def arg_parser():
         type=int,
         default=9,
         help="set onnx opset version to export")
+    parser.add_argument(
+        "--enable_onnx_checker",
+        type=ast.literal_eval,
+        default=False,
+        help="whether check onnx model validity, if True, please 'pip install onnx'"
+    )
     return parser
 
 
-def convert_inference_model_to_onnx(model_dir, save_dir, opset_version=10):
-    # convert model save with 'paddle.fluid.io.save_inference_model'
-    from paddle2onnx import convert_program_to_onnx
-    exe = fluid.Executor(fluid.CPUPlace())
-    [program, feed, fetchs] = fluid.io.load_inference_model(
+def program2onnx(model_dir,
+                 save_file,
+                 opset_version=10,
+                 enable_onnx_checker=False):
+    try:
+        import paddle
+        v0, v1, v2 = paddle.__version__.split('.')
+        if v0 == '0' and v1 == '0' and v2 == '0':
+            logging.warning("You are use develop version of paddlepaddle")
+        elif int(v0) != 1 or int(v1) < 8:
+            raise ImportError("paddlepaddle>=1.8.0 is required")
+    except:
+        logging.error(
+            "paddlepaddle not installed, use \"pip install paddlepaddle\"")
+    import paddle2onnx as p2o
+    p2o.program2onnx(
         model_dir,
-        exe,
-        model_filename='__model__',
-        params_filename='__params__')
-    convert_program_to_onnx(
-        program, fluid.global_scope(), save_dir, opset_version=opset_version)
+        save_file,
+        scope=fluid.global_scope(),
+        opset_version=opset_version,
+        enable_onnx_checker=enable_onnx_checker)
 
 
 def main():
     if len(sys.argv) < 2:
-        print("Use \"paddle2onnx -h\" to print the help information")
-        print("For more information, please follow our github repo below:)")
-        print("\nGithub: https://github.com/PaddlePaddle/paddle2onnx.git\n")
+        logging.info("Use \"paddle2onnx -h\" to print the help information")
+        logging.info(
+            "For more information, please follow our github repo below:")
+        logging.info("Github: https://github.com/PaddlePaddle/paddle2onnx.git")
         return
 
     parser = arg_parser()
@@ -77,28 +94,17 @@ def main():
 
     if args.version:
         import paddle2onnx
-        print("paddle2onnx-{} with python>=2.7, paddlepaddle>=1.8.0\n".format(
-            paddle2onnx.__version__))
+        logging.info("paddle2onnx-{} with python>=2.7, paddlepaddle>=1.8.0".
+                     format(paddle2onnx.__version__))
         return
 
-    try:
-        import paddle
-        v0, v1, v2 = paddle.__version__.split('.')
-        print("paddle.__version__ = {}".format(paddle.__version__))
-        if v0 == '0' and v1 == '0' and v2 == '0':
-            print("[WARNING] You are use develop version of paddlepaddle")
-        elif int(v0) != 1 or int(v1) < 8:
-            print("[ERROR] paddlepaddle>=1.8.0 is required")
-            return
-    except:
-        print(
-            "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
-        )
-
-    assert args.model is not None, "--model should be defined while translating paddle model to onnx"
+    assert args.model_dir is not None, "--model should be defined while translating paddle model to onnx"
     assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
-    convert_inference_model_to_onnx(
-        args.model, args.save_file, opset_version=args.opset_version)
+    program2onnx(
+        args.model_dir,
+        args.save_file,
+        opset_version=args.opset_version,
+        enable_onnx_checker=args.enable_onnx_checker)
 
 
 if __name__ == "__main__":

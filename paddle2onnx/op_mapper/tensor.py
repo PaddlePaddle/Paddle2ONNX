@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
@@ -19,10 +21,11 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 @op_mapper('concat')
 class Concat():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        node = graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
             'Concat',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -31,31 +34,30 @@ class Concat():
 
 @op_mapper('shape')
 class Shape():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
-            'Shape',
-            inputs=node.input('Input'),
-            outputs=node.output('Out'))
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Shape', inputs=node.input('Input'), outputs=node.output('Out'))
 
 
 @op_mapper('split')
 class Split():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         sections = node.attr('sections')
         if len(sections) > 0:
-            graph.update_node(
-                node,
+            graph.make_node(
                 'Split',
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
                 axis=node.attr('axis'),
                 split=sections)
         else:
-            graph.update_node(
-                node,
+            graph.make_node(
                 'Split',
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
@@ -64,13 +66,14 @@ class Split():
 
 @op_mapper('slice')
 class Slice():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
         starts = node.attr('starts')
         ends = node.attr('ends')
-        graph.update_node(
-            node,
+        graph.make_node(
             "Slice",
             inputs=[node.input('Input')[0]],
             outputs=node.output('Out'),
@@ -98,36 +101,129 @@ class Slice():
             inputs=[node.input('Input')[0], starts_node, ends_node, axes_node],
             outputs=node.output('Out'))
 
-        graph.remove_node(node)
-
 
 @op_mapper('fill_constant')
 class Constant():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        print(node.outputs)
+    def opset_1(cls, graph, node, **kw):
         value = node.attr('value')
         dtype = node.attr('dtype')
         shape = node.attr('shape')
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
-        graph.update_node(
-            node,
+        graph.make_node(
             'Constant',
             inputs=[],
             outputs=node.output('Out'),
             attrs={
+                'dims': shape,
                 'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
                 'value': value
             })
 
 
-@op_mapper('transpose2')
-class Transpose():
+@op_mapper('fill_any_like')
+class FullLike():
+    '''
+    fill_any_like is kernel for paddle op::full_like & ones_like
+    '''
+    support_opset_verison_range = (9, 12)
+
     @classmethod
     def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        value = node.attr('value')
+        dtype = node.attr('dtype')
+        input_dtype = node.input_var('X', 0).dtype
+        if dtype is None:
+            dtype = input_dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+        graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape_node],
+            outputs=node.output('Out'),
+            dims=[1],
+            dtype=dtype,
+            value=value)
+
+
+@op_mapper('gather')
+class Gather():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        if len(node.input_shape('Index', 0)) == 1:
+            # gather
+            graph.make_node(
+                'Gather',
+                inputs=[node.input('X', 0), node.input('Index', 0)],
+                outputs=node.output('Out'))
+        else:
+            raise Exception(
+                "please try to convert OP:gather(indices's rank >1) with opset_version >= 11."
+            )
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        if len(node.input_shape('Index', 0)) == 1:
+            # gather
+            graph.make_node(
+                'Gather',
+                inputs=[node.input('X', 0), node.input('Index', 0)],
+                outputs=node.output('Out'))
+        else:
+            # gather_nd 
+            graph.make_node(
+                'GatherND',
+                inputs=[node.input('X', 0), node.input('Index', 0)],
+                outputs=node.output('Out'))
+
+
+@op_mapper('squeeze2')
+class Squeeze():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        axes = node.attr('axes')
+        graph.make_node(
+            'Squeeze',
+            inputs=[node.input('X', 0)],
+            outputs=node.output('Out'),
+            axes=axes)
+
+
+@op_mapper('assign_value')
+class Assign():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        if len(node.input_names) > 0:
+            graph.make_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+        else:
+            value = np.array(node.attr('fp32_values'))
+            if value is None:
+                value = np.array(node.attr('int32_values'))
+            parameter = {
+                'data': value,
+                'dtype': node.attr('dtype'),
+                'shape': node.attr('shape')
+            }
+            graph.parameters[node.output('Out', 0)] = parameter
+
+
+@op_mapper('transpose2')
+class Transpose():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
             'Transpose',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -136,10 +232,11 @@ class Transpose():
 
 @op_mapper('flatten2')
 class Flatten():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
             'Flatten',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -148,8 +245,10 @@ class Flatten():
 
 @op_mapper('reshape2')
 class Reshape():
+    support_opset_verison_range = (5, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_5(cls, graph, node, **kw):
         if len(node.input('ShapeTensor')) > 1:
             cast_shape_nodes = []
             for i in range(len(node.input('ShapeTensor'))):
@@ -181,15 +280,15 @@ class Reshape():
                 'Reshape',
                 inputs=[node.input('X')[0], shape_node],
                 outputs=node.output('Out'))
-        graph.remove_node(node)
 
 
 @op_mapper('unsqueeze2')
 class Unsqueeze():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
             'Unsqueeze',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -198,21 +297,21 @@ class Unsqueeze():
 
 @op_mapper('reciprocal')
 class Reciprocal():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
-            'Reciprocal',
-            inputs=node.input('X'),
-            outputs=node.output('Out'))
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Reciprocal', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper('cast')
 class Cast():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
             'Cast',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -221,12 +320,13 @@ class Cast():
 
 @op_mapper('clip')
 class Clip():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         min_value = node.attr('min')
         max_value = node.attr('max')
-        graph.update_node(
-            node,
+        graph.make_node(
             'Clip',
             inputs=[node.input('X')[0]],
             outputs=node.output('Out'),
@@ -237,27 +337,26 @@ class Clip():
     def opset_11(cls, graph, node, **kw):
         min_node = graph.make_node(
             'Constant',
-            attrs={'dtype': dtypes.ONNX.FP32,
+            attrs={'dtype': dtypes.ONNX.FLOAT,
                    'value': node.attr('min')})
         max_node = graph.make_node(
             'Constant',
-            attrs={'dtype': dtypes.ONNX.FP32,
+            attrs={'dtype': dtypes.ONNX.FLOAT,
                    'value': node.attr('max')})
         node = graph.make_node(
             'Clip',
             inputs=[node.input('X')[0], min_node, max_node],
             outputs=node.output('Out'))
 
-        graph.remove_node(node)
-
 
 @op_mapper('pad2d')
 class Pad():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        pads = cls.convert_padding(graph, node, **kw)
-        graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        pads = cls.convert_padding(node, **kw)
+        graph.make_node(
             'Pad',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -267,14 +366,14 @@ class Pad():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
-        pads = cls.convert_padding(graph, node, **kw)
+        pads = cls.convert_padding(node, **kw)
         pads_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': pads})
         value_node = graph.make_node(
             'Constant',
             attrs={
-                'dtype': dtypes.ONNX.INT64,
+                'dtype': dtypes.ONNX.FLOAT,
                 'value': node.attr('pad_value')
             })
 
@@ -288,23 +387,26 @@ class Pad():
     def convert_padding(cls, node, **kw):
         x_shape = node.input_shape('X', 0)
         paddings = node.attr('paddings')
+        onnx_paddings = None
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
-            return [
+            onnx_paddings = [
                 0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
             ]
         else:
-            return [
+            onnx_paddings = [
                 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
             ]
+        return onnx_paddings
 
 
 @op_mapper('uniform_random_batch_size_like')
 class UniformRandom():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
             'RandomUniformLike',
             inputs=node.input('Input'),
             outputs=node.output('Out'),
@@ -319,13 +421,57 @@ class UniformRandom():
     mapper_dict={'bilinear_interp': 'linear',
                  'nearest_interp': 'nearest'})
 class Resize():
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        inputs = [node.input('X')[0]]
+        resize_type = kw['mapper_dict'][node.type]
+        if node.attr('align_corners') or node.attr('align_mode') == 0:
+            raise Exception(
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
+                "'asymmetric', Try converting with opset_version 11"
+            )
+        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
+            in_shape, out_shape = cls.compute_output_shape(
+                graph, node, opset_version=9)
+            cast_shape_node2 = graph.make_node(
+                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
+            cast_shape_node0 = graph.make_node(
+                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
+            node_h_w_scales = graph.make_node(
+                'Div', inputs=[cast_shape_node2, cast_shape_node0])
+            inputs.append(node_h_w_scales)
+        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
+            scale = node.input('Scale')[0]
+            inputs.append(out_shape)
+        else:
+            out_shape = [node.attr('out_h'), node.attr('out_w')]
+            scale = node.attr('scale')
+            if out_shape.count(-1) > 0:
+                scale_node = graph.make_node(
+                    'Constant',
+                    attrs={
+                        'dtype': dtypes.ONNX.FLOAT,
+                        'value': [1, 1, scale, scale]
+                    })
+                inputs.append(scale_node)
+            else:
+                raise Exception("Unexpected situation happend")
+        graph.make_node(
+            'Upsample',
+            inputs=inputs,
+            outputs=node.output('Out'),
+            mode=resize_type)
+
     @classmethod
     def opset_10(cls, graph, node, **kw):
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
         if node.attr('align_corners') or node.attr('align_mode') == 0:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --opset_version 11"
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode:" \
+                " 'asymmetric', Try converting with opset_version 11"
             )
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
             in_shape, out_shape = cls.compute_output_shape(graph, node)
@@ -352,8 +498,7 @@ class Resize():
                 inputs.append(scale_node)
             else:
                 raise Exception("Unexpected situation happend")
-        graph.update_node(
-            node,
+        graph.make_node(
             'Resize',
             inputs=inputs,
             outputs=node.output('Out'),
@@ -404,8 +549,7 @@ class Resize():
                 inputs.append(scale_node)
             else:
                 raise Exception("Unexpected situation happend")
-        graph.update_node(
-            node,
+        graph.make_node(
             'Resize',
             inputs=inputs,
             outputs=node.output('Out'),
@@ -413,16 +557,20 @@ class Resize():
             coordinate_transformation_mode=coordinate_transformation_mode)
 
     @classmethod
-    def compute_output_shape(cls, graph, node):
+    def compute_output_shape(cls, graph, node, opset_version=10):
         shape_node0 = graph.make_node('Shape', inputs=node.input('X'))
-        starts_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [0]})
-        ends_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [2]})
-        shape_node1 = graph.make_node(
-            'Slice', inputs=[shape_node0, starts_node, ends_node])
+        if opset_version < 10:
+            shape_node1 = graph.make_node(
+                'Slice', inputs=[shape_node0], starts=[0], ends=[2])
+        else:
+            starts_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            ends_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [2]})
+            shape_node1 = graph.make_node(
+                'Slice', inputs=[shape_node0, starts_node, ends_node])
         if len(node.input('OutSize')) > 0:
             cast_shape_node = graph.make_node(
                 'Cast', inputs=node.input('OutSize'), to=dtypes.ONNX.INT64)

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import onnx
+from __future__ import absolute_import
+
 import numpy as np
-from onnx import onnx_pb, helper
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
@@ -25,12 +25,15 @@ MAX_FLOAT32 = np.asarray(
 def is_static_shape(shape):
     if len(shape) > 1 and shape.count(-1) > 1:
         raise Exception(
-            "Converting this model to ONNX need with static input shape, please fix input shape of this model, see doc Q5 in https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md."
+            "Converting this model to ONNX need with static input shape," \
+            " please fix input shape of this model, see doc Q5 in" \
+            " https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md."
         )
 
 
 @op_mapper('yolo_box')
 class YOLOBox():
+    support_opset_verison_range = (9, 12)
 
     node_pred_box_x1_decode = None
     node_pred_box_y1_decode = None
@@ -99,12 +102,12 @@ class YOLOBox():
         node_range_x_new_shape = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             value=range_x_new_shape)
         node_range_y_new_shape = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             value=range_y_new_shape)
 
         node_range_x_reshape = graph.make_node(
@@ -154,13 +157,11 @@ class YOLOBox():
         node_input_h = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
+            dtype=dtypes.ONNX.FLOAT,
             value=[input_height])
 
         node_input_w = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
+            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT,
             value=[input_width])
 
         node_box_x_encode = graph.make_node(
@@ -170,23 +171,17 @@ class YOLOBox():
             'Div', inputs=[node_box_y_add_grid, node_input_h])
 
         node_anchor_tensor = graph.make_node(
-            "Constant", inputs=[], dtype=onnx.TensorProto.FLOAT, value=anchors)
+            "Constant", inputs=[], dtype=dtypes.ONNX.FLOAT, value=anchors)
 
         anchor_shape = [int(num_anchors), 2]
         node_anchor_shape = graph.make_node(
-            "Constant",
-            inputs=[],
-            dtype=onnx.TensorProto.INT64,
-            value=anchor_shape)
+            "Constant", inputs=[], dtype=dtypes.ONNX.INT64, value=anchor_shape)
 
         node_anchor_tensor_reshape = graph.make_node(
             "Reshape", inputs=[node_anchor_tensor, node_anchor_shape])
 
         node_input_size = graph.make_node(
-            "Constant",
-            inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
-            value=[input_size])
+            "Constant", inputs=[], dtype=dtypes.ONNX.FLOAT, value=[input_size])
 
         node_anchors_div_input_size = graph.make_node(
             "Div", inputs=[node_anchor_tensor_reshape, node_input_size])
@@ -205,7 +200,7 @@ class YOLOBox():
         node_new_anchor_shape = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             value=new_anchor_shape)
 
         node_anchor_w_reshape = graph.make_node(
@@ -234,15 +229,12 @@ class YOLOBox():
         node_conf_thresh = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
+            dtype=dtypes.ONNX.FLOAT,
             value=conf_thresh_mat)
 
         conf_shape = [1, int(num_anchors), input_height, input_width, 1]
         node_conf_shape = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=onnx.TensorProto.INT64,
-            value=conf_shape)
+            'Constant', inputs=[], dtype=dtypes.ONNX.INT64, value=conf_shape)
 
         node_conf_thresh_reshape = graph.make_node(
             'Reshape', inputs=[node_conf_thresh, node_conf_shape])
@@ -254,7 +246,7 @@ class YOLOBox():
 
         zeros = [0]
         node_zeros = graph.make_node(
-            'Constant', inputs=[], dtype=onnx.TensorProto.FLOAT, value=zeros)
+            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=zeros)
 
         node_conf_clip_bool = graph.make_node(
             'Greater', inputs=[node_conf_clip, node_zeros])
@@ -271,7 +263,7 @@ class YOLOBox():
         node_new_shape = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             dims=[len(new_shape)],
             value=new_shape)
 
@@ -309,10 +301,7 @@ class YOLOBox():
 
         box_shape = [1, int(num_anchors) * input_height * input_width, 4]
         node_box_shape = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=onnx.TensorProto.INT64,
-            value=box_shape)
+            'Constant', inputs=[], dtype=dtypes.ONNX.INT64, value=box_shape)
 
         node_pred_box_new_shape = graph.make_node(
             'Reshape', inputs=[node_pred_box_mul_conf, node_box_shape])
@@ -332,7 +321,7 @@ class YOLOBox():
             axis=2)
 
         node_number_two = graph.make_node(
-            "Constant", inputs=[], dtype=onnx.TensorProto.FLOAT, value=[2])
+            "Constant", inputs=[], dtype=dtypes.ONNX.FLOAT, value=[2])
 
         node_half_w = graph.make_node(
             "Div", inputs=[node_pred_box_w, node_number_two])
@@ -383,7 +372,7 @@ class YOLOBox():
             'Mul', inputs=[node_pred_box_y2, node_img_height_cast])
 
         node_number_one = graph.make_node(
-            'Constant', inputs=[], dtype=onnx.TensorProto.FLOAT, value=[1])
+            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=[1])
 
         node_new_img_height = graph.make_node(
             'Sub', inputs=[node_img_height_cast, node_number_one])
@@ -442,26 +431,22 @@ class YOLOBox():
         node_score_shape = graph.make_node(
             "Constant",
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             value=cls.score_shape)
 
         node_score_new_shape = graph.make_node(
             'Reshape',
             inputs=[cls.node_score, node_score_shape],
             outputs=node.output('Scores'))
-        graph.remove_node(node)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
         cls.front(graph, node, **kw)
         min_const = graph.make_node(
-            'Constant', inputs=[], dtype=onnx.TensorProto.FLOAT, value=0.0)
+            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=0.0)
 
         max_const = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
-            value=MAX_FLOAT32)
+            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=MAX_FLOAT32)
 
         node_pred_box_x1_clip = graph.make_node(
             'Clip', inputs=[cls.node_pred_box_x1_decode, min_const, max_const])
@@ -493,11 +478,10 @@ class YOLOBox():
         node_score_shape = graph.make_node(
             "Constant",
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             value=cls.score_shape)
 
         node_score_new_shape = graph.make_node(
             'Reshape',
             inputs=[cls.node_score, node_score_shape],
             outputs=node.output('Scores'))
-        graph.remove_node(node)

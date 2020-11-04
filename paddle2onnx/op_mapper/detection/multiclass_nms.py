@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -12,56 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
-import sys
-import os
 import numpy as np
-import onnx
 import logging
-from onnx import helper, onnx_pb
+from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
-@op_mapper('multiclass_nms')
-class BoxCoder():
+@op_mapper(['multiclass_nms', 'multiclass_nms2'])
+class MultiClassNMS():
+    support_opset_verision_range = (10, 12)
     """
     Convert the paddle multiclass_nms to onnx op.
     This op is get the select boxes from origin boxes.
     """
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_10(cls, graph, node, **kw):
         result_name = node.output('Out', 0)
         background = node.attr('background_label')
         normalized = node.attr('normalized')
         if normalized == False:
             logging.warn(
                         "The parameter normalized of multiclass_nms OP of Paddle is False, which has diff with ONNX." \
-                        " Please set normalized=True in multiclass_nms of Paddle, see doc Q4 in https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md")
+                        " Please set normalized=True in multiclass_nms of Paddle, see doc Q4 in" \
+                        " https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md")
 
         #convert the paddle attribute to onnx tensor
         node_score_threshold = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
+            dtype=dtypes.ONNX.FLOAT,
             value=[float(node.attr('score_threshold'))])
 
         node_iou_threshold = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.FLOAT,
+            dtype=dtypes.ONNX.FLOAT,
             value=[float(node.attr('nms_threshold'))])
 
         node_keep_top_k = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             value=[np.int64(node.attr('keep_top_k'))])
 
         node_keep_top_k_2D = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=onnx.TensorProto.INT64,
+            dtype=dtypes.ONNX.INT64,
             dims=[1, 1],
             value=[node.attr('keep_top_k')])
 
@@ -86,7 +84,7 @@ class BoxCoder():
                 layer_name=name,
                 inputs=[],
                 outputs=[name],
-                dtype=onnx.TensorProto.INT64,
+                dtype=dtypes.ONNX.INT64,
                 value=[value])
 
         # In this code block, we will deocde the raw score data, reshape N * C * M to 1 * N*C*M
@@ -110,8 +108,7 @@ class BoxCoder():
                 'NonZero', inputs=[node_squeeze_gather_1])
         else:
             node_thresh = graph.make_node(
-                'Constant', inputs=[], dtype=onnx.TensorProto.INT32,
-                value=[-1])
+                'Constant', inputs=[], dtype=dtypes.ONNX.INT32, value=[-1])
 
             node_cast = graph.make_node(
                 'Cast', inputs=[node_squeeze_gather_1], to=6)
@@ -249,19 +246,34 @@ class BoxCoder():
             'Squeeze', inputs=[node_cast_topk_class], axes=[0, 2])
         node_neg_squeeze_cast_topk_class = graph.make_node(
             'Neg', inputs=[node_squeeze_cast_topk_class])
+
         outputs_topk_select_classes_indices = [result_name + "@topk_select_topk_classes_scores",\
             result_name + "@topk_select_topk_classes_indices"]
         node_topk_select_topk_indices = graph.make_node(
             'TopK',
             inputs=[node_neg_squeeze_cast_topk_class, node_cast_topk_indices],
             outputs=outputs_topk_select_classes_indices)
-        print(node.output('Out'))
         node_concat_final_results = graph.make_node(
             'Gather',
             inputs=[
                 node_sort_by_socre_results,
                 outputs_topk_select_classes_indices[1]
             ],
-            outputs=node.output('Out'),
             axis=1)
-        graph.remove_node(node)
+        node_concat_final_results = graph.make_node(
+            'Squeeze',
+            inputs=[node_concat_final_results],
+            outputs=[node.output('Out', 0)],
+            axes=[0])
+
+        if node.type == 'multiclass_nms2':
+            graph.make_node(
+                'Squeeze',
+                inputs=[node_gather_2_nonzero],
+                outputs=node.output('Index'),
+                axes=[0])
+            #graph.make_node(
+            #    'Unsqueeze', 
+            #    inputs=[outputs_topk_select_classes_indices[1]],
+            #    outputs=node.output('Index'), 
+            #    axes=[-1])

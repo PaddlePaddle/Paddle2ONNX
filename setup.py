@@ -16,7 +16,7 @@ from __future__ import absolute_import
 import setuptools
 
 long_description = "paddle2onnx is a toolkit for converting trained model of PaddlePaddle to ONNX.\n\n"
-long_description += "Usage: paddle2onnx --model src --save_dir dist\n"
+long_description += "Usage: paddle2onnx --model_dir src --save_file dist\n"
 long_description += "GitHub: https://github.com/PaddlePaddle/paddle2onnx\n"
 long_description += "Email: dltp-sz@baidu.com"
 
@@ -30,7 +30,6 @@ setuptools.setup(
     long_description_content_type="text/plain",
     url="https://github.com/PaddlePaddle/paddle2onnx",
     packages=setuptools.find_packages(),
-    install_requires=['onnx>=1.6.0'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

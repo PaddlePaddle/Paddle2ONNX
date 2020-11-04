@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#from . import box_coder
-#from . import multiclass_nms
-#from . import prior_box
-#from . import yolo_box
+PRODUCER = 'PaddlePaddle'
+
+ONNX_HELPER_VERSION = '1.7.0'
+
+
+class NodeDomain():
+    ONNX = 'onnx'
+    PADDLE = 'paddle'
+    CUSTOM = 'custom'
+    RAW = 'raw'

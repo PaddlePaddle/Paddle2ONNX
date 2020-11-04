@@ -12,20 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
-import sys
-import os
+from __future__ import absolute_import
+
 import numpy as np
-import paddle.fluid.core as core
-import paddle.fluid as fluid
-import onnx
-from onnx import onnx_pb
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
 @op_mapper(
-    ['relu', 'tanh', 'log', 'sigmoid', 'leaky_relu'],
+    ['relu', 'tanh', 'log', 'sigmoid'],
     mapper_dict={
         'relu': 'Relu',
         'tanh': 'Tanh',
@@ -33,19 +28,22 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
         'sigmoid': 'Sigmoid',
     })
 class ActivationOps():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         onnx_type = kw['mapper_dict'][node.type]
-        onnx_node = graph.update_node(
-            node, onnx_type, inputs=node.input('X'), outputs=node.output('Out'))
+        onnx_node = graph.make_node(
+            onnx_type, inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper('leaky_relu')
 class LeakyRelu():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        onnx_node = graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        onnx_node = graph.make_node(
             'LeakyRelu',
             inputs=[node.input('X')[0]],
             outputs=node.output('Out'),
@@ -54,23 +52,24 @@ class LeakyRelu():
 
 @op_mapper('prelu')
 class PRelu():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
-        onnx_node = graph.update_node(
-            node,
+    def opset_1(cls, graph, node, **kw):
+        onnx_node = graph.make_node(
             'PRelu',
             inputs=[node.input('X')[0], node.input('Alpha')[0]],
             outputs=node.output('Out'))
-        return onnx_node
 
 
 @op_mapper('relu6')
 class Relu6():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         threshold = node.attr('threshold')
-        onnx_node = graph.update_node(
-            node,
+        onnx_node = graph.make_node(
             'Clip',
             inputs=[node.input('X')[0]],
             outputs=node.output('Out'),
@@ -88,8 +87,7 @@ class Relu6():
                 'dtype': dtypes.ONNX.FLOAT,
                 'value': node.attr('threshold')
             })
-        graph.update_node(
-            node,
+        graph.make_node(
             'Clip',
             inputs=[node.input('X')[0], min_node, max_node],
             outputs=node.output('Out'), )
@@ -97,12 +95,13 @@ class Relu6():
 
 @op_mapper('hard_sigmoid')
 class HardSigmoid():
+    support_opset_verison_range = (1, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         slope = node.attr('slope')
         offset = node.attr('offset')
-        graph.update_node(
-            node,
+        graph.make_node(
             'HardSigmoid',
             inputs=node.input('X'),
             outputs=node.output('Out'),
@@ -112,8 +111,10 @@ class HardSigmoid():
 
 @op_mapper('swish')
 class Swish():
+    support_opset_verision_range = (7, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         beta_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.FLOAT,
@@ -121,8 +122,7 @@ class Swish():
         beta_x_node = graph.make_node(
             'Mul', inputs=[node.input('X')[0], beta_node])
         sigmoid_node = graph.make_node('Sigmoid', inputs=[beta_x_node])
-        graph.update_node(
-            node,
+        graph.make_node(
             'Mul',
             inputs=[node.input('X')[0], sigmoid_node],
             outputs=node.output('Out'))
@@ -130,8 +130,10 @@ class Swish():
 
 @op_mapper('hard_swish')
 class HardSwish():
+    support_opset_verision_range = (7, 12)
+
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         scale_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.FLOAT,
@@ -149,4 +151,3 @@ class HardSwish():
         node2 = graph.make_node('Mul', inputs=[node.input('X')[0], node1])
         node3 = graph.make_node(
             'Div', inputs=[node2, scale_node], outputs=node.output('Out'))
-        graph.remove_node(node)
