@@ -28,6 +28,15 @@ class MultiClassNMS():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        """
+        Opset an opset of the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         result_name = node.output('Out', 0)
         background = node.attr('background_label')
         normalized = node.attr('normalized')

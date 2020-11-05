@@ -32,6 +32,15 @@ class ActivationOps():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Map mxnet s operator attributes to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_type = kw['mapper_dict'][node.type]
         onnx_node = graph.make_node(
             onnx_type, inputs=node.input('X'), outputs=node.output('Out'))
@@ -43,6 +52,15 @@ class LeakyRelu():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Map mxnet s operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_node = graph.make_node(
             'LeakyRelu',
             inputs=[node.input('X')[0]],
@@ -56,6 +74,15 @@ class PRelu():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens a node s operator to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_node = graph.make_node(
             'PRelu',
             inputs=[node.input('X')[0], node.input('Alpha')[0]],
@@ -68,6 +95,15 @@ class Relu6():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens onnx graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         threshold = node.attr('threshold')
         onnx_node = graph.make_node(
             'Clip',
@@ -78,6 +114,15 @@ class Relu6():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        """
+        Opset the given node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         min_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
                                'value': 0})
@@ -99,6 +144,15 @@ class HardSigmoid():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         slope = node.attr('slope')
         offset = node.attr('offset')
         graph.make_node(
@@ -115,6 +169,15 @@ class Swish():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opensset an opset
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         beta_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.FLOAT,
@@ -134,6 +197,15 @@ class HardSwish():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opset an opset from a graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         scale_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.FLOAT,

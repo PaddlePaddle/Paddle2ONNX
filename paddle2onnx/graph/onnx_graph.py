@@ -28,11 +28,28 @@ from paddle2onnx.constant.op_mapping_status import *
 
 class ONNXNode(Node):
     def __init__(self, op_type, inputs, outputs, attrs, layer_name):
+        """
+        Initialize onnx graph.
+
+        Args:
+            self: (todo): write your description
+            op_type: (todo): write your description
+            inputs: (list): write your description
+            outputs: (str): write your description
+            attrs: (dict): write your description
+            layer_name: (str): write your description
+        """
         super(ONNXNode, self).__init__(op_type, inputs, outputs, attrs,
                                        layer_name, NodeDomain.ONNX)
         self.onnx_node = self.make_onnx_node()
 
     def make_onnx_constant_node(self):
+        """
+        Create a tensorfluent node.
+
+        Args:
+            self: (todo): write your description
+        """
         dtype = self.attr('dtype')
         value = self.attr('value')
         if isinstance(value, list):
@@ -56,6 +73,12 @@ class ONNXNode(Node):
         return onnx_node
 
     def make_onnx_node(self):
+        """
+        Create a node for onnxnode
+
+        Args:
+            self: (todo): write your description
+        """
         if self.type in ['Constant', 'ConstantOfShape']:
             onnx_node = self.make_onnx_constant_node()
         else:
@@ -76,6 +99,15 @@ class ONNXGraph(Graph):
     }
 
     def __init__(self, paddle_graph, opset_version, block=None):
+        """
+        Initialize the graph
+
+        Args:
+            self: (todo): write your description
+            paddle_graph: (todo): write your description
+            opset_version: (str): write your description
+            block: (todo): write your description
+        """
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.ctx = paddle_graph
@@ -87,6 +119,18 @@ class ONNXGraph(Graph):
                   attrs=None,
                   layer_name=None,
                   **kw):
+        """
+        Creates a node from the given type.
+
+        Args:
+            self: (todo): write your description
+            op_type: (str): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+            attrs: (dict): write your description
+            layer_name: (str): write your description
+            kw: (todo): write your description
+        """
         if layer_name is None:
             layer_name = self.generate_node_name(op_type)
 
@@ -103,6 +147,15 @@ class ONNXGraph(Graph):
         return node
 
     def make_value_info(self, name, shape, dtype):
+        """
+        Create a tensorvalueinfo object.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            shape: (int): write your description
+            dtype: (todo): write your description
+        """
         tensor_info = helper.make_tensor_value_info(
             name=name,
             shape=shape,
@@ -110,14 +163,39 @@ class ONNXGraph(Graph):
         return tensor_info
 
     def add_input_node(self, name, shape, dtype):
+        """
+        Add an input node.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            shape: (int): write your description
+            dtype: (todo): write your description
+        """
         vi = self.make_value_info(name, shape, dtype)
         self.input_nodes.append(vi)
 
     def add_output_node(self, name, shape, dtype):
+        """
+        Add an output node.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            shape: (int): write your description
+            dtype: (todo): write your description
+        """
         vi = self.make_value_info(name, shape, dtype)
         self.output_nodes.append(vi)
 
     def export_proto(self, enable_onnx_checker=False):
+        """
+        Export the graph asnx graph
+
+        Args:
+            self: (todo): write your description
+            enable_onnx_checker: (bool): write your description
+        """
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
         onnx_graph = helper.make_graph(
@@ -136,6 +214,12 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     def check_op_mapping_status(self):
+        """
+        Check if the op_mapping of op_status of the op_types.
+
+        Args:
+            self: (todo): write your description
+        """
         if len(self.op_mapping_status[OP_MAPPING_NO_REGISTER]) > 0:
             unsupported_op_types = set([
                 node.type
@@ -161,6 +245,14 @@ class ONNXGraph(Graph):
 
     @staticmethod
     def build(paddle_graph, opset_version, verbose=False):
+        """
+        Build onnx graph from onnx graph
+
+        Args:
+            paddle_graph: (todo): write your description
+            opset_version: (str): write your description
+            verbose: (bool): write your description
+        """
         onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
 
         # build input nodes

@@ -29,6 +29,15 @@ class BoxCoder():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opset a set of the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         input_names = node.input_names
 
         prior_var = node.input_var('PriorBox', 0)

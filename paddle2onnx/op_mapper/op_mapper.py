@@ -19,6 +19,13 @@ from paddle2onnx.constant.op_mapping_status import *
 
 
 def get_max_support_version(versions, opset_version):
+    """
+    Determine version of the given versions.
+
+    Args:
+        versions: (str): write your description
+        opset_version: (str): write your description
+    """
     max_version = -1
     for vs in sorted(versions):
         if vs <= opset_version:
@@ -30,12 +37,26 @@ class OpMapper(object):
     OPSETS = {}
 
     def __init__(self, paddle_op, **kwargs):
+        """
+        Initialize an op.
+
+        Args:
+            self: (todo): write your description
+            paddle_op: (todo): write your description
+        """
         if not isinstance(paddle_op, list):
             paddle_op = [paddle_op]
         self.paddle_op = paddle_op
         self.kwargs = kwargs
 
     def __call__(self, cls):
+        """
+        Call the call to the given class.
+
+        Args:
+            self: (todo): write your description
+            cls: (todo): write your description
+        """
         for k, v in inspect.getmembers(cls, inspect.ismethod):
             if k.startswith("opset_"):
                 version = int(k.replace("opset_", ""))
@@ -47,6 +68,13 @@ class OpMapper(object):
 
     @staticmethod
     def mapping(graph, node):
+        """
+        Convert a mapping to a mapping.
+
+        Args:
+            graph: (todo): write your description
+            node: (todo): write your description
+        """
         if node.type not in OpMapper.OPSETS:
             return OP_MAPPING_NO_REGISTER
         opsets = OpMapper.OPSETS[node.type]

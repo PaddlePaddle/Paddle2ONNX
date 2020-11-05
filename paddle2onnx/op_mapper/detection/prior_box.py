@@ -21,6 +21,13 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
 def expand_aspect_rations(input_aspect_ratior, flip):
+    """
+    Expand the ratio as a given input ratio.
+
+    Args:
+        input_aspect_ratior: (todo): write your description
+        flip: (str): write your description
+    """
     expsilon = 1e-6
     output_ratios = [1.0]
     for input_ratio in input_aspect_ratior:
@@ -47,6 +54,15 @@ class PriorBox():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        """
+        Opset a set of the image.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         flip = bool(node.attr('flip'))
         clip = bool(node.attr('clip'))
         min_max_aspect_ratios_order = bool(

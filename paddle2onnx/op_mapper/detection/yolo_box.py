@@ -23,6 +23,12 @@ MAX_FLOAT32 = np.asarray(
 
 
 def is_static_shape(shape):
+    """
+    Check if shape is a static shape.
+
+    Args:
+        shape: (int): write your description
+    """
     if len(shape) > 1 and shape.count(-1) > 1:
         raise Exception(
             "Converting this model to ONNX need with static input shape," \
@@ -44,6 +50,15 @@ class YOLOBox():
 
     @classmethod
     def front(cls, graph, node, **kw):
+        """
+        Generate a graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         model_name = node.output('Boxes', 0)
         input_shape = node.input_shape('X', 0)
         is_static_shape(input_shape)
@@ -388,6 +403,15 @@ class YOLOBox():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        """
+        Opset a graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         cls.front(graph, node, **kw)
         node_pred_box_x1_clip = graph.make_node(
             'Clip',
@@ -441,6 +465,15 @@ class YOLOBox():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        """
+        Opset a batch operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         cls.front(graph, node, **kw)
         min_const = graph.make_node(
             'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=0.0)

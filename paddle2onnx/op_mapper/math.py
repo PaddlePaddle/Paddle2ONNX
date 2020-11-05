@@ -25,6 +25,15 @@ class MatMul():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens a set of the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
         graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
@@ -36,6 +45,15 @@ class Exp():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Exp', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -46,6 +64,15 @@ class Abs:
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Abs', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -66,6 +93,15 @@ class ElementwiseOps():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opset an opset onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         op_type = kw['mapper_dict'][node.type]
         axis = node.attr('axis')
         x = node.input('X', 0)
@@ -95,6 +131,15 @@ class Pow():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
+        """
+        Opset the operation on the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         x = node.input('X', 0)
         factor = node.attr('factor')
         factor_node = graph.make_node(
@@ -116,6 +161,15 @@ class Mul():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset an opset operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         x = node.input('X', 0)
         y = node.input('Y', 0)
         out = node.output('Out', 0)
@@ -136,6 +190,15 @@ class Sum():
     support_opset_verison_range = (1, 12)
 
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'sum', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -146,6 +209,15 @@ class Floor():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Floor', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -163,6 +235,15 @@ class ReduceMean():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         op_type = kw['mapper_dict'][node.type]
         graph.make_node(
             op_type,
@@ -180,6 +261,15 @@ class ArgMax():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'ArgMax',
             inputs=node.input('X'),
@@ -194,6 +284,15 @@ class Scale():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset the scale operator to the given node.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         scale = node.attr('scale')
         bias = node.attr('bias')
         if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
@@ -205,6 +304,15 @@ class Scale():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opset an opset from mxnet
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         scale = node.attr('scale')
         bias = node.attr('bias')
         if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
@@ -240,6 +348,15 @@ class Softmax():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset an opset onnx s op
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         axis = node.attr('axis')
         shape = node.output_shape('Out', 0)
         if axis < 0:

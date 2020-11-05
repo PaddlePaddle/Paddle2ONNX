@@ -23,6 +23,11 @@ from paddle2onnx.utils import logging
 
 
 def arg_parser():
+    """
+    Create an argparse argument parser.
+
+    Args:
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model_dir",
@@ -62,6 +67,15 @@ def program2onnx(model_dir,
                  save_file,
                  opset_version=10,
                  enable_onnx_checker=False):
+    """
+    Program entry point.
+
+    Args:
+        model_dir: (str): write your description
+        save_file: (str): write your description
+        opset_version: (str): write your description
+        enable_onnx_checker: (bool): write your description
+    """
     try:
         import paddle
     except:
@@ -93,6 +107,11 @@ def program2onnx(model_dir,
 
 
 def main():
+    """
+    Main entry point.
+
+    Args:
+    """
     if len(sys.argv) < 2:
         logging.info("Use \"paddle2onnx -h\" to print the help information")
         logging.info(

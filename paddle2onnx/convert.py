@@ -27,6 +27,16 @@ def export_onnx(paddle_graph,
                 opset_version=9,
                 enable_onnx_checker=False,
                 verbose=False):
+    """
+    Export graph asnx graph asnx.
+
+    Args:
+        paddle_graph: (str): write your description
+        save_file: (str): write your description
+        opset_version: (str): write your description
+        enable_onnx_checker: (bool): write your description
+        verbose: (bool): write your description
+    """
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version, verbose)
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
 
@@ -46,6 +56,19 @@ def program2onnx(program,
                  opset_version=9,
                  enable_onnx_checker=False,
                  **configs):
+    """
+    Program onnx graph to generate_file.
+
+    Args:
+        program: (list): write your description
+        save_file: (str): write your description
+        scope: (str): write your description
+        feeded_var_names: (str): write your description
+        target_vars: (str): write your description
+        opset_version: (str): write your description
+        enable_onnx_checker: (bool): write your description
+        configs: (dict): write your description
+    """
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
@@ -79,6 +102,16 @@ def program2onnx(program,
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
+    """
+    Convert graph to graph2onx format.
+
+    Args:
+        layer: (todo): write your description
+        save_file: (str): write your description
+        input_spec: (todo): write your description
+        opset_version: (str): write your description
+        configs: (todo): write your description
+    """
     from paddle.nn import Layer
     from paddle.fluid import core
     from paddle.fluid.framework import Variable

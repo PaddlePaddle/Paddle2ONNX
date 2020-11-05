@@ -26,6 +26,15 @@ class Im2Sequence():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset an opset.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         n, c, h, w = node.input_shape('X', 0)
         assert h > 0 and w > 0, "Only supported fixed input shape for im2sequence operator."
         stride_h, stride_w = node.attr('strides')
