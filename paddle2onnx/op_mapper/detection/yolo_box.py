@@ -26,8 +26,8 @@ def is_static_shape(shape):
     if len(shape) > 1 and shape.count(-1) > 1:
         raise Exception(
             "Converting this model to ONNX need with static input shape," \
-            " please fix input shape of this model, see doc Q5 in" \
-            " https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md."
+            " please fix input shape of this model, see doc Q2 in" \
+            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/FAQ.md."
         )
 
 

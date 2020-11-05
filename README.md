@@ -45,7 +45,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 ##  使用方式
 ### 静态图模型导出
 
-    paddle2onnx --model_dir paddle_model  --save_file onnx_file --onnx_opset 10 --enable_onnx_checker True
+    paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
 ### 动态图模型导出
 
@@ -56,14 +56,14 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 |----------|--------------|
 |--model_dir | 指定包含Paddle模型'\_\_model\_\_'和参数'\_\_params\_\_'的路径, 由`paddle.fluid.io.save_inference_model`保存得到|
 |--save_file | 指定转换后的模型保存目录路径 |
-|--onnx_opset | **[可选]** 该参数可设置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为10 |
+|--opset_version | **[可选]** 该参数可设置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
 |--enable_onnx_checker| **[可选]**  是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 pip install onnx==1.7.0, 默认为False|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
 ##  相关文档
 
 - [paddle2onnx测试模型库](docs/model_zoo.md)
-- [paddle2onnx支持准换算子列表](docs/op_list.md)
+- [paddle2onnx支持转换算子列表](docs/op_list.md)
 
 
 ## License

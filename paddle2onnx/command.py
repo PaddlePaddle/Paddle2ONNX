@@ -64,14 +64,16 @@ def program2onnx(model_dir,
                  enable_onnx_checker=False):
     try:
         import paddle
-        v0, v1, v2 = paddle.__version__.split('.')
-        if v0 == '0' and v1 == '0' and v2 == '0':
-            logging.warning("You are use develop version of paddlepaddle")
-        elif int(v0) != 1 or int(v1) < 8:
-            raise ImportError("paddlepaddle>=1.8.0 is required")
     except:
         logging.error(
             "paddlepaddle not installed, use \"pip install paddlepaddle\"")
+
+    v0, v1, v2 = paddle.__version__.split('.')
+    if v0 == '0' and v1 == '0' and v2 == '0':
+        logging.warning("You are use develop version of paddlepaddle")
+    elif int(v0) <= 1 and int(v1) < 8:
+        raise ImportError("paddlepaddle>=1.8.0 is required")
+
     import paddle2onnx as p2o
     # convert model save with 'paddle.fluid.io.save_inference_model'
     if hasattr(paddle, 'enable_static'):
@@ -107,7 +109,7 @@ def main():
                      format(paddle2onnx.__version__))
         return
 
-    assert args.model_dir is not None, "--model should be defined while translating paddle model to onnx"
+    assert args.model_dir is not None, "--model_dir should be defined while translating paddle model to onnx"
     assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
     program2onnx(
         args.model_dir,

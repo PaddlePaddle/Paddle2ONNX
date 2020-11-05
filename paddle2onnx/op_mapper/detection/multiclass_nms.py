@@ -34,8 +34,8 @@ class MultiClassNMS():
         if normalized == False:
             logging.warn(
                         "The parameter normalized of multiclass_nms OP of Paddle is False, which has diff with ONNX." \
-                        " Please set normalized=True in multiclass_nms of Paddle, see doc Q4 in" \
-                        " https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md")
+                        " Please set normalized=True in multiclass_nms of Paddle, see doc Q1 in" \
+                        " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/FAQ.md")
 
         #convert the paddle attribute to onnx tensor
         node_score_threshold = graph.make_node(

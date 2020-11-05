@@ -25,7 +25,7 @@ import numbers
 from six import text_type, integer_types, binary_type
 
 import google.protobuf.message
-from .onnx_pb2 import TensorProto, SparseTensorProto, AttributeProto, ValueInfoProto, TensorShapeProto, \
+from .onnx_pb import TensorProto, SparseTensorProto, AttributeProto, ValueInfoProto, TensorShapeProto, \
     NodeProto, ModelProto, GraphProto, OperatorSetIdProto, TypeProto, IR_VERSION
 from paddle2onnx.onnx_helper import mapping
 from .mapping import STORAGE_TENSOR_TYPE_TO_FIELD
