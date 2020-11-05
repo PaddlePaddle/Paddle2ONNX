@@ -25,6 +25,15 @@ class Conv():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset an opset operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         kernel_shape = node.input_shape('Filter', 0)
         graph.make_node(
             'Conv',
@@ -43,6 +52,15 @@ class ConvTranspose():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Map mxnet s opset operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         kernel_shape = node.input_shape('Filter', 0)
         node = graph.make_node(
             'ConvTranspose',
@@ -65,6 +83,15 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset a 2nd layer to onn layer.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         if node.attr('global_pooling'):
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][1],
@@ -111,6 +138,15 @@ class Norm():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from mxml
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         node = graph.make_node(
             'LpNormalization',
             inputs=node.input('X'),
@@ -124,6 +160,15 @@ class BatchNorm():
 
     @classmethod
     def make_attrs_and_inputs(cls, graph, node, **kw):
+        """
+        Create an input node and return an input node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_attr = {
             'epsilon': node.attr('epsilon'),
             'momentum': node.attr('momentum')
@@ -134,6 +179,15 @@ class BatchNorm():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        """
+        Opset a node to onnx s onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
         onnx_node = graph.make_node(
             'BatchNormalization',
@@ -143,6 +197,15 @@ class BatchNorm():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opset the given node to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
         onnx_attr['spatial'] = 0
         onnx_node = graph.make_node(
@@ -153,6 +216,15 @@ class BatchNorm():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Map mxnet s onnx s onnx graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
         onnx_attr['is_test'] = 1
         onnx_node = graph.make_node(
@@ -168,6 +240,15 @@ class InstanceNorm():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset on onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         onnx_attr = {'epsilon': node.attr('epsilon'), }
         inputs = node.input('X') + node.input('Scale') + node.input('Bias')
         onnx_node = graph.make_node(
@@ -183,6 +264,15 @@ class Dropout():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        """
+        Opens up an op_7 operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         dropout_mode = node.attr('dropout_implementation')
         dropout_prob = node.attr('dropout_prob')
         if dropout_mode == 'upscale_in_train':
@@ -207,6 +297,15 @@ class RoiAlign():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        """
+        Opset an opset of the graph.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         rois_shape = graph.make_node('Shape', inputs=[node.input('ROIs', 0)])
         starts = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,

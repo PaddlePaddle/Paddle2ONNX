@@ -34,6 +34,12 @@ def try_import(module_name):
 
 
 def check_model(onnx_model):
+    """
+    Check onnx_model and raise an error if it isnx model.
+
+    Args:
+        onnx_model: (str): write your description
+    """
     onnx = try_import('onnx')
     try:
         onnx.checker.check_model(onnx_model)
@@ -51,6 +57,14 @@ class logging():
 
     @staticmethod
     def log(level=2, message="", use_color=False):
+        """
+        Log a message to stderrpc.
+
+        Args:
+            level: (int): write your description
+            message: (str): write your description
+            use_color: (bool): write your description
+        """
         current_time = time.time()
         time_array = time.localtime(current_time)
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
@@ -66,18 +80,47 @@ class logging():
 
     @staticmethod
     def debug(message="", use_color=False):
+        """
+        Print a debug message
+
+        Args:
+            message: (str): write your description
+            use_color: (bool): write your description
+        """
         logging.log(level=3, message=message, use_color=use_color)
 
     @staticmethod
     def info(message="", use_color=False):
+        """
+        Prints a message with info
+
+        Args:
+            message: (str): write your description
+            use_color: (bool): write your description
+        """
         logging.log(level=2, message=message, use_color=use_color)
 
     @staticmethod
     def warning(message="", use_color=True):
+        """
+        Log a warning
+
+        Args:
+            message: (str): write your description
+            use_color: (bool): write your description
+        """
         logging.log(level=1, message=message, use_color=use_color)
 
     @staticmethod
     def error(message="", use_color=True, exit=True):
+        """
+        Print an error message.
+
+        Args:
+            message: (str): write your description
+            use_color: (bool): write your description
+            exit: (int): write your description
+        """
         logging.log(level=0, message=message, use_color=use_color)
         if exit:
             sys.exit(-1)

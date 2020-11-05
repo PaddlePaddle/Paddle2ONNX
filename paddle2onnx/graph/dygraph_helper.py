@@ -30,6 +30,14 @@ from paddle.fluid import dygraph
 def prepend_feed_ops(inference_program,
                      feed_target_names,
                      feed_holder_name='feed'):
+    """
+    Prepend the inputs to the given inference.
+
+    Args:
+        inference_program: (todo): write your description
+        feed_target_names: (str): write your description
+        feed_holder_name: (str): write your description
+    """
     if len(feed_target_names) == 0:
         return
     global_block = inference_program.global_block()
@@ -56,6 +64,14 @@ def prepend_feed_ops(inference_program,
 def append_fetch_ops(inference_program,
                      fetch_target_names,
                      fetch_holder_name='fetch'):
+    """
+    Appends a list of ops to the given program.
+
+    Args:
+        inference_program: (todo): write your description
+        fetch_target_names: (str): write your description
+        fetch_holder_name: (str): write your description
+    """
     global_block = inference_program.global_block()
     fetch_var = global_block.create_var(
         name=fetch_holder_name,
@@ -70,6 +86,14 @@ def append_fetch_ops(inference_program,
 
 
 def get_inout_spec(all_vars, target_vars, return_name=False):
+    """
+    Returns a dicts of all variables in the given list.
+
+    Args:
+        all_vars: (str): write your description
+        target_vars: (todo): write your description
+        return_name: (str): write your description
+    """
     result_list = []
     valid_var_dict = {}
     valid_vars = [var for var in all_vars if isinstance(var, Variable)]
@@ -90,6 +114,15 @@ def get_inout_spec(all_vars, target_vars, return_name=False):
 
 @dygraph.base.switch_to_static_graph
 def get_program(layer, input_spec, output_spec, **configs):
+    """
+    Get a program.
+
+    Args:
+        layer: (todo): write your description
+        input_spec: (str): write your description
+        output_spec: (str): write your description
+        configs: (todo): write your description
+    """
     paddle.jit.set_verbosity(0)
     prog_translator = program_translator.ProgramTranslator()
     if not prog_translator.enable_to_static:

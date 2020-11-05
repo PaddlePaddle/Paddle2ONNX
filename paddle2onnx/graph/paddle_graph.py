@@ -26,6 +26,18 @@ from paddle2onnx.constant import NodeDomain
 
 class PaddleNode(Node):
     def __init__(self, paddle_op, inputs, outputs, attrs, layer_name, block):
+        """
+        Initialize the op.
+
+        Args:
+            self: (todo): write your description
+            paddle_op: (todo): write your description
+            inputs: (list): write your description
+            outputs: (str): write your description
+            attrs: (dict): write your description
+            layer_name: (str): write your description
+            block: (todo): write your description
+        """
         super(PaddleNode, self).__init__(paddle_op.type, inputs, outputs, attrs,
                                          layer_name, NodeDomain.PADDLE)
         self.paddle_op = paddle_op
@@ -33,37 +45,103 @@ class PaddleNode(Node):
 
     @property
     def input_names(self):
+        """
+        Returns a list of all input names.
+
+        Args:
+            self: (todo): write your description
+        """
         return [name for name in self.inputs.keys()]
 
     @property
     def output_names(self):
+        """
+        Return a list of output output output names.
+
+        Args:
+            self: (todo): write your description
+        """
         return [name for name in self.outputs.keys()]
 
     def input(self, name, idx=None):
+        """
+        Return the input for the given name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            idx: (int): write your description
+        """
         if idx is None:
             return self.inputs[name]
         return self.inputs[name][idx]
 
     def output(self, name, idx=None):
+        """
+        Return the output of the given name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            idx: (int): write your description
+        """
         if idx is None:
             return self.outputs[name]
         return self.outputs[name][idx]
 
     def output_shape(self, name, idx):
+        """
+        Return the shape of a variable.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            idx: (int): write your description
+        """
         return self.block.var(self.output(name, idx)).shape
 
     def input_shape(self, name, idx):
+        """
+        Return the shape of a variable.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            idx: (str): write your description
+        """
         return self.block.var(self.input(name, idx)).shape
 
     def input_var(self, name, idx):
+        """
+        Return the variable with the given name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            idx: (int): write your description
+        """
         return self.block.var(self.input(name, idx))
 
     def attr(self, name):
+        """
+        Return the attribute of an attribute name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         if name in self.attrs:
             return self.attrs[name]
         return None
 
     def set_inputs(self, inputs):
+        """
+        Set the inputs.
+
+        Args:
+            self: (todo): write your description
+            inputs: (list): write your description
+        """
         if isinstance(inputs, dict):
             # input of node in paddle, which stored by dict 
             self.inputs = inputs
@@ -72,6 +150,13 @@ class PaddleNode(Node):
                             format(type(inputs)))
 
     def set_outputs(self, outputs):
+        """
+        Set the outputs of an output.
+
+        Args:
+            self: (todo): write your description
+            outputs: (todo): write your description
+        """
         if isinstance(outputs, dict):
             # output of node in paddle, which stored by dict 
             self.outputs = outputs
@@ -82,6 +167,16 @@ class PaddleNode(Node):
 
 class PaddleGraph(Graph):
     def __init__(self, program, parameters, input_spec=None, output_spec=None):
+        """
+        Initialize the graph.
+
+        Args:
+            self: (todo): write your description
+            program: (todo): write your description
+            parameters: (todo): write your description
+            input_spec: (todo): write your description
+            output_spec: (todo): write your description
+        """
         super(PaddleGraph, self).__init__()
         self.build_graph(program, parameters, input_spec, output_spec)
 
@@ -93,6 +188,19 @@ class PaddleGraph(Graph):
                   block=None,
                   layer_name=None,
                   **kw):
+        """
+        Generate a node.
+
+        Args:
+            self: (todo): write your description
+            op: (todo): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+            attrs: (dict): write your description
+            block: (todo): write your description
+            layer_name: (str): write your description
+            kw: (todo): write your description
+        """
         if layer_name is None:
             layer_name = self.generate_node_name(op.type)
 
@@ -109,6 +217,15 @@ class PaddleGraph(Graph):
         return node
 
     def add_input_node(self, input_spec=None, op=None, block=None):
+        """
+        Add an input node to the model.
+
+        Args:
+            self: (todo): write your description
+            input_spec: (todo): write your description
+            op: (todo): write your description
+            block: (todo): write your description
+        """
         if isinstance(input_spec, collections.Iterable):
             for ipt in input:
                 if isinstance(ipt, paddle.static.InputSpec):
@@ -128,6 +245,15 @@ class PaddleGraph(Graph):
             self.input_nodes.append(node)
 
     def add_output_node(self, output_spec=None, op=None, block=None):
+        """
+        Add an output node to the graph_spec.
+
+        Args:
+            self: (todo): write your description
+            output_spec: (todo): write your description
+            op: (todo): write your description
+            block: (todo): write your description
+        """
         if isinstance(output_spec, collections.Iterable):
             for opt in output_spec:
                 layer_name = opt.name
@@ -146,6 +272,12 @@ class PaddleGraph(Graph):
             self.output_nodes.append(node)
 
     def get_adjacency_map(self):
+        """
+        Returns a dictionary representation of adjaccelerations.
+
+        Args:
+            self: (todo): write your description
+        """
         adjacency_map = {}
         for layer_name, current_node in self.node_map.items():
             inputs = current_node.inputs.values()
@@ -168,6 +300,16 @@ class PaddleGraph(Graph):
                     parameters,
                     input_spec=None,
                     output_spec=None):
+        """
+        Builds a graph from the given program.
+
+        Args:
+            self: (todo): write your description
+            program: (todo): write your description
+            parameters: (todo): write your description
+            input_spec: (todo): write your description
+            output_spec: (str): write your description
+        """
         self.program = program
         self.set_parameters(parameters)
         self.add_input_node(input_spec=input_spec)
@@ -190,6 +332,15 @@ class PaddleGraph(Graph):
 
     @staticmethod
     def build_from_program(program, feed=None, fetch=None, scope=None):
+        """
+        Builds a graph from a program.
+
+        Args:
+            program: (todo): write your description
+            feed: (todo): write your description
+            fetch: (todo): write your description
+            scope: (todo): write your description
+        """
         parameters_dict = {}
         vars = program.global_block().vars
         for name in vars:
@@ -208,6 +359,14 @@ class PaddleGraph(Graph):
 
     @staticmethod
     def build_from_dygraph(layer, input_spec=None, output_spec=None):
+        """
+        Builds a graph from a layer.
+
+        Args:
+            layer: (todo): write your description
+            input_spec: (todo): write your description
+            output_spec: (str): write your description
+        """
         from paddle.nn import Layer
         from paddle.fluid import core
         from paddle.fluid.framework import Variable

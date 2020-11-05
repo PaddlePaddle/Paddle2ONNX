@@ -25,6 +25,15 @@ class Concat():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from mxml
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         node = graph.make_node(
             'Concat',
             inputs=node.input('X'),
@@ -38,6 +47,15 @@ class Shape():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Shape', inputs=node.input('Input'), outputs=node.output('Out'))
 
@@ -48,6 +66,15 @@ class Split():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from onnx graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         sections = node.attr('sections')
         if len(sections) > 0:
             graph.make_node(
@@ -70,6 +97,15 @@ class Slice():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset on the given node.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         axes = node.attr('axes')
         starts = node.attr('starts')
         ends = node.attr('ends')
@@ -83,6 +119,15 @@ class Slice():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        """
+        Opens an opset
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         axes = node.attr('axes')
         starts = node.attr('starts')
         ends = node.attr('ends')
@@ -108,6 +153,15 @@ class Constant():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opensset of the given node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         value = node.attr('value')
         dtype = node.attr('dtype')
         shape = node.attr('shape')
@@ -133,6 +187,15 @@ class FullLike():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        """
+        Opset the dtype of - place operations.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
         value = node.attr('value')
         dtype = node.attr('dtype')
@@ -155,6 +218,15 @@ class Gather():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset an opset operator to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
@@ -168,6 +240,15 @@ class Gather():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        """
+        Opset a new graph to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
@@ -188,6 +269,15 @@ class Squeeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset on the given node.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         axes = node.attr('axes')
         graph.make_node(
             'Squeeze',
@@ -202,6 +292,15 @@ class Assign():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from mxnet operator.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         if len(node.input_names) > 0:
             graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
@@ -223,6 +322,15 @@ class Transpose():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from mx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Transpose',
             inputs=node.input('X'),
@@ -236,6 +344,15 @@ class Flatten():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Map mxnet operator to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Flatten',
             inputs=node.input('X'),
@@ -249,6 +366,15 @@ class Reshape():
 
     @classmethod
     def opset_5(cls, graph, node, **kw):
+        """
+        Opset an onnx graph from mx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         if len(node.input('ShapeTensor')) > 1:
             cast_shape_nodes = []
             for i in range(len(node.input('ShapeTensor'))):
@@ -288,6 +414,15 @@ class Unsqueeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Unsqueeze',
             inputs=node.input('X'),
@@ -301,6 +436,15 @@ class Reciprocal():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset from a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Reciprocal', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -311,6 +455,15 @@ class Cast():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens a set1 operator
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'Cast',
             inputs=node.input('X'),
@@ -324,6 +477,15 @@ class Clip():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opens an opset of the given node.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         min_value = node.attr('min')
         max_value = node.attr('max')
         graph.make_node(
@@ -335,6 +497,15 @@ class Clip():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        """
+        Opset a node
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         min_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.FLOAT,
@@ -355,6 +526,15 @@ class Pad():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Opset the input node on the graph.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         pads = cls.convert_padding(node, **kw)
         graph.make_node(
             'Pad',
@@ -366,6 +546,15 @@ class Pad():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        """
+        Opset the given node to the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         pads = cls.convert_padding(node, **kw)
         pads_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
@@ -385,6 +574,14 @@ class Pad():
 
     @classmethod
     def convert_padding(cls, node, **kw):
+        """
+        Map mxnet s padding operator attributes to onnx s padding operator and return created node.
+
+        Args:
+            cls: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         x_shape = node.input_shape('X', 0)
         paddings = node.attr('paddings')
         onnx_paddings = None
@@ -406,6 +603,15 @@ class UniformRandom():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        """
+        Map mxnet s3 operator to onnx
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         graph.make_node(
             'RandomUniformLike',
             inputs=node.input('Input'),
@@ -425,6 +631,15 @@ class Resize():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        """
+        Opset the onn operator to the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
         if node.attr('align_corners') or node.attr('align_mode') == 0:
@@ -466,6 +681,15 @@ class Resize():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        """
+        Opset an opset of the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
         if node.attr('align_corners') or node.attr('align_mode') == 0:
@@ -506,6 +730,15 @@ class Resize():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        """
+        Opset the graph
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            kw: (todo): write your description
+        """
         node_lists = []
         resize_type = kw['mapper_dict'][node.type]
         coordinate_transformation_mode = ''
@@ -558,6 +791,15 @@ class Resize():
 
     @classmethod
     def compute_output_shape(cls, graph, node, opset_version=10):
+        """
+        Helper function to construct a node.
+
+        Args:
+            cls: (todo): write your description
+            graph: (todo): write your description
+            node: (todo): write your description
+            opset_version: (str): write your description
+        """
         shape_node0 = graph.make_node('Shape', inputs=node.input('X'))
         if opset_version < 10:
             shape_node1 = graph.make_node(

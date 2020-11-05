@@ -96,6 +96,18 @@ def make_graph(
         doc_string=None,  # type: Optional[Text]
         value_info=[],  # type: Sequence[ValueInfoProto]
 ):  # type: (...) -> GraphProto
+    """
+    Create a graph from a list of nodes.
+
+    Args:
+        nodes: (list): write your description
+        name: (str): write your description
+        inputs: (todo): write your description
+        outputs: (todo): write your description
+        initializer: (todo): write your description
+        doc_string: (str): write your description
+        value_info: (todo): write your description
+    """
     if initializer is None:
         initializer = []
     if value_info is None:
@@ -113,6 +125,13 @@ def make_graph(
 
 
 def make_opsetid(domain, version):  # type: (Text, int) -> OperatorSetIdProto
+    """
+    Create a set of opset.
+
+    Args:
+        domain: (str): write your description
+        version: (str): write your description
+    """
     opsetid = OperatorSetIdProto()
     opsetid.domain = domain
     opsetid.version = version
@@ -120,6 +139,12 @@ def make_opsetid(domain, version):  # type: (Text, int) -> OperatorSetIdProto
 
 
 def make_model(graph, **kwargs):  # type: (GraphProto, **Any) -> ModelProto
+    """
+    Make a model from a graph.
+
+    Args:
+        graph: (todo): write your description
+    """
     model = ModelProto()
     # Touch model.ir_version so it is stored as the version from which it is
     # generated.
@@ -143,6 +168,13 @@ def make_model(graph, **kwargs):  # type: (GraphProto, **Any) -> ModelProto
 
 def set_model_props(model,
                     dict_value):  # type: (ModelProto, Dict[Text, Text]) -> None
+    """
+    Set the properties of a model.
+
+    Args:
+        model: (str): write your description
+        dict_value: (dict): write your description
+    """
     del model.metadata_props[:]
     for (k, v) in dict_value.items():
         entry = model.metadata_props.add()
@@ -153,6 +185,12 @@ def set_model_props(model,
 
 def split_complex_to_pairs(
         ca):  # type: (Sequence[np.complex64]) -> Sequence[int]
+    """
+    Split complex complex pairs into pairs into pairs.
+
+    Args:
+        ca: (todo): write your description
+    """
     return [(ca[i // 2].real if (i % 2 == 0) else ca[i // 2].imag)
             for i in range(len(ca) * 2)]
 
@@ -197,6 +235,14 @@ def make_sparse_tensor(
         indices,  # type: TensorProto
         dims  # type: Sequence[int]
 ):  # type: (...) -> SparseTensorProto
+    """
+    Create a tensor.
+
+    Args:
+        values: (str): write your description
+        indices: (array): write your description
+        dims: (int): write your description
+    """
     sparse = SparseTensorProto()
     sparse.values.CopyFrom(values)
     sparse.indices.CopyFrom(indices)
@@ -292,6 +338,12 @@ def make_attribute(
 
 
 def get_attribute_value(attr):  # type: (AttributeProto) -> Any
+    """
+    Returns the value of an object.
+
+    Args:
+        attr: (str): write your description
+    """
     if attr.type == AttributeProto.FLOAT:
         return attr.f
     if attr.type == AttributeProto.INT:
@@ -316,6 +368,12 @@ def get_attribute_value(attr):  # type: (AttributeProto) -> Any
 
 
 def make_empty_tensor_value_info(name):  # type: (Text) -> ValueInfoProto
+    """
+    Create a tensorvalueinfoinfoinfoinfo object for a name.
+
+    Args:
+        name: (str): write your description
+    """
     value_info_proto = ValueInfoProto()
     value_info_proto.name = name
     return value_info_proto
@@ -400,6 +458,12 @@ def make_sequence_value_info(
 
 
 def _sanitize_str(s):  # type: (Union[Text, bytes]) -> Text
+    """
+    Sanitize a string.
+
+    Args:
+        s: (todo): write your description
+    """
     if isinstance(s, text_type):
         sanitized = s
     elif isinstance(s, binary_type):
@@ -414,28 +478,60 @@ def _sanitize_str(s):  # type: (Union[Text, bytes]) -> Text
 def printable_attribute(
         attr, subgraphs=False
 ):  # type: (AttributeProto, bool) -> Union[Text, Tuple[Text, List[GraphProto]]]
+    """
+    Prints an attribute for an attribute for an attribute.
+
+    Args:
+        attr: (todo): write your description
+        subgraphs: (todo): write your description
+    """
     content = []
     content.append(attr.name)
     content.append("=")
 
     def str_float(f):  # type: (float) -> Text
+        """
+        Return a string representation of f.
+
+        Args:
+            f: (float): write your description
+        """
         # NB: Different Python versions print different numbers of trailing
         # decimals, specifying this explicitly keeps it consistent for all
         # versions
         return '{:.15g}'.format(f)
 
     def str_int(i):  # type: (int) -> Text
+        """
+        Return the int
+
+        Args:
+            i: (int): write your description
+        """
         # NB: In Python 2, longs will repr() as '2L', which is ugly and
         # unnecessary.  Explicitly format it to keep it consistent.
         return '{:d}'.format(i)
 
     def str_str(s):  # type: (Text) -> Text
+        """
+        Return a human - readable string representation of s.
+
+        Args:
+            s: (array): write your description
+        """
         return repr(s)
 
     #_T = TypeVar('_T')  # noqa
 
     def str_list(str_elem,
                  xs):  # type: (Callable[[_T], Text], Sequence[_T]) -> Text
+        """
+        Convert a list as a list.
+
+        Args:
+            str_elem: (str): write your description
+            xs: (array): write your description
+        """
         return '[' + ', '.join(map(str_elem, xs)) + ']'
 
     # for now, this logic should continue to work as long as we are running on a proto3
@@ -488,12 +584,24 @@ def printable_attribute(
 
 
 def printable_dim(dim):  # type: (TensorShapeProto.Dimension) -> Text
+    """
+    Print the dimension dimension dimension of a dimension.
+
+    Args:
+        dim: (int): write your description
+    """
     which = dim.WhichOneof('value')
     assert which is not None
     return str(getattr(dim, which))
 
 
 def printable_type(t):  # type: (TypeProto) -> Text
+    """
+    Returns a tensor.
+
+    Args:
+        t: (todo): write your description
+    """
     if t.WhichOneof('value') == "tensor_type":
         s = TensorProto.DataType.Name(t.tensor_type.elem_type)
         if t.tensor_type.HasField('shape'):
@@ -509,6 +617,12 @@ def printable_type(t):  # type: (TypeProto) -> Text
 
 
 def printable_value_info(v):  # type: (ValueInfoProto) -> Text
+    """
+    Prints printable information about a string.
+
+    Args:
+        v: (todo): write your description
+    """
     s = '%{}'.format(v.name)
     if v.type:
         s = '{}[{}]'.format(s, printable_type(v.type))
@@ -516,6 +630,12 @@ def printable_value_info(v):  # type: (ValueInfoProto) -> Text
 
 
 def printable_tensor_proto(t):  # type: (TensorProto) -> Text
+    """
+    Prints a tensor to tensor.
+
+    Args:
+        t: (todo): write your description
+    """
     s = '%{}['.format(t.name)
     s += TensorProto.DataType.Name(t.data_type)
     if t.dims is not None:
@@ -530,6 +650,14 @@ def printable_tensor_proto(t):  # type: (TensorProto) -> Text
 def printable_node(
         node, prefix='', subgraphs=False
 ):  # type: (NodeProto, Text, bool) -> Union[Text, Tuple[Text, List[GraphProto]]]
+    """
+    Prints a pretty printable graph that node.
+
+    Args:
+        node: (todo): write your description
+        prefix: (str): write your description
+        subgraphs: (todo): write your description
+    """
     content = []
     if len(node.output):
         content.append(', '.join(['%{}'.format(name) for name in node.output]))
@@ -561,6 +689,13 @@ def printable_node(
 
 
 def printable_graph(graph, prefix=''):  # type: (GraphProto, Text) -> Text
+    """
+    Print a graph with graph
+
+    Args:
+        graph: (todo): write your description
+        prefix: (str): write your description
+    """
     content = []
     indent = prefix + '  '
     # header

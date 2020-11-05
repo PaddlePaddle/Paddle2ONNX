@@ -28,6 +28,20 @@ class Node(object):
                  attrs,
                  layer_name,
                  domain=NodeDomain.RAW):
+        """
+        Initialize the layer.
+
+        Args:
+            self: (todo): write your description
+            op_type: (todo): write your description
+            inputs: (list): write your description
+            outputs: (str): write your description
+            attrs: (dict): write your description
+            layer_name: (str): write your description
+            domain: (str): write your description
+            NodeDomain: (str): write your description
+            RAW: (str): write your description
+        """
         self.domain = domain
         self.type = op_type
         self.attrs = attrs
@@ -36,14 +50,33 @@ class Node(object):
         self.set_outputs(outputs)
 
     def __hash__(self):
+        """
+        Return the hash of the layer.
+
+        Args:
+            self: (todo): write your description
+        """
         return hash(self.layer_name)
 
     def __eq__(self, other):
+        """
+        Check if two layers are equal.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         if self.layer_name == other.layer_name:
             return True
         return False
 
     def __str__(self):
+        """
+        Return a string representation of the node s attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         node_str = ''
         attrs = ''
         for key, value in self.attrs.items():
@@ -53,17 +86,46 @@ class Node(object):
         return node_str
 
     def input(self, idx=None):
+        """
+        Returns the input for the given input.
+
+        Args:
+            self: (todo): write your description
+            idx: (int): write your description
+        """
         return self.inputs[idx]
 
     def output(self, name=None, idx=None):
+        """
+        Returns the output of the outputs.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            idx: (int): write your description
+        """
         return self.outputs[idx]
 
     def attr(self, name):
+        """
+        Return the attribute of an attribute name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         if name in self.attrs:
             return self.attrs[name]
         return None
 
     def set_inputs(self, inputs):
+        """
+        Set the inputs of the given layer.
+
+        Args:
+            self: (todo): write your description
+            inputs: (list): write your description
+        """
         if isinstance(inputs, list):
             self.inputs = [
                 ipt.layer_name if isinstance(ipt, Node) else ipt
@@ -74,6 +136,13 @@ class Node(object):
                             format(type(inputs)))
 
     def set_outputs(self, outputs):
+        """
+        Set the outputs of the layer.
+
+        Args:
+            self: (todo): write your description
+            outputs: (todo): write your description
+        """
         if isinstance(outputs, list):
             self.outputs = [
                 opt.layer_name if isinstance(opt, Node) else opt
@@ -86,6 +155,12 @@ class Node(object):
 
 class Graph(object):
     def __init__(self):
+        """
+        Initialize the graph
+
+        Args:
+            self: (todo): write your description
+        """
         self.parameters = {}
         self.node_map = collections.OrderedDict()
         self.input_nodes = list()
@@ -93,14 +168,33 @@ class Graph(object):
         self.op_type_count = dict()
 
     def __hash__(self):
+        """
+        : return : class : hash.
+
+        Args:
+            self: (todo): write your description
+        """
         return hash(self.id)
 
     def __eq__(self, other):
+        """
+        Return true if other is equal false otherwise false.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         if self.id == other.id:
             return True
         return False
 
     def __str__(self):
+        """
+        Returns a string representation of the graph
+
+        Args:
+            self: (todo): write your description
+        """
         graph_str = 'graph { \n'
         for node in self.input_nodes:
             graph_str += " input: {} \n".format(node.layer_name)
@@ -112,6 +206,13 @@ class Graph(object):
         return graph_str
 
     def set_output_nodes(self, node_list):
+        """
+        Set the output node output node.
+
+        Args:
+            self: (todo): write your description
+            node_list: (list): write your description
+        """
         if isinstance(node_list, list):
             self.output_nodes = node_list
         else:
@@ -120,6 +221,13 @@ class Graph(object):
                     type(node_list)))
 
     def set_node_map(self, node_map):
+        """
+        Set the node map.
+
+        Args:
+            self: (todo): write your description
+            node_map: (str): write your description
+        """
         if isinstance(node_map, dict):
             self.node_map = node_map
             self.generate_topo_sort()
@@ -128,6 +236,13 @@ class Graph(object):
                             format(type(node_map)))
 
     def set_input_nodes(self, node_list):
+        """
+        Set the input nodes to the given list.
+
+        Args:
+            self: (todo): write your description
+            node_list: (list): write your description
+        """
         if isinstance(node_list, list):
             self.input_nodes = node_list
         else:
@@ -136,6 +251,13 @@ class Graph(object):
                     type(node_list)))
 
     def set_parameters(self, parameters):
+        """
+        Sets the parameters of a dictionary.
+
+        Args:
+            self: (todo): write your description
+            parameters: (list): write your description
+        """
         if isinstance(parameters, dict):
             self.parameters = parameters
         else:
@@ -144,6 +266,13 @@ class Graph(object):
                     type(parameters)))
 
     def generate_node_name(self, op_type):
+        """
+        Generate a name for the given op_type.
+
+        Args:
+            self: (todo): write your description
+            op_type: (str): write your description
+        """
         if op_type in self.op_type_count:
             self.op_type_count[op_type] += 1
         else:
@@ -153,6 +282,13 @@ class Graph(object):
         return layer_name
 
     def insert_node(self, node):
+        """
+        Add a new node to the layer.
+
+        Args:
+            self: (todo): write your description
+            node: (todo): write your description
+        """
         if node.type not in ['feed', 'fetch']:
             self.node_map[node.layer_name] = node
 
@@ -164,6 +300,19 @@ class Graph(object):
                   layer_name=None,
                   domain=None,
                   **kw):
+        """
+        Create a node from a node.
+
+        Args:
+            self: (todo): write your description
+            op_type: (str): write your description
+            inputs: (todo): write your description
+            outputs: (todo): write your description
+            attrs: (dict): write your description
+            layer_name: (str): write your description
+            domain: (str): write your description
+            kw: (todo): write your description
+        """
         if layer_name is None:
             layer_name = self.generate_node_name(op_type)
 
@@ -189,6 +338,21 @@ class Graph(object):
                     move_to_end=True,
                     domain=None,
                     **kw):
+        """
+        Update a node.
+
+        Args:
+            self: (todo): write your description
+            node: (todo): write your description
+            op_type: (str): write your description
+            inputs: (array): write your description
+            outputs: (todo): write your description
+            attrs: (dict): write your description
+            block: (todo): write your description
+            move_to_end: (bool): write your description
+            domain: (str): write your description
+            kw: (todo): write your description
+        """
         node.type = op_type
         if inputs is not None:
             node.set_inputs(inputs)
@@ -206,6 +370,14 @@ class Graph(object):
         return node
 
     def get_node(self, name, copy=False):
+        """
+        Return a node corresponding to name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            copy: (bool): write your description
+        """
         if name not in self.node_map:
             raise TypeError('Node with name:{} not in graph'.format(name))
         if copy:
@@ -215,12 +387,26 @@ class Graph(object):
         return node
 
     def remove_node_by_name(self, name):
+        """
+        Removes the node by its name.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+        """
         if name in self.node_map:
             node = self.node_map.pop(name)
             return node
         raise TypeError('Node with name:{} not in graph'.format(name))
 
     def remove_node(self, node):
+        """
+        Removes a node from the graph.
+
+        Args:
+            self: (todo): write your description
+            node: (todo): write your description
+        """
         if isinstance(node, Node):
             node = self.remove_node_by_name(node.layer_name)
             return node
@@ -229,6 +415,13 @@ class Graph(object):
             return node
 
     def get_output_nodes_of_node(self, node):
+        """
+        Returns the output nodes that are in node.
+
+        Args:
+            self: (todo): write your description
+            node: (todo): write your description
+        """
         if node in self.edge_map:
             return self.edge_map[node]
         elif self.get_node(node.layer_name, copy=False):
@@ -238,6 +431,12 @@ class Graph(object):
                            format(node.layer_name))
 
     def get_adjacency_map(self):
+        """
+        Returns a dictionary of adjacency map of the graph.
+
+        Args:
+            self: (todo): write your description
+        """
         adjacency_map = {}
         for layer_name, current_node in self.node_map.items():
             inputs = current_node.inputs
@@ -254,6 +453,12 @@ class Graph(object):
         return adjacency_map
 
     def get_topo_sort_list(self):
+        """
+        Returns a list of lists of the adjacency nodes.
+
+        Args:
+            self: (todo): write your description
+        """
         topo_sort_list = list()
         adjacency_map = self.get_adjacency_map()
         for layer_name, node in self.node_map.items():
