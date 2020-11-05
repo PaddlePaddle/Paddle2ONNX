@@ -109,7 +109,7 @@ def main():
                      format(paddle2onnx.__version__))
         return
 
-    assert args.model_dir is not None, "--model should be defined while translating paddle model to onnx"
+    assert args.model_dir is not None, "--model_dir should be defined while translating paddle model to onnx"
     assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
     program2onnx(
         args.model_dir,
