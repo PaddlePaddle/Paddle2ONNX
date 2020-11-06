@@ -49,7 +49,7 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 
     paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
-##### 参数选项
+#### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
 |--model_dir | 指定包含Paddle模型, 由`paddle.fluid.io.save_inference_model`保存得到|
@@ -60,13 +60,13 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
 |--enable_onnx_checker| **[可选]**  是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 pip install onnx==1.7.0, 默认为False|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
-补充说明：
+> 补充说明：
+>
+> - PaddlePaddle模型的两种存储形式：
+>    - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
+>    - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
 
-- PaddlePaddle模型可以两种形式配置：
-    - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
-    - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
-
-##### 简单教程
+#### 简单教程
 - [静态图导出ONNX教程](docs/tutorial.ipynb)
 
 ### 动态图模型导出
