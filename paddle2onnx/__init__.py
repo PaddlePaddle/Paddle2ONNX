@@ -16,3 +16,4 @@ from __future__ import absolute_import
 __version__ = "0.4"
 
 from .convert import dygraph2onnx, program2onnx
+from .op_mapper import register_op_mapper

@@ -23,7 +23,6 @@ from paddle2onnx.constant import NodeDomain, PRODUCER, dtypes
 from paddle2onnx.op_mapper import OpMapper
 from paddle2onnx.onnx_helper import helper
 from paddle2onnx.utils import check_model, logging
-from paddle2onnx.constant.op_mapping_status import *
 
 
 class ONNXNode(Node):
@@ -69,12 +68,6 @@ class ONNXNode(Node):
 
 
 class ONNXGraph(Graph):
-    op_mapping_status = {
-        OP_MAPPING_NO_REGISTER: [],
-        OP_MAPPING_NO_VERSION: [],
-        OP_MAPPING_SUCCESSED: [],
-    }
-
     def __init__(self, paddle_graph, opset_version, block=None):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
@@ -135,32 +128,9 @@ class ONNXGraph(Graph):
             check_model(onnx_proto)
         return onnx_proto
 
-    def check_op_mapping_status(self):
-        if len(self.op_mapping_status[OP_MAPPING_NO_REGISTER]) > 0:
-            unsupported_op_types = set([
-                node.type
-                for node in self.op_mapping_status[OP_MAPPING_NO_REGISTER]
-            ])
-            error_info = "\nThere's {} ops are not supported yet\n".format(
-                len(unsupported_op_types))
-            for op_type in unsupported_op_types:
-                error_info += "=========== {} ===========\n".format(op_type)
-            raise NotImplementedError(error_info)
-
-        if len(self.op_mapping_status[OP_MAPPING_NO_VERSION]) > 0:
-            unsupported_op_types = set([
-                node.type
-                for node in self.op_mapping_status[OP_MAPPING_NO_VERSION]
-            ])
-            error_info = "\nThere's {} ops are not supported in opset_version {}, please try other opset versions\n".format(
-                len(unsupported_op_types), self.opset_version)
-
-            for op_type in unsupported_op_types:
-                error_info += "=========== {} ===========\n".format(op_type)
-            raise NotImplementedError(error_info)
-
     @staticmethod
     def build(paddle_graph, opset_version, verbose=False):
+        OpMapper.check_support_status(paddle_graph, opset_version)
         onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
 
         # build input nodes
@@ -190,8 +160,5 @@ class ONNXGraph(Graph):
         # build op nodes
         for name, node in list(paddle_graph.node_map.items()):
             status = OpMapper.mapping(onnx_graph, node)
-            onnx_graph.op_mapping_status[status].append(node)
-
-        onnx_graph.check_op_mapping_status()
 
         return onnx_graph

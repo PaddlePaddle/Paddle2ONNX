@@ -14,7 +14,7 @@
 
 from __future__ import absolute_import
 
-from .op_mapper import OpMapper
+from .op_mapper import OpMapper, register_op_mapper
 from . import nn
 from . import math
 from . import activation
