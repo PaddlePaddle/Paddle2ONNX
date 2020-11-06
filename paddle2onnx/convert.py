@@ -39,8 +39,8 @@ def export_onnx(paddle_graph,
 
 
 def program2onnx(program,
+                 scope,
                  save_file,
-                 scope=None,
                  feeded_var_names=None,
                  target_vars=None,
                  opset_version=9,

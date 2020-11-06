@@ -29,7 +29,21 @@ def arg_parser():
         "-m",
         type=_text_type,
         default=None,
-        help="paddle model path, '__model__' and '__params__' files need under this path, which saved by 'paddle.fluid.io.save_inference_model'."
+        help="PaddlePaddle model directory, if params stored in single file, you need define '--model_filename' and 'params_filename'."
+    )
+    parser.add_argument(
+        "--model_filename",
+        "-mf",
+        type=_text_type,
+        default=None,
+        help="PaddlePaddle model's network file name, which under directory seted by --model_dir"
+    )
+    parser.add_argument(
+        "--params_filename",
+        "-pf",
+        type=_text_type,
+        default=None,
+        help="PaddlePaddle model's param file name(param files combined in single file), which under directory seted by --model_dir."
     )
     parser.add_argument(
         "--save_file",
@@ -38,14 +52,8 @@ def arg_parser():
         default=None,
         help="file path to save onnx model")
     parser.add_argument(
-        "--version",
-        "-v",
-        action="store_true",
-        default=False,
-        help="get version of paddle2onnx")
-    parser.add_argument(
         "--opset_version",
-        "-oo",
+        "-ov",
         type=int,
         default=9,
         help="set onnx opset version to export")
@@ -55,12 +63,20 @@ def arg_parser():
         default=False,
         help="whether check onnx model validity, if True, please 'pip install onnx'"
     )
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="store_true",
+        default=False,
+        help="get version of paddle2onnx")
     return parser
 
 
 def program2onnx(model_dir,
                  save_file,
-                 opset_version=10,
+                 model_filename=None,
+                 params_filename=None,
+                 opset_version=9,
                  enable_onnx_checker=False):
     try:
         import paddle
@@ -79,15 +95,18 @@ def program2onnx(model_dir,
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
     exe = fluid.Executor(fluid.CPUPlace())
-    [program, feed, fetchs] = fluid.io.load_inference_model(
-        model_dir,
-        exe,
-        model_filename='__model__',
-        params_filename='__params__')
+    if model_filename is None and params_filename is None:
+        [program, feed, fetchs] = fluid.io.load_inference_model(model_dir, exe)
+    else:
+        [program, feed, fetchs] = fluid.io.load_inference_model(
+            model_dir,
+            exe,
+            model_filename=model_filename,
+            params_filename=params_filename)
     p2o.program2onnx(
         program,
+        fluid.global_scope(),
         save_file,
-        scope=fluid.global_scope(),
         opset_version=opset_version,
         enable_onnx_checker=enable_onnx_checker)
 
@@ -114,6 +133,8 @@ def main():
     program2onnx(
         args.model_dir,
         args.save_file,
+        args.model_filename,
+        args.params_filename,
         opset_version=args.opset_version,
         enable_onnx_checker=args.enable_onnx_checker)
 
