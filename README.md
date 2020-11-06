@@ -66,6 +66,9 @@ paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddleP
     - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
     - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
 
+##### 简单教程
+- [静态图导出ONNX教程](docs/tutorial.ipynb)
+
 ### 动态图模型导出
 
 处于实验状态，Paddle 2.0正式版发布后，会提供详细使用教程。
