@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import os
 import paddle
 import numpy as np
+from paddle import fluid
 from paddle.fluid.framework import Variable
 from paddle2onnx.utils import check_model, logging
 from paddle2onnx.graph import PaddleGraph, ONNXGraph
@@ -39,14 +40,13 @@ def export_onnx(paddle_graph,
 
 
 def program2onnx(program,
-                 scope,
                  save_file,
+                 scope=fluid.global_scope(),
                  feeded_var_names=None,
                  target_vars=None,
                  opset_version=9,
                  enable_onnx_checker=False,
                  **configs):
-    from paddle import fluid
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
     if isinstance(program, paddle.fluid.framework.Program):

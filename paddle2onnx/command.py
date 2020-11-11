@@ -105,7 +105,6 @@ def program2onnx(model_dir,
             params_filename=params_filename)
     p2o.program2onnx(
         program,
-        fluid.global_scope(),
         save_file,
         opset_version=opset_version,
         enable_onnx_checker=enable_onnx_checker)
