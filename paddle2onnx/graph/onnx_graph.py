@@ -36,6 +36,8 @@ class ONNXNode(Node):
         value = self.attr('value')
         if isinstance(value, list):
             dims = (len(value), )
+        elif isinstance(value, np.ndarray):
+            dims = value.shape
         elif value is None:
             dims = ()
             value = []
@@ -58,6 +60,7 @@ class ONNXNode(Node):
         if self.type in ['Constant', 'ConstantOfShape']:
             onnx_node = self.make_onnx_constant_node()
         else:
+            print(self.inputs)
             onnx_node = helper.make_node(
                 self.type,
                 inputs=self.inputs,
@@ -109,6 +112,11 @@ class ONNXGraph(Graph):
     def add_output_node(self, name, shape, dtype):
         vi = self.make_value_info(name, shape, dtype)
         self.output_nodes.append(vi)
+
+    def get_parameter(self, name):
+        if name in self.ctx.parameters:
+            return self.ctx.parameters[name]
+        return None
 
     def export_proto(self, enable_onnx_checker=False):
         op_nodes = [node.onnx_node for node in self.node_map.values()]

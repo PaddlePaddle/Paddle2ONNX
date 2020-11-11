@@ -19,6 +19,7 @@
 | elementwise_sub | 7 ~ 12 |
 | elementwise_mul | 7 ~ 12 |
 | elementwise_div | 7 ~ 12 |
+| erf | 9 ~ 12 |
 | exp | 1~12 |
 | fill_constant | 1~12 |
 | fill_any_like | 9~12 |

@@ -32,6 +32,25 @@ class Concat():
             axis=node.attr('axis'))
 
 
+@op_mapper('stack')
+class Stack():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+
+        unsqueezed_nodes = []
+        for ipt in node.input('X'):
+            unsqueezed_node = graph.make_node(
+                'Unsqueeze', inputs=[ipt], axes=[node.attr('axis')])
+            unsqueezed_nodes.append(unsqueezed_node)
+        node = graph.make_node(
+            'Concat',
+            inputs=unsqueezed_nodes,
+            outputs=node.output('Y'),
+            axis=node.attr('axis'))
+
+
 @op_mapper('shape')
 class Shape():
     support_opset_verison_range = (1, 12)
@@ -182,6 +201,52 @@ class Gather():
                 outputs=node.output('Out'))
 
 
+@op_mapper('lookup_table_v2')
+class Gather():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        if len(node.input_shape('Index', 0)) == 1:
+            weight_dtype = node.input_var('W', 0).dtype
+            weight_shape = node.input_shape('W', 0)
+            weight_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[weight_dtype]
+            weight_node = graph.make_node(
+                'Constant',
+                dims=weight_shape,
+                dtype=weight_dtype,
+                value=np.array(node.input_var('W', 0).get_tensor()))
+            # gather
+            graph.make_node(
+                'Gather',
+                inputs=[weight_node, node.input('Ids', 0)],
+                outputs=node.output('Out'))
+        else:
+            raise Exception(
+                "please try to convert OP:embeding(input's rank >1) with opset_version >= 11."
+            )
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        weight_dtype = node.input_var('W', 0).dtype
+        weight_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[weight_dtype]
+        weight = graph.get_parameter(node.input('W', 0))['data']
+        weight_node = graph.make_node(
+            'Constant', dtype=weight_dtype, value=weight.flatten())
+        if len(node.input_shape('Ids', 0)) == 1:
+            # gather
+            graph.make_node(
+                'Gather',
+                inputs=[weight_node, node.input('Ids', 0)],
+                outputs=node.output('Out'))
+        else:
+            # gather_nd 
+            graph.make_node(
+                'GatherND',
+                inputs=[weight_node, node.input('Ids', 0)],
+                outputs=node.output('Out'))
+
+
 @op_mapper('squeeze2')
 class Squeeze():
     support_opset_verison_range = (1, 12)
@@ -249,6 +314,8 @@ class Reshape():
 
     @classmethod
     def opset_5(cls, graph, node, **kw):
+        if node.output('Out', 0) == node.input('X', 0):
+            return
         if len(node.input('ShapeTensor')) > 1:
             cast_shape_nodes = []
             for i in range(len(node.input('ShapeTensor'))):

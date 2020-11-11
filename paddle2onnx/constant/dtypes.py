@@ -20,12 +20,14 @@ from paddle2onnx.onnx_helper.onnx_pb import TensorProto
 ONNX = TensorProto
 
 DTYPE_PADDLE_ONNX_MAP = {
+    TensorProto.FLOAT16: core.VarDesc.VarType.FP16,
     TensorProto.FLOAT: core.VarDesc.VarType.FP32,
     TensorProto.DOUBLE: core.VarDesc.VarType.FP64,
     TensorProto.INT16: core.VarDesc.VarType.INT16,
     TensorProto.INT32: core.VarDesc.VarType.INT32,
     TensorProto.INT64: core.VarDesc.VarType.INT64,
     TensorProto.BOOL: core.VarDesc.VarType.BOOL,
+    core.VarDesc.VarType.FP16: TensorProto.FLOAT16,
     core.VarDesc.VarType.FP32: TensorProto.FLOAT,
     core.VarDesc.VarType.FP64: TensorProto.DOUBLE,
     core.VarDesc.VarType.INT16: TensorProto.INT16,
@@ -35,13 +37,15 @@ DTYPE_PADDLE_ONNX_MAP = {
 }
 
 DTYPE_PADDLE_NUMPY_MAP = {
+    np.float16: core.VarDesc.VarType.FP16,
     np.float32: core.VarDesc.VarType.FP32,
     np.float64: core.VarDesc.VarType.FP64,
     np.int16: core.VarDesc.VarType.INT16,
     np.int32: core.VarDesc.VarType.INT32,
     np.int64: core.VarDesc.VarType.INT64,
     np.bool: core.VarDesc.VarType.BOOL,
-    core.VarDesc.VarType.FP32: np.float,
+    core.VarDesc.VarType.FP16: np.float16,
+    core.VarDesc.VarType.FP32: np.float32,
     core.VarDesc.VarType.FP64: np.float64,
     core.VarDesc.VarType.INT16: np.int16,
     core.VarDesc.VarType.INT32: np.int32,

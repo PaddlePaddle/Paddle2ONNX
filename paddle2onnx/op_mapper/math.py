@@ -110,6 +110,17 @@ class Pow():
             'Pow', inputs=[x, factor_broadcast], outputs=node.output('Out'))
 
 
+@op_mapper('square')
+class Square():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        onnx_node = graph.make_node(
+            'Mul', inputs=[x, x], outputs=node.output('Out'))
+
+
 @op_mapper('mul')
 class Mul():
     support_opset_verision_range = (1, 12)
@@ -174,6 +185,19 @@ class ReduceMean():
             })
 
 
+@op_mapper('mean')
+class Mean():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'ReduceMean',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            keepdims=0)
+
+
 @op_mapper('arg_max')
 class ArgMax():
     support_opset_verison_range = (1, 12)
@@ -212,26 +236,28 @@ class Scale():
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
             scale_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': scale})
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [scale]})
             bias_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': bias})
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [bias]})
             cast_node = graph.make_node(
                 'Cast', inputs=node.input('X'),
                 attrs={'to': dtypes.ONNX.FLOAT})
             if node.attr('bias_after_scale'):
-                node1 = graph.make_node('Mul', inputs=[scale_node, cast_node])
+                node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(
                     'Add',
-                    inputs=[bias_node, node1],
+                    inputs=[node1, bias_node],
                     outputs=node.output('Out'))
             else:
-                node1 = graph.make_node('Add', inputs=[bias_node, cast_node])
+                node1 = graph.make_node('Add', inputs=[cast_node, bias_node])
                 node2 = graph.make_node(
                     'Mul',
-                    inputs=[scale_node, node1],
-                    outputs=[node.output('Out')])
+                    inputs=[node1, scale_node],
+                    outputs=[node.output('Out', 0)])
 
 
 @op_mapper('softmax')
@@ -258,6 +284,53 @@ class Softmax():
                 'Transpose', inputs=node.input('X'), attrs={'perm': perm})
             softmax_node = graph.make_node(
                 'Softmax', inputs=[transpose_node], axis=-1)
+            transpose_node1 = graph.make_node(
+                'Transpose',
+                inputs=[softmax_node],
+                outputs=node.output('Out'),
+                attrs={'perm': perm})
+
+
+@op_mapper('softmax_with_cross_entropy')
+class SoftmaxCrossEntropyLoss():
+    support_opset_verison_range = (12, 12)
+
+    @classmethod
+    def opset_12(cls, graph, node, **kw):
+        if node.attr('soft_label'):
+            raise Exception(
+                "SoftmaxCrossEntropyLoss in onnx not support soft label.")
+
+        labels = node.input('Label', 0)
+        scores = node.input('Logits', 0)
+
+        outputs = [node.output('Loss', 0)]
+        if 'Softmax' in node.outputs:
+            outputs.append(node.output('Softmax', 0))
+
+        shape = node.input_shape('Logits', 0)
+        axis = node.attr('axis')
+        if axis < 0:
+            axis += len(shape)
+        if axis == len(shape) - 1:
+            graph.make_node(
+                'SoftmaxCrossEntropyLoss',
+                inputs=[scores, labels],
+                outputs=outputs,
+                ignore_index=node.attr('ignore_index'),
+                reduction='mean')
+        else:
+            perm = [i for i in range(len(shape))]
+            perm[-1] = axis
+            perm[axis] = len(shape) - 1
+            transpose_node = graph.make_node(
+                'Transpose', inputs=node.input('X'), attrs={'perm': perm})
+            node = graph.make_node(
+                'SoftmaxCrossEntropyLoss',
+                inputs=[scores, labels],
+                outputs=outputs,
+                ignore_index=node.attr('ignore_index'),
+                reduction='mean')
             transpose_node1 = graph.make_node(
                 'Transpose',
                 inputs=[softmax_node],
