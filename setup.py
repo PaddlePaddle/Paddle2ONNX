@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import
+
 import setuptools
+import paddle2onnx as p2o
 
 long_description = "paddle2onnx is a toolkit for converting trained model of PaddlePaddle to ONNX.\n\n"
 long_description += "Usage: paddle2onnx --model_dir src --save_file dist\n"
@@ -22,7 +24,7 @@ long_description += "Email: dltp-sz@baidu.com"
 
 setuptools.setup(
     name="paddle2onnx",
-    version=0.4,
+    version=p2o.__version__,
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
     description="a toolkit for converting trained model of PaddlePaddle to ONNX.",
