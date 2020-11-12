@@ -1,17 +1,16 @@
 # Paddle2ONNX
 
-paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式.
-paddle2onnx is a toolkit for converting trained model to **ONNX** from **PaddlePaddle** deep learning framework.
-
-| OS | Python | Paddle | ONNX Opset |
-| :-: | :-: | :-: | :-:|
-|linux, MacOS, Windows | 2.7, 3.6, 3.7, 3.8| >1.8.0 | 9~12 |
-
 ## 简介
+
+paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。
 
 - 模型格式，支持Paddle静态图和动态图模型转为ONNX，可转换由[save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model)导出的静态图模型，使用方法请参考[IPthon示例](examples/tutorial.ipynb)。动态图转换目前处于实验状态，将伴随Paddle 2.0正式版发布后，提供详细使用教程。
 - 算子支持，目前稳定支持导出ONNX Opset 9~12，部分Paddle算子支持更低的ONNX Opset转换，详情可参考[算子列表](docs/op_list.md)。
 - 模型类型，官方测试可转换的模型请参考[模型库](docs/model_zoo.md)
+
+| OS | Python | Paddle | ONNX Opset |
+| :-: | :-: | :-: | :-:|
+|linux, MacOS, Windows | 2.7, 3.6, 3.7, 3.8| >1.8.0 | 9~12 |
 
 ## 环境依赖
 
