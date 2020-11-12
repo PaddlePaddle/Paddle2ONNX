@@ -33,9 +33,11 @@ paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。
 #### 命令行
 
 Paddle模型的参数保存为多个文件（not combined）:
+
     paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
 Paddle模型的参数保存在一个单独的二进制文件中（combined）:
+
     paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
 #### 参数选项
