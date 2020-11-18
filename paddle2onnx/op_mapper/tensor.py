@@ -243,6 +243,37 @@ class Flatten():
             axis=node.attr('axis'))
 
 
+@op_mapper('flatten_contiguous_range')
+class FlattenContiguousRange():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        dims = len(node.input_shape('X', 0))
+        start_axis = node.attr('start_axis')
+        end_axis = node.attr('stop_axis')
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        slice1 = mapper_helper.slice_helper(
+            graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+        slices = [
+            slice1, graph.make_node(
+                'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
+        ]
+        if end_axis < dims - 1:
+            slice3 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[end_axis + 1],
+                ends=[dims])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+            ]
+        final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        graph.make_node(
+            'Reshape',
+            inputs=[node.input('X')[0], final_shape],
+            outputs=node.output('Out'))
+
+
 @op_mapper('reshape2')
 class Reshape():
     support_opset_verison_range = (5, 12)
