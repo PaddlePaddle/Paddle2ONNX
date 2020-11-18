@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import numpy as np
 from paddle2onnx.constant import dtypes
+import collections
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
@@ -71,10 +72,17 @@ class Pool():
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
+            # adaptive_pool is supported for cases where output_size is 1 for all dimensions,
+            # by executing a GlobalPool.
+            # It is also supported for cases where the output size is a factor of the input size.
+            # For these cases the stride and kernel size are uniform along all the indices of
+            # the same dimension, which makes it possible to export it to ONNX.
             input_height, input_width = node.input_shape('X', 0)[2:]
             output_height, output_width = node.output_shape('Out', 0)[2:]
             if input_height % output_height != 0 or input_width % output_width != 0:
-                raise Exception("ONNX cannot support adaptive pool")
+                raise Exception(
+                    "ONNX cannot support adaptive pool, which output size that are not factor of input size"
+                )
             else:
                 stride_h = int(input_height / output_height)
                 stride_w = int(input_width / output_width)
@@ -116,6 +124,54 @@ class Norm():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('layer_norm')
+class LayerNorm():
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        ipt = node.input('X', 0)
+        normalized_shape = node.attr('begin_norm_axis')
+        if isinstance(normalized_shape, collections.Iterable):
+            axes = [-i for i in range(len(normalized_shape), 0, -1)]
+        else:
+            axes = [-1]
+        epsilon = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('epsilon'))
+        two = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=2.0)
+        mean = graph.make_node("ReduceMean", inputs=ipt, axes=axes)
+        numerator = graph.make_node("Sub", inputs=[ipt, mean])
+        pow_num = graph.make_node("Pow", inputs=[numerator, two])
+        variance = graph.make_node("ReduceMean", inputs=pow_num, axes=axes)
+        add_eps = graph.make_node("Add", inputs=[variance, epsilon])
+        denominator = graph.make_node("Sqrt", inputs=add_eps)
+        if 'Bias' in node.inputs and 'Scale' in node.inputs:
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            layer_norm = graph.make_node(
+                "Mul", inputs=[layer_norm, node.input('Scale', 0)])
+            graph.make_node(
+                "Add",
+                inputs=[layer_norm, node.input('Bias', 0)],
+                outputs=node.output('Y'))
+        elif 'Bias' in node.inputs:
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            graph.make_node(
+                "Add",
+                inputs=[layer_norm, node.input('Bias', 0)],
+                outputs=node.output('Y'))
+        elif 'Scale' in node.inputs:
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            graph.make_node(
+                "Mul",
+                inputs=[layer_norm, node.input('Scale', 0)],
+                outputs=node.output('Y'))
+        else:
+            layer_norm = graph.make_node(
+                "Div",
+                inputs=[numerator, denominator],
+                outputs=node.output('Y'))
 
 
 @op_mapper('batch_norm')

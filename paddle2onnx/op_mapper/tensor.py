@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('concat')
@@ -92,33 +93,9 @@ class Slice():
         axes = node.attr('axes')
         starts = node.attr('starts')
         ends = node.attr('ends')
-        graph.make_node(
-            "Slice",
-            inputs=[node.input('Input')[0]],
-            outputs=node.output('Out'),
-            axes=axes,
-            starts=starts,
-            ends=ends)
-
-    @classmethod
-    def opset_10(cls, graph, node, **kw):
-        axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-
-        axes_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': axes})
-        starts_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': starts})
-        ends_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': ends})
-        graph.make_node(
-            "Slice",
-            inputs=[node.input('Input')[0], starts_node, ends_node, axes_node],
-            outputs=node.output('Out'))
+        mapper_helper.slice_helper(graph,
+                                   node.input('Input'), axes, starts, ends,
+                                   node.output('Out'))
 
 
 @op_mapper('fill_constant')
@@ -132,15 +109,8 @@ class Constant():
         shape = node.attr('shape')
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
-        graph.make_node(
-            'Constant',
-            inputs=[],
-            outputs=node.output('Out'),
-            attrs={
-                'dims': shape,
-                'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
-                'value': value
-            })
+        mapper_helper.constant_helper(graph, dtype, value, shape,
+                                      node.output('Out'))
 
 
 @op_mapper('fill_any_like')
@@ -202,49 +172,15 @@ class Gather():
 
 
 @op_mapper('lookup_table_v2')
-class Gather():
+class Embedding():
     support_opset_verison_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        if len(node.input_shape('Index', 0)) == 1:
-            weight_dtype = node.input_var('W', 0).dtype
-            weight_shape = node.input_shape('W', 0)
-            weight_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[weight_dtype]
-            weight_node = graph.make_node(
-                'Constant',
-                dims=weight_shape,
-                dtype=weight_dtype,
-                value=np.array(node.input_var('W', 0).get_tensor()))
-            # gather
-            graph.make_node(
-                'Gather',
-                inputs=[weight_node, node.input('Ids', 0)],
-                outputs=node.output('Out'))
-        else:
-            raise Exception(
-                "please try to convert OP:embeding(input's rank >1) with opset_version >= 11."
-            )
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        weight_dtype = node.input_var('W', 0).dtype
-        weight_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[weight_dtype]
-        weight = graph.get_parameter(node.input('W', 0))['data']
-        weight_node = graph.make_node(
-            'Constant', dtype=weight_dtype, value=weight.flatten())
-        if len(node.input_shape('Ids', 0)) == 1:
-            # gather
-            graph.make_node(
-                'Gather',
-                inputs=[weight_node, node.input('Ids', 0)],
-                outputs=node.output('Out'))
-        else:
-            # gather_nd 
-            graph.make_node(
-                'GatherND',
-                inputs=[weight_node, node.input('Ids', 0)],
-                outputs=node.output('Out'))
+        graph.make_node(
+            'Gather',
+            inputs=[node.input('W', 0), node.input('Ids', 0)],
+            outputs=node.output('Out'))
 
 
 @op_mapper('squeeze2')
@@ -308,14 +244,43 @@ class Flatten():
             axis=node.attr('axis'))
 
 
+@op_mapper('flatten_contiguous_range')
+class FlattenContiguousRange():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        dims = len(node.input_shape('X', 0))
+        start_axis = node.attr('start_axis')
+        end_axis = node.attr('stop_axis')
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        slice1 = mapper_helper.slice_helper(
+            graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+        slices = [
+            slice1, graph.make_node(
+                'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
+        ]
+        if end_axis < dims - 1:
+            slice3 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[end_axis + 1],
+                ends=[dims])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+            ]
+        final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        graph.make_node(
+            'Reshape',
+            inputs=[node.input('X')[0], final_shape],
+            outputs=node.output('Out'))
+
+
 @op_mapper('reshape2')
 class Reshape():
     support_opset_verison_range = (5, 12)
 
     @classmethod
     def opset_5(cls, graph, node, **kw):
-        if node.output('Out', 0) == node.input('X', 0):
-            return
         if len(node.input('ShapeTensor')) > 1:
             cast_shape_nodes = []
             for i in range(len(node.input('ShapeTensor'))):

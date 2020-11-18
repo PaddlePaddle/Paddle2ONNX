@@ -53,9 +53,13 @@ class Node(object):
         return node_str
 
     def input(self, idx=None):
+        if idx is None:
+            return self.inputs
         return self.inputs[idx]
 
-    def output(self, name=None, idx=None):
+    def output(self, idx=None):
+        if idx is None:
+            return self.outputs
         return self.outputs[idx]
 
     def attr(self, name):
@@ -69,9 +73,14 @@ class Node(object):
                 ipt.layer_name if isinstance(ipt, Node) else ipt
                 for ipt in inputs
             ]
+        elif isinstance(inputs, str):
+            self.inputs = [inputs]
+        elif isinstance(inputs, Node):
+            self.inputs = [inputs.layer_name]
         else:
-            raise TypeError('Inputs of node must be type: list, but got {}'.
-                            format(type(inputs)))
+            raise TypeError(
+                'Inputs of node must be type: list, ONNXNode, or String but got {}'.
+                format(type(inputs)))
 
     def set_outputs(self, outputs):
         if isinstance(outputs, list):

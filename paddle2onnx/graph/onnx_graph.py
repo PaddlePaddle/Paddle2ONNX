@@ -29,7 +29,6 @@ class ONNXNode(Node):
     def __init__(self, op_type, inputs, outputs, attrs, layer_name):
         super(ONNXNode, self).__init__(op_type, inputs, outputs, attrs,
                                        layer_name, NodeDomain.ONNX)
-        self.onnx_node = self.make_onnx_node()
 
     def make_onnx_constant_node(self):
         dtype = self.attr('dtype')
@@ -45,7 +44,7 @@ class ONNXNode(Node):
             dims = ()
             value = [value]
 
-        if 'dims' in self.attrs:
+        if 'dims' in self.attrs and self.attr('dims') is not None:
             dims = self.attrs['dims']
 
         tensor = helper.make_tensor(
@@ -60,7 +59,6 @@ class ONNXNode(Node):
         if self.type in ['Constant', 'ConstantOfShape']:
             onnx_node = self.make_onnx_constant_node()
         else:
-            print(self.inputs)
             onnx_node = helper.make_node(
                 self.type,
                 inputs=self.inputs,
@@ -119,7 +117,12 @@ class ONNXGraph(Graph):
         return None
 
     def export_proto(self, enable_onnx_checker=False):
-        op_nodes = [node.onnx_node for node in self.node_map.values()]
+
+        op_nodes = []
+        for name, node in list(self.node_map.items()):
+            onnx_op_node = node.make_onnx_node()
+            op_nodes.append(onnx_op_node)
+
         weight_nodes = [node for node in self.parameters.values()]
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
