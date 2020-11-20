@@ -15,6 +15,13 @@
 from paddle2onnx.constant import dtypes
 
 
+def get_auto_padding(in_size, kernel, stride, dilation):
+    pad_size = (in_size - 1) * stride + 1 - in_size + dilation * (kernel - 1)
+    pad_upper = int(pad_size / 2)
+    pad_lower = pad_size - pad_upper
+    return [pad_upper, pad_lower]
+
+
 def slice_helper(graph, input, axes, starts, ends, outputs=None):
     if graph.opset_version < 10:
         slice_node = graph.make_node(

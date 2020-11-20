@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.onnx_helper import helper
 
 
 @op_mapper('concat')
@@ -380,19 +381,24 @@ class Clip():
             outputs=node.output('Out'))
 
 
-@op_mapper('pad2d')
+@op_mapper(['pad2d', 'pad3d'])
 class Pad():
     support_opset_verison_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         pads = cls.convert_padding(node, **kw)
+        value = None
+        if node.attr('pad_value') is not None:
+            value = node.attr('pad_value')
+        elif node.attr('value') is not None:
+            value = node.attr('value')
         graph.make_node(
             'Pad',
             inputs=node.input('X'),
             outputs=node.output('Out'),
             mode=node.attr('mode'),
-            value=node.attr('pad_value'),
+            value=value,
             pads=pads)
 
     @classmethod
@@ -401,12 +407,14 @@ class Pad():
         pads_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': pads})
+        value = None
+        if node.attr('pad_value') is not None:
+            value = node.attr('pad_value')
+        elif node.attr('value') is not None:
+            value = node.attr('value')
         value_node = graph.make_node(
-            'Constant',
-            attrs={
-                'dtype': dtypes.ONNX.FLOAT,
-                'value': node.attr('pad_value')
-            })
+            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': value})
 
         graph.make_node(
             'Pad',
@@ -424,9 +432,14 @@ class Pad():
             onnx_paddings = [
                 0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
             ]
-        else:
+        elif node.attr('data_format') == 'NHWC':
             onnx_paddings = [
                 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+            ]
+        elif node.attr('data_format') == 'NCDHW':
+            onnx_paddings = [
+                0, 0, paddings[4], paddings[2], paddings[0], 0, 0, paddings[5],
+                paddings[3], paddings[1]
             ]
         return onnx_paddings
 
@@ -448,9 +461,16 @@ class UniformRandom():
 
 
 @op_mapper(
-    ['bilinear_interp', 'nearest_interp'],
-    mapper_dict={'bilinear_interp': 'linear',
-                 'nearest_interp': 'nearest'})
+    [
+        'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
+        'nearest_interp_v2'
+    ],
+    mapper_dict={
+        'bilinear_interp': 'linear',
+        'nearest_interp': 'nearest',
+        'bilinear_interp_v2': 'linear',
+        'nearest_interp_v2': 'nearest'
+    })
 class Resize():
     support_opset_verison_range = (9, 12)
 
@@ -579,7 +599,23 @@ class Resize():
                     })
                 inputs.append(scale_node)
             else:
-                raise Exception("Unexpected situation happend")
+                empty_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': []})
+                #node_h_w_scales = graph.make_node(
+                #    'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                #                   'value': [1,1,2,2]})
+                in_shape, out_shape = cls.compute_output_shape_by_size(graph,
+                                                                       node)
+                inputs += [empty_node, out_shape]
+                #cast_shape_node2 = graph.make_node(
+                #    'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
+                #cast_shape_node0 = graph.make_node(
+                #    'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
+                #node_h_w_scales = graph.make_node(
+                #    'Div', inputs=[cast_shape_node2, cast_shape_node0])
+                #inputs.append(node_h_w_scales)
         graph.make_node(
             'Resize',
             inputs=inputs,
@@ -613,3 +649,26 @@ class Resize():
         shape_node2 = graph.make_node(
             'Concat', inputs=[shape_node1, cast_shape_node], axis=0)
         return shape_node0, shape_node2
+
+    @classmethod
+    def compute_output_shape_by_size(cls, graph, node, opset_version=10):
+        shape_node0 = graph.make_node('Shape', inputs=node.input('X'))
+        if opset_version < 10:
+            shape_node1 = graph.make_node(
+                'Slice', inputs=[shape_node0], starts=[0], ends=[2])
+        else:
+            starts_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            ends_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [2]})
+            shape_node1 = graph.make_node(
+                'Slice', inputs=[shape_node0, starts_node, ends_node])
+        out_shape = [node.attr('out_h'), node.attr('out_w')]
+        shape_node2 = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': out_shape})
+        shape_node3 = graph.make_node(
+            'Concat', inputs=[shape_node1, shape_node2], axis=0)
+        return shape_node0, shape_node3

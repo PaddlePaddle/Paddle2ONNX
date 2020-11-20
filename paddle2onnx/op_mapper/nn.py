@@ -15,8 +15,10 @@
 from __future__ import absolute_import
 
 import numpy as np
+import math
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d'])
@@ -26,15 +28,30 @@ class Conv():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[-2:]
+        strides = node.attr('strides')
+        group = node.attr('groups')
+        pads = node.attr('paddings') + node.attr('paddings')
+
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            in_size = node.input_shape('Input', 0)[-2:]
+            pad_h = mapper_helper.get_auto_padding(in_size[0], kernel_shape[0],
+                                                   strides[0], dilations[0])
+            pad_w = mapper_helper.get_auto_padding(in_size[1], kernel_shape[1],
+                                                   strides[1], dilations[1])
+            pads = pad_h + pad_w
+
         graph.make_node(
             'Conv',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
-            dilations=node.attr('dilations'),
-            kernel_shape=kernel_shape[-2:],
-            strides=node.attr('strides'),
-            group=node.attr('groups'),
-            pads=node.attr('paddings') + node.attr('paddings'))
+            dilations=dilations,
+            kernel_shape=kernel_shape,
+            strides=strides,
+            group=group,
+            pads=pads)
 
 
 @op_mapper('conv2d_transpose')
@@ -64,6 +81,18 @@ class Pool():
     }
 
     @classmethod
+    def is_same_span(cls, in_size, out_size):
+        spans = []
+        for i in range(out_size):
+            start = math.floor(i * (in_size / out_size))
+            end = math.ceil((i + 1) * (in_size / out_size))
+            spans.append(end - start)
+        if len(set(spans)) == 1:
+            return True
+        print(spans)
+        return False
+
+    @classmethod
     def opset_1(cls, graph, node, **kw):
         if node.attr('global_pooling'):
             onnx_node = graph.make_node(
@@ -71,23 +100,27 @@ class Pool():
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
-            input_height, input_width = node.input_shape('X', 0)[2:]
-            output_height, output_width = node.output_shape('Out', 0)[2:]
-            if input_height % output_height != 0 or input_width % output_width != 0:
-                raise Exception("ONNX cannot support adaptive pool")
-            else:
-                stride_h = int(input_height / output_height)
-                stride_w = int(input_width / output_width)
-                kernel_h = input_height - (output_height - 1) * stride_h
-                kernel_w = input_width - (output_width - 1) * stride_w
+            input_h, input_w = node.input_shape('X', 0)[2:]
+            output_h, output_w = node.output_shape('Out', 0)[2:]
+            stride_h = int(input_h / output_h)
+            stride_w = int(input_w / output_w)
+            kernel_h = input_h - (output_h - 1) * stride_h
+            kernel_w = input_w - (output_w - 1) * stride_w
 
+            if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
+                    input_w, output_w):
+                raise Exception(
+                    "Cannot convert adaptive pool with input_size: {}, output_size: {}".
+                    format(
+                        node.input_shape('X', 0), node.output_shape('Out', 0)))
+            else:
                 onnx_node = graph.make_node(
                     cls.pool_type[node.attr('pooling_type')][0],
                     inputs=node.input('X'),
                     outputs=node.output('Out'),
                     kernel_shape=(kernel_h, kernel_w),
                     strides=(stride_h, stride_w),
-                    pads=[0, 0, 0, 0])
+                    auto_pad='NOTSET')
         else:
             input_shape = node.input_shape('X', 0)
             k_size = node.attr('ksize')

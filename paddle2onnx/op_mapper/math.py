@@ -30,6 +30,22 @@ class MatMul():
         graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
 
 
+@op_mapper('matmul_v2')
+class MatMul():
+    support_opset_verision_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        x = node.input('X', idx=0)
+        y = node.input('Y', idx=0)
+        out = node.output('Out')
+        if node.attr('trans_x'):
+            x = graph.make_node('Transpose', inputs=[x])
+        if node.attr('trans_y'):
+            y = graph.make_node('Transpose', inputs=[y])
+        graph.make_node('MatMul', inputs=[x, y], outputs=out)
+
+
 @op_mapper('exp')
 class Exp():
     support_opset_verision_range = (1, 12)
