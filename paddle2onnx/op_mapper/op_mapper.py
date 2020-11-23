@@ -127,7 +127,7 @@ class OpMapper(object):
                 node.type for node in op_mapping_status[OP_MAPPING_NO_VERSION]
             ])
             error_info = "\nThere's {} ops are not supported in opset_version {}, please try other opset versions\n".format(
-                len(unsupported_op_types), self.opset_version)
+                len(unsupported_op_types), opset_version)
 
             for op_type in unsupported_op_types:
                 error_info += "=========== {} ===========\n".format(op_type)

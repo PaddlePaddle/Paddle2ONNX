@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import numpy as np
 import math
+import collections
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
@@ -33,25 +34,24 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings') + node.attr('paddings')
-
+        attrs = {
+            'dilations': dilations,
+            'kernel_shape': kernel_shape,
+            'strides': strides,
+            'group': group
+        }
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
-            in_size = node.input_shape('Input', 0)[-2:]
-            pad_h = mapper_helper.get_auto_padding(in_size[0], kernel_shape[0],
-                                                   strides[0], dilations[0])
-            pad_w = mapper_helper.get_auto_padding(in_size[1], kernel_shape[1],
-                                                   strides[1], dilations[1])
-            pads = pad_h + pad_w
-
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
+        else:
+            attrs['pads'] = pads
         graph.make_node(
             'Conv',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
-            dilations=dilations,
-            kernel_shape=kernel_shape,
-            strides=strides,
-            group=group,
-            pads=pads)
+            attrs=attrs)
 
 
 @op_mapper('conv2d_transpose')
@@ -149,6 +149,67 @@ class Norm():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('layer_norm')
+class LayerNorm():
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        ipt = node.input('X', 0)
+        ipt_dims = len(node.input_shape('X', 0))
+        normalized_shape = node.attr('begin_norm_axis')
+        if isinstance(normalized_shape, collections.Iterable):
+            axes = [-i for i in range(len(normalized_shape), 0, -1)]
+        else:
+            axes = [i for i in range(normalized_shape, ipt_dims)]
+
+        epsilon = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('epsilon'))
+        two = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=2.0)
+        mean = graph.make_node("ReduceMean", inputs=[ipt], axes=axes)
+        numerator = graph.make_node("Sub", inputs=[ipt, mean])
+        pow_num = graph.make_node("Pow", inputs=[numerator, two])
+        variance = graph.make_node("ReduceMean", inputs=[pow_num], axes=axes)
+        add_eps = graph.make_node("Add", inputs=[variance, epsilon])
+        denominator = graph.make_node("Sqrt", inputs=[add_eps])
+
+        if 'Bias' in node.inputs and 'Scale' in node.inputs:
+            ipt_shape = graph.make_node("Shape", inputs=[ipt])
+            weight_shape = mapper_helper.slice_helper(
+                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
+            scale = graph.make_node(
+                "Reshape", inputs=[node.input('Scale', 0), weight_shape])
+            bias = graph.make_node(
+                "Reshape", inputs=[node.input('Bias', 0), weight_shape])
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            layer_norm = graph.make_node("Mul", inputs=[layer_norm, scale])
+            graph.make_node(
+                "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
+        elif 'Bias' in node.inputs:
+            ipt_shape = graph.make_node("Shape", inputs=[ipt])
+            weight_shape = mapper_helper.slice_helper(
+                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
+            bias = graph.make_node(
+                "Reshape", inputs=[node.input('Bias', 0), weight_shape])
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            graph.make_node(
+                "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
+        elif 'Scale' in node.inputs:
+            ipt_shape = graph.make_node("Shape", inputs=[ipt])
+            weight_shape = mapper_helper.slice_helper(
+                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
+            scale = graph.make_node(
+                "Reshape", inputs=[node.input('Scale', 0), weight_shape])
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            graph.make_node(
+                "Mul", inputs=[layer_norm, scale], outputs=node.output('Y'))
+        else:
+            layer_norm = graph.make_node(
+                "Div",
+                inputs=[numerator, denominator],
+                outputs=node.output('Y'))
 
 
 @op_mapper('batch_norm')

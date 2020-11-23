@@ -17,7 +17,6 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
-from paddle2onnx.onnx_helper import helper
 
 
 @op_mapper('concat')
@@ -31,6 +30,21 @@ class Concat():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('expand_as_v2')
+class ExpandV2():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        target_shape = graph.make_node(
+            'Shape', inputs=node.input('target_tensor'))
+
+        node = graph.make_node(
+            'Expand',
+            inputs=[node.input('X', 0), target_shape],
+            outputs=node.output('Out'))
 
 
 @op_mapper('shape')
@@ -460,6 +474,23 @@ class UniformRandom():
             seed=float(node.attr('seed')), )
 
 
+@op_mapper('uniform_random')
+class UniformRandom():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        shape = node.output_shape('Out', 0)
+        graph.make_node(
+            'RandomUniform',
+            outputs=node.output('Out'),
+            high=node.attr('max'),
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+            low=node.attr('min'),
+            seed=float(node.attr('seed')),
+            shape=shape)
+
+
 @op_mapper(
     [
         'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
@@ -603,19 +634,9 @@ class Resize():
                     'Constant',
                     attrs={'dtype': dtypes.ONNX.FLOAT,
                            'value': []})
-                #node_h_w_scales = graph.make_node(
-                #    'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                #                   'value': [1,1,2,2]})
                 in_shape, out_shape = cls.compute_output_shape_by_size(graph,
                                                                        node)
                 inputs += [empty_node, out_shape]
-                #cast_shape_node2 = graph.make_node(
-                #    'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
-                #cast_shape_node0 = graph.make_node(
-                #    'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
-                #node_h_w_scales = graph.make_node(
-                #    'Div', inputs=[cast_shape_node2, cast_shape_node0])
-                #inputs.append(node_h_w_scales)
         graph.make_node(
             'Resize',
             inputs=inputs,
