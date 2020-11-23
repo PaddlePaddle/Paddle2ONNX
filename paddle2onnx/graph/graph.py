@@ -198,7 +198,8 @@ class Graph(object):
                     move_to_end=True,
                     domain=None,
                     **kw):
-        node.type = op_type
+        if op_type is not None:
+            node.type = op_type
         if inputs is not None:
             node.set_inputs(inputs)
         if outputs is not None:
@@ -211,7 +212,7 @@ class Graph(object):
             node.domain = domain
         if move_to_end:
             self.node_map.pop(node.layer_name)
-            self.node_map[node.layer_name] = node
+        self.node_map[node.layer_name] = node
         return node
 
     def get_node(self, name, copy=False):

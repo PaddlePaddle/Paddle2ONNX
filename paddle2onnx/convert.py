@@ -20,6 +20,7 @@ import numpy as np
 from paddle.fluid.framework import Variable
 from paddle2onnx.utils import check_model, logging
 from paddle2onnx.graph import PaddleGraph, ONNXGraph
+from paddle2onnx.passes import PassManager
 
 
 def export_onnx(paddle_graph,
@@ -71,6 +72,8 @@ def program2onnx(program,
 
         paddle_graph = PaddleGraph.build_from_program(program, feeded_var_names,
                                                       target_vars, scope)
+
+        paddle_graph = PassManager.run_pass(paddle_graph, ['inplace_node_pass'])
         export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker)
     else:
         raise TypeError(
@@ -140,5 +143,8 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     paddle_graph = PaddleGraph.build_from_dygraph(layer, inner_input_spec,
                                                   output_spec)
+
+    paddle_graph = PassManager.run_pass(paddle_graph, ['inplace_node_pass'])
+
     export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
                 verbose)
