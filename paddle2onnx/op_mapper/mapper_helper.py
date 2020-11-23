@@ -19,7 +19,7 @@ def slice_helper(graph, input, axes, starts, ends, outputs=None):
     if graph.opset_version < 10:
         slice_node = graph.make_node(
             "Slice",
-            inputs=input,
+            inputs=[input],
             outputs=outputs,
             axes=axes,
             starts=starts,

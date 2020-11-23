@@ -14,15 +14,18 @@
 
 from __future__ import absolute_import
 
-from .op_mapper import OpMapper, register_op_mapper
-from . import nn
-from . import math
-from . import activation
-from . import tensor
-from . import logic
+import numpy as np
+from paddle2onnx.constant import dtypes
+from paddle2onnx.op_mapper import OpMapper as op_mapper
 
-from .detection import yolo_box
-from .detection import multiclass_nms
-from .detection import prior_box
-from .detection import box_coder
-from .sequence import im2sequence
+
+@op_mapper('greater_equal')
+class GreaterOrEqual():
+    support_opset_verison_range = (12, )
+
+    @classmethod
+    def opset_12(cls, graph, node, **kw):
+        onnx_node = graph.make_node(
+            'GreaterOrEqual',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'))

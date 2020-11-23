@@ -15,8 +15,11 @@
 from __future__ import absolute_import
 
 import numpy as np
+import math
+import collections
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d'])
@@ -26,15 +29,29 @@ class Conv():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[-2:]
+        strides = node.attr('strides')
+        group = node.attr('groups')
+        pads = node.attr('paddings') + node.attr('paddings')
+        attrs = {
+            'dilations': dilations,
+            'kernel_shape': kernel_shape,
+            'strides': strides,
+            'group': group
+        }
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
+        else:
+            attrs['pads'] = pads
         graph.make_node(
             'Conv',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
-            dilations=node.attr('dilations'),
-            kernel_shape=kernel_shape[-2:],
-            strides=node.attr('strides'),
-            group=node.attr('groups'),
-            pads=node.attr('paddings') + node.attr('paddings'))
+            attrs=attrs)
 
 
 @op_mapper('conv2d_transpose')
@@ -64,6 +81,18 @@ class Pool():
     }
 
     @classmethod
+    def is_same_span(cls, in_size, out_size):
+        spans = []
+        for i in range(out_size):
+            start = math.floor(i * (in_size / out_size))
+            end = math.ceil((i + 1) * (in_size / out_size))
+            spans.append(end - start)
+        if len(set(spans)) == 1:
+            return True
+        print(spans)
+        return False
+
+    @classmethod
     def opset_1(cls, graph, node, **kw):
         if node.attr('global_pooling'):
             onnx_node = graph.make_node(
@@ -71,23 +100,27 @@ class Pool():
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
-            input_height, input_width = node.input_shape('X', 0)[2:]
-            output_height, output_width = node.output_shape('Out', 0)[2:]
-            if input_height % output_height != 0 or input_width % output_width != 0:
-                raise Exception("ONNX cannot support adaptive pool")
-            else:
-                stride_h = int(input_height / output_height)
-                stride_w = int(input_width / output_width)
-                kernel_h = input_height - (output_height - 1) * stride_h
-                kernel_w = input_width - (output_width - 1) * stride_w
+            input_h, input_w = node.input_shape('X', 0)[2:]
+            output_h, output_w = node.output_shape('Out', 0)[2:]
+            stride_h = int(input_h / output_h)
+            stride_w = int(input_w / output_w)
+            kernel_h = input_h - (output_h - 1) * stride_h
+            kernel_w = input_w - (output_w - 1) * stride_w
 
+            if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
+                    input_w, output_w):
+                raise Exception(
+                    "Cannot convert adaptive pool with input_size: {}, output_size: {}".
+                    format(
+                        node.input_shape('X', 0), node.output_shape('Out', 0)))
+            else:
                 onnx_node = graph.make_node(
                     cls.pool_type[node.attr('pooling_type')][0],
                     inputs=node.input('X'),
                     outputs=node.output('Out'),
                     kernel_shape=(kernel_h, kernel_w),
                     strides=(stride_h, stride_w),
-                    pads=[0, 0, 0, 0])
+                    auto_pad='NOTSET')
         else:
             input_shape = node.input_shape('X', 0)
             k_size = node.attr('ksize')
@@ -116,6 +149,67 @@ class Norm():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('layer_norm')
+class LayerNorm():
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        ipt = node.input('X', 0)
+        ipt_dims = len(node.input_shape('X', 0))
+        normalized_shape = node.attr('begin_norm_axis')
+        if isinstance(normalized_shape, collections.Iterable):
+            axes = [-i for i in range(len(normalized_shape), 0, -1)]
+        else:
+            axes = [i for i in range(normalized_shape, ipt_dims)]
+
+        epsilon = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('epsilon'))
+        two = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=2.0)
+        mean = graph.make_node("ReduceMean", inputs=[ipt], axes=axes)
+        numerator = graph.make_node("Sub", inputs=[ipt, mean])
+        pow_num = graph.make_node("Pow", inputs=[numerator, two])
+        variance = graph.make_node("ReduceMean", inputs=[pow_num], axes=axes)
+        add_eps = graph.make_node("Add", inputs=[variance, epsilon])
+        denominator = graph.make_node("Sqrt", inputs=[add_eps])
+
+        if 'Bias' in node.inputs and 'Scale' in node.inputs:
+            ipt_shape = graph.make_node("Shape", inputs=[ipt])
+            weight_shape = mapper_helper.slice_helper(
+                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
+            scale = graph.make_node(
+                "Reshape", inputs=[node.input('Scale', 0), weight_shape])
+            bias = graph.make_node(
+                "Reshape", inputs=[node.input('Bias', 0), weight_shape])
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            layer_norm = graph.make_node("Mul", inputs=[layer_norm, scale])
+            graph.make_node(
+                "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
+        elif 'Bias' in node.inputs:
+            ipt_shape = graph.make_node("Shape", inputs=[ipt])
+            weight_shape = mapper_helper.slice_helper(
+                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
+            bias = graph.make_node(
+                "Reshape", inputs=[node.input('Bias', 0), weight_shape])
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            graph.make_node(
+                "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
+        elif 'Scale' in node.inputs:
+            ipt_shape = graph.make_node("Shape", inputs=[ipt])
+            weight_shape = mapper_helper.slice_helper(
+                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
+            scale = graph.make_node(
+                "Reshape", inputs=[node.input('Scale', 0), weight_shape])
+            layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
+            graph.make_node(
+                "Mul", inputs=[layer_norm, scale], outputs=node.output('Y'))
+        else:
+            layer_norm = graph.make_node(
+                "Div",
+                inputs=[numerator, denominator],
+                outputs=node.output('Y'))
 
 
 @op_mapper('batch_norm')
