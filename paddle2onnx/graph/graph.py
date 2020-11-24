@@ -188,28 +188,7 @@ class Graph(object):
         self.insert_node(node)
         return node
 
-    def update_node(self,
-                    node,
-                    op_type=None,
-                    inputs=None,
-                    outputs=None,
-                    attrs=None,
-                    block=None,
-                    move_to_end=True,
-                    domain=None,
-                    **kw):
-        if op_type is not None:
-            node.type = op_type
-        if inputs is not None:
-            node.set_inputs(inputs)
-        if outputs is not None:
-            node.set_outputs(outputs)
-        if attrs is None:
-            attrs = kw
-        attrs.update(kw)
-        node.attrs = attrs
-        if domain is not None:
-            node.domain = domain
+    def update_node(self, node, move_to_end=False):
         if move_to_end:
             self.node_map.pop(node.layer_name)
         self.node_map[node.layer_name] = node

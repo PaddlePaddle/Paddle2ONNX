@@ -104,12 +104,13 @@ class ONNXGraph(Graph):
         return tensor_info
 
     def add_input_node(self, name, shape, dtype):
-        vi = self.make_value_info(name, shape, dtype)
-        self.input_nodes.append(vi)
+        node = Node('input', [], [name], {'shape': shape, 'dtype': dtype}, name)
+        self.input_nodes.append(node)
 
     def add_output_node(self, name, shape, dtype):
-        vi = self.make_value_info(name, shape, dtype)
-        self.output_nodes.append(vi)
+        node = Node('output', [name], [], {'shape': shape,
+                                           'dtype': dtype}, name)
+        self.output_nodes.append(node)
 
     def get_parameter(self, name):
         if name in self.ctx.parameters:
@@ -123,13 +124,27 @@ class ONNXGraph(Graph):
             onnx_op_node = node.make_onnx_node()
             op_nodes.append(onnx_op_node)
 
+        input_value_infos = []
+        for node in self.input_nodes:
+            input_vi = self.make_value_info(node.layer_name,
+                                            node.attr('shape'),
+                                            node.attr('dtype'))
+            input_value_infos.append(input_vi)
+
+        output_value_infos = []
+        for node in self.output_nodes:
+            output_vi = self.make_value_info(node.layer_name,
+                                             node.attr('shape'),
+                                             node.attr('dtype'))
+            output_value_infos.append(output_vi)
+
         weight_nodes = [node for node in self.parameters.values()]
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
             name='paddle-onnx',
             initializer=[],
-            inputs=self.input_nodes,
-            outputs=self.output_nodes)
+            inputs=input_value_infos,
+            outputs=output_value_infos)
 
         opset_imports = [helper.make_opsetid("", self.opset_version)]
         onnx_proto = helper.make_model(

@@ -29,6 +29,7 @@ def export_onnx(paddle_graph,
                 enable_onnx_checker=False,
                 verbose=False):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version, verbose)
+    onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
 
     path, _ = os.path.split(save_file)
@@ -73,7 +74,6 @@ def program2onnx(program,
         paddle_graph = PaddleGraph.build_from_program(program, feeded_var_names,
                                                       target_vars, scope)
 
-        paddle_graph = PassManager.run_pass(paddle_graph, ['inplace_node_pass'])
         export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker)
     else:
         raise TypeError(
@@ -143,8 +143,6 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     paddle_graph = PaddleGraph.build_from_dygraph(layer, inner_input_spec,
                                                   output_spec)
-
-    paddle_graph = PassManager.run_pass(paddle_graph, ['inplace_node_pass'])
 
     export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
                 verbose)

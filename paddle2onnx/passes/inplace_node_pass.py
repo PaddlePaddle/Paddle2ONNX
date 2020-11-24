@@ -15,20 +15,12 @@
 from paddle2onnx.passes import PassManager
 
 
-def get_repeated_output(node):
+def get_repeated_output(inputs, outputs):
     repeated_output = {}
-    ipt_names = set()
-    for arg_name, inputs in node.inputs.items():
-        for ipt in inputs:
-            ipt_names.add(ipt)
-
-    opt_to_arg_name = {}
-    for arg_name, outputs in node.outputs.items():
-        for idx in range(len(outputs)):
-            opt = outputs[idx]
-            if opt in ipt_names:
-                repeated_output[opt] = (arg_name, idx)
-
+    for idx in range(len(outputs)):
+        opt = outputs[idx]
+        if opt in inputs:
+            repeated_output[opt] = idx
     return repeated_output
 
 
@@ -38,7 +30,7 @@ class InplaceNodePass(object):
     name_count = dict()
 
     @classmethod
-    def generate_name(cls, name):
+    def generate_new_name(cls, name):
         if name in cls.name_count:
             cls.name_count[name] += 1
         else:
@@ -47,18 +39,28 @@ class InplaceNodePass(object):
         return new_name
 
     @classmethod
-    def run_pass(cls, paddle_graph):
+    def run_pass(cls, onnx_graph):
         output_to_nodes = {}
-        node_map = list(paddle_graph.node_map.items())
+        node_map = list(onnx_graph.node_map.items())
+        name_mapping = {}
         for idx in range(len(node_map)):
             name, node = node_map[idx]
-            repeated_output = get_repeated_output(node)
+            inputs = node.inputs
+            outputs = node.outputs
+            for idx in range(len(inputs)):
+                ipt = inputs[idx]
+                if ipt in name_mapping:
+                    inputs[idx] = name_mapping[ipt]
+            repeated_output = get_repeated_output(inputs, outputs)
             if len(repeated_output) == 0:
                 continue
             else:
-                for name, (arg_name, idx) in repeated_output.items():
-                    new_name = cls.generate_name(name)
-                    node.outputs[arg_name][idx] = new_name
-                paddle_graph.update_node(node)
+                for opt, idx in repeated_output.items():
+                    name_mapping[opt] = cls.generate_new_name(opt)
+                    outputs[idx] = name_mapping[opt]
+            node.set_inputs(inputs)
+            node.set_outputs(outputs)
+            onnx_graph.update_node(node)
 
-        return paddle_graph
+        print(onnx_graph)
+        return onnx_graph
