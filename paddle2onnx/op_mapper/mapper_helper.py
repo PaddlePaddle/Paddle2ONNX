@@ -54,7 +54,8 @@ def constant_helper(graph, dtype, value, shape=None, outputs=None):
 
 def clip_helper(graph, input, max, min, output=None):
     if graph.opset_version < 11:
-        clip = graph.make_node('Clip', inputs=input, max=max, min=min)
+        clip = graph.make_node(
+            'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
         min_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
