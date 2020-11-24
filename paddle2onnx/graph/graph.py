@@ -79,7 +79,7 @@ class Node(object):
             self.inputs = [inputs.layer_name]
         else:
             raise TypeError(
-                'Inputs of node must be type: list, ONNXNode, or String but got {}'.
+                'Inputs of node must be type: list, Node, or String but got {}'.
                 format(type(inputs)))
 
     def set_outputs(self, outputs):
@@ -88,9 +88,14 @@ class Node(object):
                 opt.layer_name if isinstance(opt, Node) else opt
                 for opt in outputs
             ]
+        elif isinstance(outputs, str):
+            self.outputs = [outputs]
+        elif isinstance(ouputs, Node):
+            self.outputs = [outputs.layer_name]
         else:
-            raise TypeError('Outputs of node must be type: list, but got {}'.
-                            format(type(outputs)))
+            raise TypeError(
+                'Outputs of node must be type: list, Node, or String but got {}'.
+                format(type(outputs)))
 
 
 class Graph(object):
