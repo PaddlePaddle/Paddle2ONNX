@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('concat')
@@ -372,27 +373,9 @@ class Clip():
     def opset_1(cls, graph, node, **kw):
         min_value = node.attr('min')
         max_value = node.attr('max')
-        graph.make_node(
-            'Clip',
-            inputs=[node.input('X')[0]],
-            outputs=node.output('Out'),
-            max=max_value,
-            min=min_value)
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        min_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': node.attr('min')})
-        max_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': node.attr('max')})
-        node = graph.make_node(
-            'Clip',
-            inputs=[node.input('X')[0], min_node, max_node],
-            outputs=node.output('Out'))
+        mapper_helper.clip_helper(graph,
+                                  node.input('X', 0), max_value, min_value,
+                                  node.output('Out', 0))
 
 
 @op_mapper(['pad2d', 'pad3d'])
