@@ -117,8 +117,13 @@ class Pool():
                 attrs = {
                     'kernel_shape': (kernel_h, kernel_w),
                     'strides': (stride_h, stride_w),
-                    'ceil_mode': node.attr('ceil_mode')
                 }
+                if node.attr('ceil_mode') and graph.opset_version < 10:
+                    raise Exception(
+                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10, }"
+                    )
+                elif graph.opset_version > 10:
+                    attrs['ceil_mode'] = node.attr('ceil_mode')
                 auto_pad = node.attr('padding_algorithm')
                 if auto_pad == 'SAME':
                     attrs['auto_pad'] = 'SAME_UPPER'
@@ -143,8 +148,14 @@ class Pool():
                 'kernel_shape': k_size,
                 'strides': node.attr('strides'),
                 'pads': node.attr('paddings') + node.attr('paddings'),
-                'ceil_mode': node.attr('ceil_mode')
             }
+            if node.attr('ceil_mode') and graph.opset_version < 10:
+                raise Exception(
+                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10, }"
+                )
+            elif graph.opset_version > 10:
+                attrs['ceil_mode'] = node.attr('ceil_mode')
+
             if node.attr('pooling_type') == 'avg':
                 attrs['count_include_pad'] = not node.attr('exclusive')
             onnx_node = graph.make_node(
