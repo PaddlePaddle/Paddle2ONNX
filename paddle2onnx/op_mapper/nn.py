@@ -114,13 +114,18 @@ class Pool():
                     format(
                         node.input_shape('X', 0), node.output_shape('Out', 0)))
             else:
+                attrs = {
+                    'kernel_shape': (kernel_h, kernel_w),
+                    'strides': (stride_h, stride_w),
+                    'auto_pad': 'NOTSET'
+                }
+                if node.attr('pooling_type') == 'avg':
+                    attrs['count_include_pad'] = not node.attr('exclusive')
                 onnx_node = graph.make_node(
                     cls.pool_type[node.attr('pooling_type')][0],
                     inputs=node.input('X'),
                     outputs=node.output('Out'),
-                    kernel_shape=(kernel_h, kernel_w),
-                    strides=(stride_h, stride_w),
-                    auto_pad='NOTSET')
+                    attrs=attrs)
         else:
             input_shape = node.input_shape('X', 0)
             k_size = node.attr('ksize')
@@ -129,13 +134,18 @@ class Pool():
                 k_size[0] = input_shape[2] + paddings[0]
             if input_shape[3] > 0 and input_shape[3] + paddings[1] < k_size[1]:
                 k_size[1] = input_shape[3] + paddings[1]
+            attrs = {
+                'kernel_shape': k_size,
+                'strides': node.attr('strides'),
+                'pads': node.attr('paddings') + node.attr('paddings')
+            }
+            if node.attr('pooling_type') == 'avg':
+                attrs['count_include_pad'] = not node.attr('exclusive')
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][0],
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
-                kernel_shape=k_size,
-                strides=node.attr('strides'),
-                pads=node.attr('paddings') + node.attr('paddings'))
+                attrs=attrs)
 
 
 @op_mapper('norm')
