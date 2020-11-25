@@ -35,10 +35,10 @@ class Concat():
 
 @op_mapper('expand_as_v2')
 class ExpandV2():
-    support_opset_verison_range = (1, 12)
+    support_opset_verison_range = (8, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_8(cls, graph, node, **kw):
         target_shape = graph.make_node(
             'Shape', inputs=node.input('target_tensor'))
 
@@ -261,10 +261,10 @@ class Flatten():
 
 @op_mapper('flatten_contiguous_range')
 class FlattenContiguousRange():
-    support_opset_verison_range = (1, 12)
+    support_opset_verison_range = (5, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_5(cls, graph, node, **kw):
         dims = len(node.input_shape('X', 0))
         start_axis = node.attr('start_axis')
         end_axis = node.attr('stop_axis')
@@ -560,10 +560,8 @@ class Resize():
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': scale 
-                    })
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': scale})
                 inputs.append(scale_node)
             else:
                 raise Exception("Unexpected situation happend")
@@ -616,10 +614,8 @@ class Resize():
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': scale 
-                    })
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': scale})
                 inputs.append(scale_node)
             else:
                 empty_node = graph.make_node(
