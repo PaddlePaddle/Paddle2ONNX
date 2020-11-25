@@ -117,8 +117,13 @@ class Pool():
                 attrs = {
                     'kernel_shape': (kernel_h, kernel_w),
                     'strides': (stride_h, stride_w),
-                    'auto_pad': 'NOTSET'
+                    'ceil_mode': node.attr('ceil_mode')
                 }
+                auto_pad = node.attr('padding_algorithm')
+                if auto_pad == 'SAME':
+                    attrs['auto_pad'] = 'SAME_UPPER'
+                elif auto_pad == 'VALID':
+                    attrs['auto_pad'] = 'VALID'
                 if node.attr('pooling_type') == 'avg':
                     attrs['count_include_pad'] = not node.attr('exclusive')
                 onnx_node = graph.make_node(
@@ -137,7 +142,8 @@ class Pool():
             attrs = {
                 'kernel_shape': k_size,
                 'strides': node.attr('strides'),
-                'pads': node.attr('paddings') + node.attr('paddings')
+                'pads': node.attr('paddings') + node.attr('paddings'),
+                'ceil_mode': node.attr('ceil_mode')
             }
             if node.attr('pooling_type') == 'avg':
                 attrs['count_include_pad'] = not node.attr('exclusive')
