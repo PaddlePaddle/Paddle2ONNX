@@ -120,7 +120,7 @@ class Pool():
                 }
                 if node.attr('ceil_mode') and graph.opset_version < 10:
                     raise Exception(
-                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10, }"
+                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
                     )
                 elif graph.opset_version > 10:
                     attrs['ceil_mode'] = node.attr('ceil_mode')
@@ -151,7 +151,7 @@ class Pool():
             }
             if node.attr('ceil_mode') and graph.opset_version < 10:
                 raise Exception(
-                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10, }"
+                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
                 )
             elif graph.opset_version > 10:
                 attrs['ceil_mode'] = node.attr('ceil_mode')
