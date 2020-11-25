@@ -120,7 +120,7 @@ class Pool():
                     'auto_pad': 'NOTSET'
                 }
                 if node.attr('pooling_type') == 'avg':
-                    attrs['count_include_pad'] = node.attr('exclusive')
+                    attrs['count_include_pad'] = not node.attr('exclusive')
                 onnx_node = graph.make_node(
                     cls.pool_type[node.attr('pooling_type')][0],
                     inputs=node.input('X'),
@@ -140,7 +140,7 @@ class Pool():
                 'pads': node.attr('paddings') + node.attr('paddings')
             }
             if node.attr('pooling_type') == 'avg':
-                attrs['count_include_pad'] = node.attr('exclusive')
+                attrs['count_include_pad'] = not node.attr('exclusive')
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][0],
                 inputs=node.input('X'),

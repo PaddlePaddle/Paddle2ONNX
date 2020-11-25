@@ -549,16 +549,20 @@ class Resize():
             inputs.append(node_h_w_scales)
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
             scale = node.input('Scale')[0]
-            inputs.append(out_shape)
+            inputs.append(scale)
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, float):
+                scale = [1, 1, scale, scale]
+            else:
+                scale = [1, 1] + scale
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
                     attrs={
                         'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
+                        'value': scale 
                     })
                 inputs.append(scale_node)
             else:
@@ -600,16 +604,21 @@ class Resize():
             inputs.append(out_shape)
         elif len(node.input('Scale')) > 0:
             scale = node.input('Scale')[0]
-            inputs.append(out_shape)
+            inputs.append(scale)
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, float):
+                scale = [1, 1, scale, scale]
+            else:
+                scale = [1, 1] + scale
+
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
                     attrs={
                         'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
+                        'value': scale 
                     })
                 inputs.append(scale_node)
             else:
