@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper(
@@ -68,29 +69,10 @@ class Relu6():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        threshold = node.attr('threshold')
-        onnx_node = graph.make_node(
-            'Clip',
-            inputs=[node.input('X')[0]],
-            outputs=node.output('Out'),
-            max=threshold,
-            min=0.0)
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        min_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': 0})
-        max_node = graph.make_node(
-            'Constant',
-            attrs={
-                'dtype': dtypes.ONNX.FLOAT,
-                'value': node.attr('threshold')
-            })
-        graph.make_node(
-            'Clip',
-            inputs=[node.input('X')[0], min_node, max_node],
-            outputs=node.output('Out'), )
+        mapper_helper.clip_helper(graph,
+                                  node.input('X', 0),
+                                  node.attr('threshold'), 0.0,
+                                  node.output('Out', 0))
 
 
 @op_mapper('hard_sigmoid')
@@ -144,10 +126,8 @@ class HardSwish():
                    'value': node.attr('offset')})
 
         node0 = graph.make_node('Add', inputs=[node.input('X')[0], offset_node])
-        min_value = 0.0
-        max_value = node.attr('threshold')
-        node1 = graph.make_node(
-            'Clip', inputs=[node0], max=max_value, min=min_value)
+        node1 = mapper_helper.clip_helper(graph, node0,
+                                          node.attr('threshold'), 0.0)
         node2 = graph.make_node('Mul', inputs=[node.input('X')[0], node1])
         node3 = graph.make_node(
             'Div', inputs=[node2, scale_node], outputs=node.output('Out'))

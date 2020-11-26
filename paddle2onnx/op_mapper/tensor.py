@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('concat')
@@ -34,10 +35,10 @@ class Concat():
 
 @op_mapper('expand_as_v2')
 class ExpandV2():
-    support_opset_verison_range = (1, 12)
+    support_opset_verison_range = (8, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_8(cls, graph, node, **kw):
         target_shape = graph.make_node(
             'Shape', inputs=node.input('target_tensor'))
 
@@ -260,10 +261,10 @@ class Flatten():
 
 @op_mapper('flatten_contiguous_range')
 class FlattenContiguousRange():
-    support_opset_verison_range = (1, 12)
+    support_opset_verison_range = (5, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_5(cls, graph, node, **kw):
         dims = len(node.input_shape('X', 0))
         start_axis = node.attr('start_axis')
         end_axis = node.attr('stop_axis')
@@ -372,27 +373,9 @@ class Clip():
     def opset_1(cls, graph, node, **kw):
         min_value = node.attr('min')
         max_value = node.attr('max')
-        graph.make_node(
-            'Clip',
-            inputs=[node.input('X')[0]],
-            outputs=node.output('Out'),
-            max=max_value,
-            min=min_value)
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        min_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': node.attr('min')})
-        max_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': node.attr('max')})
-        node = graph.make_node(
-            'Clip',
-            inputs=[node.input('X')[0], min_node, max_node],
-            outputs=node.output('Out'))
+        mapper_helper.clip_helper(graph,
+                                  node.input('X', 0), max_value, min_value,
+                                  node.output('Out', 0))
 
 
 @op_mapper(['pad2d', 'pad3d'])
@@ -566,17 +549,19 @@ class Resize():
             inputs.append(node_h_w_scales)
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
             scale = node.input('Scale')[0]
-            inputs.append(out_shape)
+            inputs.append(scale)
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, float):
+                scale = [1, 1, scale, scale]
+            else:
+                scale = [1, 1] + scale
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
-                    })
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': scale})
                 inputs.append(scale_node)
             else:
                 raise Exception("Unexpected situation happend")
@@ -617,17 +602,20 @@ class Resize():
             inputs.append(out_shape)
         elif len(node.input('Scale')) > 0:
             scale = node.input('Scale')[0]
-            inputs.append(out_shape)
+            inputs.append(scale)
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, float):
+                scale = [1, 1, scale, scale]
+            else:
+                scale = [1, 1] + scale
+
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
-                    })
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': scale})
                 inputs.append(scale_node)
             else:
                 empty_node = graph.make_node(

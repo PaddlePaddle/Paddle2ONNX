@@ -19,7 +19,7 @@ def slice_helper(graph, input, axes, starts, ends, outputs=None):
     if graph.opset_version < 10:
         slice_node = graph.make_node(
             "Slice",
-            inputs=[input],
+            inputs=input,
             outputs=outputs,
             axes=axes,
             starts=starts,
@@ -50,3 +50,19 @@ def constant_helper(graph, dtype, value, shape=None, outputs=None):
             'value': value
         })
     return constant
+
+
+def clip_helper(graph, input, max, min, output=None):
+    if graph.opset_version < 11:
+        clip = graph.make_node(
+            'Clip', inputs=input, max=max, min=min, outputs=output)
+    else:
+        min_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': min})
+        max_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': max})
+        clip = graph.make_node(
+            'Clip', inputs=[input, min_node, max_node], outputs=output)
+    return clip
