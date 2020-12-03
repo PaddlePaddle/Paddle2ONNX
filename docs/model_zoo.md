@@ -48,7 +48,7 @@
 |DeepLab|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v0.7.0/tutorial/finetune_deeplabv3plus.md) |
 
 ## 图像OCR
-支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)。
+支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)。
 
 | 模型 | 来源 |
 |-------|--------|

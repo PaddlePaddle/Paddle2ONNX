@@ -53,9 +53,13 @@ class Node(object):
         return node_str
 
     def input(self, idx=None):
+        if idx is None:
+            return self.inputs
         return self.inputs[idx]
 
-    def output(self, name=None, idx=None):
+    def output(self, idx=None):
+        if idx is None:
+            return self.outputs
         return self.outputs[idx]
 
     def attr(self, name):
@@ -69,9 +73,14 @@ class Node(object):
                 ipt.layer_name if isinstance(ipt, Node) else ipt
                 for ipt in inputs
             ]
+        elif isinstance(inputs, str):
+            self.inputs = [inputs]
+        elif isinstance(inputs, Node):
+            self.inputs = [inputs.layer_name]
         else:
-            raise TypeError('Inputs of node must be type: list, but got {}'.
-                            format(type(inputs)))
+            raise TypeError(
+                'Inputs of node must be type: list, Node, or String but got {}'.
+                format(type(inputs)))
 
     def set_outputs(self, outputs):
         if isinstance(outputs, list):
@@ -79,9 +88,14 @@ class Node(object):
                 opt.layer_name if isinstance(opt, Node) else opt
                 for opt in outputs
             ]
+        elif isinstance(outputs, str):
+            self.outputs = [outputs]
+        elif isinstance(ouputs, Node):
+            self.outputs = [outputs.layer_name]
         else:
-            raise TypeError('Outputs of node must be type: list, but got {}'.
-                            format(type(outputs)))
+            raise TypeError(
+                'Outputs of node must be type: list, Node, or String but got {}'.
+                format(type(outputs)))
 
 
 class Graph(object):
@@ -189,7 +203,8 @@ class Graph(object):
                     move_to_end=True,
                     domain=None,
                     **kw):
-        node.type = op_type
+        if op_type is not None:
+            node.type = op_type
         if inputs is not None:
             node.set_inputs(inputs)
         if outputs is not None:
@@ -202,7 +217,7 @@ class Graph(object):
             node.domain = domain
         if move_to_end:
             self.node_map.pop(node.layer_name)
-            self.node_map[node.layer_name] = node
+        self.node_map[node.layer_name] = node
         return node
 
     def get_node(self, name, copy=False):
