@@ -348,3 +348,87 @@ class RoiAlign():
             output_width=node.attr('pooled_width'),
             sampling_ratio=node.attr('sampling_ratio'),
             spatial_scale=node.attr('spatial_scale'))
+
+
+@op_mapper('rnn')
+class RNN():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        hidden_size = node.attr('hidden_size')
+        num_layers = node.attr('num_layers')
+
+        if node.attr('mode') == 'LSTM':
+            reform_permutation = [(0, 1), (3, 4), (1, 3)]
+
+        def reform_weights(g, w, n, intervals):
+            slices = [
+                mapper_helper.slice_helper(
+                    g, w, axes=[1], starts=[x * n], ends=[y * n])
+                for x, y in intervals
+            ]
+            return g.make_node('Concat', slices, axis=1)
+
+        def transform_weight_with_bias(g, weights, n, intervals):
+            return [reform_weights(g, w, n, intervals) for w in weights]
+
+        # weight assign order:
+        # (F_whi F_whh B_whi B_whh）* layer_num  + (F_bias_hi F_bias_hh B_bias_hi  B_bias_hi)* layer_num
+        weight_list = node.input('WeightList')[:all_layer_param_len // 2]
+        bias_list = node.input('WeightList')[all_layer_param_len // 2:]
+        all_layer_param_len = len(node.input('WeightList'))
+        single_layer_param_len = all_weight_len // num_layers
+        prev_output = node.input('Input', 0)
+
+        for layer in range(num_layers):
+            unsqueeze_weights = []
+            param_list = weigt_list[
+                layer::single_layer_param_len / num_layers] + bias_list[
+                    layer::single_layer_param_len / num_layers]
+            param_list_len = len(param_list)
+            for i in range(weight_len):
+                weight = graph.make_node(
+                    'Unsqueeze', inputs=[param_list[i]], axes=[0])
+                unsqueeze_weights.append(weight)
+
+            input_weights = unsqueeze_weights[0:param_list_len // 2:2]
+            hidden_weights = unsqueeze_weights[1:param_list_len // 2:2]
+
+            input_weight = graph.make_node(
+                'Concat', inputs=input_weights, axis=0)
+            hidden_weight = graph.make_node(
+                'Concat', inputs=hidden_weights, axis=0)
+            input_bias = unsqueeze_weights[param_list_len // 2:param_list_len:2]
+            hidden_bias = unsqueeze_weights[param_list_len // 2 + 1:
+                                            param_list_len:2]
+
+            input_bias = graph.make_node('Concat', inputs=input_bias, axis=0)
+            hidden_bias = graph.make_node('Concat', inputs=hidden_bias, axis=0)
+
+            input_weight, hidden_weight, input_bias, hidden_bias = transform_weight_with_bias(
+                graph, [input_weight, hidden_weight, input_bias, hidden_bias],
+                hidden_size, reform_permutation)
+
+            bias = graph.make_node(
+                'Concat', inputs=[input_bias, hidden_bias], axis=1)
+
+            inputs = [prev_output, input_weight, hidden_weight, bias]
+            inputs = inputs + ['']
+            tmp_out = node.output('Out', 0) + '.tmp'
+            y = graph.make_node(
+                'LSTM',
+                inputs=inputs,
+                outputs=[tmp_out] + node.output('State'),
+                direction='bidirectional'
+                if node.attr('is_bidirec') else 'forward',
+                hidden_size=node.attr('hidden_size'))
+            transpose_y = graph.make_node(
+                'Transpose', inputs=[tmp_out], perm=[0, 2, 1, 3])
+
+            shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0, 0, -1])
+            prev_output = graph.make_node(
+                'Reshape',
+                inputs=[transpose_y, shape],
+                outputs=node.output('Out'))

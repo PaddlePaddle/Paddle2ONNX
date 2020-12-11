@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 from .op_mapper import OpMapper, register_op_mapper
+from .custom_op_mapper import CustomOp, REGISTER_CUSTOM_OP
 from . import nn
 from . import math
 from . import activation
@@ -22,6 +23,7 @@ from . import tensor
 from . import logic
 
 from .detection import yolo_box
+from .detection import deformable_conv
 from .detection import multiclass_nms
 from .detection import prior_box
 from .detection import box_coder

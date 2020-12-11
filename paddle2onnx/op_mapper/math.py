@@ -179,12 +179,13 @@ class Floor():
 
 
 @op_mapper(
-    ['reduce_mean', 'reduce_sum', 'reduce_min', 'reduce_max'],
+    ['reduce_mean', 'reduce_sum', 'reduce_min', 'reduce_max', 'reduce_prod'],
     mapper_dict={
         'reduce_mean': 'ReduceMean',
         'reduce_sum': 'ReduceSum',
         'reduce_min': 'ReduceMin',
-        'reduce_max': 'ReduceMax'
+        'reduce_max': 'ReduceMax',
+        'reduce_prod': 'ReduceProd'
     })
 class ReduceMean():
     support_opset_verison_range = (1, 12)

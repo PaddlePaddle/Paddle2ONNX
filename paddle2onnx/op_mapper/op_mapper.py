@@ -63,6 +63,7 @@ def register_op_mapper(paddle_op, mapper_obj):
 
 class OpMapper(object):
     OPSETS = {}
+    CUSTOM_OPSETS = []
 
     def __init__(self, paddle_op, **kwargs):
         if not isinstance(paddle_op, list):
@@ -90,6 +91,21 @@ class OpMapper(object):
             mapper_func, kw = opsets[convert_version]
             mapper_func(graph, node, **kw)
             return OP_MAPPING_SUCCESSED
+        except:
+            raise Exception(
+                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}\n".
+                format(node.layer_name, node.type, node.inputs, node.outputs))
+
+    @staticmethod
+    def mapping_paddle_graph(graph, node, opset_version):
+        try:
+            if node.type in OpMapper.OP_TO_GRAPH:
+                opsets = OpMapper.OPSETS[node.type]
+                versions = list(opsets.keys())
+                convert_version = get_max_support_version(versions,
+                                                          opset_version)
+                mapper_func, kw = opsets[convert_version]
+                graph.mapping_node_by_graph(node, mapper_func, **kw)
         except:
             raise Exception(
                 "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}\n".

@@ -18,6 +18,8 @@ import os
 import copy
 import collections
 import numpy as np
+import paddle
+from paddle import fluid
 from paddle.fluid import dygraph
 from paddle.fluid.framework import Operator
 from paddle2onnx.graph import Node, Graph
@@ -40,8 +42,12 @@ class PaddleNode(Node):
         return [name for name in self.outputs.keys()]
 
     def input(self, name, idx=None):
+        if name not in self.inputs:
+            return None
         if idx is None:
             return self.inputs[name]
+        if len(self.inputs) <= idx:
+            return None
         return self.inputs[name][idx]
 
     def output(self, name, idx=None):
@@ -58,10 +64,13 @@ class PaddleNode(Node):
     def input_var(self, name, idx):
         return self.block.var(self.input(name, idx))
 
-    def attr(self, name):
+    def input_dtype(self, name, idx):
+        return self.block.var(self.input(name, idx)).dtype
+
+    def attr(self, name, default=None):
         if name in self.attrs:
             return self.attrs[name]
-        return None
+        return default
 
     def set_inputs(self, inputs):
         if isinstance(inputs, dict):
