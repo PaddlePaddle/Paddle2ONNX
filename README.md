@@ -1,65 +1,64 @@
 # Paddle2ONNX
 
-## 简介
+[简体中文](README_zh.md) | English
 
-paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。
+## Introduction
 
-- 模型格式，支持Paddle静态图和动态图模型转为ONNX，可转换由[save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model)导出的静态图模型，使用方法请参考[IPthon示例](examples/tutorial.ipynb)。动态图转换目前处于实验状态，将伴随Paddle 2.0正式版发布后，提供详细使用教程。
-- 算子支持，目前稳定支持导出ONNX Opset 9~11，部分Paddle算子支持更低的ONNX Opset转换，详情可参考[算子列表](docs/op_list.md)。
-- 模型类型，官方测试可转换的模型请参考[模型库](docs/model_zoo.md)。
+Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 
-## 环境依赖
+- Supported model format. Paddle2ONNX supports both dynamic and static computational graph of PaddlePaddle. For static computational graph, Paddle2ONNX converts PaddlePaddle models saved by API [save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model), for example [IPthon example](examples/tutorial.ipynb).For dynamic computational graph, it is now under experiment and more details will be released after the release of PaddlePaddle 2.0.
+- Supported operaters. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version Opset. More details please refer to [Operator list](docs/en/op_list.md).
+- Supported models. You can find officially verified models by Paddle2ONNX in [model zoo](docs/en/model_zoo.md).
 
-### 用户环境配置
+## Environment dependencies
 
+### Configuration
      python >= 2.7  
-     静态图: paddlepaddle >= 1.8.0
-     动态图: paddlepaddle >= 2.0.0
-     onnx == 1.7.0 | 可选
+     static computational graph: paddlepaddle >= 1.8.0
+     dynamic computational graph: paddlepaddle >= 2.0.0
+     onnx == 1.7.0 | Optional
+## Installation
 
-##  安装
-###  安装方式1
+### Pip
+    pip install paddle2onnx
 
-     pip install paddle2onnx
-
-### 安装方式2
+### From source
 
      git clone https://github.com/PaddlePaddle/paddle2onnx.git
      python setup.py install
 
-##  使用方式
-### 静态图模型导出
-
-#### 命令行
-
-Paddle模型的参数保存为多个文件（not combined）:
+##  Usage
+### Static computational graph
+#### Using with command line
+Uncombibined PaddlePaddle model(parameters saved in different files)
 
     paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
-Paddle模型的参数保存在一个单独的二进制文件中（combined）:
+Combined PaddlePaddle model(parameters saved in one binary file)
 
     paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
-#### 参数选项
-| 参数 |参数说明 |
+#### Parameters
+| parameters |Description |
 |----------|--------------|
-|--model_dir | 配置包含Paddle模型的路径, 由`paddle.fluid.io.save_inference_model`保存得到|
-|--model_filename |**[可选]** 配置位于`--model_dir`下存储网络结构的文件名称。当且仅当所有模型参数被保存在一个单独的二进制文件中，它才需要被指定。默认为None|
-|--params_filename |**[可选]** 配置位于`--model_dir`下存储模型参数的文件名称。当且仅当所有模型参数被保存在一个单独的二进制文件中，它才需要被指定。默认为None|
-|--save_file | 配置ONNX模型保存的文件路径 |
-|--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
-|--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
-|--version |**[可选]** 查看paddle2onnx版本 |
+|--model_dir | the directory path of the paddlepaddle model saved by `paddle.fluid.io.save_inference_model`|
+|--model_filename |**[Optional]** the model file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
+|--params_filename |**[Optonal]** the parameter file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
+|--save_file | the directory path for the exported ONNX model|
+|--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
+|--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|
+|--version |**[Optional]** check the version of paddle2onnx |
 
-- PaddlePaddle模型的两种存储形式：
-   - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
-   - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
+- Two types of PaddlePaddle models
+   - Combined model, parameters saved in one binary file. --model_filename and --params_filename represents the file name and parameter name under the directory designated by --model_dir. --model_filename and --params_filename are valid only with parameter --model_dir.
+   - Uncombined model, parameters saved in different files. Only --model_dir is needed，which contains '\_\_model\_\_' file and the seperated parameter files.
 
-#### IPython教程
 
-- [静态图导出ONNX教程](examples/tutorial.ipynb)
+#### IPython tutorials
 
-### 动态图模型导出
+- [convert to ONNX from static computational graph](examples/tutorial.ipynb)
+
+### Dynamic computational graph
 
 ```
 import paddle
@@ -84,22 +83,22 @@ x_spec = InputSpec([None, 784], 'float32', 'x')
 layer.eval()
 
 save_path = 'onnx.save/linear_net'
-paddle.onnx.export(layer, save_path, input_spec=[x_spec])
+p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 
-# paddle.onnx.export don't exist in paddlepaddle-2.0.0rc, please try:
-# p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
+# when you paddlepaddle>2.0.0, you can try:
+# paddle.onnx.export(layer, save_path, input_spec=[x_spec])
 
 ```
 
 #### IPython教程
 
-- [动态图导出ONNX教程](examples/tutorial_dygraph2onnx.ipynb)
+- [convert to ONNX from dyragph computational graph](examples/tutorial_dygraph2onnx.ipynb)
 
-##  相关文档
+## Relative documents
 
-- [模型库](docs/model_zoo.md)
-- [算子列表](docs/op_list.md)
-- [更新记录](docs/change_log.md)
+- [model zoo](docs/en/model_zoo.md)
+- [op list](docs/en/op_list.md)
+- [update notes](docs/en/change_log.md)
 
 ## License
-Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
+[Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
