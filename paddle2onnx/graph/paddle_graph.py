@@ -46,7 +46,7 @@ class PaddleNode(Node):
             return None
         if idx is None:
             return self.inputs[name]
-        if len(self.inputs) <= idx:
+        if len(self.inputs[name]) <= idx:
             return None
         return self.inputs[name][idx]
 
@@ -212,6 +212,7 @@ class PaddleGraph(Graph):
                 'dtype': var.dtype,
                 'shape': var.shape
             }
+
         graph = PaddleGraph(program, parameters_dict)
         return graph
 

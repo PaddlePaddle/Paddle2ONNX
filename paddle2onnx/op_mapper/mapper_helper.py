@@ -53,16 +53,24 @@ def constant_helper(graph, dtype, value, shape=None, outputs=None):
 
 
 def clip_helper(graph, input, max, min, output=None):
+    if (isinstance(min, str) or isinstance(max,
+                                           str)) and graph.opset_version < 11:
+        raise "min or max of Clip is Tensor, please try with higher onnx opset_version."
     if graph.opset_version < 11:
         clip = graph.make_node(
             'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
-        min_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': min})
-        max_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': max})
-        clip = graph.make_node(
-            'Clip', inputs=[input, min_node, max_node], outputs=output)
+        if not isinstance(min, str):
+            min = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': min})
+        else:
+            min = graph.make_node('Squeeze', min, axes=[0])
+        if not isinstance(max, str):
+            max = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': max})
+        else:
+            max = graph.make_node('Squeeze', max, axes=[0])
+        clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
     return clip

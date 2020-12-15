@@ -34,7 +34,7 @@ class Concat():
 
 
 @op_mapper('expand_as_v2')
-class ExpandV2():
+class ExpandAsV2():
     support_opset_verison_range = (8, 12)
 
     @classmethod
@@ -45,6 +45,18 @@ class ExpandV2():
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), target_shape],
+            outputs=node.output('Out'))
+
+
+@op_mapper('expand_v2')
+class ExpandV2():
+    support_opset_verison_range = (8, 12)
+
+    @classmethod
+    def opset_8(cls, graph, node, **kw):
+        node = graph.make_node(
+            'Expand',
+            inputs=[node.input('X', 0), node.input('Shape', 0)],
             outputs=node.output('Out'))
 
 
@@ -211,6 +223,40 @@ class Constant():
             })
 
 
+@op_mapper('fill_constant_batch_size_like')
+class FillConstantBatchSizeLike():
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        input_dim_idx = tensor_shape = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            dims=[1],
+            value=node.attr('input_dim_idx'))
+        output_dim_idx = tensor_shape = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            dims=[1],
+            value=node.attr('output_dim_idx'))
+        input_shape = graph.make_node('Shape', inputs=node.input('Input'))
+        updates = graph.make_node('Gather', inputs=[input_shape, input_dim_idx])
+        tensor_shape = tensor_shape = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.INT64,
+                   'value': node.attr('shape')})
+        tensor_shape = graph.make_node(
+            'ScatterND', inputs=[tensor_shape, output_dim_idx, updates])
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
+        graph.make_node(
+            'ConstantOfShape',
+            inputs=[tensor_shape],
+            outputs=node.output('Out'),
+            dims=[1],
+            dtype=dtype,
+            value=node.attr('value'))
+
+
 @op_mapper('fill_any_like')
 class FullLike():
     '''
@@ -293,6 +339,7 @@ class Assign():
             graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
+            parameters = {}
             value = np.array(node.attr('fp32_values'))
             if value is None:
                 value = np.array(node.attr('int32_values'))
@@ -301,7 +348,8 @@ class Assign():
                 'dtype': node.attr('dtype'),
                 'shape': node.attr('shape')
             }
-            graph.parameters[node.output('Out', 0)] = parameter
+            parameters[node.output('Out', 0)] = parameter
+            graph.build_parameters(parameters)
 
 
 @op_mapper('transpose2')

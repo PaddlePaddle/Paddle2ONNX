@@ -17,10 +17,10 @@ from __future__ import absolute_import
 import numpy as np
 import paddle
 from paddle.fluid import layers
-from paddle2onnx.op_mapper.custom_op_mapper import CustomOp, regist_custom_paddle_op
+from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
 
 
-class DeformConv2d(CustomOp):
+class DeformConv2d(CustomPaddleOp):
     dtype_mapping = {
         "VarType.INT32": "int32",
         "VarType.INT64": "int64",
@@ -48,10 +48,9 @@ class DeformConv2d(CustomOp):
 
     def forward(self):
         input = self.input('Input', 0)
-        weight = self.inputs('Filter', 0)
-        mask = self.inputs('Mask', 0)
-        offset = self.inputs('Offset', 0)
-
+        weight = self.input('Filter', 0)
+        mask = self.input('Mask', 0)
+        offset = self.input('Offset', 0)
         input = layers.pad2d(input, self.padding)
         offset_x = paddle.strided_slice(
             offset,
@@ -67,31 +66,33 @@ class DeformConv2d(CustomOp):
             strides=[2])
 
         offset = paddle.concat([offset_x, offset_y], axis=1)
+        offset_shape = paddle.shape(offset)
 
         # (b, 2self.N, h, w)
-        p = self._get_p(offset, 'float32')
+        p = self._get_p(offset, 'float32', offset_shape)
 
         # (b, h, w, 2self.N)
         p = p.transpose((0, 2, 3, 1))
         q_lt = p.floor()
         q_rb = q_lt + 1
 
-        input_w = self.x_shape[3] + self.padding[1] * 2
-        input_h = self.x_shape[2] + self.padding[0] * 2
+        padded_x_shape = paddle.shape(input)
+        padded_w = paddle.cast(padded_x_shape[3], dtype='float32')
+        padded_h = paddle.cast(padded_x_shape[2], dtype='float32')
 
         q_lt = paddle.cast(
             paddle.concat(
                 [
-                    paddle.clip(q_lt[:, :, :, :self.N], 0, input_w - 1),
-                    paddle.clip(q_lt[:, :, :, self.N:], 0, input_h - 1)
+                    paddle.clip(q_lt[:, :, :, :self.N], 0, padded_w - 1),
+                    paddle.clip(q_lt[:, :, :, self.N:], 0, padded_h - 1)
                 ],
                 axis=-1),
             dtype='int64')
         q_rb = paddle.cast(
             paddle.concat(
                 [
-                    paddle.clip(q_rb[:, :, :, :self.N], 0, input_w - 1),
-                    paddle.clip(q_rb[:, :, :, self.N:], 0, input_h - 1)
+                    paddle.clip(q_rb[:, :, :, :self.N], 0, padded_w - 1),
+                    paddle.clip(q_rb[:, :, :, self.N:], 0, padded_h - 1)
                 ],
                 axis=-1),
             dtype='int64')
@@ -103,8 +104,8 @@ class DeformConv2d(CustomOp):
         # clip p
         p = paddle.concat(
             [
-                paddle.clip(p[:, :, :, :self.N], 0, input_w - 1),
-                paddle.clip(p[:, :, :, self.N:], 0, input_h - 1)
+                paddle.clip(p[:, :, :, :self.N], 0, padded_w - 1),
+                paddle.clip(p[:, :, :, self.N:], 0, padded_h - 1)
             ],
             axis=-1)
 
@@ -131,13 +132,11 @@ class DeformConv2d(CustomOp):
             q_rt[:, :, :, self.N:], dtype='float32') - p[:, :, :, self.N:])
         # (b, c, h, w, self.N)
 
-        x_q_lt = self._get_x_q(input, q_lt)
-        x_q_rb = self._get_x_q(input, q_rb)
-        x_q_lb = self._get_x_q(input, q_lb)
-        x_q_rt = self._get_x_q(input, q_rt)
+        x_q_lt = self._get_x_q(input, q_lt, offset_shape)
+        x_q_rb = self._get_x_q(input, q_rb, offset_shape)
+        x_q_lb = self._get_x_q(input, q_lb, offset_shape)
+        x_q_rt = self._get_x_q(input, q_rt, offset_shape)
 
-        #return out, offset, x_q_lt
-        #return out, x_q_lt
         # (b, c, h, w, self.N)
         x_offset = paddle.unsqueeze(g_lt, 1) * x_q_lt + \
                    paddle.unsqueeze(g_rb, 1) * x_q_rb + \
@@ -145,24 +144,18 @@ class DeformConv2d(CustomOp):
                    paddle.unsqueeze(g_rt, 1) * x_q_rt
 
         # modulation
-        if self.mask is not None:
+        if mask is not None:
             mask = paddle.transpose(mask, (0, 2, 3, 1))
             mask = paddle.unsqueeze(mask, 1)
-            mask = paddle.concat([mask for _ in range(offset_shape)], axis=1)
+            mask = paddle.tile(mask, [1, self.x_shape[1], 1, 1, 1])
             x_offset *= mask
 
         x_offset = self._reshape_x_offset(x_offset)
 
-        out = layers.conv2d(
-            x_offset,
-            self.num_filters,
-            self.kernel_size,
-            stride=self.kernel_size,
-            groups=self.groups,
-            param_attr=weight,
-            bias_attr=None)
+        out = paddle.nn.functional.conv2d(
+            x_offset, weight, stride=self.kernel_size, groups=self.groups)
 
-        return out, x_offset, x_offset
+        return {'Output': [out]}
 
     def _get_p_n(self, dtype):
         p_n_x = paddle.arange(
@@ -188,45 +181,41 @@ class DeformConv2d(CustomOp):
 
         return p_n
 
-    def _get_p_0(self, dtype):
+    def _get_p_0(self, dtype, offset_shape):
         p_0_x = paddle.arange(
-            0, self.offset_w * self.stride, step=self.stride, dtype=dtype)
+            0, offset_shape[3] * self.stride, step=self.stride, dtype=dtype)
         p_0_x = p_0_x.unsqueeze(1)
-        p_0_x = paddle.tile(p_0_x, [1, self.offset_h])
+        p_0_x = paddle.expand(p_0_x, offset_shape[2:])
 
         p_0_y = paddle.arange(
-            0, self.offset_h * self.stride, step=self.stride, dtype=dtype)
+            0, offset_shape[3] * self.stride, step=self.stride, dtype=dtype)
         p_0_y = p_0_y.unsqueeze(0)
-        p_0_y = paddle.tile(p_0_y, [self.offset_w, 1])
+        p_0_y = paddle.expand(p_0_y, offset_shape[2:])
 
-        p_0_x = paddle.reshape(p_0_x, [-1])
-        p_0_x = paddle.reshape(p_0_x, (1, 1, self.offset_h, self.offset_w))
+        p_0_x = p_0_x.unsqueeze([0, 1])
         p_0_x = paddle.tile(p_0_x, (1, self.N, 1, 1))
 
-        p_0_y = paddle.reshape(p_0_y, [-1])
-        p_0_y = paddle.reshape(p_0_y, (1, 1, self.offset_h, self.offset_w))
+        p_0_y = p_0_y.unsqueeze([0, 1])
         p_0_y = paddle.tile(p_0_y, (1, self.N, 1, 1))
 
         p_0 = paddle.concat([p_0_x, p_0_y], 1)
 
         return p_0
 
-    def _get_p(self, offset, dtype):
+    def _get_p(self, offset, dtype, offset_shape):
         # (1, 2N, 1, 1)
-        p_n = paddle.cast(self._get_p_n(dtype), dtype=dtype)
+        p_n = self._get_p_n(dtype)
 
         # (1, 2N, h, w)
-        p_0 = paddle.cast(self._get_p_0(dtype), dtype=dtype)
-
+        p_0 = self._get_p_0(dtype, offset_shape)
         p = offset + p_0 + p_n
 
         return p
 
-    def _get_x_q(self, x, q):
-        b = self.x_shape[0]
+    def _get_x_q(self, x, q, offset_shape):
         c = self.x_shape[1]
         # (b, c, h*w)
-        x = paddle.reshape(x, [b, c, -1])
+        x = paddle.reshape(x, [0, 0, -1])
 
         # (b, h, w, self.N)
         index = paddle.cast(
@@ -236,7 +225,7 @@ class DeformConv2d(CustomOp):
         # (b, c, h*w*self.N)
         index = paddle.unsqueeze(index, 1)
         index = paddle.tile(index, [1, c, 1, 1, 1])
-        index = paddle.reshape(index, (b, c, -1))
+        index = paddle.reshape(index, (0, 0, -1))
 
         x_range = list(range(3))
         dim = 2
@@ -250,21 +239,15 @@ class DeformConv2d(CustomOp):
         x_shape = layers.shape(x_swaped)
         index_shape = layers.shape(index_swaped)
 
-        prod = paddle.prod(x_shape[1:])
+        prod = paddle.prod(x_shape[1:], keepdim=True)
         x_swaped_flattend = paddle.reshape(x_swaped, [-1])
 
         index_swaped_flattend = paddle.reshape(index_swaped, [-1])
         index_swaped_flattend *= prod
 
-        #bias = paddle.arange(start=0, end=prod, step=1, dtype='float32')
-        bias = paddle.arange(
-            start=0,
-            end=self.x_shape[0] * self.x_shape[1],
-            step=1,
-            dtype='float32')
+        bias = paddle.arange(start=0, end=prod, step=1, dtype='float32')
         bias = paddle.tile(bias, index_shape[0])
-        #return bias
-        #index_swaped_flattend
+
         index_swaped_flattend += bias
 
         gathered = paddle.gather(x_swaped_flattend, index_swaped_flattend)
@@ -291,4 +274,4 @@ class DeformConv2d(CustomOp):
         return x_offset
 
 
-regist_custom_paddle_op('deformable_conv', DeformConv2d)
+register_custom_paddle_op('deformable_conv', DeformConv2d)

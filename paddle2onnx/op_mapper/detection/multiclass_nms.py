@@ -272,8 +272,3 @@ class MultiClassNMS():
                 inputs=[node_gather_2_nonzero],
                 outputs=node.output('Index'),
                 axes=[0])
-            #graph.make_node(
-            #    'Unsqueeze', 
-            #    inputs=[outputs_topk_select_classes_indices[1]],
-            #    outputs=node.output('Index'), 
-            #    axes=[-1])
