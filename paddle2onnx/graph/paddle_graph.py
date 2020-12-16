@@ -40,8 +40,12 @@ class PaddleNode(Node):
         return [name for name in self.outputs.keys()]
 
     def input(self, name, idx=None):
+        if name not in self.inputs:
+            return None
         if idx is None:
             return self.inputs[name]
+        if len(self.inputs[name]) <= idx:
+            return None
         return self.inputs[name][idx]
 
     def output(self, name, idx=None):
