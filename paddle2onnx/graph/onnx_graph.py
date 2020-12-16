@@ -75,8 +75,8 @@ class ONNXGraph(Graph):
 
     def make_node(self,
                   op_type,
-                  inputs=None,
-                  outputs=None,
+                  inputs=[],
+                  outputs=[],
                   attrs=None,
                   layer_name=None,
                   **kw):
@@ -87,9 +87,7 @@ class ONNXGraph(Graph):
             attrs = kw
         attrs.update(kw)
 
-        if inputs is None:
-            inputs = []
-        if outputs is None:
+        if len(outputs) == 0:
             outputs = [layer_name]
         node = ONNXNode(op_type, inputs, outputs, attrs, layer_name)
         self.insert_node(node)

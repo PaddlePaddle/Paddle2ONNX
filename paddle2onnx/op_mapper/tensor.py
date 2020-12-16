@@ -43,10 +43,14 @@ class ExpandV2():
         if node.input('target_tensor') is not None:
             target_shape = graph.make_node(
                 'Shape', inputs=node.input('target_tensor'))
-        elif target_shape is None:
+        elif target_shape is not None:
+            target_shape = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': target_shape})
+        else:
             raise Exception(
                 "Not find attribute: 'target_shape' or tensor 'target_tensor'")
-
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), target_shape],
