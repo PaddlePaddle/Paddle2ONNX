@@ -39,8 +39,13 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        target_shape = graph.make_node(
-            'Shape', inputs=node.input('target_tensor'))
+        target_shape = node.attr('target_shape')
+        if node.input('target_tensor') is not None:
+            target_shape = graph.make_node(
+                'Shape', inputs=node.input('target_tensor'))
+        elif target_shape is None:
+            raise Exception(
+                "Not find attribute: 'target_shape' or tensor 'target_tensor'")
 
         node = graph.make_node(
             'Expand',
