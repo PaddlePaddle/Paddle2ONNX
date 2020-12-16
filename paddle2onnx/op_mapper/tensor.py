@@ -40,9 +40,9 @@ class ExpandV2():
     @classmethod
     def opset_8(cls, graph, node, **kw):
         target_shape = node.attr('target_shape')
-        if node.input('target_tensor') is not None:
+        if node.input('target_tensor', 0) is not None:
             target_shape = graph.make_node(
-                'Shape', inputs=node.input('target_tensor'))
+                'Shape', inputs=[node.input('target_tensor', 0)])
         elif target_shape is not None:
             target_shape = graph.make_node(
                 'Constant',
