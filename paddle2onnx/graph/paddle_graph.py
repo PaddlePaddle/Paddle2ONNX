@@ -114,7 +114,7 @@ class PaddleGraph(Graph):
 
     def add_input_node(self, input_spec=None, op=None, block=None):
         if isinstance(input_spec, collections.Iterable):
-            for ipt in input:
+            for ipt in input_spec:
                 if isinstance(ipt, paddle.static.InputSpec):
                     layer_name = ipt.name
                     attrs = {}
