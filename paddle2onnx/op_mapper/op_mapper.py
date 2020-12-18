@@ -90,10 +90,9 @@ class OpMapper(object):
             mapper_func, kw = opsets[convert_version]
             mapper_func(graph, node, **kw)
             return OP_MAPPING_SUCCESSED
-        except:
+        except Exception as e:
             raise Exception(
-                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}\n".
-                format(node.layer_name, node.type, node.inputs, node.outputs))
+                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}, specific error:\n".format(node.layer_name, node.type, node.inputs, node.outputs) + str(e))
 
     @staticmethod
     def check_support_status(paddle_graph, opset_version):

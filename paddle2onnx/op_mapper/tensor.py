@@ -138,6 +138,7 @@ class Constant():
         shape = node.attr('shape')
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
+        value = value.flatten().tolist()
         graph.make_node(
             'Constant',
             inputs=[],

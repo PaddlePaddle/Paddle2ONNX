@@ -71,7 +71,8 @@ class Relu6():
     def opset_1(cls, graph, node, **kw):
         mapper_helper.clip_helper(graph,
                                   node.input('X', 0),
-                                  node.attr('threshold'), 0.0,
+                                  node.attr('threshold'), 
+                                  0.0,
                                   node.output('Out', 0))
 
 
