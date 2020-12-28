@@ -19,16 +19,10 @@ import paddle
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
 from paddle2onnx import utils
+from paddle2onnx.constant import dtypes
 
 
 class DeformConv2d(CustomPaddleOp):
-    dtype_mapping = {
-        "VarType.INT32": "int32",
-        "VarType.INT64": "int64",
-        "VarType.FP32": "float32",
-        "VarType.FP64": "float64",
-    }
-
     def check_attribute(self, node):
         utils.equal(node.attr('strides'), ('strided', ), dims=(0, 1))
         utils.equal(node.attr('paddings'), ('paddings', ), dims=(0, 1))
