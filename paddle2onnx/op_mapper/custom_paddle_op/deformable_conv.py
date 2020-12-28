@@ -18,6 +18,7 @@ import numpy as np
 import paddle
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
+from paddle2onnx import utils
 
 
 class DeformConv2d(CustomPaddleOp):
@@ -28,8 +29,17 @@ class DeformConv2d(CustomPaddleOp):
         "VarType.FP64": "float64",
     }
 
+    def check_attribute(self, node):
+        utils.equal(node.attr('strides'), ('strided', ), dims=(0, 1))
+        utils.equal(node.attr('paddings'), ('paddings', ), dims=(0, 1))
+        utils.equal(
+            node.input_shape('Offset', 0)[2:], ('kernel_size', ), dims=(3, 4))
+        utils.equal((node.attr('deformable_groups'), 1),
+                    ('deformable_groups', ))
+
     def __init__(self, node, **kw):
         super(DeformConv2d, self).__init__(node)
+        self.check_attribute(node)
         self.x_shape = node.input_shape('Input', 0)
         self.offset_shape = node.input_shape('Offset', 0)
         self.filter_shape = node.input_shape('Filter', 0)

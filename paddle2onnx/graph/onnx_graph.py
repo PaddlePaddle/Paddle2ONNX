@@ -178,14 +178,6 @@ class ONNXGraph(Graph):
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
 
-        from paddle2onnx.onnx_helper.onnx_pb import NodeProto, TensorProto
-        for op in op_nodes:
-            if not isinstance(op, NodeProto):
-                print(op)
-        for node in weight_nodes:
-            if not isinstance(node, NodeProto):
-                print(node)
-
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
             name='paddle-onnx',

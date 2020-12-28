@@ -83,3 +83,86 @@ class logging():
         logging.log(level=0, message=message, use_color=use_color)
         if exit:
             sys.exit(-1)
+
+
+def is_static_shape(shape):
+    if len(shape) > 1 and shape[1:].count(-1) > 0:
+        raise Exception(
+            "Converting this model to ONNX need with static input shape," \
+            " please fix input shape of this model, see doc Q2 in" \
+            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+        )
+
+
+def check_iterable_obj(obj, length):
+    if not isinstance(value, collections.Iterable):
+        raise TypeError("Expect object is iterable, actual got type {}.".format(
+            type(obj)))
+    elif len(obj) != length:
+        raise ValueError("Expect object length == {}, actual got length = {}.".
+                         format(length, len(obj)))
+
+
+def error_status(values, cond, names=(), dims=()):
+    target, origin = '', ''
+
+    if len(names) == 1:
+        origin = origin.append(name[0])
+    elif len(names) == 2:
+        origin, target = origin.append(name[0]), target.append(name[1])
+
+    if len(dims) == 1:
+        origin = origin.append('[' + dims[0] + ']')
+    elif len(dims) == 2:
+        origin, target = origin.append('[' + dims[0] + ']'), target.append(
+            '[' + dims[1] + ']')
+
+    return "Expect {} {} {}, actual got {} not {} {}".format(
+        origin, cond, target, origin, values[0], cond, target, values[1])
+
+
+def equal(values, names=(), dims=()):
+    check_iterable_obj(values, 2)
+    check_iterable_obj(names, 2)
+    check_iterable_obj(dims, 2)
+
+    if values[0] != values[1]:
+        raise exception(error_status(values, 'equal', names, dims))
+    return True
+
+
+def greater_than(values, names=(), dims=()):
+    check_iterable_obj(values, 2)
+    check_iterable_obj(names, 2)
+    check_iterable_obj(dims, 2)
+
+    if values[0] <= values[1]:
+        raise ValueError(error_status(values, 'greater_than', names, dims))
+    return True
+
+
+def greater_equal(values, names=(), dims=()):
+    check_iterable_obj(values, 2)
+    check_iterable_obj(names, 2)
+    check_iterable_obj(dims, 2)
+    if values[0] < values[1]:
+        raise ValueError(error_status(values, 'greater_equal', names, dims))
+    return True
+
+
+def less_equal(values, names=(), dims=()):
+    check_iterable_obj(values, 2)
+    check_iterable_obj(names, 2)
+    check_iterable_obj(dims, 2)
+    if values[0] > values[1]:
+        raise ValueError(error_status(values, 'less_equal', names, dims))
+    return True
+
+
+def less_than(values, names=(), dims=()):
+    check_iterable_obj(values, 2)
+    check_iterable_obj(names, 2)
+    check_iterable_obj(dims, 2)
+    if values[0] >= values[1]:
+        raise ValueError(error_status(values, 'less_than', names, dims))
+    return True

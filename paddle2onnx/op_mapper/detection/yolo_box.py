@@ -17,18 +17,10 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx import utils
 
 MAX_FLOAT32 = np.asarray(
     [255, 255, 127, 127], dtype=np.uint8).view(np.float32)[0]
-
-
-def is_static_shape(shape):
-    if len(shape) > 1 and shape.count(-1) > 1:
-        raise Exception(
-            "Converting this model to ONNX need with static input shape," \
-            " please fix input shape of this model, see doc Q2 in" \
-            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/FAQ.md."
-        )
 
 
 @op_mapper('yolo_box')
@@ -46,7 +38,7 @@ class YOLOBox():
     def front(cls, graph, node, **kw):
         model_name = node.output('Boxes', 0)
         input_shape = node.input_shape('X', 0)
-        is_static_shape(input_shape)
+        utils.is_static_shape(input_shape)
         image_size = node.input('ImgSize')
         input_height = input_shape[2]
         input_width = input_shape[3]

@@ -19,6 +19,7 @@ import paddle
 import numpy as np
 from paddle.fluid import core
 from paddle.fluid.framework import Variable, program_guard
+
 from paddle2onnx.utils import logging
 
 
