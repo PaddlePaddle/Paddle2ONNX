@@ -76,9 +76,18 @@ class ExpandAsV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        target_shape = graph.make_node(
-            'Shape', inputs=node.input('target_tensor'))
-
+        target_shape = node.attr('target_shape')
+        if node.input('target_tensor', 0) is not None:
+            target_shape = graph.make_node(
+                'Shape', inputs=[node.input('target_tensor', 0)])
+        elif target_shape is not None:
+            target_shape = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': target_shape})
+        else:
+            raise Exception(
+                "Not find attribute: 'target_shape' or tensor 'target_tensor'")
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), target_shape],
@@ -143,14 +152,17 @@ class Slice():
         starts = node.attr('starts')
         ends = node.attr('ends')
         steps = node.attr('strides', [1] * len(ends))
+        if steps != [1] * len(ends):
+            raise Exception(
+                "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
+            )
         graph.make_node(
             "Slice",
             inputs=[node.input('Input')[0]],
             outputs=node.output('Out'),
             axes=axes,
             starts=starts,
-            ends=ends,
-            step=steps)
+            ends=ends)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):

@@ -119,14 +119,13 @@ class PaddleGraph(Graph):
 
     def add_input_node(self, input_spec=None, op=None, block=None):
         if isinstance(input_spec, collections.Iterable):
-            for ipt in input:
-                if isinstance(ipt, paddle.static.InputSpec):
-                    layer_name = ipt.name
-                    attrs = {}
-                    attrs['shape'] = ipt.shape
-                    attrs['dtype'] = ipt.dtype
-                    node = Node('feed', [], [layer_name], attrs, layer_name)
-                    self.input_nodes.append(node)
+            for ipt in input_spec:
+                layer_name = ipt.name
+                attrs = {}
+                attrs['shape'] = ipt.shape
+                attrs['dtype'] = ipt.dtype
+                node = Node('feed', [], [layer_name], attrs, layer_name)
+                self.input_nodes.append(node)
         if isinstance(op, Operator):
             layer_name = op.output('Out')[0]
             var = block.var(layer_name)

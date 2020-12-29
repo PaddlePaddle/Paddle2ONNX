@@ -193,6 +193,7 @@ class LayerNorm():
         ipt = node.input('X', 0)
         ipt_dims = len(node.input_shape('X', 0))
         normalized_shape = node.attr('begin_norm_axis')
+        axes = None
         if isinstance(normalized_shape, collections.Iterable):
             axes = [-i for i in range(len(normalized_shape), 0, -1)]
         else:

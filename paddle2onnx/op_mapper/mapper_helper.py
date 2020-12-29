@@ -16,7 +16,16 @@ import paddle.fluid.core as core
 from paddle2onnx.constant import dtypes
 
 
-def slice_helper(graph, input, axes, starts, ends, outputs=None):
+def is_static_shape(shape):
+    if len(shape) > 1 and shape[1:].count(-1) > 0:
+        raise Exception(
+            "Converting this model to ONNX need with static input shape," \
+            " please fix input shape of this model, see doc Q2 in" \
+            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+        )
+
+
+def slice_helper(graph, input, axes, starts, ends, outputs=[]):
     if graph.opset_version < 10:
         slice_node = graph.make_node(
             "Slice",
@@ -40,7 +49,7 @@ def slice_helper(graph, input, axes, starts, ends, outputs=None):
         return slice_node
 
 
-def constant_helper(graph, dtype, value, shape=None, outputs=None):
+def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     constant = graph.make_node(
         'Constant',
         inputs=[],
@@ -53,7 +62,7 @@ def constant_helper(graph, dtype, value, shape=None, outputs=None):
     return constant
 
 
-def clip_helper(graph, input, max, min, output=None):
+def clip_helper(graph, input, max, min, output=[]):
     if (isinstance(min, str) or isinstance(max,
                                            str)) and graph.opset_version < 11:
         raise "min or max of Clip is Tensor, please try with higher onnx opset_version."

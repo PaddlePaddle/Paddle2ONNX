@@ -87,8 +87,8 @@ class ONNXGraph(Graph):
 
     def make_node(self,
                   op_type,
-                  inputs=None,
-                  outputs=None,
+                  inputs=[],
+                  outputs=[],
                   attrs=None,
                   layer_name=None,
                   **kw):
@@ -111,17 +111,21 @@ class ONNXGraph(Graph):
                 real_outputs.append(self.generate_node_name(op_type))
         elif isinstance(outputs, list):
             real_outputs = []
-            for opt in outputs:
-                if isinstance(opt, Node):
-                    real_outputs.append(opt.layer_name)
-                elif isinstance(opt, int):
-                    real_outputs.append(self.generate_node_name(op_type))
-                else:
-                    real_outputs.append(opt)
+            if len(outputs) == 0:
+                real_outputs = [layer_name]
+            else:
+                for opt in outputs:
+                    if isinstance(opt, Node):
+                        real_outputs.append(opt.layer_name)
+                    elif isinstance(opt, int):
+                        real_outputs.append(self.generate_node_name(op_type))
+                    else:
+                        real_outputs.append(opt)
         else:
             real_outputs = outputs
 
         node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name)
+
         self.insert_node(node)
         if len(node.outputs) == 1:
             return node.outputs[0]
