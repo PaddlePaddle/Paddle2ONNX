@@ -39,9 +39,18 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        target_shape = graph.make_node(
-            'Shape', inputs=node.input('target_tensor'))
-
+        target_shape = node.attr('target_shape')
+        if node.input('target_tensor', 0) is not None:
+            target_shape = graph.make_node(
+                'Shape', inputs=[node.input('target_tensor', 0)])
+        elif target_shape is not None:
+            target_shape = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': target_shape})
+        else:
+            raise Exception(
+                "Not find attribute: 'target_shape' or tensor 'target_tensor'")
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), target_shape],
@@ -129,6 +138,7 @@ class Constant():
         shape = node.attr('shape')
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
+        value = value.flatten().tolist()
         graph.make_node(
             'Constant',
             inputs=[],

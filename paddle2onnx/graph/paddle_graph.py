@@ -40,8 +40,12 @@ class PaddleNode(Node):
         return [name for name in self.outputs.keys()]
 
     def input(self, name, idx=None):
+        if name not in self.inputs:
+            return None
         if idx is None:
             return self.inputs[name]
+        if len(self.inputs[name]) <= idx:
+            return None
         return self.inputs[name][idx]
 
     def output(self, name, idx=None):
@@ -110,14 +114,13 @@ class PaddleGraph(Graph):
 
     def add_input_node(self, input_spec=None, op=None, block=None):
         if isinstance(input_spec, collections.Iterable):
-            for ipt in input:
-                if isinstance(ipt, paddle.static.InputSpec):
-                    layer_name = ipt.name
-                    attrs = {}
-                    attrs['shape'] = ipt.shape
-                    attrs['dtype'] = ipt.dtype
-                    node = Node('feed', [], [layer_name], attrs, layer_name)
-                    self.input_nodes.append(node)
+            for ipt in input_spec:
+                layer_name = ipt.name
+                attrs = {}
+                attrs['shape'] = ipt.shape
+                attrs['dtype'] = ipt.dtype
+                node = Node('feed', [], [layer_name], attrs, layer_name)
+                self.input_nodes.append(node)
         if isinstance(op, Operator):
             layer_name = op.output('Out')[0]
             var = block.var(layer_name)
