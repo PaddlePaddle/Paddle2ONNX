@@ -111,14 +111,17 @@ class Slice():
         starts = node.attr('starts')
         ends = node.attr('ends')
         steps = node.attr('strides', [1] * len(ends))
+        if steps != [1] * len(ends):
+            raise Exception(
+                "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
+            )
         graph.make_node(
             "Slice",
             inputs=[node.input('Input')[0]],
             outputs=node.output('Out'),
             axes=axes,
             starts=starts,
-            ends=ends,
-            step=steps)
+            ends=ends)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
