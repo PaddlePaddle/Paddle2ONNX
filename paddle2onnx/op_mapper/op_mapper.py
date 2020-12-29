@@ -114,10 +114,11 @@ class OpMapper(object):
                         print(wi)
                         print(node)
                 return OP_MAPPING_SUCCESSED
-        except:
+        except Exception as e:
             raise Exception(
-                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}\n".
-                format(node.layer_name, node.type, node.inputs, node.outputs))
+                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}, specific error:\n".
+                format(node.layer_name, node.type, node.inputs,
+                       node.outputs) + str(e))
 
     @staticmethod
     def check_support_status(paddle_graph, opset_version):

@@ -20,6 +20,7 @@ import collections
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
+from paddle2onnx import utils
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d'])
@@ -432,6 +433,8 @@ class RNN():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        mode = node.attr('mode')
+        utils.compare_attr(mode, 'LSTM', 'mode', 'equal')
         hidden_size = node.attr('hidden_size')
         num_layers = node.attr('num_layers')
         h_outs = []
@@ -448,7 +451,7 @@ class RNN():
                 rnn_outputs = [1] + node.output('State')
                 output_y = node.output('Out')
             prev_output, h_out, c_out = graph.make_node(
-                'LSTM',
+                node.attr('mode'),
                 inputs=[prev_output] + param_inputs + init_param_inputs,
                 outputs=rnn_outputs,
                 direction='bidirectional'

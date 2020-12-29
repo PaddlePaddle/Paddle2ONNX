@@ -16,9 +16,9 @@ from __future__ import absolute_import
 
 import os
 import copy
+import six
 import collections
 from paddle2onnx.constant import NodeDomain
-
 
 class Node(object):
     def __init__(self,
@@ -73,7 +73,7 @@ class Node(object):
                 ipt.layer_name if isinstance(ipt, Node) else ipt
                 for ipt in inputs
             ]
-        elif isinstance(inputs, str):
+        elif isinstance(inputs, six.string_types):
             self.inputs = [inputs]
         elif isinstance(inputs, Node):
             self.inputs = [inputs.layer_name]
@@ -88,7 +88,7 @@ class Node(object):
                 opt.layer_name if isinstance(opt, Node) else opt
                 for opt in outputs
             ]
-        elif isinstance(outputs, str):
+        elif isinstance(outputs, six.string_types):
             self.outputs = [outputs]
         elif isinstance(ouputs, Node):
             self.outputs = [outputs.layer_name]
