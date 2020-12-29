@@ -24,11 +24,11 @@ from paddle2onnx.constant import dtypes
 
 class DeformConv2d(CustomPaddleOp):
     def check_attribute(self, node):
-        utils.compare_attr_with_dims(
+        utils.compare_attr_between_dims(
             node.attr('strides'), (0, 1), 'strides', 'equal')
-        utils.compare_attr_with_dims(
+        utils.compare_attr_between_dims(
             node.attr('paddings'), (0, 1), 'paddings', 'equal')
-        utils.compare_attr_with_dims(
+        utils.compare_attr_between_dims(
             node.input_shape('Offset', 0), (2, 3), 'Offset', 'equal')
         utils.compare_attr(
             node.attr('deformable_groups'), 1, 'deformable_groups', 'equal')

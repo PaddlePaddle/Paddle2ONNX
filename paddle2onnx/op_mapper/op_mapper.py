@@ -161,7 +161,7 @@ class OpMapper(object):
             raise NotImplementedError(error_info)
 
 
-class CustomPaddleOp():
+class CustomPaddleOp(object):
     CREATE_TIMES = {}
 
     def __init__(self, node):
