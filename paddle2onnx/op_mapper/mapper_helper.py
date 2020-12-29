@@ -15,6 +15,15 @@
 from paddle2onnx.constant import dtypes
 
 
+def is_static_shape(shape):
+    if len(shape) > 1 and shape[1:].count(-1) > 0:
+        raise Exception(
+            "Converting this model to ONNX need with static input shape," \
+            " please fix input shape of this model, see doc Q2 in" \
+            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+        )
+
+
 def slice_helper(graph, input, axes, starts, ends, outputs=[]):
     if graph.opset_version < 10:
         slice_node = graph.make_node(

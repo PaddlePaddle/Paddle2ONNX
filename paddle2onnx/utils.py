@@ -86,15 +86,6 @@ class logging():
             sys.exit(-1)
 
 
-def is_static_shape(shape):
-    if len(shape) > 1 and shape[1:].count(-1) > 0:
-        raise Exception(
-            "Converting this model to ONNX need with static input shape," \
-            " please fix input shape of this model, see doc Q2 in" \
-            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
-        )
-
-
 def check_iterable_obj(obj, length):
     if not isinstance(obj, collections.Iterable):
         raise TypeError("Expect object is iterable, actual got type {}.".format(
