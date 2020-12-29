@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import importlib
+import collections
 import time
 import os
 import sys
@@ -95,7 +96,7 @@ def is_static_shape(shape):
 
 
 def check_iterable_obj(obj, length):
-    if not isinstance(value, collections.Iterable):
+    if not isinstance(obj, collections.Iterable):
         raise TypeError("Expect object is iterable, actual got type {}.".format(
             type(obj)))
     elif len(obj) != length:
@@ -122,47 +123,30 @@ def error_status(values, cond, names=(), dims=()):
 
 
 def equal(values, names=(), dims=()):
-    check_iterable_obj(values, 2)
-    check_iterable_obj(names, 2)
-    check_iterable_obj(dims, 2)
-
     if values[0] != values[1]:
         raise exception(error_status(values, 'equal', names, dims))
     return True
 
 
 def greater_than(values, names=(), dims=()):
-    check_iterable_obj(values, 2)
-    check_iterable_obj(names, 2)
-    check_iterable_obj(dims, 2)
-
     if values[0] <= values[1]:
         raise ValueError(error_status(values, 'greater_than', names, dims))
     return True
 
 
 def greater_equal(values, names=(), dims=()):
-    check_iterable_obj(values, 2)
-    check_iterable_obj(names, 2)
-    check_iterable_obj(dims, 2)
     if values[0] < values[1]:
         raise ValueError(error_status(values, 'greater_equal', names, dims))
     return True
 
 
 def less_equal(values, names=(), dims=()):
-    check_iterable_obj(values, 2)
-    check_iterable_obj(names, 2)
-    check_iterable_obj(dims, 2)
     if values[0] > values[1]:
         raise ValueError(error_status(values, 'less_equal', names, dims))
     return True
 
 
 def less_than(values, names=(), dims=()):
-    check_iterable_obj(values, 2)
-    check_iterable_obj(names, 2)
-    check_iterable_obj(dims, 2)
     if values[0] >= values[1]:
         raise ValueError(error_status(values, 'less_than', names, dims))
     return True
