@@ -15,7 +15,7 @@
 from paddle2onnx.constant import dtypes
 
 
-def slice_helper(graph, input, axes, starts, ends, outputs=None):
+def slice_helper(graph, input, axes, starts, ends, outputs=[]):
     if graph.opset_version < 10:
         slice_node = graph.make_node(
             "Slice",
@@ -39,7 +39,7 @@ def slice_helper(graph, input, axes, starts, ends, outputs=None):
         return slice_node
 
 
-def constant_helper(graph, dtype, value, shape=None, outputs=None):
+def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     constant = graph.make_node(
         'Constant',
         inputs=[],
@@ -52,7 +52,7 @@ def constant_helper(graph, dtype, value, shape=None, outputs=None):
     return constant
 
 
-def clip_helper(graph, input, max, min, output=None):
+def clip_helper(graph, input, max, min, output=[]):
     if (isinstance(min, str) or isinstance(max,
                                            str)) and graph.opset_version < 11:
         raise "min or max of Clip is Tensor, please try with higher onnx opset_version."
