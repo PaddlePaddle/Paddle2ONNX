@@ -48,7 +48,7 @@ class MatMul():
 
 @op_mapper('exp')
 class Exp():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -58,7 +58,7 @@ class Exp():
 
 @op_mapper('abs')
 class Abs:
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -66,20 +66,6 @@ class Abs:
             'Abs', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-#@op_mapper(['elementwise_max', 'elementwise_min'], mapper_dict={
-#    'elementwise_max': 'Max', 'elementwise_min': 'Min'})
-#class ElementwiseCompareOps():
-#    support_opset_version_range = (7, )
-#
-#    @classmethod
-#    def opset_7(cls, graph, node, **kw):
-#        op_type = kw['mapper_dict'][node.type]
-#        x = node.input('X', 0)
-#        y = node.input('Y', 0)
-#        graph.make_node(
-#            op_type,
-#            inputs=[x, y])
-#            '
 @op_mapper(
     [
         'elementwise_add', 'elementwise_sub', 'elementwise_div',
@@ -123,7 +109,7 @@ class ElementwiseOps():
 
 @op_mapper('pow')
 class Pow():
-    support_opset_verision_range = (8, 12)
+    support_opset_version_range = (8, 12)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -144,7 +130,7 @@ class Pow():
 
 @op_mapper('mul')
 class Mul():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -165,7 +151,7 @@ class Mul():
 
 @op_mapper('bmm')
 class BMM():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -177,7 +163,7 @@ class BMM():
 
 @op_mapper('sum')
 class Sum():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
@@ -186,7 +172,7 @@ class Sum():
 
 @op_mapper('floor')
 class Floor():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -204,7 +190,7 @@ class Floor():
         'reduce_prod': 'ReduceProd'
     })
 class ReduceMean():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -242,7 +228,7 @@ class ReduceMean():
 
 @op_mapper('arg_max')
 class ArgMax():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -256,7 +242,7 @@ class ArgMax():
 
 @op_mapper('scale')
 class Scale():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -302,7 +288,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

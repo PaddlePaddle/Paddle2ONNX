@@ -45,6 +45,7 @@ class YOLOBox():
         class_num = node.attr('class_num')
         anchors = node.attr('anchors')
         num_anchors = int(len(anchors)) // 2
+        scale_x_y = node.attr('scale_x_y')
         downsample_ratio = node.attr('downsample_ratio')
         input_size = input_height * downsample_ratio
         conf_thresh = node.attr('conf_thresh')
@@ -134,6 +135,25 @@ class YOLOBox():
 
         node_box_y_sigmoid = graph.make_node("Sigmoid", inputs=[node_box_y])
 
+        if scale_x_y is not None:
+            bias_x_y = -0.5 * (scale_x_y - 1.0)
+            scale_x_y_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': scale_x_y})
+
+            bias_x_y_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': bias_x_y})
+            node_box_x_sigmoid = graph.make_node(
+                "Mul", inputs=[node_box_x_sigmoid, scale_x_y_node])
+            node_box_x_sigmoid = graph.make_node(
+                "Add", inputs=[node_box_x_sigmoid, bias_x_y_node])
+            node_box_y_sigmoid = graph.make_node(
+                "Mul", inputs=[node_box_y_sigmoid, scale_x_y_node])
+            node_box_y_sigmoid = graph.make_node(
+                "Add", inputs=[node_box_y_sigmoid, bias_x_y_node])
         node_box_x_squeeze = graph.make_node(
             'Squeeze', inputs=[node_box_x_sigmoid], axes=[4])
 
