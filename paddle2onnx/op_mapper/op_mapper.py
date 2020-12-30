@@ -94,18 +94,12 @@ class OpMapper(object):
     @staticmethod
     def mapping(graph, node):
         try:
-            print("convert node", node.type, node.inputs, node.outputs)
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
                 custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
                     node.type](node)
                 custom_paddle_graph = custom_paddle_op.get_paddle_graph()
-                OpMapper.check_support_status(custom_paddle_graph,
+                OpMapper.check_support_status(custom_paddle_graph.node_map,
                                               graph.opset_version)
-                #                if node.type != 'anchor_generator':
-                #                    print("``````````````````````````````````222222222222222")
-                #                    print(custom_paddle_graph)
-                #                    print("``````````````````````````````````222222222222222")
-                #graph.build_parameters(custom_paddle_graph.parameters)
                 graph.build_op_nodes(custom_paddle_graph.node_map)
             else:
                 opsets = OpMapper.OPSETS[node.type]
@@ -115,18 +109,19 @@ class OpMapper(object):
                 mapper_func, kw = opsets[convert_version]
                 mapper_func(graph, node, **kw)
                 return OP_MAPPING_SUCCESSED
-        except:
+        except Exception as e:
             raise Exception(
-                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}\n".
-                format(node.layer_name, node.type, node.inputs, node.outputs))
+                "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}, specific error: ".
+                format(node.layer_name, node.type, node.inputs,
+                       node.outputs) + str(e))
 
     @staticmethod
-    def check_support_status(paddle_graph, opset_version):
+    def check_support_status(node_map, opset_version):
         op_mapping_status = {
             OP_MAPPING_NO_REGISTER: [],
             OP_MAPPING_NO_VERSION: [],
         }
-        for name, node in list(paddle_graph.node_map.items()):
+        for name, node in list(node_map.items()):
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
                 continue
             if node.type not in OpMapper.OPSETS:
@@ -161,7 +156,7 @@ class OpMapper(object):
             raise NotImplementedError(error_info)
 
 
-class CustomPaddleOp():
+class CustomPaddleOp(object):
     CREATE_TIMES = {}
 
     def __init__(self, node):
@@ -223,24 +218,23 @@ class CustomPaddleOp():
 
     def get_paddle_graph(self):
         scope_name = self.generate_scope_name(self.node)
-        with paddle.static.program_guard(self.main_program,
-                                         self.startup_program):
-            with paddle.utils.unique_name.guard(scope_name):
-                res = self.forward()
-                feed_var_names = [
-                    var.name for vars in self.inputs.values() for var in vars
-                ]
-                fetch_target_vars = [
-                    var for vars in res.values() for var in vars
-                ]
-                inference_program = graph_helper.get_program(
-                    self.main_program, feed_var_names, fetch_target_vars)
-
-                #exe = paddle.fluid.Executor(fluid.CPUPlace())
-                #exe.run(self.startup_program)
-                #paddle.fluid.io.save_inference_model('generate_proposals/', feed_var_names, fetch_target_vars, exe, main_program=inference_program)
-                paddle_graph = PaddleGraph.build_from_program(
-                    inference_program, scope=fluid.global_scope())
+        scope = paddle.static.Scope()
+        with paddle.static.scope_guard(scope):
+            with paddle.static.program_guard(self.main_program,
+                                             self.startup_program):
+                with paddle.utils.unique_name.guard(scope_name):
+                    res = self.forward()
+                    feed_var_names = [
+                        var.name for vars in self.inputs.values()
+                        for var in vars
+                    ]
+                    fetch_target_vars = [
+                        var for vars in res.values() for var in vars
+                    ]
+                    inference_program = graph_helper.get_program(
+                        self.main_program, feed_var_names, fetch_target_vars)
+                    paddle_graph = PaddleGraph.build_from_program(
+                        inference_program, scope=scope)
 
         for arg_name, opts in res.items():
             for idx in range(len(opts)):
@@ -265,7 +259,7 @@ def register_custom_paddle_op(paddle_op, custom_op):
 
     if not isinstance(custom_op, six.class_types):
         raise ValueError("'custom_op' must be Class, but got type {}.".format(
-            type(mapper_obj)))
+            type(custom_op)))
 
     forward = getattr(custom_op, "forward", None)
     if not callable(forward):

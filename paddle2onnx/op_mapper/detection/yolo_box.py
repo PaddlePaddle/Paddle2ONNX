@@ -14,13 +14,13 @@
 
 from __future__ import absolute_import
 
+import sys
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 
-MAX_FLOAT32 = np.asarray(
-    [255, 255, 127, 127], dtype=np.uint8).view(np.float32)[0]
+MAX_FLOAT32 = 3.402823466E+38
 
 
 @op_mapper('yolo_box')

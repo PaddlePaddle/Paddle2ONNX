@@ -19,6 +19,7 @@ import collections
 import time
 import os
 import sys
+import six
 
 
 def try_import(module_name):
@@ -86,58 +87,45 @@ class logging():
             sys.exit(-1)
 
 
-def check_iterable_obj(obj, length):
-    if not isinstance(obj, collections.Iterable):
-        raise TypeError("Expect object is iterable, actual got type {}.".format(
-            type(obj)))
-    elif len(obj) != length:
-        raise ValueError("Expect object length == {}, actual got length = {}.".
-                         format(length, len(obj)))
+def compare_value(a, b, cond):
+    if cond == 'equal':
+        if a != b:
+            return False
+        return True
+    if cond == 'greater_than':
+        if a <= b:
+            return False
+        return True
+    if cond == 'greater_equal':
+        if a < b:
+            return False
+        return True
+    if cond == 'less_equal':
+        if a > b:
+            return False
+        return True
+    if cond == 'less_than':
+        if a >= b:
+            return False
+        return True
 
 
-def error_status(values, cond, names=(), dims=()):
-    target, origin = '', ''
-
-    if len(names) == 1:
-        origin = origin.append(name[0])
-    elif len(names) == 2:
-        origin, target = origin.append(name[0]), target.append(name[1])
-
-    if len(dims) == 1:
-        origin = origin.append('[' + dims[0] + ']')
-    elif len(dims) == 2:
-        origin, target = origin.append('[' + dims[0] + ']'), target.append(
-            '[' + dims[1] + ']')
-
-    return "Expect {} {} {}, actual got {} not {} {}".format(
-        origin, cond, target, origin, values[0], cond, target, values[1])
+def compare_attr(actual_value, target_value, attr_name, cond='equal'):
+    if not compare_value(actual_value, target_value, cond):
+        raise ValueError('Support {} {} {}, actually got {}=={}.'.format(
+            attr_name, cond, target_value, attr_name, actual_value))
 
 
-def equal(values, names=(), dims=()):
-    if values[0] != values[1]:
-        raise exception(error_status(values, 'equal', names, dims))
-    return True
+def compare_attr_between_dims(attr, dims, attr_name, cond='equal'):
+    if not compare_value(attr[dims[0]], attr[dims[1]], cond):
+        expect_info = 'Support {}[{}] {} {}[{}], '.format(
+            attr_name, dims[0], cond, attr_name, dims[1])
+        actual_info = 'actually got {}[{}]=={}, not {} {}[{}]=={}.'.format(
+            attr_name, dims[0], attr[dims[0]], cond, attr_name, dims[1],
+            attr[dims[1]])
+        raise ValueError(expect_info + actual_info)
 
 
-def greater_than(values, names=(), dims=()):
-    if values[0] <= values[1]:
-        raise ValueError(error_status(values, 'greater_than', names, dims))
-    return True
-
-
-def greater_equal(values, names=(), dims=()):
-    if values[0] < values[1]:
-        raise ValueError(error_status(values, 'greater_equal', names, dims))
-    return True
-
-
-def less_equal(values, names=(), dims=()):
-    if values[0] > values[1]:
-        raise ValueError(error_status(values, 'less_equal', names, dims))
-    return True
-
-
-def less_than(values, names=(), dims=()):
-    if values[0] >= values[1]:
-        raise ValueError(error_status(values, 'less_than', names, dims))
-    return True
+## TODO(channingss)
+#def compare_attrs(actual_value, target_value, origin_attr_name, target_attr_name, cond='equal')
+#def compare_attrs_between_dims(actual_attr_name, target_attr_name, origin_dim, target_dim,  cond='equal')

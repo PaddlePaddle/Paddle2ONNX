@@ -85,7 +85,7 @@ layer.eval()
 save_path = 'onnx.save/linear_net'
 p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 
-# when you paddlepaddle>2.0.0, you can try:
+# when paddlepaddle>2.0.0, you can try:
 # paddle.onnx.export(layer, save_path, input_spec=[x_spec])
 
 ```

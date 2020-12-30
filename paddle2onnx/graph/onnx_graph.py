@@ -46,7 +46,6 @@ class ONNXNode(Node):
         if 'dims' in self.attrs:
             dims = self.attrs['dims']
 
-        print("make onnx constant__", self.layer_name, dtype, dims, value)
         tensor = helper.make_tensor(
             name=self.layer_name, data_type=dtype, dims=dims, vals=value)
 
@@ -160,9 +159,10 @@ class ONNXGraph(Graph):
                                  opt.attr('shape'), opt.attr('dtype'))
 
     def build_op_nodes(self, node_map):
+        OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
         for name, node in list(node_map.items()):
-            status = OpMapper.mapping(self, node)
+            OpMapper.mapping(self, node)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(
@@ -183,14 +183,6 @@ class ONNXGraph(Graph):
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
 
-        from paddle2onnx.onnx_helper.onnx_pb import NodeProto, TensorProto
-        for op in op_nodes:
-            if not isinstance(op, NodeProto):
-                print(op)
-        for node in weight_nodes:
-            if not isinstance(node, NodeProto):
-                print(node)
-
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
             name='paddle-onnx',
@@ -209,7 +201,6 @@ class ONNXGraph(Graph):
 
     @staticmethod
     def build(paddle_graph, opset_version, verbose=False):
-        OpMapper.check_support_status(paddle_graph, opset_version)
         onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)

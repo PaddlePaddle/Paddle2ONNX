@@ -215,8 +215,6 @@ class ReduceMean():
         if not node.attr('keep_dim'):
             if list(output_shape) == [1]:
                 need_unsqueeze = True
-        print("========reduce",
-              node.attr('keep_dim'), output_shape, need_unsqueeze)
 
         if not need_unsqueeze:
             graph.make_node(

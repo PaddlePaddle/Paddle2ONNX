@@ -25,12 +25,6 @@ from paddle2onnx.utils import logging
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model_type",
-        "-mt",
-        type=_text_type,
-        default=None,
-        help="PaddlePaddle model saved format.")
-    parser.add_argument(
         "--model_dir",
         "-m",
         type=_text_type,
@@ -83,8 +77,7 @@ def program2onnx(model_dir,
                  model_filename=None,
                  params_filename=None,
                  opset_version=9,
-                 enable_onnx_checker=False,
-                 model_type=None):
+                 enable_onnx_checker=False):
     try:
         import paddle
     except:
@@ -102,19 +95,14 @@ def program2onnx(model_dir,
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
     exe = fluid.Executor(fluid.CPUPlace())
-    if model_type is None:
-        if model_filename is None and params_filename is None:
-            [program, feed, fetchs] = fluid.io.load_inference_model(model_dir,
-                                                                    exe)
-        else:
-            [program, feed, fetchs] = fluid.io.load_inference_model(
-                model_dir,
-                exe,
-                model_filename=model_filename,
-                params_filename=params_filename)
-    elif model_type == 'pdmodel':
-        [program, feed, fetchs] = paddle.static.load_inference_model(model_dir,
-                                                                     exe)
+    if model_filename is None and params_filename is None:
+        [program, feed, fetchs] = fluid.io.load_inference_model(model_dir, exe)
+    else:
+        [program, feed, fetchs] = fluid.io.load_inference_model(
+            model_dir,
+            exe,
+            model_filename=model_filename,
+            params_filename=params_filename)
     p2o.program2onnx(
         program,
         fluid.global_scope(),
@@ -148,8 +136,7 @@ def main():
         args.model_filename,
         args.params_filename,
         opset_version=args.opset_version,
-        enable_onnx_checker=args.enable_onnx_checker,
-        model_type=args.model_type)
+        enable_onnx_checker=args.enable_onnx_checker)
 
 
 if __name__ == "__main__":

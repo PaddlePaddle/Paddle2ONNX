@@ -63,30 +63,7 @@ class DistributeFpnProposals(CustomPaddleOp):
         _, rois_idx_restore = paddle.topk(
             rois_idx_order, axis=0, sorted=True, largest=False, k=size)
         #rois_idx_restore = paddle.cast(rois_idx_restore, dtype='int32')
-        print("====================================", rois_idx_restore)
         return {'MultiFpnRois': rois, 'RestoreIndex': [rois_idx_restore]}
 
-
-#        fpn_rois = self.input('FpnRois', 0)
-#        areas = self.bbox_area(fpn_rois)
-#        scale = paddle.sqrt(areas)
-#        num_level = self.max_level - self.min_level + 1
-#        target_level = paddle.log(scale/self.refer_scale + 1e-06) / np.log(2)
-#        target_level = paddle.floor(self.refer_level + target_level)
-#        
-#        rois = list()
-#        rois_idx_order = list()
-#
-#        for level in range(self.min_level, self.max_level+1):
-#            level_tensor = paddle.full_like(target_level, fill_value=level)
-#            res = paddle.equal(target_level, level_tensor)
-#            res = paddle.squeeze(res, axis=1)
-#            res = paddle.cast(res, dtype='int32')
-#            index = paddle.nonzero(res)
-#            roi = paddle.gather(fpn_rois, index, axis=0)
-#            rois.append(roi)
-#            rois_idx_order.append(index)
-#        rois_idx_order = paddle.concat(rois_idx_order, axis=0)
-#        rois_idx_restore = paddle.argsort(rois_idx_order, axis=0)
 
 register_custom_paddle_op('distribute_fpn_proposals', DistributeFpnProposals)

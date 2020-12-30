@@ -253,8 +253,6 @@ class MultiClassNMS():
             dtype=dtypes.ONNX.FLOAT,
             value=[float(node.attr('score_threshold'))])
 
-        print("=============nms", node.attr('nms_threshold'))
-
         node_iou_threshold = graph.make_node(
             'Constant',
             inputs=[],
