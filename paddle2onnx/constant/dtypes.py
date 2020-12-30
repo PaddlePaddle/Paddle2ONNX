@@ -63,3 +63,18 @@ DTYPE_PADDLE_STR_MAP = {
     'int64': core.VarDesc.VarType.INT64,
     'bool': core.VarDesc.VarType.BOOL
 }
+
+DTYPE_ONNX_STR_MAP = {
+    TensorProto.FLOAT: 'float32',
+    TensorProto.DOUBLE: 'float64',
+    TensorProto.INT16: 'int16',
+    TensorProto.INT32: 'int32',
+    TensorProto.INT64: 'int64',
+    TensorProto.BOOL: 'bool',
+    'float32': TensorProto.FLOAT,
+    'float64': TensorProto.DOUBLE,
+    'int16': TensorProto.INT16,
+    'int32': TensorProto.INT32,
+    'int64': TensorProto.INT64,
+    'bool': TensorProto.BOOL,
+}

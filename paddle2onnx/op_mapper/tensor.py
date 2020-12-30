@@ -100,9 +100,12 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
+        shape = mapper_helper.cast(graph,
+                                   node.input('Shape', 0),
+                                   node.input_dtype('Shape', 0), 'int64')
         node = graph.make_node(
             'Expand',
-            inputs=[node.input('X', 0), node.input('Shape', 0)],
+            inputs=[node.input('X', 0), shape],
             outputs=node.output('Out'))
 
 
@@ -237,9 +240,13 @@ class Expand():
                     outputs=node.output('Out'))
         elif 'RepeatTimes' in node.inputs and len(node.input(
                 'RepeatTimes')) == 1:
+            repeat_times = mapper_helper.cast(graph,
+                                              node.input('RepeatTimes', 0),
+                                              node.input_dtype('RepeatTimes',
+                                                               0), 'int64')
             graph.make_node(
                 "Tile",
-                inputs=[node.input('X', 0), node.input('RepeatTimes', 0)],
+                inputs=[node.input('X', 0), repeat_times],
                 outputs=node.output('Out'))
         elif expand_times is None:
             raise Exception("Not find attribute: 'repeat_times'.")
@@ -265,11 +272,6 @@ class Range():
         start = node.input('Start', 0)
         end = node.input('End', 0)
         step = node.input('Step', 0)
-        #graph.make_node(
-        #    "Range",
-        #    inputs=[start, end, step],
-        #    outputs=node.output('Out'))
-        #return 
         start_t = graph.make_node('Squeeze', inputs=[start], axes=[0])
         end_t = graph.make_node('Squeeze', inputs=[end], axes=[0])
         step_t = graph.make_node('Squeeze', inputs=[step], axes=[0])

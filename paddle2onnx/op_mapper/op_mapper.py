@@ -108,7 +108,6 @@ class OpMapper(object):
                                                           graph.opset_version)
                 mapper_func, kw = opsets[convert_version]
                 mapper_func(graph, node, **kw)
-                return OP_MAPPING_SUCCESSED
         except Exception as e:
             raise Exception(
                 "Error happened when mapping node ['{}'] to onnx, which op_type is '{}' with inputs: {} and outputs: {}, specific error: ".
@@ -217,12 +216,12 @@ class CustomPaddleOp(object):
         return graph
 
     def get_paddle_graph(self):
-        scope_name = self.generate_scope_name(self.node)
+        scope_prefix = self.generate_scope_name(self.node)
         scope = paddle.static.Scope()
         with paddle.static.scope_guard(scope):
             with paddle.static.program_guard(self.main_program,
                                              self.startup_program):
-                with paddle.utils.unique_name.guard(scope_name):
+                with paddle.utils.unique_name.guard(scope_prefix):
                     res = self.forward()
                     feed_var_names = [
                         var.name for vars in self.inputs.values()

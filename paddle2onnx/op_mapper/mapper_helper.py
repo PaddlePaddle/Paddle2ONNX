@@ -116,3 +116,13 @@ def dtype_alignment(graph, nodes, node_dtypes):
         else:
             casted_nodes.append(nodes[i])
     return casted_nodes
+
+
+def cast(graph, input, origin_dtype, target_dtype):
+    if not isinstance(origin_dtype, six.string_types):
+        origin_dtype = dtypes.DTYPE_PADDLE_STR_MAP[origin_dtype]
+    if origin_dtype != target_dtype:
+        cast_node = graph.make_node(
+            'Cast', inputs=input, to=dtypes.DTYPE_ONNX_STR_MAP[target_dtype])
+        return cast_node
+    return input

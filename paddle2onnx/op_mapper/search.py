@@ -43,7 +43,7 @@ class TopKV2():
         if 'K' in node.inputs and len(node.input('K')) > 0:
             k_node = node.input('K', 0)
             k_node_dtype = node.input_dtype('K', 0)
-            if dtypes.DTYPE_PADDLE_STR_MAP[k_node_dtype] != 'in64':
+            if dtypes.DTYPE_PADDLE_STR_MAP[k_node_dtype] != 'int64':
                 k_node = graph.make_node(
                     'Cast', inputs=[k_node], to=dtypes.ONNX.INT64)
             graph.make_node(

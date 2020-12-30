@@ -33,6 +33,17 @@ class PaddleNode(Node):
         self.paddle_op = paddle_op
         self.block = block
 
+    def __str__(self):
+        node_str = ''
+        attrs = ''
+        for key, value in self.attrs.items():
+            if key == 'op_callstack':
+                continue
+            attrs += ', ' + key + '=' + str(value)
+        node_str += "  {} = {}::{}(inputs={}{}) \n".format(
+            self.outputs, self.domain, self.type, self.inputs, attrs)
+        return node_str
+
     @property
     def input_names(self):
         return [name for name in self.inputs.keys()]

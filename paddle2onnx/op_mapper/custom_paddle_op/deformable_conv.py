@@ -35,6 +35,7 @@ class DeformConv2d(CustomPaddleOp):
 
     def __init__(self, node, **kw):
         super(DeformConv2d, self).__init__(node)
+        self.check_attribute(node)
         self.x_shape = node.input_shape('Input', 0)
         self.offset_shape = node.input_shape('Offset', 0)
         self.filter_shape = node.input_shape('Filter', 0)
