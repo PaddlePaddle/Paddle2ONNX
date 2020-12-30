@@ -18,6 +18,8 @@ import os
 import copy
 import collections
 import numpy as np
+import paddle
+from paddle import fluid
 from paddle.fluid import dygraph
 from paddle.fluid.framework import Operator
 from paddle2onnx.graph import Node, Graph
@@ -30,6 +32,17 @@ class PaddleNode(Node):
                                          layer_name, NodeDomain.PADDLE)
         self.paddle_op = paddle_op
         self.block = block
+
+    def __str__(self):
+        node_str = ''
+        attrs = ''
+        for key, value in self.attrs.items():
+            if key == 'op_callstack':
+                continue
+            attrs += ', ' + key + '=' + str(value)
+        node_str += "  {} = {}::{}(inputs={}{}) \n".format(
+            self.outputs, self.domain, self.type, self.inputs, attrs)
+        return node_str
 
     @property
     def input_names(self):
@@ -62,10 +75,13 @@ class PaddleNode(Node):
     def input_var(self, name, idx):
         return self.block.var(self.input(name, idx))
 
-    def attr(self, name):
+    def input_dtype(self, name, idx):
+        return self.block.var(self.input(name, idx)).dtype
+
+    def attr(self, name, default=None):
         if name in self.attrs:
             return self.attrs[name]
-        return None
+        return default
 
     def set_inputs(self, inputs):
         if isinstance(inputs, dict):
@@ -206,6 +222,7 @@ class PaddleGraph(Graph):
                 'dtype': var.dtype,
                 'shape': var.shape
             }
+
         graph = PaddleGraph(program, parameters_dict)
         return graph
 

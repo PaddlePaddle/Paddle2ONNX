@@ -49,7 +49,7 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 |--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|
 |--version |**[Optional]** check the version of paddle2onnx |
 
-- Two types of PaddlePaddle models 
+- Two types of PaddlePaddle models
    - Combined model, parameters saved in one binary file. --model_filename and --params_filename represents the file name and parameter name under the directory designated by --model_dir. --model_filename and --params_filename are valid only with parameter --model_dir.
    - Uncombined model, parameters saved in different files. Only --model_dir is needed，which contains '\_\_model\_\_' file and the seperated parameter files.
 
@@ -60,7 +60,39 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 
 ### Dynamic computational graph
 
-Under experiment now, tutorials will be provided after the release of PaddlePaddle 2.0.
+```
+import paddle
+from paddle import nn
+from paddle.static import InputSpec
+import paddle2onnx as p2o
+
+class LinearNet(nn.Layer):
+    def __init__(self):
+        super(LinearNet, self).__init__()
+        self._linear = nn.Linear(784, 10)
+
+    def forward(self, x):
+        return self._linear(x)
+
+layer = LinearNet()
+
+# configure model inputs
+x_spec = InputSpec([None, 784], 'float32', 'x')
+
+# convert model to inference mode
+layer.eval()
+
+save_path = 'onnx.save/linear_net'
+p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
+
+# when paddlepaddle>2.0.0, you can try:
+# paddle.onnx.export(layer, save_path, input_spec=[x_spec])
+
+```
+
+#### IPython教程
+
+- [convert to ONNX from dyragph computational graph](examples/tutorial_dygraph2onnx.ipynb)
 
 ## Relative documents
 

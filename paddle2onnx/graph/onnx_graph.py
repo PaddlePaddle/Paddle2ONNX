@@ -73,6 +73,17 @@ class ONNXGraph(Graph):
         self.opset_version = opset_version
         self.ctx = paddle_graph
 
+    def __str__(self):
+        graph_str = 'graph { \n'
+        for node in self.input_nodes:
+            graph_str += " input: {} \n".format(node)
+        for node in self.output_nodes:
+            graph_str += " output: {} \n \n".format(node)
+        for name, node in self.node_map.items():
+            graph_str += node.__str__()
+        graph_str += ' }'
+        return graph_str
+
     def make_node(self,
                   op_type,
                   inputs=[],
@@ -87,13 +98,71 @@ class ONNXGraph(Graph):
             attrs = kw
         attrs.update(kw)
 
-        # Auto generate output
-        if isinstance(outputs, collections.Iterable) and len(outputs) == 0:
-            outputs = [layer_name]
+        if inputs is None:
+            inputs = []
 
-        node = ONNXNode(op_type, inputs, outputs, attrs, layer_name)
+        real_outputs = None
+        if outputs is None:
+            real_outputs = [layer_name]
+        elif isinstance(outputs, int):
+            real_outputs = []
+            for i in range(outputs):
+                real_outputs.append(self.generate_node_name(op_type))
+        elif isinstance(outputs, list):
+            real_outputs = []
+            if len(outputs) == 0:
+                real_outputs = [layer_name]
+            else:
+                for opt in outputs:
+                    if isinstance(opt, Node):
+                        real_outputs.append(opt.layer_name)
+                    elif isinstance(opt, int):
+                        real_outputs.append(self.generate_node_name(op_type))
+                    else:
+                        real_outputs.append(opt)
+        else:
+            real_outputs = outputs
+
+        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name)
+
         self.insert_node(node)
-        return node
+        if len(node.outputs) == 1:
+            return node.outputs[0]
+        else:
+            return node.outputs
+
+    def build_parameters(self, parameters):
+        # build weight nodes
+        for name, param in parameters.items():
+            weight = param['data']
+            if weight is not np.ndarray:
+                weight = np.array(weight)
+            tensor = helper.make_tensor(
+                name=name,
+                dims=param['shape'],
+                data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
+                vals=weight.flatten().tolist())
+            node = helper.make_node(
+                'Constant', inputs=[], outputs=[name], value=tensor)
+            self.parameters[name] = node
+
+    def build_input_nodes(self, input_nodes):
+        # build input nodes
+        for ipt in input_nodes:
+            self.add_input_node(ipt.layer_name,
+                                ipt.attr('shape'), ipt.attr('dtype'))
+
+    def build_output_nodes(self, output_nodes):
+        # build output nodes
+        for opt in output_nodes:
+            self.add_output_node(opt.layer_name,
+                                 opt.attr('shape'), opt.attr('dtype'))
+
+    def build_op_nodes(self, node_map):
+        OpMapper.check_support_status(node_map, self.opset_version)
+        # build op nodes
+        for name, node in list(node_map.items()):
+            OpMapper.mapping(self, node)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(
@@ -113,6 +182,7 @@ class ONNXGraph(Graph):
     def export_proto(self, enable_onnx_checker=False):
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
+
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
             name='paddle-onnx',
@@ -126,39 +196,15 @@ class ONNXGraph(Graph):
 
         if enable_onnx_checker:
             check_model(onnx_proto)
+
         return onnx_proto
 
     @staticmethod
     def build(paddle_graph, opset_version, verbose=False):
-        OpMapper.check_support_status(paddle_graph, opset_version)
         onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
-
-        # build input nodes
-        for ipt in paddle_graph.input_nodes:
-            vi = onnx_graph.add_input_node(ipt.layer_name,
-                                           ipt.attr('shape'), ipt.attr('dtype'))
-
-        # build output nodes
-        for opt in paddle_graph.output_nodes:
-            onnx_graph.add_output_node(opt.layer_name,
-                                       opt.attr('shape'), opt.attr('dtype'))
-
-        # build weight nodes
-        for name, param in paddle_graph.parameters.items():
-            weight = param['data']
-            if weight is not np.ndarray:
-                weight = np.array(weight)
-            tensor = helper.make_tensor(
-                name=name,
-                dims=param['shape'],
-                data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
-                vals=weight.flatten().tolist())
-            node = helper.make_node(
-                'Constant', inputs=[], outputs=[name], value=tensor)
-            onnx_graph.parameters[name] = node
-
-        # build op nodes
-        for name, node in list(paddle_graph.node_map.items()):
-            status = OpMapper.mapping(onnx_graph, node)
+        onnx_graph.build_parameters(paddle_graph.parameters)
+        onnx_graph.build_input_nodes(paddle_graph.input_nodes)
+        onnx_graph.build_output_nodes(paddle_graph.output_nodes)
+        onnx_graph.build_op_nodes(paddle_graph.node_map)
 
         return onnx_graph

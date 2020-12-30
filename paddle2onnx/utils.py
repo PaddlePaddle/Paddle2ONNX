@@ -15,9 +15,11 @@
 from __future__ import absolute_import
 
 import importlib
+import collections
 import time
 import os
 import sys
+import six
 
 
 def try_import(module_name):
@@ -83,3 +85,47 @@ class logging():
         logging.log(level=0, message=message, use_color=use_color)
         if exit:
             sys.exit(-1)
+
+
+def compare_value(a, b, cond):
+    if cond == 'equal':
+        if a != b:
+            return False
+        return True
+    if cond == 'greater_than':
+        if a <= b:
+            return False
+        return True
+    if cond == 'greater_equal':
+        if a < b:
+            return False
+        return True
+    if cond == 'less_equal':
+        if a > b:
+            return False
+        return True
+    if cond == 'less_than':
+        if a >= b:
+            return False
+        return True
+
+
+def compare_attr(actual_value, target_value, attr_name, cond='equal'):
+    if not compare_value(actual_value, target_value, cond):
+        raise ValueError('Support {} {} {}, actually got {}=={}.'.format(
+            attr_name, cond, target_value, attr_name, actual_value))
+
+
+def compare_attr_between_dims(attr, dims, attr_name, cond='equal'):
+    if not compare_value(attr[dims[0]], attr[dims[1]], cond):
+        expect_info = 'Support {}[{}] {} {}[{}], '.format(
+            attr_name, dims[0], cond, attr_name, dims[1])
+        actual_info = 'actually got {}[{}]=={}, not {} {}[{}]=={}.'.format(
+            attr_name, dims[0], attr[dims[0]], cond, attr_name, dims[1],
+            attr[dims[1]])
+        raise ValueError(expect_info + actual_info)
+
+
+## TODO(channingss)
+#def compare_attrs(actual_value, target_value, origin_attr_name, target_attr_name, cond='equal')
+#def compare_attrs_between_dims(actual_attr_name, target_attr_name, origin_dim, target_dim,  cond='equal')

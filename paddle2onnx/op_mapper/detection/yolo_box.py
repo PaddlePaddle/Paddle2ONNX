@@ -18,16 +18,9 @@ import sys
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
-MAX_FLOAT32 = 3.402823466E+38 
-
-def is_static_shape(shape):
-    if len(shape) > 1 and shape.count(-1) > 1:
-        raise Exception(
-            "Converting this model to ONNX need with static input shape," \
-            " please fix input shape of this model, see doc Q2 in" \
-            " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/FAQ.md."
-        )
+MAX_FLOAT32 = 3.402823466E+38
 
 
 @op_mapper('yolo_box')
@@ -45,13 +38,14 @@ class YOLOBox():
     def front(cls, graph, node, **kw):
         model_name = node.output('Boxes', 0)
         input_shape = node.input_shape('X', 0)
-        is_static_shape(input_shape)
+        mapper_helper.is_static_shape(input_shape)
         image_size = node.input('ImgSize')
         input_height = input_shape[2]
         input_width = input_shape[3]
         class_num = node.attr('class_num')
         anchors = node.attr('anchors')
         num_anchors = int(len(anchors)) // 2
+        scale_x_y = node.attr('scale_x_y')
         downsample_ratio = node.attr('downsample_ratio')
         input_size = input_height * downsample_ratio
         conf_thresh = node.attr('conf_thresh')
@@ -141,6 +135,25 @@ class YOLOBox():
 
         node_box_y_sigmoid = graph.make_node("Sigmoid", inputs=[node_box_y])
 
+        if scale_x_y is not None:
+            bias_x_y = -0.5 * (scale_x_y - 1.0)
+            scale_x_y_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': scale_x_y})
+
+            bias_x_y_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': bias_x_y})
+            node_box_x_sigmoid = graph.make_node(
+                "Mul", inputs=[node_box_x_sigmoid, scale_x_y_node])
+            node_box_x_sigmoid = graph.make_node(
+                "Add", inputs=[node_box_x_sigmoid, bias_x_y_node])
+            node_box_y_sigmoid = graph.make_node(
+                "Mul", inputs=[node_box_y_sigmoid, scale_x_y_node])
+            node_box_y_sigmoid = graph.make_node(
+                "Add", inputs=[node_box_y_sigmoid, bias_x_y_node])
         node_box_x_squeeze = graph.make_node(
             'Squeeze', inputs=[node_box_x_sigmoid], axes=[4])
 

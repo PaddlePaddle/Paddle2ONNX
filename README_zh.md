@@ -63,7 +63,36 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 
 ### 动态图模型导出
 
-处于实验状态，Paddle 2.0正式版发布后，会提供详细使用教程。
+```
+import paddle
+from paddle import nn
+from paddle.static import InputSpec
+import paddle2onnx as p2o
+
+class LinearNet(nn.Layer):
+    def __init__(self):
+        super(LinearNet, self).__init__()
+        self._linear = nn.Linear(784, 10)
+
+    def forward(self, x):
+        return self._linear(x)
+
+layer = LinearNet()
+
+# configure model inputs
+x_spec = InputSpec([None, 784], 'float32', 'x')
+
+# convert model to inference mode
+layer.eval()
+
+save_path = 'onnx.save/linear_net'
+p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
+
+# when you paddlepaddle>2.0.0, you can try:
+# paddle.onnx.export(layer, save_path, input_spec=[x_spec])
+
+```
+- [动态图导出ONNX教程](examples/tutorial_dygraph2onnx.ipynb)
 
 ##  相关文档
 

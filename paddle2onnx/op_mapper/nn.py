@@ -20,6 +20,7 @@ import collections
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
+from paddle2onnx import utils
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d'])
@@ -89,7 +90,6 @@ class Pool():
             spans.append(end - start)
         if len(set(spans)) == 1:
             return True
-        print(spans)
         return False
 
     @classmethod
@@ -100,12 +100,23 @@ class Pool():
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
+            mapper_helper.is_static_shape(node.input_shape('X', 0))
+
             input_h, input_w = node.input_shape('X', 0)[2:]
             output_h, output_w = node.output_shape('Out', 0)[2:]
             stride_h = int(input_h / output_h)
             stride_w = int(input_w / output_w)
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
+
+            if node.attr('strides') is not None and (
+                    -1 not in node.attr('strides')):
+                stride_h, stride_w = node.attr('strides')
+
+            if node.attr('ksize') is not None and (
+                    -1 not in node.attr('ksize')):
+                kernel_h = input_h - (node.attr('ksize')[0] - 1) * stride_h
+                kernel_w = input_w - (node.attr('ksize')[1] - 1) * stride_w
 
             if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
                     input_w, output_w):
@@ -120,7 +131,7 @@ class Pool():
                 }
                 if node.attr('ceil_mode') and graph.opset_version < 10:
                     raise Exception(
-                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10, }"
+                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
                     )
                 elif graph.opset_version > 10:
                     attrs['ceil_mode'] = node.attr('ceil_mode')
@@ -151,7 +162,7 @@ class Pool():
             }
             if node.attr('ceil_mode') and graph.opset_version < 10:
                 raise Exception(
-                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10, }"
+                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
                 )
             elif graph.opset_version > 10:
                 attrs['ceil_mode'] = node.attr('ceil_mode')
@@ -349,3 +360,107 @@ class RoiAlign():
             output_width=node.attr('pooled_width'),
             sampling_ratio=node.attr('sampling_ratio'),
             spatial_scale=node.attr('spatial_scale'))
+
+
+@op_mapper('rnn')
+class RNN():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def make_param_inputs(cls, graph, node, layer, hidden_size, num_layers):
+        # weight assign order:
+        # (F_whi F_whh B_whi B_whh）* layer_num  + (F_bias_hi F_bias_hh B_bias_hi  B_bias_hi)* layer_num
+        def reform_weights(g, w, n, intervals):
+            slices = [
+                mapper_helper.slice_helper(
+                    g, w, axes=[1], starts=[x * n], ends=[y * n])
+                for x, y in intervals
+            ]
+            return g.make_node('Concat', slices, axis=1)
+
+        def transform_weight_with_bias(g, weights, n, intervals):
+            return [reform_weights(g, w, n, intervals) for w in weights]
+
+        if node.attr('mode') == 'LSTM':
+            reform_permutation = [(0, 1), (3, 4), (1, 3)]
+        bidirect_len = 4 if node.attr('is_bidirec') else 2
+        all_layer_param_len = len(node.input('WeightList'))
+        weight_list = node.input('WeightList')[:all_layer_param_len // 2]
+        bias_list = node.input('WeightList')[all_layer_param_len // 2:]
+        single_layer_param_len = all_layer_param_len // num_layers
+
+        unsqueeze_weights = []
+        layer_weight_list = weight_list[layer * bidirect_len:layer *
+                                        bidirect_len + bidirect_len]
+        layer_bias_list = bias_list[layer * bidirect_len:layer * bidirect_len +
+                                    bidirect_len]
+        param_list = layer_weight_list + layer_bias_list
+        param_list_len = len(param_list)
+        for i in range(param_list_len):
+            weight = graph.make_node(
+                'Unsqueeze', inputs=[param_list[i]], axes=[0])
+            unsqueeze_weights.append(weight)
+
+        input_weights = unsqueeze_weights[0:param_list_len // 2:2]
+        hidden_weights = unsqueeze_weights[1:param_list_len // 2:2]
+
+        input_weight = graph.make_node('Concat', inputs=input_weights, axis=0)
+        hidden_weight = graph.make_node('Concat', inputs=hidden_weights, axis=0)
+        input_bias = unsqueeze_weights[param_list_len // 2:param_list_len:2]
+        hidden_bias = unsqueeze_weights[param_list_len // 2 + 1:param_list_len:
+                                        2]
+
+        input_bias = graph.make_node('Concat', inputs=input_bias, axis=0)
+        hidden_bias = graph.make_node('Concat', inputs=hidden_bias, axis=0)
+        input_weight, hidden_weight, input_bias, hidden_bias = transform_weight_with_bias(
+            graph, [input_weight, hidden_weight, input_bias, hidden_bias],
+            hidden_size, reform_permutation)
+        bias = graph.make_node(
+            'Concat', inputs=[input_bias, hidden_bias], axis=1)
+        return [input_weight, hidden_weight, bias, '']
+
+    @classmethod
+    def make_init_param_inputs(cls, graph, node, layer):
+        all_init_h, all_init_c = node.input('PreState')
+        bidirect_len = 2 if node.attr('is_bidirec') else 1
+        init_h = mapper_helper.slice_helper(
+            graph, all_init_h, [0], [layer * bidirect_len],
+            [layer * bidirect_len + bidirect_len])
+        init_c = mapper_helper.slice_helper(
+            graph, all_init_c, [0], [layer * bidirect_len],
+            [layer * bidirect_len + bidirect_len])
+        return [init_h, init_c]
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        mode = node.attr('mode')
+        utils.compare_attr(mode, 'LSTM', 'mode', 'equal')
+        hidden_size = node.attr('hidden_size')
+        num_layers = node.attr('num_layers')
+        h_outs = []
+        c_outs = []
+        prev_output = node.input('Input', 0)
+        for layer in range(num_layers):
+            param_inputs = cls.make_param_inputs(graph, node, layer,
+                                                 hidden_size, num_layers)
+            init_param_inputs = cls.make_init_param_inputs(graph, node, layer)
+            if layer + 1 < num_layers:
+                rnn_outputs = 3
+                output_y = None
+            else:
+                rnn_outputs = [1] + node.output('State')
+                output_y = node.output('Out')
+            prev_output, h_out, c_out = graph.make_node(
+                node.attr('mode'),
+                inputs=[prev_output] + param_inputs + init_param_inputs,
+                outputs=rnn_outputs,
+                direction='bidirectional'
+                if node.attr('is_bidirec') else 'forward',
+                hidden_size=node.attr('hidden_size'))
+            prev_output = graph.make_node(
+                'Transpose', inputs=[prev_output], perm=[0, 2, 1, 3])
+
+            prev_shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0, 0, -1])
+            prev_output = graph.make_node(
+                'Reshape', inputs=[prev_output, prev_shape], outputs=output_y)

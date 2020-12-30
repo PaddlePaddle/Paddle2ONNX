@@ -22,51 +22,11 @@ from paddle.fluid import layers
 from paddle.fluid import core
 from paddle.fluid.framework import Variable, program_guard
 from paddle.fluid.dygraph.dygraph_to_static import program_translator
-from paddle2onnx.utils import logging
 from paddle.fluid.dygraph.jit import declarative
 from paddle.fluid import dygraph
 
-
-def prepend_feed_ops(inference_program,
-                     feed_target_names,
-                     feed_holder_name='feed'):
-    if len(feed_target_names) == 0:
-        return
-    global_block = inference_program.global_block()
-    feed_var = global_block.create_var(
-        name=feed_holder_name,
-        type=core.VarDesc.VarType.FEED_MINIBATCH,
-        persistable=True)
-    for i, name in enumerate(feed_target_names):
-        if not global_block.has_var(name):
-            raise ValueError(
-                "The feeded_var_names[{i}]: '{name}' doesn't exist in pruned inference program. "
-                "Please check whether '{name}' is a valid feed_var name, or remove it from feeded_var_names "
-                "if '{name}' is not involved in the target_vars calculation.".
-                format(
-                    i=i, name=name))
-        out = global_block.var(name)
-        global_block._prepend_op(
-            type='feed',
-            inputs={'X': [feed_var]},
-            outputs={'Out': [out]},
-            attrs={'col': i})
-
-
-def append_fetch_ops(inference_program,
-                     fetch_target_names,
-                     fetch_holder_name='fetch'):
-    global_block = inference_program.global_block()
-    fetch_var = global_block.create_var(
-        name=fetch_holder_name,
-        type=core.VarDesc.VarType.FETCH_LIST,
-        persistable=True)
-    for i, name in enumerate(fetch_target_names):
-        global_block.append_op(
-            type='fetch',
-            inputs={'X': [name]},
-            outputs={'Out': [fetch_var]},
-            attrs={'col': i})
+from paddle2onnx.utils import logging
+from paddle2onnx.graph.graph_helper import prepend_feed_ops, append_fetch_ops
 
 
 def get_inout_spec(all_vars, target_vars, return_name=False):
