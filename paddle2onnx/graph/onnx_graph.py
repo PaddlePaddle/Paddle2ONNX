@@ -159,9 +159,10 @@ class ONNXGraph(Graph):
                                  opt.attr('shape'), opt.attr('dtype'))
 
     def build_op_nodes(self, node_map):
+        OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
         for name, node in list(node_map.items()):
-            status = OpMapper.mapping(self, node)
+            OpMapper.mapping(self, node)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(
@@ -200,7 +201,6 @@ class ONNXGraph(Graph):
 
     @staticmethod
     def build(paddle_graph, opset_version, verbose=False):
-        OpMapper.check_support_status(paddle_graph, opset_version)
         onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
