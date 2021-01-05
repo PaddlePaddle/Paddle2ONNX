@@ -29,6 +29,8 @@ class MultiClassNMS():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        logging.warning("Only support operator:{}'s input[batch_size] == 1.".
+                        format(node.type))
         scores = node.input('Scores', 0)
         bboxes = node.input('BBoxes', 0)
         num_class = node.input_shape('Scores', 0)[1]
