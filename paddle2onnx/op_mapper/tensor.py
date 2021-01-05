@@ -27,8 +27,15 @@ class Concat():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         inputs = node.input('X')
+
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
+
+        input_shapes = [
+            list(node.input_shape('X', i)) for i in range(len(inputs))
+        ]
+        inputs = mapper_helper.fix_negative_shapes(graph, inputs, input_shapes,
+                                                   node.attr('axis'))
 
         node = graph.make_node(
             'Concat',
@@ -100,9 +107,13 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        shape = mapper_helper.cast(graph,
-                                   node.input('Shape', 0),
-                                   node.input_dtype('Shape', 0), 'int64')
+        if len(node.input('Shape')) > 0:
+            shape = mapper_helper.cast(graph,
+                                       node.input('Shape', 0),
+                                       node.input_dtype('Shape', 0), 'int64')
+        elif len(node.attr('shape')) > 0:
+            shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=node.attr('shape'))
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],

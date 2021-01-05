@@ -69,7 +69,8 @@ class Abs:
 @op_mapper(
     [
         'elementwise_add', 'elementwise_sub', 'elementwise_div',
-        'elementwise_mul', 'elementwise_min', 'elementwise_max'
+        'elementwise_mul', 'elementwise_min', 'elementwise_max',
+        'elementwise_pow'
     ],
     mapper_dict={
         'elementwise_add': 'Add',
@@ -78,6 +79,7 @@ class Abs:
         'elementwise_mul': 'Mul',
         'elementwise_min': 'Min',
         'elementwise_max': 'Max',
+        'elementwise_pow': 'Pow',
     })
 class ElementwiseOps():
     support_opset_version_range = (7, 12)

@@ -14,6 +14,7 @@
 
 import paddle.fluid.core as core
 import six
+import copy
 from paddle2onnx.constant import dtypes
 
 
@@ -85,6 +86,37 @@ def clip_helper(graph, input, max, min, output=[]):
             max = graph.make_node('Squeeze', max, axes=[0])
         clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
     return clip
+
+
+def fix_negative_shapes(graph, nodes, node_shapes, axis):
+    assert len(nodes) == len(
+        node_shapes), "Length of nodes and node_shapes should be equal."
+    new_node_shapes = copy.deepcopy(node_shapes)
+    for dim in range(1):
+        if dim == axis:
+            continue
+        negative_shape_indices = []
+        positive_shape = -1
+        for i in range(len(node_shapes)):
+            if node_shapes[i][dim] == -1:
+                negative_shape_indices.append(i)
+            if node_shapes[i][dim] > positive_shape:
+                positive_shape = node_shapes[i][dim]
+
+        if positive_shape != -1:
+            for negative_shape_index in negative_shape_indices:
+                new_node_shapes[negative_shape_index][dim] = positive_shape
+
+    for i in range(len(node_shapes)):
+        if new_node_shapes[i] != node_shapes[i]:
+            print(nodes)
+            print(new_node_shapes, node_shapes, i)
+            print('*' * 10)
+            shape_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=new_node_shapes[i])
+            nodes[i] = graph.make_node('Reshape', inputs=[nodes[i], shape_node])
+            print(nodes)
+    return nodes
 
 
 def dtype_alignment(graph, nodes, node_dtypes):

@@ -55,6 +55,7 @@
 | reduce_mean | 1~12 |
 | reduce_max | 1~12 |
 | reduce_min | 1~12 |
+| reduce_prod | 1~12|
 | reduce_sum | 1~12 |
 | relu | 1~12 |
 | relu6 | 1~12 |

@@ -18,7 +18,8 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
-@op_mapper(['multiclass_nms', 'multiclass_nms2'])
+@op_mapper(
+    ['multiclass_nms', 'multiclass_nms2', 'matrix_nms', 'multiclass_nms3'])
 class MultiClassNMS():
     support_opset_verision_range = (10, 12)
     """
@@ -32,47 +33,51 @@ class MultiClassNMS():
         bboxes = node.input('BBoxes', 0)
         num_class = node.input_shape('Scores', 0)[1]
         if len(node.input_shape('Scores', 0)) == 2:
+            # inputs: scores & bboxes is lod tensor
             scores = graph.make_node('Transpose', inputs=[scores], perm=[1, 0])
             scores = graph.make_node('Unsqueeze', inputs=[scores], axes=[0])
-            bboxes_list = graph.make_node(
+            scores_list = graph.make_node(
                 'Split',
-                inputs=[bboxes],
+                inputs=scores,
                 outputs=num_class,
                 axis=1,
                 split=[1] * num_class)
-            scores_list = graph.make_node(
+            bboxes = graph.make_node('Transpose', inputs=bboxes, perm=[1, 0, 2])
+            bboxes_list = graph.make_node(
                 'Split',
-                inputs=[scores],
+                inputs=bboxes,
                 outputs=num_class,
-                axis=1,
+                axis=0,
                 split=[1] * num_class)
             bbox_ids = []
             for i in range(num_class):
-                single_class_bboxes = graph.make_node(
-                    'Transpose', inputs=[bboxes_list[i]], perm=[1, 0, 2])
-                bbox_id = cls.nms(graph,
-                                  node,
-                                  scores_list[i],
-                                  single_class_bboxes,
-                                  class_id=i,
-                                  is_lod_inputs=True)
+                bbox_id = cls.nms(
+                    graph,
+                    node,
+                    #single_scores,
+                    scores_list[i],
+                    bboxes_list[i],
+                    class_id=i)
                 bbox_ids.append(bbox_id)
             bbox_ids = graph.make_node('Concat', inputs=bbox_ids, axis=0)
-            bboxes = graph.make_node(
-                'Transpose', inputs=[bboxes], perm=[1, 0, 2])
             const_shape = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[1, -1, 4])
             bboxes = graph.make_node('Reshape', inputs=[bboxes, const_shape])
-            cls.keep_top_k(
-                graph, node, bbox_ids, scores, bboxes, is_lod_inputs=True)
+            cls.keep_top_k(graph, node, bbox_ids, scores, bboxes)
         else:
             bbox_ids = cls.nms(graph, node, scores, bboxes)
             cls.keep_top_k(graph, node, bbox_ids, scores, bboxes)
 
     @classmethod
-    def nms(cls, graph, node, scores, bboxes, class_id=0, is_lod_inputs=False):
+    def nms(cls, graph, node, scores, bboxes, class_id=0):
         normalized = node.attr('normalized')
         nms_top_k = node.attr('nms_top_k')
+        if node.type == 'matrix_nms':
+            iou_threshold = 0.5
+        else:
+            iou_threshold = node.attr('nms_threshold')
+        if nms_top_k == -1:
+            nms_top_k = 100000
 
         #convert the paddle attribute to onnx tensor
         score_threshold = graph.make_node(
@@ -80,17 +85,15 @@ class MultiClassNMS():
             dtype=dtypes.ONNX.FLOAT,
             value=[float(node.attr('score_threshold'))])
         iou_threshold = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.FLOAT,
-            value=[float(node.attr('nms_threshold'))])
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=[float(iou_threshold)])
         nms_top_k = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[np.int64(nms_top_k)])
 
         # the paddle data format is x1,y1,x2,y2
         kwargs = {'center_point_box': 0}
 
-        if is_lod_inputs or normalized:
-            select_nms = graph.make_node(
+        if normalized:
+            select_bbox_indices = graph.make_node(
                 'NonMaxSuppression',
                 inputs=[
                     bboxes, scores, nms_top_k, iou_threshold, score_threshold
@@ -107,7 +110,7 @@ class MultiClassNMS():
                 'Concat',
                 inputs=[new_bboxes[0], new_bboxes[1], new_xmax, new_ymax],
                 axis=2)
-            select_nms = graph.make_node(
+            select_bbox_indices = graph.make_node(
                 'NonMaxSuppression',
                 inputs=[
                     new_bboxes, scores, nms_top_k, iou_threshold,
@@ -118,18 +121,13 @@ class MultiClassNMS():
             class_id = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0, class_id, 0])
             class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
-            select_nms = graph.make_node('Add', inputs=[select_nms, class_id])
+            select_bbox_indices = graph.make_node(
+                'Add', inputs=[select_bbox_indices, class_id])
 
-        return select_nms
+        return select_bbox_indices
 
     @classmethod
-    def keep_top_k(cls,
-                   graph,
-                   node,
-                   select_nms,
-                   scores,
-                   bboxes,
-                   is_lod_inputs=False):
+    def keep_top_k(cls, graph, node, select_bbox_indices, scores, bboxes):
         # step 1 nodes select the nms class
         # create some const value to use
         background = node.attr('background_label')
@@ -142,13 +140,13 @@ class MultiClassNMS():
         # In this code block, we will deocde the raw score data, reshape N * C * M to 1 * N*C*M
         # and the same time, decode the select indices to 1 * D, gather the select_indices
         class_id = graph.make_node(
-            'Gather', inputs=[select_nms, const_values[1]], axis=1)
+            'Gather', inputs=[select_bbox_indices, const_values[1]], axis=1)
 
         squeezed_class_id = graph.make_node(
             'Squeeze', inputs=[class_id], axes=[1])
 
         bbox_id = graph.make_node(
-            'Gather', inputs=[select_nms, const_values[2]], axis=1)
+            'Gather', inputs=[select_bbox_indices, const_values[2]], axis=1)
 
         if background == 0:
             nonzero = graph.make_node('NonZero', inputs=[squeezed_class_id])
@@ -230,13 +228,8 @@ class MultiClassNMS():
             'Gather', inputs=[class_id, keep_topk_indices], axis=1)
 
         # gather the boxes need to gather the boxes id, then get boxes
-        if is_lod_inputs:
-            # bboxes is lod_tensor, shape is [N, C, M]
-            gather_topk_boxes_id = graph.make_node(
-                'Gather', [add_class_M_index, keep_topk_indices], axis=1)
-        else:
-            gather_topk_boxes_id = graph.make_node(
-                'Gather', [bbox_id, keep_topk_indices], axis=1)
+        gather_topk_boxes_id = graph.make_node(
+            'Gather', [bbox_id, keep_topk_indices], axis=1)
 
         # squeeze the gather_topk_boxes_id to 1 dim
         squeeze_topk_boxes_id = graph.make_node(
@@ -279,9 +272,22 @@ class MultiClassNMS():
             outputs=[node.output('Out', 0)],
             axes=[0])
 
-        if node.type == 'multiclass_nms2':
-            concat_final_indices = graph.make_node(
+        if node.type in ['multiclass_nms2', 'matrix_nms', 'multiclass_nms3']:
+            final_indices = graph.make_node(
                 'Squeeze',
                 inputs=[bbox_id],
                 outputs=node.output('Index'),
                 axes=[0])
+            if node.type in ['matrix_nms', 'multiclass_nms3']:
+                select_bboxes_shape = graph.make_node(
+                    'Shape', inputs=[final_indices])
+                indices = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                if 'NmsRoisNum' in node.outputs:
+                    rois_num = node.output('NmsRoisNum')
+                else:
+                    rois_num = node.output('RoisNum')
+                graph.make_node(
+                    "Gather",
+                    inputs=[select_bboxes_shape, indices],
+                    outputs=rois_num)
