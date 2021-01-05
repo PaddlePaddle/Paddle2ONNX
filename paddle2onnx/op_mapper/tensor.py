@@ -31,12 +31,6 @@ class Concat():
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
 
-        input_shapes = [
-            list(node.input_shape('X', i)) for i in range(len(inputs))
-        ]
-        inputs = mapper_helper.fix_negative_shapes(graph, inputs, input_shapes,
-                                                   node.attr('axis'))
-
         node = graph.make_node(
             'Concat',
             inputs=inputs,
