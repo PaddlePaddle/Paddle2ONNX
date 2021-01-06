@@ -230,6 +230,7 @@ class Expand():
                 ]
                 repeat_times = mapper_helper.dtype_alignment(
                     graph, repeat_times, repeat_times_dtypes)
+                # When OpSet>=11, Concat could use negative axis
                 repeat_times_tensor = graph.make_node(
                     'Concat', inputs=repeat_times, axis=-1)
                 graph.make_node(
@@ -270,10 +271,10 @@ class Expand():
 
 @op_mapper('range')
 class Range():
-    support_opset_verison_range = (6, 12)
+    support_opset_verison_range = (11, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_11(cls, graph, node, **kw):
         start = node.input('Start', 0)
         end = node.input('End', 0)
         step = node.input('Step', 0)
