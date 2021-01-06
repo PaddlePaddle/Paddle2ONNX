@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import numpy as np
-import logging
+from paddle2onnx.utils import logging
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
@@ -29,7 +29,7 @@ class MultiClassNMS():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
-        logging.warning("Only support operator:{}'s input[batch_size] == 1.".
+        logging.warning("Operator:{} only supports input[batch_size] == 1.".
                         format(node.type))
         scores = node.input('Scores', 0)
         bboxes = node.input('BBoxes', 0)
@@ -53,29 +53,32 @@ class MultiClassNMS():
                 split=[1] * num_class)
             bbox_ids = []
             for i in range(num_class):
-                bbox_id = cls.nms(
-                    graph,
-                    node,
-                    #single_scores,
-                    scores_list[i],
-                    bboxes_list[i],
-                    class_id=i)
+                bbox_id = cls.nms(graph,
+                                  node,
+                                  scores_list[i],
+                                  bboxes_list[i],
+                                  class_id=i)
                 bbox_ids.append(bbox_id)
             bbox_ids = graph.make_node('Concat', inputs=bbox_ids, axis=0)
             const_shape = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[1, -1, 4])
             bboxes = graph.make_node('Reshape', inputs=[bboxes, const_shape])
-            cls.keep_top_k(graph, node, bbox_ids, scores, bboxes)
+            cls.keep_top_k(
+                graph, node, bbox_ids, scores, bboxes, is_lod_input=True)
         else:
             bbox_ids = cls.nms(graph, node, scores, bboxes)
             cls.keep_top_k(graph, node, bbox_ids, scores, bboxes)
 
     @classmethod
-    def nms(cls, graph, node, scores, bboxes, class_id=0):
+    def nms(cls, graph, node, scores, bboxes, class_id=None):
         normalized = node.attr('normalized')
         nms_top_k = node.attr('nms_top_k')
         if node.type == 'matrix_nms':
             iou_threshold = 0.5
+            logging.warning(
+                "Operator:{} is not supported completely, so we use traditional"
+                " NMS (iou_theshold={}) to instead it, which introduce some difference.".
+                format(node.type, str(iou_threshold)))
         else:
             iou_threshold = node.attr('nms_threshold')
         if nms_top_k == -1:
@@ -119,7 +122,7 @@ class MultiClassNMS():
                     score_threshold
                 ])
 
-        if class_id != 0:
+        if class_id is not None and class_id != 0:
             class_id = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0, class_id, 0])
             class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
@@ -129,7 +132,13 @@ class MultiClassNMS():
         return select_bbox_indices
 
     @classmethod
-    def keep_top_k(cls, graph, node, select_bbox_indices, scores, bboxes):
+    def keep_top_k(cls,
+                   graph,
+                   node,
+                   select_bbox_indices,
+                   scores,
+                   bboxes,
+                   is_lod_input=False):
         # step 1 nodes select the nms class
         # create some const value to use
         background = node.attr('background_label')
@@ -181,12 +190,12 @@ class MultiClassNMS():
             'Mul', inputs=[class_id, class_num])
 
         # add class * M * index
-        add_class_M_index = graph.make_node(
+        add_class_indices = graph.make_node(
             'Add', inputs=[mul_classnum_boxnum, bbox_id])
 
         # Squeeze the indices to 1 dim
         score_indices = graph.make_node(
-            'Squeeze', inputs=[add_class_M_index], axes=[0, 2])
+            'Squeeze', inputs=[add_class_indices], axes=[0, 2])
 
         # gather the data from flatten scores
         scores = graph.make_node(
@@ -230,8 +239,12 @@ class MultiClassNMS():
             'Gather', inputs=[class_id, keep_topk_indices], axis=1)
 
         # gather the boxes need to gather the boxes id, then get boxes
-        gather_topk_boxes_id = graph.make_node(
-            'Gather', [bbox_id, keep_topk_indices], axis=1)
+        if is_lod_input:
+            gather_topk_boxes_id = graph.make_node(
+                'Gather', [add_class_indices, keep_topk_indices], axis=1)
+        else:
+            gather_topk_boxes_id = graph.make_node(
+                'Gather', [bbox_id, keep_topk_indices], axis=1)
 
         # squeeze the gather_topk_boxes_id to 1 dim
         squeeze_topk_boxes_id = graph.make_node(
@@ -285,11 +298,13 @@ class MultiClassNMS():
                     'Shape', inputs=[final_indices])
                 indices = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                rois_num = None
                 if 'NmsRoisNum' in node.outputs:
                     rois_num = node.output('NmsRoisNum')
-                else:
+                elif 'RoisNum' in node.outputs:
                     rois_num = node.output('RoisNum')
-                graph.make_node(
-                    "Gather",
-                    inputs=[select_bboxes_shape, indices],
-                    outputs=rois_num)
+                if rois_num is not None:
+                    graph.make_node(
+                        "Gather",
+                        inputs=[select_bboxes_shape, indices],
+                        outputs=rois_num)

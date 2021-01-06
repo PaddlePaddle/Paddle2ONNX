@@ -7,7 +7,7 @@
 Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 
 - Supported model format. Paddle2ONNX supports both dynamic and static computational graph of PaddlePaddle. For static computational graph, Paddle2ONNX converts PaddlePaddle models saved by API [save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model), for example [IPthon example](examples/tutorial.ipynb).For dynamic computational graph, it is now under experiment and more details will be released after the release of PaddlePaddle 2.0.
-- Supported operaters. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version Opset. More details please refer to [Operator list](docs/en/op_list.md).
+- Supported operators. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version Opset. More details please refer to [Operator list](docs/en/op_list.md).
 - Supported models. You can find officially verified models by Paddle2ONNX in [model zoo](docs/en/model_zoo.md).
 
 ## Environment dependencies
@@ -90,7 +90,7 @@ p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 
 ```
 
-#### IPython教程
+#### IPython tutorials
 
 - [convert to ONNX from dyragph computational graph](examples/tutorial_dygraph2onnx.ipynb)
 
