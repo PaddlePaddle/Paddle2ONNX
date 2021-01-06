@@ -24,6 +24,8 @@ from paddle.fluid import layers
 from paddle2onnx.graph import graph_helper, PaddleGraph
 from paddle2onnx.constant.op_mapping_status import *
 
+import paddle2onnx
+
 REGISTER_CUSTOM_PADDLE_OP = {}
 
 
@@ -167,9 +169,9 @@ class CustomPaddleOp(object):
             CustomPaddleOp.CREATE_TIMES[node.type] += 1
         else:
             CustomPaddleOp.CREATE_TIMES[node.type] = 1
-        scope_name = node.type + str(CustomPaddleOp.CREATE_TIMES[node.type] -
-                                     1) + '_'
-        return scope_name
+        scope_prefix = node.type + str(CustomPaddleOp.CREATE_TIMES[node.type] -
+                                       1) + '_'
+        return scope_prefix
 
     def create_place_holder(self, node):
         place_holders = {}
@@ -214,12 +216,12 @@ class CustomPaddleOp(object):
         return graph
 
     def get_paddle_graph(self):
-        scope_name = self.generate_scope_name(self.node)
+        scope_prefix = self.generate_scope_name(self.node)
         scope = paddle.static.Scope()
         with paddle.static.scope_guard(scope):
             with paddle.static.program_guard(self.main_program,
                                              self.startup_program):
-                with paddle.utils.unique_name.guard(scope_name):
+                with paddle.utils.unique_name.guard(scope_prefix):
                     res = self.forward()
                     feed_var_names = [
                         var.name for vars in self.inputs.values()

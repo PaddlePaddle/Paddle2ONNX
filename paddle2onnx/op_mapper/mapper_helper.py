@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import paddle.fluid.core as core
 import six
+import copy
 from paddle2onnx.constant import dtypes
 
 
@@ -84,3 +86,44 @@ def clip_helper(graph, input, max, min, output=[]):
             max = graph.make_node('Squeeze', max, axes=[0])
         clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
     return clip
+
+
+def dtype_alignment(graph, nodes, node_dtypes):
+    assert len(nodes) == len(
+        node_dtypes), "Length of nodes and node_dtypes should be equal."
+    dtype_order = [
+        core.VarDesc.VarType.BOOL, core.VarDesc.VarType.INT16,
+        core.VarDesc.VarType.INT32, core.VarDesc.VarType.INT64,
+        core.VarDesc.VarType.FP16, core.VarDesc.VarType.FP32
+    ]
+    max_index = -1
+    for dtype in node_dtypes:
+        index = dtype_order.index(dtype)
+        if index > max_index:
+            max_index = index
+
+    if max_index < 0:
+        return nodes
+
+    casted_nodes = list()
+    cast_dtype = dtype_order[max_index]
+    cast_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[cast_dtype]
+    for i, dtype in enumerate(node_dtypes):
+        index = dtype_order.index(dtype)
+        if index != max_index:
+            cast_node = graph.make_node(
+                'Cast', inputs=[nodes[i]], to=cast_dtype)
+            casted_nodes.append(cast_node)
+        else:
+            casted_nodes.append(nodes[i])
+    return casted_nodes
+
+
+def cast(graph, input, origin_dtype, target_dtype):
+    if not isinstance(origin_dtype, six.string_types):
+        origin_dtype = dtypes.DTYPE_PADDLE_STR_MAP[origin_dtype]
+    if origin_dtype != target_dtype:
+        cast_node = graph.make_node(
+            'Cast', inputs=input, to=dtypes.DTYPE_ONNX_STR_MAP[target_dtype])
+        return cast_node
+    return input

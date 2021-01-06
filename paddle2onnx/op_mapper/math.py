@@ -48,7 +48,7 @@ class MatMul():
 
 @op_mapper('exp')
 class Exp():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -58,7 +58,7 @@ class Exp():
 
 @op_mapper('abs')
 class Abs:
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -69,16 +69,20 @@ class Abs:
 @op_mapper(
     [
         'elementwise_add', 'elementwise_sub', 'elementwise_div',
-        'elementwise_mul'
+        'elementwise_mul', 'elementwise_min', 'elementwise_max',
+        'elementwise_pow'
     ],
     mapper_dict={
         'elementwise_add': 'Add',
         'elementwise_sub': 'Sub',
         'elementwise_div': 'Div',
         'elementwise_mul': 'Mul',
+        'elementwise_min': 'Min',
+        'elementwise_max': 'Max',
+        'elementwise_pow': 'Pow',
     })
 class ElementwiseOps():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -88,6 +92,7 @@ class ElementwiseOps():
         y = node.input('Y', 0)
         x_shape = node.input_shape('X', 0)
         y_shape = node.input_shape('Y', 0)
+
         if axis == -1 or axis == (len(x_shape) - 1
                                   ) or len(x_shape) == len(y_shape):
             onnx_node = graph.make_node(
@@ -107,7 +112,7 @@ class ElementwiseOps():
 
 @op_mapper('pow')
 class Pow():
-    support_opset_verision_range = (8, 12)
+    support_opset_version_range = (8, 12)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -128,7 +133,7 @@ class Pow():
 
 @op_mapper('mul')
 class Mul():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -149,7 +154,7 @@ class Mul():
 
 @op_mapper('bmm')
 class BMM():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -161,7 +166,7 @@ class BMM():
 
 @op_mapper('sum')
 class Sum():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
@@ -170,7 +175,7 @@ class Sum():
 
 @op_mapper('floor')
 class Floor():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -188,24 +193,45 @@ class Floor():
         'reduce_prod': 'ReduceProd'
     })
 class ReduceMean():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
-        graph.make_node(
-            op_type,
-            inputs=node.input('X'),
-            outputs=node.output('Out'),
-            attrs={
-                'axes': node.attr('dim'),
-                'keepdims': node.attr('keep_dim')
-            })
+
+        output_shape = node.output_shape('Out', 0)
+        need_unsqueeze = False
+        if not node.attr('keep_dim'):
+            if list(output_shape) == [1]:
+                need_unsqueeze = True
+
+        if not need_unsqueeze:
+            graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+        else:
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[reduce_node],
+                outputs=node.output('Out'),
+                axes=[0])
 
 
 @op_mapper('arg_max')
 class ArgMax():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -219,7 +245,7 @@ class ArgMax():
 
 @op_mapper('scale')
 class Scale():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -265,7 +291,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

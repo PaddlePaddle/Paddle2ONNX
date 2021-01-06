@@ -21,6 +21,7 @@ from . import math
 from . import activation
 from . import tensor
 from . import logic
+from . import search
 
 from .detection import yolo_box
 from .detection import multiclass_nms
@@ -29,3 +30,8 @@ from .detection import box_coder
 from .sequence import im2sequence
 
 from .custom_paddle_op import deformable_conv
+from .custom_paddle_op import anchor_generator
+from .custom_paddle_op import generate_proposals
+from .custom_paddle_op import collect_fpn_proposals
+from .custom_paddle_op import distribute_fpn_proposals
+from .custom_paddle_op import box_clip

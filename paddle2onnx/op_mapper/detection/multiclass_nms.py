@@ -18,7 +18,8 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 
-@op_mapper(['multiclass_nms', 'multiclass_nms2'])
+@op_mapper(
+    ['multiclass_nms', 'multiclass_nms2', 'matrix_nms', 'multiclass_nms3'])
 class MultiClassNMS():
     support_opset_verision_range = (10, 12)
     """
@@ -28,247 +29,267 @@ class MultiClassNMS():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
-        result_name = node.output('Out', 0)
-        background = node.attr('background_label')
+        logging.warning("Only support operator:{}'s input[batch_size] == 1.".
+                        format(node.type))
+        scores = node.input('Scores', 0)
+        bboxes = node.input('BBoxes', 0)
+        num_class = node.input_shape('Scores', 0)[1]
+        if len(node.input_shape('Scores', 0)) == 2:
+            # inputs: scores & bboxes is lod tensor
+            scores = graph.make_node('Transpose', inputs=[scores], perm=[1, 0])
+            scores = graph.make_node('Unsqueeze', inputs=[scores], axes=[0])
+            scores_list = graph.make_node(
+                'Split',
+                inputs=scores,
+                outputs=num_class,
+                axis=1,
+                split=[1] * num_class)
+            bboxes = graph.make_node('Transpose', inputs=bboxes, perm=[1, 0, 2])
+            bboxes_list = graph.make_node(
+                'Split',
+                inputs=bboxes,
+                outputs=num_class,
+                axis=0,
+                split=[1] * num_class)
+            bbox_ids = []
+            for i in range(num_class):
+                bbox_id = cls.nms(
+                    graph,
+                    node,
+                    #single_scores,
+                    scores_list[i],
+                    bboxes_list[i],
+                    class_id=i)
+                bbox_ids.append(bbox_id)
+            bbox_ids = graph.make_node('Concat', inputs=bbox_ids, axis=0)
+            const_shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[1, -1, 4])
+            bboxes = graph.make_node('Reshape', inputs=[bboxes, const_shape])
+            cls.keep_top_k(graph, node, bbox_ids, scores, bboxes)
+        else:
+            bbox_ids = cls.nms(graph, node, scores, bboxes)
+            cls.keep_top_k(graph, node, bbox_ids, scores, bboxes)
+
+    @classmethod
+    def nms(cls, graph, node, scores, bboxes, class_id=0):
         normalized = node.attr('normalized')
-        if normalized == False:
-            logging.warn(
-                        "The parameter normalized of multiclass_nms OP of Paddle is False, which has diff with ONNX." \
-                        " Please set normalized=True in multiclass_nms of Paddle, see doc Q1 in" \
-                        " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/FAQ.md")
+        nms_top_k = node.attr('nms_top_k')
+        if node.type == 'matrix_nms':
+            iou_threshold = 0.5
+        else:
+            iou_threshold = node.attr('nms_threshold')
+        if nms_top_k == -1:
+            nms_top_k = 100000
 
         #convert the paddle attribute to onnx tensor
-        node_score_threshold = graph.make_node(
+        score_threshold = graph.make_node(
             'Constant',
-            inputs=[],
             dtype=dtypes.ONNX.FLOAT,
             value=[float(node.attr('score_threshold'))])
-
-        node_iou_threshold = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=dtypes.ONNX.FLOAT,
-            value=[float(node.attr('nms_threshold'))])
-
-        node_keep_top_k = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=dtypes.ONNX.INT64,
-            value=[np.int64(node.attr('keep_top_k'))])
-
-        node_keep_top_k_2D = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=dtypes.ONNX.INT64,
-            dims=[1, 1],
-            value=[node.attr('keep_top_k')])
+        iou_threshold = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=[float(iou_threshold)])
+        nms_top_k = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[np.int64(nms_top_k)])
 
         # the paddle data format is x1,y1,x2,y2
         kwargs = {'center_point_box': 0}
 
-        node_select_nms= graph.make_node(
-            'NonMaxSuppression',
-            inputs=[node.input('BBoxes', 0), node.input('Scores', 0), node_keep_top_k,\
-                node_iou_threshold, node_score_threshold])
-        # step 1 nodes select the nms class
+        if normalized:
+            select_bbox_indices = graph.make_node(
+                'NonMaxSuppression',
+                inputs=[
+                    bboxes, scores, nms_top_k, iou_threshold, score_threshold
+                ])
+        elif not normalized:
+            value_one = graph.make_node(
+                'Constant', dims=[1], dtype=dtypes.ONNX.FLOAT, value=1.0)
+            new_bboxes = graph.make_node(
+                'Split', inputs=[bboxes], outputs=4, axis=2,
+                split=[1, 1, 1, 1])
+            new_xmax = graph.make_node('Add', inputs=[new_bboxes[2], value_one])
+            new_ymax = graph.make_node('Add', inputs=[new_bboxes[3], value_one])
+            new_bboxes = graph.make_node(
+                'Concat',
+                inputs=[new_bboxes[0], new_bboxes[1], new_xmax, new_ymax],
+                axis=2)
+            select_bbox_indices = graph.make_node(
+                'NonMaxSuppression',
+                inputs=[
+                    new_bboxes, scores, nms_top_k, iou_threshold,
+                    score_threshold
+                ])
 
+        if class_id != 0:
+            class_id = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0, class_id, 0])
+            class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
+            select_bbox_indices = graph.make_node(
+                'Add', inputs=[select_bbox_indices, class_id])
+
+        return select_bbox_indices
+
+    @classmethod
+    def keep_top_k(cls, graph, node, select_bbox_indices, scores, bboxes):
+        # step 1 nodes select the nms class
         # create some const value to use
-        node_const_value = [result_name+"@const_0",
-            result_name+"@const_1",\
-            result_name+"@const_2",\
-            result_name+"@const_-1"]
-        value_const_value = [0, 1, 2, -1]
-        for name, value in zip(node_const_value, value_const_value):
-            graph.make_node(
-                'Constant',
-                layer_name=name,
-                inputs=[],
-                outputs=[name],
-                dtype=dtypes.ONNX.INT64,
-                value=[value])
+        background = node.attr('background_label')
+        const_values = []
+        for value in [0, 1, 2, -1]:
+            const_value = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[value])
+            const_values.append(const_value)
 
         # In this code block, we will deocde the raw score data, reshape N * C * M to 1 * N*C*M
         # and the same time, decode the select indices to 1 * D, gather the select_indices
-        node_gather_1 = graph.make_node(
-            'Gather',
-            inputs=[node_select_nms, result_name + "@const_1"],
-            axis=1)
+        class_id = graph.make_node(
+            'Gather', inputs=[select_bbox_indices, const_values[1]], axis=1)
 
-        node_squeeze_gather_1 = graph.make_node(
-            'Squeeze', inputs=[node_gather_1], axes=[1])
+        squeezed_class_id = graph.make_node(
+            'Squeeze', inputs=[class_id], axes=[1])
 
-        node_gather_2 = graph.make_node(
-            'Gather',
-            inputs=[node_select_nms, result_name + "@const_2"],
-            axis=1)
+        bbox_id = graph.make_node(
+            'Gather', inputs=[select_bbox_indices, const_values[2]], axis=1)
 
-        #slice the class is not 0
         if background == 0:
-            node_nonzero = graph.make_node(
-                'NonZero', inputs=[node_squeeze_gather_1])
+            nonzero = graph.make_node('NonZero', inputs=[squeezed_class_id])
         else:
-            node_thresh = graph.make_node(
+            thresh = graph.make_node(
                 'Constant', inputs=[], dtype=dtypes.ONNX.INT32, value=[-1])
 
-            node_cast = graph.make_node(
-                'Cast', inputs=[node_squeeze_gather_1], to=6)
+            cast = graph.make_node('Cast', inputs=[squeezed_class_id], to=6)
 
-            node_greater = graph.make_node(
-                'Greater', inputs=[node_cast, node_thresh])
+            greater = graph.make_node('Greater', inputs=[cast, thresh])
 
-            node_nonzero = graph.make_node('NonZero', inputs=[node_greater])
+            nonzero = graph.make_node('NonZero', inputs=[greater])
 
-        node_gather_1_nonzero = graph.make_node(
-            'Gather', inputs=[node_gather_1, node_nonzero], axis=0)
+        class_id = graph.make_node('Gather', inputs=[class_id, nonzero], axis=0)
 
-        node_gather_2_nonzero = graph.make_node(
-            'Gather', inputs=[node_gather_2, node_nonzero], axis=0)
-
-        # reshape scores N * C * M to (N*C*M) * 1
-        node_reshape_scores_rank1 = graph.make_node(
-            "Reshape",
-            inputs=[node.input('Scores', 0), result_name + "@const_-1"])
+        bbox_id = graph.make_node('Gather', inputs=[bbox_id, nonzero], axis=0)
 
         # get the shape of scores
-        node_shape_scores = graph.make_node(
-            'Shape', inputs=node.input('Scores'))
+        shape_scores = graph.make_node('Shape', inputs=scores)
 
         # gather the index: 2 shape of scores
-        node_gather_scores_dim1 = graph.make_node(
-            'Gather',
-            inputs=[node_shape_scores, result_name + "@const_2"],
-            axis=0)
+        class_num = graph.make_node(
+            'Gather', inputs=[shape_scores, const_values[2]], axis=0)
+
+        # reshape scores N * C * M to (N*C*M) * 1
+        scores = graph.make_node('Reshape', inputs=[scores, const_values[-1]])
 
         # mul class * M
-        node_mul_classnum_boxnum = graph.make_node(
-            'Mul', inputs=[node_gather_1_nonzero, node_gather_scores_dim1])
+        mul_classnum_boxnum = graph.make_node(
+            'Mul', inputs=[class_id, class_num])
 
         # add class * M * index
-        node_add_class_M_index = graph.make_node(
-            'Add', inputs=[node_mul_classnum_boxnum, node_gather_2_nonzero])
+        add_class_M_index = graph.make_node(
+            'Add', inputs=[mul_classnum_boxnum, bbox_id])
 
         # Squeeze the indices to 1 dim
-        node_squeeze_select_index = graph.make_node(
-            'Squeeze', inputs=[node_add_class_M_index], axes=[0, 2])
+        score_indices = graph.make_node(
+            'Squeeze', inputs=[add_class_M_index], axes=[0, 2])
 
         # gather the data from flatten scores
-        node_gather_select_scores = graph.make_node(
-            'Gather',
-            inputs=[node_reshape_scores_rank1, node_squeeze_select_index],
-            axis=0)
+        scores = graph.make_node(
+            'Gather', inputs=[scores, score_indices], axis=0)
 
-        # get nums to input TopK
-        node_shape_select_num = graph.make_node(
-            'Shape', inputs=[node_gather_select_scores])
+        keep_top_k = node.attr('keep_top_k')
+        keep_top_k = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            dims=[1, 1],
+            value=[node.attr('keep_top_k')])
 
-        node_gather_select_num = graph.make_node(
-            'Gather',
-            inputs=[node_shape_select_num, result_name + "@const_0"],
-            axis=0)
-
-        node_unsqueeze_select_num = graph.make_node(
-            'Unsqueeze', inputs=[node_gather_select_num], axes=[0])
-
-        node_concat_topK_select_num = graph.make_node(
-            'Concat',
-            inputs=[node_unsqueeze_select_num, node_keep_top_k_2D],
-            axis=0)
-
-        node_cast_concat_topK_select_num = graph.make_node(
-            'Cast', inputs=[node_concat_topK_select_num], to=6)
         # get min(topK, num_select)
-        node_compare_topk_num_select = graph.make_node(
-            'ReduceMin', inputs=[node_cast_concat_topK_select_num], keepdims=0)
-
+        shape_select_num = graph.make_node('Shape', inputs=[scores])
+        const_zero = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+        gather_select_num = graph.make_node(
+            'Gather', inputs=[shape_select_num, const_zero], axis=0)
+        unsqueeze_select_num = graph.make_node(
+            'Unsqueeze', inputs=[gather_select_num], axes=[0])
+        concat_topK_select_num = graph.make_node(
+            'Concat', inputs=[unsqueeze_select_num, keep_top_k], axis=0)
+        cast_concat_topK_select_num = graph.make_node(
+            'Cast', inputs=[concat_topK_select_num], to=6)
+        keep_top_k = graph.make_node(
+            'ReduceMin', inputs=[cast_concat_topK_select_num], keepdims=0)
         # unsqueeze the indices to 1D tensor
-        node_unsqueeze_topk_select_indices = graph.make_node(
-            'Unsqueeze', inputs=[node_compare_topk_num_select], axes=[0])
-
+        keep_top_k = graph.make_node('Unsqueeze', inputs=[keep_top_k], axes=[0])
         # cast the indices to INT64
-        node_cast_topk_indices = graph.make_node(
-            'Cast', inputs=[node_unsqueeze_topk_select_indices], to=7)
+        keep_top_k = graph.make_node('Cast', inputs=[keep_top_k], to=7)
 
         # select topk scores  indices
-        outputs_topk_select_topk_indices = [result_name + "@topk_select_topk_values",\
-            result_name + "@topk_select_topk_indices"]
-        node_topk_select_topk_indices = graph.make_node(
-            'TopK',
-            inputs=[node_gather_select_scores, node_cast_topk_indices],
-            outputs=outputs_topk_select_topk_indices)
+        keep_topk_scores, keep_topk_indices = graph.make_node(
+            'TopK', inputs=[scores, keep_top_k], outputs=2)
 
         # gather topk label, scores, boxes
-        node_gather_topk_scores = graph.make_node(
-            'Gather',
-            inputs=[
-                node_gather_select_scores, outputs_topk_select_topk_indices[1]
-            ],
-            axis=0)
+        gather_topk_scores = graph.make_node(
+            'Gather', inputs=[scores, keep_topk_indices], axis=0)
 
-        node_gather_topk_class = graph.make_node(
-            'Gather',
-            inputs=[
-                node_gather_1_nonzero, outputs_topk_select_topk_indices[1]
-            ],
-            axis=1)
+        gather_topk_class = graph.make_node(
+            'Gather', inputs=[class_id, keep_topk_indices], axis=1)
 
         # gather the boxes need to gather the boxes id, then get boxes
-        node_gather_topk_boxes_id = graph.make_node(
-            'Gather',
-            inputs=[
-                node_gather_2_nonzero, outputs_topk_select_topk_indices[1]
-            ],
-            axis=1)
+        gather_topk_boxes_id = graph.make_node(
+            'Gather', [bbox_id, keep_topk_indices], axis=1)
 
         # squeeze the gather_topk_boxes_id to 1 dim
-        node_squeeze_topk_boxes_id = graph.make_node(
-            'Squeeze', inputs=[node_gather_topk_boxes_id], axes=[0, 2])
+        squeeze_topk_boxes_id = graph.make_node(
+            'Squeeze', inputs=[gather_topk_boxes_id], axes=[0, 2])
 
-        node_gather_select_boxes = graph.make_node(
-            'Gather',
-            inputs=[node.input('BBoxes', 0), node_squeeze_topk_boxes_id],
-            axis=1)
+        gather_select_boxes = graph.make_node(
+            'Gather', inputs=[bboxes, squeeze_topk_boxes_id], axis=1)
 
         # concat the final result
         # before concat need to cast the class to float
-        node_cast_topk_class = graph.make_node(
-            'Cast', inputs=[node_gather_topk_class], to=1)
+        cast_topk_class = graph.make_node(
+            'Cast', inputs=[gather_topk_class], to=1)
 
-        node_unsqueeze_topk_scores = graph.make_node(
-            'Unsqueeze', inputs=[node_gather_topk_scores], axes=[0, 2])
+        unsqueeze_topk_scores = graph.make_node(
+            'Unsqueeze', inputs=[gather_topk_scores], axes=[0, 2])
 
-        inputs_concat_final_results = [node_cast_topk_class, node_unsqueeze_topk_scores, \
-            node_gather_select_boxes]
-        node_sort_by_socre_results = graph.make_node(
+        inputs_concat_final_results = [
+            cast_topk_class, unsqueeze_topk_scores, gather_select_boxes
+        ]
+
+        sort_by_socre_results = graph.make_node(
             'Concat', inputs=inputs_concat_final_results, axis=2)
 
-        # select topk classes indices
-        node_squeeze_cast_topk_class = graph.make_node(
-            'Squeeze', inputs=[node_cast_topk_class], axes=[0, 2])
-        node_neg_squeeze_cast_topk_class = graph.make_node(
-            'Neg', inputs=[node_squeeze_cast_topk_class])
+        # sort by class_id
+        squeeze_cast_topk_class = graph.make_node(
+            'Squeeze', inputs=[cast_topk_class], axes=[0, 2])
 
-        outputs_topk_select_classes_indices = [result_name + "@topk_select_topk_classes_scores",\
-            result_name + "@topk_select_topk_classes_indices"]
-        node_topk_select_topk_indices = graph.make_node(
-            'TopK',
-            inputs=[node_neg_squeeze_cast_topk_class, node_cast_topk_indices],
-            outputs=outputs_topk_select_classes_indices)
-        node_concat_final_results = graph.make_node(
-            'Gather',
-            inputs=[
-                node_sort_by_socre_results,
-                outputs_topk_select_classes_indices[1]
-            ],
-            axis=1)
-        node_concat_final_results = graph.make_node(
+        neg_squeeze_cast_topk_class = graph.make_node(
+            'Neg', inputs=[squeeze_cast_topk_class])
+
+        data, indices = graph.make_node(
+            'TopK', inputs=[neg_squeeze_cast_topk_class, keep_top_k], outputs=2)
+
+        concat_final_results = graph.make_node(
+            'Gather', inputs=[sort_by_socre_results, indices], axis=1)
+
+        concat_final_results = graph.make_node(
             'Squeeze',
-            inputs=[node_concat_final_results],
+            inputs=[concat_final_results],
             outputs=[node.output('Out', 0)],
             axes=[0])
 
-        if node.type == 'multiclass_nms2':
-            graph.make_node(
+        if node.type in ['multiclass_nms2', 'matrix_nms', 'multiclass_nms3']:
+            final_indices = graph.make_node(
                 'Squeeze',
-                inputs=[node_gather_2_nonzero],
+                inputs=[bbox_id],
                 outputs=node.output('Index'),
                 axes=[0])
+            if node.type in ['matrix_nms', 'multiclass_nms3']:
+                select_bboxes_shape = graph.make_node(
+                    'Shape', inputs=[final_indices])
+                indices = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                if 'NmsRoisNum' in node.outputs:
+                    rois_num = node.output('NmsRoisNum')
+                else:
+                    rois_num = node.output('RoisNum')
+                graph.make_node(
+                    "Gather",
+                    inputs=[select_bboxes_shape, indices],
+                    outputs=rois_num)

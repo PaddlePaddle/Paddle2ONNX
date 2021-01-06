@@ -21,12 +21,13 @@ from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper(
-    ['relu', 'tanh', 'log', 'sigmoid'],
+    ['relu', 'tanh', 'log', 'sigmoid', 'sqrt'],
     mapper_dict={
         'relu': 'Relu',
         'tanh': 'Tanh',
         'log': 'Log',
         'sigmoid': 'Sigmoid',
+        'sqrt': 'Sqrt',
     })
 class ActivationOps():
     support_opset_verison_range = (1, 12)
@@ -71,8 +72,7 @@ class Relu6():
     def opset_1(cls, graph, node, **kw):
         mapper_helper.clip_helper(graph,
                                   node.input('X', 0),
-                                  node.attr('threshold'), 
-                                  0.0,
+                                  node.attr('threshold'), 0.0,
                                   node.output('Out', 0))
 
 

@@ -91,7 +91,8 @@ class BoxCoder():
             node_centor_tmp_list = [node_centor_w_tmp, node_centor_h_tmp]
 
             count = 2
-            for (name, node) in zip(name_centor_tmp_list, node_centor_tmp_list):
+            for (name, op_node) in zip(name_centor_tmp_list,
+                                       node_centor_tmp_list):
                 tmp_node = graph.make_node('Add',
                        inputs=[node.output('OutputBox')[0] + "@slice_" + str(1)]\
                            + [name_box_split[count]],
