@@ -92,6 +92,9 @@ p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 # paddle.onnx.export(layer, save_path, input_spec=[x_spec])
 
 ```
+
+#### IPython教程
+
 - [动态图导出ONNX教程](examples/tutorial_dygraph2onnx.ipynb)
 
 ##  相关文档
