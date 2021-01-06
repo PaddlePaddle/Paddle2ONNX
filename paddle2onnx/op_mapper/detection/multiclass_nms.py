@@ -186,12 +186,12 @@ class MultiClassNMS():
             'Mul', inputs=[class_id, class_num])
 
         # add class * M * index
-        add_class_M_index = graph.make_node(
+        add_class_indices = graph.make_node(
             'Add', inputs=[mul_classnum_boxnum, bbox_id])
 
         # Squeeze the indices to 1 dim
         score_indices = graph.make_node(
-            'Squeeze', inputs=[add_class_M_index], axes=[0, 2])
+            'Squeeze', inputs=[add_class_indices], axes=[0, 2])
 
         # gather the data from flatten scores
         scores = graph.make_node(
@@ -237,7 +237,7 @@ class MultiClassNMS():
         # gather the boxes need to gather the boxes id, then get boxes
         if is_lod_input:
             gather_topk_boxes_id = graph.make_node(
-                'Gather', [add_class_M_index, keep_topk_indices], axis=1)
+                'Gather', [add_class_indices, keep_topk_indices], axis=1)
         else:
             gather_topk_boxes_id = graph.make_node(
                 'Gather', [bbox_id, keep_topk_indices], axis=1)
