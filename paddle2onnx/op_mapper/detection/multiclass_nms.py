@@ -75,6 +75,10 @@ class MultiClassNMS():
         nms_top_k = node.attr('nms_top_k')
         if node.type == 'matrix_nms':
             iou_threshold = 0.5
+            logging.warning(
+                "Operator:{} is not supported completely, so we use traditional"
+                " NMS (iou_theshold={}) to instead it, which introduce some difference.".
+                format(node.type, str(iou_threshold)))
         else:
             iou_threshold = node.attr('nms_threshold')
         if nms_top_k == -1:
