@@ -92,7 +92,7 @@ p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 
 #### IPython tutorials
 
-- [convert to ONNX from dygraph computational graph](examples/tutorial_dygraph2onnx.ipynb)
+- [convert to ONNX from dynamic computational graph](examples/tutorial_dygraph2onnx.ipynb)
 
 ## Relative documents
 

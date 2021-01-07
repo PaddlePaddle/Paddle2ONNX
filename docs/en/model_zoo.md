@@ -1,5 +1,5 @@
 Paddle2ONNX mainly supports three types of models: image classification, object detection and image segmentation.
-As PaddlePaddle 2.0 evolves, the realization of serialized operaters will be more universal. It is expected that NLP and OCR series of models will be supported.
+As PaddlePaddle 2.0 evolves, the realization of serialized operators will be more universal. It is expected that NLP and OCR series of models will be supported.
 
 Due to the differences between frameworks, some models may not be supported. If you meet any problem such as converting failure or inference error，you can raise a issue in [ISSUE](https://github.com/PaddlePaddle/paddle-onnx/issues/new).
 
@@ -37,11 +37,11 @@ Due to ONNX's limit, Paddle2ONNX is not able to support all the detection models
 
 | Models | Source |
 |-------|--------|
-|SSD_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#ssd) |
-|YoloV3_DarkNet53|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
-|YoloV3_ResNet34|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
-|YoloV3_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
-|FasterRCNN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#faster--mask-r-cnn) |
+|SSD_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#ssd) |
+|YoloV3_DarkNet53|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
+|YoloV3_ResNet34|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
+|YoloV3_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
+|FasterRCNN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#faster--mask-r-cnn) |
 
 ## Image segmentation
 Support UNet,HRNet and DeepLab. Test models are from [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg).
