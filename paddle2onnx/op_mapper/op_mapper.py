@@ -153,7 +153,7 @@ class OpMapper(object):
                 opsets = OpMapper.OPSETS[op_type]
                 if min(opsets.keys()) > recommend_opset_version:
                     recommend_opset_version = min(opsets.keys())
-            error_info = "\nThere's {} ops are not supported in opset_version {}, please try opset versions >= {}.\n".format(
+            error_info = "\nThere's {} ops are not supported in opset version {}, please try opset version >= {}.\n".format(
                 len(unsupported_op_types), opset_version,
                 recommend_opset_version)
 
