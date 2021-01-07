@@ -30,7 +30,7 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 ##  Usage
 ### Static computational graph
 #### Using with command line
-Uncombibined PaddlePaddle model(parameters saved in different files)
+Uncombined PaddlePaddle model(parameters saved in different files)
 
     paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
@@ -92,7 +92,7 @@ p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 
 #### IPython tutorials
 
-- [convert to ONNX from dyragph computational graph](examples/tutorial_dygraph2onnx.ipynb)
+- [convert to ONNX from dynamic computational graph](examples/tutorial_dygraph2onnx.ipynb)
 
 ## Relative documents
 
