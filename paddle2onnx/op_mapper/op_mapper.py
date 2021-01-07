@@ -147,8 +147,15 @@ class OpMapper(object):
             unsupported_op_types = set([
                 node.type for node in op_mapping_status[OP_MAPPING_NO_VERSION]
             ])
-            error_info = "\nThere's {} ops are not supported in opset_version {}, please try other opset versions\n".format(
-                len(unsupported_op_types), opset_version)
+
+            recommend_opset_version = -1
+            for op_type in unsupported_op_types:
+                opsets = OpMapper.OPSETS[op_type]
+                if min(opsets.keys()) > recommend_opset_version:
+                    recommend_opset_version = min(opsets.keys())
+            error_info = "\nThere's {} ops are not supported in opset_version {}, please try opset versions >= {}.\n".format(
+                len(unsupported_op_types), opset_version,
+                recommend_opset_version)
 
             for op_type in unsupported_op_types:
                 error_info += "=========== {} ===========\n".format(op_type)
