@@ -30,7 +30,7 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 ##  Usage
 ### Static computational graph
 #### Using with command line
-Uncombibined PaddlePaddle model(parameters saved in different files)
+Uncombined PaddlePaddle model(parameters saved in different files)
 
     paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
