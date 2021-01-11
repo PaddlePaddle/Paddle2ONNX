@@ -38,6 +38,7 @@
 |YoloV3_ResNet34|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
 |YoloV3_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
 |FasterRCNN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#faster--mask-r-cnn) |
+|FasterRCNN_with_DCN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#deformable-%E5%8D%B7%E7%A7%AF%E7%BD%91%E7%BB%9Cv2) |
 
 ## 图像分割
 支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)。

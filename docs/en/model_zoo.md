@@ -42,6 +42,7 @@ Due to ONNX's limit, Paddle2ONNX is not able to support all the detection models
 |YoloV3_ResNet34|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3) |
 |YoloV3_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3) |
 |FasterRCNN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#faster--mask-r-cnn) |
+|FasterRCNN_with_DCN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#deformable-convnets-v2) |
 
 ## Image segmentation
 Support UNet,HRNet and DeepLab. Test models are from [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg).
