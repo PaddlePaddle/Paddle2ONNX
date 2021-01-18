@@ -100,21 +100,22 @@ class Pool():
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
-
             input_h, input_w = node.input_shape('X', 0)[2:]
-            output_h, output_w = node.output_shape('Out', 0)[2:]
-            stride_h = int(input_h / output_h)
-            stride_w = int(input_w / output_w)
-            kernel_h = input_h - (output_h - 1) * stride_h
-            kernel_w = input_w - (output_w - 1) * stride_w
 
-            if node.attr('strides') is not None and (
-                    -1 not in node.attr('strides')):
-                stride_h, stride_w = node.attr('strides')
-
-            if node.attr('ksize') is not None and (
-                    -1 not in node.attr('ksize')):
+            if node.attr('ksize') is None or (-1 in node.attr('ksize')):
+                # if ksize is not fixed, check if input shape of pool is fixed.
+                mapper_helper.is_static_shape(node.input_shape('X', 0))
+                if node.attr('strides') is not None and (
+                        -1 not in node.attr('strides')):
+                    stride_h, stride_w = node.attr('strides')
+                else:
+                    stride_h = int(input_h / output_h)
+                    stride_w = int(input_w / output_w)
+                output_h, output_w = node.output_shape('Out', 0)[2:]
+                kernel_h = input_h - (output_h - 1) * stride_h
+                kernel_w = input_w - (output_w - 1) * stride_w
+            else:
+                output_h, output_w = node.attr('ksize')[0]
                 kernel_h = input_h - (node.attr('ksize')[0] - 1) * stride_h
                 kernel_w = input_w - (node.attr('ksize')[1] - 1) * stride_w
 
