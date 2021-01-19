@@ -108,19 +108,6 @@ class Pool():
             stride_h = int(input_h / output_h)
             stride_w = int(input_w / output_w)
 
-            #if node.attr('ksize') is not None and  (-1 not in node.attr('ksize')):
-            #    output_h, output_w = node.attr('ksize')
-            #else:
-            #    # if ksize is not fixed, check if input shape of pool is fixed.
-            #    output_h, output_w = node.output_shape('Out', 0)[2:]
-
-            #if node.attr('strides') is not None and (
-            #        -1 not in node.attr('strides')):
-            #    stride_h, stride_w = node.attr('strides')
-            #else:
-            #    stride_h = int(input_h / output_h)
-            #    stride_w = int(input_w / output_w)
-
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
 
