@@ -407,7 +407,7 @@ class Gather():
                 outputs=node.output('Out'))
 
 
-@op_mapper('lookup_table_v2')
+@op_mapper(['lookup_table_v2', 'lookup_table'])
 class Embedding():
     support_opset_verison_range = (1, 12)
 

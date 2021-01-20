@@ -57,7 +57,7 @@ class LessOrEqual():
 
 @op_mapper('equal')
 class Equal():
-    support_opset_verison_range = (1, )
+    support_opset_verison_range = (12, )
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
@@ -65,3 +65,13 @@ class Equal():
             'Equal',
             inputs=[node.input('X', 0), node.input('Y', 0)],
             outputs=node.output('Out'))
+
+
+@op_mapper('logical_not')
+class Not():
+    support_opset_verison_range = (1, )
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        onnx_node = graph.make_node(
+            'Not', inputs=[node.input('Input')], outputs=node.output('Out'))
