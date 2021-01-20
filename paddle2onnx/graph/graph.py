@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import os
 import copy
+import six
 import collections
 from paddle2onnx.constant import NodeDomain
 
@@ -73,13 +74,13 @@ class Node(object):
                 ipt.layer_name if isinstance(ipt, Node) else ipt
                 for ipt in inputs
             ]
-        elif isinstance(inputs, str):
+        elif isinstance(inputs, six.string_types):
             self.inputs = [inputs]
         elif isinstance(inputs, Node):
             self.inputs = [inputs.layer_name]
         else:
             raise TypeError(
-                'Inputs of node must be type: list, ONNXNode, or String but got {}'.
+                'Inputs of node must be type: list, Node, or String but got {}'.
                 format(type(inputs)))
 
     def set_outputs(self, outputs):
@@ -88,9 +89,14 @@ class Node(object):
                 opt.layer_name if isinstance(opt, Node) else opt
                 for opt in outputs
             ]
+        elif isinstance(outputs, six.string_types):
+            self.outputs = [outputs]
+        elif isinstance(ouputs, Node):
+            self.outputs = [outputs.layer_name]
         else:
-            raise TypeError('Outputs of node must be type: list, but got {}'.
-                            format(type(outputs)))
+            raise TypeError(
+                'Outputs of node must be type: list, Node, or String but got {}'.
+                format(type(outputs)))
 
 
 class Graph(object):
@@ -188,7 +194,28 @@ class Graph(object):
         self.insert_node(node)
         return node
 
-    def update_node(self, node, move_to_end=False):
+    def update_node(self,
+                    node,
+                    op_type=None,
+                    inputs=None,
+                    outputs=None,
+                    attrs=None,
+                    block=None,
+                    move_to_end=True,
+                    domain=None,
+                    **kw):
+        if op_type is not None:
+            node.type = op_type
+        if inputs is not None:
+            node.set_inputs(inputs)
+        if outputs is not None:
+            node.set_outputs(outputs)
+        if attrs is None:
+            attrs = kw
+        attrs.update(kw)
+        node.attrs = attrs
+        if domain is not None:
+            node.domain = domain
         if move_to_end:
             self.node_map.pop(node.layer_name)
         self.node_map[node.layer_name] = node

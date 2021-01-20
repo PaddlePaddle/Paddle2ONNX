@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import os
+import six
 import paddle
 import numpy as np
 from paddle.fluid.framework import Variable

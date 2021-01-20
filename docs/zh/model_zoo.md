@@ -29,7 +29,7 @@
 | Xception41| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/xception.py) |
 
 ## 图像检测
-支持的模型有SSD、YoloV3模型，测试模型来自于[PaddleDetection](https://github.com/PaddlePaddle/Paddledetection)。由于ONNX对检测模型算子支持比较有限，paddle2onnx对检测模型也不能完全支持。后续我们计划增加对其它检测模型的支持，基于ONNX目前对检测模型支持的现状，将会集中于一阶段检测模型。
+支持的模型有SSD、YoloV3、FasterRCNN模型，测试模型来自于[PaddleDetection](https://github.com/PaddlePaddle/Paddledetection)。由于ONNX对检测模型算子支持比较有限，paddle2onnx对检测模型也不能完全支持。后续我们计划增加对其它检测模型的支持，基于ONNX目前对检测模型支持的现状，将会主要集中于一阶段检测模型。
 
 | 模型 | 来源 |
 |-------|--------|
@@ -37,6 +37,8 @@
 |YoloV3_DarkNet53|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
 |YoloV3_ResNet34|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
 |YoloV3_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#yolo-v3-%E5%9F%BA%E4%BA%8Epasacl-voc%E6%95%B0%E6%8D%AE%E9%9B%86) |
+|FasterRCNN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#faster--mask-r-cnn) |
+|FasterRCNN_with_DCN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#deformable-%E5%8D%B7%E7%A7%AF%E7%BD%91%E7%BB%9Cv2) |
 
 ## 图像分割
 支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)。
@@ -48,7 +50,7 @@
 |DeepLab|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v0.7.0/tutorial/finetune_deeplabv3plus.md) |
 
 ## 图像OCR
-支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)。
+支持的模型有DB等模型，测试模型来自于[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)。
 
 | 模型 | 来源 |
 |-------|--------|

@@ -18,6 +18,8 @@ import os
 import copy
 import collections
 import numpy as np
+import paddle
+from paddle import fluid
 from paddle.fluid import dygraph
 from paddle.fluid.framework import Operator
 from paddle2onnx.graph import Node, Graph
@@ -31,6 +33,17 @@ class PaddleNode(Node):
         self.paddle_op = paddle_op
         self.block = block
 
+    def __str__(self):
+        node_str = ''
+        attrs = ''
+        for key, value in self.attrs.items():
+            if key == 'op_callstack':
+                continue
+            attrs += ', ' + key + '=' + str(value)
+        node_str += "  {} = {}::{}(inputs={}{}) \n".format(
+            self.outputs, self.domain, self.type, self.inputs, attrs)
+        return node_str
+
     @property
     def input_names(self):
         return [name for name in self.inputs.keys()]
@@ -40,8 +53,12 @@ class PaddleNode(Node):
         return [name for name in self.outputs.keys()]
 
     def input(self, name, idx=None):
+        if name not in self.inputs:
+            return None
         if idx is None:
             return self.inputs[name]
+        if len(self.inputs[name]) <= idx:
+            return None
         return self.inputs[name][idx]
 
     def output(self, name, idx=None):
@@ -58,10 +75,13 @@ class PaddleNode(Node):
     def input_var(self, name, idx):
         return self.block.var(self.input(name, idx))
 
-    def attr(self, name):
+    def input_dtype(self, name, idx):
+        return self.block.var(self.input(name, idx)).dtype
+
+    def attr(self, name, default=None):
         if name in self.attrs:
             return self.attrs[name]
-        return None
+        return default
 
     def set_inputs(self, inputs):
         if isinstance(inputs, dict):
@@ -110,14 +130,13 @@ class PaddleGraph(Graph):
 
     def add_input_node(self, input_spec=None, op=None, block=None):
         if isinstance(input_spec, collections.Iterable):
-            for ipt in input:
-                if isinstance(ipt, paddle.static.InputSpec):
-                    layer_name = ipt.name
-                    attrs = {}
-                    attrs['shape'] = ipt.shape
-                    attrs['dtype'] = ipt.dtype
-                    node = Node('feed', [], [layer_name], attrs, layer_name)
-                    self.input_nodes.append(node)
+            for ipt in input_spec:
+                layer_name = ipt.name
+                attrs = {}
+                attrs['shape'] = ipt.shape
+                attrs['dtype'] = ipt.dtype
+                node = Node('feed', [], [layer_name], attrs, layer_name)
+                self.input_nodes.append(node)
         if isinstance(op, Operator):
             layer_name = op.output('Out')[0]
             var = block.var(layer_name)
@@ -203,6 +222,7 @@ class PaddleGraph(Graph):
                 'dtype': var.dtype,
                 'shape': var.shape
             }
+
         graph = PaddleGraph(program, parameters_dict)
         return graph
 
