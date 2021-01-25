@@ -106,8 +106,12 @@ class ExpandV2():
                                        node.input('Shape', 0),
                                        node.input_dtype('Shape', 0), 'int64')
         elif len(node.attr('shape')) > 0:
+            shape = node.attr('shape')
+            for idx in range(len(shape)):
+                if shape[idx] == -1:
+                    shape[idx] = 1
             shape = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=node.attr('shape'))
+                'Constant', dtype=dtypes.ONNX.INT64, value=shape)
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],
