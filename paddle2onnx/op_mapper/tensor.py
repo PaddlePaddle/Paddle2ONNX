@@ -168,13 +168,29 @@ class Slice():
             raise Exception(
                 "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
             )
-        graph.make_node(
-            "Slice",
-            inputs=[node.input('Input')[0]],
-            outputs=node.output('Out'),
-            axes=axes,
-            starts=starts,
-            ends=ends)
+        decrease_axis = node.attr('decrease_axis')
+        if decrease_axis is None:
+            graph.make_node(
+                "Slice",
+                inputs=[node.input('Input')[0]],
+                outputs=node.output('Out'),
+                axes=axes,
+                starts=starts,
+                ends=ends)
+        else:
+            if isinstance(decrease_axis, int):
+                decrease_axis = [decrease_axis]
+            sliced = graph.make_node(
+                "Slice",
+                inputs=[node.input('Input')[0]],
+                axes=axes,
+                starts=starts,
+                ends=ends)
+            graph.make_node(
+                'Squeeze',
+                inputs=[sliced],
+                outputs=node.output('Out'),
+                axes=decrease_axis)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
