@@ -90,7 +90,7 @@ class Gelu():
         zero_point_five = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.5])
         one = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=[1])
-        x = graph.make_node('Div', inputs=[input, sqrt])
+        x = graph.make_node('Div', inputs=[input, sqrt2])
         x = graph.make_node('Erf', inputs=x)
         x = graph.make_node('Add', inputs=[x, one])
         x = graph.make_node('Mul', inputs=[input, x])
