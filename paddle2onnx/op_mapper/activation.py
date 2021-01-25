@@ -76,6 +76,28 @@ class Relu6():
                                   node.output('Out', 0))
 
 
+@op_mapper('gelu')
+class Gelu():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        if node.attr('approximate'):
+            raise Exception("Not support approximate is True.")
+        input = node.input('X', 0)
+        sqrt2 = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.4142135623730951])
+        zero_point_five = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.5])
+        one = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=[1])
+        x = graph.make_node('Div', inputs=[input, sqrt])
+        x = graph.make_node('Erf', inputs=x)
+        x = graph.make_node('Add', inputs=[x, one])
+        x = graph.make_node('Mul', inputs=[input, x])
+        graph.make_node(
+            'Mul', inputs=[x, zero_point_five], outputs=node.output('Out'))
+
+
 @op_mapper('hard_sigmoid')
 class HardSigmoid():
     support_opset_verison_range = (1, 12)
