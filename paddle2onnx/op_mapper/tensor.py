@@ -220,12 +220,29 @@ class Expand():
         if expand_times is None:
             expand_times = node.attr('repeat_times')
 
+        repeat_times = None
+        repeat_times_key = None
+        is_split_repeat_times = False
         if 'repeat_times_tensor' in node.inputs and len(
                 node.input('repeat_times_tensor')) > 0:
-            if len(node.input('repeat_times_tensor')) > 1:
+            repeat_times_key = 'repeat_times_tensor'
+            if len(node.input('repeat_time_tensor')) > 1:
                 repeat_times = node.input('repeat_times_tensor')
+                is_split_repeat_times = True
+            else:
+                repeat_times = node.input('repeat_times_tensor', 0)
+        elif 'expand_times_tensor' in node.inputs and len(
+                node.input('expand_times_tensor')) > 0:
+            repeat_times_key = 'expand_times_tensor'
+            if len(node.input('expand_times_tensor')) > 1:
+                repeat_times = node.input('expand_times_tensor')
+                is_split_repeat_times = True
+            else:
+                repeat_times = node.input('expand_times_tensor', 0)
+        if repeat_times is not None:
+            if is_split_repeat_times:
                 repeat_times_dtypes = [
-                    node.input_dtype('repeat_times_tensor', i)
+                    node.input_dtype(repeat_times_key, i)
                     for i in range(len(repeat_times))
                 ]
                 repeat_times = mapper_helper.dtype_alignment(
@@ -233,6 +250,8 @@ class Expand():
                 # When OpSet>=11, Concat could use negative axis
                 repeat_times_tensor = graph.make_node(
                     'Concat', inputs=repeat_times, axis=-1)
+                repeat_times_tensor = graph.make_node(
+                    'Cast', inputs=repeat_times_tensor, to=dtypes.ONNX.INT64)
                 graph.make_node(
                     "Tile",
                     inputs=[node.input('X', 0), repeat_times_tensor],
@@ -240,9 +259,7 @@ class Expand():
             else:
                 graph.make_node(
                     "Tile",
-                    inputs=[
-                        node.input('X', 0), node.input('repeat_times_tensor', 0)
-                    ],
+                    inputs=[node.input('X', 0), repeat_times],
                     outputs=node.output('Out'))
         elif 'RepeatTimes' in node.inputs and len(node.input(
                 'RepeatTimes')) == 1:
@@ -304,6 +321,7 @@ class Constant():
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
         value = value.flatten().tolist()
+
         graph.make_node(
             'Constant',
             inputs=[],
@@ -374,6 +392,28 @@ class FullLike():
             value=value)
 
 
+@op_mapper('fill_zeros_like')
+class ZeroLike():
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        value = 0
+        dtype = node.attr('dtype')
+        input_dtype = node.input_var('X', 0).dtype
+        if dtype is None:
+            dtype = input_dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+        graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape_node],
+            outputs=node.output('Out'),
+            dims=[1],
+            dtype=dtype,
+            value=value)
+
+
 @op_mapper('gather')
 class Gather():
     support_opset_verison_range = (1, 12)
@@ -413,9 +453,13 @@ class Embedding():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        ids = node.input('Ids', 0)
+        if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
+            ids = graph.make_node(
+                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
         graph.make_node(
             'Gather',
-            inputs=[node.input('W', 0), node.input('Ids', 0)],
+            inputs=[node.input('W', 0), ids],
             outputs=node.output('Out'))
 
 

@@ -52,9 +52,7 @@ class InplaceNodePass(object):
                 if ipt in name_mapping:
                     inputs[idx] = name_mapping[ipt]
             repeated_output = get_repeated_output(inputs, outputs)
-            if len(repeated_output) == 0:
-                continue
-            else:
+            if len(repeated_output) != 0:
                 for opt, idx in repeated_output.items():
                     name_mapping[opt] = cls.generate_new_name(opt)
                     outputs[idx] = name_mapping[opt]
@@ -62,5 +60,4 @@ class InplaceNodePass(object):
             node.set_outputs(outputs)
             onnx_graph.update_node(node)
 
-        print(onnx_graph)
         return onnx_graph

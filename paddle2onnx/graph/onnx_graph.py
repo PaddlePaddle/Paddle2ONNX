@@ -29,14 +29,13 @@ class ONNXNode(Node):
     def __init__(self, op_type, inputs, outputs, attrs, layer_name):
         super(ONNXNode, self).__init__(op_type, inputs, outputs, attrs,
                                        layer_name, NodeDomain.ONNX)
+        self.onnx_node = self.make_onnx_node()
 
     def make_onnx_constant_node(self):
         dtype = self.attr('dtype')
         value = self.attr('value')
         if isinstance(value, list):
             dims = (len(value), )
-        elif isinstance(value, np.ndarray):
-            dims = value.shape
         elif value is None:
             dims = ()
             value = []
@@ -44,7 +43,7 @@ class ONNXNode(Node):
             dims = ()
             value = [value]
 
-        if 'dims' in self.attrs and self.attr('dims') is not None:
+        if 'dims' in self.attrs:
             dims = self.attrs['dims']
 
         tensor = helper.make_tensor(
@@ -132,15 +131,37 @@ class ONNXGraph(Graph):
         else:
             return node.outputs
 
+    def update_node(self,
+                    node,
+                    op_type=None,
+                    inputs=None,
+                    outputs=None,
+                    attrs=None,
+                    **kw):
+        if op_type is None:
+            op_type = node.type
+        if inputs is None:
+            inputs = node.inputs
+        if outputs is None:
+            outputs = node.outputs
+        if attrs is None:
+            attrs = node.attrs
+        attrs.update(kw)
+
+        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name)
+        self.insert_node(node)
+        return node
+
     def build_parameters(self, parameters):
         # build weight nodes
         for name, param in parameters.items():
             weight = param['data']
             if weight is not np.ndarray:
                 weight = np.array(weight)
+            print(name, param['data'].shape, param['shape'])
             tensor = helper.make_tensor(
                 name=name,
-                dims=param['shape'],
+                dims=param['data'].shape,
                 data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
                 vals=weight.flatten().tolist())
             node = helper.make_node(
@@ -173,48 +194,23 @@ class ONNXGraph(Graph):
         return tensor_info
 
     def add_input_node(self, name, shape, dtype):
-        node = Node('input', [], [name], {'shape': shape, 'dtype': dtype}, name)
-        self.input_nodes.append(node)
+        vi = self.make_value_info(name, shape, dtype)
+        self.input_nodes.append(vi)
 
     def add_output_node(self, name, shape, dtype):
-        node = Node('output', [name], [], {'shape': shape,
-                                           'dtype': dtype}, name)
-        self.output_nodes.append(node)
-
-    def get_parameter(self, name):
-        if name in self.ctx.parameters:
-            return self.ctx.parameters[name]
-        return None
+        vi = self.make_value_info(name, shape, dtype)
+        self.output_nodes.append(vi)
 
     def export_proto(self, enable_onnx_checker=False):
-
-        op_nodes = []
-        for name, node in list(self.node_map.items()):
-            onnx_op_node = node.make_onnx_node()
-            op_nodes.append(onnx_op_node)
-
-        input_value_infos = []
-        for node in self.input_nodes:
-            input_vi = self.make_value_info(node.layer_name,
-                                            node.attr('shape'),
-                                            node.attr('dtype'))
-            input_value_infos.append(input_vi)
-
-        output_value_infos = []
-        for node in self.output_nodes:
-            output_vi = self.make_value_info(node.layer_name,
-                                             node.attr('shape'),
-                                             node.attr('dtype'))
-            output_value_infos.append(output_vi)
-
+        op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
 
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
             name='paddle-onnx',
             initializer=[],
-            inputs=input_value_infos,
-            outputs=output_value_infos)
+            inputs=self.input_nodes,
+            outputs=self.output_nodes)
 
         opset_imports = [helper.make_opsetid("", self.opset_version)]
         onnx_proto = helper.make_model(

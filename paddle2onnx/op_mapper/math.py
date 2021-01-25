@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('matmul')
@@ -27,6 +28,14 @@ class MatMul():
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
+        if node.attr('transpose_X'):
+            perm = list(range(len(node.input_shape('X', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            x = graph.make_node('Transpose', inputs=[x], perm=perm)
+        if node.attr('transpose_Y'):
+            perm = list(range(len(node.input_shape('Y', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            y = graph.make_node('Transpose', inputs=[y], perm=perm)
         graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
 
 
@@ -151,16 +160,24 @@ class Mul():
         x = node.input('X', 0)
         y = node.input('Y', 0)
         out = node.output('Out', 0)
-        x_shape = node.input_shape('X', 0)
-        y_shape = node.input_shape('Y', 0)
         x_num_col_dims = node.attr('x_num_col_dims')
         y_num_col_dims = node.attr('y_num_col_dims')
         flatten_x = graph.make_node(
             'Flatten', inputs=node.input('X'), attrs={'axis': x_num_col_dims})
         flatten_y = graph.make_node(
             'Flatten', inputs=node.input('Y'), attrs={'axis': y_num_col_dims})
-        mul_node = graph.make_node(
-            'MatMul', inputs=[flatten_x, flatten_y], outputs=node.output('Out'))
+        mul_node = graph.make_node('MatMul', inputs=[flatten_x, flatten_y])
+
+        x_shape = graph.make_node('Shape', inputs=[x])
+        l_shape = mapper_helper.slice_helper(
+            graph, x_shape, axes=[0], starts=[0], ends=[x_num_col_dims])
+        y_shape = graph.make_node('Shape', inputs=[y])
+        y_rank = len(node.input_shape('Y', 0))
+        r_shape = mapper_helper.slice_helper(
+            graph, y_shape, axes=[0], starts=[y_num_col_dims], ends=[y_rank])
+
+        out_shape = graph.make_node('Concat', inputs=[l_shape, r_shape], axis=0)
+        graph.make_node('Reshape', [mul_node, out_shape], node.output('Out'))
 
 
 @op_mapper('bmm')
