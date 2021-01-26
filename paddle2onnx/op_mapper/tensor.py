@@ -189,7 +189,7 @@ class Slice():
             graph.make_node(
                 'Squeeze',
                 inputs=[sliced],
-                outputs=node.output('out'),
+                outputs=node.output('Out'),
                 axes=decrease_axis)
 
     @classmethod
@@ -232,7 +232,7 @@ class Slice():
             graph.make_node(
                 'Squeeze',
                 inputs=[sliced],
-                outputs=node.output('out'),
+                outputs=node.output('Out'),
                 axes=decrease_axis)
 
 
