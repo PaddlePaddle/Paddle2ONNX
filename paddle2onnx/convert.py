@@ -47,6 +47,7 @@ def program2onnx(program,
                  opset_version=9,
                  enable_onnx_checker=False,
                  **configs):
+    print(feeded_var_names)
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()

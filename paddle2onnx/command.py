@@ -107,6 +107,8 @@ def program2onnx(model_dir,
         program,
         fluid.global_scope(),
         save_file,
+        feeded_var_names=feed,
+        target_vars=fetch,
         opset_version=opset_version,
         enable_onnx_checker=enable_onnx_checker)
 
