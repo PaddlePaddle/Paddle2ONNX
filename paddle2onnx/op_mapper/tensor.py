@@ -159,15 +159,7 @@ class Slice():
     support_opset_verison_range = (1, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
-        if steps != [1] * len(ends):
-            raise Exception(
-                "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
-            )
+    def slice(cls, graph, node):
         decrease_axis = node.attr('decrease_axis')
         if decrease_axis is None:
             graph.make_node(
@@ -189,8 +181,20 @@ class Slice():
             graph.make_node(
                 'Squeeze',
                 inputs=[sliced],
-                outputs=node.output('Out'),
+                outputs=node.output('out'),
                 axes=decrease_axis)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        axes = node.attr('axes')
+        starts = node.attr('starts')
+        ends = node.attr('ends')
+        steps = node.attr('strides', [1] * len(ends))
+        if steps != [1] * len(ends):
+            raise Exception(
+                "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
+            )
+        cls.slice(graph, node)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -211,13 +215,8 @@ class Slice():
         steps_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': steps})
-        graph.make_node(
-            "Slice",
-            inputs=[
-                node.input('Input')[0], starts_node, ends_node, axes_node,
-                steps_node
-            ],
-            outputs=node.output('Out'))
+
+        cls.slice(graph, node)
 
 
 @op_mapper(['sequence_expand'])
