@@ -217,7 +217,8 @@ class Slice():
                 inputs=[
                     node.input('Input')[0], starts_node, ends_node, axes_node,
                     steps_node
-                ])
+                ],
+                outputs=node.output('Out'))
         else:
             sliced = graph.make_node(
                 "Slice",
