@@ -275,11 +275,6 @@ class Expand():
                 repeat_times = mapper_helper.dtype_alignment(
                     graph, repeat_times, repeat_times_dtypes)
 
-                #for i in range(len(repeat_times)):
-                #    if node.input_shape('repeat_times_tensor', i) == [0]:
-                #        repeat_times[i] = graph.make_node(
-                #            'Unsqueeze', inputs=[repeat_times[i]], axes=[0])
-
                 # When OpSet>=11, Concat could use negative axis
                 repeat_times_tensor = graph.make_node(
                     'Concat', inputs=repeat_times, axis=-1)
@@ -571,8 +566,6 @@ class Reshape():
                 dim = node.input(shape_name)[i]
                 dim = graph.make_node(
                     'Cast', inputs=[dim], to=dtypes.ONNX.INT64)
-                #if node.input_shape(shape_name, i) == [0]:
-                #    dim = graph.make_node('Unsqueeze', inputs=[dim], axes=[0])
                 dims.append(dim)
             shape = graph.make_node('Concat', inputs=dims, axis=-1)
             graph.make_node(
