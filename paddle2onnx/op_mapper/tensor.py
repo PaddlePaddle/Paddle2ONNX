@@ -555,17 +555,18 @@ class Reshape():
             if node.attr('shape') is None or len(node.attr('shape')) == 0:
                 raise Exception("shape tensor and shape attrubite all unkown.")
         if len(node.input(shape_name)) > 1:
-            cast_shape_nodes = []
+            dims = []
             for i in range(len(node.input(shape_name))):
                 dim = node.input(shape_name)[i]
-                cast_node = graph.make_node(
+                dim = graph.make_node(
                     'Cast', inputs=[dim], to=dtypes.ONNX.INT64)
-                cast_shape_nodes.append(cast_node)
-            shape_node = graph.make_node(
-                'Concat', inputs=cast_shape_nodes, axis=-1)
+                if node.input_shape(shape_name, i) == [0]:
+                    dim = graph.make_node('Unsqueeze', inputs=[dim], axes=[0])
+                dims.append(dim)
+            shape = graph.make_node('Concat', inputs=dims, axis=-1)
             graph.make_node(
                 'Reshape',
-                inputs=[node.input('X')[0], shape_node],
+                inputs=[node.input('X')[0], shape],
                 outputs=node.output('Out'))
         elif len(node.input(shape_name)) == 1:
             cast_shape_node = graph.make_node(
