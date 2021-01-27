@@ -5,11 +5,11 @@ Due to the differences between frameworks, some models may not be supported. If 
 
 # Dynamic computational graph
 
-As dynamic computational graph is under develop, test models are few. We will update more convertable models of dynamic computational graphs as the develop of PaddlePaddle.
+As dynamic computational model is under develop,  We will update more convertable models of dynamic computational graphs as the develop of PaddlePaddle.
 
 ## Image classification
 
-Comprehensive coverage of image classification models，now we support the whole series model in PaddlClas  [dygraph branch](https://github.com/paddlepaddle/PaddleClas/tree/dygraph) 。
+Comprehensive coverage of image classification models，now we support the whole series model in PaddlClas  [dygraph branch](https://github.com/paddlepaddle/PaddleClas/tree/dygraph).
 
 |Models | Source |  
 |---|---|
@@ -26,7 +26,7 @@ Comprehensive coverage of image classification models，now we support the whole
 
 
 ## OCR
-Support CRNN(Text Detection Model), DB(Text Recognition Model) and Text Angle Classification Model. Test models are form PaddleOCR [dygraphbranch ](https://github.com/PaddlePaddle/PaddleOCR//tree/dygraph)).
+Support CRNN(Text Detection Model), DB(Text Recognition Model) and Text Angle Classification Model. Test models are form PaddleOCR [dygraph branch](https://github.com/PaddlePaddle/PaddleOCR//tree/dygraph).
 
 | Models | Source |
 |-------|--------|
@@ -53,7 +53,7 @@ comming soon
 
 # Static computational graph
 ## Image classification
-Test models are from [PaddleClas](https://github.com/PaddlePaddle/PaddleClas).
+Test models are from PaddleClas [master branch](https://github.com/PaddlePaddle/PaddleClas/tree/master).
 
 | Models | Source |
 |-------|--------|
@@ -69,7 +69,7 @@ Test models are from [PaddleClas](https://github.com/PaddlePaddle/PaddleClas).
 | Xception41| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/xception.py) |
 
 ## object detection
-Support SSD,YoloV3. Test models are from [PaddleDetection](https://github.com/PaddlePaddle/Paddledetection).
+Support SSD,YoloV3. Test models are from PaddleDetection [release/0.4 branch](https://github.com/PaddlePaddle/Paddledetection/tree/release/0.4).
 Due to ONNX's limit, Paddle2ONNX is not able to support all the detection models and now  only supports one-stage detection model.
 
 | Models | Source |
@@ -82,7 +82,7 @@ Due to ONNX's limit, Paddle2ONNX is not able to support all the detection models
 |FasterRCNN_with_DCN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#deformable-convnets-v2) |
 
 ## Image segmentation
-Support UNet,HRNet and DeepLab. Test models are from [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg).
+Support UNet,HRNet and DeepLab. Test models are from PaddleSeg [release/v0.7.0 branch](https://github.com/PaddlePaddle/PaddleSeg/tree/release/v0.7.0).
 
 | Models | Source |
 |-------|--------|

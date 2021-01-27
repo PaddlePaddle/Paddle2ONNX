@@ -51,7 +51,7 @@
 
 # 静态图模型
 ## 图像分类
-图像分类模型支持比较完善，测试模型来自于[PaddleCls](https://github.com/PaddlePaddle/PaddleClas)。
+图像分类模型支持比较完善，测试模型来自于 PaddleCls [master/](https://github.com/PaddlePaddle/PaddleClas/tree/master)。
 
 | 模型 | 来源 |
 |-------|--------|
@@ -67,7 +67,7 @@
 | Xception41| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/xception.py) |
 
 ## 图像检测
-支持的模型有SSD、YoloV3、FasterRCNN模型，测试模型来自于[PaddleDetection](https://github.com/PaddlePaddle/Paddledetection)。由于ONNX对检测模型算子支持比较有限，paddle2onnx对检测模型也不能完全支持。后续我们计划增加对其它检测模型的支持，基于ONNX目前对检测模型支持的现状，将会主要集中于一阶段检测模型。
+支持的模型有SSD、YoloV3、FasterRCNN模型，测试模型来自于PaddleDetection [release/0.4分支](https://github.com/PaddlePaddle/Paddledetection/tree/release/0.4)。由于ONNX对检测模型算子支持比较有限，paddle2onnx对检测模型也不能完全支持。后续我们计划增加对其它检测模型的支持，基于ONNX目前对检测模型支持的现状，将会主要集中于一阶段检测模型。
 
 | 模型 | 来源 |
 |-------|--------|
@@ -79,7 +79,7 @@
 |FasterRCNN_with_DCN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO_cn.md#deformable-%E5%8D%B7%E7%A7%AF%E7%BD%91%E7%BB%9Cv2) |
 
 ## 图像分割
-支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)。
+支持的模型有UNet, HRNet, DeepLab模型，测试模型来自于PaddleSeg [release/v0.7.0分支](https://github.com/PaddlePaddle/PaddleSeg/tree/release/v0.7.0)
 
 | 模型 | 来源 |
 |-------|--------|
