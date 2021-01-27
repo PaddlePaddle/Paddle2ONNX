@@ -180,7 +180,7 @@ class Slice():
                 "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
             )
         decrease_axis = cls.decrease_axis(node)
-        if decrease_axix is None:
+        if decrease_axis is None:
             graph.make_node(
                 "Slice",
                 inputs=[node.input('Input')[0]],
@@ -222,7 +222,7 @@ class Slice():
                                'value': steps})
 
         decrease_axis = cls.decrease_axis(node)
-        if decrease_axix is None:
+        if decrease_axis is None:
             sliced = graph.make_node(
                 "Slice",
                 inputs=[
