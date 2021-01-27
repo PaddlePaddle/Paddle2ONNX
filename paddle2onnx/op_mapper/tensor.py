@@ -159,6 +159,16 @@ class Slice():
     support_opset_verison_range = (1, 12)
 
     @classmethod
+    def real_decrease_axis(cls, node):
+        if len(node.attr('decrease_axis')) == 0:
+            return False
+        if node.output_shape('Out', 0) == [0]:
+            return True
+        if len(node.input_shape('Input', 0)) > len(node.output_shape('Out', 0)):
+            return True
+        return False
+
+    @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
         starts = node.attr('starts')
@@ -168,8 +178,7 @@ class Slice():
             raise Exception(
                 "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
             )
-        decrease_axis = node.attr('decrease_axis')
-        if len(decrease_axis) == 0 or node.output_shape('Out', 0) != [0]:
+        if cls.real_decrease_axis(node):
             graph.make_node(
                 "Slice",
                 inputs=[node.input('Input')[0]],
@@ -210,9 +219,7 @@ class Slice():
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': steps})
 
-        decrease_axis = node.attr('decrease_axis')
-
-        if len(decrease_axis) == 0 or node.output_shape('Out', 0) != [0]:
+        if cls.real_decrease_axis(node):
             sliced = graph.make_node(
                 "Slice",
                 inputs=[
