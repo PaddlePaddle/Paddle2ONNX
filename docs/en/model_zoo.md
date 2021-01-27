@@ -44,8 +44,8 @@ Support UNet, HRNet, DeepLab and so on. Test models are from PaddleSeg [release/
 |DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/deeplabv3) |
 |Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/deeplabv3p) |
 |FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/fcn) |
-|GCNet|[PaddleSeg](DeepLdia://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/gcnet) |
-|OCRNet|[PaddleSeg](DeepLa://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/ocrnet) |
+|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/gcnet) |
+|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/ocrnet) |
 |UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/unet) |
 
 ## object detection
