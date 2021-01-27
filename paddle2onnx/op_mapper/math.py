@@ -180,6 +180,21 @@ class Mul():
         graph.make_node('Reshape', [mul_node, out_shape], node.output('Out'))
 
 
+@op_mapper('affine_channel')
+class AffineChannel():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        bias = node.input('Bias', 0)
+        scale = node.input('Scale', 0)
+        scale = graph.make_node('Unsqueeze', inputs=scale, axes=[0, 2, 3])
+        bias = graph.make_node('Unsqueeze', inputs=bias, axes=[0, 2, 3])
+        x = graph.make_node('Mul', inputs=[x, scale])
+        x = graph.make_node('Add', inputs=[x, bias], outputs=node.output('Out'))
+
+
 @op_mapper('bmm')
 class BMM():
     support_opset_version_range = (1, 12)

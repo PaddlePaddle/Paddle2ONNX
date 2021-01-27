@@ -95,30 +95,24 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        if node.attr('global_pooling'):
+        if node.attr('global_pooling') or (node.attr('adaptive') and
+                                           node.attr('ksize') == [1, 1]):
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][1],
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
+            # if pool is adaptive, check if input shape of pool is fixed.
             mapper_helper.is_static_shape(node.input_shape('X', 0))
-
             input_h, input_w = node.input_shape('X', 0)[2:]
             output_h, output_w = node.output_shape('Out', 0)[2:]
             stride_h = int(input_h / output_h)
             stride_w = int(input_w / output_w)
+
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
 
-            if node.attr('strides') is not None and (
-                    -1 not in node.attr('strides')):
-                stride_h, stride_w = node.attr('strides')
-
-            if node.attr('ksize') is not None and (
-                    -1 not in node.attr('ksize')):
-                kernel_h = input_h - (node.attr('ksize')[0] - 1) * stride_h
-                kernel_w = input_w - (node.attr('ksize')[1] - 1) * stride_w
-
+            #check if kernel_size is fixed.
             if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
                     input_w, output_w):
                 raise Exception(

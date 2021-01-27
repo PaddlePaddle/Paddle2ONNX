@@ -19,6 +19,7 @@ import copy
 import collections
 import numpy as np
 import paddle
+import six
 from paddle import fluid
 from paddle.fluid import dygraph
 from paddle.fluid.framework import Operator
@@ -101,9 +102,9 @@ class PaddleNode(Node):
 
 
 class PaddleGraph(Graph):
-    def __init__(self, program, parameters, input_spec=None, output_spec=None):
+    def __init__(self, program, parameters, inputs=None, outputs=None):
         super(PaddleGraph, self).__init__()
-        self.build_graph(program, parameters, input_spec, output_spec)
+        self.build_graph(program, parameters, inputs, outputs)
 
     def make_node(self,
                   op,
@@ -128,40 +129,41 @@ class PaddleGraph(Graph):
         self.insert_node(node)
         return node
 
-    def add_input_node(self, input_spec=None, op=None, block=None):
-        if isinstance(input_spec, collections.Iterable):
-            for ipt in input_spec:
+    def add_input_node(self, inputs, block=None):
+        attrs = {}
+        layer_name = ''
+        for ipt in inputs:
+            if isinstance(ipt, six.string_types):
+                # parse feed_names
+                layer_name = ipt
+                var = block.var(ipt)
+                attrs['shape'] = var.shape
+                attrs['dtype'] = var.dtype
+            else:
+                # parse InputSpecs
                 layer_name = ipt.name
-                attrs = {}
                 attrs['shape'] = ipt.shape
                 attrs['dtype'] = ipt.dtype
-                node = Node('feed', [], [layer_name], attrs, layer_name)
-                self.input_nodes.append(node)
-        if isinstance(op, Operator):
-            layer_name = op.output('Out')[0]
-            var = block.var(layer_name)
-            attrs = {}
-            attrs['shape'] = var.shape
-            attrs['dtype'] = var.dtype
             node = Node('feed', [], [layer_name], attrs, layer_name)
             self.input_nodes.append(node)
 
-    def add_output_node(self, output_spec=None, op=None, block=None):
-        if isinstance(output_spec, collections.Iterable):
-            for opt in output_spec:
+    def add_output_node(self, outputs, block=None):
+        from paddle.fluid.framework import Variable
+        attrs = {}
+        layer_name = ''
+        for opt in outputs:
+            if isinstance(opt, Variable):
+                # parse fetch_target_vars 
                 layer_name = opt.name
-                attrs = {}
                 attrs['shape'] = opt.shape
                 attrs['dtype'] = opt.dtype
-                node = Node('fetch', [layer_name], [], attrs, layer_name)
-                self.output_nodes.append(node)
-        if isinstance(op, Operator):
-            layer_name = op.input('X')[0]
-            var = block.var(layer_name)
-            attrs = {}
-            attrs['shape'] = var.shape
-            attrs['dtype'] = var.dtype
-            node = Node(op.type, [layer_name], [], attrs, layer_name)
+            else:
+                # parse OutputSpecs
+                attrs = {}
+                layer_name = opt.name
+                attrs['shape'] = opt.shape
+                attrs['dtype'] = opt.dtype
+            node = Node('fetch', [layer_name], [], attrs, layer_name)
             self.output_nodes.append(node)
 
     def get_adjacency_map(self):
@@ -182,21 +184,15 @@ class PaddleGraph(Graph):
                             adjacency_map[node].add(current_node)
         return adjacency_map
 
-    def build_graph(self,
-                    program,
-                    parameters,
-                    input_spec=None,
-                    output_spec=None):
+    def build_graph(self, program, parameters, inputs=None, outputs=None):
         self.program = program
         self.set_parameters(parameters)
-        self.add_input_node(input_spec=input_spec)
-        self.add_output_node(output_spec=output_spec)
+        self.add_input_node(inputs, program.global_block())
+        self.add_output_node(outputs, program.global_block())
         for block in program.blocks:
             for i, op in enumerate(block.ops):
-                if op.type == 'feed':
-                    self.add_input_node(op=op, block=block)
-                elif op.type == 'fetch':
-                    self.add_output_node(op=op, block=block)
+                if op.type in ['feed', 'fetch']:
+                    continue
                 else:
                     inputs = {}
                     outputs = {}
@@ -223,7 +219,7 @@ class PaddleGraph(Graph):
                 'shape': var.shape
             }
 
-        graph = PaddleGraph(program, parameters_dict)
+        graph = PaddleGraph(program, parameters_dict, feed, fetch)
         return graph
 
     @staticmethod
@@ -265,7 +261,8 @@ class PaddleGraph(Graph):
                         'dtype': param.dtype,
                         'shape': param.shape
                     }
-            graph = PaddleGraph(program, parameters_dict)
+            graph = PaddleGraph(program, parameters_dict, input_spec,
+                                output_spec)
             return graph
         else:
             raise TypeError(
