@@ -160,6 +160,11 @@ class Slice():
 
     @classmethod
     def decrease_axis(cls, node):
+        # tensor[i,:] will decrease rank of origin input, example:
+        # paddle.slice() will not decrease rank of origin input
+        # if input shape is [2, 3], input[0, :] will generate output with shape [3], not [1, 3].
+        # paddle.slice(input, 0, 1, 0) will  generate output with shape [1, 3], not [3]. 
+
         decrease_axis = node.attr('decrease_axis')
         if len(decrease_axis) == 0:
             return None
