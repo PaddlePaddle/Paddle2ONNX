@@ -204,7 +204,10 @@ class PaddleGraph(Graph):
                                           op.all_attrs(), block)
 
     @staticmethod
-    def build_from_program(program, feed=None, fetch=None, scope=None):
+    def build_from_program(program,
+                           feed_var_names=None,
+                           fetch_vars=None,
+                           scope=None):
         parameters_dict = {}
         vars = program.global_block().vars
         for name in vars:
@@ -219,7 +222,8 @@ class PaddleGraph(Graph):
                 'shape': var.shape
             }
 
-        graph = PaddleGraph(program, parameters_dict, feed, fetch)
+        graph = PaddleGraph(program, parameters_dict, feed_var_names,
+                            fetch_vars)
         return graph
 
     @staticmethod
