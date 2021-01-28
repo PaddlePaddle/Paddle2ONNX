@@ -240,7 +240,10 @@ class CustomPaddleOp(object):
                     inference_program = graph_helper.get_program(
                         self.main_program, feed_var_names, fetch_target_vars)
                     paddle_graph = PaddleGraph.build_from_program(
-                        inference_program, scope=scope)
+                        inference_program,
+                        feed_var_names,
+                        fetch_target_vars,
+                        scope=scope)
 
         for arg_name, opts in res.items():
             for idx in range(len(opts)):
