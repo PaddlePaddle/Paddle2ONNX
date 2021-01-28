@@ -99,4 +99,4 @@ def get_program(layer, input_spec, output_spec, **configs):
     fetch_var_names = [v.name for v in target_vars]
     prepend_feed_ops(main_program, feeded_var_names)
     append_fetch_ops(main_program, fetch_var_names)
-    return main_program
+    return main_program, feeded_var_names, target_vars
