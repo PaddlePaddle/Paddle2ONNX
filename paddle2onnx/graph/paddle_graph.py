@@ -19,7 +19,6 @@ import copy
 import collections
 import numpy as np
 import paddle
-import six
 from paddle import fluid
 from paddle.fluid import dygraph
 from paddle.fluid.framework import Operator
@@ -130,39 +129,24 @@ class PaddleGraph(Graph):
         return node
 
     def add_input_node(self, inputs, block=None):
-        attrs = {}
-        layer_name = ''
         for ipt in inputs:
-            if isinstance(ipt, six.string_types):
-                # parse feed_names
-                layer_name = ipt
-                var = block.var(ipt)
-                attrs['shape'] = var.shape
-                attrs['dtype'] = var.dtype
-            else:
-                # parse InputSpecs
-                layer_name = ipt.name
-                attrs['shape'] = ipt.shape
-                attrs['dtype'] = ipt.dtype
+            # parse feed_names
+            layer_name = ipt
+            var = block.var(ipt)
+            attrs = {}
+            attrs['shape'] = var.shape
+            attrs['dtype'] = var.dtype
             node = Node('feed', [], [layer_name], attrs, layer_name)
             self.input_nodes.append(node)
 
     def add_output_node(self, outputs, block=None):
         from paddle.fluid.framework import Variable
-        attrs = {}
-        layer_name = ''
         for opt in outputs:
-            if isinstance(opt, Variable):
-                # parse fetch_target_vars 
-                layer_name = opt.name
-                attrs['shape'] = opt.shape
-                attrs['dtype'] = opt.dtype
-            else:
-                # parse OutputSpecs
-                attrs = {}
-                layer_name = opt.name
-                attrs['shape'] = opt.shape
-                attrs['dtype'] = opt.dtype
+            # parse fetch_target_vars 
+            layer_name = opt.name
+            attrs = {}
+            attrs['shape'] = opt.shape
+            attrs['dtype'] = opt.dtype
             node = Node('fetch', [layer_name], [], attrs, layer_name)
             self.output_nodes.append(node)
 
@@ -247,11 +231,21 @@ class PaddleGraph(Graph):
                         'dtype': param.dtype,
                         'shape': param.shape
                     }
-            graph = PaddleGraph(program, parameters_dict,
-                                layer._input_spec(), layer._output_spec())
+            if input_spec is None:
+                input_spec = layer._input_spec()
+            if output_spec is None:
+                output_spec = layer._output_spec()
+            feed_var_names = [ipt.name for ipt in layer._input_spec()]
+            fetch_vars = [
+                program.global_block().var(opt.name)
+                for opt in layer._output_spec()
+            ]
+            graph = PaddleGraph(program, parameters_dict, feed_var_names,
+                                fetch_vars)
             return graph
         elif isinstance(layer, Layer):
-            program = dg_helper.get_program(layer, input_spec, output_spec)
+            program, feed_var_names, fetch_vars = dg_helper.get_program(
+                layer, input_spec, output_spec)
             parameters_dict = {}
             pruned_vars = program.global_block().vars
             for param in layer.parameters():
@@ -265,8 +259,8 @@ class PaddleGraph(Graph):
                         'dtype': param.dtype,
                         'shape': param.shape
                     }
-            graph = PaddleGraph(program, parameters_dict, input_spec,
-                                output_spec)
+            graph = PaddleGraph(program, parameters_dict, feed_var_names,
+                                fetch_vars)
             return graph
         else:
             raise TypeError(
