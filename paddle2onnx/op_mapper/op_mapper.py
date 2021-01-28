@@ -239,6 +239,8 @@ class CustomPaddleOp(object):
                     ]
                     inference_program = graph_helper.get_program(
                         self.main_program, feed_var_names, fetch_target_vars)
+                    print(feed_var_names)
+                    print(fetch_target_vars)
                     paddle_graph = PaddleGraph.build_from_program(
                         inference_program,
                         feed_var_names,

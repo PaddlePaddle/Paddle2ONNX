@@ -275,7 +275,7 @@ class Expand():
         if 'repeat_times_tensor' in node.inputs and len(
                 node.input('repeat_times_tensor')) > 0:
             repeat_times_key = 'repeat_times_tensor'
-            if len(node.input('repeat_time_tensor')) > 1:
+            if len(node.input('repeat_times_tensor')) > 1:
                 repeat_times = node.input('repeat_times_tensor')
                 is_split_repeat_times = True
             else:
