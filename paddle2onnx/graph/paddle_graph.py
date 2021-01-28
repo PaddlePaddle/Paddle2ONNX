@@ -129,12 +129,11 @@ class PaddleGraph(Graph):
         return node
 
     def add_input_node(self, inputs, block=None):
-        attrs = {}
-        layer_name = ''
         for ipt in inputs:
             # parse feed_names
             layer_name = ipt
             var = block.var(ipt)
+            attrs = {}
             attrs['shape'] = var.shape
             attrs['dtype'] = var.dtype
             node = Node('feed', [], [layer_name], attrs, layer_name)
@@ -142,11 +141,10 @@ class PaddleGraph(Graph):
 
     def add_output_node(self, outputs, block=None):
         from paddle.fluid.framework import Variable
-        attrs = {}
-        layer_name = ''
         for opt in outputs:
             # parse fetch_target_vars 
             layer_name = opt.name
+            attrs = {}
             attrs['shape'] = opt.shape
             attrs['dtype'] = opt.dtype
             node = Node('fetch', [layer_name], [], attrs, layer_name)
@@ -233,18 +231,16 @@ class PaddleGraph(Graph):
                         'dtype': param.dtype,
                         'shape': param.shape
                     }
-                feed_var_names = program.desc.get_feed_target_names()
-                fetch_var_names = program.desc.get_fetch_target_names()
-                fetch_vars = [
-                    program.global_block().var(name) for name in fetch_var_names
-                ]
-                feed_vars = [
-                    program.global_block().var(name) for name in feed_var_names
-                ]
-            feed_var_names = paddle.fluid.dygraph.jit._get_input_var_names(
-                feed_vars, input_spec)
-            fetch_vars = paddle.fluid.dygraph.jit._get_output_vars(fetch_vars,
-                                                                   output_spec)
+            if input_spec is None:
+                input_spec = layer._input_spec()
+            if output_spec is None:
+                output_spec = layer._output_spec()
+            feed_var_names = [
+                ipt.name for ipt in layer._input_spec()
+            ]
+            fetch_vars = [
+                program.global_block().var(opt.name) for opt in layer._output_spec()
+            ]
             graph = PaddleGraph(program, parameters_dict, feed_var_names,
                                 fetch_vars)
             return graph
