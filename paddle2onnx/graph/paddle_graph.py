@@ -235,11 +235,10 @@ class PaddleGraph(Graph):
                 input_spec = layer._input_spec()
             if output_spec is None:
                 output_spec = layer._output_spec()
-            feed_var_names = [
-                ipt.name for ipt in layer._input_spec()
-            ]
+            feed_var_names = [ipt.name for ipt in layer._input_spec()]
             fetch_vars = [
-                program.global_block().var(opt.name) for opt in layer._output_spec()
+                program.global_block().var(opt.name)
+                for opt in layer._output_spec()
             ]
             graph = PaddleGraph(program, parameters_dict, feed_var_names,
                                 fetch_vars)
