@@ -96,9 +96,10 @@ def program2onnx(model_dir,
         paddle.enable_static()
     exe = fluid.Executor(fluid.CPUPlace())
     if model_filename is None and params_filename is None:
-        [program, feed, fetchs] = fluid.io.load_inference_model(model_dir, exe)
+        [program, feed_var_names, fetch_vars] = fluid.io.load_inference_model(
+            model_dir, exe)
     else:
-        [program, feed, fetchs] = fluid.io.load_inference_model(
+        [program, feed_var_names, fetch_vars] = fluid.io.load_inference_model(
             model_dir,
             exe,
             model_filename=model_filename,
@@ -107,6 +108,8 @@ def program2onnx(model_dir,
         program,
         fluid.global_scope(),
         save_file,
+        feed_var_names=feed_var_names,
+        target_vars=fetch_vars,
         opset_version=opset_version,
         enable_onnx_checker=enable_onnx_checker)
 

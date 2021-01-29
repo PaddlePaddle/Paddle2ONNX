@@ -71,7 +71,7 @@ def get_program(layer, input_spec, output_spec, **configs):
         raise TypeError(
             "The input Layer should be 'Layer', but received  type is %s." %
             type(layer))
-    feeded_var_names = paddle.fluid.dygraph.jit._get_input_var_names(
+    feed_var_names = paddle.fluid.dygraph.jit._get_input_var_names(
         concrete_program.inputs, input_spec)
     target_vars = paddle.fluid.dygraph.jit._get_output_vars(
         concrete_program.outputs, output_spec)
@@ -94,9 +94,9 @@ def get_program(layer, input_spec, output_spec, **configs):
         global_block._remove_op(index)
     main_program.desc.flush()
     main_program = main_program._prune_with_input(
-        feeded_var_names=feeded_var_names, targets=target_vars)
+        feeded_var_names=feed_var_names, targets=target_vars)
     main_program = main_program._inference_optimize(prune_read_op=True)
     fetch_var_names = [v.name for v in target_vars]
-    prepend_feed_ops(main_program, feeded_var_names)
+    prepend_feed_ops(main_program, feed_var_names)
     append_fetch_ops(main_program, fetch_var_names)
-    return main_program
+    return main_program, feed_var_names, target_vars

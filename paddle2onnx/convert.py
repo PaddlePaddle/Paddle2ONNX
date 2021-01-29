@@ -42,7 +42,7 @@ def export_onnx(paddle_graph,
 def program2onnx(program,
                  scope,
                  save_file,
-                 feeded_var_names=None,
+                 feed_var_names=None,
                  target_vars=None,
                  opset_version=9,
                  enable_onnx_checker=False,
@@ -51,15 +51,14 @@ def program2onnx(program,
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
     if isinstance(program, paddle.fluid.framework.Program):
-        if feeded_var_names is not None:
-            if isinstance(feeded_var_names, six.string_types):
-                feeded_var_names = [feeded_var_names]
+        if feed_var_names is not None:
+            if isinstance(feed_var_names, six.string_types):
+                feed_var_names = [feed_var_names]
             else:
-                if not (bool(feeded_var_names) and all(
+                if not (bool(feed_var_names) and all(
                         isinstance(name, six.string_types)
-                        for name in feeded_var_names)):
-                    raise TypeError(
-                        "'feeded_var_names' should be a list of str.")
+                        for name in feed_var_names)):
+                    raise TypeError("'feed_var_names' should be a list of str.")
 
         if target_vars is not None:
             if isinstance(target_vars, Variable):
@@ -70,7 +69,7 @@ def program2onnx(program,
                     raise TypeError(
                         "'target_vars' should be a list of variable.")
 
-        paddle_graph = PaddleGraph.build_from_program(program, feeded_var_names,
+        paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
                                                       target_vars, scope)
         export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker)
     else:
