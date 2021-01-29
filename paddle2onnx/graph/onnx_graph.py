@@ -183,7 +183,6 @@ class ONNXGraph(Graph):
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
 
-        print(self.input_nodes)
         onnx_graph = helper.make_graph(
             nodes=weight_nodes + op_nodes,
             name='paddle-onnx',
@@ -204,7 +203,6 @@ class ONNXGraph(Graph):
     def build(paddle_graph, opset_version, verbose=False):
         onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
         onnx_graph.build_parameters(paddle_graph.parameters)
-        #print(paddle_graph)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
         onnx_graph.build_op_nodes(paddle_graph.node_map)
