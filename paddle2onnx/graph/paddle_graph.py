@@ -24,6 +24,7 @@ from paddle.fluid import dygraph
 from paddle.fluid.framework import Operator
 from paddle2onnx.graph import Node, Graph
 from paddle2onnx.constant import NodeDomain
+from paddle2onnx.utils import logging
 
 
 class PaddleNode(Node):
@@ -101,9 +102,9 @@ class PaddleNode(Node):
 
 
 class PaddleGraph(Graph):
-    def __init__(self, program, parameters, inputs=None, outputs=None):
+    def __init__(self, program, parameters, feed_var_names, fetch_vars):
         super(PaddleGraph, self).__init__()
-        self.build_graph(program, parameters, inputs, outputs)
+        self.build_graph(program, parameters, feed_var_names, fetch_vars)
 
     def make_node(self,
                   op,
@@ -168,11 +169,15 @@ class PaddleGraph(Graph):
                             adjacency_map[node].add(current_node)
         return adjacency_map
 
-    def build_graph(self, program, parameters, inputs=None, outputs=None):
+    def build_graph(self,
+                    program,
+                    parameters,
+                    feed_var_names=None,
+                    target_vars=None):
         self.program = program
         self.set_parameters(parameters)
-        self.add_input_node(inputs, program.global_block())
-        self.add_output_node(outputs, program.global_block())
+        self.add_input_node(feed_var_names, program.global_block())
+        self.add_output_node(target_vars, program.global_block())
         for block in program.blocks:
             for i, op in enumerate(block.ops):
                 if op.type in ['feed', 'fetch']:
@@ -231,10 +236,15 @@ class PaddleGraph(Graph):
                         'dtype': param.dtype,
                         'shape': param.shape
                     }
-            if input_spec is None:
+            if input_spec is not None:
+                logging.warning(
+                    "Although input_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
+                )
                 input_spec = layer._input_spec()
-            if output_spec is None:
-                output_spec = layer._output_spec()
+            if output_spec is not None:
+                logging.warning(
+                    "Although output_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
+                )
             feed_var_names = [ipt.name for ipt in layer._input_spec()]
             fetch_vars = [
                 program.global_block().var(opt.name)
