@@ -106,8 +106,12 @@ class ExpandV2():
                                        node.input('Shape', 0),
                                        node.input_dtype('Shape', 0), 'int64')
         elif len(node.attr('shape')) > 0:
+            shape = node.attr('shape')
+            for idx in range(len(shape)):
+                if shape[idx] == -1:
+                    shape[idx] = 1
             shape = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=node.attr('shape'))
+                'Constant', dtype=dtypes.ONNX.INT64, value=shape)
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],
@@ -155,6 +159,22 @@ class Slice():
     support_opset_verison_range = (1, 12)
 
     @classmethod
+    def decrease_axis(cls, node):
+        # tensor[i,:] will decrease rank of origin input, example:
+        # paddle.slice() will not decrease rank of origin input
+        # if input shape is [2, 3], input[0, :] will generate output with shape [3], not [1, 3].
+        # paddle.slice(input, 0, 1, 0) will  generate output with shape [1, 3], not [3]. 
+
+        decrease_axis = node.attr('decrease_axis')
+        if len(decrease_axis) == 0:
+            return None
+        if node.output_shape('Out', 0) == [0]:
+            return decrease_axis
+        if len(node.input_shape('Input', 0)) > len(node.output_shape('Out', 0)):
+            return decrease_axis
+        return None
+
+    @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
         starts = node.attr('starts')
@@ -164,13 +184,27 @@ class Slice():
             raise Exception(
                 "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
             )
-        graph.make_node(
-            "Slice",
-            inputs=[node.input('Input')[0]],
-            outputs=node.output('Out'),
-            axes=axes,
-            starts=starts,
-            ends=ends)
+        decrease_axis = cls.decrease_axis(node)
+        if decrease_axis is None:
+            graph.make_node(
+                "Slice",
+                inputs=[node.input('Input')[0]],
+                outputs=node.output('Out'),
+                axes=axes,
+                starts=starts,
+                ends=ends)
+        else:
+            sliced = graph.make_node(
+                "Slice",
+                inputs=[node.input('Input')[0]],
+                axes=axes,
+                starts=starts,
+                ends=ends)
+            graph.make_node(
+                'Squeeze',
+                inputs=[sliced],
+                outputs=node.output('Out'),
+                axes=decrease_axis)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -191,13 +225,28 @@ class Slice():
         steps_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': steps})
-        graph.make_node(
-            "Slice",
-            inputs=[
-                node.input('Input')[0], starts_node, ends_node, axes_node,
-                steps_node
-            ],
-            outputs=node.output('Out'))
+
+        decrease_axis = cls.decrease_axis(node)
+        if decrease_axis is None:
+            sliced = graph.make_node(
+                "Slice",
+                inputs=[
+                    node.input('Input')[0], starts_node, ends_node, axes_node,
+                    steps_node
+                ],
+                outputs=node.output('Out'))
+        else:
+            sliced = graph.make_node(
+                "Slice",
+                inputs=[
+                    node.input('Input')[0], starts_node, ends_node, axes_node,
+                    steps_node
+                ])
+            graph.make_node(
+                'Squeeze',
+                inputs=[sliced],
+                outputs=node.output('Out'),
+                axes=decrease_axis)
 
 
 @op_mapper(['sequence_expand'])
@@ -230,6 +279,7 @@ class Expand():
                 ]
                 repeat_times = mapper_helper.dtype_alignment(
                     graph, repeat_times, repeat_times_dtypes)
+
                 # When OpSet>=11, Concat could use negative axis
                 repeat_times_tensor = graph.make_node(
                     'Concat', inputs=repeat_times, axis=-1)
@@ -516,17 +566,16 @@ class Reshape():
             if node.attr('shape') is None or len(node.attr('shape')) == 0:
                 raise Exception("shape tensor and shape attrubite all unkown.")
         if len(node.input(shape_name)) > 1:
-            cast_shape_nodes = []
+            dims = []
             for i in range(len(node.input(shape_name))):
                 dim = node.input(shape_name)[i]
-                cast_node = graph.make_node(
+                dim = graph.make_node(
                     'Cast', inputs=[dim], to=dtypes.ONNX.INT64)
-                cast_shape_nodes.append(cast_node)
-            shape_node = graph.make_node(
-                'Concat', inputs=cast_shape_nodes, axis=-1)
+                dims.append(dim)
+            shape = graph.make_node('Concat', inputs=dims, axis=-1)
             graph.make_node(
                 'Reshape',
-                inputs=[node.input('X')[0], shape_node],
+                inputs=[node.input('X')[0], shape],
                 outputs=node.output('Out'))
         elif len(node.input(shape_name)) == 1:
             cast_shape_node = graph.make_node(
