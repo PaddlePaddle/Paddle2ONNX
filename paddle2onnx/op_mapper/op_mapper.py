@@ -234,15 +234,13 @@ class CustomPaddleOp(object):
                         var.name for vars in self.inputs.values()
                         for var in vars
                     ]
-                    fetch_target_vars = [
-                        var for vars in res.values() for var in vars
-                    ]
+                    fetch_vars = [var for vars in res.values() for var in vars]
                     inference_program = graph_helper.get_program(
-                        self.main_program, feed_var_names, fetch_target_vars)
+                        self.main_program, feed_var_names, fetch_vars)
                     paddle_graph = PaddleGraph.build_from_program(
                         inference_program,
                         feed_var_names,
-                        fetch_target_vars,
+                        fetch_vars,
                         scope=scope)
 
         for arg_name, opts in res.items():
