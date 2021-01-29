@@ -21,7 +21,6 @@
 | Transformer系列 |[paddleclas](https://github.com/paddlepaddle/paddleclas/blob/dygraph/readme_cn.md#transformer%e7%b3%bb%e5%88%97)|
 | 其他模型 |[paddleclas](https://github.com/paddlepaddle/paddleclas/blob/dygraph/readme_cn.md#%e5%85%b6%e4%bb%96%e6%a8%a1%e5%9e%8b)|
 
-
 ## 图像OCR
 支持的模型有DB(文字检测)，CRNN(文字识别)，以及方向分类模型，测试模型来自于PaddleOCR [dgraph分支](https://github.com/PaddlePaddle/PaddleOCR//tree/dygraph)。
 
