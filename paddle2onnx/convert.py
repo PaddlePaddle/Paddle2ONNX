@@ -53,7 +53,7 @@ def program2onnx(program,
     if isinstance(program, paddle.fluid.framework.Program):
         if feed_var_names is not None:
             if isinstance(feed_var_names, six.string_types):
-                feed_var_names = [feeded_var_names]
+                feed_var_names = [feed_var_names]
             else:
                 if not (bool(feed_var_names) and all(
                         isinstance(name, six.string_types)
