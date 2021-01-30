@@ -429,16 +429,15 @@ class FullLike():
         input_dtype = node.input_var('X', 0).dtype
         if dtype is None:
             dtype = input_dtype
-        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
-        print(dtype)
-        print(node)
+        np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
+        onnx_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
         graph.make_node(
             'ConstantOfShape',
             inputs=[shape_node],
             outputs=node.output('Out'),
             dims=[1],
-            dtype=dtype,
-            value=int(value))
+            dtype=onnx_dtype,
+            value=np.array(value).astype(np_dtype))
 
 
 @op_mapper('gather')

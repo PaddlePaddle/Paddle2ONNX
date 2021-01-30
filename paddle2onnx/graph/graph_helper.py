@@ -75,7 +75,7 @@ def get_program(program, feed_var_names, fetch_vars):
         global_block._remove_op(index)
     program.desc.flush()
     program = program._prune_with_input(
-        feed_var_names=feed_var_names, targets=fetch_vars)
+        feeded_var_names=feed_var_names, targets=fetch_vars)
     program = program._inference_optimize(prune_read_op=True)
     fetch_var_names = [v.name for v in fetch_vars]
     prepend_feed_ops(program, feed_var_names)
