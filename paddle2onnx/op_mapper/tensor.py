@@ -439,7 +439,7 @@ class FullLike():
             outputs=node.output('Out'),
             dims=[1],
             dtype=dtype,
-            value=value)
+            value=int(value))
 
 
 @op_mapper('fill_zeros_like')

@@ -36,8 +36,16 @@ class MatMul():
             perm = list(range(len(node.input_shape('Y', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
             y = graph.make_node('Transpose', inputs=[y], perm=perm)
-        graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
-
+        if node.attr('alpha') == 1.0:
+            graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
+        else:
+            matmul = graph.make_node('MatMul', inputs=[x, y])
+            scale = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.FLOAT,
+                value=node.attr('alpha'))
+            onnx_node = graph.make_node(
+                'Mul', inputs=[matmul, scale], outputs=node.output('Out'))
 
 @op_mapper('matmul_v2')
 class MatMul():
@@ -49,9 +57,13 @@ class MatMul():
         y = node.input('Y', idx=0)
         out = node.output('Out')
         if node.attr('trans_x'):
-            x = graph.make_node('Transpose', inputs=[x])
+            perm = list(range(len(node.input_shape('X', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            x = graph.make_node('Transpose', inputs=[x], perm=perm)
         if node.attr('trans_y'):
-            y = graph.make_node('Transpose', inputs=[y])
+            perm = list(range(len(node.input_shape('Y', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            y = graph.make_node('Transpose', inputs=[y], perm=perm)
         graph.make_node('MatMul', inputs=[x, y], outputs=out)
 
 
@@ -149,6 +161,19 @@ class Square():
         x = node.input('X', 0)
         onnx_node = graph.make_node(
             'Mul', inputs=[x, x], outputs=node.output('Out'))
+
+@op_mapper('cumsum')
+class CumSum():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+
+        axis = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=node.attr('axis'))
+        graph.make_node(
+            'CumSum',
+            inputs=[node.input('X', 0), axis],
+            outputs=node.output('Out'))
 
 
 @op_mapper('mul')
