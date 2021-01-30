@@ -35,9 +35,9 @@ def prepend_feed_ops(inference_program,
     for i, name in enumerate(feed_target_names):
         if not global_block.has_var(name):
             raise ValueError(
-                "The feeded_var_names[{i}]: '{name}' doesn't exist in pruned inference program. "
-                "Please check whether '{name}' is a valid feed_var name, or remove it from feeded_var_names "
-                "if '{name}' is not involved in the target_vars calculation.".
+                "The feed_var_names[{i}]: '{name}' doesn't exist in pruned inference program. "
+                "Please check whether '{name}' is a valid feed_var name, or remove it from feed_var_names "
+                "if '{name}' is not involved in the fetch_vars calculation.".
                 format(
                     i=i, name=name))
         out = global_block.var(name)
@@ -64,7 +64,7 @@ def append_fetch_ops(inference_program,
             attrs={'col': i})
 
 
-def get_program(program, feeded_var_names, target_vars):
+def get_program(program, feed_var_names, fetch_vars):
     global_block = program.global_block()
     need_to_remove_op_index = []
     for i, op in enumerate(global_block.ops):
@@ -75,9 +75,9 @@ def get_program(program, feeded_var_names, target_vars):
         global_block._remove_op(index)
     program.desc.flush()
     program = program._prune_with_input(
-        feeded_var_names=feeded_var_names, targets=target_vars)
+        feeded_var_names=feed_var_names, targets=fetch_vars)
     program = program._inference_optimize(prune_read_op=True)
-    fetch_var_names = [v.name for v in target_vars]
-    prepend_feed_ops(program, feeded_var_names)
+    fetch_var_names = [v.name for v in fetch_vars]
+    prepend_feed_ops(program, feed_var_names)
     append_fetch_ops(program, fetch_var_names)
     return program
