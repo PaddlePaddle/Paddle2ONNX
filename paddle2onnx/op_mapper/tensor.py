@@ -365,6 +365,21 @@ class Constant():
             })
 
 
+@op_mapper(['lookup_table_v2', 'lookup_table'])
+class Embedding():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        ids = node.input('Ids', 0)
+        if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
+            ids = graph.make_node(
+                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
+        graph.make_node(
+            'Gather',
+            inputs=[node.input('W', 0), ids],
+            outputs=node.output('Out'))
+
 @op_mapper('fill_constant_batch_size_like')
 class FillConstantBatchSizeLike():
     support_opset_verison_range = (9, 12)
@@ -414,14 +429,15 @@ class FullLike():
         input_dtype = node.input_var('X', 0).dtype
         if dtype is None:
             dtype = input_dtype
-        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+        np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
+        onnx_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
         graph.make_node(
             'ConstantOfShape',
             inputs=[shape_node],
             outputs=node.output('Out'),
             dims=[1],
-            dtype=dtype,
-            value=value)
+            dtype=onnx_dtype,
+            value=np.array(value).astype(np_dtype))
 
 
 @op_mapper('gather')

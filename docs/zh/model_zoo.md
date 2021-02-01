@@ -47,10 +47,17 @@
 ## 图像检测
 待测试
 
+## 自然语言处理
+目前支持的模型有ERNIE系列模型，测试模型来自于PaddleNLP [2.0-beta 分支](https://github.com/PaddlePaddle/models/tree/release/2.0-beta/PaddleNLP)。
+
+| 模型 | 来源 |
+|-------|--------|
+|ERNIE-1.0|[PaddleNLP](https://github.com/PaddlePaddle/models/blob/develop/PaddleNLP/docs/models.md#paddlenlpmodels) |
+|ERNIE-2.0|[PaddleNLP](https://github.com/PaddlePaddle/models/blob/develop/PaddleNLP/docs/models.md#paddlenlpmodels) |
 
 # 静态图模型
 ## 图像分类
-图像分类模型支持比较完善，测试模型来自于 PaddleCls [master/](https://github.com/PaddlePaddle/PaddleClas/tree/master)。
+图像分类模型支持比较完善，测试模型来自于 PaddleCls [master 分支](https://github.com/PaddlePaddle/PaddleClas/tree/master)。
 
 | 模型 | 来源 |
 |-------|--------|

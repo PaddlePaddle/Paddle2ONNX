@@ -18,6 +18,7 @@
 | conv2d | 1~12 |
 | conv2d_transpose | 1~12 |
 | collect_fpn_proposals | 11~12 |
+| cumsum | 11~12 |
 | deformable_conv | 11~12 |
 | depthwise_conv2d | 1~12 |
 | distribute_fpn_proposals | 11~12 |
@@ -51,9 +52,12 @@
 | leaky_relu | 1~12 |
 | less_equal| 12~ |
 | log | 1~12 |
+| lookup_table | 1~12 |
+| lookup_table_v2 | 1~12 |
 | logical_and | 1~12 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
+| mean | 1~12 |
 | mul | 1~12 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
@@ -80,11 +84,13 @@
 | softmax | 1~12 |
 | scale | 1~12 | opset 1~6 limited supported |
 | sequence_expand | 1~12 |
+| softmax_with_cross_entropy | 12 |
 | shape | 1~12 |
 | sigmoid | 1~12 |
 | slice | 1~12 |
 | split | 1~12 |
 | squeeze2 | 1~12 |
+| square | 7~12 |
 | sqrt | 1~12 |
 | stack | 1~12 |
 | stride_slice | 1~12 |

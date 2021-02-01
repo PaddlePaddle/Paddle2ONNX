@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('matmul')
@@ -27,8 +28,24 @@ class MatMul():
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
-        graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
-
+        if node.attr('transpose_X'):
+            perm = list(range(len(node.input_shape('X', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            x = graph.make_node('Transpose', inputs=[x], perm=perm)
+        if node.attr('transpose_Y'):
+            perm = list(range(len(node.input_shape('Y', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            y = graph.make_node('Transpose', inputs=[y], perm=perm)
+        if node.attr('alpha') == 1.0:
+            graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
+        else:
+            matmul = graph.make_node('MatMul', inputs=[x, y])
+            scale = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.FLOAT,
+                value=node.attr('alpha'))
+            onnx_node = graph.make_node(
+                'Mul', inputs=[matmul, scale], outputs=node.output('Out'))
 
 @op_mapper('matmul_v2')
 class MatMul():
@@ -40,9 +57,13 @@ class MatMul():
         y = node.input('Y', idx=0)
         out = node.output('Out')
         if node.attr('trans_x'):
-            x = graph.make_node('Transpose', inputs=[x])
+            perm = list(range(len(node.input_shape('X', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            x = graph.make_node('Transpose', inputs=[x], perm=perm)
         if node.attr('trans_y'):
-            y = graph.make_node('Transpose', inputs=[y])
+            perm = list(range(len(node.input_shape('Y', 0))))
+            perm[-1], perm[-2] = perm[-2], perm[-1]
+            y = graph.make_node('Transpose', inputs=[y], perm=perm)
         graph.make_node('MatMul', inputs=[x, y], outputs=out)
 
 
@@ -131,6 +152,30 @@ class Pow():
             'Pow', inputs=[x, factor_broadcast], outputs=node.output('Out'))
 
 
+@op_mapper('square')
+class Square():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        onnx_node = graph.make_node(
+            'Mul', inputs=[x, x], outputs=node.output('Out'))
+
+@op_mapper('cumsum')
+class CumSum():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+
+        axis = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=node.attr('axis'))
+        graph.make_node(
+            'CumSum',
+            inputs=[node.input('X', 0), axis],
+            outputs=node.output('Out'))
+
+
 @op_mapper('mul')
 class Mul():
     support_opset_version_range = (1, 12)
@@ -140,16 +185,24 @@ class Mul():
         x = node.input('X', 0)
         y = node.input('Y', 0)
         out = node.output('Out', 0)
-        x_shape = node.input_shape('X', 0)
-        y_shape = node.input_shape('Y', 0)
         x_num_col_dims = node.attr('x_num_col_dims')
         y_num_col_dims = node.attr('y_num_col_dims')
         flatten_x = graph.make_node(
             'Flatten', inputs=node.input('X'), attrs={'axis': x_num_col_dims})
         flatten_y = graph.make_node(
             'Flatten', inputs=node.input('Y'), attrs={'axis': y_num_col_dims})
-        mul_node = graph.make_node(
-            'MatMul', inputs=[flatten_x, flatten_y], outputs=node.output('Out'))
+        mul_node = graph.make_node('MatMul', inputs=[flatten_x, flatten_y])
+
+        x_shape = graph.make_node('Shape', inputs=[x])
+        l_shape = mapper_helper.slice_helper(
+            graph, x_shape, axes=[0], starts=[0], ends=[x_num_col_dims])
+        y_shape = graph.make_node('Shape', inputs=[y])
+        y_rank = len(node.input_shape('Y', 0))
+        r_shape = mapper_helper.slice_helper(
+            graph, y_shape, axes=[0], starts=[y_num_col_dims], ends=[y_rank])
+
+        out_shape = graph.make_node('Concat', inputs=[l_shape, r_shape], axis=0)
+        graph.make_node('Reshape', [mul_node, out_shape], node.output('Out'))
 
 
 @op_mapper('affine_channel')
@@ -244,6 +297,19 @@ class ReduceMean():
                 axes=[0])
 
 
+@op_mapper('mean')
+class Mean():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'ReduceMean',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            keepdims=0)
+
+
 @op_mapper('arg_max')
 class ArgMax():
     support_opset_version_range = (1, 12)
@@ -282,26 +348,28 @@ class Scale():
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
             scale_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': scale})
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [scale]})
             bias_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': bias})
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [bias]})
             cast_node = graph.make_node(
                 'Cast', inputs=node.input('X'),
                 attrs={'to': dtypes.ONNX.FLOAT})
             if node.attr('bias_after_scale'):
-                node1 = graph.make_node('Mul', inputs=[scale_node, cast_node])
+                node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(
                     'Add',
-                    inputs=[bias_node, node1],
+                    inputs=[node1, bias_node],
                     outputs=node.output('Out'))
             else:
-                node1 = graph.make_node('Add', inputs=[bias_node, cast_node])
+                node1 = graph.make_node('Add', inputs=[cast_node, bias_node])
                 node2 = graph.make_node(
                     'Mul',
-                    inputs=[scale_node, node1],
-                    outputs=[node.output('Out')])
+                    inputs=[node1, scale_node],
+                    outputs=[node.output('Out', 0)])
 
 
 @op_mapper('softmax')
@@ -328,6 +396,53 @@ class Softmax():
                 'Transpose', inputs=node.input('X'), attrs={'perm': perm})
             softmax_node = graph.make_node(
                 'Softmax', inputs=[transpose_node], axis=-1)
+            transpose_node1 = graph.make_node(
+                'Transpose',
+                inputs=[softmax_node],
+                outputs=node.output('Out'),
+                attrs={'perm': perm})
+
+
+@op_mapper('softmax_with_cross_entropy')
+class SoftmaxCrossEntropyLoss():
+    support_opset_verison_range = (12, 12)
+
+    @classmethod
+    def opset_12(cls, graph, node, **kw):
+        if node.attr('soft_label'):
+            raise Exception(
+                "SoftmaxCrossEntropyLoss in onnx not support soft label.")
+
+        labels = node.input('Label', 0)
+        scores = node.input('Logits', 0)
+
+        outputs = [node.output('Loss', 0)]
+        if 'Softmax' in node.outputs:
+            outputs.append(node.output('Softmax', 0))
+
+        shape = node.input_shape('Logits', 0)
+        axis = node.attr('axis')
+        if axis < 0:
+            axis += len(shape)
+        if axis == len(shape) - 1:
+            graph.make_node(
+                'SoftmaxCrossEntropyLoss',
+                inputs=[scores, labels],
+                outputs=outputs,
+                ignore_index=node.attr('ignore_index'),
+                reduction='mean')
+        else:
+            perm = [i for i in range(len(shape))]
+            perm[-1] = axis
+            perm[axis] = len(shape) - 1
+            transpose_node = graph.make_node(
+                'Transpose', inputs=node.input('X'), attrs={'perm': perm})
+            node = graph.make_node(
+                'SoftmaxCrossEntropyLoss',
+                inputs=[scores, labels],
+                outputs=outputs,
+                ignore_index=node.attr('ignore_index'),
+                reduction='mean')
             transpose_node1 = graph.make_node(
                 'Transpose',
                 inputs=[softmax_node],
