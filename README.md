@@ -6,16 +6,16 @@
 
 Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 
-- Supported model format. Paddle2ONNX supports both dynamic and static computational graph of PaddlePaddle. For static computational graph, Paddle2ONNX converts PaddlePaddle models saved by API [save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model), for example [IPthon example](examples/tutorial.ipynb).For dynamic computational graph, it is now under experiment and more details will be released after the release of PaddlePaddle 2.0.
-- Supported operators. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version Opset. More details please refer to [Operator list](docs/en/op_list.md).
+- Supported model format. Paddle2ONNX supports both dynamic and static computational graph of PaddlePaddle. For static computational graph, Paddle2ONNX converts PaddlePaddle models saved by API [save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model), for example [IPthon example](examples/tutorial.ipynb). For dynamic computational graph, it is now under experiment and more details will be released after the release of PaddlePaddle 2.0.
+- Supported operators. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version opset. More details please refer to [Operator list](docs/en/op_list.md).
 - Supported models. You can find officially verified models by Paddle2ONNX in [model zoo](docs/en/model_zoo.md).
 
 ## AIStudio Tutorials
 
-- [Export and inference ONNX model in Paddle2.0](https://aistudio.baidu.com/aistudio/projectdetail/1461212)
-- [How to deploy PP-OCR model by ONNXRunTime](https://aistudio.baidu.com/aistudio/projectdetail/1479970)
+- [Export and inference ONNX model in PaddlePaddle 2.0](https://aistudio.baidu.com/aistudio/projectdetail/1461212)
+- [How to deploy PP-OCR model using ONNX RunTime](https://aistudio.baidu.com/aistudio/projectdetail/1479970)
 
-## Environment dependencies
+## Environment Dependencies
 
 ### Configuration
      python >= 2.7  
@@ -24,17 +24,19 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
      onnx == 1.7.0 | Optional
 ## Installation
 
-### Pip
-    pip install paddle2onnx
+### Via Pip
+    
+     pip install paddle2onnx
+    
 
-### From source
+### From Source
 
      git clone https://github.com/PaddlePaddle/paddle2onnx.git
      python setup.py install
 
-##  Usage
-### Static computational graph
-#### Using with command line
+## Usage
+### Static Computational Graph
+#### Via Command Line Tool
 Uncombined PaddlePaddle model(parameters saved in different files)
 
     paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
@@ -44,10 +46,10 @@ Combined PaddlePaddle model(parameters saved in one binary file)
     paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
 #### Parameters
-| parameters |Description |
+| Parameters | Description |
 |----------|--------------|
-|--model_dir | the directory path of the paddlepaddle model saved by `paddle.fluid.io.save_inference_model`|
-|--model_filename |**[Optional]** the model file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
+|--model_dir | The directory path of the paddlepaddle model saved by `paddle.fluid.io.save_inference_model`|
+|--model_filename |**[Optional]** The model file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
 |--params_filename |**[Optonal]** the parameter file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
 |--save_file | the directory path for the exported ONNX model|
 |--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
@@ -61,9 +63,9 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 
 #### IPython tutorials
 
-- [convert to ONNX from static computational graph](examples/tutorial.ipynb)
+- [Convert to ONNX from static computational graph](examples/tutorial.ipynb)
 
-### Dynamic computational graph
+### Dynamic Computational Graph
 
 ```
 import paddle
@@ -97,9 +99,9 @@ p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
 
 #### IPython tutorials
 
-- [convert to ONNX from dynamic computational graph](examples/tutorial_dygraph2onnx.ipynb)
+- [Convert to ONNX from dynamic computational graph](examples/tutorial_dygraph2onnx.ipynb)
 
-## Relative documents
+## Documents
 
 - [model zoo](docs/en/model_zoo.md)
 - [op list](docs/en/op_list.md)
