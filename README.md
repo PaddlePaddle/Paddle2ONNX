@@ -10,6 +10,11 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 - Supported operators. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version Opset. More details please refer to [Operator list](docs/en/op_list.md).
 - Supported models. You can find officially verified models by Paddle2ONNX in [model zoo](docs/en/model_zoo.md).
 
+## AIStudio Tutorials
+
+- [Export and inference ONNX model in Paddle2.0](https://aistudio.baidu.com/aistudio/projectdetail/1461212)
+- [How to deploy PP-OCR model by ONNXRunTime](https://aistudio.baidu.com/aistudio/projectdetail/1479970)
+
 ## Environment dependencies
 
 ### Configuration
