@@ -10,6 +10,11 @@ paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。
 - 算子支持，目前稳定支持导出ONNX Opset 9~11，部分Paddle算子支持更低的ONNX Opset转换，详情可参考[算子列表](docs/zh/op_list.md)。
 - 模型类型，官方测试可转换的模型请参考[模型库](docs/zh/model_zoo.md)。
 
+## AIStudio入门教程
+
+- [Paddle2.0导出ONNX模型和推理](https://aistudio.baidu.com/aistudio/projectdetail/1461212)
+- [手把手教你使用ONNXRunTime部署PP-OCR](https://aistudio.baidu.com/aistudio/projectdetail/1479970)
+
 ## 环境依赖
 
 ### 用户环境配置
