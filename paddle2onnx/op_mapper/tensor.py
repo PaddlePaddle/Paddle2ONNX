@@ -380,7 +380,6 @@ class Embedding():
             inputs=[node.input('W', 0), ids],
             outputs=node.output('Out'))
 
-
 @op_mapper('fill_constant_batch_size_like')
 class FillConstantBatchSizeLike():
     support_opset_verison_range = (9, 12)
