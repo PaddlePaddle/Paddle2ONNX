@@ -380,12 +380,13 @@ class Embedding():
             inputs=[node.input('W', 0), ids],
             outputs=node.output('Out'))
 
+
 @op_mapper('fill_constant_batch_size_like')
 class FillConstantBatchSizeLike():
     support_opset_verison_range = (9, 12)
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_11(cls, graph, node, **kw):
         input_dim_idx = tensor_shape = graph.make_node(
             'Constant',
             dtype=dtypes.ONNX.INT64,
