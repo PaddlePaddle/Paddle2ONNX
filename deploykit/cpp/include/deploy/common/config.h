@@ -39,6 +39,8 @@ class ConfigParser {
   YAML::Node GetNode(const std::string &node_name) const;
 
  private:
+  bool CommonParser(const YAML::Node &paddle_config);
+
   bool DetParser(const YAML::Node &det_config);
 
   bool DetParserTransforms(const YAML::Node &preprocess_op);

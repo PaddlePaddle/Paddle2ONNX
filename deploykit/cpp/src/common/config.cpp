@@ -31,11 +31,29 @@ bool ConfigParser::Load(const std::string &cfg_file,
       std::cerr << "Fail to parser PaddleDection yaml file" << std::endl;
       return false;
     }
+  } else if (pp_type == "paddle") {
+    if (!CommonParser(config)) {
+      std::cerr << "Fail to parser Paddle yaml file" << std::endl;
+      return false;
+    }
   }
 }
 
 YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
   return config_[node_name];
+}
+
+bool ConfigParser::CommonParser(const YAML::Node &paddle_config) {
+  if (!paddle_config["model_name"].IsDefined()) {
+    std::cerr << "Fail to find model_name in Paddle yaml file" << std::endl;
+    return false;
+  }
+  if (!det_config["transforms"].IsDefined()) {
+    std::cerr << "Fail to find transforms in Paddle yaml file" << std::endl;
+    return false;
+  }
+  config_ = paddle_config;
+  return true;
 }
 
 bool ConfigParser::DetParser(const YAML::Node &det_config) {

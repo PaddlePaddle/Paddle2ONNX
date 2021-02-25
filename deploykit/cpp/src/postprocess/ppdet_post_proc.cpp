@@ -28,20 +28,20 @@ void PaddleDetPostProc::Init(const ConfigParser &parser) {
 }
 
 bool PaddleDetPostProc::Run(const std::vector<DataBlob> &outputs,
-                            const std::vector<ShapeInfo> &shape_traces,
+                            const std::vector<ShapeInfo> &shape_infos,
                             std::vector<PaddleDetResult> *det_results) {
   det_results->clear();
   DataBlob output_blob = outputs[0];
   float *output_data = reinterpret_cast<float*>(output_blob.data.data());
   auto lod_vector = output_blob.lod;
-  int batchsize = shape_traces.size();
+  int batchsize = shape_infos.size();
   // box postprocess
   for (int i = 0; i < lod_vector[0].size() - 1; ++i) {
     int rh = 1;
     int rw = 1;
     if (model_arch_ == "SSD" || model_arch_ == "Face") {
-      rh =  shape_traces[i].shape[0][1];
-      rw =  shape_traces[i].shape[0][0];
+      rh =  shape_infos[i].shape[0][1];
+      rw =  shape_infos[i].shape[0][0];
     }
     PaddleDetResult det_result;
     for (int j = lod_vector[0][i]; j < lod_vector[0][i + 1]; ++j) {

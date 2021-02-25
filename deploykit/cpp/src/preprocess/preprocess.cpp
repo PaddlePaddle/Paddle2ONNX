@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <omp.h>
+
 #include "include/deploy/preprocess/preprocess.h"
 
 namespace Deploy {
@@ -30,21 +32,33 @@ bool BasePreprocess::BuildTransform(const ConfigParser &parser) {
 }
 
 bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
-  for (int i=0; i < transforms.size(); i++) {
-    if (!transforms[i]->Run(imgs)) {
-      std::cerr << "Run transforms to image failed!" << std::endl;
-      return false;
+  int batch_size = imgs->size();
+  int thread_num = omp_get_num_procs();
+  thread_num = std::min(thread_num, batch_size);
+  #pragma omp parallel for num_threads(thread_num)
+  for (int i = 0; i < batch_size; i++) {
+    for (int j = 0; j < transforms.size(); j++) {
+      if (!transforms[j]->Run((*imgs)[i])) {
+        std::cerr << "Run transforms to image failed!" << std::endl;
+        return false;
+      }
     }
   }
-  Padding batch_padding;
-  batch_padding.Run(imgs, max_w_, max_h_);
+  #pragma omp parallel for num_threads(thread_num)
+  for (int i = 0; i < batch_size; i++) {
+    Padding batch_padding;
+    batch_padding.Run((*imgs[i]), max_w_, max_h_);
+  }
   return true;
 }
 
 bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
-                                std::vector<ShapeInfo> *shape_traces) {
-  int batchsize = imgs.size();
-  for (int i = 0; i < batchsize; i++) {
+                                std::vector<ShapeInfo> *shape_infos) {
+  int batch_size = imgs.size();
+  int thread_num = omp_get_num_procs();
+  thread_num = std::min(thread_num, batch_size);
+  #pragma omp parallel for num_threads(thread_num)
+  for (int i = 0; i < batch_size; i++) {
     ShapeInfo im_shape;
     std::vector<int> origin_size = {imgs[i].cols, imgs[i].rows};
     im_shape.transform_order.push_back("Origin");
@@ -60,12 +74,12 @@ bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
     if (final_shape[1] > max_h_) {
       max_h_ = final_shape[1];
     }
-    shape_traces->push_back(std::move(im_shape));
+    shape_infos->push_back(std::move(im_shape));
   }
-  for (int i = 0; i < batchsize; i++) {
+  for (int i = 0; i < batch_size; i++) {
     std::vector<int> max_shape = GetMaxSize();
-    (*shape_traces)[i].shape.push_back(std::move(max_shape));
-    (*shape_traces)[i].transform_order.push_back("Padding");
+    (*shape_infos)[i].shape.push_back(std::move(max_shape));
+    (*shape_infos)[i].transform_order.push_back("Padding");
   }
   return true;
 }

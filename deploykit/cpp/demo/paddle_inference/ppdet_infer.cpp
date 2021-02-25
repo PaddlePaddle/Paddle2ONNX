@@ -17,7 +17,6 @@
 #include "yaml-cpp/yaml.h"
 #include "include/deploy/common/config.h"
 #include "include/deploy/common/blob.h"
-#include "include/deploy/engine/engine_config.h"
 #include "include/deploy/postprocess/ppdet_post_proc.h"
 #include "include/deploy/preprocess/ppdet_pre_proc.h"
 #include "include/deploy/engine/ppinference_engine.h"
@@ -63,16 +62,16 @@ int main(int argc, char** argv) {
     cv::Mat img;
     img = cv::imread(FLAGS_image, 1);
     imgs.push_back(std::move(img));
-    // create inpus and shape_traces
-    std::vector<Deploy::ShapeInfo> shape_traces;
+    // create inpus and shape_infos
+    std::vector<Deploy::ShapeInfo> shape_infos;
     std::vector<Deploy::DataBlob> inputs;
     // preprocess
-    det_preprocess.Run(imgs, &inputs, &shape_traces);
+    det_preprocess.Run(imgs, &inputs, &shape_infos);
     // infer
     std::vector<Deploy::DataBlob> outputs;
     ppi_engine.Infer(inputs, &outputs);
     // postprocess
     std::vector<Deploy::PaddleDetResult> detresults;
-    det_postprocess.Run(outputs, shape_traces, &detresults);
+    det_postprocess.Run(outputs, shape_infos, &detresults);
   }
 }

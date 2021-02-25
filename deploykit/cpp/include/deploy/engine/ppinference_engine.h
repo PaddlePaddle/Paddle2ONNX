@@ -19,10 +19,11 @@
 #include <iostream>
 #include <memory>
 
-#include "include/deploy/common/blob.h"
-#include "include/deploy/engine/engine_config.h"
-
 #include "paddle_inference_api.h"  // NOLINT
+
+#include "include/deploy/common/blob.h"
+
+
 
 #ifdef _WIN32
 #define OS_PATH_SEP "\\"
@@ -31,6 +32,45 @@
 #endif
 
 namespace Deploy {
+
+struct PaddleInferenceConfig {
+  //  Whether to use mkdnn accelerator library when deploying on CPU
+  bool use_mkl = true;
+
+  //  The number of threads set when using mkldnn accelerator
+  int mkl_thread_num = 1;
+
+  //  Whether to use GPU
+  bool use_gpu = false;
+
+  //  Set GPU ID, default is 0
+  int gpu_id = 0;
+
+  //  Enable IR optimization
+  bool use_ir_optim = true;
+
+  // Whether to use TensorRT
+  bool use_trt = false;
+
+  //  Set batchsize
+  int batch_size = 1;
+
+  //  Set TensorRT min_subgraph_size
+  int min_subgraph_size = 1;
+
+  /*Set TensorRT data precision
+  0: FP32
+  1: FP16
+  2: Int8
+  */
+  int precision = 0;
+
+  //  When tensorrt is used, whether to serialize tensorrt engine to disk
+  bool use_static = false;
+
+  //  Is offline calibration required, when tensorrt is used
+  bool use_calib_mode = false;
+};
 
 class PaddleInferenceEngine{
  public:

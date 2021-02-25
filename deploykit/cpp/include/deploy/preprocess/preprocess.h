@@ -1,4 +1,3 @@
-
 // Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +31,7 @@ class BasePreprocess {
 
   virtual bool Run(const std::vector<cv::Mat> &imgs,
                   std::vector<DataBlob> *inputs,
-                  std::vector<ShapeInfo> *shape_traces) = 0;
+                  std::vector<ShapeInfo> *shape_infos) = 0;
 
  protected:
   bool BuildTransform(const ConfigParser &parser);
@@ -40,7 +39,7 @@ class BasePreprocess {
   bool RunTransform(std::vector<cv::Mat> *imgs);
 
   bool ShapeInfer(const std::vector<cv::Mat> &imgs,
-                  std::vector<ShapeInfo> *shape_traces);
+                  std::vector<ShapeInfo> *shape_infos);
 
   std::vector<std::shared_ptr<Transform>> transforms;
 

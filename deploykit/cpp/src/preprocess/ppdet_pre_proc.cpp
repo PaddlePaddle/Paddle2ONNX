@@ -25,16 +25,16 @@ bool PaddleDetPreProc::Init(const ConfigParser &parser) {
 
 bool PaddleDetPreProc::Run(const std::vector<cv::Mat> &imgs,
                           std::vector<DataBlob> *inputs,
-                          std::vector<ShapeInfo> *shape_traces) {
+                          std::vector<ShapeInfo> *shape_infos) {
   inputs->clear();
-  shape_traces->clear();
+  shape_infos->clear();
   int batchsize = imgs.size();
   DataBlob img_blob;
   DataBlob im_size_blob;
   DataBlob im_info_blob;
   DataBlob im_shape_blob;
   DataBlob scale_factor_blob;
-  ShapeInfer(imgs, shape_traces);
+  ShapeInfer(imgs, shape_infos);
   std::vector<int> max_shape = GetMaxSize();
   std::vector<cv::Mat> images;
   images.assign(imgs.begin(), imgs.end());
@@ -58,15 +58,15 @@ bool PaddleDetPreProc::Run(const std::vector<cv::Mat> &imgs,
     // Additional information for input
     if (model_arch_ == "YOLO") {
       std::vector<int> origin_size =
-            {(*shape_traces)[i].shape[0][1], (*shape_traces)[i].shape[0][0]};
+            {(*shape_infos)[i].shape[0][1], (*shape_infos)[i].shape[0][0]};
       memcpy(im_size_blob.data.data() + i * 2 * sizeof(int),
             origin_size.data(), 2 * sizeof(int));
     }
     if (model_arch_ == "RCNN") {
-      std::vector<float> im_info = (*shape_traces)[i].GetImInfo();
+      std::vector<float> im_info = (*shape_infos)[i].GetImInfo();
       std::vector<float> im_shape =
-            {static_cast<float>((*shape_traces)[i].shape[0][1]),
-            static_cast<float>((*shape_traces)[i].shape[0][0]),
+            {static_cast<float>((*shape_infos)[i].shape[0][1]),
+            static_cast<float>((*shape_infos)[i].shape[0][0]),
             1};
       memcpy(im_info_blob.data.data() + i * 3 * sizeof(float),
             im_info.data(), 3 * sizeof(float));
@@ -76,12 +76,12 @@ bool PaddleDetPreProc::Run(const std::vector<cv::Mat> &imgs,
     if (model_arch_ == "RetinaNet" ||
         model_arch_ == "EfficientDet" ||
         model_arch_ == "FCOS") {
-      std::vector<float> im_info = (*shape_traces)[i].GetImInfo();
+      std::vector<float> im_info = (*shape_infos)[i].GetImInfo();
       memcpy(im_info_blob.data.data() + i * 3 * sizeof(float),
             im_info.data(), 3 * sizeof(float));
     }
     if (model_arch_ == "TTFNet") {
-      std::vector<float> scale = (*shape_traces)[i].GetScale();
+      std::vector<float> scale = (*shape_infos)[i].GetScale();
       std::vector<float> scale_factor =
             {scale[0], scale[1], scale[0], scale[1]};
       memcpy(scale_factor_blob.data.data() + i * 4 * sizeof(float),
