@@ -317,7 +317,7 @@ bool Permute::Run(cv::Mat *im) {
   int rh = im_clone.rows;
   int rw = im_clone.cols;
   int rc = im_clone.channels();
-  float *data = reinterpret_cast<float*>(im_clone.data);
+  float *data = reinterpret_cast<float*>(im->data);
   for (int i = 0; i < rc; ++i) {
     cv::extractChannel(im_clone,
                       cv::Mat(rh, rw, CV_32FC1, data + i * rh * rw), i);
