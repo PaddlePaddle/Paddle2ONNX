@@ -48,7 +48,7 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
   #pragma omp parallel for num_threads(thread_num)
   for (int i = 0; i < batch_size; i++) {
     Padding batch_padding;
-    batch_padding.Run((*imgs[i]), max_w_, max_h_);
+    batch_padding.Run((*imgs)[i], max_w_, max_h_);
   }
   return success;
 }
