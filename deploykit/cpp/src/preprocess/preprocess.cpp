@@ -33,6 +33,7 @@ bool BasePreprocess::BuildTransform(const ConfigParser &parser) {
 
 bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
   int batch_size = imgs->size();
+  bool success = true;
   int thread_num = omp_get_num_procs();
   thread_num = std::min(thread_num, batch_size);
   #pragma omp parallel for num_threads(thread_num)
@@ -40,7 +41,7 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
     for (int j = 0; j < transforms.size(); j++) {
       if (!transforms[j]->Run(&(*imgs)[i])) {
         std::cerr << "Run transforms to image failed!" << std::endl;
-        return false;
+        success = false;
       }
     }
   }
@@ -49,7 +50,7 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
     Padding batch_padding;
     batch_padding.Run((*imgs[i]), max_w_, max_h_);
   }
-  return true;
+  return success;
 }
 
 bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
