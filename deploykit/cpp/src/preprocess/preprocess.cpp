@@ -38,7 +38,7 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
   #pragma omp parallel for num_threads(thread_num)
   for (int i = 0; i < batch_size; i++) {
     for (int j = 0; j < transforms.size(); j++) {
-      if (!transforms[j]->Run((*imgs)[i])) {
+      if (!transforms[j]->Run(&(*imgs)[i])) {
         std::cerr << "Run transforms to image failed!" << std::endl;
         return false;
       }

@@ -313,13 +313,14 @@ bool RGB2BGR::ShapeInfer(ShapeInfo* shape_info) {
 }
 
 bool Permute::Run(cv::Mat *im) {
-  cv::Mat im = im->clone();
-  int rh = im->rows;
-  int rw = im->cols;
-  int rc = im->channels();
-  float *data = reinterpret_cast<float*>(im->data);
+  cv::Mat im_clone = (*im).clone();
+  int rh = im_clone.rows;
+  int rw = im_clone.cols;
+  int rc = im_clone.channels();
+  float *data = reinterpret_cast<float*>(im_clone.data);
   for (int i = 0; i < rc; ++i) {
-    cv::extractChannel(im, cv::Mat(rh, rw, CV_32FC1, data + i * rh * rw), i);
+    cv::extractChannel(im_clone,
+                      cv::Mat(rh, rw, CV_32FC1, data + i * rh * rw), i);
   }
   return true;
 }

@@ -48,7 +48,7 @@ bool ConfigParser::CommonParser(const YAML::Node &paddle_config) {
     std::cerr << "Fail to find model_name in Paddle yaml file" << std::endl;
     return false;
   }
-  if (!det_config["transforms"].IsDefined()) {
+  if (!paddle_config["transforms"].IsDefined()) {
     std::cerr << "Fail to find transforms in Paddle yaml file" << std::endl;
     return false;
   }
