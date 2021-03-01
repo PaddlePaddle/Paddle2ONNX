@@ -88,15 +88,13 @@ bool ResizeByShort::ShapeInfer(ShapeInfo* shape_info) {
 float ResizeByLong::GenerateScale(const int origin_w, const int origin_h) {
   int im_size_max = std::max(origin_w, origin_h);
   int im_size_min = std::min(origin_w, origin_h);
+  float scale = 1.0f;
   if (target_size_ == -1) {
-    float scale = 1.0f;
     if (im_size_max > max_size_) {
-      float scale =
-        static_cast<float>(max_size_) / static_cast<float>(im_size_max);
+      scale = static_cast<float>(max_size_) / static_cast<float>(im_size_max);
     }
   } else {
-    float scale =
-        static_cast<float>(target_size_) / static_cast<float>(im_size_max);
+    scale = static_cast<float>(target_size_) / static_cast<float>(im_size_max);
     if (max_size_ > 0) {
       if (round(scale * im_size_min) > max_size_) {
         scale = static_cast<float>(max_size_) / static_cast<float>(im_size_min);

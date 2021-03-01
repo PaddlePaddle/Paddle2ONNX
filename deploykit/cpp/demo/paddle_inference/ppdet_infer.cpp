@@ -67,4 +67,15 @@ int main(int argc, char** argv) {
   // postprocess
   std::vector<Deploy::PaddleDetResult> detresults;
   det_postprocess.Run(outputs, shape_infos, &detresults);
+  // print result
+  Deploy::PaddleDetResult result = detresults[0];
+  for (int i = 0; i < result.boxes.size(); i++) {
+    if (result.boxes[i].score > 0.3) {
+      std::cout << "score: " << result.boxes[i].score
+              << ", box(xmin, ymin, w, h):(" << result.boxes[i].coordinate[0]
+              << ", " << result.boxes[i].coordinate[1] << ", "
+              << result.boxes[i].coordinate[2] << ", "
+              << result.boxes[i].coordinate[3] << ")" << std::endl;
+    }
+  }
 }
