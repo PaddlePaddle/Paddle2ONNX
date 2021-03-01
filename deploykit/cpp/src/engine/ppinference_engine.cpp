@@ -22,7 +22,7 @@ void PaddleInferenceEngine::Init(const std::string model_dir,
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
-  ifstream file_check(prog_file.c_str());
+  std::ifstream file_check(prog_file.c_str());
   if (!file_check.good()) {
     prog_file = model_dir + OS_PATH_SEP + "inference.pdmodel";
     params_file = model_dir + OS_PATH_SEP + "inference.pdiparams";
