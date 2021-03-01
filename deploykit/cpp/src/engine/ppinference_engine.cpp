@@ -65,7 +65,7 @@ void PaddleInferenceEngine::Init(const std::string model_dir,
       engine_config.use_static /* use_static*/,
       engine_config.use_calib_mode /* use_calib_mode*/);
   }
-  predictor_ = std::move(paddle_infer::CreatePaddlePredictor(config));
+  predictor_ = std::move(paddle_infer::CreatePredictor(config));
 }
 
 void PaddleInferenceEngine::Infer(const std::vector<DataBlob> &inputs,
