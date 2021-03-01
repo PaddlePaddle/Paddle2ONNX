@@ -71,33 +71,33 @@ void PaddleInferenceEngine::Init(const std::string model_dir,
 void PaddleInferenceEngine::Infer(const std::vector<DataBlob> &inputs,
                                   std::vector<DataBlob> *outputs) {
   for (int i = 0; i < inputs.size(); i++) {
-    auto in_tensor = predictor_->GetInputTensor(inputs[i].name);
+    auto in_tensor = predictor_->GetInputHandle(inputs[i].name);
     in_tensor->Reshape(inputs[i].shape);
     if (inputs[i].dtype == 0) {
       float *im_tensor_data;
       im_tensor_data = (float*)(inputs[i].data.data());  // NOLINT
-      in_tensor->copy_from_cpu(im_tensor_data);
+      in_tensor->CopyFromCpu(im_tensor_data);
     } else if (inputs[i].dtype == 1) {
       int64_t *im_tensor_data;
       im_tensor_data = (int64_t*)(inputs[i].data.data());  // NOLINT
-      in_tensor->copy_from_cpu(im_tensor_data);
+      in_tensor->CopyFromCpu(im_tensor_data);
     } else if (inputs[i].dtype == 2) {
       int *im_tensor_data;
       im_tensor_data = (int*)(inputs[i].data.data());  // NOLINT
-      in_tensor->copy_from_cpu(im_tensor_data);
+      in_tensor->CopyFromCpu(im_tensor_data);
     } else if (inputs[i].dtype == 3) {
       uint8_t *im_tensor_data;
       im_tensor_data = (uint8_t*)(inputs[i].data.data());  // NOLINT
-      in_tensor->copy_from_cpu(im_tensor_data);
+      in_tensor->CopyFromCpu(im_tensor_data);
     }
   }
   // predict
-  predictor_->ZeroCopyRun();
+  predictor_->Run();
 
   // get output
   auto output_names = predictor_->GetOutputNames();
   for (const auto output_name : output_names) {
-    auto output_tensor = predictor_->GetOutputTensor(output_name);
+    auto output_tensor = predictor_->GetOutputHandle(output_name);
     auto output_tensor_shape = output_tensor->shape();
     DataBlob output;
     output.name = output_name;
@@ -110,17 +110,17 @@ void PaddleInferenceEngine::Infer(const std::vector<DataBlob> &inputs,
     }
     if (output.dtype == 0) {
       output.data.resize(size * sizeof(float));
-      output_tensor->copy_to_cpu(reinterpret_cast<float*>(output.data.data()));
+      output_tensor->CopyToCpu(reinterpret_cast<float*>(output.data.data()));
     } else if (output.dtype == 1) {
       output.data.resize(size * sizeof(int64_t));
-      output_tensor->copy_to_cpu(
+      output_tensor->CopyToCpu(
         reinterpret_cast<int64_t*>(output.data.data()));
     } else if (output.dtype == 2) {
       output.data.resize(size * sizeof(int));
-      output_tensor->copy_to_cpu(reinterpret_cast<int*>(output.data.data()));
+      output_tensor->CopyToCpu(reinterpret_cast<int*>(output.data.data()));
     } else if (output.dtype == 3) {
       output.data.resize(size * sizeof(uint8_t));
-      output_tensor->copy_to_cpu(
+      output_tensor->CopyToCpu(
         reinterpret_cast<uint8_t*>(output.data.data()));
     }
     outputs->push_back(std::move(output));
