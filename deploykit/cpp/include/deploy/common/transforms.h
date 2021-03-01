@@ -115,7 +115,7 @@ class ResizeByLong : public Transform {
     if (item["stride"].IsDefined()) {
       stride_ = item["stride"].as<int>();
     } else {
-      interp_ = 0;
+      stride_ = 0;
     }
   }
   virtual bool Run(cv::Mat *im);

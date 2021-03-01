@@ -28,7 +28,7 @@
 DEFINE_string(det_model_dir, "", "Path of inference model");
 DEFINE_string(det_cfg_file, "", "Path of yaml file");
 DEFINE_string(image, "", "Path of test image file");
-DEFINE_string(pptype, "ocr", "Type of PaddleToolKit");
+DEFINE_string(toolkit, "ocr", "Type of PaddleToolKit");
 
 
 int main(int argc, char** argv) {
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   // det parser yaml file
   std::string pp_type = "ocr";
   Deploy::ConfigParser det_parser;
-  det_parser.Load(FLAGS_det_cfg_file, FLAGS_pptype);
+  det_parser.Load(FLAGS_det_cfg_file, FLAGS_toolkit);
   // det preprocess init
   Deploy::PaddleOcrPreProc det_preprocess;
   det_preprocess.Init(det_parser);

@@ -29,7 +29,7 @@ class ConfigParser {
 
   ~ConfigParser() {}
 
-  bool Load(const std::string &cfg_file, const std::string &pp_type);
+  bool Load(const std::string &cfg_file, const std::string &toolkit);
 
   template <typename T>
   const T& Get(const std::string &name) const {

@@ -22,21 +22,21 @@
 namespace Deploy {
 
 bool ConfigParser::Load(const std::string &cfg_file,
-                        const std::string &pp_type) {
+                        const std::string &toolkit) {
   // Load config as a YAML::Node
   YAML::Node config = YAML::LoadFile(cfg_file);
   // Parser yaml file
-  if (pp_type == "det") {
+  if (toolkit == "det") {
     if (!DetParser(config)) {
       std::cerr << "Fail to parser PaddleDection yaml file" << std::endl;
       return false;
     }
-  } else if (pp_type == "paddle") {
+  } else if (toolkit == "paddle") {
     if (!CommonParser(config)) {
       std::cerr << "Fail to parser Paddle yaml file" << std::endl;
       return false;
     }
-  } else if (pp_type == "ocr") {
+  } else if (toolkit == "ocr") {
     if (!OcrParser(config)) {
       std::cerr << "Fail to parser PaddleOCR yaml file" << std::endl;
       return false;

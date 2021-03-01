@@ -31,7 +31,7 @@ DEFINE_string(image, "", "Path of test image file");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_int32(gpu_id, 0, "GPU card id");
 DEFINE_int32(batch_size, 1, "Batch size of infering");
-DEFINE_string(pptype, "det", "Type of PaddleToolKit");
+DEFINE_string(toolkit, "det", "Type of PaddleToolKit");
 
 
 int main(int argc, char** argv) {
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   // parser yaml file
   Deploy::ConfigParser parser;
-  parser.Load(FLAGS_cfg_file, FLAGS_pptype);
+  parser.Load(FLAGS_cfg_file, FLAGS_toolkit);
   // data preprocess
   // preprocess init
   Deploy::PaddleDetPreProc det_preprocess;
