@@ -74,7 +74,7 @@ class PaddleInferenceEngine{
             std::vector<DataBlob> *outputs);
 
  private:
-  std::unique_ptr<paddle::PaddlePredictor> predictor_;
+  std::unique_ptr<paddle_infer::::Predictor> predictor_;
 };
 
 }  // namespace Deploy
