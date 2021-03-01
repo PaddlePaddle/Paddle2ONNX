@@ -63,6 +63,7 @@ class PaddleDetPostProc {
           std::vector<PaddleDetResult> *det_results);
  private:
   std::string model_arch_;
+  std::map<int, std::string> labels_;
 };
 
 }  // namespace Deploy

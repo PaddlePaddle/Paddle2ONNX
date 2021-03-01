@@ -14,8 +14,7 @@
 
 #pragma once
 
-#include <io.h>
-
+#include <fstream>
 #include <vector>
 #include <string>
 #include <iostream>

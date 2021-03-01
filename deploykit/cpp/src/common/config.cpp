@@ -62,7 +62,7 @@ bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
   } else {
     config_ = ocr_config;
   }
-  return true
+  return true;
 }
 
 bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
