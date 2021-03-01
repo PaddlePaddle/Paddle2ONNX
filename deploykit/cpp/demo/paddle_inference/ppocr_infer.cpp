@@ -19,34 +19,33 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "yaml-cpp/yaml.h"
-#include "include/deploy/postprocess/ppdet_post_proc.h"
-#include "include/deploy/preprocess/ppdet_pre_proc.h"
+#include "include/deploy/postprocess/ppocr_post_proc.h"
+#include "include/deploy/preprocess/ppocr_pre_proc.h"
 #include "include/deploy/engine/ppinference_engine.h"
 
 
 
-DEFINE_string(model_dir, "", "Path of inference model");
-DEFINE_string(cfg_file, "", "Path of yaml file");
+DEFINE_string(det_model_dir, "", "Path of inference model");
+DEFINE_string(det_cfg_file, "", "Path of yaml file");
 DEFINE_string(image, "", "Path of test image file");
-DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
-DEFINE_int32(gpu_id, 0, "GPU card id");
-DEFINE_int32(batch_size, 1, "Batch size of infering");
-DEFINE_string(pptype, "det", "Type of PaddleToolKit");
+DEFINE_string(pptype, "ocr", "Type of PaddleToolKit");
 
 
 int main(int argc, char** argv) {
   // Parsing command-line
   google::ParseCommandLineFlags(&argc, &argv, true);
-  // parser yaml file
-  Deploy::ConfigParser parser;
-  parser.Load(FLAGS_cfg_file, FLAGS_pptype);
-  // data preprocess
-  // preprocess init
-  Deploy::PaddleDetPreProc det_preprocess;
-  det_preprocess.Init(parser);
-  // postprocess init
-  Deploy::PaddleDetPostProc det_postprocess;
-  det_postprocess.Init(parser);
+
+  // init det model
+  // det parser yaml file
+  std::string pp_type = "ocr";
+  Deploy::ConfigParser det_parser;
+  det_parser.Load(FLAGS_det_cfg_file, FLAGS_pptype);
+  // det preprocess init
+  Deploy::PaddleOcrPreProc det_preprocess;
+  det_preprocess.Init(det_parser);
+  // det postprocess init
+  Deploy::PaddleOcrPostProc det_postprocess;
+  det_postprocess.Init(det_parser);
   // engine init
   Deploy::PaddleInferenceEngine ppi_engine;
   Deploy::PaddleInferenceConfig ppi_config;
@@ -61,21 +60,11 @@ int main(int argc, char** argv) {
   std::vector<Deploy::DataBlob> inputs;
   // preprocess
   det_preprocess.Run(imgs, &inputs, &shape_infos);
-  // infer
+  // det infer
   std::vector<Deploy::DataBlob> outputs;
   ppi_engine.Infer(inputs, &outputs);
   // postprocess
-  std::vector<Deploy::PaddleDetResult> det_results;
-  det_postprocess.Run(outputs, shape_infos, &det_results);
-  // print result
-  Deploy::PaddleDetResult result = det_results[0];
-  for (int i = 0; i < result.boxes.size(); i++) {
-    if (result.boxes[i].score > 0.3) {
-      std::cout << "score: " << result.boxes[i].score
-              << ", box(xmin, ymin, w, h):(" << result.boxes[i].coordinate[0]
-              << ", " << result.boxes[i].coordinate[1] << ", "
-              << result.boxes[i].coordinate[2] << ", "
-              << result.boxes[i].coordinate[3] << ")" << std::endl;
-    }
-  }
+  std::vector<Deploy::PaddleOcrResult> ocr_results;
+  det_postprocess.Run(outputs, shape_infos, &ocr_results);
 }
+
