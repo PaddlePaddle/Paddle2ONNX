@@ -36,11 +36,47 @@ bool ConfigParser::Load(const std::string &cfg_file,
       std::cerr << "Fail to parser Paddle yaml file" << std::endl;
       return false;
     }
+  } else if (pp_type == "ocr") {
+    if (!OcrParser(config)) {
+      std::cerr << "Fail to parser PaddleOCR yaml file" << std::endl;
+      return false;
+    }
   }
+  return true;
 }
 
 YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
   return config_[node_name];
+}
+
+bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
+  if (ocr_config["use_tensort"].as<bool>()) {
+    config_["model_name"] = ocr_config["arch"].as<std::string>();
+    config_["toolkit"] = "PaddleOCR";
+    config_["toolkit_version"] = "Unknown";
+    YAML::Node preprocess_op = ocr_config["transforms"];
+    if (!OcrParserTransforms(preprocess_op)) {
+      std::cerr << "Fail to parser PaddleOCR transforms failed" << std::endl;
+      return false;
+    }
+  } else {
+    config_ = ocr_config;
+  }
+  return true
+}
+
+bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
+  for (const auto& item : preprocess_op) {
+    std::string name = item.begin()->first.as<std::string>();
+    if (name == "ResizeByLong") {
+      if (config_["model_name"].as<std::string>() == "DET") {
+        config_["transforms"]["Resize"]["width"] = 640;
+        config_["transforms"]["Resize"]["height"] = 640;
+      }
+    } else {
+      config_["transforms"][name] = item.begin()->second;
+    }
+  }
 }
 
 bool ConfigParser::CommonParser(const YAML::Node &paddle_config) {

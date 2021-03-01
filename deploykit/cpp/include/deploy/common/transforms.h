@@ -112,6 +112,11 @@ class ResizeByLong : public Transform {
     } else {
       max_size_ = -1;
     }
+    if (item["stride"].IsDefined()) {
+      stride_ = item["stride"].as<int>();
+    } else {
+      interp_ = 0;
+    }
   }
   virtual bool Run(cv::Mat *im);
   virtual bool ShapeInfer(ShapeInfo* shape);
@@ -121,6 +126,7 @@ class ResizeByLong : public Transform {
   int target_size_;
   int max_size_;
   int interp_;
+  int stride_;
 };
 
 class Resize : public Transform {

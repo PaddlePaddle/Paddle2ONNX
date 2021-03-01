@@ -88,16 +88,23 @@ bool ResizeByShort::ShapeInfer(ShapeInfo* shape_info) {
 float ResizeByLong::GenerateScale(const int origin_w, const int origin_h) {
   int im_size_max = std::max(origin_w, origin_h);
   int im_size_min = std::min(origin_w, origin_h);
-  float scale =
-      static_cast<float>(target_size_) / static_cast<float>(im_size_max);
-  if (max_size_ > 0) {
-    if (round(scale * im_size_min) > max_size_) {
-      scale = static_cast<float>(max_size_) / static_cast<float>(im_size_min);
+  if (target_size_ == -1) {
+    float scale = 1.0f;
+    if (im_size_max > max_size_) {
+      float scale =
+        static_cast<float>(max_size_) / static_cast<float>(im_size_max);
+    }
+  } else {
+    float scale =
+        static_cast<float>(target_size_) / static_cast<float>(im_size_max);
+    if (max_size_ > 0) {
+      if (round(scale * im_size_min) > max_size_) {
+        scale = static_cast<float>(max_size_) / static_cast<float>(im_size_min);
+      }
     }
   }
   return scale;
 }
-
 
 bool ResizeByLong::Run(cv::Mat *im) {
   int origin_w = im->cols;
@@ -105,6 +112,18 @@ bool ResizeByLong::Run(cv::Mat *im) {
   float scale = GenerateScale(origin_w, origin_h);
   int width = static_cast<int>(round(scale * im->cols));
   int height = static_cast<int>(round(scale * im->rows));
+  if (stride_ != 0) {
+    if (width / stride_ < 1 + 1e-5) {
+      width = stride_;
+    } else {
+      width = (width / 32) * 32;
+    }
+    if (height / stride_ < 1 + 1e-5) {
+      height = stride_;
+    } else {
+      height = (height / 32) * 32;
+    }
+  }
   cv::resize(*im, *im, cv::Size(width, height), 0, 0, interp_);
   return true;
 }

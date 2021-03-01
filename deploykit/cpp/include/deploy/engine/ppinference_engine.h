@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <io.h>
+
 #include <vector>
 #include <string>
 #include <iostream>
@@ -23,13 +25,6 @@
 
 #include "include/deploy/common/blob.h"
 
-
-
-#ifdef _WIN32
-#define OS_PATH_SEP "\\"
-#else
-#define OS_PATH_SEP "/"
-#endif
 
 namespace Deploy {
 

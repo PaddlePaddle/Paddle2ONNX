@@ -19,13 +19,18 @@ namespace Deploy {
 
 void PaddleInferenceEngine::Init(const std::string model_dir,
                                 const PaddleInferenceConfig &engine_config) {
-  paddle::AnalysisConfig config;
+  paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
+  if (access(prog_file.c_str(), 0) == -1) {
+    prog_file = model_dir + OS_PATH_SEP + "inference.pdmodel";
+    params_file = model_dir + OS_PATH_SEP + "inference.pdiparams";
+  }
   config.SetModel(prog_file, params_file);
   if (engine_config.use_mkl && !engine_config.use_gpu) {
     config.EnableMKLDNN();
     config.SetCpuMathLibraryNumThreads(engine_config.mkl_thread_num);
+    config.SetMkldnnCacheCapacity(10);
   }
   if (engine_config.use_gpu) {
     config.EnableUseGpu(100, engine_config.gpu_id);
@@ -41,13 +46,13 @@ void PaddleInferenceEngine::Init(const std::string model_dir,
   #endif
   config.EnableMemoryOptim();
   if (engine_config.use_trt && engine_config.use_gpu) {
-    paddle::AnalysisConfig::Precision precision;
+    paddle_infer::PrecisionType precision;
     if (engine_config.precision == 0) {
-      precision = paddle::AnalysisConfig::Precision::kFloat32;
+      precision = paddle_infer::PrecisionType::kFloat32;
     } else if (engine_config.precision == 1) {
-      precision = paddle::AnalysisConfig::Precision::kHalf;
+      precision = paddle_infer::PrecisionType::kHalf;
     } else if (engine_config.precision == 2) {
-      precision = paddle::AnalysisConfig::Precision::kInt8;
+      precision = paddle_infer::PrecisionType::kInt8;
     } else {
       std::cerr << "Can not support the set precision" << std::endl;
     }
@@ -59,7 +64,7 @@ void PaddleInferenceEngine::Init(const std::string model_dir,
       engine_config.use_static /* use_static*/,
       engine_config.use_calib_mode /* use_calib_mode*/);
   }
-  predictor_ = std::move(CreatePaddlePredictor(config));
+  predictor_ = std::move(paddle_infer::CreatePaddlePredictor(config));
 }
 
 void PaddleInferenceEngine::Infer(const std::vector<DataBlob> &inputs,
@@ -96,7 +101,7 @@ void PaddleInferenceEngine::Infer(const std::vector<DataBlob> &inputs,
     DataBlob output;
     output.name = output_name;
     output.shape.assign(output_tensor_shape.begin(), output_tensor_shape.end());
-    output.dtype = paddle::PaddleDType(output_tensor->type());
+    output.dtype = paddle_infer::DataType(output_tensor->type());
     output.lod = output_tensor->lod();
     int size = 1;
     for (const auto& i : output_tensor_shape) {

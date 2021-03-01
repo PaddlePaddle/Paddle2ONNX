@@ -34,7 +34,6 @@ bool PaddleDetPostProc::Run(const std::vector<DataBlob> &outputs,
   DataBlob output_blob = outputs[0];
   float *output_data = reinterpret_cast<float*>(output_blob.data.data());
   auto lod_vector = output_blob.lod;
-  int batchsize = shape_infos.size();
   // box postprocess
   for (int i = 0; i < lod_vector[0].size() - 1; ++i) {
     int rh = 1;

@@ -41,6 +41,10 @@ class ConfigParser {
  private:
   bool CommonParser(const YAML::Node &paddle_config);
 
+  bool OcrParser(const YAML::Node &ocr_config);
+
+  bool OcrParserTransforms(const YAML::Node &preprocess_op);
+
   bool DetParser(const YAML::Node &det_config);
 
   bool DetParserTransforms(const YAML::Node &preprocess_op);
