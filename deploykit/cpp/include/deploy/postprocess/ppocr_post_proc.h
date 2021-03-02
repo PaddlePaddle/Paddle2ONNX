@@ -40,10 +40,6 @@ class PaddleOcrPostProc {
           const std::vector<ShapeInfo> &shape_infos,
           std::vector<PaddleOcrResult> *ocr_results);
 
-  bool GetRotateCropImage(
-    const std::vector<std::vector<std::vector<int>>> &boxes,
-    std::vector<cv::Mat> *imgs);
-
  private:
   bool DetPostProc(const std::vector<DataBlob> &outputs,
           const std::vector<ShapeInfo> &shape_infos,
