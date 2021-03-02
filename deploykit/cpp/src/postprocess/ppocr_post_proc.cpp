@@ -196,8 +196,8 @@ bool PaddleOcrPostProc::FilterTagDetRes(const ShapeInfo &shape_info,
                                   PaddleOcrResult *ocr_result) {
   int ori_w = shape_info.shape[0][0];
   int ori_h = shape_info.shape[0][1];
-  int resize_w = reinterpret_cast<float>(shape_info.shape[1][0]);
-  int resize_h = reinterpret_cast<float>(shape_info.shape[1][1]);
+  int resize_w = shape_info.shape[1][0];
+  int resize_h = shape_info.shape[1][1];
   float ratio_w = (float)resize_w / (float)ori_w;  // NOLINT
   float ratio_h = (float)resize_h / (float)(ori_h);  // NOLINT
 

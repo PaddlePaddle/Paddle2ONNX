@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
   det_preprocess.Run(imgs, &inputs, &shape_infos);
   // det infer
   std::vector<Deploy::DataBlob> outputs;
-  ppi_engine.Infer(inputs, &outputs);
+  det_ppi_engine.Infer(inputs, &outputs);
   // postprocess
   std::vector<Deploy::PaddleOcrResult> ocr_results;
   det_postprocess.Run(outputs, shape_infos, &ocr_results);
