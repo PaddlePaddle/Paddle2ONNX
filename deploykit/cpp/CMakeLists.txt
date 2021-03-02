@@ -275,7 +275,7 @@ add_executable(ppdet_infer demo/paddle_inference/ppdet_infer.cpp src/engine/ppin
 ADD_DEPENDENCIES(ppdet_infer ext-yaml-cpp)
 target_link_libraries(ppdet_infer ${DEPS})
 
-add_executable(ppocr_infer demo/paddle_inference/ppocr_infer.cpp src/engine/ppinference_engine.cpp src/postprocess/ppocr_post_proc.cpp src/preprocess/ppocr_pre_proc.cpp src/preprocess/preprocess.cpp src/common/config.cpp src/common/transforms.cpp)
+add_executable(ppocr_infer demo/paddle_inference/ppocr_infer.cpp src/engine/ppinference_engine.cpp src/postprocess/ppocr_post_proc.cpp src/preprocess/ppocr_pre_proc.cpp src/preprocess/preprocess.cpp src/common/config.cpp src/common/transforms.cpp src/util/clipper.cpp)
 ADD_DEPENDENCIES(ppocr_infer ext-yaml-cpp)
 target_link_libraries(ppocr_infer ${DEPS})
 

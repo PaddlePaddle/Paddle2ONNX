@@ -18,8 +18,13 @@
 #include <map>
 #include <string>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 #include "include/deploy/common/blob.h"
 #include "include/deploy/common/config.h"
+#include "include/deploy/postprocess/util/clipper.h"
 
 namespace Deploy {
 
@@ -30,12 +35,18 @@ struct PaddleOcrResult {
 class PaddleOcrPostProc {
  public:
   void Init(const ConfigParser &parser);
+
   bool Run(const std::vector<DataBlob> &outputs,
           const std::vector<ShapeInfo> &shape_infos,
           std::vector<PaddleOcrResult> *ocr_results);
 
+  bool GetRotateCropImage(
+    const std::vector<std::vector<std::vector<int>>> &boxes,
+    std::vector<cv::Mat> *imgs);
+
  private:
   bool DetPostProc(const std::vector<DataBlob> &outputs,
+          const std::vector<ShapeInfo> &shape_infos,
           std::vector<PaddleOcrResult> *ocr_results);
 
   bool BoxesFromBitmap(
@@ -48,8 +59,29 @@ class PaddleOcrPostProc {
   bool FilterTagDetRes(const ShapeInfo &shape_info,
           PaddleOcrResult *ocr_result);
 
+  bool GetContourArea(const std::vector<std::vector<float>> &box,
+                      const float unclip_ratio, float *distance);
+
+  cv::RotatedRect UnClip(std::vector<std::vector<float>> box,
+                         const float &unclip_ratio);
+
+  float BoxScoreFast(std::vector<std::vector<float>> box_array, cv::Mat pred);
+
   std::vector<std::vector<int>> OrderPointsClockwise(
-          std::vector<std::vector<int>> *pts);
+          std::vector<std::vector<int>> pts);
+
+  std::vector<std::vector<float>> GetMiniBoxes(
+          cv::RotatedRect box, float *ssid);
+
+  static bool XsortInt(std::vector<int> a, std::vector<int> b);
+
+  static bool XsortFp32(std::vector<float> a, std::vector<float> b);
+
+  std::vector<std::vector<float>> Mat2Vector(cv::Mat mat);
+  
+  inline int _max(int a, int b) { return a >= b ? a : b; }
+
+  inline int _min(int a, int b) { return a >= b ? b : a; }
 
   template <class T> inline T clamp(T x, T min, T max) {
     if (x > max)
@@ -69,6 +101,7 @@ class PaddleOcrPostProc {
 
   std::string model_arch_;
   double det_db_thresh_ = 0.3;
+  double det_db_box_thresh_ = 0.5;
   double det_db_unclip_ratio_ = 2.0;
 };
 

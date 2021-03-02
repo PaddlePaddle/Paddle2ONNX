@@ -54,6 +54,11 @@ bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
     config_["model_name"] = ocr_config["arch"].as<std::string>();
     config_["toolkit"] = "PaddleOCR";
     config_["toolkit_version"] = "Unknown";
+    config_["det_db_thresh"] = ocr_config["det_db_thresh"].as<double>();
+    config_["det_db_box_thresh"] =
+      ocr_config["det_db_box_thresh"].as<double>();
+    config_["det_db_unclip_ratio"] =
+      ocr_config["det_db_unclip_ratio"].as<double>();
     YAML::Node preprocess_op = ocr_config["transforms"];
     if (!OcrParserTransforms(preprocess_op)) {
       std::cerr << "Fail to parser PaddleOCR transforms failed" << std::endl;

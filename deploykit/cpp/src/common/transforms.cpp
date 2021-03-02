@@ -95,11 +95,6 @@ float ResizeByLong::GenerateScale(const int origin_w, const int origin_h) {
     }
   } else {
     scale = static_cast<float>(target_size_) / static_cast<float>(im_size_max);
-    if (max_size_ > 0) {
-      if (round(scale * im_size_min) > max_size_) {
-        scale = static_cast<float>(max_size_) / static_cast<float>(im_size_min);
-      }
-    }
   }
   return scale;
 }
@@ -132,6 +127,18 @@ bool ResizeByLong::ShapeInfer(ShapeInfo* shape_info) {
   float scale = GenerateScale(before_shape[0], before_shape[1]);
   int width = static_cast<int>(round(scale * before_shape[0]));
   int height = static_cast<int>(round(scale * before_shape[1]));
+  if (stride_ != 0) {
+    if (width / stride_ < 1 + 1e-5) {
+      width = stride_;
+    } else {
+      width = (width / 32) * 32;
+    }
+    if (height / stride_ < 1 + 1e-5) {
+      height = stride_;
+    } else {
+      height = (height / 32) * 32;
+    }
+  }
   std::vector<int> after_shape = {width, height};
   shape_info->shape.push_back(after_shape);
   return true;

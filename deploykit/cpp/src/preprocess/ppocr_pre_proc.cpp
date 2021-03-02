@@ -23,7 +23,7 @@ bool PaddleOcrPreProc::Init(const ConfigParser &parser) {
   model_arch_ = parser.Get<std::string>("model_name");
 }
 
-bool PaddleDetPreProc::Run(const std::vector<cv::Mat> &imgs,
+bool PaddleOcrPreProc::Run(const std::vector<cv::Mat> &imgs,
                           std::vector<DataBlob> *inputs,
                           std::vector<ShapeInfo> *shape_infos) {
   inputs->clear();

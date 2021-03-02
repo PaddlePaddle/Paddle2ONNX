@@ -79,7 +79,7 @@ class ResizeByShort : public Transform {
     if (item["interp"].IsDefined()) {
       interp_ = item["interp"].as<int>();
     } else {
-      interp_ = 0;
+      interp_ = 1;
     }
     if (item["max_size"].IsDefined()) {
       max_size_ = item["max_size"].as<int>();
@@ -105,7 +105,7 @@ class ResizeByLong : public Transform {
     if (item["interp"].IsDefined()) {
       interp_ = item["interp"].as<int>();
     } else {
-      interp_ = 0;
+      interp_ = 1;
     }
     if (item["max_size"].IsDefined()) {
       max_size_ = item["max_size"].as<int>();
@@ -135,7 +135,7 @@ class Resize : public Transform {
     if (item["interp"].IsDefined()) {
       interp_ = item["interp"].as<int>();
     } else {
-      interp_ = 0;
+      interp_ = 1;
     }
     height_ = item["height"].as<int>();
     width_ = item["width"].as<int>();
