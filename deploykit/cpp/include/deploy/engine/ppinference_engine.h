@@ -66,9 +66,11 @@ struct PaddleInferenceConfig {
   bool use_calib_mode = false;
 };
 
-class PaddleInferenceEngine{
+class PaddleInferenceEngine {
  public:
-  void Init(const std::string model_dir, const PaddleInferenceConfig &config);
+  void Init(const std::string model_filename,
+            const std::string params_filename,
+            const PaddleInferenceConfig &engine_config);
 
   void Infer(const std::vector<DataBlob> &inputs,
             std::vector<DataBlob> *outputs);

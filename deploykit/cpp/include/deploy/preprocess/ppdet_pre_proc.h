@@ -18,8 +18,6 @@
 #include <string>
 
 #include "include/deploy/preprocess/preprocess.h"
-#include "include/deploy/common/blob.h"
-#include "include/deploy/common/config.h"
 
 
 namespace Deploy {

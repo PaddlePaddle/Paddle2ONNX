@@ -25,7 +25,8 @@
 
 
 
-DEFINE_string(model_dir, "", "Path of inference model");
+DEFINE_string(model_filename, "", "Path of det inference model");
+DEFINE_string(params_filename, "", "Path of det inference params");
 DEFINE_string(cfg_file, "", "Path of yaml file");
 DEFINE_string(image, "", "Path of test image file");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
@@ -50,7 +51,7 @@ int main(int argc, char** argv) {
   // engine init
   Deploy::PaddleInferenceEngine ppi_engine;
   Deploy::PaddleInferenceConfig ppi_config;
-  ppi_engine.Init(FLAGS_model_dir, ppi_config);
+  ppi_engine.Init(FLAGS_model_filename, FLAGS_params_filename, ppi_config);
   // read image
   std::vector<cv::Mat> imgs;
   cv::Mat img;

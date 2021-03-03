@@ -28,7 +28,7 @@
 
 namespace Deploy {
 
-class DataBlob{
+class DataBlob {
  public:
   // data
   std::vector<char> data;
@@ -52,7 +52,7 @@ class DataBlob{
   std::vector<std::vector<size_t>> lod;
 };
 
-class ShapeInfo{
+class ShapeInfo {
  public:
   // shape trace
   std::vector<std::vector<int> > shape;

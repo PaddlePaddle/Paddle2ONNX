@@ -25,7 +25,8 @@
 
 
 
-DEFINE_string(det_model_dir, "", "Path of det inference model");
+DEFINE_string(det_model_filename, "", "Path of det inference model");
+DEFINE_string(det_params_filename, "", "Path of det inference params");
 DEFINE_string(det_cfg_file, "", "Path of det yaml file");
 DEFINE_string(image, "", "Path of test image file");
 DEFINE_string(toolkit, "ocr", "Type of PaddleToolKit");
@@ -48,7 +49,9 @@ int main(int argc, char** argv) {
   // engine init
   Deploy::PaddleInferenceEngine det_ppi_engine;
   Deploy::PaddleInferenceConfig det_ppi_config;
-  det_ppi_engine.Init(FLAGS_det_model_dir, det_ppi_config);
+  det_ppi_engine.Init(FLAGS_det_model_filename,
+                      FLAGS_det_params_filename,
+                      det_ppi_config);
   // read image
   std::vector<cv::Mat> imgs;
   cv::Mat img;
