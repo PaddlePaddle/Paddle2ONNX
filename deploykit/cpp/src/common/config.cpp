@@ -50,7 +50,7 @@ YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
 }
 
 bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
-  if (ocr_config["use_tensort"].as<bool>()) {
+  if (ocr_config["fix_shape"].as<bool>()) {
     config_["model_name"] = ocr_config["arch"].as<std::string>();
     config_["toolkit"] = "PaddleOCR";
     config_["toolkit_version"] = "Unknown";
