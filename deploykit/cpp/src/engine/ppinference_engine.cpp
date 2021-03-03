@@ -17,8 +17,8 @@
 
 namespace Deploy {
 
-void PaddleInferenceEngine::Init(const std::string model_filename,
-                                const std::string params_filename,
+void PaddleInferenceEngine::Init(const std::string &model_filename,
+                                const std::string &params_filename,
                                 const PaddleInferenceConfig &engine_config) {
   paddle_infer::Config config;
   config.SetModel(model_filename, params_filename);

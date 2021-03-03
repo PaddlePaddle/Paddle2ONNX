@@ -68,8 +68,8 @@ struct PaddleInferenceConfig {
 
 class PaddleInferenceEngine {
  public:
-  void Init(const std::string model_filename,
-            const std::string params_filename,
+  void Init(const std::string &model_filename,
+            const std::string &params_filename,
             const PaddleInferenceConfig &engine_config);
 
   void Infer(const std::vector<DataBlob> &inputs,
