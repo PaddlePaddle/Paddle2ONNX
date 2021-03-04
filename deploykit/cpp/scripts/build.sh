@@ -14,7 +14,7 @@ WITH_STATIC_LIB=OFF
 # CUDA 的 lib 路径
 CUDA_LIB=/usr/local/cuda/lib64
 # CUDNN 的 lib 路径
-CUDNN_LIB=/usr/lib/x86_64-linux-gnu
+CUDNN_LIB=/usr/local/cuda/lib64
 
 {
     bash $(pwd)/scripts/bootstrap.sh # 下载预编译版本的加密工具和opencv依赖库
