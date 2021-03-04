@@ -30,6 +30,8 @@ namespace Deploy {
 
 struct PaddleOcrResult {
   std::vector<std::vector<std::vector<int>>> boxes;
+  float score;
+  int label;
 };
 
 class PaddleOcrPostProc {
@@ -40,9 +42,17 @@ class PaddleOcrPostProc {
           const std::vector<ShapeInfo> &shape_infos,
           std::vector<PaddleOcrResult> *ocr_results);
 
+  bool GetRotateCropImage(
+          const cv::Mat &srcimage,
+          const std::vector<std::vector<std::vector<int>>> &boxes,
+          std::vector<cv::Mat> *imgs);
+
  private:
   bool DetPostProc(const std::vector<DataBlob> &outputs,
           const std::vector<ShapeInfo> &shape_infos,
+          std::vector<PaddleOcrResult> *ocr_results);
+
+  bool ClsPostProc(const std::vector<DataBlob> &outputs,
           std::vector<PaddleOcrResult> *ocr_results);
 
   bool BoxesFromBitmap(
@@ -74,7 +84,7 @@ class PaddleOcrPostProc {
   static bool XsortFp32(std::vector<float> a, std::vector<float> b);
 
   std::vector<std::vector<float>> Mat2Vector(cv::Mat mat);
-  
+
   inline int _max(int a, int b) { return a >= b ? a : b; }
 
   inline int _min(int a, int b) { return a >= b ? b : a; }
@@ -96,6 +106,7 @@ class PaddleOcrPostProc {
   }
 
   std::string model_arch_;
+  double cls_thresh_ = 0.9
   double det_db_thresh_ = 0.3;
   double det_db_box_thresh_ = 0.5;
   double det_db_unclip_ratio_ = 2.0;
