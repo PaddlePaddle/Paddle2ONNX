@@ -371,7 +371,7 @@ bool Convert::ShapeInfer(ShapeInfo* shape_info) {
   return true;
 }
 
-int OcrResize::GeneralWidth(int w, int h);
+int OcrResize::GeneralWidth(int w, int h) {
   int resize_w;
   float ratio = static_cast<float>(w) / static_cast<float>(h);
   if (ceilf(height_ * ratio) > width_) {
@@ -380,6 +380,7 @@ int OcrResize::GeneralWidth(int w, int h);
     resize_w = static_cast<int>(ceilf(height_ * ratio));
   }
   return resize_w
+}
 
 bool OcrResize::Run(cv::Mat *im) {
   int resize_w = GeneralWidth(im->cols, im->rows);
