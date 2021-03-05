@@ -93,11 +93,11 @@ int main(int argc, char** argv) {
 
   // init crnn
   Deploy::ConfigParser crnn_parser;
-  cls_parser.Load(FLAGS_crnn_cfg_file, FLAGS_toolkit);
+  crnn_parser.Load(FLAGS_crnn_cfg_file, FLAGS_toolkit);
   Deploy::PaddleOcrPreProc crnn_preprocess;
-  det_preprocess.Init(crnn_parser);
+  crnn_preprocess.Init(crnn_parser);
   Deploy::PaddleOcrPostProc crnn_postprocess;
-  cls_postprocess.Init(crnn_parser);
+  crnn_postprocess.Init(crnn_parser);
   Deploy::PaddleInferenceEngine crnn_ppi_engine;
   Deploy::PaddleInferenceConfig crnn_ppi_config;
   crnn_ppi_engine.Init(FLAGS_crnn_model_filename,

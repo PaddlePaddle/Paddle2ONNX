@@ -293,7 +293,6 @@ class OcrTrtResize : public Transform {
   virtual void Init(const YAML::Node& item) {
     height_ = item["height"].as<int>();
     width_ = item["width"].as<int>();
-    is_pad_ = item["is_pad"].as<bool>();
     if (item["interp"].IsDefined()) {
       interp_ = item["interp"].as<int>();
     } else {
