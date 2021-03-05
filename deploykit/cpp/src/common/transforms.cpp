@@ -386,7 +386,7 @@ bool OcrResize::Run(cv::Mat *im) {
   int resize_w = GeneralWidth(im->cols, im->rows);
   cv::resize(*im, *im, cv::Size(resize_w, height_), 0.f, 0.f, interp_);
   if (resize_w < width_ || is_pad_) {
-    cv::copyMakeBorder(resize_img, resize_img, 0, 0, 0,
+    cv::copyMakeBorder(*im, *im, 0, 0, 0,
                       static_cast<int>(width_ - resize_w),
                       cv::BORDER_CONSTANT, value_);
   }
@@ -407,11 +407,11 @@ bool OcrResize::ShapeInfer(ShapeInfo* shape_info) {
 bool OcrTrtResize::Run(cv::Mat *im) {
   int k = static_cast<int>(im->cols * 32 / im->rows);
   if (k >= width_) {
-    cv::resize(img, resize_img, cv::Size(width_, height_), 0.f, 0.f, interp_);
+    cv::resize(*im, *im, cv::Size(width_, height_), 0.f, 0.f, interp_);
   } else {
-    cv::resize(img, resize_img, cv::Size(k, height_),
+    cv::resize(*im, *im, cv::Size(k, height_),
                 0.f, 0.f, cv::INTER_LINEAR);
-    cv::copyMakeBorder(resize_img, resize_img, 0, 0, 0,
+    cv::copyMakeBorder(*im, *im, 0, 0, 0,
           static_cast<int>(width_ - k), cv::BORDER_CONSTANT, {127, 127, 127});
   }
 }
