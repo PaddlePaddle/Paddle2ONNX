@@ -163,7 +163,7 @@ bool PaddleOcrPostProc::ClsPostProc(const std::vector<DataBlob> &outputs,
     PaddleOcrResult ocr_result;
     for (int j = 0; j < output_num; j++) {
       if (softmax_out[j + i * output_num] > score) {
-        score = softmax_out[j + i * output_num];
+        score = output_data[j + i * output_num];
         label = j;
       }
     }

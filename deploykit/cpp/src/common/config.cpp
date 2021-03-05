@@ -63,6 +63,7 @@ bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
     }
     if (ocr_config["arch"].as<std::string>() == "CLS") {
       config_["cls_thresh"] = ocr_config["cls_thresh"].as<double>();
+      config_["is_pad"] = ocr_config["is_pad"].as<bool>();
     }
     YAML::Node preprocess_op = ocr_config["transforms"];
     if (!OcrParserTransforms(preprocess_op)) {

@@ -106,7 +106,7 @@ class PaddleOcrPostProc {
   }
 
   std::string model_arch_;
-  double cls_thresh_ = 0.9
+  double cls_thresh_ = 0.9;
   double det_db_thresh_ = 0.3;
   double det_db_box_thresh_ = 0.5;
   double det_db_unclip_ratio_ = 2.0;

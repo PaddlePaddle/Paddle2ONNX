@@ -32,6 +32,8 @@ DEFINE_string(cls_params_filename, "", "Path of cls inference params");
 DEFINE_string(crnn_model_filename, "", "Path of crnn inference model");
 DEFINE_string(crnn_params_filename, "", "Path of crnn inference params");
 DEFINE_string(det_cfg_file, "", "Path of det yaml file");
+DEFINE_string(cls_cfg_file, "", "Path of cls yaml file");
+DEFINE_string(crnn_cfg_file, "", "Path of crnn yaml file");
 DEFINE_string(image, "", "Path of test image file");
 DEFINE_string(toolkit, "ocr", "Type of PaddleToolKit");
 DEFINE_bool(use_cls, false, "Whether to use cls model");
