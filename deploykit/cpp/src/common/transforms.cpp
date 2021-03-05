@@ -406,8 +406,7 @@ bool OcrResize::ShapeInfer(ShapeInfo* shape_info) {
 bool OcrTrtResize::Run(cv::Mat *im) {
   int k = static_cast<int>(im->cols * 32 / im->rows);
   if (k >= width_) {
-    cv::resize(img, resize_img, cv::Size(width_, height_), 0.f, 0.f,
-                cv::INTER_LINEAR);
+    cv::resize(img, resize_img, cv::Size(width_, height_), 0.f, 0.f, interp_);
   } else {
     cv::resize(img, resize_img, cv::Size(k, height_),
                 0.f, 0.f, cv::INTER_LINEAR);
@@ -416,7 +415,7 @@ bool OcrTrtResize::Run(cv::Mat *im) {
   }
 }
 
-bool OcrResize::ShapeInfer(ShapeInfo* shape_info) {
+bool OcrTrtResize::ShapeInfer(ShapeInfo* shape_info) {
   shape_info->transform_order.push_back("OcrTrtResize");
   std::vector<int> after_shape = {width_, height_};
   shape_info->shape.push_back(after_shape);

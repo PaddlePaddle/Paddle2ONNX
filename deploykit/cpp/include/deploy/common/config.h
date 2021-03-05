@@ -32,7 +32,7 @@ class ConfigParser {
   bool Load(const std::string &cfg_file, const std::string &toolkit);
 
   template <typename T>
-  const T& Get(const std::string &name) const {
+  const T Get(const std::string &name) const {
     return config_[name].as<T>();
   }
 

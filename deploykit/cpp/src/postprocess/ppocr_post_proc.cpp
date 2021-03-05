@@ -179,7 +179,6 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
   ocr_results->clear();
   DataBlob output_blob = outputs[0];
   float *output_data = reinterpret_cast<float*>(output_blob.data.data());
-  auto lod_vector = output_blob.lod;
 }
 
 bool PaddleOcrPostProc::BoxesFromBitmap(

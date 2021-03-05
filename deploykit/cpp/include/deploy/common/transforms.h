@@ -268,10 +268,36 @@ class OcrResize : public Transform {
       interp_ = 1;
     }
     if (item["value"].IsDefined()) {
-      vector<float> value = item["interp"].as<std::vector<float>>();
+      std::vector<float> value = item["interp"].as<std::vector<float>>();
       value_ = cv::Scalar(value[0], value[1], value[2]);
     } else {
       value_ = cv::Scalar(0, 0, 0);
+    }
+  }
+  virtual bool Run(cv::Mat *im);
+  virtual bool ShapeInfer(ShapeInfo* shape);
+
+
+ private:
+  int GeneralWidth(int w, int h);
+
+  int height_;
+  int width_;
+  int interp_;
+  bool is_pad_;
+  cv::Scalar value_;
+};
+
+class OcrTrtResize : public Transform {
+ public:
+  virtual void Init(const YAML::Node& item) {
+    height_ = item["height"].as<int>();
+    width_ = item["width"].as<int>();
+    is_pad_ = item["is_pad"].as<bool>();
+    if (item["interp"].IsDefined()) {
+      interp_ = item["interp"].as<int>();
+    } else {
+      interp_ = 1;
     }
   }
   virtual bool Run(cv::Mat *im);
@@ -281,8 +307,6 @@ class OcrResize : public Transform {
   int height_;
   int width_;
   int interp_;
-  bool is_pad_;
-  cv::Scalar value_;
 };
 
 }  // namespace Deploy
