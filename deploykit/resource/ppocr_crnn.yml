@@ -1,0 +1,33 @@
+model_format: Paddle
+model_name: CRNN
+toolkit: PaddleOCR
+toolkit_version: Unknown
+fix_shape: false
+transforms:
+  OcrResize:
+    height: 32
+    width: 320
+    interp: 1
+    is_pad: false
+  Convert:
+    dtype: float
+  Normalize:
+    is_scale: true
+    mean:
+      - 0.5
+      - 0.5
+      - 0.5
+    std:
+      - 2.0
+      - 2.0
+      - 2.0
+    min_val:
+      - 0
+      - 0
+      - 0
+    max_val:
+      - 255
+      - 255
+      - 255
+  Permute:
+    is_permute: true

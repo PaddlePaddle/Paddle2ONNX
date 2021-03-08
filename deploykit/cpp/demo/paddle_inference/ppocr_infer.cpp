@@ -77,19 +77,17 @@ int main(int argc, char** argv) {
   det_postprocess.Run(outputs, shape_infos, &ocr_results);
 
   // init cls
-  if (FLAGS_use_cls) {
-    Deploy::ConfigParser cls_parser;
-    cls_parser.Load(FLAGS_cls_cfg_file, FLAGS_toolkit);
-    Deploy::PaddleOcrPreProc cls_preprocess;
-    cls_preprocess.Init(cls_parser);
-    Deploy::PaddleOcrPostProc cls_postprocess;
-    cls_postprocess.Init(cls_parser);
-    Deploy::PaddleInferenceEngine cls_ppi_engine;
-    Deploy::PaddleInferenceConfig cls_ppi_config;
-    cls_ppi_engine.Init(FLAGS_cls_model_filename,
-                        FLAGS_cls_params_filename,
-                        cls_ppi_config);
-  }
+  Deploy::ConfigParser cls_parser;
+  cls_parser.Load(FLAGS_cls_cfg_file, FLAGS_toolkit);
+  Deploy::PaddleOcrPreProc cls_preprocess;
+  cls_preprocess.Init(cls_parser);
+  Deploy::PaddleOcrPostProc cls_postprocess;
+  cls_postprocess.Init(cls_parser);
+  Deploy::PaddleInferenceEngine cls_ppi_engine;
+  Deploy::PaddleInferenceConfig cls_ppi_config;
+  cls_ppi_engine.Init(FLAGS_cls_model_filename,
+                      FLAGS_cls_params_filename,
+                      cls_ppi_config);
 
   // init crnn
   Deploy::ConfigParser crnn_parser;

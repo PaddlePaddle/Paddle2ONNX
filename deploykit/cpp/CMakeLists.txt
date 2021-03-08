@@ -206,14 +206,14 @@ endif()
 
 if(WITH_STATIC_LIB)
     set(DEPS
-        ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        ${PADDLE_DIR}/paddle/lib/libpaddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
 else()
     if (NOT WIN32)
       set(DEPS
-          ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
+          ${PADDLE_DIR}/paddle/lib/libpaddle_inference${CMAKE_SHARED_LIBRARY_SUFFIX})
     else()
       set(DEPS
-          ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
+          ${PADDLE_DIR}/paddle/lib/paddle_inference${CMAKE_SHARED_LIBRARY_SUFFIX})
     endif()
 endif()
 

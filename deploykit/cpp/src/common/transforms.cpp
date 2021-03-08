@@ -379,7 +379,7 @@ int OcrResize::GeneralWidth(int w, int h) {
   } else {
     resize_w = static_cast<int>(ceilf(height_ * ratio));
   }
-  return resize_w
+  return resize_w;
 }
 
 bool OcrResize::Run(cv::Mat *im) {
@@ -390,6 +390,7 @@ bool OcrResize::Run(cv::Mat *im) {
                       static_cast<int>(width_ - resize_w),
                       cv::BORDER_CONSTANT, value_);
   }
+  return true;
 }
 
 bool OcrResize::ShapeInfer(ShapeInfo* shape_info) {
@@ -414,6 +415,7 @@ bool OcrTrtResize::Run(cv::Mat *im) {
     cv::copyMakeBorder(*im, *im, 0, 0, 0,
           static_cast<int>(width_ - k), cv::BORDER_CONSTANT, {127, 127, 127});
   }
+  return true;
 }
 
 bool OcrTrtResize::ShapeInfer(ShapeInfo* shape_info) {

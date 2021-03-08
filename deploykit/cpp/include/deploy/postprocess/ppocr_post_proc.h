@@ -32,6 +32,7 @@ struct PaddleOcrResult {
   std::vector<std::vector<std::vector<int>>> boxes;
   float score;
   int label;
+  double cls_thresh;
 };
 
 class PaddleOcrPostProc {

@@ -65,9 +65,11 @@ bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
     std::vector<int> origin_size = {imgs[i].cols, imgs[i].rows};
     im_shape.transform_order.push_back("Origin");
     im_shape.shape.push_back(origin_size);
-    if (!transforms[i]->ShapeInfer(&im_shape)) {
-      std::cerr << "Apply shape inference failed!" << std::endl;
-      success = false;
+    for (int j = 0; j < transforms.size(); j++) {
+      if (!transforms[j]->ShapeInfer(&im_shape)) {
+        std::cerr << "Apply shape inference failed!" << std::endl;
+        success = false;
+      }
     }
     std::vector<int> final_shape = im_shape.shape.back();
     if (final_shape[0] > max_w_) {
@@ -115,6 +117,10 @@ std::shared_ptr<Transform> BasePreprocess::CreateTransform(
     return std::make_shared<BGR2RGB>();
   } else if (transform_name == "Convert") {
     return std::make_shared<Convert>();
+  } else if (transform_name == "OcrResize") {
+    return std::make_shared<OcrResize>();
+  } else if (transform_name == "OcrTrtResize") {
+    return std::make_shared<OcrTrtResize>();
   } else {
     std::cerr << "There's unexpected transform(name='" << transform_name
               << "')." << std::endl;
