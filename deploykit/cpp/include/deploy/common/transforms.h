@@ -262,6 +262,7 @@ class OcrResize : public Transform {
     height_ = item["height"].as<int>();
     width_ = item["width"].as<int>();
     is_pad_ = item["is_pad"].as<bool>();
+    fix_width_ = item["fix_width"].as<bool>();
     if (item["interp"].IsDefined()) {
       interp_ = item["interp"].as<int>();
     } else {
@@ -285,6 +286,7 @@ class OcrResize : public Transform {
   int width_;
   int interp_;
   bool is_pad_;
+  bool fix_width_;
   cv::Scalar value_;
 };
 

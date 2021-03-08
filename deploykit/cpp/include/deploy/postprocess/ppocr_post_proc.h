@@ -56,6 +56,9 @@ class PaddleOcrPostProc {
   bool ClsPostProc(const std::vector<DataBlob> &outputs,
           std::vector<PaddleOcrResult> *ocr_results);
 
+  bool CrnnPostProc(const std::vector<DataBlob> &outputs,
+          std::vector<PaddleOcrResult> *ocr_results);
+
   bool BoxesFromBitmap(
           const cv::Mat &pred,
           const cv::Mat &bitmap,
@@ -107,6 +110,7 @@ class PaddleOcrPostProc {
   }
 
   std::string model_arch_;
+  std::vector<std::string> label_list_;
   double cls_thresh_ = 0.9;
   double det_db_thresh_ = 0.3;
   double det_db_box_thresh_ = 0.5;

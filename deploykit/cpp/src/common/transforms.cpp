@@ -374,6 +374,9 @@ bool Convert::ShapeInfer(ShapeInfo* shape_info) {
 int OcrResize::GeneralWidth(int w, int h) {
   int resize_w;
   float ratio = static_cast<float>(w) / static_cast<float>(h);
+  if (!fix_width_) {
+    width_ = static_cast<int>(32 * ratio);
+  }
   if (ceilf(height_ * ratio) > width_) {
     resize_w = width_;
   } else {

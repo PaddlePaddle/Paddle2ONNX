@@ -3,12 +3,14 @@ model_name: CRNN
 toolkit: PaddleOCR
 toolkit_version: Unknown
 fix_shape: false
+path: ./ppocr_keys_v1.txt
 transforms:
   OcrResize:
     height: 32
     width: 320
     interp: 1
     is_pad: false
+    fix_width: false
   Convert:
     dtype: float
   Normalize:

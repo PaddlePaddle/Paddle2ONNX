@@ -26,6 +26,10 @@ void PaddleOcrPostProc::Init(const ConfigParser &parser) {
   if (model_arch_ == "CLS") {
     cls_thresh_ = parser.Get<double>("cls_thresh");
   }
+  if (model_arch_ == "CRNN") {
+    std::string path = parser.Get<std::string>("path");
+    ReadDict(path);
+  }
 }
 
 bool PaddleOcrPostProc::Run(const std::vector<DataBlob> &outputs,
@@ -41,7 +45,7 @@ bool PaddleOcrPostProc::Run(const std::vector<DataBlob> &outputs,
     return true;
   }
   if (model_arch_ == "CRNN") {
-    ClsPostProc(outputs, ocr_results);
+    CrnnPostProc(outputs, ocr_results);
   }
 }
 
@@ -179,6 +183,51 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
   ocr_results->clear();
   DataBlob output_blob = outputs[0];
   float *output_data = reinterpret_cast<float*>(output_blob.data.data());
+  std::vector<int> output_shape = output_blob.shape;
+  for (int i = 0; i < output_shape[0]; i++) {
+    PaddleOcrResult ocr_result;
+    std::vector<std::string> str_res;
+    int argmax_idx;
+    int size = output_shape[1] * output_shape[2];
+    int last_index = 0;
+    float score = 0.f;
+    int count = 0;
+    float max_value = 0.0f;
+    for (int j = 0; j < output_shape[1]; j++) {
+      int fisrt = i * size + j * output_shape[2];
+      int last = i * size + (j + 1) * output_shape[2];
+      argmax_idx =
+        std::distance(output_data + fisrt,
+        std::max_element(output_data + fisrt, output_data + last));
+      max_value = static_cast<float>(*std::max_element(output_data + fisrt,
+        output_data + last));
+      if (argmax_idx > 0 && (!(i > 0 && argmax_idx == last_index))) {
+        score += max_value;
+        count += 1;
+        str_res.push_back(label_list_[argmax_idx]);
+      }
+      last_index = argmax_idx;
+    }
+    score /= count;
+    for (int i = 0; i < str_res.size(); i++) {
+      std::cout << str_res[i];
+    }
+    std::cout << "\tscore: " << score << std::endl;
+  }
+}
+
+PaddleOcrPostProc::ReadDict(const std::string &path) {
+  std::ifstream in(path);
+  std::string line;
+  if (in) {
+    while (getline(in, line)) {
+      label_list_.push_back(line);
+    }
+  } else {
+    std::cout << "no such label file: " << path << ", exit the program..."
+              << std::endl;
+    exit(1);
+  }
 }
 
 bool PaddleOcrPostProc::BoxesFromBitmap(

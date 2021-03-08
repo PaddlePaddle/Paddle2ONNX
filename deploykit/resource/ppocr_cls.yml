@@ -10,6 +10,7 @@ transforms:
     width: 192
     interp: 1
     is_pad: false
+    fix_width: true
   Convert:
     dtype: float
   Normalize:

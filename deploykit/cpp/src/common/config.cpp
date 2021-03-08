@@ -52,6 +52,7 @@ YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
 bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
   if (ocr_config["fix_shape"].as<bool>()) {
     config_["model_name"] = ocr_config["arch"].as<std::string>();
+    config_["path"] = ocr_config["path"].as<std::string>();
     config_["toolkit"] = "PaddleOCR";
     config_["toolkit_version"] = "Unknown";
     if (ocr_config["arch"].as<std::string>() == "DET") {
@@ -63,7 +64,6 @@ bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
     }
     if (ocr_config["arch"].as<std::string>() == "CLS") {
       config_["cls_thresh"] = ocr_config["cls_thresh"].as<double>();
-      config_["is_pad"] = ocr_config["is_pad"].as<bool>();
     }
     YAML::Node preprocess_op = ocr_config["transforms"];
     if (!OcrParserTransforms(preprocess_op)) {
