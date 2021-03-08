@@ -50,6 +50,22 @@ class DataBlob {
 
   // Lod Info
   std::vector<std::vector<size_t>> lod;
+
+  template <typename T>
+  std::vector<T> GetShape() const {
+    std::vector<T> _shape;
+    for (int i = 0; i < shape.size(); i++) {
+        _shape.push_back(static_cast<T>(shape[i]));
+    }
+    return _shape;
+  }
+
+  template <typename T>
+  void SetShape(std::vector<T> data_shape) {
+    for (int i = 0; i < data_shape.size(); i++){
+        shape.push_back(static_cast<int>(data_shape[i]));
+    }
+  }
 };
 
 class ShapeInfo {
