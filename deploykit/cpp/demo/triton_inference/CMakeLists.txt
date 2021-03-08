@@ -56,7 +56,6 @@ endmacro()
 
 set(DEPS ${TRITON_DIR}/lib/libhttpclient${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(DEPS ${DEPS} ${OpenCV_LIBS})
-#set(DEPS ${DEPS} ${TRITON_LIBS})
 set(DEPS ${DEPS} glog gflags protobuf yaml-cpp)
 
 if (NOT WIN32)
@@ -64,14 +63,17 @@ if (NOT WIN32)
     set(DEPS ${DEPS} ${EXTERNAL_LIB})
 endif()
 
-add_library(triton_inference SHARED  ${PROJECT_ROOT_DIR}/src/engine/triton_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp)
+add_library(triton_inference SHARED  ${PROJECT_ROOT_DIR}/src/engine/triton_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp)
 ADD_DEPENDENCIES(triton_inference ext-yaml-cpp)
 target_link_libraries(triton_inference ${DEPS})
 
-add_executable(ppdet_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppdet_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/triton_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp)
+set(DEPS ${DEPS} triton_inference)
+
+add_executable(ppdet_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppdet_infer.cpp)
 ADD_DEPENDENCIES(ppdet_triton_infer ext-yaml-cpp)
 target_link_libraries(ppdet_triton_infer ${DEPS})
 
-add_executable(ppocr_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppocr_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/triton_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp)
+
+add_executable(ppocr_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppocr_infer.cpp)
 ADD_DEPENDENCIES(ppocr_triton_infer ext-yaml-cpp)
 target_link_libraries(ppocr_triton_infer ${DEPS})
