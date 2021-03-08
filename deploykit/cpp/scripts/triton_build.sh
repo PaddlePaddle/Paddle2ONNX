@@ -1,11 +1,9 @@
 #!/bin/bash
 
-#TRITON_DIR=/workspace/install/
-
 for i in "$@"; do
     case $i in
-        --triton_dir=*)
-         TRITON_DIR="${i#*=}"
+        --triton_client=*)
+         TRITON_CLIENT="${i#*=}"
          shift
          ;;
         *)
@@ -15,7 +13,12 @@ for i in "$@"; do
     esac
 done
 
-echo  $(TRITON_DIR)
+if [ $TRITON_CLIENT ];then
+	echo "TRITON_CLIENT = $TRITON_CLIENT"
+else
+	echo "TRITON_CLIENT is not exist, please set by --triton_clent"
+    exit 1
+fi
 # download opencv library
 OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc4.8ffmpeg/
 {
