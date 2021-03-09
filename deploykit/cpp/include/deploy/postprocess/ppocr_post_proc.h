@@ -17,6 +17,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <fstream>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -58,6 +59,8 @@ class PaddleOcrPostProc {
 
   bool CrnnPostProc(const std::vector<DataBlob> &outputs,
           std::vector<PaddleOcrResult> *ocr_results);
+
+  bool ReadDict(const std::string &path);
 
   bool BoxesFromBitmap(
           const cv::Mat &pred,

@@ -128,12 +128,16 @@ int main(int argc, char** argv) {
       }
     }
     // run crnn model
-    std::vector<Deploy::ShapeInfo> crnn_shape_infos;
-    std::vector<Deploy::DataBlob> crnn_inputs;
-    crnn_preprocess.Run(crop_imgs, &crnn_inputs, &crnn_shape_infos);
-    std::vector<Deploy::DataBlob> crnn_outputs;
-    crnn_ppi_engine.Infer(crnn_inputs, &crnn_outputs);
-    crnn_postprocess.Run(crnn_outputs, crnn_shape_infos, &results);
+    for (int j = 0; j < crop_imgs.size(); j++) {
+      std::vector<Deploy::ShapeInfo> crnn_shape_infos;
+      std::vector<Deploy::DataBlob> crnn_inputs;
+      std::vector<cv::Mat> rec_imgs;
+      rec_imgs.push_back(crop_imgs[j])
+      crnn_preprocess.Run(rec_imgs, &crnn_inputs, &crnn_shape_infos);
+      std::vector<Deploy::DataBlob> crnn_outputs;
+      crnn_ppi_engine.Infer(crnn_inputs, &crnn_outputs);
+      crnn_postprocess.Run(crnn_outputs, crnn_shape_infos, &results);
+    }
   }
 }
 

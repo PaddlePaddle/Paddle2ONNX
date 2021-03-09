@@ -55,13 +55,15 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
 
 bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
                                 std::vector<ShapeInfo> *shape_infos) {
+  max_w_ = 0;
+  max_h_ = 0;
   int batch_size = imgs.size();
   bool success = true;
   int thread_num = omp_get_num_procs();
   thread_num = std::min(thread_num, batch_size);
   #pragma omp parallel for num_threads(thread_num)
   for (int i = 0; i < batch_size; i++) {
-    ShapeInfo im_shape;
+    ShapeInfo im_shape
     std::vector<int> origin_size = {imgs[i].cols, imgs[i].rows};
     im_shape.transform_order.push_back("Origin");
     im_shape.shape.push_back(origin_size);

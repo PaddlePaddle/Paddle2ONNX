@@ -29,6 +29,8 @@ void PaddleOcrPostProc::Init(const ConfigParser &parser) {
   if (model_arch_ == "CRNN") {
     std::string path = parser.Get<std::string>("path");
     ReadDict(path);
+    label_list_.insert(label_list_.begin(), "#");
+    label_list_.push_back(" ");
   }
 }
 
@@ -216,7 +218,7 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
   }
 }
 
-PaddleOcrPostProc::ReadDict(const std::string &path) {
+bool PaddleOcrPostProc::ReadDict(const std::string &path) {
   std::ifstream in(path);
   std::string line;
   if (in) {
@@ -226,8 +228,9 @@ PaddleOcrPostProc::ReadDict(const std::string &path) {
   } else {
     std::cout << "no such label file: " << path << ", exit the program..."
               << std::endl;
-    exit(1);
+    return false;
   }
+  return true;
 }
 
 bool PaddleOcrPostProc::BoxesFromBitmap(

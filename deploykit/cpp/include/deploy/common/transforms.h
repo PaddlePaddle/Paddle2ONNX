@@ -269,7 +269,7 @@ class OcrResize : public Transform {
       interp_ = 1;
     }
     if (item["value"].IsDefined()) {
-      std::vector<float> value = item["interp"].as<std::vector<float>>();
+      std::vector<float> value = item["value"].as<std::vector<float>>();
       value_ = cv::Scalar(value[0], value[1], value[2]);
     } else {
       value_ = cv::Scalar(0, 0, 0);
