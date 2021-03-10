@@ -40,6 +40,7 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
   for (int i = 0; i < batch_size; i++) {
     for (int j = 0; j < transforms.size(); j++) {
       if (!transforms[j]->Run(&(*imgs)[i])) {
+        std::cerr << "Run transforms to image failed!" << std::endl;
         success = false;
       }
     }
@@ -65,6 +66,7 @@ bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
     im_shape.shape.push_back(origin_size);
     for (int j = 0; j < transforms.size(); j++) {
       if (!transforms[j]->ShapeInfer(&im_shape)) {
+        std::cerr << "Apply shape inference failed!" << std::endl;
         success = false;
       }
     }
