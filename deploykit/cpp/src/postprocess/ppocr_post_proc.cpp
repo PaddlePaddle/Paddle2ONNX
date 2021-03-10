@@ -18,9 +18,17 @@ namespace Deploy {
 
 void PaddleOcrPostProc::Init(const ConfigParser &parser) {
   model_arch_ = parser.Get<std::string>("model_name");
-  det_db_thresh_ = parser.Get<double>("det_db_thresh");
-  det_db_box_thresh_ = parser.Get<double>("det_db_box_thresh");
-  det_db_unclip_ratio_ = parser.Get<double>("det_db_unclip_ratio");
+  if (model_arch_ == "DET") {
+    det_db_thresh_ = parser.Get<double>("det_db_thresh");
+    det_db_box_thresh_ = parser.Get<double>("det_db_box_thresh");
+    det_db_unclip_ratio_ = parser.Get<double>("det_db_unclip_ratio");
+  }
+  if (model_arch_ == "CRNN") {
+    std::string path = parser.Get<std::string>("path");
+    ReadDict(path);
+    label_list_.insert(label_list_.begin(), "#");
+    label_list_.push_back(" ");
+  }
 }
 
 bool PaddleOcrPostProc::Run(const std::vector<DataBlob> &outputs,
@@ -30,6 +38,75 @@ bool PaddleOcrPostProc::Run(const std::vector<DataBlob> &outputs,
   if (model_arch_ == "DET") {
     DetPostProc(outputs, shape_infos, ocr_results);
     return true;
+  }
+  if (model_arch_ == "CLS") {
+    ClsPostProc(outputs, ocr_results);
+    return true;
+  }
+  if (model_arch_ == "CRNN") {
+    CrnnPostProc(outputs, ocr_results);
+  }
+}
+
+bool PaddleOcrPostProc::GetRotateCropImage(
+      const cv::Mat &srcimage,
+      const std::vector<std::vector<std::vector<int>>> &boxes,
+      std::vector<cv::Mat> *imgs) {
+  int img_num = boxes.size();
+  imgs->clear();
+  for (int i = 0; i < img_num; i++) {
+    std::vector<std::vector<int>> box;
+    box = boxes[i];
+    cv::Mat image;
+    srcimage.copyTo(image);
+    std::vector<std::vector<int>> points = box;
+    int x_collect[4] = {box[0][0], box[1][0], box[2][0], box[3][0]};
+    int y_collect[4] = {box[0][1], box[1][1], box[2][1], box[3][1]};
+    int left = static_cast<int>(*std::min_element(x_collect, x_collect + 4));
+    int right = static_cast<int>(*std::max_element(x_collect, x_collect + 4));
+    int top = static_cast<int>(*std::min_element(y_collect, y_collect + 4));
+    int bottom = static_cast<int>(*std::max_element(y_collect, y_collect + 4));
+
+    cv::Mat img_crop;
+    image(cv::Rect(left, top, right - left, bottom - top)).copyTo(img_crop);
+
+    for (int i = 0; i < points.size(); i++) {
+      points[i][0] -= left;
+      points[i][1] -= top;
+    }
+
+    int img_crop_width = static_cast<int>(sqrt(pow(points[0][0] -
+                    points[1][0], 2) + pow(points[0][1] - points[1][1], 2)));
+    int img_crop_height = static_cast<int>(sqrt(pow(points[0][0] -
+                    points[3][0], 2) + pow(points[0][1] - points[3][1], 2)));
+
+    cv::Point2f pts_std[4];
+    pts_std[0] = cv::Point2f(0., 0.);
+    pts_std[1] = cv::Point2f(img_crop_width, 0.);
+    pts_std[2] = cv::Point2f(img_crop_width, img_crop_height);
+    pts_std[3] = cv::Point2f(0.f, img_crop_height);
+
+    cv::Point2f pointsf[4];
+    pointsf[0] = cv::Point2f(points[0][0], points[0][1]);
+    pointsf[1] = cv::Point2f(points[1][0], points[1][1]);
+    pointsf[2] = cv::Point2f(points[2][0], points[2][1]);
+    pointsf[3] = cv::Point2f(points[3][0], points[3][1]);
+
+    cv::Mat M = cv::getPerspectiveTransform(pointsf, pts_std);
+
+    cv::Mat dst_img;
+    cv::warpPerspective(img_crop, dst_img, M,
+                        cv::Size(img_crop_width, img_crop_height),
+                        cv::BORDER_REPLICATE);
+    if (static_cast<float>(dst_img.rows) >=
+        static_cast<float>(dst_img.cols) * 1.5) {
+      cv::Mat srcCopy = cv::Mat(dst_img.rows, dst_img.cols, dst_img.depth());
+      cv::transpose(dst_img, srcCopy);
+      cv::flip(srcCopy, srcCopy, 0);
+      imgs->insert(imgs->begin(), srcCopy);
+    } else {
+      imgs->insert(imgs->begin(), dst_img);
+    }
   }
 }
 
@@ -71,6 +148,82 @@ bool PaddleOcrPostProc::DetPostProc(const std::vector<DataBlob> &outputs,
     ocr_results->push_back(ocr_result);
     return true;
   }
+}
+
+bool PaddleOcrPostProc::ClsPostProc(const std::vector<DataBlob> &outputs,
+                            std::vector<PaddleOcrResult> *ocr_results) {
+  DataBlob output_blob = outputs[0];
+  float *output_data = reinterpret_cast<float*>(output_blob.data.data());
+  std::vector<int> out_shape = output_blob.shape;
+  int batch_size = out_shape[0];
+  int output_num = 1;
+  for (int i = 1; i < out_shape.size(); i++) {
+    output_num *= out_shape[i];
+  }
+  for (int i = 0; i < batch_size; i++) {
+    float cls_score = 0;
+    int label = 0;
+    PaddleOcrResult ocr_result;
+    for (int j = 0; j < output_num; j++) {
+      if (output_data[j + i * output_num] > cls_score) {
+        cls_score = output_data[j + i * output_num];
+        label = j;
+      }
+    }
+    ocr_result.cls_score = cls_score;
+    ocr_result.label = label;
+    ocr_results->push_back(ocr_result);
+  }
+}
+
+bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
+                            std::vector<PaddleOcrResult> *ocr_results) {
+  ocr_results->clear();
+  DataBlob output_blob = outputs[0];
+  float *output_data = reinterpret_cast<float*>(output_blob.data.data());
+  std::vector<int> output_shape = output_blob.shape;
+  for (int i = 0; i < output_shape[0]; i++) {
+    PaddleOcrResult ocr_result;
+    int argmax_idx;
+    int size = output_shape[1] * output_shape[2];
+    int last_index = 0;
+    float crnn_score = 0.f;
+    int count = 0;
+    float max_value = 0.0f;
+    for (int j = 0; j < output_shape[1]; j++) {
+      int fisrt = i * size + j * output_shape[2];
+      int last = i * size + (j + 1) * output_shape[2];
+      argmax_idx =
+        std::distance(output_data + fisrt,
+        std::max_element(output_data + fisrt, output_data + last));
+      max_value = static_cast<float>(*std::max_element(output_data + fisrt,
+        output_data + last));
+      if (argmax_idx > 0 && (!(i > 0 && argmax_idx == last_index))) {
+        crnn_score += max_value;
+        count += 1;
+        ocr_result.str_res.push_back(label_list_[argmax_idx]);
+      }
+      last_index = argmax_idx;
+    }
+    crnn_score /= count;
+    ocr_result.crnn_score = crnn_score;
+    ocr_results->push_back(ocr_result);
+  }
+}
+
+bool PaddleOcrPostProc::ReadDict(const std::string &path) {
+  std::ifstream in(path);
+  std::string line;
+  if (in) {
+    while (getline(in, line)) {
+      label_list_.push_back(line);
+    }
+  } else {
+    std::cout << "no such label file: " << path << ", exit the program..."
+              << std::endl;
+    return false;
+  }
+  return true;
 }
 
 bool PaddleOcrPostProc::BoxesFromBitmap(
@@ -211,7 +364,7 @@ bool PaddleOcrPostProc::GetContourArea(
                   (box[i][1] - box[(i + 1) % pts_num][1]) *
                       (box[i][1] - box[(i + 1) % pts_num][1]));
   }
-  area = fabs(float(area / 2.0));
+  area = fabs(static_cast<float>(area / 2.0));
 
   *distance = area * unclip_ratio / dist;
   return true;
@@ -225,10 +378,10 @@ cv::RotatedRect PaddleOcrPostProc::UnClip(std::vector<std::vector<float>> box,
 
   ClipperLib::ClipperOffset offset;
   ClipperLib::Path p;
-  p << ClipperLib::IntPoint(int(box[0][0]), int(box[0][1]))
-    << ClipperLib::IntPoint(int(box[1][0]), int(box[1][1]))
-    << ClipperLib::IntPoint(int(box[2][0]), int(box[2][1]))
-    << ClipperLib::IntPoint(int(box[3][0]), int(box[3][1]));
+  p << ClipperLib::IntPoint((int)(box[0][0]), int(box[0][1]))  // NOLINT
+    << ClipperLib::IntPoint((int)(box[1][0]), int(box[1][1]))  // NOLINT
+    << ClipperLib::IntPoint((int)(box[2][0]), int(box[2][1]))  // NOLINT
+    << ClipperLib::IntPoint((int)(box[3][0]), int(box[3][1]));  // NOLINT
   offset.AddPath(p, ClipperLib::jtRound, ClipperLib::etClosedPolygon);
 
   ClipperLib::Paths soln;
@@ -259,45 +412,44 @@ float PaddleOcrPostProc::BoxScoreFast(
   float box_x[4] = {array[0][0], array[1][0], array[2][0], array[3][0]};
   float box_y[4] = {array[0][1], array[1][1], array[2][1], array[3][1]};
 
-  int xmin = clamp(int(std::floor(*(std::min_element(box_x, box_x + 4)))), 0,
-                   width - 1);
-  int xmax = clamp(int(std::ceil(*(std::max_element(box_x, box_x + 4)))), 0,
-                   width - 1);
-  int ymin = clamp(int(std::floor(*(std::min_element(box_y, box_y + 4)))), 0,
-                   height - 1);
-  int ymax = clamp(int(std::ceil(*(std::max_element(box_y, box_y + 4)))), 0,
-                   height - 1);
+  int xmin = clamp(static_cast<int>(
+    std::floor(*(std::min_element(box_x, box_x + 4)))), 0, width - 1);
+  int xmax = clamp(static_cast<int>(
+    std::ceil(*(std::max_element(box_x, box_x + 4)))), 0, width - 1);
+  int ymin = clamp(static_cast<int>(
+    std::floor(*(std::min_element(box_y, box_y + 4)))), 0, height - 1);
+  int ymax = clamp(static_cast<int>(
+    std::ceil(*(std::max_element(box_y, box_y + 4)))), 0, height - 1);
 
   cv::Mat mask;
   mask = cv::Mat::zeros(ymax - ymin + 1, xmax - xmin + 1, CV_8UC1);
 
   cv::Point root_point[4];
-  root_point[0] = cv::Point(int(array[0][0]) - xmin, int(array[0][1]) - ymin);
-  root_point[1] = cv::Point(int(array[1][0]) - xmin, int(array[1][1]) - ymin);
-  root_point[2] = cv::Point(int(array[2][0]) - xmin, int(array[2][1]) - ymin);
-  root_point[3] = cv::Point(int(array[3][0]) - xmin, int(array[3][1]) - ymin);
+  root_point[0] = cv::Point(static_cast<int>(array[0][0]) - xmin,
+                            static_cast<int>(array[0][1]) - ymin);
+  root_point[1] = cv::Point(static_cast<int>(array[1][0]) - xmin,
+                            static_cast<int>(array[1][1]) - ymin);
+  root_point[2] = cv::Point(static_cast<int>(array[2][0]) - xmin,
+                            static_cast<int>(array[2][1]) - ymin);
+  root_point[3] = cv::Point(static_cast<int>(array[3][0]) - xmin,
+                            static_cast<int>(array[3][1]) - ymin);
   const cv::Point *ppt[1] = {root_point};
   int npt[] = {4};
   cv::fillPoly(mask, ppt, npt, 1, cv::Scalar(1));
-
   cv::Mat croppedImg;
   pred(cv::Rect(xmin, ymin, xmax - xmin + 1, ymax - ymin + 1))
       .copyTo(croppedImg);
-
   auto score = cv::mean(croppedImg, mask)[0];
   return score;
 }
 
-std::vector<std::vector<float>> 
+std::vector<std::vector<float>>
 PaddleOcrPostProc::GetMiniBoxes(cv::RotatedRect box, float *ssid) {
   *ssid = std::max(box.size.width, box.size.height);
-
   cv::Mat points;
   cv::boxPoints(box, points);
-
   auto array = Mat2Vector(points);
   std::sort(array.begin(), array.end(), XsortFp32);
-
   std::vector<float> idx1 = array[0], idx2 = array[1], idx3 = array[2],
                      idx4 = array[3];
   if (array[3][1] <= array[2][1]) {
@@ -319,7 +471,6 @@ PaddleOcrPostProc::GetMiniBoxes(cv::RotatedRect box, float *ssid) {
   array[1] = idx2;
   array[2] = idx3;
   array[3] = idx4;
-
   return array;
 }
 
@@ -338,7 +489,7 @@ PaddleOcrPostProc::OrderPointsClockwise(std::vector<std::vector<int>> pts) {
     std::swap(rightmost[0], rightmost[1]);
 
   std::vector<std::vector<int>> rect = {leftmost[0], rightmost[0],
-                                        rightmost[1],leftmost[1]};
+                                        rightmost[1], leftmost[1]};
   return rect;
 }
 

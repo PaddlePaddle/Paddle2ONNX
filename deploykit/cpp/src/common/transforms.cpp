@@ -371,4 +371,62 @@ bool Convert::ShapeInfer(ShapeInfo* shape_info) {
   return true;
 }
 
+int OcrResize::GeneralWidth(int w, int h) {
+  int resize_w;
+  float ratio = static_cast<float>(w) / static_cast<float>(h);
+  if (!fix_width_) {
+    width_ = static_cast<int>(32 * ratio);
+  }
+  if (ceilf(height_ * ratio) > width_) {
+    resize_w = width_;
+  } else {
+    resize_w = static_cast<int>(ceilf(height_ * ratio));
+  }
+  return resize_w;
+}
+
+bool OcrResize::Run(cv::Mat *im) {
+  int resize_w = GeneralWidth(im->cols, im->rows);
+  cv::resize(*im, *im, cv::Size(resize_w, height_), 0.f, 0.f, interp_);
+  if (resize_w < width_ || is_pad_) {
+    cv::copyMakeBorder(*im, *im, 0, 0, 0,
+                      static_cast<int>(width_ - resize_w),
+                      cv::BORDER_CONSTANT, value_);
+  }
+  return true;
+}
+
+bool OcrResize::ShapeInfer(ShapeInfo* shape_info) {
+  std::vector<int> before_shape = shape_info->shape.back();
+  shape_info->transform_order.push_back("OcrResize");
+  int resize_w = GeneralWidth(before_shape[0], before_shape[1]);
+  if (resize_w < width_ || is_pad_) {
+    resize_w = width_;
+  }
+  std::vector<int> after_shape = {resize_w, height_};
+  shape_info->shape.push_back(after_shape);
+  return true;
+}
+
+bool OcrTrtResize::Run(cv::Mat *im) {
+  int k = static_cast<int>(im->cols * 32 / im->rows);
+  if (k >= width_) {
+    cv::resize(*im, *im, cv::Size(width_, height_), 0.f, 0.f, interp_);
+  } else {
+    cv::resize(*im, *im, cv::Size(k, height_),
+                0.f, 0.f, cv::INTER_LINEAR);
+    cv::copyMakeBorder(*im, *im, 0, 0, 0,
+          static_cast<int>(width_ - k), cv::BORDER_CONSTANT, {127, 127, 127});
+  }
+  return true;
+}
+
+bool OcrTrtResize::ShapeInfer(ShapeInfo* shape_info) {
+  shape_info->transform_order.push_back("OcrTrtResize");
+  std::vector<int> after_shape = {width_, height_};
+  shape_info->shape.push_back(after_shape);
+  return true;
+}
+
+
 }  // namespace Deploy
