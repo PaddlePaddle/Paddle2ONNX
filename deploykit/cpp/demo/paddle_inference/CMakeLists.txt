@@ -34,7 +34,6 @@ else()
 endif()
 include(${PROJECT_ROOT_DIR}/cmake/yaml-cpp.cmake)
 
-include_directories("${PROJECT_ROOT_DIR}/cmake/yaml-cpp.cmake")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 
