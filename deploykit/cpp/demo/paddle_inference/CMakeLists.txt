@@ -15,6 +15,8 @@ SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
 SET(CUDA_LIB "" CACHE PATH "Location of libraries")
 
+SET(PROJECT_ROOT_DIR  "../../" CACHE PATH  "root directory of project.")
+
 if (NOT WIN32)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -32,7 +34,7 @@ else()
 endif()
 include(cmake/yaml-cpp.cmake)
 
-include_directories("${CMAKE_SOURCE_DIR}/")
+include_directories("${PROJECT_ROOT_DIR}/cmake/yaml-cpp.cmake")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 
@@ -61,7 +63,10 @@ if (NOT (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))
   endif()
 endif()
 
-include_directories("${CMAKE_SOURCE_DIR}/")
+include_directories("${PROJECT_ROOT_DIR}/include/deploy/common")
+include_directories("${PROJECT_ROOT_DIR}/include/deploy/postprocess")
+include_directories("${PROJECT_ROOT_DIR}/include/deploy/preprocess")
+include_directories("${PROJECT_ROOT_DIR}/include/deploy/engine/ppinference_engine.h")
 include_directories("${PADDLE_DIR}/")
 include_directories("${PADDLE_DIR}/third_party/install/protobuf/include")
 include_directories("${PADDLE_DIR}/third_party/install/glog/include")
@@ -267,15 +272,11 @@ endif()
 
 set(DEPS ${DEPS} ${OpenCV_LIBS})
 
-#add_library(paddlex_inference SHARED src/visualize src/transforms.cpp src/paddlex.cpp)
-#ADD_DEPENDENCIES(paddlex_inference ext-yaml-cpp)
-#target_link_libraries(paddlex_inference ${DEPS})
-
-add_executable(ppdet_infer demo/paddle_inference/ppdet_infer.cpp src/engine/ppinference_engine.cpp src/postprocess/ppdet_post_proc.cpp src/preprocess/ppdet_pre_proc.cpp src/preprocess/preprocess.cpp src/common/config.cpp src/common/transforms.cpp)
+add_executable(ppdet_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppdet_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/ppinference_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp ${PROJECT_ROOT_DIR}/src/common/config.cpp ${PROJECT_ROOT_DIR}/src/common/transforms.cpp)
 ADD_DEPENDENCIES(ppdet_infer ext-yaml-cpp)
 target_link_libraries(ppdet_infer ${DEPS})
 
-add_executable(ppocr_infer demo/paddle_inference/ppocr_infer.cpp src/engine/ppinference_engine.cpp src/postprocess/ppocr_post_proc.cpp src/preprocess/ppocr_pre_proc.cpp src/preprocess/preprocess.cpp src/common/config.cpp src/common/transforms.cpp src/postprocess/util/clipper.cpp)
+add_executable(ppocr_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppocr_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/ppinference_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp ${PROJECT_ROOT_DIR}/src/common/config.cpp ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp)
 ADD_DEPENDENCIES(ppocr_infer ext-yaml-cpp)
 target_link_libraries(ppocr_infer ${DEPS})
 
