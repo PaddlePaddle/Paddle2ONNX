@@ -23,9 +23,6 @@ void PaddleOcrPostProc::Init(const ConfigParser &parser) {
     det_db_box_thresh_ = parser.Get<double>("det_db_box_thresh");
     det_db_unclip_ratio_ = parser.Get<double>("det_db_unclip_ratio");
   }
-  if (model_arch_ == "CLS") {
-    cls_thresh_ = parser.Get<double>("cls_thresh");
-  }
   if (model_arch_ == "CRNN") {
     std::string path = parser.Get<std::string>("path");
     ReadDict(path);
@@ -106,9 +103,9 @@ bool PaddleOcrPostProc::GetRotateCropImage(
       cv::Mat srcCopy = cv::Mat(dst_img.rows, dst_img.cols, dst_img.depth());
       cv::transpose(dst_img, srcCopy);
       cv::flip(srcCopy, srcCopy, 0);
-      imgs->push_back(srcCopy);
+      imgs->insert(imgs->begin(), srcCopy);
     } else {
-      imgs->push_back(dst_img);
+      imgs->insert(imgs->begin(), dst_img);
     }
   }
 }
@@ -164,18 +161,17 @@ bool PaddleOcrPostProc::ClsPostProc(const std::vector<DataBlob> &outputs,
     output_num *= out_shape[i];
   }
   for (int i = 0; i < batch_size; i++) {
-    float score = 0;
+    float cls_score = 0;
     int label = 0;
     PaddleOcrResult ocr_result;
     for (int j = 0; j < output_num; j++) {
       if (output_data[j + i * output_num] > score) {
-        score = output_data[j + i * output_num];
+        cls_score = output_data[j + i * output_num];
         label = j;
       }
     }
-    ocr_result.score = score;
+    ocr_result.cls_score = cls_score;
     ocr_result.label = label;
-    ocr_result.cls_thresh = cls_thresh_;
     ocr_results->push_back(ocr_result);
   }
 }
@@ -188,11 +184,10 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
   std::vector<int> output_shape = output_blob.shape;
   for (int i = 0; i < output_shape[0]; i++) {
     PaddleOcrResult ocr_result;
-    std::vector<std::string> str_res;
     int argmax_idx;
     int size = output_shape[1] * output_shape[2];
     int last_index = 0;
-    float score = 0.f;
+    float crnn_score = 0.f;
     int count = 0;
     float max_value = 0.0f;
     for (int j = 0; j < output_shape[1]; j++) {
@@ -204,17 +199,14 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
       max_value = static_cast<float>(*std::max_element(output_data + fisrt,
         output_data + last));
       if (argmax_idx > 0 && (!(i > 0 && argmax_idx == last_index))) {
-        score += max_value;
+        crnn_score += max_value;
         count += 1;
-        str_res.push_back(label_list_[argmax_idx]);
+        ocr_result.str_res.push_back(label_list_[argmax_idx]);
       }
       last_index = argmax_idx;
     }
-    score /= count;
-    for (int i = 0; i < str_res.size(); i++) {
-      std::cout << str_res[i];
-    }
-    std::cout << "\tscore: " << score << std::endl;
+    crnn_score /= count;
+    ocr_result.crnn_score
   }
 }
 

@@ -37,7 +37,8 @@ DEFINE_string(crnn_cfg_file, "", "Path of crnn yaml file");
 DEFINE_string(image, "", "Path of test image file");
 DEFINE_string(toolkit, "ocr", "Type of PaddleToolKit");
 DEFINE_bool(use_cls, false, "Whether to use cls model");
-
+DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
+DEFINE_int32(gpu_id, 0, "GPU card id");
 
 int main(int argc, char** argv) {
   // Parsing command-line
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
   // engine init
   Deploy::PaddleInferenceEngine det_ppi_engine;
   Deploy::PaddleInferenceConfig det_ppi_config;
+  det_ppi_config.use_gpu = FLAGS_use_gpu;
   det_ppi_engine.Init(FLAGS_det_model_filename,
                       FLAGS_det_params_filename,
                       det_ppi_config);
@@ -84,6 +86,7 @@ int main(int argc, char** argv) {
   Deploy::PaddleOcrPostProc cls_postprocess;
   cls_postprocess.Init(cls_parser);
   Deploy::PaddleInferenceEngine cls_ppi_engine;
+  cls_ppi_engine.use_gpu = FLAGS_use_gpu;
   Deploy::PaddleInferenceConfig cls_ppi_config;
   cls_ppi_engine.Init(FLAGS_cls_model_filename,
                       FLAGS_cls_params_filename,
@@ -98,6 +101,7 @@ int main(int argc, char** argv) {
   crnn_postprocess.Init(crnn_parser);
   Deploy::PaddleInferenceEngine crnn_ppi_engine;
   Deploy::PaddleInferenceConfig crnn_ppi_config;
+  crnn_ppi_config.use_gpu = FLAGS_use_gpu;
   crnn_ppi_engine.Init(FLAGS_crnn_model_filename,
                       FLAGS_crnn_params_filename,
                       crnn_ppi_config);
@@ -122,7 +126,7 @@ int main(int argc, char** argv) {
       cls_postprocess.Run(cls_outputs, cls_shape_infos, &results);
       for (int j = 0; j < crop_imgs.size(); j ++) {
         if (results[j].label % 2 == 1 &&
-            results[j].score > results[j].cls_thresh) {
+            results[j].cls_score > cls_parser.Get<double>("cls_thresh")) {
           cv::rotate(crop_imgs[j], crop_imgs[j], 1);
         }
       }
@@ -132,11 +136,16 @@ int main(int argc, char** argv) {
       std::vector<Deploy::ShapeInfo> crnn_shape_infos;
       std::vector<Deploy::DataBlob> crnn_inputs;
       std::vector<cv::Mat> rec_imgs;
-      rec_imgs.push_back(crop_imgs[j])
+      rec_imgs.push_back(crop_imgs[j]);
       crnn_preprocess.Run(rec_imgs, &crnn_inputs, &crnn_shape_infos);
       std::vector<Deploy::DataBlob> crnn_outputs;
       crnn_ppi_engine.Infer(crnn_inputs, &crnn_outputs);
       crnn_postprocess.Run(crnn_outputs, crnn_shape_infos, &results);
+      std::string str_res = results[0].str_res;
+      for (int i = 0; i < str_res.size(); i++) {
+        std::cout << str_res[i];
+      }
+      std::cout << "\tscore: " << results[0].crnn_score << std::endl;
     }
   }
 }

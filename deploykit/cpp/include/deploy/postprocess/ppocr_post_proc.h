@@ -31,9 +31,10 @@ namespace Deploy {
 
 struct PaddleOcrResult {
   std::vector<std::vector<std::vector<int>>> boxes;
-  float score;
+  float cls_score;
+  float crnn_score;
   int label;
-  double cls_thresh;
+  std::vector<std::string> str_res;
 };
 
 class PaddleOcrPostProc {

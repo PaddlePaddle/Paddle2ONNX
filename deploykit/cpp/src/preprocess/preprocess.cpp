@@ -40,7 +40,6 @@ bool BasePreprocess::RunTransform(std::vector<cv::Mat> *imgs) {
   for (int i = 0; i < batch_size; i++) {
     for (int j = 0; j < transforms.size(); j++) {
       if (!transforms[j]->Run(&(*imgs)[i])) {
-        std::cerr << "Run transforms to image failed!" << std::endl;
         success = false;
       }
     }
@@ -59,17 +58,13 @@ bool BasePreprocess::ShapeInfer(const std::vector<cv::Mat> &imgs,
   max_h_ = 0;
   int batch_size = imgs.size();
   bool success = true;
-  int thread_num = omp_get_num_procs();
-  thread_num = std::min(thread_num, batch_size);
-  #pragma omp parallel for num_threads(thread_num)
   for (int i = 0; i < batch_size; i++) {
-    ShapeInfo im_shape
+    ShapeInfo im_shape;
     std::vector<int> origin_size = {imgs[i].cols, imgs[i].rows};
     im_shape.transform_order.push_back("Origin");
     im_shape.shape.push_back(origin_size);
     for (int j = 0; j < transforms.size(); j++) {
       if (!transforms[j]->ShapeInfer(&im_shape)) {
-        std::cerr << "Apply shape inference failed!" << std::endl;
         success = false;
       }
     }
