@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
       crnn_ppi_engine.Infer(crnn_inputs, &crnn_outputs);
       crnn_postprocess.Run(crnn_outputs, crnn_shape_infos, &results);
       std::vector<std::string> str_res = results[0].str_res;
-      for (int i = 0; i < str_res.size(); i++) {
+      for (int k = 0; k < str_res.size(); k++) {
         std::cout << str_res[i];
       }
       std::cout << "\tscore: " << results[0].crnn_score << std::endl;
