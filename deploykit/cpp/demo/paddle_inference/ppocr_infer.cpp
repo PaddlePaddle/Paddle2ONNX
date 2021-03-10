@@ -86,8 +86,8 @@ int main(int argc, char** argv) {
   Deploy::PaddleOcrPostProc cls_postprocess;
   cls_postprocess.Init(cls_parser);
   Deploy::PaddleInferenceEngine cls_ppi_engine;
-  cls_ppi_engine.use_gpu = FLAGS_use_gpu;
   Deploy::PaddleInferenceConfig cls_ppi_config;
+  cls_ppi_config.use_gpu = FLAGS_use_gpu;
   cls_ppi_engine.Init(FLAGS_cls_model_filename,
                       FLAGS_cls_params_filename,
                       cls_ppi_config);
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
       std::vector<Deploy::DataBlob> crnn_outputs;
       crnn_ppi_engine.Infer(crnn_inputs, &crnn_outputs);
       crnn_postprocess.Run(crnn_outputs, crnn_shape_infos, &results);
-      std::string str_res = results[0].str_res;
+      std::vector<std::string> str_res = results[0].str_res;
       for (int i = 0; i < str_res.size(); i++) {
         std::cout << str_res[i];
       }

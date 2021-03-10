@@ -165,7 +165,7 @@ bool PaddleOcrPostProc::ClsPostProc(const std::vector<DataBlob> &outputs,
     int label = 0;
     PaddleOcrResult ocr_result;
     for (int j = 0; j < output_num; j++) {
-      if (output_data[j + i * output_num] > score) {
+      if (output_data[j + i * output_num] > cls_score) {
         cls_score = output_data[j + i * output_num];
         label = j;
       }
