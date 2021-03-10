@@ -52,13 +52,19 @@ YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
 bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
   if (ocr_config["fix_shape"].as<bool>()) {
     config_["model_name"] = ocr_config["arch"].as<std::string>();
+    config_["path"] = ocr_config["path"].as<std::string>();
     config_["toolkit"] = "PaddleOCR";
     config_["toolkit_version"] = "Unknown";
-    config_["det_db_thresh"] = ocr_config["det_db_thresh"].as<double>();
-    config_["det_db_box_thresh"] =
-      ocr_config["det_db_box_thresh"].as<double>();
-    config_["det_db_unclip_ratio"] =
-      ocr_config["det_db_unclip_ratio"].as<double>();
+    if (ocr_config["arch"].as<std::string>() == "DET") {
+      config_["det_db_thresh"] = ocr_config["det_db_thresh"].as<double>();
+      config_["det_db_box_thresh"] =
+        ocr_config["det_db_box_thresh"].as<double>();
+      config_["det_db_unclip_ratio"] =
+        ocr_config["det_db_unclip_ratio"].as<double>();
+    }
+    if (ocr_config["arch"].as<std::string>() == "CLS") {
+      config_["cls_thresh"] = ocr_config["cls_thresh"].as<double>();
+    }
     YAML::Node preprocess_op = ocr_config["transforms"];
     if (!OcrParserTransforms(preprocess_op)) {
       std::cerr << "Fail to parser PaddleOCR transforms failed" << std::endl;
@@ -77,6 +83,15 @@ bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
       if (config_["model_name"].as<std::string>() == "DET") {
         config_["transforms"]["Resize"]["width"] = 640;
         config_["transforms"]["Resize"]["height"] = 640;
+      }
+    } else if (name == "OcrResize") {
+      if (config_["model_name"].as<std::string>() == "CLS") {
+        config_["transforms"]["Resize"]["width"] = 100;
+        config_["transforms"]["Resize"]["height"] = 32;
+      }
+      if (config_["model_name"].as<std::string>() == "CRNN") {
+        config_["transforms"]["OcrTrtResize"]["width"] = 100;
+        config_["transforms"]["OcrTrtResize"]["height"] = 32;
       }
     } else {
       config_["transforms"][name] = item.begin()->second;

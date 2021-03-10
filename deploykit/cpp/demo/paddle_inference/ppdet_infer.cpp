@@ -51,6 +51,7 @@ int main(int argc, char** argv) {
   // engine init
   Deploy::PaddleInferenceEngine ppi_engine;
   Deploy::PaddleInferenceConfig ppi_config;
+  ppi_config.use_gpu = FLAGS_use_gpu;
   ppi_engine.Init(FLAGS_model_filename, FLAGS_params_filename, ppi_config);
   // read image
   std::vector<cv::Mat> imgs;
