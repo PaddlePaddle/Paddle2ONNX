@@ -207,6 +207,7 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
     }
     crnn_score /= count;
     ocr_result.crnn_score;
+    ocr_results->push_back(ocr_result);
   }
 }
 
