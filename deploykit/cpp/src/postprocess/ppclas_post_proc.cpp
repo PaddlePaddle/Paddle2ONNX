@@ -31,10 +31,11 @@ bool PaddleClasPostProc::Run(const std::vector<DataBlob> &outputs,
     PaddleClasResult clas_result;
     int fisrt = i * size;
     int last = (i + 1) * size;
-    int maxPosition = max_element(
-      output_data + fisrt, output_data + last)) - (output_data + fisrt);
+    int maxPosition = std::max_element(
+      output_data + fisrt, output_data + last) - (output_data + fisrt);
     clas_result.class_id = maxPosition;
     clas_result.score = static_cast<double>(output_data[maxPosition]);
+    clas_results->push_back(clas_result);
   }
 }
 

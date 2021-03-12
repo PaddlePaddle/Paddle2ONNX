@@ -65,11 +65,10 @@ int main(int argc, char** argv) {
   ppi_engine.Infer(inputs, &outputs);
   // postprocess
   std::vector<Deploy::PaddleClasResult> clas_results;
-  clas_postprocess.Run(outputs, shape_infos, &clas_results);
+  clas_postprocess.Run(outputs, &clas_results);
   // print result
   Deploy::PaddleClasResult result = clas_results[0];
   std::cout << "result: " << std::endl;
   std::cout << "\tclass id: " << result.class_id << std::endl;
-  std::cout << std::fixed << std::setprecision(10)
-            << "\tscore: " << result.score << std::endl;
+  std::cout << "\tscore: " << result.score << std::endl;
 }

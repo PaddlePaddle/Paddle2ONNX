@@ -276,6 +276,6 @@ add_executable(ppocr_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppocr_infer
 ADD_DEPENDENCIES(ppocr_infer ext-yaml-cpp)
 target_link_libraries(ppocr_infer ${DEPS})
 
-add_executable(ppocr_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppclas_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/ppinference_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppclas_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppclas_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp ${PROJECT_ROOT_DIR}/src/common/config.cpp ${PROJECT_ROOT_DIR}/src/common/transforms.cpp)
-ADD_DEPENDENCIES(ppocr_infer ext-yaml-cpp)
-target_link_libraries(ppocr_infer ${DEPS})
+add_executable(ppclas_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppclas_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/ppinference_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppclas_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppclas_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp ${PROJECT_ROOT_DIR}/src/common/config.cpp ${PROJECT_ROOT_DIR}/src/common/transforms.cpp)
+ADD_DEPENDENCIES(ppclas_infer ext-yaml-cpp)
+target_link_libraries(ppclas_infer ${DEPS})

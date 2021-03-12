@@ -45,7 +45,7 @@ bool PaddleClasPreProc::Run(const std::vector<cv::Mat> &imgs,
   }
   img_blob.shape = {batchsize, 3, max_shape[1], max_shape[0]};
   img_blob.dtype = 0;
-  img_blob.name = "x";
+  img_blob.name = "inputs";
   inputs->push_back(std::move(img_blob));
 }
 

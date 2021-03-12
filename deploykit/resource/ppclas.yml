@@ -2,6 +2,8 @@ model_format: Paddle
 toolkit: PaddleClas
 toolkit_version: Unknown
 transforms:
+  BGR2RGB:
+    is_rgb2bgr: true
   ResizeByShort:
     target_size: 256
     interp: 1

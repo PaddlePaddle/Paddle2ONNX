@@ -17,13 +17,14 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 
 #include "include/deploy/common/blob.h"
 #include "include/deploy/common/config.h"
 
 namespace Deploy {
 
-struct PaddleClsResult {
+struct PaddleClasResult {
   // target boxes
   int class_id;
   double score;
