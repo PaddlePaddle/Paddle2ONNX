@@ -27,6 +27,10 @@ class PaddleClasPreProc : public BasePreprocess {
 
   virtual bool Run(const std::vector<cv::Mat> &imgs,
                   std::vector<DataBlob> *inputs);
+
+  virtual bool Run(const std::vector<cv::Mat> &imgs,
+                  std::vector<DataBlob> *inputs,
+                  std::vector<ShapeInfo> *shape_infos) {}
 };
 
 }  // namespace Deploy

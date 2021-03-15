@@ -24,7 +24,6 @@ bool PaddleClasPreProc::Init(const ConfigParser &parser) {
 bool PaddleClasPreProc::Run(const std::vector<cv::Mat> &imgs,
                           std::vector<DataBlob> *inputs) {
   inputs->clear();
-  shape_infos->clear();
   int batchsize = imgs.size();
   DataBlob img_blob;
   std::vector<cv::Mat> images;
