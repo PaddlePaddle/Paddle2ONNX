@@ -55,11 +55,10 @@ int main(int argc, char** argv) {
   cv::Mat img;
   img = cv::imread(FLAGS_image, 1);
   imgs.push_back(std::move(img));
-  // create inpus and shape_infos
-  std::vector<Deploy::ShapeInfo> shape_infos;
+  // create inpus
   std::vector<Deploy::DataBlob> inputs;
   // preprocess
-  clas_preprocess.Run(imgs, &inputs, &shape_infos);
+  clas_preprocess.Run(imgs, &inputs);
   // infer
   std::vector<Deploy::DataBlob> outputs;
   ppi_engine.Infer(inputs, &outputs);

@@ -22,28 +22,27 @@ bool PaddleClasPreProc::Init(const ConfigParser &parser) {
 }
 
 bool PaddleClasPreProc::Run(const std::vector<cv::Mat> &imgs,
-                          std::vector<DataBlob> *inputs,
-                          std::vector<ShapeInfo> *shape_infos) {
+                          std::vector<DataBlob> *inputs) {
   inputs->clear();
   shape_infos->clear();
   int batchsize = imgs.size();
   DataBlob img_blob;
-  ShapeInfer(imgs, shape_infos);
-  std::vector<int> max_shape = GetMaxSize();
   std::vector<cv::Mat> images;
   images.assign(imgs.begin(), imgs.end());
   if (!RunTransform(&images)) {
     std::cerr << "Apply transforms to image failed!" << std::endl;
     return false;
   }
-  int input_size = max_shape[0] * max_shape[1] * 3;
+  int img_w = images[0].cols;
+  int img_h = images[0].rows;
+  int input_size = img_w * img_h * 3;
   img_blob.data.resize(input_size * batchsize * sizeof(float));
   for (int i=0; i < batchsize; i++) {
     // img data for input
     memcpy(img_blob.data.data() + i * input_size * sizeof(float),
             images[i].data, input_size * sizeof(float));
   }
-  img_blob.shape = {batchsize, 3, max_shape[1], max_shape[0]};
+  img_blob.shape = {batchsize, 3, img_h, img_w};
   img_blob.dtype = 0;
   img_blob.name = "inputs";
   inputs->push_back(std::move(img_blob));
