@@ -32,14 +32,14 @@ DEFINE_string(model_version, "", "model version of triton server");
 DEFINE_string(cfg_file, "", "Path of yaml file");
 DEFINE_string(image, "", "Path of test image file");
 DEFINE_string(image_list, "", "Path of test image list file");
-DEFINE_string(pptype, "det", "Type of PaddleToolKit");
+DEFINE_string(toolkit, "det", "Type of PaddleToolKit");
 
 int main(int argc, char **argv) {
   // Parsing command-line
   google::ParseCommandLineFlags(&argc, &argv, true);
   // parser yaml file
   Deploy::ConfigParser parser;
-  parser.Load(FLAGS_cfg_file, FLAGS_pptype);
+  parser.Load(FLAGS_cfg_file, FLAGS_toolkit);
 
   // data preprocess
   // preprocess init
