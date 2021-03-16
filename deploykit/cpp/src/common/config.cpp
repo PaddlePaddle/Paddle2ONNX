@@ -31,7 +31,7 @@ bool ConfigParser::Load(const std::string &cfg_file,
       std::cerr << "Fail to parser PaddleDection yaml file" << std::endl;
       return false;
     }
-  } else if (toolkit == "paddle") {
+  } else if (toolkit == "paddle" || toolkit == "clas") {
     if (!CommonParser(config)) {
       std::cerr << "Fail to parser Paddle yaml file" << std::endl;
       return false;
@@ -100,10 +100,6 @@ bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
 }
 
 bool ConfigParser::CommonParser(const YAML::Node &paddle_config) {
-  if (!paddle_config["model_name"].IsDefined()) {
-    std::cerr << "Fail to find model_name in Paddle yaml file" << std::endl;
-    return false;
-  }
   if (!paddle_config["transforms"].IsDefined()) {
     std::cerr << "Fail to find transforms in Paddle yaml file" << std::endl;
     return false;

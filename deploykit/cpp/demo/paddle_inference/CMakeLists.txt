@@ -32,9 +32,8 @@ if (NOT WIN32)
 else()
     SET(YAML_BUILD_TYPE OFF CACHE BOOL "yaml build shared library.")
 endif()
-include(cmake/yaml-cpp.cmake)
+include(${PROJECT_ROOT_DIR}/cmake/yaml-cpp.cmake)
 
-include_directories("${PROJECT_ROOT_DIR}/cmake/yaml-cpp.cmake")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 
@@ -63,10 +62,7 @@ if (NOT (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))
   endif()
 endif()
 
-include_directories("${PROJECT_ROOT_DIR}/include/deploy/common")
-include_directories("${PROJECT_ROOT_DIR}/include/deploy/postprocess")
-include_directories("${PROJECT_ROOT_DIR}/include/deploy/preprocess")
-include_directories("${PROJECT_ROOT_DIR}/include/deploy/engine/ppinference_engine.h")
+include_directories("${PROJECT_ROOT_DIR}")
 include_directories("${PADDLE_DIR}/")
 include_directories("${PADDLE_DIR}/third_party/install/protobuf/include")
 include_directories("${PADDLE_DIR}/third_party/install/glog/include")
@@ -280,4 +276,6 @@ add_executable(ppocr_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppocr_infer
 ADD_DEPENDENCIES(ppocr_infer ext-yaml-cpp)
 target_link_libraries(ppocr_infer ${DEPS})
 
-
+add_executable(ppclas_infer ${PROJECT_ROOT_DIR}/demo/paddle_inference/ppclas_infer.cpp ${PROJECT_ROOT_DIR}/src/engine/ppinference_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppclas_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppclas_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp ${PROJECT_ROOT_DIR}/src/common/config.cpp ${PROJECT_ROOT_DIR}/src/common/transforms.cpp)
+ADD_DEPENDENCIES(ppclas_infer ext-yaml-cpp)
+target_link_libraries(ppclas_infer ${DEPS})
