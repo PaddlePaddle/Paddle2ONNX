@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(PaddleX CXX C)
 
-SET(TRITON_DIR "" CACHE PATH "Location of libraries")
+SET(TRITON_CLIENT "" CACHE PATH "Location of libraries")
 SET(GLOG_DIR "" CACHE PATH "Location of libraries")
 SET(GFLAGS_DIR "" CACHE PATH "Location of libraries")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
@@ -38,8 +38,8 @@ link_directories("${GFLAGS_DIR}/lib")
 include_directories("${GLOG_DIR}/include")
 link_directories("${GLOG_DIR}/lib")
 
-include_directories("${TRITON_DIR}/include")
-link_directories("${TRITON_DIR}/lib")
+include_directories("${TRITON_CLIENT}/include")
+link_directories("${TRITON_CLIENT}/lib")
 
 
 find_package(OpenCV REQUIRED PATHS ${OPENCV_DIR}/share/OpenCV NO_DEFAULT_PATH)
@@ -54,7 +54,7 @@ macro(safe_set_static_flag)
     endforeach(flag_var)
 endmacro()
 
-set(DEPS ${TRITON_DIR}/lib/libhttpclient${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(DEPS ${TRITON_CLIENT}/lib/libhttpclient${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(DEPS ${DEPS} ${OpenCV_LIBS})
 set(DEPS ${DEPS} glog gflags protobuf yaml-cpp)
 

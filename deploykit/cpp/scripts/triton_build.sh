@@ -7,7 +7,7 @@ for i in "$@"; do
          shift
          ;;
         *)
-         # unknown option
+         echo "unknown option $i"
          exit 1
          ;;
     esac
@@ -19,10 +19,14 @@ else
 	echo "TRITON_CLIENT is not exist, please set by --triton_clent"
     exit 1
 fi
+
+# install relayed library
+sh $(pwd)/scripts/triton_env.sh 
+
 # download opencv library
 OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc4.8ffmpeg/
 {
-    bash $(pwd)/scripts/bootstrap.sh ${OPENCV_DIR} # 下载预编译版本的加密工具和opencv依赖库
+    bash $(pwd)/scripts/bootstrap.sh ${OPENCV_DIR}
 } || {
     echo "Fail to execute script/bootstrap.sh"
     exit -1
@@ -59,7 +63,7 @@ rm -rf build
 mkdir -p build
 cd build
 cmake ../demo/triton_inference/ \
-    -DTRITON_DIR=${TRITON_DIR} \
+    -DTRITON_CLIENT=${TRITON_CLIENT} \
     -DOPENCV_DIR=${OPENCV_DIR}  \
     -DGLOG_DIR=${GLOG_DIR} \
     -DGFLAGS_DIR=${GFLAGS_DIR}
