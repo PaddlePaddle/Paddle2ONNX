@@ -9,7 +9,7 @@ Triton的全称为Triton Inference Server，它提供了针对CPU和GPU优化的
 拉取镜像的命令：
 
 - `<xx.yy>`指的是你需要拉取的Triton docker版本，目前支持`20.11`，所以请手动替换`<xx.yy>`为`20.11`。
-- 镜像后缀为**-py3**为Triton的服务端，**-py3-sdk**为Triton的客户端。
+- 镜像后缀为`-py3`为Triton的服务端（server），`-py3-sdk`为Triton的客户端（client）。
 
 ```
 docker pull nvcr.io/nvidia/tritonserver:<xx.yy>-py3
@@ -34,7 +34,7 @@ sh fetch_models.sh
 
 ### 2.2 启动Triton server服务
 
-经过Triton的优化可以使用GPU提供极佳的推理性能，且可以在仅支持CPU的系统上工作。以上两种情况下，我们都可以使用上述的Triton Docker映像部署。
+经过Triton的优化可以使用GPU提供极佳的推理性能，且可以在仅支持CPU的系统上工作。以上两种情况下，我们都可以使用上述的Triton Docker镜像部署。
 
 #### 2.2.1 启动基于GPU的服务
 
