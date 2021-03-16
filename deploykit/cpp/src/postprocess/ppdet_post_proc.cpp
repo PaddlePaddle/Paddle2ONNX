@@ -54,15 +54,15 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
   int box_size = box_shape[1] * box_shape[2];
   for (int i = 0; i < batchsize; i++) {
     std::map<int, std::vector<int>> indices;
-    PaddleDetResult det_result;
+    int num_det = 0;
     for (int j = 0; j < cls_num; j++) {
       NMSFast(score_blob, box_blob, i, j, &(indices[j]));
       num_det += indices[j].size();
     }
     float *scores_data =
-      reinterpret_cast<float*>score_blob.data.data() + i * score_size;
+      reinterpret_cast<float*>(score_blob.data.data()) + i * score_size;
     float *box_data =
-      reinterpret_cast<float*>score_blob.data.data() + i * box_size;
+      reinterpret_cast<float*>(score_blob.data.data()) + i * box_size;
     if (keep_top_k > -1 && num_det > keep_top_k) {
       float *sdata;
       std::vector<std::pair<float, std::pair<int, int>>> score_index_pairs;
@@ -85,7 +85,7 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
           int idx = score_index_pairs[j].second.second;
           new_indices[label].push_back(idx);
       }
-      indices.claer();
+      indices.clear();
       new_indices.swap(indices);
     }
     int rh = 1;
@@ -95,7 +95,7 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
       rw =  shape_infos[i].shape[0][0];
     }
     PaddleDetResult det_result;
-    for (const auto& it : new_indices) {
+    for (const auto& it : indices) {
       int label = it.first;
       const std::vector<int>& label_indices = it.second;
       for (size_t j = 0; j < label_indices.size(); ++j) {
@@ -193,7 +193,7 @@ bool PaddleDetPostProc::DetPostNonMms(const std::vector<DataBlob> &outputs,
 void PaddleDetPostProc::NMSFast(const DataBlob &score_blob,
                           const DataBlob &box_blob,
                           const int &i, const int &j,
-                          std::map<int, std::vector<int>> *selected_indices) {
+                          std::vector<int> *selected_indices) {
   const float score_threshold = 0.009999999776482582;
   const int top_k = 100;
   float nms_threshold = 0.44999998807907104;
@@ -209,12 +209,12 @@ void PaddleDetPostProc::NMSFast(const DataBlob &score_blob,
   for (int i = 0; i < score_shape.size(); i++) {
     size_s *= score_shape[i];
   }
-  const float *score =
+  float *score =
     reinterpret_cast<float*>(score_blob.data.data()) + i * size_s + j * box_n;
-  const float *bbox_data =
+  float *bbox_data =
     reinterpret_cast<float*>(box_blob.data.data()) + i * size_b;
   std::vector<float> scores_data(box_n);
-  std::copy_n(score, num_boxes, scores_data.begin());
+  std::copy_n(score, box_n, scores_data.begin());
   std::vector<std::pair<float, int>> sorted_indices;
   GetMaxScoreIndex(scores_data, score_threshold, top_k, &sorted_indices);
   selected_indices->clear();
@@ -249,19 +249,12 @@ void PaddleDetPostProc::GetMaxScoreIndex(const std::vector<float> &scores,
   }
   // Sort the score pair according to the scores in descending order
   std::stable_sort(sorted_indices->begin(), sorted_indices->end(),
-                   SortScorePairDescend);
+                   SortScorePairDescend<int>);
   // Keep top_k scores if needed.
   if (top_k > -1 && top_k < static_cast<int>(sorted_indices->size())) {
     sorted_indices->resize(top_k);
   }
 }
-
-bool PaddleDetPostProc::SortScorePairDescend(
-                          const std::pair<float, int>& pair1,
-                          const std::pair<float, int>& pair2) {
-  return pair1.first > pair2.first;
-}
-
 
 float PaddleDetPostProc::JaccardOverlap(const float* box1,
                                 const float* box2,

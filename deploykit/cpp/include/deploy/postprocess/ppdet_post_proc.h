@@ -66,24 +66,39 @@ class PaddleDetPostProc {
           std::vector<PaddleDetResult> *det_results);
 
  private:
+  template <class T>
+  bool SortScorePairDescend(const std::pair<float, T>& pair1,
+                            const std::pair<float, T>& pair2) {
+    return pair1.first > pair2.first;
+  }
+
   bool DetPostNonNms(const std::vector<DataBlob> &outputs,
           const std::vector<ShapeInfo> &shape_infos,
           std::vector<PaddleDetResult> *det_results);
+
   bool DetPostWithNms(const std::vector<DataBlob> &outputs,
                       const std::vector<ShapeInfo> &shape_infos,
                       std::vector<PaddleDetResult> *det_results);
+
   void NMSFast(const DataBlob &score_blob,
               const DataBlob &box_blob,
               const int &i,
               const int &j,
-              std::map<int, std::vector<int>> *selected_indices);
+              std::vector<int> *selected_indices);
+
   void GetMaxScoreIndex(const std::vector<float> &scores,
                         const float &threshold, const int &top_k,
                         std::vector<std::pair<float, int>> *sorted_indices);
+
+  bool SortScorePairDescend(const std::pair<float, int>& pair1,
+                          const std::pair<float, int>& pair2);
+
   float JaccardOverlap(const float* box1,
                       const float* box2,
                       const bool normalized);
+
   float BBoxArea(const float* box, const bool normalized);
+
   std::string model_arch_;
   std::map<int, std::string> labels_;
 };
