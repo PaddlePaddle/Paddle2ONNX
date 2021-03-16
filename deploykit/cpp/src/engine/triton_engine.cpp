@@ -156,7 +156,6 @@ void TritonInferenceEngine::Infer(const TritonInferenceConfigs &configs,
 
     int size = 1;
     for (const auto &i : output_blob.shape) {
-      std::cout << i <<  std::endl;
       size *= i;
     }
     size_t output_byte_size;
