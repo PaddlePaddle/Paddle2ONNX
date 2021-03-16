@@ -16,7 +16,7 @@ done
 if [ $TRITON_CLIENT ];then
 	echo "TRITON_CLIENT = $TRITON_CLIENT"
 else
-	echo "TRITON_CLIENT is not exist, please set by --triton_clent"
+	echo "TRITON_CLIENT is not exist, please set by --triton_client"
     exit 1
 fi
 
