@@ -88,9 +88,10 @@ int main(int argc, char **argv) {
         auto res = det_results[i];
         for (int j = 0; j < res.boxes.size(); j++) {
           auto box = res.boxes[j];
-          if (box.score < 0.5) {
-            break;
-          }
+
+        if (box.score < 0.5 || box.score > 1.0) {
+          continue;
+        }
           std::string result_log;
           result_log += "class_id: " + std::to_string(box.category_id) + ", ";
           result_log += "score: " + std::to_string(box.score) + ", ";
@@ -124,8 +125,8 @@ int main(int argc, char **argv) {
       auto res = det_results[i];
       for (int j = 0; j < res.boxes.size(); j++) {
         auto box = res.boxes[j];
-        if (box.score < 0.5) {
-          break;
+        if (box.score < 0.5 ||  box.score > 1.0) {
+          continue;
         }
         std::string result_log;
         result_log += "class_id: " + std::to_string(box.category_id) + ", ";

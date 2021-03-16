@@ -79,9 +79,6 @@ void TritonInferenceEngine::CreateInput(
   for (int i = 0; i < input_blobs.size(); i++) {
     nic::InferInput *input;
     std::vector<int64_t> input_shape = input_blobs[i].GetShape<int64_t>();
-    for (int j = 0; j < input_shape.size(); j++) {
-      std::cout << input_shape[j] << std::endl;
-    }
     nic::InferInput::Create(&input, input_blobs[i].name,
                             input_blobs[i].GetShape<int64_t>(),
                             DtypeToString(input_blobs[i].dtype));
@@ -159,6 +156,7 @@ void TritonInferenceEngine::Infer(const TritonInferenceConfigs &configs,
 
     int size = 1;
     for (const auto &i : output_blob.shape) {
+      std::cout << i <<  std::endl;
       size *= i;
     }
     size_t output_byte_size;
@@ -168,15 +166,18 @@ void TritonInferenceEngine::Infer(const TritonInferenceConfigs &configs,
 
     if (output_blob.dtype == 0) {
       output_blob.data.resize(size * sizeof(float));
+      memcpy(output_blob.data.data(), output_data, size * sizeof(float));
     } else if (output_blob.dtype == 1) {
       output_blob.data.resize(size * sizeof(int64_t));
+      memcpy(output_blob.data.data(), output_data, size * sizeof(int64_t));
     } else if (output_blob.dtype == 2) {
       output_blob.data.resize(size * sizeof(int));
+      memcpy(output_blob.data.data(), output_data, size * sizeof(int));
     } else if (output_blob.dtype == 3) {
       output_blob.data.resize(size * sizeof(uint8_t));
+      memcpy(output_blob.data.data(), output_data, size * sizeof(uint8_t));
     }
 
-    memcpy(output_blob.data.data(), output_data, size * sizeof(float));
     output_blobs->push_back(output_blob);
   }
 }
