@@ -24,7 +24,7 @@ docker pull nvcr.io/nvidia/tritonserver:<xx.yy>-py3-sdk
 
 >以[PPYOLO](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0-rc/configs/ppyolo/README_cn.md)为例：首先参考[EXPORT_MODEL](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0-rc/docs/advanced_tutorials/deploy/EXPORT_MODEL.md)将训练后模型（或预训练模型）导出Paddle inference模型，再调用[Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX.git)从Paddle转换为Triton目前支持的ONNX格式。
 
-预训练ONNX模型下载脚本：
+PPYOLO预训练ONNX模型下载脚本：
 
 ```
 cd /path/to/paddle2onnx/deploykit/resource/triton/
@@ -72,7 +72,7 @@ docker run --rm -p8000:8000 -p8001:8001 -p8002:8002 -v /full/path/to/paddle2onnx
  nvcr.io/nvidia/tritonserver:<xx.yy>-py3 tritonserver --model-repository=/model_repository/
 ```
 
-### 2.4 验证远程服务
+### 2.3 验证远程服务
 
 使用Triton的ready接口来验证服务器和模型是否已准备好进行推断，在主机系统重使用curl访问服务器的状态。
 
@@ -86,7 +86,7 @@ $ curl -v localhost:8000/v2/health/ready
 < Content-Type: text/plain
 ```
 
-## 3 PPYOLO demo
+## 3 PPYOLO Demo
 
 ### 3.1 创建包含Triton客户端SDK的docker容器
 
@@ -112,7 +112,7 @@ sh scripts/triton_build.sh --triton_client=/workspace/install/
 ./build/demo/ppdet_triton_infer --image /paddle2onnx/deploykit/resource/triton/imgs/ppyolo_test.jpg  --cfg_file /paddle2onnx/deploykit/resource/triton/client/ppyolo/infer_cfg.yml --url localhost:8000 --model_name ppyolo
 ```
 
->|参数名称 | 含义 |
+|参数名称 | 含义 |
 |---|---|
 | --model_name | 模型名称|
 | --url | 服务的远程IP地址+端口，如：localhost:8000|
