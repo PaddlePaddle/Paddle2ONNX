@@ -68,7 +68,8 @@ int main(int argc, char** argv) {
   ppi_engine.Infer(inputs, &outputs);
   // postprocess
   std::vector<Deploy::PaddleDetResult> det_results;
-  det_postprocess.Run(outputs, shape_infos, &det_results);
+  bool use_cpu_nms = false;
+  det_postprocess.Run(outputs, shape_infos, use_cpu_nms, &det_results);
   // print result
   Deploy::PaddleDetResult result = det_results[0];
   for (int i = 0; i < result.boxes.size(); i++) {
