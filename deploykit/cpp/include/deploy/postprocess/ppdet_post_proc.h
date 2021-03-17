@@ -17,6 +17,12 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
+#include <utility>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include "include/deploy/common/blob.h"
 #include "include/deploy/common/config.h"
@@ -55,13 +61,45 @@ struct PaddleDetResult {
   }
 };
 
+template <class T>
+bool SortScorePairDescend(const std::pair<float, T>& pair1,
+                          const std::pair<float, T>& pair2) {
+  return pair1.first > pair2.first;
+}
+
 class PaddleDetPostProc {
  public:
   void Init(const ConfigParser &parser);
   bool Run(const std::vector<DataBlob> &outputs,
           const std::vector<ShapeInfo> &shape_infos,
+          const bool use_cpu_nms,
           std::vector<PaddleDetResult> *det_results);
+
  private:
+  bool DetPostNonNms(const std::vector<DataBlob> &outputs,
+          const std::vector<ShapeInfo> &shape_infos,
+          std::vector<PaddleDetResult> *det_results);
+
+  bool DetPostWithNms(const std::vector<DataBlob> &outputs,
+                      const std::vector<ShapeInfo> &shape_infos,
+                      std::vector<PaddleDetResult> *det_results);
+
+  void NMSFast(const DataBlob &score_blob,
+              const DataBlob &box_blob,
+              const int &i,
+              const int &j,
+              std::vector<int> *selected_indices);
+
+  void GetMaxScoreIndex(const std::vector<float> &scores,
+                        const float &threshold, const int &top_k,
+                        std::vector<std::pair<float, int>> *sorted_indices);
+
+  float JaccardOverlap(const float* box1,
+                      const float* box2,
+                      const bool normalized);
+
+  float BBoxArea(const float* box, const bool normalized);
+
   std::string model_arch_;
   std::map<int, std::string> labels_;
 };
