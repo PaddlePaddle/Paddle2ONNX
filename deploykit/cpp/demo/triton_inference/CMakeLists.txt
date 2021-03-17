@@ -69,11 +69,11 @@ target_link_libraries(triton_inference ${DEPS})
 
 set(DEPS ${DEPS} triton_inference)
 
-add_executable(ppdet_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppdet_infer.cpp)
+add_executable(ppdet_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppdet_infer/ppdet_infer.cpp)
 ADD_DEPENDENCIES(ppdet_triton_infer ext-yaml-cpp)
 target_link_libraries(ppdet_triton_infer ${DEPS})
 
 
-add_executable(ppocr_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppocr_infer.cpp)
+add_executable(ppocr_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppocr_infer/ppocr_infer.cpp)
 ADD_DEPENDENCIES(ppocr_triton_infer ext-yaml-cpp)
 target_link_libraries(ppocr_triton_infer ${DEPS})

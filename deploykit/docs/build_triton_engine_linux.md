@@ -27,7 +27,7 @@ docker pull nvcr.io/nvidia/tritonserver:<xx.yy>-py3-clientsdk
 PPYOLO预训练ONNX模型下载脚本：
 
 ```
-cd /path/to/paddle2onnx/deploykit/resource/triton/
+cd /path/to/paddle2onnx/deploykit/cpp/demo/triton_inference/ppdet_infer/
 sh fetch_models.sh
 ```
 
@@ -41,7 +41,7 @@ sh fetch_models.sh
 使用以下命令对刚刚创建的PPYOLO模型库运行Triton服务。需要注意的是，必须安装[NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-docker)，Docker才能识别GPU。 --gpus = 1参数表明Triton可以使用1块GPU进行推理。
 
 ```
-docker run --gpus=1 --rm -p8000:8000 -p8001:8001 -p8002:8002 -v /path/to/paddle2onnx/deploykit/resource/model_repository/:/model_repository/
+docker run --gpus=1 --rm -p8000:8000 -p8001:8001 -p8002:8002 -v /path/to/paddle2onnx/deploykit/cpp/demo/triton_inference/model_repository/:/model_repository/
  nvcr.io/nvidia/tritonserver:<xx.yy>-py3 tritonserver --model-repository=/model_repository/
 ```
 启动Triton之后，您将在控制台上看到如下输出，显示服务器正在启动并加载模型。当您看到如下输出时，Triton准备接受推理请求。
@@ -109,7 +109,7 @@ $ sh scripts/triton_build.sh --triton_client=/workspace/install/
 上述编译后会生成针对不同模型库套件实现的Demo，以`ppdet_triton_infer`为例，可请求`ppyolo_onnx`的推理。
 
 ```
-$ ./build/demo/ppdet_triton_infer --image /paddle2onnx/deploykit/resource/triton/imgs/ppyolo_test.jpg  --cfg_file /paddle2onnx/deploykit/resource/triton/client/ppyolo/infer_cfg.yml --url localhost:8000 --model_name ppyolo_onnx
+$ ./build/demo/ppdet_triton_infer --image /paddle2onnx/deploykit/cpp/demo/triton_inference/ppdet_infer/ppyolo_test.jpg  --cfg_file /paddle2onnx/deploykit/cpp/demo/triton_inference/ppdet_infer/client/ppyolo/infer_cfg.yml --url localhost:8000 --model_name ppyolo_onnx
 ```
 
 |参数名称 | 含义 |
