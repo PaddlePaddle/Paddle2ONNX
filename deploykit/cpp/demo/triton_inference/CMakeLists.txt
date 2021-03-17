@@ -63,7 +63,7 @@ if (NOT WIN32)
     set(DEPS ${DEPS} ${EXTERNAL_LIB})
 endif()
 
-add_library(triton_inference SHARED  ${PROJECT_ROOT_DIR}/src/engine/triton_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp)
+add_library(triton_inference SHARED  ${PROJECT_ROOT_DIR}/src/engine/triton_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppclas_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppclas_pre_proc.cpp)
 ADD_DEPENDENCIES(triton_inference ext-yaml-cpp)
 target_link_libraries(triton_inference ${DEPS})
 
@@ -77,3 +77,7 @@ target_link_libraries(ppdet_triton_infer ${DEPS})
 add_executable(ppocr_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppocr_infer/ppocr_infer.cpp)
 ADD_DEPENDENCIES(ppocr_triton_infer ext-yaml-cpp)
 target_link_libraries(ppocr_triton_infer ${DEPS})
+
+add_executable(ppclas_triton_infer ${PROJECT_ROOT_DIR}/demo/triton_inference/ppclas_infer/ppclas_infer.cpp)
+ADD_DEPENDENCIES(ppclas_triton_infer ext-yaml-cpp)
+target_link_libraries(ppclas_triton_infer ${DEPS})
