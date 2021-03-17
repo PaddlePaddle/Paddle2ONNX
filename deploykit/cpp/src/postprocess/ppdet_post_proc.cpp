@@ -33,6 +33,11 @@ bool PaddleDetPostProc::Run(const std::vector<DataBlob> &outputs,
   det_results->clear();
   DataBlob output_blob = outputs[0];
   float *output_data = reinterpret_cast<float*>(output_blob.data.data());
+  if (output_blob.lod.empty()) {
+       std::vector<size_t> lod = {0, output_blob.data.size()/sizeof(float)};
+       output_blob.lod.push_back(lod);
+    }
+
   auto lod_vector = output_blob.lod;
   // box postprocess
   for (int i = 0; i < lod_vector[0].size() - 1; ++i) {
@@ -48,12 +53,12 @@ bool PaddleDetPostProc::Run(const std::vector<DataBlob> &outputs,
       box.category_id = static_cast<int>(round(output_data[j * 6]));
       box.category = labels_[box.category_id];
       box.score = output_data[1 + j * 6];
-      int xmin = (output_data[2 + j * 6] * rw);
-      int ymin = (output_data[3 + j * 6] * rh);
-      int xmax = (output_data[4 + j * 6] * rw);
-      int ymax = (output_data[5 + j * 6] * rh);
-      int wd = xmax - xmin;
-      int hd = ymax - ymin;
+      float xmin = (output_data[2 + j * 6] * rw);
+      float ymin = (output_data[3 + j * 6] * rh);
+      float xmax = (output_data[4 + j * 6] * rw);
+      float ymax = (output_data[5 + j * 6] * rh);
+      float wd = xmax - xmin;
+      float hd = ymax - ymin;
       box.coordinate = {xmin, ymin, wd, hd};
       det_result.boxes.push_back(std::move(box));
     }
