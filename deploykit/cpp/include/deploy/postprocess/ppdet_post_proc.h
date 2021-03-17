@@ -20,6 +20,10 @@
 #include <algorithm>
 #include <utility>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 #include "include/deploy/common/blob.h"
 #include "include/deploy/common/config.h"
 
@@ -57,6 +61,12 @@ struct PaddleDetResult {
   }
 };
 
+template <class T>
+bool SortScorePairDescend(const std::pair<float, T>& pair1,
+                          const std::pair<float, T>& pair2) {
+  return pair1.first > pair2.first;
+}
+
 class PaddleDetPostProc {
  public:
   void Init(const ConfigParser &parser);
@@ -66,12 +76,6 @@ class PaddleDetPostProc {
           std::vector<PaddleDetResult> *det_results);
 
  private:
-  template <class T>
-  bool SortScorePairDescend(const std::pair<float, T>& pair1,
-                            const std::pair<float, T>& pair2) {
-    return pair1.first > pair2.first;
-  }
-
   bool DetPostNonNms(const std::vector<DataBlob> &outputs,
           const std::vector<ShapeInfo> &shape_infos,
           std::vector<PaddleDetResult> *det_results);
@@ -89,9 +93,6 @@ class PaddleDetPostProc {
   void GetMaxScoreIndex(const std::vector<float> &scores,
                         const float &threshold, const int &top_k,
                         std::vector<std::pair<float, int>> *sorted_indices);
-
-  bool SortScorePairDescend(const std::pair<float, int>& pair1,
-                          const std::pair<float, int>& pair2);
 
   float JaccardOverlap(const float* box1,
                       const float* box2,

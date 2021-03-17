@@ -56,13 +56,14 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
     std::map<int, std::vector<int>> indices;
     int num_det = 0;
     for (int j = 0; j < cls_num; j++) {
+      //  do nms for per class
       NMSFast(score_blob, box_blob, i, j, &(indices[j]));
       num_det += indices[j].size();
     }
     float *scores_data =
       reinterpret_cast<float*>(score_blob.data.data()) + i * score_size;
     float *box_data =
-      reinterpret_cast<float*>(score_blob.data.data()) + i * box_size;
+      reinterpret_cast<float*>(box_blob.data.data()) + i * box_size;
     if (keep_top_k > -1 && num_det > keep_top_k) {
       float *sdata;
       std::vector<std::pair<float, std::pair<int, int>>> score_index_pairs;
@@ -105,9 +106,9 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
         box.category = labels_[box.category_id];
         box.score = scores_data[label * nms_box + idx];
         float xmin = box_data[4 * idx] * rw;
-        float ymin = box_data[4 * idx] * rh;
-        float xmax = box_data[4 * idx] * rw;
-        float ymax = box_data[4 * idx] * rh;
+        float ymin = box_data[4 * idx + 1] * rh;
+        float xmax = box_data[4 * idx + 2] * rw;
+        float ymax = box_data[4 * idx + 3] * rh;
         float wd = xmax - xmin;
         float hd = ymax - ymin;
         box.coordinate = {xmin, ymin, wd, hd};
@@ -118,7 +119,7 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
   }
 }
 
-bool PaddleDetPostProc::DetPostNonMms(const std::vector<DataBlob> &outputs,
+bool PaddleDetPostProc::DetPostNonNms(const std::vector<DataBlob> &outputs,
                                 const std::vector<ShapeInfo> &shape_infos,
                                 std::vector<PaddleDetResult> *det_results) {
   DataBlob output_blob = outputs[0];
@@ -154,7 +155,7 @@ bool PaddleDetPostProc::DetPostNonMms(const std::vector<DataBlob> &outputs,
     det_results->push_back(std::move(det_result));
   }
   if (outputs.size() == 2) {
-    DataBlob mask_blob = outputs[0];
+    DataBlob mask_blob = outputs[1];
     std::vector<int> output_mask_shape = mask_blob.shape;
     float *mask_data = reinterpret_cast<float*>(mask_blob.data.data());
     int masks_size = 1;
@@ -179,7 +180,7 @@ bool PaddleDetPostProc::DetPostNonMms(const std::vector<DataBlob> &outputs,
                         begin_mask);
         cv::resize(bin_mask, bin_mask, cv::Size(box->mask.shape[0],
                   box->mask.shape[1]));
-          cv::threshold(bin_mask, bin_mask, 0.5, 1, cv::THRESH_BINARY);
+        cv::threshold(bin_mask, bin_mask, 0.5, 1, cv::THRESH_BINARY);
         auto mask_int_begin = reinterpret_cast<float*>(bin_mask.data);
         auto mask_int_end =
           mask_int_begin + box->mask.shape[0] * box->mask.shape[1];
@@ -209,10 +210,10 @@ void PaddleDetPostProc::NMSFast(const DataBlob &score_blob,
   for (int i = 0; i < score_shape.size(); i++) {
     size_s *= score_shape[i];
   }
-  float *score =
-    reinterpret_cast<float*>(score_blob.data.data()) + i * size_s + j * box_n;
-  float *bbox_data =
-    reinterpret_cast<float*>(box_blob.data.data()) + i * size_b;
+  const float *score = reinterpret_cast<const float*>(
+                score_blob.data.data()) + i * size_s + j * box_n;
+  const float *bbox_data = reinterpret_cast<const float*>(
+                box_blob.data.data()) + i * size_b;
   std::vector<float> scores_data(box_n);
   std::copy_n(score, box_n, scores_data.begin());
   std::vector<std::pair<float, int>> sorted_indices;

@@ -33,7 +33,7 @@ DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_int32(gpu_id, 0, "GPU card id");
 DEFINE_int32(batch_size, 1, "Batch size of infering");
 DEFINE_string(toolkit, "det", "Type of PaddleToolKit");
-
+DEFINE_bool(use_cpu_nms, false, "whether postprocess with NMS");
 
 int main(int argc, char** argv) {
   // Parsing command-line
@@ -68,8 +68,7 @@ int main(int argc, char** argv) {
   ppi_engine.Infer(inputs, &outputs);
   // postprocess
   std::vector<Deploy::PaddleDetResult> det_results;
-  bool use_cpu_nms = false;
-  det_postprocess.Run(outputs, shape_infos, use_cpu_nms, &det_results);
+  det_postprocess.Run(outputs, shape_infos, FLAGS_use_cpu_nms, &det_results);
   // print result
   Deploy::PaddleDetResult result = det_results[0];
   for (int i = 0; i < result.boxes.size(); i++) {
