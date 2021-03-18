@@ -1,17 +1,22 @@
 #!/bin/bash
 
 # install libpng needed by opencv
-if [ -x "$(command -v  ldconfig -p | grep png16 )" ];then
+ldconfig -p | grep png16 > log 
+if [ $? -ne 0 ];then
     apt-get install libpng16-16
 fi
 
 # install libjasper1 needed by opencv
-if [ -x "$(command -v  ldconfig -p | grep libjasper )" ];then
-    if [ ! -x "$(command -v  add-apt-repository )"]; then
+ldconfig -p | grep libjasper  > log 
+if [  $? -ne 0  ];then
+    add-apt-repository > log
+    if [  $? -ne 0 ]; then
         apt-get install software-properties-common
     fi
     add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main"
     apt update
     apt install libjasper1 libjasper-dev
 fi
+
+rm -rf log
 
