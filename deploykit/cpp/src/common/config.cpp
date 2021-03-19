@@ -41,12 +41,40 @@ bool ConfigParser::Load(const std::string &cfg_file,
       std::cerr << "Fail to parser PaddleOCR yaml file" << std::endl;
       return false;
     }
+  } else if (toolkit == "seg") {
+    if (!SegParser(config)) {
+      std::cerr << "Fail to parser PaddleSeg yaml file" << std::endl;
+    }
   }
   return true;
 }
 
 YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
   return config_[node_name];
+}
+
+bool ConfigParser::SegParser(const YAML::Node &seg_config) {
+  config_["toolkit"] = "PaddleSeg";
+  config_["toolkit_version"] = "Unknown";
+  YAML::Node preprocess_op = seg_config["transforms"];
+  for (const auto& item : preprocess_op) {
+    std::string name = item.begin()->second.as<std::string>();
+    if (name == "Normalize") {
+      config_["transforms"]["Normalize"]["is_scale"] = true;
+      for (int i = 0; i < 3; i++) {
+        config_["transforms"]["Normalize"]["mean"].push_back(0.5);
+        config_["transforms"]["Normalize"]["std"].push_back(0.5);
+        config_["transforms"]["Normalize"]["min_val"].push_back(0);
+        config_["transforms"]["Normalize"]["max_val"].push_back(255);
+      }
+    } else if (name == "Padding") {
+      //
+    } else {
+      std::cout << "can't parser: " << name << std::endl;
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
