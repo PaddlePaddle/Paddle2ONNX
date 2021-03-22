@@ -56,10 +56,12 @@ YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
 bool ConfigParser::SegParser(const YAML::Node &seg_config) {
   config_["toolkit"] = "PaddleSeg";
   config_["toolkit_version"] = "Unknown";
+  config_["transforms"]["RGB2BGR"]["is_rgb2bgr"] = true;
   YAML::Node preprocess_op = seg_config["Deploy"]["transforms"];
   for (const auto& item : preprocess_op) {
     std::string name = item.begin()->second.as<std::string>();
     if (name == "Normalize") {
+      config_["transforms"]["Convert"]["dtype"] = "float";
       config_["transforms"]["Normalize"]["is_scale"] = true;
       for (int i = 0; i < 3; i++) {
         config_["transforms"]["Normalize"]["mean"].push_back(0.5);
@@ -68,7 +70,7 @@ bool ConfigParser::SegParser(const YAML::Node &seg_config) {
         config_["transforms"]["Normalize"]["max_val"].push_back(255);
       }
     } else if (name == "Padding") {
-      std::vector<int> target_size = item["target_size"].as<std::vector<int>();
+      std::vector<int> target_size = item["target_size"].as<std::vector<int>>();
       config_["transforms"]["Padding"]["width"] = target_size[0];
       config_["transforms"]["Padding"]["height"] = target_size[1];
       for (int i = 0; i < 3; i++) {
@@ -79,6 +81,7 @@ bool ConfigParser::SegParser(const YAML::Node &seg_config) {
       return false;
     }
   }
+  config_["transforms"]["Permute"]["is_permute"] = true;
   return true;
 }
 

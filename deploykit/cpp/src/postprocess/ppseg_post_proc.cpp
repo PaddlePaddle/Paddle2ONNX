@@ -47,16 +47,15 @@ bool PaddleSegPostProc::Run(const std::vector<DataBlob> &outputs,
     cv::Mat mask_label(final_shape[1], final_shape[0], CV_8UC1, label.data());
     cv::Mat mask_score(final_shape[1], final_shape[0], CV_32FC1, score.data());
     for (int j = 0; j < shape_infos[i].transform_order.size(); j++) {
-      int index = shape_infos[i].transform_order.size() - j - 1;
       std::string name = shape_infos[i].transform_order[j];
       if (name == "Padding") {
-        int before_pad_w = shape_infos[i].shape[index - 1][0];
-        int before_pad_h = shape_infos[i].shape[index - 1][1];
+        int before_pad_w = shape_infos[i].shape[j][0];
+        int before_pad_h = shape_infos[i].shape[j][1];
         mask_label = mask_label(cv::Rect(0, 0, before_pad_w, before_pad_h));
         mask_score = mask_score(cv::Rect(0, 0, before_pad_w, before_pad_h));
-      } else if (name.find("Resize", 0)) {
-        int before_resize_w = shape_infos[i].shape[index - 1][0];
-        int before_resize_h = shape_infos[i].shape[index - 1][1];
+      } else if (name.find("Resize", 0) != -1) {
+        int before_resize_w = shape_infos[i].shape[j][0];
+        int before_resize_h = shape_infos[i].shape[j][1];
         cv::resize(mask_label,
                  mask_label,
                  cv::Size(before_resize_w, before_resize_h),
