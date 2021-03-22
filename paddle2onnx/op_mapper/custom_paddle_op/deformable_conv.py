@@ -42,6 +42,8 @@ class DeformConv2d(CustomPaddleOp):
         self.padding = node.attr('paddings') + node.attr('paddings')
         self.groups = node.attr('groups')
         self.dilation = node.attr('dilations')[0]
+        self.padded_x_h = node.input_shape('Input', 0)[2] + self.padding[0]
+        self.padded_x_w = node.input_shape('Input', 0)[3] + self.padding[1]
 
         self.kernel_size = node.input_shape('Filter', 0)[2]
         self.N = self.kernel_size**2
@@ -79,13 +81,15 @@ class DeformConv2d(CustomPaddleOp):
 
         coordinate = coordinate.transpose((0, 2, 3, 1))
         coord_lt, coord_rb, coord_lb, coord_rt = self.get_bilinear_corner_coordinate(
-            coordinate, padded_x_h, padded_x_w)
+            coordinate, self.padded_x_h, self.padded_x_w)
 
         # clip coordinate
         coordinate = paddle.concat(
             [
-                paddle.clip(coordinate[:, :, :, :self.N], 0, padded_x_h - 1),
-                paddle.clip(coordinate[:, :, :, self.N:], 0, padded_x_w - 1)
+                paddle.clip(coordinate[:, :, :, :self.N], 0,
+                            self.padded_x_h - 1),
+                paddle.clip(coordinate[:, :, :, self.N:], 0,
+                            self.padded_x_w - 1)
             ],
             axis=-1)
 
@@ -93,13 +97,13 @@ class DeformConv2d(CustomPaddleOp):
             coord_lt, coord_rb, coord_lb, coord_rt, coordinate)
 
         feature_lt = self.get_feature_by_coordinate(input, coord_lt, offset_h,
-                                                    offset_w, padded_x_w)
+                                                    offset_w, self.padded_x_w)
         feature_rb = self.get_feature_by_coordinate(input, coord_rb, offset_h,
-                                                    offset_w, padded_x_w)
+                                                    offset_w, self.padded_x_w)
         feature_lb = self.get_feature_by_coordinate(input, coord_lb, offset_h,
-                                                    offset_w, padded_x_w)
+                                                    offset_w, self.padded_x_w)
         feature_rt = self.get_feature_by_coordinate(input, coord_rt, offset_h,
-                                                    offset_w, padded_x_w)
+                                                    offset_w, self.padded_x_w)
 
         feature_after_deformation = paddle.unsqueeze(cof_lt, 1) * feature_lt + \
                    paddle.unsqueeze(cof_rb, 1) * feature_rb + \
@@ -162,15 +166,14 @@ class DeformConv2d(CustomPaddleOp):
         kernel_offset_y = paddle.tile(kernel_offset_y, (1, self.N, 1, 1))
 
         kernel_offset = paddle.concat([kernel_offset_x, kernel_offset_y], 1)
-        offset = offset + kernel_offset + kernel_grid_origin
+        offset = offset + paddle.cast(kernel_offset, 'float32') + paddle.cast(
+            kernel_grid_origin, 'float32')
 
         return offset
 
     def get_bilinear_corner_coordinate(self, coord, padded_h, padded_w):
         coord_lt = coord.floor()
         coord_rb = coord_lt + 1
-        padded_w = paddle.cast(padded_w, dtype='float32')
-        padded_h = paddle.cast(padded_h, dtype='float32')
         coord_lt = paddle.cast(
             paddle.concat(
                 [
