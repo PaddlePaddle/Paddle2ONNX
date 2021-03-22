@@ -72,7 +72,7 @@ if (NOT WIN32)
     set(DEPS ${DEPS} ${EXTERNAL_LIB})
 endif()
 
-add_library(tensorrt_inference STATIC  ${PROJECT_ROOT_DIR}/src/engine/tensorrt_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp)
+add_library(tensorrt_inference STATIC  ${PROJECT_ROOT_DIR}/src/engine/tensorrt_engine.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppdet_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppdet_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/preprocess.cpp  ${PROJECT_ROOT_DIR}/src/common/config.cpp  ${PROJECT_ROOT_DIR}/src/common/transforms.cpp ${PROJECT_ROOT_DIR}/src/postprocess/util/clipper.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppocr_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppocr_pre_proc.cpp ${PROJECT_ROOT_DIR}/src/postprocess/ppclas_post_proc.cpp ${PROJECT_ROOT_DIR}/src/preprocess/ppclas_pre_proc.cpp )
 
 ADD_DEPENDENCIES(tensorrt_inference ext-yaml-cpp)
 target_link_libraries(tensorrt_inference ${DEPS})
@@ -87,3 +87,7 @@ target_link_libraries(ppdet_tensorrt_infer ${DEPS})
 add_executable(ppocr_tensorrt_infer ${PROJECT_ROOT_DIR}/demo/tensorrt_inference/ppocr_infer.cpp)
 ADD_DEPENDENCIES(ppocr_tensorrt_infer ext-yaml-cpp)
 target_link_libraries(ppocr_tensorrt_infer ${DEPS})
+
+add_executable(ppclas_tensorrt_infer ${PROJECT_ROOT_DIR}/demo/tensorrt_inference/ppclas_infer.cpp)
+ADD_DEPENDENCIES(ppclas_tensorrt_infer ext-yaml-cpp)
+target_link_libraries(ppclas_tensorrt_infer ${DEPS})

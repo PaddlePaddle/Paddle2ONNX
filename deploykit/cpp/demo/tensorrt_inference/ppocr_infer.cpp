@@ -50,6 +50,10 @@ int main(int argc, char **argv) {
   Deploy::TensorRTInferenceEngine tensorrt_engine;
 
   Deploy::TensorRTInferenceConfigs configs;
+  configs.SetTRTDynamicShapeInfo("x",
+          {1, 3, 640, 640},
+          {1, 3, 640, 640},
+          {1, 3, 640, 640});
   tensorrt_engine.Init(FLAGS_model_dir,
           1<<28,
           1,

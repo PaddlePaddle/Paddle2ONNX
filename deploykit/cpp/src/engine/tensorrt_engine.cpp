@@ -72,7 +72,7 @@ void TensorRTInferenceEngine::Init(std::string model_dir,
   config->setMaxWorkspaceSize(max_workspace_size);
 
   const auto explicitBatch =
-      max_batch_size << reinterpret_cast<uint32_t>(
+      max_batch_size << static_cast<uint32_t>(
           nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
   auto network = InferUniquePtr<nvinfer1::INetworkDefinition>(
@@ -82,7 +82,7 @@ void TensorRTInferenceEngine::Init(std::string model_dir,
       nvonnxparser::createParser(*network, configs.logger_));
   auto parsed = parser->parseFromFile(
       model_dir.c_str(),
-      reinterpret_cast<int>(configs.logger_.mReportableSeverity));
+      static_cast<int>(configs.logger_.mReportableSeverity));
 
   engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(
       builder->buildEngineWithConfig(*network, *config), InferDeleter());
@@ -162,7 +162,6 @@ bool TensorRTInferenceEngine::SaveEngine(const nvinfer1::ICudaEngine &engine,
 void TensorRTInferenceEngine::Infer(const std::vector<DataBlob> &input_blobs,
                                     const int batch_size,
                                     std::vector<DataBlob> *output_blobs) {
-  // std::shared_ptr<nvinfer1::ICudaEngine>  engine_ = std::move(engine_);
   auto context = InferUniquePtr<nvinfer1::IExecutionContext>(
       engine_->createExecutionContext());
   int input_index = 0;
@@ -176,11 +175,10 @@ void TensorRTInferenceEngine::Infer(const std::vector<DataBlob> &input_blobs,
     input_index++;
   }
   TensorRT::BufferManager buffers(engine_, batch_size, context.get());
-  // FeedInput(input_blobs, buffers);
+  FeedInput(input_blobs, buffers);
   buffers.copyInputToDevice();
-  // bool status = context->executeV2(buffers.getDeviceBindings().data());
-  std::cout << "success!!!" << std::endl;
-  // buffers.copyOutputToHostAsync();
+  bool status = context->executeV2(buffers.getDeviceBindings().data());
+  buffers.copyOutputToHostAsync();
 }
 
 }  //  namespace Deploy

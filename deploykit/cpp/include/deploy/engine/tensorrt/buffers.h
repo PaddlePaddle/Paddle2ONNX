@@ -82,8 +82,8 @@ template <typename AllocFunc, typename FreeFunc> class GenericBuffer {
   //!
   //! \brief Construct an empty buffer.
   //!
-  // GenericBuffer(nvinfer1::DataType type = nvinfer1::DataType::kFLOAT)
-  //    : mSize(0), mCapacity(0), mType(type), mBuffer(nullptr) {}
+  explicit GenericBuffer(nvinfer1::DataType type = nvinfer1::DataType::kFLOAT)
+     : mSize(0), mCapacity(0), mType(type), mBuffer(nullptr) {}
 
   //!
   //! \brief Construct a buffer with the specified allocation size in bytes.
@@ -246,6 +246,7 @@ class BufferManager {
       }
       vol *= volume(dims);
       std::cout << "input-" << i << " initial byteSize:" << vol << std::endl;
+
       std::unique_ptr<ManagedBuffer> manBuf{new ManagedBuffer()};
       manBuf->deviceBuffer = DeviceBuffer(vol, type);
       manBuf->hostBuffer = HostBuffer(vol, type);
@@ -345,8 +346,7 @@ class BufferManager {
                                ? mManagedBuffers[i]->deviceBuffer.data()
                                : mManagedBuffers[i]->hostBuffer.data();
 
-      // const size_t byteSize = mManagedBuffers[i]->hostBuffer.nbBytes();
-      const size_t byteSize = 307200;
+      const size_t byteSize = mManagedBuffers[i]->hostBuffer.nbBytes();
       std::cout << "input-host-" << i << " runtime byteSize:"
                 << mManagedBuffers[i]->hostBuffer.nbBytes() << std::endl;
       std::cout << "input-device-" << i << " runtime byteSize:"
