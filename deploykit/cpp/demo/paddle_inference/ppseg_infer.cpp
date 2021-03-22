@@ -57,12 +57,14 @@ int main(int argc, char** argv) {
   imgs.push_back(std::move(img));
   // create inpus
   std::vector<Deploy::DataBlob> inputs;
+  // create shape_info
+  std::vector<Deploy::ShapeInfo> shape_infos;
   // preprocess
-  seg_preprocess.Run(imgs, &inputs);
+  seg_preprocess.Run(imgs, &inputs, &shape_infos);
   // infer
   std::vector<Deploy::DataBlob> outputs;
   ppi_engine.Infer(inputs, &outputs);
   // postprocess
   std::vector<Deploy::PaddleSegResult> seg_results;
-  seg_postprocess.Run(outputs, &seg_results);
+  seg_postprocess.Run(outputs, shape_infos, &seg_results);
 }

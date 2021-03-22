@@ -56,7 +56,7 @@ YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
 bool ConfigParser::SegParser(const YAML::Node &seg_config) {
   config_["toolkit"] = "PaddleSeg";
   config_["toolkit_version"] = "Unknown";
-  YAML::Node preprocess_op = seg_config["transforms"];
+  YAML::Node preprocess_op = seg_config["Deploy"]["transforms"];
   for (const auto& item : preprocess_op) {
     std::string name = item.begin()->second.as<std::string>();
     if (name == "Normalize") {
@@ -68,7 +68,12 @@ bool ConfigParser::SegParser(const YAML::Node &seg_config) {
         config_["transforms"]["Normalize"]["max_val"].push_back(255);
       }
     } else if (name == "Padding") {
-      //
+      std::vector<int> target_size = item["target_size"].as<std::vector<int>();
+      config_["transforms"]["Padding"]["width"] = target_size[0];
+      config_["transforms"]["Padding"]["height"] = target_size[1];
+      for (int i = 0; i < 3; i++) {
+        config_["transforms"]["Padding"]["im_padding_value"].push_back(127.5);
+      }
     } else {
       std::cout << "can't parser: " << name << std::endl;
       return false;

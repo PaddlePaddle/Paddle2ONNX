@@ -39,7 +39,7 @@ bool PaddleSegPostProc::Run(const std::vector<DataBlob> &outputs,
     score.resize(output_size);
     for (int j = 0; j < output_size; j++) {
       int fisrt = i * size + j * shape[1];
-      int last = i * size + （j + 1） * shape[1];
+      int last = i * size + (j + 1) * shape[1];
       int index = std::max_element(data + fisrt, data + last) - (data + fisrt);
       label[j] = index;
       score[j] = data[fisrt + index];
@@ -48,7 +48,7 @@ bool PaddleSegPostProc::Run(const std::vector<DataBlob> &outputs,
     cv::Mat mask_score(final_shape[1], final_shape[0], CV_32FC1, score.data());
     for (int j = 0; j < shape_infos[i].transform_order.size(); j++) {
       int index = shape_infos[i].transform_order.size() - j - 1;
-      std::string name = shape_infos[i].transform_order[];
+      std::string name = shape_infos[i].transform_order[j];
       if (name == "Padding") {
         int before_pad_w = shape_infos[i].shape[index - 1][0];
         int before_pad_h = shape_infos[i].shape[index - 1][1];
@@ -77,8 +77,8 @@ bool PaddleSegPostProc::Run(const std::vector<DataBlob> &outputs,
     seg_result.score_map.data.assign(mask_score.begin<float>(),
                                 mask_score.end<float>());
     seg_result.score_map.shape = {mask_score.rows, mask_score.cols};
+    seg_results->push_back(std::move(seg_result));
   }
-  seg_results->push_back(std::move(seg_result));
 }
 
 }  // namespace Deploy

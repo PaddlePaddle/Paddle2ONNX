@@ -49,6 +49,8 @@ class ConfigParser {
 
   bool DetParserTransforms(const YAML::Node &preprocess_op);
 
+  bool SegParser(const YAML::Node &seg_config);
+
   YAML::Node config_;
 };
 
