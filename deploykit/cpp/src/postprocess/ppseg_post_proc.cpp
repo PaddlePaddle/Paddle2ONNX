@@ -38,11 +38,15 @@ bool PaddleSegPostProc::Run(const std::vector<DataBlob> &outputs,
     label.resize(output_size);
     score.resize(output_size);
     for (int j = 0; j < output_size; j++) {
-      int fisrt = i * size + j * shape[1];
-      int last = i * size + (j + 1) * shape[1];
-      int index = std::max_element(data + fisrt, data + last) - (data + fisrt);
-      label[j] = index;
-      score[j] = data[fisrt + index];
+      std::vector<float> pixel_score;
+      pixel_score.resize(shape[1]);
+      for (int k = 0; k < shape[1]; k++) {
+        pixel_score[k] = data[j + k * output_size];
+      }
+      int index = std::max_element(
+        pixel_score.begin(), pixel_score.end()) - pixel_score.begin();
+      label[j] = static_cast<uint8_t>(index);
+      score[j] = pixel_score[index];
     }
     cv::Mat mask_label(final_shape[1], final_shape[0], CV_8UC1, label.data());
     cv::Mat mask_score(final_shape[1], final_shape[0], CV_32FC1, score.data());
