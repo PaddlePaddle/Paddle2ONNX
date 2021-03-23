@@ -31,10 +31,14 @@ class FillConstantBatchSizeLike(CustomPaddleOp):
         updates = input_shape[self.node.attr('input_dim_idx')]
         shape = paddle.assign(np.array(self.node.attr('shape')).astype('int32'))
         dims = len(self.node.attr('shape'))
-        new_shape = paddle.concat([shape[:self.node.attr('output_dim_idx')], updates, shape[self.node.attr('output_dim_idx')+1:dims]])
+        new_shape = paddle.concat([
+            shape[:self.node.attr('output_dim_idx')], updates,
+            shape[self.node.attr('output_dim_idx') + 1:dims]
+        ])
         dtype = dtypes.DTYPE_PADDLE_STR_MAP[self.node.attr('dtype')]
         out = paddle.full(new_shape, self.node.attr('value'), dtype)
         return {'Out': [out]}
 
 
-register_custom_paddle_op('fill_constant_batch_size_like', FillConstantBatchSizeLike)
+register_custom_paddle_op('fill_constant_batch_size_like',
+                          FillConstantBatchSizeLike)
