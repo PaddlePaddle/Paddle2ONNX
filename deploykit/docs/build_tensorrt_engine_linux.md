@@ -53,7 +53,7 @@ $ python tools/export_model.py -c configs/ppyolo/ppyolo_mobilenet_v3_small.yml \
 ```
 $ git clone https://github.com/Channingss/paddle2onnx.git
 $ cd paddle2onnx/
-$ git checkout trt
+$ git checkout deform
 $ python setup.py install
 ```
 
