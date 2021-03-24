@@ -131,6 +131,27 @@ class ONNXGraph(Graph):
         else:
             return node.outputs
 
+    def update_node(self,
+                    node,
+                    op_type=None,
+                    inputs=None,
+                    outputs=None,
+                    attrs=None,
+                    **kw):
+        if op_type is None:
+            op_type = node.type
+        if inputs is None:
+            inputs = node.inputs
+        if outputs is None:
+            outputs = node.outputs
+        if attrs is None:
+            attrs = node.attrs
+        attrs.update(kw)
+
+        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name)
+        self.insert_node(node)
+        return node
+
     def build_parameters(self, parameters):
         # build weight nodes
         for name, param in parameters.items():
@@ -139,7 +160,7 @@ class ONNXGraph(Graph):
                 weight = np.array(weight)
             tensor = helper.make_tensor(
                 name=name,
-                dims=param['shape'],
+                dims=param['data'].shape,
                 data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
                 vals=weight.flatten().tolist())
             node = helper.make_node(

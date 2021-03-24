@@ -34,7 +34,9 @@ class Conv():
         kernel_shape = kernel_shape[-2:]
         strides = node.attr('strides')
         group = node.attr('groups')
-        pads = node.attr('paddings') + node.attr('paddings')
+        pads = node.attr('paddings')
+        if len(pads) == 2:
+            pads = pads + pads
         attrs = {
             'dilations': dilations,
             'kernel_shape': kernel_shape,

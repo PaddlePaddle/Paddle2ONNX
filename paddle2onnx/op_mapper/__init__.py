@@ -26,6 +26,7 @@ from . import search
 from .detection import yolo_box
 from .detection import multiclass_nms
 from .detection import prior_box
+from .detection import density_prior_box
 from .detection import box_coder
 from .sequence import im2sequence
 
