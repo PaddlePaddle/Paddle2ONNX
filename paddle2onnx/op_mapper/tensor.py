@@ -180,6 +180,12 @@ class Slice():
         starts = node.attr('starts')
         ends = node.attr('ends')
         steps = node.attr('strides', [1] * len(ends))
+
+        input_shape = node.input_shape('Input', 0)
+        for i, e in enumerate(ends):
+            if ends[i] > input_shape[i] and input_shape[i] > 0:
+                ends[i] = input_shape[i]
+
         if steps != [1] * len(ends):
             raise Exception(
                 "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
@@ -212,6 +218,11 @@ class Slice():
         starts = node.attr('starts')
         ends = node.attr('ends')
         steps = node.attr('strides', [1] * len(ends))
+
+        input_shape = node.input_shape('Input', 0)
+        for i, e in enumerate(ends):
+            if ends[i] > input_shape[i] and input_shape[i] > 0:
+                ends[i] = input_shape[i]
 
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
