@@ -34,11 +34,14 @@ struct OpenVinoEngineConfig {
 class OpenVinoEngine {
  public:
   void Init(const std::string &model_filename,
-            const OpenVinoConfig &engine_config);
+            const OpenVinoEngineConfig &engine_config);
 
   void Infer(const std::vector<DataBlob> &inputs,
             std::vector<DataBlob> *outputs);
  private:
+  bool GetDtype(const InferenceEngine::TensorDesc &output_blob,
+                DataBlob *output);
+
   InferenceEngine::CNNNetwork network_;
   InferenceEngine::ExecutableNetwork executable_network_;
 };

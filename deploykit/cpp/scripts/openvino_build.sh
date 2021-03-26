@@ -21,7 +21,7 @@ rm -rf build
 mkdir -p build
 cd build
 if [ ${ARCH} = "x86" ];then
-  cmake .. \
+  cmake ../demo/openvino/ \
       -DOPENCV_DIR=${OPENCV_DIR} \
       -DGFLAGS_DIR=${GFLAGS_DIR} \
       -DOPENVINO_DIR=${OPENVINO_DIR} \
@@ -29,7 +29,7 @@ if [ ${ARCH} = "x86" ];then
       -DARCH=${ARCH}
   make
 else
-  cmake ..\
+  cmake ../demo/openvino/ \
       -DOPENCV_DIR=${OPENCV_DIR} \
       -DGFLAGS_DIR=${GFLAGS_DIR} \
       -DOPENVINO_DIR=${OPENVINO_DIR} \

@@ -137,8 +137,8 @@ bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
 
 bool ConfigParser::CommonParser(const YAML::Node &paddle_config) {
   if (!paddle_config["transforms"].IsDefined()) {
-    std::cerr << "Fail to find transforms in Paddle yaml file" << std::endl;
-    return false;
+    std::cout << "Can't to find transforms in Paddle yaml file, " <<
+    "make sure model do not need preprocess" << std::endl;
   }
   config_ = paddle_config;
   return true;

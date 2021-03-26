@@ -35,6 +35,7 @@ DEFINE_string(image, "", "Path of test image file");
 DEFINE_string(toolkit, "ocr", "Type of PaddleToolKit");
 DEFINE_string(device, "CPU", "Infering with VPU or CPU");
 DEFINE_int32(batch_size, 1, "Batch size of infering");
+DEFINE_bool(use_cls, false, "Whether to use cls model");
 
 int main(int argc, char** argv) {
   // Parsing command-line
@@ -53,7 +54,7 @@ int main(int argc, char** argv) {
   // engine init
   Deploy::OpenVinoEngine det_openvino_engine;
   Deploy::OpenVinoEngineConfig det_openvino_config;
-  openvino_config.device = FLAGS_device;
+  det_openvino_config.device = FLAGS_device;
   det_openvino_engine.Init(FLAGS_det_model_filename, det_openvino_config);
   // read image
   std::vector<cv::Mat> imgs;
@@ -81,7 +82,7 @@ int main(int argc, char** argv) {
   cls_postprocess.Init(cls_parser);
   Deploy::OpenVinoEngine cls_openvino_engine;
   Deploy::OpenVinoEngineConfig cls_openvino_config;
-  openvino_config.device = FLAGS_device;
+  cls_openvino_config.device = FLAGS_device;
   cls_openvino_engine.Init(FLAGS_cls_model_filename, cls_openvino_config);
 
   // init crnn
@@ -93,8 +94,8 @@ int main(int argc, char** argv) {
   crnn_postprocess.Init(crnn_parser);
   Deploy::OpenVinoEngine crnn_openvino_engine;
   Deploy::OpenVinoEngineConfig crnn_openvino_config;
-  openvino_config.device = FLAGS_device;
-  crnn_openvino_config.Init(FLAGS_crnn_model_filename, crnn_openvino_config);
+  crnn_openvino_config.device = FLAGS_device;
+  crnn_openvino_engine.Init(FLAGS_crnn_model_filename, crnn_openvino_config);
 
   // do ocr
   int img_num = ocr_results.size();

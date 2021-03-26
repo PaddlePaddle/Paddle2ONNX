@@ -35,36 +35,36 @@ void OpenVinoEngine::Init(const std::string &model_filename,
 
 void OpenVinoEngine::Infer(const std::vector<DataBlob> &inputs,
                           std::vector<DataBlob> *outputs) {
-  InferRequest infer_request = executable_network_.CreateInferRequest();
+  InferenceEngine::InferRequest infer_request =
+        executable_network_.CreateInferRequest();
   for (int i = 0; i < inputs.size(); i++) {
     std::vector<int> input_shape = inputs[i].shape;
     InferenceEngine::TensorDesc input_tensor;
-    if (input_shape.size() == 4) {
-      input_tensor.setLayout(InferenceEngine::Layout::NCHW);
+    int size = 1;
+    for (auto& input_s : input_shape) {
+      size *= input_s;
     }
+    InferenceEngine::Blob::Ptr input_blob =
+        infer_request.GetBlob(inputs[i].name);
+    InferenceEngine::MemoryBlob::Ptr input_mem_blob =
+        InferenceEngine::as<InferenceEngine::MemoryBlob>(input_blob);
+    auto mem_blob_holder = input_mem_blob->wmap();
     if (inputs[i].dtype == 0) {
       input_tensor.setPrecision(InferenceEngine::Precision::FP32);
-      InferenceEngine::Blob::Ptr input_blob =
-            InferenceEngine::make_shared_blob<float>(input_tensor,
-            reinterpret_cast<float*>(inputs[i].data.data());
-      infer_request.SetBlob(inputs[i].name, input_blob);
-    } else if (output.dtype == 1) {
+      float *blob_data = mem_blob_holder.as<float *>();
+      memcpy(blob_data, inputs[i].data.data(), size * sizeof(float));
+    } else if (inputs[i].dtype == 1) {
       input_tensor.setPrecision(InferenceEngine::Precision::U64);
-      InferenceEngine::Blob::Ptr input_blob =
-            InferenceEngine::make_shared_blob<int64_t>(input_tensor,
-            reinterpret_cast<int64_t*>(inputs[i].data.data());
-      infer_request.SetBlob(inputs[i].name, input_blob);
-    } else if (output.dtype == 2) {
+      int64_t *blob_data = mem_blob_holder.as<int64_t *>();
+      memcpy(blob_data, inputs[i].data.data(), size * sizeof(int64_t));
+    } else if (inputs[i].dtype == 2) {
       input_tensor.setPrecision(InferenceEngine::Precision::I32);
-      InferenceEngine::Blob::Ptr input_blob =
-            InferenceEngine::make_shared_blob<int>(input_tensor,
-            reinterpret_cast<int*>(inputs[i].data.data());
-      infer_request.SetBlob(inputs[i].name, input_blob);
-    } else if (output.dtype == 3) {
+      int *blob_data = mem_blob_holder.as<int *>();
+      memcpy(blob_data, inputs[i].data.data(), size * sizeof(int));
+    } else if (inputs[i].dtype == 3) {
       input_tensor.setPrecision(InferenceEngine::Precision::U8);
-      InferenceEngine::Blob::Ptr input_blob =
-            InferenceEngine::make_shared_blob<uint8_t>(input_tensor,
-            reinterpret_cast<uint8_t*>(inputs[i].data.data());
+      uint8_t *blob_data = mem_blob_holder.as<uint8_t *>();
+      memcpy(blob_data, inputs[i].data.data(), size * sizeof(uint8_t));
       infer_request.SetBlob(inputs[i].name, input_blob);
     }
   }
@@ -77,28 +77,33 @@ void OpenVinoEngine::Infer(const std::vector<DataBlob> &inputs,
     DataBlob output;
     std::string name = output_map.first;
     output.name = name;
-    InferenceEngine::Blob::Ptr output = infer_request.GetBlob(outputName);
+    InferenceEngine::Blob::Ptr output_ptr = infer_request.GetBlob(name);
     InferenceEngine::MemoryBlob::CPtr moutput =
-      InferenceEngine::as<InferenceEngine::MemoryBlob>(output);
+      InferenceEngine::as<InferenceEngine::MemoryBlob>(output_ptr);
     InferenceEngine::TensorDesc blob_output = moutput->getTensorDesc();
-    std::vector<int> output_shape = blob_output.getDims();
+    InferenceEngine::SizeVector output_shape = blob_output.getDims();
     int size = 1;
+    output.shape.clear();
     for (auto& i : output_shape) {
       size *= i;
+      output.shape.push_back(static_cast<int>(i));
     }
-    output.shape.assign(output_shape.begin(), output_shape.end());
-    GetDtype(blob_output, &output)
+    GetDtype(blob_output, &output);
     auto moutputHolder = moutput->rmap();
     if (output.dtype == 0) {
+      output.data.resize(size * sizeof(float));
       float* data = moutputHolder.as<float *>();
       memcpy(output.data.data(), data, size * sizeof(float));
     } else if (output.dtype == 1) {
+      output.data.resize(size * sizeof(int64_t));
       int64_t* data = moutputHolder.as<int64_t *>();
       memcpy(output.data.data(), data, size * sizeof(int64_t));
     } else if (output.dtype == 2) {
+      output.data.resize(size * sizeof(int));
       int* data = moutputHolder.as<int *>();
       memcpy(output.data.data(), data, size * sizeof(int));
     } else if (output.dtype == 3) {
+      output.data.resize(size * sizeof(uint8_t));
       uint8_t* data = moutputHolder.as<uint8_t *>();
       memcpy(output.data.data(), data, size * sizeof(uint8_t));
     }
@@ -108,7 +113,7 @@ void OpenVinoEngine::Infer(const std::vector<DataBlob> &inputs,
 
 bool OpenVinoEngine::GetDtype(const InferenceEngine::TensorDesc &output_blob,
                           DataBlob *output) {
-  InferenceEngine::Precision output_precision output_blob.getPrecision();
+  InferenceEngine::Precision output_precision = output_blob.getPrecision();
   if (output_precision == 10) {
     output->dtype = 0;
   } else if (output_precision == 73) {

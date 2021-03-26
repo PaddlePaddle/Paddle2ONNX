@@ -9,13 +9,14 @@ SET(OPENVINO_DIR "" CACHE PATH "Location of libraries")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
 SET(GFLAGS_DIR "" CACHE PATH "Location of libraries")
 SET(NGRAPH_LIB "" CACHE PATH "Location of libraries")
+SET(PROJECT_ROOT_DIR  "../../" CACHE PATH  "root directory of project.")
 
-include(cmake/yaml-cpp.cmake)
-
-include_directories("${CMAKE_SOURCE_DIR}/")
-link_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include(${PROJECT_ROOT_DIR}/cmake/yaml-cpp.cmake)
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
+
+
+
 
 macro(safe_set_static_flag)
     foreach(flag_var
@@ -50,6 +51,7 @@ if (NOT DEFINED NGRAPH_LIB OR ${NGRAPH_LIB} STREQUAL "")
     message(FATAL_ERROR "please set NGRAPH_DIR with -DNGRAPH_DIR=/path/ngraph")
 endif()
 
+include_directories("${PROJECT_ROOT_DIR}/")
 include_directories("${OPENVINO_DIR}")
 include_directories("${OPENVINO_DIR}/include")
 include_directories("${OPENVINO_DIR}/external/tbb/include/tbb")

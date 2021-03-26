@@ -32,15 +32,6 @@ bool PaddleDetPostProc::Run(const std::vector<DataBlob> &outputs,
                             const bool use_cpu_nms,
                             std::vector<PaddleDetResult> *det_results) {
   det_results->clear();
-  if (model_arch_ == "YOLO" && outputs.size() == 3) {
-    std::vector<DataBlob> output_tmp = outputs;
-    outputs.clear();
-    for (int i = 0; i < output_tmp.size(); i++) {
-      if (output_tmp[i].shape.size() == 2) {
-        outputs.push_bacK(output_tmp[i]);
-      }
-    }
-  }
   if (use_cpu_nms) {
     DetPostWithNms(outputs, shape_infos, det_results);
   } else {
@@ -131,7 +122,16 @@ bool PaddleDetPostProc::DetPostWithNms(const std::vector<DataBlob> &outputs,
 bool PaddleDetPostProc::DetPostNonNms(const std::vector<DataBlob> &outputs,
                                 const std::vector<ShapeInfo> &shape_infos,
                                 std::vector<PaddleDetResult> *det_results) {
-  DataBlob output_blob = outputs[0];
+  DataBlob output_blob;
+  if (model_arch_ == "YOLO" && outputs.size() == 3) {
+    for (int i = 0; i < outputs.size(); i++) {
+      if (outputs[i].shape.size() == 2) {
+        output_blob = outputs[i];
+      }
+    }
+  } else {
+    output_blob = outputs[0];
+  }
   float *output_data = reinterpret_cast<float*>(output_blob.data.data());
   if (output_blob.lod.empty()) {
     std::vector<size_t> lod = {0, output_blob.data.size()/sizeof(float)};
