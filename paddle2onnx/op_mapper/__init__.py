@@ -35,3 +35,4 @@ from .custom_paddle_op import generate_proposals
 from .custom_paddle_op import collect_fpn_proposals
 from .custom_paddle_op import distribute_fpn_proposals
 from .custom_paddle_op import box_clip
+from .custom_paddle_op import fill_constant_batch_size_like 
