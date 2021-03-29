@@ -20,6 +20,7 @@ import six
 import collections
 from paddle2onnx.constant import NodeDomain
 
+
 class Node(object):
     def __init__(self,
                  op_type,
@@ -163,7 +164,7 @@ class Graph(object):
         else:
             self.op_type_count[op_type] = 1
         # layer_name need follow https://github.com/onnx/onnx/blob/master/docs/OpConventions.md
-        layer_name = op_type + '@' + str(self.op_type_count[op_type] - 1)
+        layer_name = op_type + '_' + str(self.op_type_count[op_type] - 1)
         return layer_name
 
     def insert_node(self, node):
