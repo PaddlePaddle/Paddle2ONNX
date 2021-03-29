@@ -18,6 +18,7 @@ import math
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.utils import require_fixed_shape
 
 
 def expand_aspect_rations(input_aspect_ratior, flip):
@@ -74,6 +75,8 @@ class PriorBox():
         img_height = image_shape[2]
         feature_width = input_shape[3]
         feature_height = input_shape[2]
+        assert img_width > 0 and img_height > 0, require_fixed_shape(
+            cls.__name__)
 
         step_width = 1.0
         step_height = 1.0

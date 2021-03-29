@@ -126,6 +126,7 @@ def compare_attr_between_dims(attr, dims, attr_name, cond='equal'):
         raise ValueError(expect_info + actual_info)
 
 
-## TODO(channingss)
-#def compare_attrs(actual_value, target_value, origin_attr_name, target_attr_name, cond='equal')
-#def compare_attrs_between_dims(actual_attr_name, target_attr_name, origin_dim, target_dim,  cond='equal')
+def require_fixed_shape(op_name=None):
+    logging.error(
+        "[{}]Fixed shape is required, refer this doc for more information: https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/FAQ.md".
+        format(op_name))

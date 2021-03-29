@@ -18,6 +18,7 @@ import math
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.utils import require_fix_shape
 
 
 @op_mapper('density_prior_box')
@@ -48,6 +49,9 @@ class DensityPriorBox():
         img_height = image_shape[2]
         feature_width = input_shape[3]
         feature_height = input_shape[2]
+
+        assert img_width > 0 and img_height > 0, require_fixed_shape(
+            cls.__name__)
 
         if step_w == 0.0 or step_h == 0.0:
             step_w = float(img_width / feature_width)
