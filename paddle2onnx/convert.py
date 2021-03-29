@@ -21,6 +21,7 @@ import numpy as np
 from paddle.fluid.framework import Variable
 from paddle2onnx.utils import check_model, logging
 from paddle2onnx.graph import PaddleGraph, ONNXGraph
+from paddle2onnx.passes import PassManager
 
 
 def export_onnx(paddle_graph,
@@ -29,6 +30,8 @@ def export_onnx(paddle_graph,
                 enable_onnx_checker=False,
                 verbose=False):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version, verbose)
+    onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
+
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
 
     path, _ = os.path.split(save_file)

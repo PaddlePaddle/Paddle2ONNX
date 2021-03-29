@@ -11,9 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
 
-__version__ = "0.6"
-
-from .convert import dygraph2onnx, program2onnx
-from .op_mapper import register_op_mapper
+from .pass_manager import PassManager
+from .inplace_node_pass import InplaceNodePass
