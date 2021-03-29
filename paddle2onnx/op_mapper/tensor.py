@@ -375,15 +375,29 @@ class Constant():
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
         value = value.flatten().tolist()
-        graph.make_node(
-            'Constant',
-            inputs=[],
-            outputs=node.output('Out'),
-            attrs={
-                'dims': shape,
-                'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
-                'value': value
-            })
+        if len(shape) ==0 and len(node.input('ShapeTensor')) > 0:
+            shape_tensor = mapper_helper.cast(graph,
+                                       node.input('ShapeTensor', 0),
+                                       node.input_dtype('ShapeTensor', 0), 'int64')
+            graph.make_node(
+                'ConstantOfShape',
+                inputs=shape_tensor,
+                outputs=node.output('Out'),
+                attrs={
+                    'dims': [1],
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
+                    'value': value
+                })
+        else:
+            graph.make_node(
+                'Constant',
+                inputs=[],
+                outputs=node.output('Out'),
+                attrs={
+                    'dims': shape,
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
+                    'value': value
+                })
 
 
 @op_mapper(['lookup_table_v2', 'lookup_table'])
