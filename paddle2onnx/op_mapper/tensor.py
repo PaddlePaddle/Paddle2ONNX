@@ -193,8 +193,9 @@ class Slice():
 
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
-            if ends[i] > input_shape[i] and input_shape[i] > 0:
-                ends[i] = input_shape[i]
+            axis = axes[i]
+            if e > input_shape[axis] and input_shape[axis] > 0:
+                ends[i] = input_shape[axis]
 
         if steps != [1] * len(ends):
             raise Exception(
@@ -231,8 +232,9 @@ class Slice():
 
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
-            if ends[i] > input_shape[i] and input_shape[i] > 0:
-                ends[i] = input_shape[i]
+            axis = axes[i]
+            if e > input_shape[axis] and input_shape[axis] > 0:
+                ends[i] = input_shape[axis]
 
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
