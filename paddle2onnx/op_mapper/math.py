@@ -41,11 +41,10 @@ class MatMul():
         else:
             matmul = graph.make_node('MatMul', inputs=[x, y])
             scale = graph.make_node(
-                'Constant',
-                dtype=dtypes.ONNX.FLOAT,
-                value=node.attr('alpha'))
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('alpha'))
             onnx_node = graph.make_node(
                 'Mul', inputs=[matmul, scale], outputs=node.output('Out'))
+
 
 @op_mapper('matmul_v2')
 class MatMul():
@@ -162,6 +161,7 @@ class Square():
         onnx_node = graph.make_node(
             'Mul', inputs=[x, x], outputs=node.output('Out'))
 
+
 @op_mapper('cumsum')
 class CumSum():
     support_opset_version_range = (11, 12)
@@ -169,7 +169,8 @@ class CumSum():
     @classmethod
     def opset_11(cls, graph, node, **kw):
 
-        axis = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=node.attr('axis'))
+        axis = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=node.attr('axis'))
         graph.make_node(
             'CumSum',
             inputs=[node.input('X', 0), axis],
@@ -380,6 +381,8 @@ class Softmax():
     def opset_1(cls, graph, node, **kw):
         axis = node.attr('axis')
         shape = node.output_shape('Out', 0)
+        if axis is None:
+            axis = -1
         if axis < 0:
             axis += len(shape)
         if axis == len(shape) - 1:
@@ -387,7 +390,7 @@ class Softmax():
                 'Softmax',
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
-                attrs={'axis': node.attr('axis')})
+                attrs={'axis': axis})
         else:
             perm = [i for i in range(len(shape))]
             perm[-1] = axis
