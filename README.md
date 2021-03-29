@@ -31,7 +31,8 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 
 ### From Source
 
-     git clone https://github.com/PaddlePaddle/paddle2onnx.git
+     git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
+     cd Paddle2ONNX
      python setup.py install
 
 ## Usage
