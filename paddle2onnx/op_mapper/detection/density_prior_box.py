@@ -18,7 +18,7 @@ import math
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
-from paddle2onnx.utils import require_fix_shape
+from paddle2onnx.utils import require_fixed_shape
 
 
 @op_mapper('density_prior_box')
