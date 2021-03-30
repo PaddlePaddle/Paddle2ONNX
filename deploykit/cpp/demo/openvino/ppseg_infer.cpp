@@ -24,7 +24,6 @@
 #include "include/deploy/engine/openvino_engine.h"
 
 DEFINE_string(model_filename, "", "Path of det inference model");
-DEFINE_string(params_filename, "", "Path of det inference params");
 DEFINE_string(cfg_file, "", "Path of yaml file");
 DEFINE_string(image, "", "Path of test image file");
 DEFINE_string(device, "CPU", "Infering with VPU or CPU");

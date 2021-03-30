@@ -56,12 +56,12 @@ YAML::Node ConfigParser::GetNode(const std::string &node_name) const {
 bool ConfigParser::SegParser(const YAML::Node &seg_config) {
   config_["toolkit"] = "PaddleSeg";
   config_["toolkit_version"] = "Unknown";
+  config_["transforms"]["Convert"]["dtype"] = "float";
   config_["transforms"]["RGB2BGR"]["is_rgb2bgr"] = true;
   YAML::Node preprocess_op = seg_config["Deploy"]["transforms"];
   for (const auto& item : preprocess_op) {
     std::string name = item.begin()->second.as<std::string>();
     if (name == "Normalize") {
-      config_["transforms"]["Convert"]["dtype"] = "float";
       config_["transforms"]["Normalize"]["is_scale"] = true;
       for (int i = 0; i < 3; i++) {
         config_["transforms"]["Normalize"]["mean"].push_back(0.5);
@@ -87,19 +87,21 @@ bool ConfigParser::SegParser(const YAML::Node &seg_config) {
 
 bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
   if (ocr_config["fix_shape"].as<bool>()) {
-    config_["model_name"] = ocr_config["arch"].as<std::string>();
-    config_["path"] = ocr_config["path"].as<std::string>();
+    config_["model_name"] = ocr_config["model_name"].as<std::string>();
     config_["toolkit"] = "PaddleOCR";
     config_["toolkit_version"] = "Unknown";
-    if (ocr_config["arch"].as<std::string>() == "DET") {
+    if (ocr_config["model_name"].as<std::string>() == "DET") {
       config_["det_db_thresh"] = ocr_config["det_db_thresh"].as<double>();
       config_["det_db_box_thresh"] =
         ocr_config["det_db_box_thresh"].as<double>();
       config_["det_db_unclip_ratio"] =
         ocr_config["det_db_unclip_ratio"].as<double>();
     }
-    if (ocr_config["arch"].as<std::string>() == "CLS") {
+    if (ocr_config["model_name"].as<std::string>() == "CLS") {
       config_["cls_thresh"] = ocr_config["cls_thresh"].as<double>();
+    }
+    if (ocr_config["model_name"].as<std::string>() == "CRNN") {
+      config_["path"] = ocr_config["path"].as<std::string>();
     }
     YAML::Node preprocess_op = ocr_config["transforms"];
     if (!OcrParserTransforms(preprocess_op)) {
@@ -114,7 +116,7 @@ bool ConfigParser::OcrParser(const YAML::Node &ocr_config) {
 
 bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
   for (const auto& item : preprocess_op) {
-    std::string name = item.begin()->first.as<std::string>();
+    std::string name = item.first.as<std::string>();
     if (name == "ResizeByLong") {
       if (config_["model_name"].as<std::string>() == "DET") {
         config_["transforms"]["Resize"]["width"] = 640;
@@ -130,9 +132,10 @@ bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
         config_["transforms"]["OcrTrtResize"]["height"] = 32;
       }
     } else {
-      config_["transforms"][name] = item.begin()->second;
+      config_["transforms"][name] = item.second;
     }
   }
+  return true;
 }
 
 bool ConfigParser::CommonParser(const YAML::Node &paddle_config) {
