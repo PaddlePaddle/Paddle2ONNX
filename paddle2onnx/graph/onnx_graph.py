@@ -160,7 +160,7 @@ class ONNXGraph(Graph):
                 weight = np.array(weight)
             tensor = helper.make_tensor(
                 name=name,
-                dims=param['data'].shape,
+                dims=param['shape'],
                 data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
                 vals=weight.flatten().tolist())
             node = helper.make_node(
