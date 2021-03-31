@@ -39,11 +39,17 @@ class DeformConv2d(CustomPaddleOp):
         self.in_channel = node.input_shape('Input', 0)[1]
         self.offset_channel = node.input_shape('Offset', 0)[1]
         self.stride = node.attr('strides')[0]
-        self.padding = node.attr('paddings') + node.attr('paddings')
+        self.padding = node.attr('paddings')
+        if len(self.padding) == 2:
+            self.padding += self.padding
         self.groups = node.attr('groups')
         self.dilation = node.attr('dilations')[0]
-        self.padded_x_h = node.input_shape('Input', 0)[2] + self.padding[0]
-        self.padded_x_w = node.input_shape('Input', 0)[3] + self.padding[1]
+        self.padded_x_h = node.input_shape('Input', 0)[2]
+        self.padded_x_w = node.input_shape('Input', 0)[3]
+        if self.padded_x_h > 0:
+            self.padded_x_h = self.padded_x_h + self.padding[0] + self.padding[1]
+        if self.padded_x_w > 0:
+            self.padded_x_w = self.padded_x_w + self.padding[2] + self.padding[3]
 
         self.kernel_size = node.input_shape('Filter', 0)[2]
         self.N = self.kernel_size**2
@@ -57,8 +63,9 @@ class DeformConv2d(CustomPaddleOp):
 
         input = layers.pad2d(input, self.padding)
         input_shape = paddle.shape(input)
-        padded_x_h = input_shape[2]
-        padded_x_w = input_shape[3]
+        if self.padded_x_h < 0 or self.padded_x_w < 0:
+            self.padded_x_h = input_shape[2]
+            self.padded_x_w = input_shape[3]
 
         offset_x = paddle.strided_slice(
             offset,
