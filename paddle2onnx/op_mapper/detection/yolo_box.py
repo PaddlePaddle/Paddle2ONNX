@@ -256,7 +256,7 @@ class YOLOBox():
         node_conf_sub = graph.make_node(
             'Sub', inputs=[node_conf_sigmoid, node_conf_thresh_reshape])
 
-        if (opset_version == 11):
+        if (opset_version >= 11):
             min_const = graph.make_node(
                 'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=0.0)
 
