@@ -17,3 +17,6 @@ __version__ = "0.6"
 
 from .convert import dygraph2onnx, program2onnx
 from .op_mapper import register_op_mapper
+
+to_openvino = False
+to_opencv = False

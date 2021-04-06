@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import numpy as np
+import paddle2onnx
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
@@ -100,18 +101,71 @@ class Gelu():
 
 @op_mapper('hard_sigmoid')
 class HardSigmoid():
-    support_opset_verison_range = (1, 12)
+    support_opset_verison_range = (6, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         slope = node.attr('slope')
         offset = node.attr('offset')
-        graph.make_node(
-            'HardSigmoid',
-            inputs=node.input('X'),
-            outputs=node.output('Out'),
-            alpha=slope,
-            beta=offset)
+
+        if not getattr(paddle2onnx, 'to_opencv', 'False'):
+            graph.make_node(
+                'HardSigmoid',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                alpha=slope,
+                beta=offset)
+        else:
+            slope_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': slope})
+            offset_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': offset})
+            tmp0 = graph.make_node(
+                'Div', inputs=[node.input('X')[0], slope_node])
+            tmp1 = graph.make_node('Add', inputs=[tmp0, offset_node])
+            graph.make_node(
+                'Clip',
+                inputs=[tmp1],
+                min=0.0,
+                max=1.0,
+                outputs=node.output('Out'))
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        slope = node.attr('slope')
+        offset = node.attr('offset')
+
+        if not getattr(paddle2onnx, 'to_opencv', 'False'):
+            graph.make_node(
+                'HardSigmoid',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                alpha=slope,
+                beta=offset)
+        else:
+            slope_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': slope})
+            offset_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': offset})
+            tmp0 = graph.make_node(
+                'Mul', inputs=[node.input('X')[0], slope_node])
+            tmp1 = graph.make_node('Add', inputs=[tmp0, offset_node])
+            const0 = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': 0.0})
+            const1 = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': 1.0})
+            graph.make_node(
+                'Clip',
+                inputs=[tmp1, const0, const1],
+                outputs=node.output('Out'))
 
 
 @op_mapper('swish')
