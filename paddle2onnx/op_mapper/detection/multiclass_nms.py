@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+import paddle2onnx
 from paddle2onnx.utils import logging
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
@@ -159,21 +160,27 @@ class MultiClassNMS():
         bbox_id = graph.make_node(
             'Gather', inputs=[select_bbox_indices, const_values[2]], axis=1)
 
-        if background == 0:
-            nonzero = graph.make_node('NonZero', inputs=[squeezed_class_id])
+        if not getattr(paddle2onnx, 'to_openvino', False):
+            if background == 0:
+                nonzero = graph.make_node('NonZero', inputs=[squeezed_class_id])
+            else:
+                thresh = graph.make_node(
+                    'Constant', inputs=[], dtype=dtypes.ONNX.INT32, value=[-1])
+
+                cast = graph.make_node('Cast', inputs=[squeezed_class_id], to=6)
+
+                greater = graph.make_node('Greater', inputs=[cast, thresh])
+
+                nonzero = graph.make_node('NonZero', inputs=[greater])
+
+            class_id = graph.make_node(
+                'Gather', inputs=[class_id, nonzero], axis=0)
+
+            bbox_id = graph.make_node(
+                'Gather', inputs=[bbox_id, nonzero], axis=0)
         else:
-            thresh = graph.make_node(
-                'Constant', inputs=[], dtype=dtypes.ONNX.INT32, value=[-1])
-
-            cast = graph.make_node('Cast', inputs=[squeezed_class_id], to=6)
-
-            greater = graph.make_node('Greater', inputs=[cast, thresh])
-
-            nonzero = graph.make_node('NonZero', inputs=[greater])
-
-        class_id = graph.make_node('Gather', inputs=[class_id, nonzero], axis=0)
-
-        bbox_id = graph.make_node('Gather', inputs=[bbox_id, nonzero], axis=0)
+            class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
+            bbox_id = graph.make_node('Unsqueeze', inputs=[bbox_id], axes=[0])
 
         # get the shape of scores
         shape_scores = graph.make_node('Shape', inputs=scores)
