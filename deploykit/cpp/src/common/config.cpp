@@ -119,8 +119,9 @@ bool ConfigParser::OcrParserTransforms(const YAML::Node &preprocess_op) {
     std::string name = item.first.as<std::string>();
     if (name == "ResizeByLong") {
       if (config_["model_name"].as<std::string>() == "DET") {
-        config_["transforms"]["Resize"]["width"] = 640;
-        config_["transforms"]["Resize"]["height"] = 640;
+        config_["transforms"]["ResizeByLong"]["target_size"] = 640;
+        config_["transforms"]["Padding"]["width"] = 640;
+        config_["transforms"]["Padding"]["height"] = 640;
       }
     } else if (name == "OcrResize") {
       if (config_["model_name"].as<std::string>() == "CLS") {

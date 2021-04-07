@@ -180,7 +180,7 @@ bool PaddleOcrPostProc::CrnnPostProc(const std::vector<DataBlob> &outputs,
                             std::vector<PaddleOcrResult> *ocr_results) {
   ocr_results->clear();
   DataBlob output_blob;
-  if (outputs.size != 1) {
+  if (outputs.size() != 1) {
     for (int i = 0; i < outputs.size(); i++) {
       if (outputs[i].shape.size() == 3) {
         if (outputs[i].shape[2] == label_list_.size()) {
