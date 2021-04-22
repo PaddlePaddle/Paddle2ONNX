@@ -23,7 +23,7 @@ from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx import utils
 
 
-@op_mapper(['conv2d', 'depthwise_conv2d'])
+@op_mapper(['conv2d', 'depthwise_conv2d', 'conv3d'])
 class Conv():
     support_opset_verison_range = (1, 12)
 
@@ -31,12 +31,14 @@ class Conv():
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
         dilations = node.attr('dilations')
-        kernel_shape = kernel_shape[-2:]
+        kernel_shape = kernel_shape[2:]
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
         if len(pads) == 2:
             pads = pads + pads
+        elif len(pads) == 3:
+            pads = pads + pads + pads
         attrs = {
             'dilations': dilations,
             'kernel_shape': kernel_shape,
