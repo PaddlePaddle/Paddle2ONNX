@@ -54,7 +54,7 @@ class LeakyRelu():
 
 @op_mapper('prelu')
 class PRelu():
-    support_opset_verison_range = (9, 12)
+    support_opset_verison_range = (9, 13)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -66,7 +66,7 @@ class PRelu():
             shape_node = graph.make_node('Shape', inputs=node.input('X'))
             axes = [i for i in range(len(slope_shape), len(input_shape))]
             unsqueezed_slope = graph.make_node(
-                'Unsqueeze', inputs=node.input('Alpha')[0], axes=axes)
+                'Unsqueeze', inputs=[node.input('Alpha')[0]], axes=axes)
             slope_node = graph.make_node(
                 'Expand', inputs=[unsqueezed_slope, shape_node])
         onnx_node = graph.make_node(
@@ -74,6 +74,25 @@ class PRelu():
             inputs=[node.input('X')[0], slope_node],
             outputs=node.output('Out'))
 
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        slope_shape = node.input_shape('Alpha', 0)
+        input_shape = node.input_shape('X', 0)
+
+        slope_node = node.input('Alpha')[0]
+        if len(input_shape) != len(slope_shape):
+            shape_node = graph.make_node('Shape', inputs=node.input('X'))
+            value = [i for i in range(len(slope_shape), len(input_shape))]
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=value)
+            unsqueezed_slope = graph.make_node(
+                'Unsqueeze', inputs=[node.input('Alpha')[0], axes])
+            slope_node = graph.make_node(
+                'Expand', inputs=[unsqueezed_slope, shape_node])
+        onnx_node = graph.make_node(
+            'PRelu',
+            inputs=[node.input('X')[0], slope_node],
+            outputs=node.output('Out'))
 
 @op_mapper('relu6')
 class Relu6():
