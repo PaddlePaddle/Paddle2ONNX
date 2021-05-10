@@ -52,6 +52,25 @@ class LeakyRelu():
             alpha=node.attr('alpha'))
 
 
+@op_mapper('softplus')
+class Softplus():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        beta = node.attr('beta')
+        threshold = node.attr('threshold')
+        if np.isclose(beta, 1.0, 1e-06, 1e-06) and \
+            np.isclose(threshold, 20.0, 1e-06, 1e-06):
+            onnx_node = graph.make_node(
+                'Softplus',
+                inputs=[node.input('X')[0]],
+                outputs=node.output('Out'))
+        else:
+            raise Exception("[ERROR] Operator softplus " \
+            "only supported while beta==1.0 and threshold==20.0")
+
+
 @op_mapper('prelu')
 class PRelu():
     support_opset_verison_range = (1, 12)

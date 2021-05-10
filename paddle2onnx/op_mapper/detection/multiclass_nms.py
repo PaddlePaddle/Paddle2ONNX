@@ -77,7 +77,7 @@ class MultiClassNMS():
             iou_threshold = 0.5
             logging.warning(
                 "Operator:{} is not supported completely, so we use traditional"
-                " NMS (iou_theshold={}) to instead it, which introduce some difference.".
+                " NMS (nms_theshold={}) to instead it, which introduce some difference.".
                 format(node.type, str(iou_threshold)))
         else:
             iou_threshold = node.attr('nms_threshold')
@@ -295,7 +295,9 @@ class MultiClassNMS():
                 axes=[0])
             if node.type in ['matrix_nms', 'multiclass_nms3']:
                 select_bboxes_shape = graph.make_node(
-                    'Shape', inputs=[final_indices])
+                    'Shape', inputs=[concat_final_results])
+                select_bboxes_shape1 = graph.make_node(
+                    'Cast', inputs=[select_bboxes_shape], to=dtypes.ONNX.INT32)
                 indices = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.INT64, value=[0])
                 rois_num = None
@@ -306,5 +308,5 @@ class MultiClassNMS():
                 if rois_num is not None:
                     graph.make_node(
                         "Gather",
-                        inputs=[select_bboxes_shape, indices],
+                        inputs=[select_bboxes_shape1, indices],
                         outputs=rois_num)
