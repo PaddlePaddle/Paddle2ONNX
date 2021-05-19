@@ -436,15 +436,13 @@ class FillConstantBatchSizeLike():
         out_shape = node.attr('shape')
         input_dim_idx = node.attr('input_dim_idx')
         output_dim_idx = node.attr('output_dim_idx')
-        assert output_dim_idx == 0, "Only output_dim_idx == 0 is supported of fill_constant_batch_size_like"
+
+        del out_shape[output_dim_idx]
+        out_shape.insert(0, 1)
 
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
         value = node.attr('value')
-        out_shape[output_dim_idx] = 1
-        # 判断是否只有一维大于0
         input_shape = node.input_shape('Input', 0)
-        # 判断output_dim_idx是否为0
-        # 是不是可以用Reduce之类的操作
 
         constant = graph.make_node(
             'Constant',
@@ -463,8 +461,19 @@ class FillConstantBatchSizeLike():
             dtype=dtypes.ONNX.INT64,
             value=[1] * (len(out_shape) - 1))
         repeat = graph.make_node('Concat', inputs=[batch, repeat], axis=-1)
-        graph.make_node(
-            'Tile', inputs=[constant, repeat], outputs=node.output('Out'))
+        if output_dim_idx == 0:
+            graph.make_node(
+                'Tile', inputs=[constant, repeat], outputs=node.output('Out'))
+        else:
+            out = graph.make_node('Tile', inputs=[constant, repeat])
+            perm = list(range(len(out_shape)))
+            perm[0] = output_dim_idx
+            perm[output_dim_idx] = 0
+            graph.make_node(
+                'Transpose',
+                inputs=[out],
+                perm=perm,
+                outputs=node.output('Out'))
 
 
 #    @classmethod
