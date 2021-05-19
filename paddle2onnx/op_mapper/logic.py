@@ -44,7 +44,7 @@ class Equal():
 
 
 @op_mapper('greater_than')
-class GreaterOrEqual():
+class GreaterThan():
     support_opset_verison_range = (1, )
 
     @classmethod
