@@ -162,14 +162,12 @@ class MultiClassNMS():
         if background == 0:
             nonzero = graph.make_node('NonZero', inputs=[squeezed_class_id])
         else:
-            thresh = graph.make_node(
-                'Constant', inputs=[], dtype=dtypes.ONNX.INT32, value=[-1])
-
-            cast = graph.make_node('Cast', inputs=[squeezed_class_id], to=6)
-
-            greater = graph.make_node('Greater', inputs=[cast, thresh])
-
-            nonzero = graph.make_node('NonZero', inputs=[greater])
+            filter_cls_id = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT32, value=[background])
+            cast = graph.make_node(
+                'Cast', inputs=[squeezed_class_id], to=dtypes.ONNX.INT32)
+            filter_index = graph.make_node('Sub', inputs=[cast, filter_cls_id])
+            nonzero = graph.make_node('NonZero', inputs=[filter_index])
 
         class_id = graph.make_node('Gather', inputs=[class_id, nonzero], axis=0)
 
