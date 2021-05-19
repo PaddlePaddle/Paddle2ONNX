@@ -111,17 +111,25 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        if len(node.input('Shape')) > 0:
-            shape = mapper_helper.cast(graph,
-                                       node.input('Shape', 0),
-                                       node.input_dtype('Shape', 0), 'int64')
-        elif len(node.attr('shape')) > 0:
-            shape = node.attr('shape')
-            for idx in range(len(shape)):
-                if shape[idx] == -1:
-                    shape[idx] = 1
+        if node.input('expand_shapes_tensor') is not None and len(
+                node.input('expand_shapes_tensor')) > 0:
             shape = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=shape)
+                'Concat', inputs=node.input('expand_shapes_tensor'), axis=-1)
+            shape = graph.make_node(
+                'Cast', inputs=[shape], to=dtypes.ONNX.INT64)
+        else:
+            if len(node.input('Shape')) > 0:
+                shape = mapper_helper.cast(graph,
+                                           node.input('Shape', 0),
+                                           node.input_dtype('Shape', 0),
+                                           'int64')
+            elif len(node.attr('shape')) > 0:
+                shape = node.attr('shape')
+                for idx in range(len(shape)):
+                    if shape[idx] == -1:
+                        shape[idx] = 1
+                shape = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=shape)
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],
@@ -377,10 +385,11 @@ class Constant():
         value = np.ones(shape) * value
         value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
         value = value.flatten().tolist()
-        if len(shape) ==0 and len(node.input('ShapeTensor')) > 0:
-            shape_tensor = mapper_helper.cast(graph,
-                                       node.input('ShapeTensor', 0),
-                                       node.input_dtype('ShapeTensor', 0), 'int64')
+        if len(shape) == 0 and len(node.input('ShapeTensor')) > 0:
+            shape_tensor = mapper_helper.cast(
+                graph,
+                node.input('ShapeTensor', 0),
+                node.input_dtype('ShapeTensor', 0), 'int64')
             graph.make_node(
                 'ConstantOfShape',
                 inputs=shape_tensor,
@@ -423,33 +432,78 @@ class FillConstantBatchSizeLike():
     support_opset_verison_range = (9, 12)
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
-        input_dim_idx = tensor_shape = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.INT64,
-            dims=[1],
-            value=node.attr('input_dim_idx'))
-        output_dim_idx = tensor_shape = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.INT64,
-            dims=[1],
-            value=node.attr('output_dim_idx'))
-        input_shape = graph.make_node('Shape', inputs=node.input('Input'))
-        updates = graph.make_node('Gather', inputs=[input_shape, input_dim_idx])
-        tensor_shape = tensor_shape = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.INT64,
-                   'value': node.attr('shape')})
-        tensor_shape = graph.make_node(
-            'ScatterND', inputs=[tensor_shape, output_dim_idx, updates])
+    def opset_10(cls, graph, node, **kw):
+        out_shape = node.attr('shape')
+        input_dim_idx = node.attr('input_dim_idx')
+        output_dim_idx = node.attr('output_dim_idx')
+
+        del out_shape[output_dim_idx]
+        out_shape.insert(0, 1)
+
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
-        graph.make_node(
-            'ConstantOfShape',
-            inputs=[tensor_shape],
-            outputs=node.output('Out'),
-            dims=[1],
+        value = node.attr('value')
+        input_shape = node.input_shape('Input', 0)
+
+        constant = graph.make_node(
+            'Constant',
             dtype=dtype,
-            value=node.attr('value'))
+            dims=out_shape,
+            value=[value] * np.prod(out_shape))
+
+        shape = graph.make_node('Shape', inputs=node.input('Input'))
+        start = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[input_dim_idx])
+        end = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[input_dim_idx + 1])
+        batch = graph.make_node('Slice', inputs=[shape, start, end])
+        repeat = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            value=[1] * (len(out_shape) - 1))
+        repeat = graph.make_node('Concat', inputs=[batch, repeat], axis=-1)
+        if output_dim_idx == 0:
+            graph.make_node(
+                'Tile', inputs=[constant, repeat], outputs=node.output('Out'))
+        else:
+            out = graph.make_node('Tile', inputs=[constant, repeat])
+            perm = list(range(len(out_shape)))
+            perm[0] = output_dim_idx
+            perm[output_dim_idx] = 0
+            graph.make_node(
+                'Transpose',
+                inputs=[out],
+                perm=perm,
+                outputs=node.output('Out'))
+
+
+#    @classmethod
+#    def opset_11(cls, graph, node, **kw):
+#        input_dim_idx = tensor_shape = graph.make_node(
+#            'Constant',
+#            dtype=dtypes.ONNX.INT64,
+#            dims=[1],
+#            value=node.attr('input_dim_idx'))
+#        output_dim_idx = tensor_shape = graph.make_node(
+#            'Constant',
+#            dtype=dtypes.ONNX.INT64,
+#            dims=[1],
+#            value=node.attr('output_dim_idx'))
+#        input_shape = graph.make_node('Shape', inputs=node.input('Input'))
+#        updates = graph.make_node('Gather', inputs=[input_shape, input_dim_idx])
+#        tensor_shape = tensor_shape = graph.make_node(
+#            'Constant',
+#            attrs={'dtype': dtypes.ONNX.INT64,
+#                   'value': node.attr('shape')})
+#        tensor_shape = graph.make_node(
+#            'ScatterND', inputs=[tensor_shape, output_dim_idx, updates])
+#        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
+#        graph.make_node(
+#            'ConstantOfShape',
+#            inputs=[tensor_shape],
+#            outputs=node.output('Out'),
+#            dims=[1],
+#            dtype=dtype,
+#            value=node.attr('value'))
 
 
 @op_mapper('fill_any_like')
@@ -540,7 +594,7 @@ class Assign():
             if value is None or value.size < 1:
                 value = np.array(node.attr('int32_values'))
             if value is None or value.size < 1:
-                value = np.array(node.attr('int64_value'))
+                value = np.array(node.attr('int64_values'))
             parameter = {
                 'data': value,
                 'dtype': node.attr('dtype'),

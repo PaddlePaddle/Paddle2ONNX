@@ -88,9 +88,14 @@ class Abs:
 
 @op_mapper(
     [
-        'elementwise_add', 'elementwise_sub', 'elementwise_div',
-        'elementwise_mul', 'elementwise_min', 'elementwise_max',
-        'elementwise_pow'
+        'elementwise_add',
+        'elementwise_sub',
+        'elementwise_div',
+        'elementwise_mul',
+        'elementwise_min',
+        'elementwise_max',
+        'elementwise_pow',
+        'elementwise_mod',
     ],
     mapper_dict={
         'elementwise_add': 'Add',
@@ -100,12 +105,13 @@ class Abs:
         'elementwise_min': 'Min',
         'elementwise_max': 'Max',
         'elementwise_pow': 'Pow',
+        'elementwise_mod': 'Mod',
     })
 class ElementwiseOps():
     support_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_7(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
         axis = node.attr('axis')
         x = node.input('X', 0)
@@ -128,6 +134,51 @@ class ElementwiseOps():
                 'Reshape', inputs=[y, broadcast_shape_node])
             onnx_node = graph.make_node(
                 op_type, inputs=[x, y_node], outputs=node.output('Out'))
+
+
+@op_mapper('elementwise_floordiv')
+class ElementWiseFloorDiv():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        y = node.input('Y', 0)
+        axis = node.attr('axis')
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
+        x_dtype = node.input_dtype('X', 0)
+        y_dtype = node.input_dtype('Y', 0)
+        x_dtype = dtypes.DTYPE_PADDLE_STR_MAP[x_dtype]
+        y_dtype = dtypes.DTYPE_PADDLE_STR_MAP[y_dtype]
+        is_int = False
+        if x_dtype.count('int') > 0 and y_dtype.count('int') > 0:
+            is_int = True
+        if axis == -1 or axis == (len(x_shape) - 1
+                                  ) or len(x_shape) == len(y_shape):
+            if is_int:
+                graph.make_node(
+                    'Div', inputs=[x, y], outputs=node.output('Out'))
+            else:
+                div_node = graph.make_node('Div', inputs=[x, y])
+                graph.make_node(
+                    'Floor', inputs=[div_node], outputs=node.output('Out'))
+        else:
+            broadcast_shape = [1] * len(x_shape)
+            broadcast_shape[axis:axis + len(y_shape)] = y_shape
+            broadcast_shape_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=list(broadcast_shape))
+            y_node = graph.make_node(
+                'Reshape', inputs=[y, broadcast_shape_node])
+            if is_int:
+                div_node = graph.make_node(
+                    'Div', inputs=[x, y_node], outputs=node.output('Out'))
+            else:
+                div_node = graph.make_node('Div', inputs=[x, y_node])
+                graph.make_node(
+                    'Floor', inputs=[div_node], outputs=node.output('Out'))
 
 
 @op_mapper('pow')
@@ -233,6 +284,65 @@ class BMM():
             'MatMul', inputs=[x, y], outputs=node.output('Out'))
 
 
+@op_mapper('p_norm')
+class PNorm():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        axis = node.attr('axis')
+        p = node.attr('porder')
+        keepdim = node.attr('keepdim')
+        epsilon = node.attr('epsilon')
+        assert axis == 1, "Only axis == 1 is supported for p_norm"
+        if p == 1 or p == 2 and not keepdim:
+            graph.make_node(
+                'LpNormalization',
+                inputs=[x],
+                outputs=node.output('Out'),
+                axis=1,
+                p=p)
+        else:
+            pnode = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=[p])
+            mul = graph.make_node('Pow', inputs=[x, pnode])
+            reduce_sum = graph.make_node(
+                'ReduceSum', inputs=[mul], axes=[1], keepdims=keepdim)
+            pnode1 = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0 / p])
+            graph.make_node(
+                'Pow', inputs=[reduce_sum, pnode1], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        axis = node.attr('axis')
+        p = node.attr('porder')
+        keepdim = node.attr('keepdim')
+        epsilon = node.attr('epsilon')
+        assert axis == 1, "Only axis == 1 is supported for p_norm"
+        if (p == 1 or p == 2) and not keepdim:
+            graph.make_node(
+                'LpNormalization',
+                inputs=[x],
+                outputs=node.output('Out'),
+                axis=1,
+                p=p)
+        else:
+            pnode = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=[p])
+            mul = graph.make_node('Pow', inputs=[x, pnode])
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
+            reduce_sum = graph.make_node(
+                'ReduceSum', inputs=[mul, axes], keepdims=keepdim)
+            pnode1 = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0 / p])
+            graph.make_node(
+                'Pow', inputs=[reduce_sum, pnode1], outputs=node.output('Out'))
+
+
 @op_mapper('sum')
 class Sum():
     support_opset_version_range = (1, 12)
@@ -325,6 +435,66 @@ class ArgMax():
                    'keepdims': 0})
 
 
+#
+#@op_mapper('scale')
+#class Scale():
+#    support_opset_version_range = (1, 12)
+#
+#    @classmethod
+#    def opset_1(cls, graph, node, **kw):
+#        scale = node.attr('scale')
+#        bias = node.attr('bias')
+#        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
+#            graph.make_node(
+#                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+#        else:
+#            raise Exception(
+#                "please try to convert OP:scale with opset_version >= 7.")
+#
+#    @classmethod
+#    def opset_7(cls, graph, node, **kw):
+#        scale = node.attr('scale')
+#        bias = node.attr('bias')
+#        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
+#            graph.make_node(
+#                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+#        else:
+#            cast_node = graph.make_node(
+#                'Cast', inputs=node.input('X'),
+#                attrs={'to': dtypes.ONNX.FLOAT})
+#            if np.fabs(scale - 1.0) < 1e-06:
+#                bias_node = graph.make_node(
+#                    'Constant',
+#                    attrs={'dtype': dtypes.ONNX.FLOAT,
+#                           'value': [bias]})
+#                graph.make_node('Add', inputs=[cast_node, bias_node], outputs=node.output('Out'))
+#            elif np.fabs(bias - 1.0) < 1e-06:
+#                scale_node = graph.make_node(
+#                   'Constant',
+#                   attrs={'dtype': dtypes.ONNX.FLOAT,
+#                          'value': [scale]})
+#                graph.make_node('Mul', inputs=[cast_node, scale_node], outputs=node.output('Out'))
+#            else:
+#                scale_node = graph.make_node(
+#                    'Constant',
+#                    attrs={'dtype': dtypes.ONNX.FLOAT,
+#                           'value': [scale]})
+#                bias_node = graph.make_node(
+#                    'Constant',
+#                    attrs={'dtype': dtypes.ONNX.FLOAT,
+#                           'value': [bias]})
+#                if node.attr('bias_after_scale'):
+#                    node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
+#                    node2 = graph.make_node(
+#                        'Add',
+#                        inputs=[node1, bias_node],
+#                        outputs=node.output('Out'))
+#                else:
+#                    node1 = graph.make_node('Add', inputs=[cast_node, bias_node])
+#                    node2 = graph.make_node(
+#                        'Mul',
+#                        inputs=[node1, scale_node],
+#                        outputs=[node.output('Out', 0)])
 @op_mapper('scale')
 class Scale():
     support_opset_version_range = (1, 12)

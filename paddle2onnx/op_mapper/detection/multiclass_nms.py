@@ -77,7 +77,7 @@ class MultiClassNMS():
             iou_threshold = 0.5
             logging.warning(
                 "Operator:{} is not supported completely, so we use traditional"
-                " NMS (iou_theshold={}) to instead it, which introduce some difference.".
+                " NMS (nms_theshold={}) to instead it, which introduce some difference.".
                 format(node.type, str(iou_threshold)))
         else:
             iou_threshold = node.attr('nms_threshold')
@@ -162,14 +162,12 @@ class MultiClassNMS():
         if background == 0:
             nonzero = graph.make_node('NonZero', inputs=[squeezed_class_id])
         else:
-            thresh = graph.make_node(
-                'Constant', inputs=[], dtype=dtypes.ONNX.INT32, value=[-1])
-
-            cast = graph.make_node('Cast', inputs=[squeezed_class_id], to=6)
-
-            greater = graph.make_node('Greater', inputs=[cast, thresh])
-
-            nonzero = graph.make_node('NonZero', inputs=[greater])
+            filter_cls_id = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT32, value=[background])
+            cast = graph.make_node(
+                'Cast', inputs=[squeezed_class_id], to=dtypes.ONNX.INT32)
+            filter_index = graph.make_node('Sub', inputs=[cast, filter_cls_id])
+            nonzero = graph.make_node('NonZero', inputs=[filter_index])
 
         class_id = graph.make_node('Gather', inputs=[class_id, nonzero], axis=0)
 
@@ -295,7 +293,9 @@ class MultiClassNMS():
                 axes=[0])
             if node.type in ['matrix_nms', 'multiclass_nms3']:
                 select_bboxes_shape = graph.make_node(
-                    'Shape', inputs=[final_indices])
+                    'Shape', inputs=[concat_final_results])
+                select_bboxes_shape1 = graph.make_node(
+                    'Cast', inputs=[select_bboxes_shape], to=dtypes.ONNX.INT32)
                 indices = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.INT64, value=[0])
                 rois_num = None
@@ -306,5 +306,5 @@ class MultiClassNMS():
                 if rois_num is not None:
                     graph.make_node(
                         "Gather",
-                        inputs=[select_bboxes_shape, indices],
+                        inputs=[select_bboxes_shape1, indices],
                         outputs=rois_num)
