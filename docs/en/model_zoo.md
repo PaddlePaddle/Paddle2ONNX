@@ -49,44 +49,13 @@ Support UNet, HRNet, DeepLab and so on. Test models are from PaddleSeg [release/
 |UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.0.0-rc/configs/unet) |
 
 ## object detection
-comming soon
-
-# Static computational graph
-## Image classification
-Test models are from PaddleClas [master branch](https://github.com/PaddlePaddle/PaddleClas/tree/master).
-
-| Models | Source |
-|-------|--------|
-| ResNet | [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/resnet.py) |
-| DenseNet | [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/densenet.py) |
-| ShuffleNet | [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/shufflenet_v2.py) |
-| MobileNet| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/mobilenet_v3.py) |
-| VGG16| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/vgg.py) |
-| SE_ResNext50| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/se_resnext.py) |
-| InceptionV4| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/inception_v4.py) |
-| SE_ResNet50_vd| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/se_resnext_vd.py) |
-| SqueezeNet1_0| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/squeezenet.py) |
-| Xception41| [PaddleCls](https://github.com/PaddlePaddle/PaddleClas/blob/master/ppcls/modeling/architectures/xception.py) |
-
-## object detection
-Support SSD,YoloV3. Test models are from PaddleDetection [release/0.4 branch](https://github.com/PaddlePaddle/Paddledetection/tree/release/0.4).
-Due to ONNX's limit, Paddle2ONNX is not able to support all the detection models and now  only supports one-stage detection model.
-
-| Models | Source |
-|-------|--------|
-|SSD_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#ssd) |
-|YoloV3_DarkNet53|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3) |
-|YoloV3_ResNet34|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3) |
-|YoloV3_MobileNet|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#yolo-v3) |
-|FasterRCNN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#faster--mask-r-cnn) |
-|FasterRCNN_FPN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#faster--mask-r-cnn) |
-|FasterRCNN_FPN_DCN|[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md#deformable-convnets-v2) |
-
-## Image segmentation
-Support UNet,HRNet and DeepLab. Test models are from PaddleSeg [release/v0.7.0 branch](https://github.com/PaddlePaddle/PaddleSeg/tree/release/v0.7.0).
-
-| Models | Source |
-|-------|--------|
-|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v0.7.0/tutorial/finetune_unet.md) |
-|HRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v0.7.0/tutorial/finetune_hrnet.md) |
-|DeepLab|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v0.7.0/tutorial/finetune_deeplabv3plus.md) |
+Support 8 object detection archtectures. Test models are from PaddleDetection [release/2.1](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
+| Models      | Source                                                       |
+| ----------- | ------------------------------------------------------------ |
+| YOLO-V3     | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/ |
+| PPYOLO      | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ |
+| PPYOLO-Tiny | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ |
+| PPYOLO-V2   | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ |
+| TTFNet      | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/ |
+| PAFNet      | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/ |
+| SSD         | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/ |
