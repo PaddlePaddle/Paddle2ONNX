@@ -1,11 +1,7 @@
-Paddle2ONNX mainly supports three types of models: image classification, object detection and image segmentation.
-As PaddlePaddle 2.0 evolves, the realization of serialized operators will be more universal. It is expected that NLP and OCR series of models will be supported.
+Paddle2ONNX supports converting PaddlePaddle model to ONNX format.
 
 Due to the differences between frameworks, some models may not be supported. If you meet any problem such as converting failure or inference error，you can raise a issue in [ISSUE](https://github.com/PaddlePaddle/paddle-onnx/issues/new).
 
-# Dynamic computational graph
-
-As dynamic computational model is under develop,  We will update more convertable models of dynamic computational graphs as the develop of PaddlePaddle.
 
 ## Image classification
 
