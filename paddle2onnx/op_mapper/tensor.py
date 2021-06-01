@@ -1078,3 +1078,19 @@ class Resize():
         shape_node3 = graph.make_node(
             'Concat', inputs=[shape_node1, shape_node2], axis=0)
         return shape_node0, shape_node3
+
+@op_mapper('pixel_shuffle')
+class PixelShuffle():
+    support_opset_verison_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        upscale_factor = node.attr('upscale_factor')
+
+        node = graph.make_node(
+            'DepthToSpace',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            blocksize=upscale_factor,
+            mode='CRD')
+
