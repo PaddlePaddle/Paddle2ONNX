@@ -1027,13 +1027,21 @@ class Resize():
                 in_shape, out_shape = cls.compute_output_shape_by_size(graph,
                                                                        node)
                 inputs += [empty_node, out_shape]
-        graph.make_node(
-            'Resize',
-            inputs=inputs,
-            outputs=node.output('Out'),
-            mode=resize_type,
-            coordinate_transformation_mode=coordinate_transformation_mode,
-            nearest_mode='floor')
+        if node.type == 'nearest_interp' or node.type == 'nearest_interp_v2':
+            graph.make_node(
+                'Resize',
+                inputs=inputs,
+                outputs=node.output('Out'),
+                mode=resize_type,
+                coordinate_transformation_mode=coordinate_transformation_mode,
+                nearest_mode='floor')
+        else:
+            graph.make_node(
+                'Resize',
+                inputs=inputs,
+                outputs=node.output('Out'),
+                mode=resize_type,
+                coordinate_transformation_mode=coordinate_transformation_mode)
 
     @classmethod
     def compute_output_shape(cls, graph, node, opset_version=10):
