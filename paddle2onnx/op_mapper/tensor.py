@@ -1032,7 +1032,8 @@ class Resize():
             inputs=inputs,
             outputs=node.output('Out'),
             mode=resize_type,
-            coordinate_transformation_mode=coordinate_transformation_mode)
+            coordinate_transformation_mode=coordinate_transformation_mode,
+            nearest_mode='floor')
 
     @classmethod
     def compute_output_shape(cls, graph, node, opset_version=10):
