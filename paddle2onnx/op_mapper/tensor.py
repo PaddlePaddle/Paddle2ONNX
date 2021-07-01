@@ -1027,7 +1027,7 @@ class Resize():
                 in_shape, out_shape = cls.compute_output_shape_by_size(graph,
                                                                        node)
                 inputs += [empty_node, out_shape]
-        if node.type == 'nearest_interp' or node.type == 'nearest_interp_v2':
+        if resize_type == 'nearest' or coordinate_transformation_mode == 'asymmetric':
             graph.make_node(
                 'Resize',
                 inputs=inputs,
