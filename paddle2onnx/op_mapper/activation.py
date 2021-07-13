@@ -52,17 +52,70 @@ class LeakyRelu():
             alpha=node.attr('alpha'))
 
 
-@op_mapper('prelu')
-class PRelu():
+@op_mapper('softplus')
+class Softplus():
     support_opset_verison_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        beta = node.attr('beta')
+        threshold = node.attr('threshold')
+        if np.isclose(beta, 1.0, 1e-06, 1e-06) and \
+            np.isclose(threshold, 20.0, 1e-06, 1e-06):
+            onnx_node = graph.make_node(
+                'Softplus',
+                inputs=[node.input('X')[0]],
+                outputs=node.output('Out'))
+        else:
+            raise Exception("[ERROR] Operator softplus " \
+            "only supported while beta==1.0 and threshold==20.0")
+
+
+@op_mapper('prelu')
+class PRelu():
+    support_opset_verison_range = (9, 13)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        slope_shape = node.input_shape('Alpha', 0)
+        input_shape = node.input_shape('X', 0)
+
+        slope_node = node.input('Alpha')[0]
+        if len(input_shape) != len(slope_shape):
+            assert len(slope_shape) == 1, "Slope shape is not expected for prelu"
+            shape_node = graph.make_node('Shape', inputs=node.input('X'))
+            axes = [i for i in range(len(input_shape))]
+            del axes[1]
+            unsqueezed_slope = graph.make_node(
+                'Unsqueeze', inputs=[node.input('Alpha')[0]], axes=axes)
+            slope_node = graph.make_node(
+                'Expand', inputs=[unsqueezed_slope, shape_node])
         onnx_node = graph.make_node(
             'PRelu',
-            inputs=[node.input('X')[0], node.input('Alpha')[0]],
+            inputs=[node.input('X')[0], slope_node],
             outputs=node.output('Out'))
 
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        slope_shape = node.input_shape('Alpha', 0)
+        input_shape = node.input_shape('X', 0)
+
+        slope_node = node.input('Alpha')[0]
+        if len(input_shape) != len(slope_shape):
+            assert len(slope_shape) == 1, "Slope shape is not expected for prelu"
+            shape_node = graph.make_node('Shape', inputs=node.input('X'))
+            value = [i for i in range(len(input_shape))]
+            del value[1]
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=value)
+            unsqueezed_slope = graph.make_node(
+                'Unsqueeze', inputs=[node.input('Alpha')[0], axes])
+            slope_node = graph.make_node(
+                'Expand', inputs=[unsqueezed_slope, shape_node])
+        onnx_node = graph.make_node(
+            'PRelu',
+            inputs=[node.input('X')[0], slope_node],
+            outputs=node.output('Out'))
 
 @op_mapper('relu6')
 class Relu6():

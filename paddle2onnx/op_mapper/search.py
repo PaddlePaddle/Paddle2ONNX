@@ -57,7 +57,7 @@ class TopKV2():
             k = node.attr('k')
             k_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': k})
+                                   'value': [k]})
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
