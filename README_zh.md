@@ -4,7 +4,7 @@
 
 ## 简介
 
-paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。
+paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。  
 
 - 模型格式，支持Paddle静态图和动态图模型转为ONNX，可转换由[save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model)导出的静态图模型，使用方法请参考[IPthon示例](examples/tutorial.ipynb)。动态图转换目前处于实验状态，将伴随Paddle 2.0正式版发布后，提供详细使用教程。
 - 算子支持，目前稳定支持导出ONNX Opset 9~11，部分Paddle算子支持更低的ONNX Opset转换，详情可参考[算子列表](docs/zh/op_list.md)。
