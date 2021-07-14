@@ -14,8 +14,8 @@
 
 import numpy as np
 import paddle.fluid.core as core
-from paddle2onnx.onnx_helper import helper
-from paddle2onnx.onnx_helper.onnx_pb import TensorProto
+from onnx import helper
+from onnx import TensorProto
 
 ONNX = TensorProto
 
