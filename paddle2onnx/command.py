@@ -104,7 +104,7 @@ def program2onnx(model_dir,
             exe,
             model_filename=model_filename,
             params_filename=params_filename)
-    print("yeliang check")
+            
     p2o.program2onnx(
         program,
         fluid.global_scope(),
