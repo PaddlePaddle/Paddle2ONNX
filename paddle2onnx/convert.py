@@ -23,7 +23,6 @@ from paddle2onnx.utils import check_model, logging
 from paddle2onnx.graph import PaddleGraph, ONNXGraph
 from paddle2onnx.passes import PassManager
 
-
 def export_onnx(paddle_graph,
                 save_file,
                 opset_version=9,
