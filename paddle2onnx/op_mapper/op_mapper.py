@@ -118,7 +118,7 @@ class OpMapper(object):
     def get_recommend_opset_version(node_map, opset_version):
         recommend_opset_version = OpMapper.check_support_status(node_map, opset_version, True)
         for name, node in list(node_map.items()):
-            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP: #如果是custom的op，直接跳过
+            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP: #如果是custom的op，获取custom的推荐op
                 custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[node.type](node)
                 custom_paddle_graph = custom_paddle_op.get_paddle_graph()
                 custom_recommend_opset_version = OpMapper.check_support_status(custom_paddle_graph.node_map, opset_version, True)
