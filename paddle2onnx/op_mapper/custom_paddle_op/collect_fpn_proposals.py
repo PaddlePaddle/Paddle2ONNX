@@ -18,6 +18,8 @@ import numpy as np
 import paddle
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
+from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 class CollectFpnProposals(CustomPaddleOp):
@@ -39,5 +41,15 @@ class CollectFpnProposals(CustomPaddleOp):
         rois = paddle.gather(multi_level_rois, index, axis=0)
         return {"FpnRois": [rois]}
 
-
+@op_mapper('collect_fpn_proposals')
+class Collectfpnproposals:
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'collect_fpn_proposals',
+            inputs=node.input('MultiLevelRois')+ node.input('MultiLevelScores'),
+            outputs=node.output('FpnRois'),
+            post_nms_top_n = node.attr('post_nms_topN'),
+            domain = 'custom')
+            
 register_custom_paddle_op('collect_fpn_proposals', CollectFpnProposals)

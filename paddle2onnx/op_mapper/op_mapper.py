@@ -92,15 +92,24 @@ class OpMapper(object):
                     opset_dict[version] = (v, self.kwargs)
 
     @staticmethod
-    def mapping(graph, node):
+    def mapping(graph, node, combiane_custom=True):
         try:
-            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
-                custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
-                    node.type](node)
-                custom_paddle_graph = custom_paddle_op.get_paddle_graph()
-                OpMapper.check_support_status(custom_paddle_graph.node_map,
-                                              graph.opset_version)
-                graph.build_op_nodes(custom_paddle_graph.node_map)
+            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP: #如果是一个用户自定义的o
+                print("here is custom:", node.type)
+                if combiane_custom:
+                    opsets = OpMapper.OPSETS[node.type]
+                    versions = list(opsets.keys())
+                    convert_version = get_max_support_version(versions,
+                                                            graph.opset_version)
+                    mapper_func, kw = opsets[convert_version]
+                    mapper_func(graph, node, **kw)
+                else:
+                    custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
+                        node.type](node)
+                    custom_paddle_graph = custom_paddle_op.get_paddle_graph()
+                    OpMapper.check_support_status(custom_paddle_graph.node_map,
+                                                graph.opset_version)
+                    graph.build_op_nodes(custom_paddle_graph.node_map)
             else:
                 opsets = OpMapper.OPSETS[node.type]
                 versions = list(opsets.keys())

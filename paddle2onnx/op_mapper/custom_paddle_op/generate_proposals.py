@@ -19,6 +19,8 @@ import paddle
 import math
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
+from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 BBOX_CLIP_DEFAULT = math.log(1000.0 / 16.0)
 
@@ -163,5 +165,19 @@ class GenerateProposals(CustomPaddleOp):
             anchors, bboxdeltas, iminfo, scores, variances)
         return {'RpnRoiProbs': [new_scores], 'RpnRois': [proposals]}
 
-
+@op_mapper('generate_proposals')
+class Generateproposals:
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'generate_proposals',
+            inputs=node.input('Anchors')+node.input('BboxDeltas')+node.input('ImInfo')+node.input('Scores')+node.input('Variances'),
+            outputs=node.output('RpnRoiProbs') + node.output('RpnRois'),
+            eta = node.attr('eta'),
+            min_size = node.attr('min_size'),
+            nms_thresh = node.attr('nms_thresh'),
+            post_nms_topN = node.attr('post_nms_topN'),
+            pre_nms_topN = node.attr('pre_nms_topN'),
+            domain = 'custom')
+            
 register_custom_paddle_op('generate_proposals', GenerateProposals)
