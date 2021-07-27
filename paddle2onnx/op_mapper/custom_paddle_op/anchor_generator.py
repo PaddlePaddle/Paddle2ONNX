@@ -86,7 +86,7 @@ class Anchors_generator:
         node = graph.make_node(
             'anchor_generator',
             inputs=node.input('Input'),
-            outputs=node.utput('Anchors') + node.output('Variances'),
+            outputs=node.output('Anchors') + node.output('Variances'),
             anchor_sizes = node.attr('anchor_sizes'),
             aspect_ratios = node.attr('aspect_ratios'),
             offset = node.attr('offset'),

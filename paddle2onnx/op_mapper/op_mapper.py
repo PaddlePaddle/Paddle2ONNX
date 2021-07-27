@@ -92,10 +92,9 @@ class OpMapper(object):
                     opset_dict[version] = (v, self.kwargs)
 
     @staticmethod
-    def mapping(graph, node, combiane_custom=True):
+    def mapping(graph, node, combiane_custom=False):
         try:
-            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP: #如果是一个用户自定义的o
-                print("here is custom:", node.type)
+            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
                 if combiane_custom:
                     opsets = OpMapper.OPSETS[node.type]
                     versions = list(opsets.keys())
