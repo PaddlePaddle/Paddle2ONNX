@@ -347,6 +347,7 @@ class PNorm():
 class Sum():
     support_opset_version_range = (1, 12)
 
+    @classmethod
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'sum', inputs=node.input('X'), outputs=node.output('Out'))

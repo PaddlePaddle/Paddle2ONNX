@@ -65,3 +65,29 @@ class TopKV2():
                 largest=node.attr('largest'),
                 sorted=node.attr('sorted'),
                 axis=node.attr('axis'))
+
+@op_mapper('top_k')
+class TopK():
+    support_opset_verison_range = (11, )
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        if 'K' in node.inputs and len(node.input('K')) > 0:
+            k_node = node.input('K', 0)
+            k_node_dtype = node.input_dtype('K', 0)
+            if dtypes.DTYPE_PADDLE_STR_MAP[k_node_dtype] != 'int64':
+                k_node = graph.make_node(
+                    'Cast', inputs=[k_node], to=dtypes.ONNX.INT64)
+            graph.make_node(
+                'TopK',
+                inputs=[node.input('X', 0), k_node],
+                outputs=[node.output('Out', 0), node.output('Indices', 0)])
+        else:
+            k = node.attr('k')
+            k_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [k]})
+            graph.make_node(
+                'TopK',
+                inputs=[node.input('X', 0), k_node],
+                outputs=[node.output('Out', 0), node.output('Indices', 0)])
