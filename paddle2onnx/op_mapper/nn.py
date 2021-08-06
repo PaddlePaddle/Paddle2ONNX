@@ -64,15 +64,28 @@ class ConvTranspose():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
-        node = graph.make_node(
-            'ConvTranspose',
-            inputs=node.input('Input') + node.input('Filter'),
-            outputs=node.output('Output'),
-            dilations=node.attr('dilations'),
-            kernel_shape=kernel_shape[-2:],
-            strides=node.attr('strides'),
-            group=node.attr('groups'),
-            pads=node.attr('paddings') + node.attr('paddings'))
+        output_padding=node.attr('output_padding')
+        if len(node.attr('output_padding')) > 0:
+            node = graph.make_node(
+                'ConvTranspose',
+                inputs=node.input('Input') + node.input('Filter'),
+                outputs=node.output('Output'),
+                dilations=node.attr('dilations'),
+                kernel_shape=kernel_shape[-2:],
+                strides=node.attr('strides'),
+                group=node.attr('groups'),
+                pads=node.attr('paddings') + node.attr('output_padding'),
+                output_padding=node.attr('output_padding'))
+        else:
+            node = graph.make_node(
+                'ConvTranspose',
+                inputs=node.input('Input') + node.input('Filter'),
+                outputs=node.output('Output'),
+                dilations=node.attr('dilations'),
+                kernel_shape=kernel_shape[-2:],
+                strides=node.attr('strides'),
+                group=node.attr('groups'),
+                pads=node.attr('paddings') + node.attr('paddings'))
 
 
 @op_mapper('pool2d')
@@ -452,6 +465,8 @@ class RNN():
 
         if node.attr('mode') == 'LSTM':
             reform_permutation = [(0, 1), (3, 4), (1, 3)]
+        elif node.attr('mode') == 'GRU':
+            reform_permutation = [(1, 2), (0, 1), (2, 3)]
         bidirect_len = 4 if node.attr('is_bidirec') else 2
         all_layer_param_len = len(node.input('WeightList'))
         weight_list = node.input('WeightList')[:all_layer_param_len // 2]
@@ -490,46 +505,86 @@ class RNN():
 
     @classmethod
     def make_init_param_inputs(cls, graph, node, layer):
-        all_init_h, all_init_c = node.input('PreState')
-        bidirect_len = 2 if node.attr('is_bidirec') else 1
-        init_h = mapper_helper.slice_helper(
-            graph, all_init_h, [0], [layer * bidirect_len],
-            [layer * bidirect_len + bidirect_len])
-        init_c = mapper_helper.slice_helper(
-            graph, all_init_c, [0], [layer * bidirect_len],
-            [layer * bidirect_len + bidirect_len])
-        return [init_h, init_c]
+        if node.attr('mode') == 'LSTM':
+            all_init_h, all_init_c = node.input('PreState')
+            bidirect_len = 2 if node.attr('is_bidirec') else 1
+            init_h = mapper_helper.slice_helper(
+                graph, all_init_h, [0], [layer * bidirect_len],
+                [layer * bidirect_len + bidirect_len])
+            init_c = mapper_helper.slice_helper(
+                graph, all_init_c, [0], [layer * bidirect_len],
+                [layer * bidirect_len + bidirect_len])
+            return [init_h, init_c]
+        elif node.attr('mode') == 'GRU':
+            all_init_h = node.input('PreState', 0)
+            bidirect_len = 2 if node.attr('is_bidirec') else 1
+            init_h = mapper_helper.slice_helper(
+                graph, all_init_h, [0], [layer * bidirect_len],
+                [layer * bidirect_len + bidirect_len])
+            return [init_h]
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
         mode = node.attr('mode')
-        utils.compare_attr(mode, 'LSTM', 'mode', 'equal')
         hidden_size = node.attr('hidden_size')
         num_layers = node.attr('num_layers')
-        h_outs = []
-        c_outs = []
         prev_output = node.input('Input', 0)
-        for layer in range(num_layers):
-            param_inputs = cls.make_param_inputs(graph, node, layer,
-                                                 hidden_size, num_layers)
-            init_param_inputs = cls.make_init_param_inputs(graph, node, layer)
-            if layer + 1 < num_layers:
-                rnn_outputs = 3
-                output_y = None
-            else:
-                rnn_outputs = [1] + node.output('State')
-                output_y = node.output('Out')
-            prev_output, h_out, c_out = graph.make_node(
-                node.attr('mode'),
-                inputs=[prev_output] + param_inputs + init_param_inputs,
-                outputs=rnn_outputs,
-                direction='bidirectional'
-                if node.attr('is_bidirec') else 'forward',
-                hidden_size=node.attr('hidden_size'))
-            prev_output = graph.make_node(
-                'Transpose', inputs=[prev_output], perm=[0, 2, 1, 3])
+        if node.attr('mode') == 'LSTM':
+            for layer in range(num_layers):
+                param_inputs = cls.make_param_inputs(graph, node, layer,
+                                                     hidden_size, num_layers)
+                init_param_inputs = cls.make_init_param_inputs(graph, node,
+                                                               layer)
+                if layer + 1 < num_layers:
+                    rnn_outputs = 3
+                    output_y = None
+                else:
+                    rnn_outputs = [1] + node.output('State')
+                    output_y = node.output('Out')
+                prev_output, h_out, c_out = graph.make_node(
+                    node.attr('mode'),
+                    inputs=[prev_output] + param_inputs + init_param_inputs,
+                    outputs=rnn_outputs,
+                    direction='bidirectional'
+                    if node.attr('is_bidirec') else 'forward',
+                    hidden_size=node.attr('hidden_size'))
+                prev_output = graph.make_node(
+                    'Transpose', inputs=[prev_output], perm=[0, 2, 1, 3])
 
-            prev_shape = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[0, 0, -1])
-            prev_output = graph.make_node(
-                'Reshape', inputs=[prev_output, prev_shape], outputs=output_y)
+                prev_shape = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0, 0, -1])
+                prev_output = graph.make_node(
+                    'Reshape',
+                    inputs=[prev_output, prev_shape],
+                    outputs=output_y)
+        elif node.attr('mode') == 'GRU':
+            for layer in range(num_layers):
+                param_inputs = cls.make_param_inputs(graph, node, layer,
+                                                     hidden_size, num_layers)
+                init_param_inputs = cls.make_init_param_inputs(graph, node,
+                                                               layer)
+                if layer + 1 < num_layers:
+                    rnn_outputs = 2
+                    output_y = None
+                else:
+                    rnn_outputs = [1] + node.output('State')
+                    output_y = node.output('Out')
+                attrs = {
+                    'direction': 'bidirectional'
+                    if node.attr('is_bidirec') else 'forward',
+                    'hidden_size': node.attr('hidden_size'),
+                    'linear_before_reset': 1,
+                }
+                prev_output, h_out = graph.make_node(
+                    node.attr('mode'),
+                    inputs=[prev_output] + param_inputs + init_param_inputs,
+                    outputs=rnn_outputs,
+                    attrs=attrs)
+                prev_output = graph.make_node(
+                    'Transpose', inputs=[prev_output], perm=[0, 2, 1, 3])
+                prev_shape = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0, 0, -1])
+                prev_output = graph.make_node(
+                    'Reshape',
+                    inputs=[prev_output, prev_shape],
+                    outputs=output_y)
