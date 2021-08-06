@@ -72,6 +72,7 @@ class ONNXGraph(Graph):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.ctx = paddle_graph
+        self.update_opset_version()
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -179,6 +180,9 @@ class ONNXGraph(Graph):
             self.add_output_node(opt.layer_name,
                                  opt.attr('shape'), opt.attr('dtype'))
 
+    def update_opset_version(self):
+        node_map = self.ctx.node_map
+        self.opset_version = OpMapper.get_recommend_opset_version(node_map, self.opset_version)
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
