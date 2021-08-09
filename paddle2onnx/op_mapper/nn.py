@@ -64,15 +64,28 @@ class ConvTranspose():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
-        node = graph.make_node(
-            'ConvTranspose',
-            inputs=node.input('Input') + node.input('Filter'),
-            outputs=node.output('Output'),
-            dilations=node.attr('dilations'),
-            kernel_shape=kernel_shape[-2:],
-            strides=node.attr('strides'),
-            group=node.attr('groups'),
-            pads=node.attr('paddings') + node.attr('paddings'))
+        output_padding=node.attr('output_padding')
+        if len(node.attr('output_padding')) > 0:
+            node = graph.make_node(
+                'ConvTranspose',
+                inputs=node.input('Input') + node.input('Filter'),
+                outputs=node.output('Output'),
+                dilations=node.attr('dilations'),
+                kernel_shape=kernel_shape[-2:],
+                strides=node.attr('strides'),
+                group=node.attr('groups'),
+                pads=node.attr('paddings') + node.attr('output_padding'),
+                output_padding=node.attr('output_padding'))
+        else:
+            node = graph.make_node(
+                'ConvTranspose',
+                inputs=node.input('Input') + node.input('Filter'),
+                outputs=node.output('Output'),
+                dilations=node.attr('dilations'),
+                kernel_shape=kernel_shape[-2:],
+                strides=node.attr('strides'),
+                group=node.attr('groups'),
+                pads=node.attr('paddings') + node.attr('paddings'))
 
 
 @op_mapper('pool2d')
