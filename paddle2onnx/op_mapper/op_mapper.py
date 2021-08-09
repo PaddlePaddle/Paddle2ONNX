@@ -92,7 +92,7 @@ class OpMapper(object):
                     opset_dict[version] = (v, self.kwargs)
 
     @staticmethod
-    def mapping(graph, node, combiane_custom=False):
+    def mapping(graph, node, combine_custom=False):
         try:
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
                 if combiane_custom:
