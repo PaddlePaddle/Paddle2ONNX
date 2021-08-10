@@ -95,7 +95,7 @@ class OpMapper(object):
     def mapping(graph, node, combine_custom=False):
         try:
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
-                if combiane_custom:
+                if combine_custom:
                     opsets = OpMapper.OPSETS[node.type]
                     versions = list(opsets.keys())
                     convert_version = get_max_support_version(versions,
