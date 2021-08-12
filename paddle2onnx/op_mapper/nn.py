@@ -65,7 +65,7 @@ class ConvTranspose():
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
         output_padding=node.attr('output_padding')
-        if len(node.attr('output_padding')) > 0:
+        if output_padding and len(node.attr('output_padding')) > 0:
             node = graph.make_node(
                 'ConvTranspose',
                 inputs=node.input('Input') + node.input('Filter'),
