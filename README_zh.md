@@ -56,6 +56,7 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 |--save_file | 指定转换后的模型保存目录路径 |
 |--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
 |--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
+--enable_paddle_fallback| **[可选]**  配置custom op是否使用paddle_fallback模式导出, 默认为False|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
 - PaddlePaddle模型的两种存储形式：
