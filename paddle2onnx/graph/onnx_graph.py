@@ -70,9 +70,10 @@ class ONNXNode(Node):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, paddle_graph, opset_version, block=None):
+    def __init__(self, paddle_graph, opset_version, operator_export_type="ONNX" ,block=None):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
+        self.operator_export_type = operator_export_type
         self.ctx = paddle_graph
         self.custom = []
         self.update_opset_version()
@@ -195,7 +196,7 @@ class ONNXGraph(Graph):
         OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
         for name, node in list(node_map.items()):
-            OpMapper.mapping(self, node)
+            OpMapper.mapping(self, node, self.operator_export_type)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(
@@ -235,8 +236,8 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     @staticmethod
-    def build(paddle_graph, opset_version, verbose=False):
-        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
+    def build(paddle_graph, opset_version, operator_export_type="ONNX", verbose=False):
+        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version, operator_export_type=operator_export_type)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)

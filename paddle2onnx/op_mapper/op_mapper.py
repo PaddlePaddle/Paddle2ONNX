@@ -92,10 +92,10 @@ class OpMapper(object):
                     opset_dict[version] = (v, self.kwargs)
 
     @staticmethod
-    def mapping(graph, node, combine_custom=False):
+    def mapping(graph, node, operator_export_type="ONNX"):
         try:
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:
-                if combine_custom:
+                if operator_export_type in ["PaddleFallback"]:
                     opsets = OpMapper.OPSETS[node.type]
                     versions = list(opsets.keys())
                     convert_version = get_max_support_version(versions,
