@@ -18,7 +18,8 @@ import numpy as np
 import paddle
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
-
+from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 class BoxClip(CustomPaddleOp):
     def __init__(self, node, **kw):
@@ -43,5 +44,13 @@ class BoxClip(CustomPaddleOp):
 
         return {'Output': [cliped_box]}
 
-
+@op_mapper('box_clip')
+class Boxclip:
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'box_clip',
+            inputs=node.input('Input')+node.input('ImInfo'),
+            outputs=node.output('Output'),
+            domain = 'custom')
 register_custom_paddle_op('box_clip', BoxClip)
