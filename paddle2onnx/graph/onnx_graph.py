@@ -26,9 +26,10 @@ from paddle2onnx.utils import check_model, logging
 
 
 class ONNXNode(Node):
-    def __init__(self, op_type, inputs, outputs, attrs, layer_name):
+    def __init__(self, op_type, inputs, outputs, attrs, layer_name, domain):
         super(ONNXNode, self).__init__(op_type, inputs, outputs, attrs,
-                                       layer_name, NodeDomain.ONNX)
+                                       layer_name, domain)
+        self.domain = domain
         self.onnx_node = self.make_onnx_node()
 
     def make_onnx_constant_node(self):
@@ -63,15 +64,18 @@ class ONNXNode(Node):
                 inputs=self.inputs,
                 outputs=self.outputs,
                 name=self.layer_name,
+                domain=self.domain,
                 **self.attrs)
         return onnx_node
 
 
 class ONNXGraph(Graph):
-    def __init__(self, paddle_graph, opset_version, block=None):
+    def __init__(self, paddle_graph, opset_version, operator_export_type="ONNX" ,block=None):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
+        self.operator_export_type = operator_export_type
         self.ctx = paddle_graph
+        self.custom = []
         self.update_opset_version()
 
     def __str__(self):
@@ -91,9 +95,14 @@ class ONNXGraph(Graph):
                   outputs=[],
                   attrs=None,
                   layer_name=None,
+                  domain=None,
                   **kw):
         if layer_name is None:
             layer_name = self.generate_node_name(op_type)
+
+        if domain is not None:
+            if domain not in self.custom:
+                self.custom.append(domain)
 
         if attrs is None:
             attrs = kw
@@ -124,7 +133,7 @@ class ONNXGraph(Graph):
         else:
             real_outputs = outputs
 
-        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name)
+        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name, domain)
 
         self.insert_node(node)
         if len(node.outputs) == 1:
@@ -149,7 +158,7 @@ class ONNXGraph(Graph):
             attrs = node.attrs
         attrs.update(kw)
 
-        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name)
+        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name, node.domain)
         self.insert_node(node)
         return node
 
@@ -187,7 +196,7 @@ class ONNXGraph(Graph):
         OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
         for name, node in list(node_map.items()):
-            OpMapper.mapping(self, node)
+            OpMapper.mapping(self, node, self.operator_export_type)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(
@@ -216,6 +225,8 @@ class ONNXGraph(Graph):
             outputs=self.output_nodes)
 
         opset_imports = [helper.make_opsetid("", self.opset_version)]
+        for custom_domain in self.custom:
+            opset_imports.append(helper.make_opsetid(custom_domain, 1))
         onnx_proto = helper.make_model(
             onnx_graph, producer_name=PRODUCER, opset_imports=opset_imports)
 
@@ -225,8 +236,8 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     @staticmethod
-    def build(paddle_graph, opset_version, verbose=False):
-        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version)
+    def build(paddle_graph, opset_version, operator_export_type="ONNX", verbose=False):
+        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version, operator_export_type=operator_export_type)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
