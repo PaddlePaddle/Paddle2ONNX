@@ -19,7 +19,7 @@ import paddle
 from onnxruntime import InferenceSession
 
 
-def compare(result, expect, delta=1e-6, rtol=1e-5):
+def compare(result, expect, delta=1e-10, rtol=1e-10):
     """
     比较函数
     :param result: 输入值
@@ -76,7 +76,7 @@ class APIOnnx(object):
         self.pwd = os.getcwd()
         self.delta = delta
         self.rtol = rtol
-        self.static = True
+        self.static = False
         self.kwargs_dict = {"input_data": ()}
         self._shape = []
         self._dtype = []
@@ -149,7 +149,7 @@ class APIOnnx(object):
         self._mkdir()
         for place in self.places:
             paddle.set_device(place)
-
+            logging.info("begin to test device: {}".format(place))
             exp = self._mk_dygraph_exp()
             res_fict = {}
             # export onnx models and make onnx res
@@ -163,6 +163,11 @@ class APIOnnx(object):
                 logging.info("compare dygraph exp with onnx version {} res...".
                              format(str(v)))
                 compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                logging.info(
+                    "comparing dygraph exp with onnx version {} res is done.".
+                    format(str(v)))
             # dygraph model jit save
-            if self.static is True:
+            if self.static is True and place == 'gpu':
+                logging.info("start to jit save...")
                 self._dygraph_jit_save()
+                logging.info("jit save is already...")
