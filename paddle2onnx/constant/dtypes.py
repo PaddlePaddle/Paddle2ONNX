@@ -14,8 +14,8 @@
 
 import numpy as np
 import paddle.fluid.core as core
-from paddle2onnx.onnx_helper import helper
-from paddle2onnx.onnx_helper.onnx_pb import TensorProto
+from onnx import helper
+from onnx import TensorProto
 
 ONNX = TensorProto
 
@@ -26,12 +26,14 @@ DTYPE_PADDLE_ONNX_MAP = {
     TensorProto.INT32: core.VarDesc.VarType.INT32,
     TensorProto.INT64: core.VarDesc.VarType.INT64,
     TensorProto.BOOL: core.VarDesc.VarType.BOOL,
+    TensorProto.UINT8: core.VarDesc.VarType.UINT8,
     core.VarDesc.VarType.FP32: TensorProto.FLOAT,
     core.VarDesc.VarType.FP64: TensorProto.DOUBLE,
     core.VarDesc.VarType.INT16: TensorProto.INT16,
     core.VarDesc.VarType.INT32: TensorProto.INT32,
     core.VarDesc.VarType.INT64: TensorProto.INT64,
     core.VarDesc.VarType.BOOL: TensorProto.BOOL,
+    core.VarDesc.VarType.UINT8: TensorProto.UINT8,
 }
 
 DTYPE_PADDLE_NUMPY_MAP = {

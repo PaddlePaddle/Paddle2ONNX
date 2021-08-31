@@ -244,6 +244,11 @@ class Slice():
             if e > input_shape[axis] and input_shape[axis] > 0:
                 ends[i] = input_shape[axis]
 
+        for i, s in enumerate(starts):
+            axis = axes[i]
+            if s < 0 and input_shape[axis] > 0:
+                starts[i] = input_shape[axis] + s
+
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': axes})
@@ -1022,12 +1027,21 @@ class Resize():
                 in_shape, out_shape = cls.compute_output_shape_by_size(graph,
                                                                        node)
                 inputs += [empty_node, out_shape]
-        graph.make_node(
-            'Resize',
-            inputs=inputs,
-            outputs=node.output('Out'),
-            mode=resize_type,
-            coordinate_transformation_mode=coordinate_transformation_mode)
+        if resize_type == 'nearest' and coordinate_transformation_mode == 'asymmetric':
+            graph.make_node(
+                'Resize',
+                inputs=inputs,
+                outputs=node.output('Out'),
+                mode=resize_type,
+                coordinate_transformation_mode=coordinate_transformation_mode,
+                nearest_mode='floor')
+        else:
+            graph.make_node(
+                'Resize',
+                inputs=inputs,
+                outputs=node.output('Out'),
+                mode=resize_type,
+                coordinate_transformation_mode=coordinate_transformation_mode)
 
     @classmethod
     def compute_output_shape(cls, graph, node, opset_version=10):
@@ -1079,6 +1093,7 @@ class Resize():
             'Concat', inputs=[shape_node1, shape_node2], axis=0)
         return shape_node0, shape_node3
 
+
 @op_mapper('pixel_shuffle')
 class PixelShuffle():
     support_opset_verison_range = (11, 12)
@@ -1093,4 +1108,3 @@ class PixelShuffle():
             outputs=node.output('Out'),
             blocksize=upscale_factor,
             mode='CRD')
-

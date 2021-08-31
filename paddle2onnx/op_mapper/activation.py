@@ -82,8 +82,10 @@ class PRelu():
 
         slope_node = node.input('Alpha')[0]
         if len(input_shape) != len(slope_shape):
+            assert len(slope_shape) == 1, "Slope shape is not expected for prelu"
             shape_node = graph.make_node('Shape', inputs=node.input('X'))
-            axes = [i for i in range(len(slope_shape), len(input_shape))]
+            axes = [i for i in range(len(input_shape))]
+            del axes[1]
             unsqueezed_slope = graph.make_node(
                 'Unsqueeze', inputs=[node.input('Alpha')[0]], axes=axes)
             slope_node = graph.make_node(
@@ -100,8 +102,10 @@ class PRelu():
 
         slope_node = node.input('Alpha')[0]
         if len(input_shape) != len(slope_shape):
+            assert len(slope_shape) == 1, "Slope shape is not expected for prelu"
             shape_node = graph.make_node('Shape', inputs=node.input('X'))
-            value = [i for i in range(len(slope_shape), len(input_shape))]
+            value = [i for i in range(len(input_shape))]
+            del value[1]
             axes = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=value)
             unsqueezed_slope = graph.make_node(

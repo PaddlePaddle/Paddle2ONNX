@@ -64,6 +64,12 @@ def arg_parser():
         help="whether check onnx model validity, if True, please 'pip install onnx'"
     )
     parser.add_argument(
+        "--enable_paddle_fallback",
+        type=ast.literal_eval,
+        default=False,
+        help="whether use PaddleFallback for custom op, default is False"
+    )
+    parser.add_argument(
         "--version",
         "-v",
         action="store_true",
@@ -77,7 +83,8 @@ def program2onnx(model_dir,
                  model_filename=None,
                  params_filename=None,
                  opset_version=9,
-                 enable_onnx_checker=False):
+                 enable_onnx_checker=False,
+                 operator_export_type="ONNX"):
     try:
         import paddle
     except:
@@ -111,7 +118,8 @@ def program2onnx(model_dir,
         feed_var_names=feed_var_names,
         target_vars=fetch_vars,
         opset_version=opset_version,
-        enable_onnx_checker=enable_onnx_checker)
+        enable_onnx_checker=enable_onnx_checker,
+        operator_export_type=operator_export_type)
 
 
 def main():
@@ -133,13 +141,18 @@ def main():
 
     assert args.model_dir is not None, "--model_dir should be defined while translating paddle model to onnx"
     assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
+    
+    operator_export_type = "ONNX"
+    if args.enable_paddle_fallback:
+        operator_export_type = "PaddleFallback"
     program2onnx(
         args.model_dir,
         args.save_file,
         args.model_filename,
         args.params_filename,
         opset_version=args.opset_version,
-        enable_onnx_checker=args.enable_onnx_checker)
+        enable_onnx_checker=args.enable_onnx_checker,
+        operator_export_type=operator_export_type)
 
 
 if __name__ == "__main__":

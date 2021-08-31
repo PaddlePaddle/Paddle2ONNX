@@ -18,6 +18,8 @@ import numpy as np
 import paddle
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
+from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 class DistributeFpnProposals(CustomPaddleOp):
@@ -64,6 +66,20 @@ class DistributeFpnProposals(CustomPaddleOp):
             rois_idx_order, axis=0, sorted=True, largest=False, k=size)
         #rois_idx_restore = paddle.cast(rois_idx_restore, dtype='int32')
         return {'MultiFpnRois': rois, 'RestoreIndex': [rois_idx_restore]}
+
+@op_mapper('distribute_fpn_proposals')
+class Distributefpnproposals:
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'distribute_fpn_proposals',
+            inputs=node.input('FpnRois'),
+            outputs=node.output('MultiFpnRois') + node.output('RestoreIndex'),
+            max_level = node.attr('max_level'),
+            min_level = node.attr('min_level'),
+            refer_level = node.attr('refer_level'),
+            refer_scale = node.attr('refer_scale'),
+            domain = 'custom')
 
 
 register_custom_paddle_op('distribute_fpn_proposals', DistributeFpnProposals)
