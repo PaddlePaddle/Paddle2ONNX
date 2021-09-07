@@ -61,6 +61,7 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 |--save_file | the directory path for the exported ONNX model|
 |--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
 |--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|
+|--enable_paddle_fallback| **[Optional]**  Whether custom op is exported using paddle_fallback mode. Default value is False|
 |--version |**[Optional]** check the version of paddle2onnx |
 
 - Two types of PaddlePaddle models

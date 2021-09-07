@@ -20,6 +20,8 @@ from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
 from paddle2onnx import utils
 from paddle2onnx.constant import dtypes
+from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 class DeformConv2d(CustomPaddleOp):
@@ -276,5 +278,19 @@ class DeformConv2d(CustomPaddleOp):
                                              offset_w * self.kernel_size))
         return x_offset
 
-
+@op_mapper('deformable_conv')
+class Deformconv2d:
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'deformable_conv',
+            inputs=node.input('Input')+node.input('Filter')+node.input('Mask')+node.input('Offset'),
+            outputs=node.output('Output'),
+            stride = node.attr('strides'),
+            padding = node.attr('paddings'),
+            groups = node.attr('groups'),
+            dilation = node.attr('dilations'),
+            deformable_groups = node.attr('deformable_groups'),
+            domain = 'custom')
+            
 register_custom_paddle_op('deformable_conv', DeformConv2d)
