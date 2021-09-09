@@ -21,7 +21,7 @@ import numpy as np
 from paddle2onnx.graph import Node, Graph
 from paddle2onnx.constant import NodeDomain, PRODUCER, dtypes
 from paddle2onnx.op_mapper import OpMapper
-from paddle2onnx.onnx_helper import helper
+from onnx import helper
 from paddle2onnx.utils import check_model, logging
 
 
