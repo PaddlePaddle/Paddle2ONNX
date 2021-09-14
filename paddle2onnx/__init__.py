@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 
-__version__ = "0.6"
+__version__ = "0.8"
 
 from .convert import dygraph2onnx, program2onnx
 from .op_mapper import register_op_mapper
