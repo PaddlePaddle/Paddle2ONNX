@@ -43,6 +43,25 @@ class Equal():
             outputs=node.output('Out'))
 
 
+@op_mapper('not_equal')
+class NotEqual():
+    support_opset_verison_range = (12, )
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        equal_val = graph.make_node(
+            'Equal', inputs=[node.input('X', 0), node.input('Y', 0)])
+        k_node = graph.make_node(
+            'Cast', inputs=[equal_val], to=dtypes.ONNX.INT64)
+        const = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=1)
+        sub_ = graph.make_node('Sub', inputs=[const, k_node])
+        graph.make_node(
+            'Cast',
+            inputs=[sub_],
+            outputs=node.output('Out'),
+            to=dtypes.ONNX.BOOL)
+
+
 @op_mapper('greater_than')
 class GreaterThan():
     support_opset_verison_range = (1, )
