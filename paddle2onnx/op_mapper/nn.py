@@ -64,7 +64,7 @@ class ConvTranspose():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         kernel_shape = node.input_shape('Filter', 0)
-        output_padding=node.attr('output_padding')
+        output_padding = node.attr('output_padding')
         if output_padding and len(node.attr('output_padding')) > 0:
             node = graph.make_node(
                 'ConvTranspose',
@@ -173,7 +173,7 @@ class Pool():
                 raise Exception(
                     "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
                 )
-            elif graph.opset_version > 10:
+            elif graph.opset_version >= 10:
                 attrs['ceil_mode'] = node.attr('ceil_mode')
 
             if node.attr('pooling_type') == 'avg':
