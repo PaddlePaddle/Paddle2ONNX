@@ -550,6 +550,32 @@ class FullLike():
             value=np.array(value).astype(np_dtype))
 
 
+@op_mapper('fill_zeros_like')
+class FullZeroLike():
+    '''
+    fill_any_like is kernel for paddle op::full_like & ones_like
+    '''
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        value = 0
+        dtype = node.attr('dtype')
+        input_dtype = node.input_var('X', 0).dtype
+        if dtype is None:
+            dtype = input_dtype
+        np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
+        onnx_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+        graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape_node],
+            outputs=node.output('Out'),
+            dims=[1],
+            dtype=onnx_dtype,
+            value=np.array(value).astype(np_dtype))
+
+
 @op_mapper('gather')
 class Gather():
     support_opset_verison_range = (1, 12)
