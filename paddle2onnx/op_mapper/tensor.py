@@ -962,6 +962,7 @@ class Resize():
                         'dtype': dtypes.ONNX.FLOAT,
                         'value': [1, 1, scale_h, scale_w]
                     })
+                inputs.append(scale_node)
             else:
                 raise Exception("Unexpected situation happend")
         graph.make_node(
