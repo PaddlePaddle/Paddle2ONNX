@@ -949,7 +949,7 @@ class Resize():
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
-             if isinstance(scale, (tuple, list)):
+            if isinstance(scale, (tuple, list)):
                 scale_h = scale[0]
                 scale_w = scale[1]
             else:
