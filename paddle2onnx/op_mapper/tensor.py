@@ -949,12 +949,18 @@ class Resize():
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, (tuple, list)):
+                scale_h = scale[0]
+                scale_w = scale[1]
+            else:
+                scale_h = scale
+                scale_w = scale
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
                     attrs={
                         'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
+                        'value': [1, 1, scale_h, scale_w]
                     })
                 inputs.append(scale_node)
             else:
