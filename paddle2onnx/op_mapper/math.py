@@ -94,6 +94,14 @@ class Acos():
         graph.make_node(
             'Acos', inputs=node.input('X'), outputs=node.output('Out'))
 
+@op_mapper('asin')
+class Asin():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Asin', inputs=node.input('X'), outputs=node.output('Out'))
 
 @op_mapper(
     [
