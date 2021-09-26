@@ -497,6 +497,21 @@ class ArgMax():
                 'keepdims': 0
             })
 
+@op_mapper('arg_min')
+class ArgMin():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'ArgMin',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            attrs={
+                'axis': node.attr('axis'),
+                'keepdims': 0
+            })
+
 
 #
 #@op_mapper('scale')
