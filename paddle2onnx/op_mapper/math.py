@@ -126,6 +126,26 @@ class Ceil():
             'Ceil', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('cos')
+class Cos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Cos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cosh')
+class Cosh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper(
     [
         'elementwise_add',
