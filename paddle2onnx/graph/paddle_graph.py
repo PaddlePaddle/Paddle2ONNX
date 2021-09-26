@@ -225,7 +225,7 @@ class PaddleGraph(Graph):
             program = layer.program()
             parameters_dict = {}
             pruned_vars = program.global_block().vars
-            for param in layer.parameters():
+            for param in layer.parameters() + layer.buffers():
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
                     continue
                 if not param.persistable:
@@ -258,7 +258,7 @@ class PaddleGraph(Graph):
                 layer, input_spec, output_spec)
             parameters_dict = {}
             pruned_vars = program.global_block().vars
-            for param in layer.parameters():
+            for param in layer.parameters() + layer.buffers():
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
                     continue
                 if not param.persistable:
