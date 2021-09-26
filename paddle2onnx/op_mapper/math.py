@@ -103,6 +103,15 @@ class Asin():
         graph.make_node(
             'Asin', inputs=node.input('X'), outputs=node.output('Out'))
 
+@op_mapper('atan')
+class Atan():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Atan', inputs=node.input('X'), outputs=node.output('Out'))
+
 @op_mapper(
     [
         'elementwise_add',
