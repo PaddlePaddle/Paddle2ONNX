@@ -85,6 +85,15 @@ class Abs:
         graph.make_node(
             'Abs', inputs=node.input('X'), outputs=node.output('Out'))
 
+@op_mapper('acos')
+class Acos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Acos', inputs=node.input('X'), outputs=node.output('Out'))
+
 
 @op_mapper(
     [
