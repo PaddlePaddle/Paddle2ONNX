@@ -86,6 +86,66 @@ class Abs:
             'Abs', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('acos')
+class Acos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Acos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('asin')
+class Asin():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Asin', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('atan')
+class Atan():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Atan', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('ceil')
+class Ceil():
+    supports_opset_version_range = (6, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Ceil', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cos')
+class Cos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Cos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cosh')
+class Cosh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper(
     [
         'elementwise_add',
@@ -119,8 +179,8 @@ class ElementwiseOps():
         x_shape = node.input_shape('X', 0)
         y_shape = node.input_shape('Y', 0)
 
-        if axis == -1 or axis == (len(x_shape) - 1
-                                  ) or len(x_shape) == len(y_shape):
+        if axis == -1 or axis == (
+                len(x_shape) - 1) or len(x_shape) == len(y_shape):
             onnx_node = graph.make_node(
                 op_type, inputs=[x, y], outputs=node.output('Out'))
         else:
@@ -154,8 +214,8 @@ class ElementWiseFloorDiv():
         is_int = False
         if x_dtype.count('int') > 0 and y_dtype.count('int') > 0:
             is_int = True
-        if axis == -1 or axis == (len(x_shape) - 1
-                                  ) or len(x_shape) == len(y_shape):
+        if axis == -1 or axis == (
+                len(x_shape) - 1) or len(x_shape) == len(y_shape):
             if is_int:
                 graph.make_node(
                     'Div', inputs=[x, y], outputs=node.output('Out'))
@@ -432,8 +492,26 @@ class ArgMax():
             'ArgMax',
             inputs=node.input('X'),
             outputs=node.output('Out'),
-            attrs={'axis': node.attr('axis'),
-                   'keepdims': 0})
+            attrs={
+                'axis': node.attr('axis'),
+                'keepdims': node.attr('keepdims')
+            })
+
+
+@op_mapper('arg_min')
+class ArgMin():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'ArgMin',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            attrs={
+                'axis': node.attr('axis'),
+                'keepdims': node.attr('keepdims')
+            })
 
 
 #
@@ -521,15 +599,17 @@ class Scale():
         else:
             scale_node = graph.make_node(
                 'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [scale]})
+                attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': [scale]
+                })
             bias_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [bias]})
+                'Constant', attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': [bias]
+                })
             cast_node = graph.make_node(
-                'Cast', inputs=node.input('X'),
-                attrs={'to': dtypes.ONNX.FLOAT})
+                'Cast', inputs=node.input('X'), attrs={'to': dtypes.ONNX.FLOAT})
             if node.attr('bias_after_scale'):
                 node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(
