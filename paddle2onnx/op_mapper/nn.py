@@ -187,7 +187,7 @@ class Pool():
 
 @op_mapper('elu')
 class ELU():
-    support_opset_verision_range = (6, )
+    support_opset_verision_range = (1, 12)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -200,7 +200,7 @@ class ELU():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_verision_range = (9, )
+    support_opset_verision_range = (1, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
