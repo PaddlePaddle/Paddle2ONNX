@@ -497,6 +497,7 @@ class ArgMax():
                 'keepdims': 0
             })
 
+
 @op_mapper('arg_min')
 class ArgMin():
     support_opset_version_range = (1, 12)
@@ -511,6 +512,16 @@ class ArgMin():
                 'axis': node.attr('axis'),
                 'keepdims': 0
             })
+
+
+@op_mapper('erf')
+class Erf():
+    support_opset_verision_range = (9, 13)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Erf', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 #
