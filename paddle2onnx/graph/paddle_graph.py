@@ -239,6 +239,8 @@ class PaddleGraph(Graph):
             for param in layer.buffers():
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
                     continue
+                if not param.value().get_tensor()._is_initialized():
+                    continue
                 if param.name in pruned_vars:
                     parameters_dict[param.name] = {
                         'data': np.array(param.value().get_tensor()),
@@ -280,6 +282,8 @@ class PaddleGraph(Graph):
                     }
             for param in layer.buffers():
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
                     continue
                 if param.name in pruned_vars:
                     parameters_dict[param.name] = {
