@@ -86,6 +86,112 @@ class Abs:
             'Abs', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('erf')
+class Erf():
+    support_opset_verision_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Erf', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('isinf_v2')
+class IsInf_v2():
+    support_opset_verision_range = (10, 12)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        graph.make_node(
+            'IsInf', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('isnan')
+class IsInf():
+    support_opset_verision_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        isnan = graph.make_node('IsNaN', inputs=node.input('X'))
+        cast_node = graph.make_node(
+            'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
+        graph.make_node(
+            'ReduceMax', inputs=[cast_node], outputs=node.output('Out'))
+
+
+@op_mapper('isnan_v2')
+class IsNaN_v2():
+    support_opset_verision_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'IsNaN', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('less_than')
+class Less_than():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Less',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'),
+        )
+
+
+@op_mapper('log2')
+class Log2():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        two = graph.make_node(
+            'Constant', attrs={
+                'dtype': dtypes.ONNX.FLOAT,
+                'value': [2]
+            })
+        ln2 = graph.make_node('Log', inputs=[two])
+        lnx = graph.make_node('Log', inputs=node.input('X'))
+        graph.make_node('Div', inputs=[lnx, ln2], outputs=node.output('Out'))
+
+
+@op_mapper('logsumexp')
+class LogSumExp():
+    support_opset_verision_range = (1, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+
+        if node.attr('reduce_all'):
+            if not node.attr('keepdim'):
+                reduce_node = graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                )
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node],
+                    axes=[0],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ReduceLogSumExp',
+                inputs=node.input('X'),
+                keepdims=node.attr('keepdim'),
+                axes=node.attr('axis'),
+                outputs=node.output('Out'))
+
+
 @op_mapper(
     [
         'elementwise_add',
@@ -119,8 +225,8 @@ class ElementwiseOps():
         x_shape = node.input_shape('X', 0)
         y_shape = node.input_shape('Y', 0)
 
-        if axis == -1 or axis == (len(x_shape) - 1
-                                  ) or len(x_shape) == len(y_shape):
+        if axis == -1 or axis == (
+                len(x_shape) - 1) or len(x_shape) == len(y_shape):
             onnx_node = graph.make_node(
                 op_type, inputs=[x, y], outputs=node.output('Out'))
         else:
@@ -154,8 +260,8 @@ class ElementWiseFloorDiv():
         is_int = False
         if x_dtype.count('int') > 0 and y_dtype.count('int') > 0:
             is_int = True
-        if axis == -1 or axis == (len(x_shape) - 1
-                                  ) or len(x_shape) == len(y_shape):
+        if axis == -1 or axis == (
+                len(x_shape) - 1) or len(x_shape) == len(y_shape):
             if is_int:
                 graph.make_node(
                     'Div', inputs=[x, y], outputs=node.output('Out'))
@@ -432,8 +538,10 @@ class ArgMax():
             'ArgMax',
             inputs=node.input('X'),
             outputs=node.output('Out'),
-            attrs={'axis': node.attr('axis'),
-                   'keepdims': 0})
+            attrs={
+                'axis': node.attr('axis'),
+                'keepdims': node.attr('keepdims')
+            })
 
 
 #
@@ -521,15 +629,17 @@ class Scale():
         else:
             scale_node = graph.make_node(
                 'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [scale]})
+                attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': [scale]
+                })
             bias_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [bias]})
+                'Constant', attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': [bias]
+                })
             cast_node = graph.make_node(
-                'Cast', inputs=node.input('X'),
-                attrs={'to': dtypes.ONNX.FLOAT})
+                'Cast', inputs=node.input('X'), attrs={'to': dtypes.ONNX.FLOAT})
             if node.attr('bias_after_scale'):
                 node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(

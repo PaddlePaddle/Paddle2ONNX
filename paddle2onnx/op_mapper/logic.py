@@ -50,7 +50,8 @@ class NotEqual():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         equal_val = graph.make_node(
-            'Equal', inputs=[node.input('X', 0), node.input('Y', 0)])
+            'Equal', inputs=[node.input('X', 0),
+                             node.input('Y', 0)])
         k_node = graph.make_node(
             'Cast', inputs=[equal_val], to=dtypes.ONNX.INT64)
         const = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=1)
@@ -82,6 +83,28 @@ class LogicalAnd():
     def opset_1(cls, graph, node, **kw):
         onnx_node = graph.make_node(
             'And',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'))
+
+
+@op_mapper('logical_not')
+class LogicalNot():
+    support_opset_verision_range = (6, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        graph.make_node(
+            'Not', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('logical_or')
+class LogicalOr():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Or',
             inputs=[node.input('X', 0), node.input('Y', 0)],
             outputs=node.output('Out'))
 
