@@ -22,14 +22,16 @@ class Net(paddle.nn.Layer):
     simplr Net
     """
 
-    def __init__(self):
+    def __init__(self, axis=None, keepdim=False):
         super(Net, self).__init__()
+        self.axis = axis
+        self.keepdim = keepdim
 
     def forward(self, inputs):
         """
         forward
         """
-        x = paddle.argmin(inputs, axis=0)
+        x = paddle.argmin(inputs, axis=self.axis, keepdim=self.keepdim)
         return x
 
 
@@ -90,4 +92,51 @@ def test_argmin_12():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_argmin_keepdim():
+    """
+    api: paddle.argmin
+    op version: 12
+    """
+    op = Net(keepdim=True)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'argmin', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_argmin_axis():
+    """
+    api: paddle.argmin
+    op version: 12
+    """
+    op = Net(axis=1)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'argmin', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_argmin_axis_keepdim():
+    """
+    api: paddle.argmin
+    op version: 12
+    """
+    op = Net(axis=1, keepdim=True)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'argmin', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
     obj.run()

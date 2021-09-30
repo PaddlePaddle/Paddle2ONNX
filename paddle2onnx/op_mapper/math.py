@@ -504,14 +504,26 @@ class ArgMin():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        graph.make_node(
-            'ArgMin',
-            inputs=node.input('X'),
-            outputs=node.output('Out'),
-            attrs={
-                'axis': node.attr('axis'),
-                'keepdims': node.attr('keepdims')
-            })
+        if node.attr('flatten'):
+            flatten = graph.make_node('Flatten', inputs=node.input('X'), axis=0)
+            squeeze_node = graph.make_node('Squeeze', inputs=flatten)
+            graph.make_node(
+                'ArgMin', inputs=squeeze_node, outputs=node.output('Out'))
+        else:
+            if node.attr('keepdims'):
+                graph.make_node(
+                    'ArgMin',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=node.attr('axis'),
+                    keepdims=1)
+            else:
+                graph.make_node(
+                    'ArgMin',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=node.attr('axis'),
+                    keepdims=0)
 
 
 #
