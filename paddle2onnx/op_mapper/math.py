@@ -106,6 +106,16 @@ class Asin():
             'Asin', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('sinh')
+class Sinh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Sinh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('atan')
 class Atan():
     supports_opset_version_range = (7, 12)
@@ -144,6 +154,17 @@ class Cosh():
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('size')
+class Numel():
+    supports_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        graph.make_node(
+            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
 
 
 @op_mapper(
@@ -524,6 +545,106 @@ class ArgMin():
                     outputs=node.output('Out'),
                     axis=node.attr('axis'),
                     keepdims=0)
+
+
+@op_mapper('brelu')
+class Hardtanh():
+    support_opset_verision_range = (6, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        mapper_helper.clip_helper(graph, node.input('X', 0), node.attr('t_max'),
+                                  node.attr('t_min'), node.output('Out', 0))
+
+
+@op_mapper('mv')
+class Mv():
+    support_opset_verision_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'MatMul',
+            inputs=[node.input('X', 0),
+                    node.input('Vec', 0)],
+            outputs=node.output('Out'))
+
+
+@op_mapper('dot')
+class Dot():
+    support_opset_verision_range = (4, 12)
+
+    @classmethod
+    def opset_4(cls, graph, node, **kw):
+        list_node = []
+        input_shape = node.input_shape('X', 0)
+        for i in range(input_shape[0]):
+            start_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT32, value=[i])
+            temp_x = graph.make_node(
+                'Gather', inputs=[node.input('X', 0), start_node], axis=0)
+            temp_y = graph.make_node(
+                'Gather', inputs=[node.input('Y', 0), start_node], axis=0)
+            temp_y = graph.make_node('Transpose', inputs=temp_y)
+            temp_sum = graph.make_node('MatMul', inputs=[temp_x, temp_y])
+            list_node.append(temp_sum)
+        graph.make_node(
+            'Concat', inputs=list_node, axis=0, outputs=node.output('Out'))
+
+
+@op_mapper('dist')
+class Dist():
+    support_opset_verision_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        sub_node = graph.make_node(
+            'Sub', inputs=[node.input('X', 0),
+                           node.input('Y', 0)])
+        abs_node = graph.make_node('Abs', inputs=sub_node)
+        if node.attr('p') == 0:
+            sign_node = graph.make_node('Sign', inputs=abs_node)
+            sum_node = graph.make_node(
+                'ReduceSum', inputs=sign_node, keepdims=0)
+            graph.make_node(
+                'Unsqueeze',
+                axes=[0],
+                inputs=[sum_node],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('inf'):
+            max_node = graph.make_node(
+                'ReduceMax',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            graph.make_node(
+                'Unsqueeze',
+                axes=[0],
+                inputs=[max_node],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('-inf'):
+            min_node = graph.make_node(
+                'ReduceMin',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            graph.make_node(
+                'Unsqueeze',
+                axes=[0],
+                inputs=[min_node],
+                outputs=node.output('Out'))
+        else:
+            p = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('p'))
+            pow_node = graph.make_node(
+                'Pow',
+                inputs=[abs_node, p],
+            )
+            sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
+            sum_node = graph.make_node('Unsqueeze', axes=[0], inputs=[sum_node])
+            p_1 = graph.make_node('Reciprocal', inputs=p)
+            graph.make_node(
+                'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
 
 
 #

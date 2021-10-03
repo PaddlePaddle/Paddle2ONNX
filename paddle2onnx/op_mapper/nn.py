@@ -198,12 +198,22 @@ class ELU():
             alpha=node.attr('alpha'))
 
 
+@op_mapper('softsign')
+class SoftSign():
+    support_opset_verision_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Softsign', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('hard_shrink')
 class Hardshrink():
     support_opset_verision_range = (1, 12)
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'Shrink',
             inputs=node.input('X'),
@@ -222,6 +232,19 @@ class Norm():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('log_softmax')
+class LogSoftmax():
+    support_opset_verision_range = (6, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        graph.make_node(
+            'LogSoftmax',
+            inputs=node.input('X'),
+            axis=node.attr('axis'),
+            outputs=node.output('Out'))
 
 
 @op_mapper('layer_norm')

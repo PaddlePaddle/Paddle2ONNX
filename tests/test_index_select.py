@@ -22,110 +22,89 @@ class Net(paddle.nn.Layer):
     simplr Net
     """
 
-    def __init__(self, mode='constant'):
+    def __init__(self, axis=0):
         super(Net, self).__init__()
-        self.mode = mode
-        self._pad = paddle.nn.Pad1D(padding=1, mode=self.mode)
+        self.axis = axis
 
     def forward(self, inputs):
         """
         forward
         """
-        x = self._pad(inputs)
+        x = paddle.index_select(
+            inputs, index=paddle.to_tensor([1, 2]), axis=self.axis)
         return x
 
 
-def test_Pad1D_9():
+def test_gather_9():
     """
-    api: paddle.Pad1D
+    api: paddle.gather
     op version: 9
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad1D', [9])
+    obj = APIOnnx(op, 'gather', [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_Pad1D_10():
+def test_gather_10():
     """
-    api: paddle.nn.Pad1D
+    api: paddle.gather
     op version: 10
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad1D', [10])
+    obj = APIOnnx(op, 'gather', [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_Pad1D_11():
+def test_gather_11():
     """
-    api: paddle.nn.Pad1D
+    api: paddle.gather
     op version: 11
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad1D', [11])
+    obj = APIOnnx(op, 'gather', [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_Pad1D_12():
+def test_gather_12():
     """
-    api: paddle.nn.Pad1D
+    api: paddle.gather
     op version: 12
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad1D', [12])
+    obj = APIOnnx(op, 'gather', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_Pad1D_reflect():
+def test_gather_axis():
     """
-    api: paddle.nn.Pad1D
+    api: paddle.gather
     op version: 12
     """
-    op = Net(mode='reflect')
+    op = Net(axis=1)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad1D', [12])
+    obj = APIOnnx(op, 'gather', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
-    obj.run()
-
-
-def test_Pad1D_replicate():
-    """
-    api: paddle.nn.Pad1D
-    op version: 12
-    """
-    op = Net(mode='replicate')
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad1D', [12])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()

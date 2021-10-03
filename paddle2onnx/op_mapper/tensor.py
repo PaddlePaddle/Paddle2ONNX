@@ -820,6 +820,10 @@ class Pad():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        if node.attr('mode') == 'replicate':
+            mode = 'edge'
+        else:
+            mode = node.attr('mode')
         pads = cls.convert_padding(node, **kw)
         value = None
         if node.attr('pad_value') is not None:
@@ -837,6 +841,10 @@ class Pad():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         pads = cls.convert_padding(node, **kw)
+        if node.attr('mode') == 'replicate':
+            mode = 'edge'
+        else:
+            mode = node.attr('mode')
         pads_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': pads})
