@@ -834,7 +834,7 @@ class Pad():
             'Pad',
             inputs=node.input('X'),
             outputs=node.output('Out'),
-            mode=node.attr('mode'),
+            mode=mode,
             value=value,
             pads=pads)
 
@@ -861,7 +861,7 @@ class Pad():
             'Pad',
             inputs=node.input('X') + [pads_node, value_node],
             outputs=node.output('Out'),
-            mode=node.attr('mode'))
+            mode=mode)
 
     @classmethod
     def convert_padding(cls, node, **kw):
