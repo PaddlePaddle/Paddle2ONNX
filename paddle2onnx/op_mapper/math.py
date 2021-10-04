@@ -163,7 +163,7 @@ class LogSumExp():
     support_opset_verision_range = (1, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
 
         if node.attr('reduce_all'):
             if not node.attr('keepdim'):
