@@ -190,7 +190,7 @@ class ELU():
     support_opset_verision_range = (1, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'Elu',
             inputs=node.input('X'),
@@ -200,7 +200,7 @@ class ELU():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_verision_range = (1, 12)
+    support_opset_verision_range = (9, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):

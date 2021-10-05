@@ -91,7 +91,7 @@ class Acos():
     supports_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Acos', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -101,7 +101,7 @@ class Asin():
     supports_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Asin', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -111,7 +111,7 @@ class Atan():
     supports_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Atan', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -121,7 +121,7 @@ class Ceil():
     supports_opset_version_range = (6, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         graph.make_node(
             'Ceil', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -131,7 +131,7 @@ class Cos():
     supports_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Cos', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -141,7 +141,7 @@ class Cosh():
     supports_opset_version_range = (9, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         graph.make_node(
             'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
 
