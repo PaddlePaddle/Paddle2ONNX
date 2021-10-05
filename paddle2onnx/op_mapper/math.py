@@ -119,6 +119,66 @@ class IsInf():
             'ReduceMax', inputs=[cast_node], outputs=node.output('Out'))
 
 
+@op_mapper('acos')
+class Acos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Acos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('asin')
+class Asin():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Asin', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('atan')
+class Atan():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Atan', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('ceil')
+class Ceil():
+    supports_opset_version_range = (6, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        graph.make_node(
+            'Ceil', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cos')
+class Cos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Cos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cosh')
+class Cosh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('isnan_v2')
 class IsNaN_v2():
     support_opset_verision_range = (9, 12)
@@ -190,17 +250,6 @@ class LogSumExp():
                 keepdims=node.attr('keepdim'),
                 axes=node.attr('axis'),
                 outputs=node.output('Out'))
-            'Cos', inputs=node.input('X'), outputs=node.output('Out'))
-
-
-@op_mapper('cosh')
-class Cosh():
-    supports_opset_version_range = (9, 12)
-
-    @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.make_node(
-            'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper(

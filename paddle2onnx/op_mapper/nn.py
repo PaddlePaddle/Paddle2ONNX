@@ -185,6 +185,32 @@ class Pool():
                 attrs=attrs)
 
 
+@op_mapper('elu')
+class ELU():
+    support_opset_verision_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'Elu',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            alpha=node.attr('alpha'))
+
+
+@op_mapper('hard_shrink')
+class Hardshrink():
+    support_opset_verision_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        node = graph.make_node(
+            'Shrink',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            lambd=node.attr('threshold'))
+
+
 @op_mapper('norm')
 class Norm():
     support_opset_verison_range = (1, 12)
