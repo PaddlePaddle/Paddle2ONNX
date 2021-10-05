@@ -438,7 +438,7 @@ class Log10():
     support_opset_verision_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         ten = graph.make_node(
             'Constant', attrs={
                 'dtype': dtypes.ONNX.FLOAT,
@@ -454,7 +454,7 @@ class Log1p():
     support_opset_verision_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         one = graph.make_node(
             'Constant', attrs={
                 'dtype': dtypes.ONNX.FLOAT,
