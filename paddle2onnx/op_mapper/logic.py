@@ -131,3 +131,15 @@ class Equal():
             'Equal',
             inputs=[node.input('X', 0), node.input('Y', 0)],
             outputs=node.output('Out'))
+
+
+@op_mapper('isfinite_v2')
+class Isfinite():
+    support_opset_verision_range = (10, 12)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        is_inf = graph.make_node('IsInf', inputs=node.input('X', 0))
+        is_nan = graph.make_node('IsNaN', inputs=node.input('X', 0))
+        finite = graph.make_node('Or', inputs=[is_inf, is_nan])
+        graph.make_node('Not', inputs=[finite], outputs=node.output('Out'))

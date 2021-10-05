@@ -119,6 +119,66 @@ class IsInf():
             'ReduceMax', inputs=[cast_node], outputs=node.output('Out'))
 
 
+@op_mapper('acos')
+class Acos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Acos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('asin')
+class Asin():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Asin', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('atan')
+class Atan():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Atan', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('ceil')
+class Ceil():
+    supports_opset_version_range = (6, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        graph.make_node(
+            'Ceil', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cos')
+class Cos():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Cos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cosh')
+class Cosh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('isnan_v2')
 class IsNaN_v2():
     support_opset_verision_range = (9, 12)
@@ -542,6 +602,34 @@ class ArgMax():
                 'axis': node.attr('axis'),
                 'keepdims': node.attr('keepdims')
             })
+
+
+@op_mapper('arg_min')
+class ArgMin():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        if node.attr('flatten'):
+            flatten = graph.make_node('Flatten', inputs=node.input('X'), axis=0)
+            squeeze_node = graph.make_node('Squeeze', inputs=flatten)
+            graph.make_node(
+                'ArgMin', inputs=squeeze_node, outputs=node.output('Out'))
+        else:
+            if node.attr('keepdims'):
+                graph.make_node(
+                    'ArgMin',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=node.attr('axis'),
+                    keepdims=1)
+            else:
+                graph.make_node(
+                    'ArgMin',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=node.attr('axis'),
+                    keepdims=0)
 
 
 #
