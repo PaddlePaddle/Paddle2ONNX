@@ -190,6 +190,17 @@ class LogSumExp():
                 keepdims=node.attr('keepdim'),
                 axes=node.attr('axis'),
                 outputs=node.output('Out'))
+            'Cos', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('cosh')
+class Cosh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper(
@@ -542,6 +553,34 @@ class ArgMax():
                 'axis': node.attr('axis'),
                 'keepdims': node.attr('keepdims')
             })
+
+
+@op_mapper('arg_min')
+class ArgMin():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        if node.attr('flatten'):
+            flatten = graph.make_node('Flatten', inputs=node.input('X'), axis=0)
+            squeeze_node = graph.make_node('Squeeze', inputs=flatten)
+            graph.make_node(
+                'ArgMin', inputs=squeeze_node, outputs=node.output('Out'))
+        else:
+            if node.attr('keepdims'):
+                graph.make_node(
+                    'ArgMin',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=node.attr('axis'),
+                    keepdims=1)
+            else:
+                graph.make_node(
+                    'ArgMin',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=node.attr('axis'),
+                    keepdims=0)
 
 
 #
