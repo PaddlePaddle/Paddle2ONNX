@@ -97,7 +97,7 @@ class Erf():
 
 
 @op_mapper('isinf_v2')
-class IsInf_v2():
+class IsInf():
     support_opset_version_range = (10, 12)
 
     @classmethod
@@ -107,7 +107,7 @@ class IsInf_v2():
 
 
 @op_mapper('isnan')
-class IsInf():
+class IsNaN():
     support_opset_version_range = (9, 12)
 
     @classmethod
@@ -180,7 +180,7 @@ class Cosh():
 
 
 @op_mapper('isnan_v2')
-class IsNaN_v2():
+class IsNaN():
     support_opset_version_range = (9, 12)
 
     @classmethod
