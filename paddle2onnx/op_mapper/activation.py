@@ -133,7 +133,7 @@ class Relu6():
 
 @op_mapper('gelu')
 class Gelu():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -185,7 +185,7 @@ class HardSigmoid():
 
 @op_mapper('swish')
 class Swish():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -206,7 +206,7 @@ class Swish():
 
 @op_mapper('hard_swish')
 class HardSwish():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
