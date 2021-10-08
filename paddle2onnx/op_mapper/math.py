@@ -22,7 +22,7 @@ from paddle2onnx.op_mapper import mapper_helper
 
 @op_mapper('matmul')
 class MatMul():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -48,7 +48,7 @@ class MatMul():
 
 @op_mapper('matmul_v2')
 class MatMul():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -274,7 +274,7 @@ class Pow():
 
 @op_mapper('square')
 class Square():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
