@@ -19,7 +19,7 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 - Deploy PaddlePaddle model by ADLIK, [more details](https://github.com/Adlik/Adlik/tree/master/examples/paddle_model)
 - Deploy PaddlePaddle model by OpenVINO, [more details](https://paddlex.readthedocs.io/zh_CN/develop/deploy/openvino/index.html)
 - Deploy PaddlePaddle model by OpenCV, [more details](https://github.com/opencv/opencv/tree/master/samples/dnn/dnn_model_runner/dnn_conversion/paddlepaddle)
-- Deploy PaddlePaddle model by Triton, [more details](https://github.com/PaddlePaddle/PaddleX/blob/develop/dygraph/deploy/cpp/docs/compile/triton/docker.md)
+- Deploy PaddlePaddle model by Triton, [more details](https://github.com/PaddlePaddle/PaddleX/blob/develop/deploy/cpp/docs/compile/triton/docker.md)
 
 ## Environment Dependencies
 
