@@ -89,10 +89,10 @@ class LogicalAnd():
 
 @op_mapper('logical_xor')
 class LogicalXor():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Xor',
             inputs=[node.input('X', 0), node.input('Y', 0)],

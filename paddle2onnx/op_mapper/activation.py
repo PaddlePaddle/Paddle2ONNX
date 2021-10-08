@@ -155,10 +155,10 @@ class Gelu():
 
 @op_mapper('selu')
 class Selu():
-    support_opset_verision_range = (6, 12)
+    support_opset_version_range = (6, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         graph.make_node(
             'Selu',
             inputs=node.input('X'),

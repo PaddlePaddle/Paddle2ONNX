@@ -213,10 +213,10 @@ class Hardshrink():
 
 @op_mapper('logsigmoid')
 class LogSigmoid():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         sigmoid_node = graph.make_node('Sigmoid', inputs=node.input('X'))
         graph.make_node('Log', inputs=sigmoid_node, outputs=node.output('Out'))
 

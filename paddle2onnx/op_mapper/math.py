@@ -151,7 +151,7 @@ class Sin():
     supports_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Sin', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -435,10 +435,10 @@ class Floor():
 
 @op_mapper('log10')
 class Log10():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
-    def opset_7(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         ten = graph.make_node(
             'Constant', attrs={
                 'dtype': dtypes.ONNX.FLOAT,
@@ -451,7 +451,7 @@ class Log10():
 
 @op_mapper('log1p')
 class Log1p():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -470,10 +470,10 @@ class Log1p():
                'reduce_any': 'ReduceMax'
            })
 class ReduceAll():
-    support_opset_verision_range = (6, 12)
+    support_opset_version_range = (6, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
 
         all_node = graph.make_node(
@@ -608,20 +608,20 @@ class ArgMin():
 
 @op_mapper('round')
 class Round():
-    support_opset_verision_range = (11, 12)
+    support_opset_version_range = (11, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_11(cls, graph, node, **kw):
         graph.make_node(
             'Round', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper('rsqrt')
 class Rsqrt():
-    support_opset_verision_range = (6, 12)
+    support_opset_version_range = (6, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         sqrt_node = graph.make_node('Sqrt', inputs=node.input('X'))
         graph.make_node(
             'Reciprocal', inputs=sqrt_node, outputs=node.output('Out'))
@@ -629,10 +629,10 @@ class Rsqrt():
 
 @op_mapper('sign')
 class Sign():
-    support_opset_verision_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         graph.make_node(
             'Sign', inputs=node.input('X'), outputs=node.output('Out'))
 
