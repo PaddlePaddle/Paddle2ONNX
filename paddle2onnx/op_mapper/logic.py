@@ -89,10 +89,10 @@ class LogicalAnd():
 
 @op_mapper('logical_not')
 class LogicalNot():
-    support_opset_version_range = (6, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'Not', inputs=node.input('X'), outputs=node.output('Out'))
 
