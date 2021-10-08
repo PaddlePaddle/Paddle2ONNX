@@ -89,7 +89,7 @@ class LogicalAnd():
 
 @op_mapper('logical_not')
 class LogicalNot():
-    support_opset_verision_range = (6, 12)
+    support_opset_version_range = (6, 12)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -99,7 +99,7 @@ class LogicalNot():
 
 @op_mapper('logical_or')
 class LogicalOr():
-    support_opset_verision_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -135,7 +135,7 @@ class Equal():
 
 @op_mapper('isfinite_v2')
 class Isfinite():
-    support_opset_verision_range = (10, 12)
+    support_opset_version_range = (10, 12)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
