@@ -15,6 +15,12 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 - [Export and inference ONNX model in PaddlePaddle 2.0](https://aistudio.baidu.com/aistudio/projectdetail/1461212)
 - [How to deploy PP-OCR model using ONNX RunTime](https://aistudio.baidu.com/aistudio/projectdetail/1479970)
 
+## What we can do with Paddle2ONNX
+- Deploy PaddlePaddle model by ADLIK, [more details](https://github.com/Adlik/Adlik/tree/master/examples/paddle_model)
+- Deploy PaddlePaddle model by OpenVINO, [more details](https://paddlex.readthedocs.io/zh_CN/develop/deploy/openvino/index.html)
+- Deploy PaddlePaddle model by OpenCV, [more details](https://github.com/opencv/opencv/tree/master/samples/dnn/dnn_model_runner/dnn_conversion/paddlepaddle)
+- Deploy PaddlePaddle model by Triton, [more details](https://github.com/PaddlePaddle/PaddleX/blob/develop/deploy/cpp/docs/compile/triton/docker.md)
+
 ## Environment Dependencies
 
 ### Configuration
@@ -25,9 +31,9 @@ Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
 ## Installation
 
 ### Via Pip
-    
+
      pip install paddle2onnx
-    
+
 
 ### From Source
 
@@ -61,6 +67,8 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 - Two types of PaddlePaddle models
    - Combined model, parameters saved in one binary file. --model_filename and --params_filename represents the file name and parameter name under the directory designated by --model_dir. --model_filename and --params_filename are valid only with parameter --model_dir.
    - Uncombined model, parameters saved in different files. Only --model_dir is needed，which contains '\_\_model\_\_' file and the seperated parameter files.
+- Use onnxruntime to verify the Converted model
+    - When using onnxruntime to verify the converted onnx model, please note that the onnxruntime and onnx versions need to match. [Onnxruntime and onnx version requirements. ](https://github.com/microsoft/onnxruntime/blob/master/docs/Versioning.md)
 
 
 #### IPython tutorials

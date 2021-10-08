@@ -80,6 +80,19 @@ class Stack():
             outputs=node.output('Y'),
             axis=axis)
 
+@op_mapper('unstack')
+class Unstack():
+    support_opset_verison_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        print(node)
+        graph.make_node(
+                'Split',
+                inputs=node.input('X'),
+                outputs=node.output('Y'),
+                axis=node.attr('axis'))
+
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
@@ -448,7 +461,7 @@ class FillConstantBatchSizeLike():
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
         value = node.attr('value')
         input_shape = node.input_shape('Input', 0)
-
+        value = int(value)
         constant = graph.make_node(
             'Constant',
             dtype=dtype,
@@ -522,6 +535,32 @@ class FullLike():
     def opset_9(cls, graph, node, **kw):
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
         value = node.attr('value')
+        dtype = node.attr('dtype')
+        input_dtype = node.input_var('X', 0).dtype
+        if dtype is None:
+            dtype = input_dtype
+        np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
+        onnx_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+        graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape_node],
+            outputs=node.output('Out'),
+            dims=[1],
+            dtype=onnx_dtype,
+            value=np.array(value).astype(np_dtype))
+
+
+@op_mapper('fill_zeros_like')
+class FullZeroLike():
+    '''
+    fill_any_like is kernel for paddle op::full_like & ones_like
+    '''
+    support_opset_verison_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        value = 0
         dtype = node.attr('dtype')
         input_dtype = node.input_var('X', 0).dtype
         if dtype is None:
@@ -824,16 +863,23 @@ class Pad():
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
             onnx_paddings = [
-                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
+                0, 0, paddings[0], paddings[2],
+                0, 0, paddings[1], paddings[3]
             ]
         elif node.attr('data_format') == 'NHWC':
             onnx_paddings = [
-                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+                0, paddings[0], paddings[2], 0,
+                0, paddings[1], paddings[3], 0
             ]
         elif node.attr('data_format') == 'NCDHW':
             onnx_paddings = [
-                0, 0, paddings[4], paddings[2], paddings[0], 0, 0, paddings[5],
-                paddings[3], paddings[1]
+                0, 0, paddings[4], paddings[2], paddings[0],
+                0, 0, paddings[5], paddings[3], paddings[1]
+            ]
+        elif node.attr('data_format') == 'NDHWC':
+            onnx_paddings = [
+                0, paddings[4], paddings[2], paddings[0], 0,
+                0, paddings[5], paddings[3], paddings[1], 0
             ]
         return onnx_paddings
 
@@ -910,12 +956,18 @@ class Resize():
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, (tuple, list)):
+                scale_h = scale[0]
+                scale_w = scale[1]
+            else:
+                scale_h = scale
+                scale_w = scale
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
                     attrs={
                         'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
+                        'value': [1, 1, scale_h, scale_w]
                     })
                 inputs.append(scale_node)
             else:
