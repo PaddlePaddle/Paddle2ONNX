@@ -22,6 +22,7 @@ from paddle import fluid
 from paddle.fluid import layers
 
 from paddle2onnx.graph import graph_helper, PaddleGraph
+from paddle2onnx.utils import logging
 from paddle2onnx.constant.op_mapping_status import *
 
 import paddle2onnx
@@ -98,8 +99,8 @@ class OpMapper(object):
                 if operator_export_type in ["PaddleFallback"]:
                     opsets = OpMapper.OPSETS[node.type]
                     versions = list(opsets.keys())
-                    convert_version = get_max_support_version(versions,
-                                                            graph.opset_version)
+                    convert_version = get_max_support_version(
+                        versions, graph.opset_version)
                     mapper_func, kw = opsets[convert_version]
                     mapper_func(graph, node, **kw)
                 else:
@@ -107,7 +108,7 @@ class OpMapper(object):
                         node.type](node)
                     custom_paddle_graph = custom_paddle_op.get_paddle_graph()
                     OpMapper.check_support_status(custom_paddle_graph.node_map,
-                                                graph.opset_version)
+                                                  graph.opset_version)
                     graph.build_op_nodes(custom_paddle_graph.node_map)
             else:
                 opsets = OpMapper.OPSETS[node.type]
@@ -124,22 +125,27 @@ class OpMapper(object):
 
     @staticmethod
     def get_recommend_opset_version(node_map, opset_version):
-        recommend_opset_version = OpMapper.check_support_status(node_map, opset_version, True)
+        recommend_opset_version = OpMapper.check_support_status(
+            node_map, opset_version, True)
         for name, node in list(node_map.items()):
-            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP: #如果是custom的op，获取custom的推荐op
-                custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[node.type](node)
+            if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:  #如果是custom的op，获取custom的推荐op
+                custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
+                    node.type](node)
                 custom_paddle_graph = custom_paddle_op.get_paddle_graph()
-                custom_recommend_opset_version = OpMapper.check_support_status(custom_paddle_graph.node_map, opset_version, True)
-                recommend_opset_version = max(recommend_opset_version, custom_recommend_opset_version)
+                custom_recommend_opset_version = OpMapper.check_support_status(
+                    custom_paddle_graph.node_map, opset_version, True)
+                recommend_opset_version = max(recommend_opset_version,
+                                              custom_recommend_opset_version)
         if opset_version != recommend_opset_version:
-            error_info = "\n======================\n"
-            error_info += "\nFor successful convert, set recommend opset version : {}\n".format(recommend_opset_version)
-            error_info += "\n======================\n"
-            print(error_info)
+            warning_info = "\n======================\n"
+            warning_info += "\nFor a successful conversion, set the recommended opset version : {}\n".format(
+                recommend_opset_version)
+            warning_info += "\n======================\n"
+            logging.warning(warning_info)
         return recommend_opset_version
-        
+
     @staticmethod
-    def check_support_status(node_map, opset_version, for_check = False):
+    def check_support_status(node_map, opset_version, for_check=False):
         op_mapping_status = {
             OP_MAPPING_NO_REGISTER: [],
             OP_MAPPING_NO_VERSION: [],
@@ -177,16 +183,16 @@ class OpMapper(object):
                 opsets = OpMapper.OPSETS[op_type]
                 if min(opsets.keys()) > recommend_opset_version:
                     recommend_opset_version = min(opsets.keys())
-            error_info = "\nThere's {} ops are not supported in opset version {}, please try opset version >= {}.\n".format(
+            warning_info = "\nThere are {} ops that are not supported in opset version {}, please set opset version >= {}.\n".format(
                 len(unsupported_op_types), opset_version,
                 recommend_opset_version)
 
             for op_type in unsupported_op_types:
-                error_info += "=========== {} ===========\n".format(op_type)
+                warning_info += "=========== {} ===========\n".format(op_type)
             if for_check:
-                print(error_info)
+                logging.warning(warning_info)
                 return recommend_opset_version
-            raise NotImplementedError(error_info)
+            raise NotImplementedError(warning_info)
         return opset_version
 
 
