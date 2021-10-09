@@ -187,7 +187,7 @@ class Pool():
 
 @op_mapper('elu')
 class ELU():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -200,7 +200,7 @@ class ELU():
 
 @op_mapper('softsign')
 class SoftSign():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -210,10 +210,10 @@ class SoftSign():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         node = graph.make_node(
             'Shrink',
             inputs=node.input('X'),
@@ -236,10 +236,10 @@ class Norm():
 
 @op_mapper('log_softmax')
 class LogSoftmax():
-    support_opset_verision_range = (6, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'LogSoftmax',
             inputs=node.input('X'),

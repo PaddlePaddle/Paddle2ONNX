@@ -113,7 +113,7 @@ class Equal():
 
 @op_mapper('isfinite_v2')
 class Isfinite():
-    support_opset_verision_range = (10, 12)
+    support_opset_version_range = (10, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

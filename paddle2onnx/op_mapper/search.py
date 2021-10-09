@@ -104,7 +104,7 @@ class TopK():
 
 @op_mapper('argsort')
 class ArgSort():
-    support_opset_verision_range = (11, 12)
+    support_opset_version_range = (11, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -136,7 +136,7 @@ class ArgSort():
 
 @op_mapper('index_select')
 class IndexSelect():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
