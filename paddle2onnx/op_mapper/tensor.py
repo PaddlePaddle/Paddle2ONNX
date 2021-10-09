@@ -863,16 +863,23 @@ class Pad():
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
             onnx_paddings = [
-                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
+                0, 0, paddings[0], paddings[2],
+                0, 0, paddings[1], paddings[3]
             ]
         elif node.attr('data_format') == 'NHWC':
             onnx_paddings = [
-                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+                0, paddings[0], paddings[2], 0,
+                0, paddings[1], paddings[3], 0
             ]
         elif node.attr('data_format') == 'NCDHW':
             onnx_paddings = [
-                0, 0, paddings[4], paddings[2], paddings[0], 0, 0, paddings[5],
-                paddings[3], paddings[1]
+                0, 0, paddings[4], paddings[2], paddings[0],
+                0, 0, paddings[5], paddings[3], paddings[1]
+            ]
+        elif node.attr('data_format') == 'NDHWC':
+            onnx_paddings = [
+                0, paddings[4], paddings[2], paddings[0], 0,
+                0, paddings[5], paddings[3], paddings[1], 0
             ]
         return onnx_paddings
 

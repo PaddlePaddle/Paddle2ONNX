@@ -50,7 +50,8 @@ class NotEqual():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         equal_val = graph.make_node(
-            'Equal', inputs=[node.input('X', 0), node.input('Y', 0)])
+            'Equal', inputs=[node.input('X', 0),
+                             node.input('Y', 0)])
         k_node = graph.make_node(
             'Cast', inputs=[equal_val], to=dtypes.ONNX.INT64)
         const = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=1)
@@ -86,6 +87,18 @@ class LogicalAnd():
             outputs=node.output('Out'))
 
 
+@op_mapper('logical_xor')
+class LogicalXor():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Xor',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'))
+
+
 @op_mapper('less_equal')
 class LessOrEqual():
     support_opset_verison_range = (12, )
@@ -108,3 +121,15 @@ class Equal():
             'Equal',
             inputs=[node.input('X', 0), node.input('Y', 0)],
             outputs=node.output('Out'))
+
+
+@op_mapper('isfinite_v2')
+class Isfinite():
+    support_opset_version_range = (10, 12)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        is_inf = graph.make_node('IsInf', inputs=node.input('X', 0))
+        is_nan = graph.make_node('IsNaN', inputs=node.input('X', 0))
+        finite = graph.make_node('Or', inputs=[is_inf, is_nan])
+        graph.make_node('Not', inputs=[finite], outputs=node.output('Out'))
