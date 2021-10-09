@@ -435,18 +435,18 @@ class Floor():
 
 @op_mapper('log10')
 class Log10():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         ten = graph.make_node(
             'Constant', attrs={
                 'dtype': dtypes.ONNX.FLOAT,
                 'value': [10]
             })
-        ln2 = graph.make_node('Log', inputs=[ten])
+        ln10 = graph.make_node('Log', inputs=[ten])
         lnx = graph.make_node('Log', inputs=node.input('X'))
-        graph.make_node('Div', inputs=[lnx, ln2], outputs=node.output('Out'))
+        graph.make_node('Div', inputs=[lnx, ln10], outputs=node.output('Out'))
 
 
 @op_mapper('log1p')
