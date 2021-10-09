@@ -190,7 +190,7 @@ class ELU():
     support_opset_version_range = (1, 12)
 
     @classmethod
-    def opset_6(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'Elu',
             inputs=node.input('X'),
