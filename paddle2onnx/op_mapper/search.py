@@ -104,10 +104,10 @@ class TopK():
 
 @op_mapper('argsort')
 class ArgSort():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_11(cls, graph, node, **kw):
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
         k_node = graph.make_node(
             'Constant',
@@ -132,6 +132,20 @@ class ArgSort():
                          node.output('Indices', 0)],
                 axis=node.attr('axis'),
                 largest=1)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        k = node.input_var('X', 0).shape[node.attr('axis')]
+        if not node.attr('descending'):
+            raise Exception("descending=False only support opset version>=11.")
+        else:
+            graph.make_node(
+                'TopK',
+                inputs=node.input('X', 0),
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)],
+                axis=node.attr('axis'),
+                k=k)
 
 
 @op_mapper('index_select')

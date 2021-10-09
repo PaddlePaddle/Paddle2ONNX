@@ -94,3 +94,35 @@ def test_argsort_descending():
         paddle.to_tensor(
             randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
     obj.run()
+
+
+def test_argsort_descending_1():
+    """
+    api: paddle.argsort
+    op version: 12
+    """
+    op = Net(descending=True)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'argsort', [1])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_argsort_descending_1_axis():
+    """
+    api: paddle.argsort
+    op version: 12
+    """
+    op = Net(descending=True, axis=1)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'argsort', [1])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
+    obj.run()
