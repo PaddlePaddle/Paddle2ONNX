@@ -34,6 +34,7 @@
 | elementwise_pow | 7~12 |
 | elementwise_sub | 7~12 |
 | equal | 1~12 |
+| erf | 9~12 |
 | exp | 1~12 |
 | expand_as_v2 | 8~12 |
 | expand_v2 | 8~12 |
@@ -43,6 +44,7 @@
 | flatten2 | 1~12 |
 | flatten_contiguous_range | 1~12 |
 | floor | 1~12 |
+| floor_mod | 7~12 |
 | lod_reset | 1~12 |
 | lstm | 9~12 |
 | gather | 1~12 |  opset 1~10 limited supported |
@@ -51,15 +53,23 @@
 | group_norm | 1~12 |   |
 | hard_sigmoid | 1~12 |
 | hard_swish | 1~12 |
+| has_nan | 9~12 |
 | im2sequence | 1~12 |
 | instance_norm | 1~12 |
+| isinf | 10~12 |
+| isnan | 9~12 |
 | layer_norm | 9~12 |
 | leaky_relu | 1~12 |
+| less_than | 1~12 | opset 7~12 limited supported
 | less_equal| 12~ |
 | log | 1~12 |
+| log2 | 7~12 |
 | lookup_table | 1~12 |
 | lookup_table_v2 | 1~12 |
 | logical_and | 1~12 |
+| logical_not | 1~12 |
+| logical_or | 1~12 | opset 7~12 limited supported |
+| logsumexp | 1~12 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
