@@ -3,9 +3,15 @@
 | Paddle Operator |  ONNX Opset Versions | support_status |
 | --------------- | -------------------- | -------------- |
 | abs | 1~12 |
+| acos | 7~12 |
 | arg_max | 1~12 |
+| arg_min | 1~12 |
+| asin | 7~12 |
 | anchor_generator | 11~12 |
 | assign_value | 1~12 |
+| all | 6~12 |
+| atan | 7~12 |
+| any | 6~12 |
 | batch_norm | 1~12 |
 | bilinear_interp | 9~12 |
 | bilinear_interp_v2 | 9~12 |
@@ -13,7 +19,10 @@
 | box_coder | 7~12 |
 | box_clip | 11~12 |
 | cast | 1~12 |
+| ceil | 1~13 | opset 6~13 limited supported |
 | clip | 1~12 |
+| cos | 7~12 |
+| cosh | 9~12 |
 | concat | 1~12 |
 | conv2d | 1~12 |
 | conv2d_transpose | 1~12 |
@@ -38,6 +47,7 @@
 | exp | 1~12 |
 | expand_as_v2 | 8~12 |
 | expand_v2 | 8~12 |
+| elu | 1~12 |
 | fill_constant | 1~12 |
 | fill_constant_batch_size_like  | 9~12 |
 | fill_any_like | 9~12 |
@@ -51,6 +61,7 @@
 | generate_proposals | 12~ |   |
 | greater_equal | 12~ |   |
 | group_norm | 1~12 |   |
+| hardshrink | 9~12 |
 | hard_sigmoid | 1~12 |
 | hard_swish | 1~12 |
 | has_nan | 9~12 |
@@ -58,6 +69,7 @@
 | instance_norm | 1~12 |
 | isinf | 10~12 |
 | isnan | 9~12 |
+| isfinite | 10~12 |
 | layer_norm | 9~12 |
 | leaky_relu | 1~12 |
 | less_than | 1~12 | opset 7~12 limited supported
@@ -70,6 +82,13 @@
 | logical_not | 1~12 |
 | logical_or | 1~12 | opset 7~12 limited supported |
 | logsumexp | 1~12 |
+| log10 | 7~12 |
+| log1p | 7~12 |
+| lookup_table | 1~12 |
+| lookup_table_v2 | 1~12 |
+| logical_and | 1~12 |
+| logical_xor | 1~12 | opset 7~12 limited supported |
+| logsigmoid | 1~12 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
@@ -99,13 +118,18 @@
 | reshape2 | 5~12 |
 | rnn | 1~12 |
 | roi_align | 10~12 |
+| round | 11~12 |
+| rsqrt | 6~12 |
 | softmax | 1~12 |
 | scale | 1~12 | opset 1~6 limited supported |
 | sequence_expand | 1~12 |
+| selu | 6~12 |
 | softmax_with_cross_entropy | 12 |
 | softplus | 1~12 |
 | shape | 1~12 |
 | sigmoid | 1~12 |
+| sign | 9~12 |
+| sin | 7~12 |
 | slice | 1~12 |
 | split | 1~12 |
 | squeeze2 | 1~12 |
