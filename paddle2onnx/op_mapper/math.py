@@ -218,14 +218,10 @@ class Log2():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
-        two = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.FLOAT,
-                'value': [2]
-            })
-        ln2 = graph.make_node('Log', inputs=[two])
+        _ln2 = 0.693147180559945309
+        _ln2 = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=_ln2)
         lnx = graph.make_node('Log', inputs=node.input('X'))
-        graph.make_node('Div', inputs=[lnx, ln2], outputs=node.output('Out'))
+        graph.make_node('Div', inputs=[lnx, _ln2], outputs=node.output('Out'))
 
 
 @op_mapper('logsumexp')
@@ -545,14 +541,11 @@ class Log10():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
-        ten = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.FLOAT,
-                'value': [10]
-            })
-        ln10 = graph.make_node('Log', inputs=[ten])
+        _ln10 = 2.30258509299404568401
+        _ln10 = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=_ln10)
         lnx = graph.make_node('Log', inputs=node.input('X'))
-        graph.make_node('Div', inputs=[lnx, ln10], outputs=node.output('Out'))
+        graph.make_node('Div', inputs=[lnx, _ln10], outputs=node.output('Out'))
 
 
 @op_mapper('log1p')
