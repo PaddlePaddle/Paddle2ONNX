@@ -24,27 +24,28 @@ class Net(paddle.nn.Layer):
 
     def __init__(self):
         super(Net, self).__init__()
-        self._softmax = paddle.nn.Softmax(axis=-1, name=None)
+        self.register_buffer(
+            "my_buffer",
+            paddle.to_tensor(
+                10, dtype="float32"), )
 
     def forward(self, inputs):
         """
         forward
         """
-        x = self._softmax(inputs)
-        return x
+        return inputs + self.my_buffer
 
 
-def test_Softmax_9():
+def test_register_buffer():
     """
-    api: paddle.Softmax
-    op version: 9, 10, 11, 12
+    api: register_buffer
+    op version: 9
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Softmax', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'register_buffer', [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [1]).astype('float32')))
     obj.run()
