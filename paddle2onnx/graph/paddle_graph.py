@@ -225,10 +225,21 @@ class PaddleGraph(Graph):
             program = layer.program()
             parameters_dict = {}
             pruned_vars = program.global_block().vars
-            for param in layer.parameters() + layer.buffers():
+            for param in layer.parameters():
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
                     continue
                 if not param.persistable:
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            for param in layer.buffers():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
                     continue
                 if param.name in pruned_vars:
                     parameters_dict[param.name] = {
@@ -258,10 +269,21 @@ class PaddleGraph(Graph):
                 layer, input_spec, output_spec)
             parameters_dict = {}
             pruned_vars = program.global_block().vars
-            for param in layer.parameters() + layer.buffers():
+            for param in layer.parameters():
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
                     continue
                 if not param.persistable:
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            for param in layer.buffers():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
                     continue
                 if param.name in pruned_vars:
                     parameters_dict[param.name] = {
