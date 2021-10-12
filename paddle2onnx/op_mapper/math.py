@@ -648,7 +648,10 @@ class Dot():
         mul_node = graph.make_node(
             'Mul', inputs=[node.input('X', 0),
                            node.input('Y', 0)])
-        one = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[1])
+        one = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            value=[len(node.input_shape('X', 0)) - 1])
         graph.make_node(
             'ReduceSum', inputs=[mul_node, one], outputs=node.output('Out'))
 
@@ -660,7 +663,7 @@ class Dot():
         graph.make_node(
             'ReduceSum',
             inputs=[mul_node],
-            axes=[1],
+            axes=[len(node.input_shape('X', 0)) - 1],
             outputs=node.output('Out'))
 
 
