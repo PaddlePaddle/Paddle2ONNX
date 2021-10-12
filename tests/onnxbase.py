@@ -64,8 +64,6 @@ class APIOnnx(object):
         self.seed = 33
         np.random.seed(self.seed)
         paddle.seed(self.seed)
-        self.delta = 1e-10
-        self.rtol = 1e-11
         self.func = func
         if paddle.device.is_compiled_with_cuda() is True:
             self.places = ['gpu', 'cpu']
