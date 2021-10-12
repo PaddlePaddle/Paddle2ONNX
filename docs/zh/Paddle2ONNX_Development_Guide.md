@@ -1,16 +1,14 @@
-﻿[toc]
-
-# Paddle2ONNX开发指南
+﻿# Paddle2ONNX开发指南
 本文档为Paddle2ONNX的新OP开发指南，旨在帮助开发者快速掌握Paddle2ONNX的新OP开发方式，在遇到模型转换失败时能有应对方法，快速解决自己遇到的问题。
 ## Paddle2ONNX简介 ##
 ONNX (Open Neural Network Exchange) 是针对机器学习所设计的开源文件格式，用于存储训练好的模型。它使得不同的人工智能框架可以采用相同格式存储模型并交互。通过ONNX格式，Paddle模型可以使用OpenVINO、ONNX Runtime等框架进行推理。
 Paddle2ONNX是paddlepaddle的工具套件，负责将paddle的inference模型转换为ONNX格式模型，便于开发者将paddle模型扩展到支持ONNX部署的框架上进行推理。
 ## Paddle2ONNX新OP开发步骤 ##
-Paddle2ONNX开发的主要步骤为：
-1.根据paddle API掌握其使用方法和对应的Paddle OP；
-2.根据Paddle OP的原理使用ONNX OP直接或者组合实现相同功能；
-3.实现对应OP的单测；
-4.为Paddle2ONNX提PR；
+Paddle2ONNX开发的主要步骤为：  
+1.根据paddle API掌握其使用方法和对应的Paddle OP；  
+2.根据Paddle OP的原理使用ONNX OP直接或者组合实现相同功能；  
+3.实现对应OP的单测；  
+4.为Paddle2ONNX提PR；  
 ### 查找Paddle API和paddle OP对应关系 ###
 当遇到某个模型转换失败，提示某个OP不支持时，可以通过[Paddle文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/index_cn.html)查询其对应的使用方式，通常情况下Paddle的OP和API名字接近，如果通过OP名无法搜到或者不确定时需要到[Paddle源码](https://github.com/PaddlePaddle/Paddle)中去搜索。首先下载Paddle源码，然后到Paddle/python/paddle文件夹下全局搜索OP名，如果搜索到某个OP的python接口使用到了该OP表示该API为对应结果。由于paddle.fluid中的API不推荐使用，所以避免找其中的API。
 比如需要查找size这个Paddle OP对应的API，在Paddle文档中并不能找到较好的结果，在Paddle/python/paddle文件夹下全局搜索到Paddle/python/paddle/tensor/stat.py脚本中paddle.numel API接口中使用到了size op，因此可确认paddle.numel为size op的对应API。
