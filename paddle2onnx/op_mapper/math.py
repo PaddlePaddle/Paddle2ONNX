@@ -442,7 +442,7 @@ class Log10():
         ten = graph.make_node(
             'Constant', attrs={
                 'dtype': dtypes.ONNX.FLOAT,
-                'value': [10]
+                'value': [11]
             })
         ln10 = graph.make_node('Log', inputs=[ten])
         lnx = graph.make_node('Log', inputs=node.input('X'))
