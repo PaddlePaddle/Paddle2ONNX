@@ -187,7 +187,7 @@ class Pool():
 
 @op_mapper('elu')
 class ELU():
-    support_opset_verision_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -200,7 +200,7 @@ class ELU():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_verision_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -209,6 +209,16 @@ class Hardshrink():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             lambd=node.attr('threshold'))
+
+
+@op_mapper('logsigmoid')
+class LogSigmoid():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        sigmoid_node = graph.make_node('Sigmoid', inputs=node.input('X'))
+        graph.make_node('Log', inputs=sigmoid_node, outputs=node.output('Out'))
 
 
 @op_mapper('norm')

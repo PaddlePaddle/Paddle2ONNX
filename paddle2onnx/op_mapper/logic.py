@@ -87,6 +87,18 @@ class LogicalAnd():
             outputs=node.output('Out'))
 
 
+@op_mapper('logical_xor')
+class LogicalXor():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Xor',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'))
+
+
 @op_mapper('less_equal')
 class LessOrEqual():
     support_opset_verison_range = (12, )
@@ -113,7 +125,7 @@ class Equal():
 
 @op_mapper('isfinite_v2')
 class Isfinite():
-    support_opset_verision_range = (10, 12)
+    support_opset_version_range = (10, 12)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
