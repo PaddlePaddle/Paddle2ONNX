@@ -19,7 +19,7 @@ from onnxbase import randtool
 
 class Net(paddle.nn.Layer):
     """
-    simplr Net
+    simple Net
     """
 
     def __init__(self, axis=-1, descending=False):

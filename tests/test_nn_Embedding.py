@@ -20,7 +20,7 @@ import numpy as np
 
 class Net(paddle.nn.Layer):
     """
-    simplr Net
+    simple Net
     """
 
     def __init__(self):
