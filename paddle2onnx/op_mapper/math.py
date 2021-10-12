@@ -156,17 +156,6 @@ class Cosh():
             'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper('size')
-class Numel():
-    supports_opset_version_range = (1, 12)
-
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        size_node = graph.make_node('Size', inputs=node.input('Input'))
-        graph.make_node(
-            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
-
-
 @op_mapper('sin')
 class Sin():
     supports_opset_version_range = (7, 12)
@@ -652,24 +641,27 @@ class Mv():
 
 @op_mapper('dot')
 class Dot():
-    support_opset_version_range = (4, 12)
+    support_opset_version_range = (7, 13)
 
     @classmethod
-    def opset_4(cls, graph, node, **kw):
-        list_node = []
-        input_shape = node.input_shape('X', 0)
-        for i in range(input_shape[0]):
-            start_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT32, value=[i])
-            temp_x = graph.make_node(
-                'Gather', inputs=[node.input('X', 0), start_node], axis=0)
-            temp_y = graph.make_node(
-                'Gather', inputs=[node.input('Y', 0), start_node], axis=0)
-            temp_y = graph.make_node('Transpose', inputs=temp_y)
-            temp_sum = graph.make_node('MatMul', inputs=[temp_x, temp_y])
-            list_node.append(temp_sum)
+    def opset_13(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0),
+                           node.input('Y', 0)])
+        one = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[1])
         graph.make_node(
-            'Concat', inputs=list_node, axis=0, outputs=node.output('Out'))
+            'ReduceSum', inputs=[mul_node, one], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0),
+                           node.input('Y', 0)])
+        graph.make_node(
+            'ReduceSum',
+            inputs=[mul_node],
+            axes=[1],
+            outputs=node.output('Out'))
 
 
 @op_mapper('dist')

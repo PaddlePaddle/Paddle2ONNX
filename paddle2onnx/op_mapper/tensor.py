@@ -163,6 +163,17 @@ class Shape():
             to=dtypes.ONNX.INT32)
 
 
+@op_mapper('size')
+class Numel():
+    supports_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        graph.make_node(
+            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
+
+
 @op_mapper('split')
 class Split():
     support_opset_verison_range = (1, 12)
