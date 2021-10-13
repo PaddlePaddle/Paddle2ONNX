@@ -86,6 +86,39 @@ class Abs:
             'Abs', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('erf')
+class Erf():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Erf', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('isinf_v2')
+class IsInf():
+    support_opset_version_range = (10, 12)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        graph.make_node(
+            'IsInf', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('isnan')
+class IsNaN():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        isnan = graph.make_node('IsNaN', inputs=node.input('X'))
+        cast_node = graph.make_node(
+            'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
+        graph.make_node(
+            'ReduceMax', inputs=[cast_node], outputs=node.output('Out'))
+
+
 @op_mapper('acos')
 class Acos():
     supports_opset_version_range = (7, 12)
@@ -114,6 +147,16 @@ class Sinh():
     def opset_9(cls, graph, node, **kw):
         graph.make_node(
             'Sinh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('sin')
+class Sin():
+    supports_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Sin', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper('atan')
@@ -156,14 +199,73 @@ class Cosh():
             'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper('sin')
-class Sin():
-    supports_opset_version_range = (7, 12)
+@op_mapper('isnan_v2')
+class IsNaN():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'IsNaN', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('less_than')
+class Less_than():
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
         graph.make_node(
-            'Sin', inputs=node.input('X'), outputs=node.output('Out'))
+            'Less',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'),
+        )
+
+
+@op_mapper('log2')
+class Log2():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        _ln2 = 0.693147180559945309
+        _ln2 = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=_ln2)
+        lnx = graph.make_node('Log', inputs=node.input('X'))
+        graph.make_node('Div', inputs=[lnx, _ln2], outputs=node.output('Out'))
+
+
+@op_mapper('logsumexp')
+class LogSumExp():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+
+        if node.attr('reduce_all'):
+            if not node.attr('keepdim'):
+                reduce_node = graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                )
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node],
+                    axes=[0],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ReduceLogSumExp',
+                inputs=node.input('X'),
+                keepdims=node.attr('keepdim'),
+                axes=node.attr('axis'),
+                outputs=node.output('Out'))
 
 
 @op_mapper(
@@ -449,14 +551,11 @@ class Log10():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
-        ten = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.FLOAT,
-                'value': [10]
-            })
-        ln10 = graph.make_node('Log', inputs=[ten])
+        _ln10 = 2.30258509299404568401
+        _ln10 = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=_ln10)
         lnx = graph.make_node('Log', inputs=node.input('X'))
-        graph.make_node('Div', inputs=[lnx, ln10], outputs=node.output('Out'))
+        graph.make_node('Div', inputs=[lnx, _ln10], outputs=node.output('Out'))
 
 
 @op_mapper('log1p')
