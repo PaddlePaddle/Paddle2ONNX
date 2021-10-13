@@ -64,6 +64,7 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
    - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
 - 使用onnxruntime验证转换模型：
    - 若使用onnxruntime验证转换后的onnx模型，请注意onnxruntime和onnx的版本匹配。[onnxruntime和onnx版本要求](https://github.com/microsoft/onnxruntime/blob/master/docs/Versioning.md)
+- 若模型转换中提示OP不支持，欢迎开发者自己开发并向我们提PR，具体请参考文档[OP开发指南](docs/zh/Paddle2ONNX_Development_Guide.md)
 
 #### IPython教程
 

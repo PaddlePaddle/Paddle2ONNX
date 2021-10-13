@@ -69,6 +69,7 @@ Combined PaddlePaddle model(parameters saved in one binary file)
    - Uncombined model, parameters saved in different files. Only --model_dir is needed，which contains '\_\_model\_\_' file and the seperated parameter files.
 - Use onnxruntime to verify the Converted model
     - When using onnxruntime to verify the converted onnx model, please note that the onnxruntime and onnx versions need to match. [Onnxruntime and onnx version requirements. ](https://github.com/microsoft/onnxruntime/blob/master/docs/Versioning.md)
+- If there is a prompt that OP does not support during model conversion, users are welcome to develop by themselves, please refer to the document [OP Development Guide](docs/zh/Paddle2ONNX_Development_Guide.md)
 
 
 #### IPython tutorials
