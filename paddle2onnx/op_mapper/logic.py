@@ -87,8 +87,30 @@ class LogicalAnd():
             outputs=node.output('Out'))
 
 
+@op_mapper('logical_not')
+class LogicalNot():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Not', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('logical_or')
+class LogicalOr():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Or',
+            inputs=[node.input('X', 0), node.input('Y', 0)],
+            outputs=node.output('Out'))
+
+
 @op_mapper('logical_xor')
-class LogicalXor():
+class LogicalXOr():
     support_opset_version_range = (7, 12)
 
     @classmethod
