@@ -36,6 +36,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             logging.error("the expect is {}".format(expect))
         assert res
         assert result.shape == expect.shape
+        assert result.dtype == expect.dtype
     elif type(result) == list:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
