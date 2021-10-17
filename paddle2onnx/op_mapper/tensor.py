@@ -30,12 +30,15 @@ class Concat():
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
+        axis = node.attr('axis')
+        if axis < 0:
+            axis = axis + len(node.input_shape('X', 0))
 
         node = graph.make_node(
             'Concat',
             inputs=inputs,
             outputs=node.output('Out'),
-            axis=node.attr('axis'))
+            axis=axis)
 
 
 @op_mapper('assign')
