@@ -30,7 +30,7 @@ from paddle2onnx.op_mapper import mapper_helper
         'sqrt': 'Sqrt',
     })
 class ActivationOps():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -41,7 +41,7 @@ class ActivationOps():
 
 @op_mapper('leaky_relu')
 class LeakyRelu():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -54,7 +54,7 @@ class LeakyRelu():
 
 @op_mapper('softplus')
 class Softplus():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -73,7 +73,7 @@ class Softplus():
 
 @op_mapper('prelu')
 class PRelu():
-    support_opset_verison_range = (9, 13)
+    support_opset_version_range = (9, 13)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -122,7 +122,7 @@ class PRelu():
 
 @op_mapper('relu6')
 class Relu6():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -169,7 +169,7 @@ class Selu():
 
 @op_mapper('hard_sigmoid')
 class HardSigmoid():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
