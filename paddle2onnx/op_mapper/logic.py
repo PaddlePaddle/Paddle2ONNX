@@ -21,7 +21,7 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 @op_mapper('greater_equal')
 class GreaterOrEqual():
-    support_opset_verison_range = (12, )
+    support_opset_version_range = (12, )
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
@@ -33,7 +33,7 @@ class GreaterOrEqual():
 
 @op_mapper('equal')
 class Equal():
-    support_opset_verison_range = (12, )
+    support_opset_version_range = (12, )
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -45,7 +45,7 @@ class Equal():
 
 @op_mapper('not_equal')
 class NotEqual():
-    support_opset_verison_range = (12, )
+    support_opset_version_range = (12, )
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -65,7 +65,7 @@ class NotEqual():
 
 @op_mapper('greater_than')
 class GreaterThan():
-    support_opset_verison_range = (1, )
+    support_opset_version_range = (1, )
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -77,7 +77,7 @@ class GreaterThan():
 
 @op_mapper('logical_and')
 class LogicalAnd():
-    support_opset_verison_range = (1, )
+    support_opset_version_range = (1, )
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -123,7 +123,7 @@ class LogicalXOr():
 
 @op_mapper('less_equal')
 class LessOrEqual():
-    support_opset_verison_range = (12, )
+    support_opset_version_range = (12, )
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
@@ -135,7 +135,7 @@ class LessOrEqual():
 
 @op_mapper('equal')
 class Equal():
-    support_opset_verison_range = (1, )
+    support_opset_version_range = (1, )
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
