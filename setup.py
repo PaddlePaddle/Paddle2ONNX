@@ -30,7 +30,7 @@ setuptools.setup(
     long_description_content_type="text/plain",
     url="https://github.com/PaddlePaddle/paddle2onnx",
     packages=setuptools.find_packages(),
-    install_requires=['six', 'protobuf', 'onnx'],
+    install_requires=['six', 'protobuf', 'onnx<=1.9.0'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
