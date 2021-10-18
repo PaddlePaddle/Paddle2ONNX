@@ -650,7 +650,7 @@ class ReduceMean():
 
 @op_mapper('mean')
 class Mean():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -881,7 +881,7 @@ class Softmax():
 
 @op_mapper('softmax_with_cross_entropy')
 class SoftmaxCrossEntropyLoss():
-    support_opset_verison_range = (12, 12)
+    support_opset_version_range = (12, 12)
 
     @classmethod
     def opset_12(cls, graph, node, **kw):

@@ -1,4 +1,4 @@
 protobuf
 six
 paddlepaddle
-onnx
+onnx<=1.9.0

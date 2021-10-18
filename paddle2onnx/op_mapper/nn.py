@@ -25,7 +25,7 @@ from paddle2onnx import utils
 
 @op_mapper(['conv2d', 'depthwise_conv2d'])
 class Conv():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -59,7 +59,7 @@ class Conv():
 
 @op_mapper(['conv2d_transpose', 'depthwise_conv2d_transpose'])
 class ConvTranspose():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -90,7 +90,7 @@ class ConvTranspose():
 
 @op_mapper('pool2d')
 class Pool():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
     pool_type = {
         'max': ('MaxPool', 'GlobalMaxPool'),
         'avg': ('AveragePool', 'GlobalAveragePool')
@@ -223,7 +223,7 @@ class LogSigmoid():
 
 @op_mapper('norm')
 class Norm():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -236,7 +236,7 @@ class Norm():
 
 @op_mapper('layer_norm')
 class LayerNorm():
-    support_opset_verison_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -298,7 +298,7 @@ class LayerNorm():
 
 @op_mapper('batch_norm')
 class BatchNorm():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def make_attrs_and_inputs(cls, graph, node, **kw):
@@ -342,7 +342,7 @@ class BatchNorm():
 
 @op_mapper('group_norm')
 class GroupNorm():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -415,7 +415,7 @@ class GroupNorm():
 
 @op_mapper('instance_norm')
 class InstanceNorm():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -432,7 +432,7 @@ class InstanceNorm():
 
 @op_mapper('dropout')
 class Dropout():
-    support_opset_verison_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -458,7 +458,7 @@ class Dropout():
 
 @op_mapper('roi_align')
 class RoiAlign():
-    support_opset_verison_range = (10, 12)
+    support_opset_version_range = (10, 12)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -491,7 +491,7 @@ class RoiAlign():
 
 @op_mapper('rnn')
 class RNN():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def make_param_inputs(cls, graph, node, layer, hidden_size, num_layers):
