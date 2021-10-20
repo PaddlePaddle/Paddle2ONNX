@@ -36,6 +36,9 @@ def export_onnx(paddle_graph,
 
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
 
+    if save_file is None:
+        return onnx_proto
+
     path, _ = os.path.split(save_file)
     if path != '' and not os.path.isdir(path):
         os.makedirs(path)
@@ -77,8 +80,8 @@ def program2onnx(program,
 
         paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
                                                       target_vars, scope)
-        export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
-                    operator_export_type)
+        return export_onnx(paddle_graph, save_file, opset_version,
+                           enable_onnx_checker, operator_export_type)
     else:
         raise TypeError(
             "the input 'program' should be 'Program', but received type is %s."
@@ -159,5 +162,5 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     paddle_graph = PaddleGraph.build_from_dygraph(layer, inner_input_spec,
                                                   output_spec)
-    export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
-                operator_export_type, verbose)
+    return export_onnx(paddle_graph, save_file, opset_version,
+                       enable_onnx_checker, operator_export_type, verbose)
