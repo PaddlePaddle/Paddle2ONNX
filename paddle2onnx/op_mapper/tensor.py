@@ -836,6 +836,9 @@ class Pad():
     def opset_1(cls, graph, node, **kw):
         if node.attr('mode') == 'replicate':
             mode = 'edge'
+        elif node.attr('mode') == 'circular':
+            raise Exception("The padding mode = circular is not supported, " \
+                            "Please try the other three ways")
         else:
             mode = node.attr('mode')
         pads = cls.convert_padding(node, **kw)
@@ -857,6 +860,9 @@ class Pad():
         pads = cls.convert_padding(node, **kw)
         if node.attr('mode') == 'replicate':
             mode = 'edge'
+        elif node.attr('mode') == 'circular':
+            raise Exception("The padding mode = circular is not supported, " \
+                            "Please try the other three ways")
         else:
             mode = node.attr('mode')
         pads_node = graph.make_node(
@@ -881,6 +887,9 @@ class Pad():
     def convert_padding(cls, node, **kw):
         x_shape = node.input_shape('X', 0)
         paddings = node.attr('paddings')
+        if paddings == []:
+            raise Exception("Tensor input type is not supported, " \
+                            "Please try input List or Int")
         onnx_paddings = None
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
