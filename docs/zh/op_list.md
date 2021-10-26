@@ -6,6 +6,7 @@
 | acos | 7~12 |
 | arg_max | 1~12 |
 | arg_min | 1~12 |
+| arg_sort | 1~12 |
 | asin | 7~12 |
 | anchor_generator | 11~12 |
 | assign_value | 1~12 |
@@ -32,7 +33,9 @@
 | depthwise_conv2d | 1~12 |
 | depthwise_conv2d_transpose | 1~12 |
 | distribute_fpn_proposals | 11~12 |
+| dist | 7~12 | 
 | dropout | 7~12 |
+| dot | 7~13 |
 | elementwise_add | 7~12 |
 | elementwise_div | 7~12 |
 | elementwise_floordiv | 7~12 |
@@ -62,11 +65,13 @@
 | greater_equal | 12~ |   |
 | group_norm | 1~12 |   |
 | hardshrink | 9~12 |
+| hardtanh | 6~12 |
 | hard_sigmoid | 1~12 |
 | hard_swish | 1~12 |
 | has_nan | 9~12 |
 | im2sequence | 1~12 |
 | instance_norm | 1~12 |
+| index_select | 1~12 |
 | isinf | 10~12 |
 | isnan | 9~12 |
 | isfinite | 10~12 |
@@ -89,15 +94,19 @@
 | logical_and | 1~12 |
 | logical_xor | 1~12 | opset 7~12 limited supported |
 | logsigmoid | 1~12 |
+| logsoftmax | 1~12 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
 | mul | 1~12 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
+| mv | 1~12 |
 | nearest_interp | 9~12 |
 | nearest_interp_v2 | 9~12 |
 | norm | 1~12 |
+| numel | 1~12 |
+| pad1d | 2~12 |
 | pad2d | 1~12 |
 | pad3d | 1~12 |
 | pixel_shuffle | 11~12 |
@@ -126,10 +135,12 @@
 | selu | 6~12 |
 | softmax_with_cross_entropy | 12 |
 | softplus | 1~12 |
+| softsign | 1~12 |
 | shape | 1~12 |
 | sigmoid | 1~12 |
 | sign | 9~12 |
 | sin | 7~12 |
+| sinh | 9~12 |
 | slice | 1~12 |
 | split | 1~12 |
 | squeeze2 | 1~12 |

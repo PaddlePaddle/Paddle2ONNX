@@ -166,6 +166,17 @@ class Shape():
             to=dtypes.ONNX.INT32)
 
 
+@op_mapper('size')
+class Numel():
+    supports_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        graph.make_node(
+            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
+
+
 @op_mapper('split')
 class Split():
     support_opset_version_range = (1, 12)
@@ -823,6 +834,13 @@ class Pad():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        if node.attr('mode') == 'replicate':
+            mode = 'edge'
+        elif node.attr('mode') == 'circular':
+            raise Exception("The padding mode = circular is not supported, " \
+                            "Please try the other three ways")
+        else:
+            mode = node.attr('mode')
         pads = cls.convert_padding(node, **kw)
         value = None
         if node.attr('pad_value') is not None:
@@ -833,13 +851,20 @@ class Pad():
             'Pad',
             inputs=node.input('X'),
             outputs=node.output('Out'),
-            mode=node.attr('mode'),
+            mode=mode,
             value=value,
             pads=pads)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
         pads = cls.convert_padding(node, **kw)
+        if node.attr('mode') == 'replicate':
+            mode = 'edge'
+        elif node.attr('mode') == 'circular':
+            raise Exception("The padding mode = circular is not supported, " \
+                            "Please try the other three ways")
+        else:
+            mode = node.attr('mode')
         pads_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': pads})
@@ -856,12 +881,15 @@ class Pad():
             'Pad',
             inputs=node.input('X') + [pads_node, value_node],
             outputs=node.output('Out'),
-            mode=node.attr('mode'))
+            mode=mode)
 
     @classmethod
     def convert_padding(cls, node, **kw):
         x_shape = node.input_shape('X', 0)
         paddings = node.attr('paddings')
+        if paddings == []:
+            raise Exception("Tensor input type is not supported, " \
+                            "Please try input List or Int")
         onnx_paddings = None
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':

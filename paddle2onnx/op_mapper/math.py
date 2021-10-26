@@ -139,6 +139,16 @@ class Asin():
             'Asin', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('sinh')
+class Sinh():
+    supports_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Sinh', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('sin')
 class Sin():
     supports_opset_version_range = (7, 12)
@@ -703,6 +713,112 @@ class ArgMin():
                     outputs=node.output('Out'),
                     axis=node.attr('axis'),
                     keepdims=0)
+
+
+@op_mapper('brelu')
+class Hardtanh():
+    support_opset_version_range = (6, 12)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        mapper_helper.clip_helper(graph, node.input('X', 0), node.attr('t_max'),
+                                  node.attr('t_min'), node.output('Out', 0))
+
+
+@op_mapper('mv')
+class Mv():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'MatMul',
+            inputs=[node.input('X', 0),
+                    node.input('Vec', 0)],
+            outputs=node.output('Out'))
+
+
+@op_mapper('dot')
+class Dot():
+    support_opset_version_range = (7, 13)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0),
+                           node.input('Y', 0)])
+        one = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            value=[len(node.input_shape('X', 0)) - 1])
+        graph.make_node(
+            'ReduceSum', inputs=[mul_node, one], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0),
+                           node.input('Y', 0)])
+        graph.make_node(
+            'ReduceSum',
+            inputs=[mul_node],
+            axes=[len(node.input_shape('X', 0)) - 1],
+            outputs=node.output('Out'))
+
+
+@op_mapper('dist')
+class Dist():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        sub_node = graph.make_node(
+            'Sub', inputs=[node.input('X', 0),
+                           node.input('Y', 0)])
+        abs_node = graph.make_node('Abs', inputs=sub_node)
+        if node.attr('p') == 0:
+            sign_node = graph.make_node('Sign', inputs=abs_node)
+            sum_node = graph.make_node(
+                'ReduceSum', inputs=sign_node, keepdims=0)
+            graph.make_node(
+                'Unsqueeze',
+                axes=[0],
+                inputs=[sum_node],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('inf'):
+            max_node = graph.make_node(
+                'ReduceMax',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            graph.make_node(
+                'Unsqueeze',
+                axes=[0],
+                inputs=[max_node],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('-inf'):
+            min_node = graph.make_node(
+                'ReduceMin',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            graph.make_node(
+                'Unsqueeze',
+                axes=[0],
+                inputs=[min_node],
+                outputs=node.output('Out'))
+        else:
+            p = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('p'))
+            pow_node = graph.make_node(
+                'Pow',
+                inputs=[abs_node, p],
+            )
+            sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
+            sum_node = graph.make_node('Unsqueeze', axes=[0], inputs=[sum_node])
+            p_1 = graph.make_node('Reciprocal', inputs=p)
+            graph.make_node(
+                'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
 
 
 @op_mapper('round')
