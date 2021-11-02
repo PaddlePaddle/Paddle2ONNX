@@ -22,7 +22,7 @@ from paddle2onnx.op_mapper import mapper_helper
 
 @op_mapper('concat')
 class Concat():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -30,17 +30,20 @@ class Concat():
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
+        axis = node.attr('axis')
+        if axis < 0:
+            axis = axis + len(node.input_shape('X', 0))
 
         node = graph.make_node(
             'Concat',
             inputs=inputs,
             outputs=node.output('Out'),
-            axis=node.attr('axis'))
+            axis=axis)
 
 
 @op_mapper('assign')
 class Assign():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -50,7 +53,7 @@ class Assign():
 
 @op_mapper('lod_reset')
 class LodReset():
-    support_opset_verison_range = (1, )
+    support_opset_version_range = (1, )
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -60,7 +63,7 @@ class LodReset():
 
 @op_mapper('stack')
 class Stack():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -80,10 +83,23 @@ class Stack():
             outputs=node.output('Y'),
             axis=axis)
 
+@op_mapper('unstack')
+class Unstack():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        print(node)
+        graph.make_node(
+                'Split',
+                inputs=node.input('X'),
+                outputs=node.output('Y'),
+                axis=node.attr('axis'))
+
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
-    support_opset_verison_range = (8, 12)
+    support_opset_version_range = (8, 12)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -107,7 +123,7 @@ class ExpandAsV2():
 
 @op_mapper('expand_v2')
 class ExpandV2():
-    support_opset_verison_range = (8, 12)
+    support_opset_version_range = (8, 12)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -138,7 +154,7 @@ class ExpandV2():
 
 @op_mapper('shape')
 class Shape():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -150,9 +166,20 @@ class Shape():
             to=dtypes.ONNX.INT32)
 
 
+@op_mapper('size')
+class Numel():
+    supports_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        graph.make_node(
+            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
+
+
 @op_mapper('split')
 class Split():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -174,7 +201,7 @@ class Split():
 
 @op_mapper(['slice', 'strided_slice'])
 class Slice():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def decrease_axis(cls, node):
@@ -297,7 +324,7 @@ class SequenceExpand():
 
 @op_mapper(['expand', 'tile'])
 class Expand():
-    support_opset_verison_range = (11, 12)
+    support_opset_version_range = (11, 12)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -357,7 +384,7 @@ class Expand():
 
 @op_mapper('range')
 class Range():
-    support_opset_verison_range = (11, 12)
+    support_opset_version_range = (11, 12)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -375,7 +402,7 @@ class Range():
 
 @op_mapper('fill_constant')
 class Constant():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -418,7 +445,7 @@ class Constant():
 
 @op_mapper(['lookup_table_v2', 'lookup_table'])
 class Embedding():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -434,7 +461,7 @@ class Embedding():
 
 @op_mapper('fill_constant_batch_size_like')
 class FillConstantBatchSizeLike():
-    support_opset_verison_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -448,7 +475,7 @@ class FillConstantBatchSizeLike():
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
         value = node.attr('value')
         input_shape = node.input_shape('Input', 0)
-
+        value = int(value)
         constant = graph.make_node(
             'Constant',
             dtype=dtype,
@@ -516,7 +543,7 @@ class FullLike():
     '''
     fill_any_like is kernel for paddle op::full_like & ones_like
     '''
-    support_opset_verison_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -537,9 +564,35 @@ class FullLike():
             value=np.array(value).astype(np_dtype))
 
 
+@op_mapper('fill_zeros_like')
+class FullZeroLike():
+    '''
+    fill_any_like is kernel for paddle op::full_like & ones_like
+    '''
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        value = 0
+        dtype = node.attr('dtype')
+        input_dtype = node.input_var('X', 0).dtype
+        if dtype is None:
+            dtype = input_dtype
+        np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
+        onnx_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+        graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape_node],
+            outputs=node.output('Out'),
+            dims=[1],
+            dtype=onnx_dtype,
+            value=np.array(value).astype(np_dtype))
+
+
 @op_mapper('gather')
 class Gather():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -572,7 +625,7 @@ class Gather():
 
 @op_mapper('squeeze2')
 class Squeeze():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -586,7 +639,7 @@ class Squeeze():
 
 @op_mapper('assign_value')
 class Assign():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -611,7 +664,7 @@ class Assign():
 
 @op_mapper('transpose2')
 class Transpose():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -624,7 +677,7 @@ class Transpose():
 
 @op_mapper('flatten2')
 class Flatten():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -637,7 +690,7 @@ class Flatten():
 
 @op_mapper('flatten_contiguous_range')
 class FlattenContiguousRange():
-    support_opset_verison_range = (5, 12)
+    support_opset_version_range = (5, 12)
 
     @classmethod
     def opset_5(cls, graph, node, **kw):
@@ -668,7 +721,7 @@ class FlattenContiguousRange():
 
 @op_mapper('reshape2')
 class Reshape():
-    support_opset_verison_range = (5, 12)
+    support_opset_version_range = (5, 12)
 
     @classmethod
     def opset_5(cls, graph, node, **kw):
@@ -712,7 +765,7 @@ class Reshape():
 
 @op_mapper('unsqueeze2')
 class Unsqueeze():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -725,7 +778,7 @@ class Unsqueeze():
 
 @op_mapper('reciprocal')
 class Reciprocal():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -735,7 +788,7 @@ class Reciprocal():
 
 @op_mapper('cast')
 class Cast():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -748,7 +801,7 @@ class Cast():
 
 @op_mapper('clip')
 class Clip():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -777,10 +830,17 @@ class Clip():
 
 @op_mapper(['pad2d', 'pad3d'])
 class Pad():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        if node.attr('mode') == 'replicate':
+            mode = 'edge'
+        elif node.attr('mode') == 'circular':
+            raise Exception("The padding mode = circular is not supported, " \
+                            "Please try the other three ways")
+        else:
+            mode = node.attr('mode')
         pads = cls.convert_padding(node, **kw)
         value = None
         if node.attr('pad_value') is not None:
@@ -791,13 +851,20 @@ class Pad():
             'Pad',
             inputs=node.input('X'),
             outputs=node.output('Out'),
-            mode=node.attr('mode'),
+            mode=mode,
             value=value,
             pads=pads)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
         pads = cls.convert_padding(node, **kw)
+        if node.attr('mode') == 'replicate':
+            mode = 'edge'
+        elif node.attr('mode') == 'circular':
+            raise Exception("The padding mode = circular is not supported, " \
+                            "Please try the other three ways")
+        else:
+            mode = node.attr('mode')
         pads_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': pads})
@@ -814,33 +881,43 @@ class Pad():
             'Pad',
             inputs=node.input('X') + [pads_node, value_node],
             outputs=node.output('Out'),
-            mode=node.attr('mode'))
+            mode=mode)
 
     @classmethod
     def convert_padding(cls, node, **kw):
         x_shape = node.input_shape('X', 0)
         paddings = node.attr('paddings')
+        if paddings == []:
+            raise Exception("Tensor input type is not supported, " \
+                            "Please try input List or Int")
         onnx_paddings = None
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
             onnx_paddings = [
-                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
+                0, 0, paddings[0], paddings[2],
+                0, 0, paddings[1], paddings[3]
             ]
         elif node.attr('data_format') == 'NHWC':
             onnx_paddings = [
-                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+                0, paddings[0], paddings[2], 0,
+                0, paddings[1], paddings[3], 0
             ]
         elif node.attr('data_format') == 'NCDHW':
             onnx_paddings = [
-                0, 0, paddings[4], paddings[2], paddings[0], 0, 0, paddings[5],
-                paddings[3], paddings[1]
+                0, 0, paddings[4], paddings[2], paddings[0],
+                0, 0, paddings[5], paddings[3], paddings[1]
+            ]
+        elif node.attr('data_format') == 'NDHWC':
+            onnx_paddings = [
+                0, paddings[4], paddings[2], paddings[0], 0,
+                0, paddings[5], paddings[3], paddings[1], 0
             ]
         return onnx_paddings
 
 
 @op_mapper('uniform_random_batch_size_like')
 class UniformRandom():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -856,7 +933,7 @@ class UniformRandom():
 
 @op_mapper('uniform_random')
 class UniformRandom():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -883,7 +960,7 @@ class UniformRandom():
         'nearest_interp_v2': 'nearest'
     })
 class Resize():
-    support_opset_verison_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -910,12 +987,18 @@ class Resize():
         else:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
             scale = node.attr('scale')
+            if isinstance(scale, (tuple, list)):
+                scale_h = scale[0]
+                scale_w = scale[1]
+            else:
+                scale_h = scale
+                scale_w = scale
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
                     attrs={
                         'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale, scale]
+                        'value': [1, 1, scale_h, scale_w]
                     })
                 inputs.append(scale_node)
             else:
@@ -1096,7 +1179,7 @@ class Resize():
 
 @op_mapper('pixel_shuffle')
 class PixelShuffle():
-    support_opset_verison_range = (11, 12)
+    support_opset_version_range = (11, 12)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
