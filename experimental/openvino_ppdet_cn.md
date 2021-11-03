@@ -17,7 +17,8 @@
 
 ## 模型分析
 
-目前本文档中仅支持了PaddleDetection中的YOLOv3系列，包括YOLOv3-DarkNet, YOLOv3-Resnet34等等。PaddleDetection中的目标检测模型均包括3个输入值和2个输出值。3个输入值为`image`, `im_shape`, `scale_factor`，分别表示预处理后的图像数据N*3*H*W，图像原大小信息N*2, 图像缩放系数N*2，后面两个输入信息最终目的是要将检测框坐标还原到原图对应的位置。
+目前本文档中仅支持了PaddleDetection中的YOLOv3系列，包括YOLOv3-DarkNet, YOLOv3-Resnet34等等。PaddleDetection中的目标检测模型均包括3个输入值和2个输出值。3个输入值为`image`, `im_shape`, `scale_factor`，分别表示预处理后的图像数据N*3*H*W，图像原大小信息N*2, 图像缩放系数N*2，后面两个输入信息最终目的是要将检测框坐标还原到原图对应的位置。  
+
 注意，为了支持OpenVINO，我们需要将YOLOv3的输入大小固定，例如3个输入形状固定为状[1,3,608,608], [1,2], [1,2]，即将batch_size，以及输入图像的高和宽都固定，其中batch_size必须为1，而高和宽为32的倍数即可，如[1,3,608,608]或[1,3,320,320]
 
 ## 转换过程
