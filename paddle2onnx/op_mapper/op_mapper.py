@@ -104,6 +104,7 @@ class OpMapper(object):
                     mapper_func, kw = opsets[convert_version]
                     mapper_func(graph, node, **kw)
                 else:
+                    paddle.enable_static()
                     custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
                         node.type](node)
                     custom_paddle_graph = custom_paddle_op.get_paddle_graph()
@@ -129,6 +130,7 @@ class OpMapper(object):
             node_map, opset_version, True)
         for name, node in list(node_map.items()):
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:  #如果是custom的op，获取custom的推荐op
+                paddle.enable_static()
                 custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
                     node.type](node)
                 custom_paddle_graph = custom_paddle_op.get_paddle_graph()
