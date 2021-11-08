@@ -169,6 +169,16 @@ class Atan():
             'Atan', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('tan')
+class Tan():
+    supports_opset_version_range = (8, 12)
+
+    @classmethod
+    def opset_8(cls, graph, node, **kw):
+        graph.make_node(
+            'Tan', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('ceil')
 class Ceil():
     supports_opset_version_range = (6, 12)

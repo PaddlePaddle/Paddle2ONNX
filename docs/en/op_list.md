@@ -14,6 +14,7 @@
 | atan | 7~12 |
 | any | 6~12 |
 | batch_norm | 1~12 |
+| bicubic_interp_v2 | 9~12 |
 | bilinear_interp | 9~12 |
 | bilinear_interp_v2 | 9~12 |
 | bmm | 1~12 |
@@ -59,6 +60,7 @@
 | floor | 1~12 |
 | floor_mod | 7~12 |
 | lod_reset | 1~12 |
+| linear_interp_v2 | 9~12 |
 | lstm | 9~12 |
 | gather | 1~12 |  opset 1~10 limited supported |
 | generate_proposals | 12~ |   |
@@ -95,9 +97,11 @@
 | logical_xor | 1~12 | opset 7~12 limited supported |
 | logsigmoid | 1~12 |
 | logsoftmax | 1~12 |
+| masked_select | 11~12 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
+| meshgrid | 1~12 |
 | mul | 1~12 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
@@ -131,11 +135,13 @@
 | rsqrt | 6~12 |
 | softmax | 1~12 |
 | scale | 1~12 | opset 1~6 limited supported |
+| scatter | 1~15 |
 | sequence_expand | 1~12 |
 | selu | 6~12 |
 | softmax_with_cross_entropy | 12 |
 | softplus | 1~12 |
 | softsign | 1~12 |
+| softshrink | 9~12 |
 | shape | 1~12 |
 | sigmoid | 1~12 |
 | sign | 9~12 |
@@ -151,12 +157,18 @@
 | sum | 1~12 |
 | swish | 1~12 |
 | tanh | 1~12 |
+| tanh_shrink | 7~12 |
+| tan | 8~12 |
+| thresholded_relu | 1~12 |
 | tile | 11~12 |
 | top_k | 11~12 |
 | top_k_v2 | 11~12 |
 | transpose2 | 1~12 |
+| trilinear_interp_v2 | 9~12 |
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
+| unique | 11~12 |
 | unsqueeze2 | 1~12 |
+| where | 9~12 |
 | where_index | 9~12 |
 | yolo_box | 9~12 |
