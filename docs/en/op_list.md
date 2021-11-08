@@ -136,6 +136,7 @@
 | softmax | 1~12 |
 | scale | 1~12 | opset 1~6 limited supported |
 | scatter | 1~15 |
+| scatter_nd_add | 11~12 |
 | sequence_expand | 1~12 |
 | selu | 6~12 |
 | softmax_with_cross_entropy | 12 |

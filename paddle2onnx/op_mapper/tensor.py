@@ -1307,6 +1307,30 @@ class Scatter():
                 outputs=node.output('Out'))
 
 
+@op_mapper('scatter_nd_add')
+class ScatterndAdd():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        shape = graph.make_node('Shape', inputs=node.input('X', 0))
+        zero_like_node = graph.make_node('ConstantOfShape',
+                                         inputs=[shape],
+                                         dims=[1],
+                                         dtype=dtypes.ONNX.FLOAT,
+                                         value=[0])
+        add_node = graph.make_node(
+            'ScatterND',
+            inputs=[
+                zero_like_node,
+                node.input('Index', 0),
+                node.input('Updates', 0)
+            ],
+        )
+        graph.make_node('Add',
+                        inputs=[node.input('X', 0), add_node],
+                        outputs=node.output('Out'))
+
 @op_mapper('meshgrid')
 class Meshgrid():
     support_opset_version_range = (1, 12)
