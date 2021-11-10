@@ -22,6 +22,7 @@ from . import activation
 from . import tensor
 from . import logic
 from . import search
+from . import quantize
 
 from .detection import yolo_box
 from .detection import multiclass_nms

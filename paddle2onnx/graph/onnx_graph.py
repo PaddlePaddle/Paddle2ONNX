@@ -23,6 +23,7 @@ from paddle2onnx.constant import NodeDomain, PRODUCER, dtypes
 from paddle2onnx.op_mapper import OpMapper
 from onnx import helper
 from paddle2onnx.utils import check_model, logging
+from onnx import TensorProto
 
 
 class ONNXNode(Node):
@@ -70,10 +71,15 @@ class ONNXNode(Node):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, paddle_graph, opset_version, operator_export_type="ONNX" ,block=None):
+    def __init__(self,
+                 paddle_graph,
+                 opset_version,
+                 operator_export_type="ONNX",
+                 block=None):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
+        self.origin_parameters = None
         self.ctx = paddle_graph
         self.custom = []
         self.update_opset_version()
@@ -133,7 +139,8 @@ class ONNXGraph(Graph):
         else:
             real_outputs = outputs
 
-        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name, domain)
+        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name,
+                        domain)
 
         self.insert_node(node)
         if len(node.outputs) == 1:
@@ -158,12 +165,14 @@ class ONNXGraph(Graph):
             attrs = node.attrs
         attrs.update(kw)
 
-        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name, node.domain)
+        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name,
+                        node.domain)
         self.insert_node(node)
         return node
 
     def build_parameters(self, parameters):
         # build weight nodes
+        self.origin_parameters = parameters
         for name, param in parameters.items():
             weight = param['data']
             if weight is not np.ndarray:
@@ -176,6 +185,21 @@ class ONNXGraph(Graph):
             node = helper.make_node(
                 'Constant', inputs=[], outputs=[name], value=tensor)
             self.parameters[name] = node
+
+    def update_parameters(self, name, param):
+        weight = param['data']
+        if weight is not np.ndarray:
+            weight = np.array(weight)
+
+        tensor = helper.make_tensor(
+            name=name,
+            dims=param['shape'],
+            data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
+            vals=weight.flatten().tolist())
+        node = helper.make_node(
+            'Constant', inputs=[], outputs=[name], value=tensor)
+        self.parameters[name] = node
+        self.origin_parameters[name] = param
 
     def build_input_nodes(self, input_nodes):
         # build input nodes
@@ -191,7 +215,9 @@ class ONNXGraph(Graph):
 
     def update_opset_version(self):
         node_map = self.ctx.node_map
-        self.opset_version = OpMapper.get_recommend_opset_version(node_map, self.opset_version)
+        self.opset_version = OpMapper.get_recommend_opset_version(
+            node_map, self.opset_version)
+
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
@@ -236,8 +262,14 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     @staticmethod
-    def build(paddle_graph, opset_version, operator_export_type="ONNX", verbose=False):
-        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version, operator_export_type=operator_export_type)
+    def build(paddle_graph,
+              opset_version,
+              operator_export_type="ONNX",
+              verbose=False):
+        onnx_graph = ONNXGraph(
+            paddle_graph,
+            opset_version=opset_version,
+            operator_export_type=operator_export_type)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
