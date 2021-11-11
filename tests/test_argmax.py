@@ -22,14 +22,15 @@ class Net(paddle.nn.Layer):
     simple Net
     """
 
-    def __init__(self):
+    def __init__(self, dtype='int64'):
         super(Net, self).__init__()
+        self.dtype = dtype
 
     def forward(self, inputs):
         """
         forward
         """
-        x = paddle.argmax(inputs, axis=0)
+        x = paddle.argmax(inputs, axis=0, dtype=self.dtype)
         return x
 
 
@@ -87,6 +88,21 @@ def test_argmax_12():
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'argmax', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_argmax_dtype():
+    """
+    api: paddle.argmax
+    op version: 11
+    """
+    op = Net(dtype="int32")
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'argmax', [11])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
