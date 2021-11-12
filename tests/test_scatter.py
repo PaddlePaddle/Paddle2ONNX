@@ -102,18 +102,18 @@ def test_scatter_15():
     obj.run()
 
 
-# def test_scatter_overwrite():
-#     """
-#     api: paddle.scatter
-#     op version: 16
-#     """
-#     op = Net(overwrite=False)
-#     op.eval()
-#     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'scatter', [16])
-#     obj.set_input_data(
-#         "input_data",
-#         paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'),
-#         paddle.to_tensor([2, 1, 0, 2]).astype('int64'),
-#         paddle.to_tensor([[1, 1], [2, 2], [3, 3], [4, 4]]).astype('float32'))
-#     obj.run()
+def test_scatter_overwrite():
+    """
+    api: paddle.scatter
+    op version: 16
+    """
+    op = Net(overwrite=False)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'scatter', [15])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'),
+        paddle.to_tensor([2, 1, 0]).astype('int64'),
+        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'))
+    obj.run()

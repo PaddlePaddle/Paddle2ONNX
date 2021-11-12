@@ -1278,33 +1278,44 @@ class PixelShuffle():
 
 @op_mapper('scatter')
 class Scatter():
-    support_opset_version_range = (1, 15)
+    support_opset_version_range = (11, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        shape = graph.make_node(
-            'Constant',
-            value=[node.input_shape('Ids', 0)[0], 1],
-            dtype=dtypes.ONNX.INT64)
-        reshape_index = graph.make_node(
-            'Reshape', inputs=[node.input('Ids', 0), shape])
+    def opset_11(cls, graph, node, **kw):
+        shape = graph.make_node('Constant',
+                                value=[node.input_shape('Ids', 0)[0], 1],
+                                dtype=dtypes.ONNX.INT64)
+        reshape_index = graph.make_node('Reshape',
+                                        inputs=[node.input('Ids', 0), shape])
         if not node.attr('overwrite'):
-            raise Exception("overwrite = False not support yet.")
-            # graph.make_node('ScatterND',
-            #                 inputs=[
-            #                     node.input('X', 0), reshape_index,
-            #                     node.input('Updates', 0)
-            #                 ],
-            #                 outputs=node.output('Out'),
-            #                 reduction='add')
-        else:
-            graph.make_node(
+            input = graph.make_node(
                 'ScatterND',
                 inputs=[
                     node.input('X', 0), reshape_index,
-                    node.input('Updates', 0)
-                ],
-                outputs=node.output('Out'))
+                    graph.make_node('ConstantOfShape',
+                                    inputs=[
+                                        graph.make_node('Shape',
+                                                        inputs=node.input(
+                                                            'Updates', 0))
+                                    ],
+                                    dims=[1],
+                                    dtype=dtypes.ONNX.FLOAT,
+                                    value=[0])
+                ])
+            node.inputs['X'] = [input]
+            node.inputs['Index'] = [reshape_index]
+            node.inputs['Ids'] = []
+            node.set_inputs(node.inputs)
+            from paddle2onnx.op_mapper.tensor import ScatterndAdd
+            ScatterndAdd.opset_11(graph, node, **kw)
+
+        else:
+            graph.make_node('ScatterND',
+                            inputs=[
+                                node.input('X', 0), reshape_index,
+                                node.input('Updates', 0)
+                            ],
+                            outputs=node.output('Out'))
 
 
 @op_mapper('scatter_nd_add')
@@ -1330,6 +1341,7 @@ class ScatterndAdd():
         graph.make_node('Add',
                         inputs=[node.input('X', 0), add_node],
                         outputs=node.output('Out'))
+
 
 @op_mapper('meshgrid')
 class Meshgrid():
