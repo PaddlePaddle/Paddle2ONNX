@@ -138,7 +138,7 @@ def test_nn_functional_interpolate_linear_scale_factor_float():
     api: paddle.nn.functional.interpolate
     op version: 11
     """
-    op = Net(mode='linear', scale_factor=1.3, data_format='NCW')
+    op = Net(mode='linear', scale_factor=1.5, data_format='NCW')
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'nn_functional_interpolate', [11])
@@ -154,7 +154,7 @@ def test_nn_functional_interpolate_linear_date_format():
     api: paddle.nn.functional.interpolate
     op version: 11
     """
-    op = Net(mode='linear', scale_factor=1.3, data_format='NWC')
+    op = Net(mode='linear', scale_factor=1.5, data_format='NWC')
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'nn_functional_interpolate', [11])
@@ -171,7 +171,7 @@ def test_nn_functional_interpolate_linear_align_corners():
     op version: 11
     """
     op = Net(
-        mode='linear', scale_factor=1.5, data_format='NWC', align_corners=True)
+        mode='linear', scale_factor=1.5, data_format='NCW', align_corners=True)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'nn_functional_interpolate', [11])
@@ -187,7 +187,7 @@ def test_nn_functional_interpolate_linear_size():
     api: paddle.nn.functional.interpolate
     op version: 11
     """
-    op = Net(mode='linear', size=[5], data_format='NWC', align_corners=True)
+    op = Net(mode='linear', size=[5], data_format='NCW')
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'nn_functional_interpolate', [11])
