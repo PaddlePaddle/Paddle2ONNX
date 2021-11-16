@@ -133,55 +133,6 @@ def test_nn_functional_interpolate_nearest_date_format():
     obj.run()
 
 
-def test_nn_functional_interpolate_linear_date_format():
-    """
-    api: paddle.nn.functional.interpolate
-    op version: 11
-    """
-    op = Net(mode='linear', scale_factor=1.5, data_format='NWC')
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_interpolate', [11])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [2, 6, 10]).astype('float32')))
-    obj.run()
-
-
-def test_nn_functional_interpolate_linear_align_corners():
-    """
-    api: paddle.nn.functional.interpolate
-    op version: 11
-    """
-    op = Net(
-        mode='linear', scale_factor=1.5, data_format='NCW', align_corners=True)
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_interpolate', [11])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [2, 2, 10]).astype('float32')))
-    obj.run()
-
-
-def test_nn_functional_interpolate_linear_size():
-    """
-    api: paddle.nn.functional.interpolate
-    op version: 11
-    """
-    op = Net(mode='linear', size=[5], data_format='NCW')
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_interpolate', [11])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [2, 2, 10]).astype('float32')))
-    obj.run()
-
-
 def test_nn_functional_interpolate_bilinear_scale_factor_float():
     """
     api: paddle.nn.functional.interpolate

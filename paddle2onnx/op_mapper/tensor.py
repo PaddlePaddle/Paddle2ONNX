@@ -946,7 +946,7 @@ class UniformRandom():
 @op_mapper(
     [
         'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
-        'nearest_interp_v2', 'linear_interp_v2', 'trilinear_interp_v2',
+        'nearest_interp_v2', 'trilinear_interp_v2',
         'bicubic_interp_v2'
     ],
     mapper_dict={
@@ -954,7 +954,6 @@ class UniformRandom():
         'nearest_interp': 'nearest',
         'bilinear_interp_v2': 'linear',
         'nearest_interp_v2': 'nearest',
-        'linear_interp_v2': 'linear',
         'trilinear_interp_v2': 'linear',
         'bicubic_interp_v2': 'cubic'
     })
@@ -1057,10 +1056,7 @@ class Resize():
         date_layout = node.attr('data_layout')
         dim = len(node.input_shape('X', 0))
         if date_layout == 'NHWC':
-            if dim == 3:
-                perm = [0, 2, 1]
-                perm_t = [0, 2, 1]
-            elif dim == 4:
+            if dim == 4:
                 perm = [0, 3, 1, 2]
                 perm_t = [0, 2, 3, 1]
             elif dim == 5:
@@ -1111,9 +1107,7 @@ class Resize():
             scale = node.input('Scale')[0]
             inputs.append(scale)
         else:
-            if dim == 3:
-                out_shape = [node.attr('out_w')]
-            elif dim == 4:
+            if dim == 4:
                 out_shape = [node.attr('out_h'), node.attr('out_w')]
             else:
                 out_shape = [
