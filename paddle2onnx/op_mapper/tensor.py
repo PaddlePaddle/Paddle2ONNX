@@ -946,15 +946,13 @@ class UniformRandom():
 @op_mapper(
     [
         'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
-        'nearest_interp_v2', 'trilinear_interp_v2',
-        'bicubic_interp_v2'
+        'nearest_interp_v2', 'bicubic_interp_v2'
     ],
     mapper_dict={
         'bilinear_interp': 'linear',
         'nearest_interp': 'nearest',
         'bilinear_interp_v2': 'linear',
         'nearest_interp_v2': 'nearest',
-        'trilinear_interp_v2': 'linear',
         'bicubic_interp_v2': 'cubic'
     })
 class Resize():
@@ -1234,9 +1232,7 @@ class Resize():
                 })
             shape_node1 = graph.make_node(
                 'Slice', inputs=[shape_node0, starts_node, ends_node])
-        if dim == 3:
-            out_shape = [node.attr('out_w')]
-        elif dim == 4:
+        if dim == 4:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
         else:
             out_shape = [
