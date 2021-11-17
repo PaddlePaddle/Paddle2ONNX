@@ -81,22 +81,6 @@ def test_dot_12():
     obj.run()
 
 
-def test_dot_13():
-    """
-    api: paddle.dot
-    op version: 13
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [13])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [2, 4]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [2, 4]).astype('float32')))
-    obj.run()
-
-
 def test_dot_1D():
     """
     api: paddle.dot

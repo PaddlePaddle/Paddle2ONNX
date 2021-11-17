@@ -36,7 +36,7 @@
 | distribute_fpn_proposals | 11~12 |
 | dist | 7~12 | 
 | dropout | 7~12 |
-| dot | 7~13 |
+| dot | 7~12 |
 | elementwise_add | 7~12 |
 | elementwise_div | 7~12 |
 | elementwise_floordiv | 7~12 |
@@ -135,7 +135,7 @@
 | rsqrt | 6~12 |
 | softmax | 1~12 |
 | scale | 1~12 | opset 1~6 limited supported |
-| scatter | 1~15 |
+| scatter | 1~12 |
 | scatter_nd_add | 11~12 |
 | sequence_expand | 1~12 |
 | selu | 6~12 |

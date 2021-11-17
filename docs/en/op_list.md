@@ -36,7 +36,7 @@
 | distribute_fpn_proposals | 11~12 |
 | dist | 7~12 | 
 | dropout | 7~12 |
-| dot | 7~13 |
+| dot | 7~12 |
 | elementwise_add | 7~12 |
 | elementwise_div | 7~12 |
 | elementwise_floordiv | 7~12 |
