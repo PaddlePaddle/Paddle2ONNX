@@ -83,6 +83,9 @@ class ONNXGraph(Graph):
         self.ctx = paddle_graph
         self.custom = []
         self.update_opset_version()
+        self.name_dict = dict()
+        self.changed_dict = dict()
+        self.sort_name_dict = dict()
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -95,6 +98,100 @@ class ONNXGraph(Graph):
         graph_str += ' }'
         return graph_str
 
+    def update_graph(self):
+        if not self.changed_dict:
+            return
+        for input_name, vals in self.changed_dict.items():
+            ori_input_name = vals['name']
+            total = vals['total']
+            all_q_dq = vals['qdq']
+            num = 0
+            for layer_name, node in self.node_map.items():
+                inputs = node.inputs
+                if input_name not in inputs:
+                    continue
+                if node.type in ['QuantizeLinear']:
+                    continue
+                for i in range(len(inputs)):
+                    if input_name == inputs[i]:
+                        change_input_name = ori_input_name + ".paddleadd" + str(
+                            num)
+                        inputs[i] = change_input_name
+                        print(inputs)
+                        node = self.update_node(node, inputs=inputs)
+                        self.sort_name_dict[node.layer_name] = all_q_dq[num]
+                        num = num + 1
+
+        temp_node_map = dict()
+        for layer_name, node in self.node_map.items():
+            if layer_name in self.sort_name_dict.keys():
+                qdq_node = self.sort_name_dict[layer_name]
+                for fake_node_name in qdq_node:
+                    fake_node = self.node_map[fake_node_name]
+                    temp_node_map[fake_node_name] = fake_node
+                temp_node_map[layer_name] = node
+            else:
+                for fake_values in self.sort_name_dict.values():
+                    if layer_name in fake_values:
+                        continue
+                    else:
+                        temp_node_map[layer_name] = node
+        self.node_map = temp_node_map
+
+    def get_another_node_by_input(self, name, copy_node=False):
+        check_op_list = ['fake_quantize_dequantize_moving_average_abs_max']
+        result_layer_name = []
+        for layer_name, node in self.ctx.node_map.items():
+            inputs = node.inputs
+            for one_input in inputs.values():
+                if name in one_input and node.type not in check_op_list:
+                    result_layer_name.append(layer_name)
+
+        print("result_layer_name:", result_layer_name)
+        node_list = []
+        if copy_node:
+            for i in range(len(result_layer_name)):
+                node = copy.copy(self.ctx.node_map[result_layer_name[i]])
+                node_list.append(node)
+        else:
+            for i in range(len(result_layer_name)):
+                node = self.ctx.node_map[result_layer_name[i]]
+                node_list.append(node)
+
+        return node_list
+
+    def add_name(self, name):
+        if name in self.name_dict.keys():
+            self.name_dict[name]["names"].append(name + "_" + str(
+                self.name_dict[name]["total"]))
+            self.name_dict[name]["total"] = self.name_dict[name]["total"] + 1
+        else:
+            self.name_dict[name] = dict()
+            self.name_dict[name]["total"] = 0
+            self.name_dict[name]["num"] = 0
+            self.name_dict[name]["names"] = list()
+            self.name_dict[name]["names"].append(name + "_" + str(
+                self.name_dict[name]["total"]))
+            self.name_dict[name]["total"] = self.name_dict[name]["total"] + 1
+
+    def get_name(self, name, with_remove=False):
+        if name in self.name_dict.keys():
+            if self.name_dict[name]["num"] >= self.name_dict[name]["total"]:
+                raise ValueError('name num {}, but total name nums is {}.'.
+                                 format(self.name_dict[name]["num"],
+                                        self.name_dict[name]["total"]))
+
+            re_name = self.name_dict[name]["names"][self.name_dict[name]["num"]]
+            if with_remove:
+                self.name_dict[name]["num"] = self.name_dict[name]["num"] + 1
+            return re_name
+        else:
+            warning_info = "\n======================\n"
+            warning_info += "\n Not Find Name : {}\n".format(name)
+            warning_info += "\n======================\n"
+            logging.warning(warning_info)
+            return name
+
     def make_node(self,
                   op_type,
                   inputs=[],
@@ -102,6 +199,7 @@ class ONNXGraph(Graph):
                   attrs=None,
                   layer_name=None,
                   domain=None,
+                  return_node=False,
                   **kw):
         if layer_name is None:
             layer_name = self.generate_node_name(op_type)
@@ -143,10 +241,16 @@ class ONNXGraph(Graph):
                         domain)
 
         self.insert_node(node)
-        if len(node.outputs) == 1:
-            return node.outputs[0]
+        if return_node:
+            if len(node.outputs) == 1:
+                return node.outputs[0], node
+            else:
+                return node.outputs, node
         else:
-            return node.outputs
+            if len(node.outputs) == 1:
+                return node.outputs[0]
+            else:
+                return node.outputs
 
     def update_node(self,
                     node,
@@ -223,6 +327,7 @@ class ONNXGraph(Graph):
         # build op nodes
         for name, node in list(node_map.items()):
             OpMapper.mapping(self, node, self.operator_export_type)
+        self.update_graph()
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(

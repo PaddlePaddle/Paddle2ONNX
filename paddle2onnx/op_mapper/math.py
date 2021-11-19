@@ -52,7 +52,8 @@ class MatMul():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        x = node.input('X', idx=0)
+        x = graph.get_name(node.input('X', idx=0), with_remove=True)
+        # x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
         out = node.output('Out')
         if node.attr('trans_x'):

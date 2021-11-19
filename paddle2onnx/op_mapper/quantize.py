@@ -21,6 +21,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx import utils
+from paddle2onnx.utils import logging
 import paddle
 from onnx import helper
 import onnx
@@ -32,8 +33,6 @@ class Fake_quantize_dequantize_moving_average_abs_max():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        print("opset version 13")
-
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
@@ -44,21 +43,64 @@ class Fake_quantize_dequantize_moving_average_abs_max():
                 InScale = param['data']
 
         Minus_InScale = -1.0 * InScale
-        print("name, minus_scale, inscale: ", key, Minus_InScale, InScale)
 
-        clip_node = node.input('X', 0)
+        input_node_name = node.input('X', 0)
 
         scale_node = graph.make_node(
             'Constant',
             dtype=dtypes.ONNX.FLOAT,
             value=[float(InScale[0]) / 127.0])
 
+        graph.add_name(node.output('Out', 0))
+        output_name = graph.get_name(node.output('Out', 0))
+
         quantize_node = graph.make_node(
-            'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
+            'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
         graph.make_node(
             'DequantizeLinear',
             inputs=[quantize_node, scale_node, zero_node],
-            outputs=node.output('Out'))
+            outputs=output_name)
+
+        print(input_node_name)
+        if input_node_name in graph.changed_dict.keys():
+            return
+
+        another_nodes = graph.get_another_node_by_input(
+            input_node_name, copy_node=False)
+        if len(another_nodes) == 0:
+            return
+        index = 0
+        all_q_dq = list()
+        for another_node in another_nodes:
+            zero_node, z_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=[0], return_node=True)
+            scale_node, s_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.FLOAT,
+                value=[float(InScale[0]) / 127.0],
+                return_node=True)
+            changed_output_name = output_name + ".paddleadd" + str(index)
+            index = index + 1
+            print(another_node)
+            quantize_node, q_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[input_node_name, scale_node, zero_node],
+                return_node=True)
+            dequantize_node, dq_node = graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                outputs=changed_output_name,
+                return_node=True)
+            all_q_dq.append([
+                z_node.layer_name, s_node.layer_name, q_node.layer_name,
+                dq_node.layer_name
+            ])
+            print("output_name: ", changed_output_name)
+
+        graph.changed_dict[input_node_name] = dict()
+        graph.changed_dict[input_node_name]["name"] = output_name
+        graph.changed_dict[input_node_name]["total"] = index
+        graph.changed_dict[input_node_name]["qdq"] = all_q_dq
 
 
 @op_mapper('fake_channel_wise_quantize_dequantize_abs_max')
@@ -67,7 +109,6 @@ class Fake_channel_wise_quantize_dequantize_abs_max():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        print("opset version 10")
         paddle.disable_static()
         key = node.input('X')
 
@@ -76,7 +117,6 @@ class Fake_channel_wise_quantize_dequantize_abs_max():
         weight = None
         for name, param in graph.origin_parameters.items():
             if name in key:
-                print(name)
                 weight = param['data']
                 update_name = name
                 update_param = param
@@ -103,29 +143,21 @@ class Fake_channel_wise_quantize_dequantize_abs_max():
             zero_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[1])
 
-        # print("vals: ",vals)
-        # tensor = paddle.clip(tensor, min=-127.0, max=127.0)
         div = paddle.divide(tensor, scale)
 
         numpy_data = np.around(div.numpy())
         round_tensor = paddle.to_tensor(numpy_data)
 
         round_numpy = np.round(div.numpy())
-        print("max diff: ", np.amax(abs(round_numpy - numpy_data)))
-        # print("diff: ", round_numpy - numpy_data)
 
-        # clip_tensor = paddle.clip(round_tensor, min=-127.0, max=127.0)
         clip_tensor = round_tensor
         dq_tensor = paddle.multiply(clip_tensor, scale)
-        # print("q_dq tensor: ",dq_tensor)
-
-        # print("q_dq_q tensor: ",dq_tensor / scale)
 
         update_param['data'] = dq_tensor.numpy()
         graph.update_parameters(update_name, update_param)
 
         scale_numpy = paddle.squeeze(scale).numpy().tolist()
-        # print("scale_numpy: ",scale_numpy)
+
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
 
@@ -141,64 +173,6 @@ class Fake_channel_wise_quantize_dequantize_abs_max():
             outputs=node.output('Out'),
             attrs=attrs)
 
-    @classmethod
-    def opset_10(cls, graph, node, **kw):
-        print("opset version 13")
-
-        abs_node = graph.make_node('Abs', inputs=node.input('X', 0))
-
-        input_shape = node.input_shape('X', 0)
-        if len(input_shape) == 4:
-            one_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
-
-            shape_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64,
-                value=[input_shape[0], -1])
-            reshaped_node = graph.make_node(
-                'Reshape', inputs=[abs_node, shape_node])
-
-            topk_node = graph.make_node(
-                'TopK', inputs=[reshaped_node, one_node], outputs=2, axis=1)
-
-            val_node = topk_node[0]
-
-            # minus_node = graph.make_node(
-            #     'Constant', dtype=dtypes.ONNX.FLOAT, value=[-1.])
-            # minus_val_node = graph.make_node(
-            #     'Mul', inputs=[val_node, minus_node])
-
-            # clip_node = graph.make_node(
-            #     'Clip', inputs=[node.input('X',0), minus_val_node, val_node])
-            # clip_node =
-
-            bins_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=127.)
-            scale_node = graph.make_node('Div', inputs=[val_node, bins_node])
-
-            shape_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
-            scale_node = graph.make_node(
-                'Reshape', inputs=[scale_node, shape_node])
-
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[0])
-
-            attrs = {'axis': node.attr("quant_axis"), }
-            quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[node.input('X', 0), scale_node, zero_node],
-                attrs=attrs)
-
-            graph.make_node(
-                'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                outputs=node.output('Out'),
-                attrs=attrs)
-
-        if len(input_shape) == 2:
-            print("no impletment!")
-
 
 @op_mapper('moving_average_abs_max_scale')
 class Moving_average_abs_max_scale():
@@ -206,7 +180,6 @@ class Moving_average_abs_max_scale():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        print("opset version 13")
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.])
 
