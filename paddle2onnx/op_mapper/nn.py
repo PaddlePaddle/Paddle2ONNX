@@ -35,13 +35,11 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-        if len(pads) == 2:
-            pads = pads + pads
         # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
         if len(pads) == 4:
-            tmp_val = pads[2]
-            pads[2] = pads[1]
-            pads[1] = tmp_val
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        if len(pads) == 2:
+            pads = pads + pads
         attrs = {
             'dilations': dilations,
             'kernel_shape': kernel_shape,
@@ -114,8 +112,8 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        if node.attr('global_pooling') or (node.attr('adaptive')
-                                           and node.attr('ksize') == [1, 1]):
+        if node.attr('global_pooling') or (node.attr('adaptive') and
+                                           node.attr('ksize') == [1, 1]):
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][1],
                 inputs=node.input('X'),
@@ -447,9 +445,7 @@ class InstanceNorm():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        onnx_attr = {
-            'epsilon': node.attr('epsilon'),
-        }
+        onnx_attr = {'epsilon': node.attr('epsilon'), }
         inputs = node.input('X') + node.input('Scale') + node.input('Bias')
         onnx_node = graph.make_node(
             'InstanceNormalization',
@@ -472,10 +468,8 @@ class Dropout():
         elif dropout_mode == 'downgrade_in_infer':
             scale_node = graph.make_node(
                 'Constant',
-                attrs={
-                    'dtype': dtypes.ONNX.FLOAT,
-                    'value': 1 - dropout_prob
-                })
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': 1 - dropout_prob})
             graph.make_node(
                 "Mul",
                 inputs=[node.input('X')[0], scale_node],
@@ -492,23 +486,18 @@ class RoiAlign():
     def opset_10(cls, graph, node, **kw):
         rois_shape = graph.make_node('Shape', inputs=[node.input('ROIs', 0)])
         starts = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.INT64,
-                'value': [0]
-            })
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [0]})
         ends = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.INT64,
-                'value': [1]
-            })
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [1]})
         num_rois = graph.make_node('Slice', inputs=[rois_shape, starts, ends])
         zero = graph.make_node(
             'Constant', dims=[1], dtype=dtypes.ONNX.INT64, value=[0])
         batch_indices = graph.make_node('Expand', inputs=[zero, num_rois])
         node = graph.make_node(
             'RoiAlign',
-            inputs=[node.input('X', 0),
-                    node.input('ROIs', 0), batch_indices],
+            inputs=[node.input('X', 0), node.input('ROIs', 0), batch_indices],
             outputs=node.output('Out'),
             mode='avg',
             output_height=node.attr('pooled_height'),
@@ -564,8 +553,8 @@ class RNN():
         input_weight = graph.make_node('Concat', inputs=input_weights, axis=0)
         hidden_weight = graph.make_node('Concat', inputs=hidden_weights, axis=0)
         input_bias = unsqueeze_weights[param_list_len // 2:param_list_len:2]
-        hidden_bias = unsqueeze_weights[param_list_len // 2 +
-                                        1:param_list_len:2]
+        hidden_bias = unsqueeze_weights[param_list_len // 2 + 1:param_list_len:
+                                        2]
 
         input_bias = graph.make_node('Concat', inputs=input_bias, axis=0)
         hidden_bias = graph.make_node('Concat', inputs=hidden_bias, axis=0)
@@ -606,8 +595,8 @@ class RNN():
             for layer in range(num_layers):
                 param_inputs = cls.make_param_inputs(graph, node, layer,
                                                      hidden_size, num_layers)
-                init_param_inputs = cls.make_init_param_inputs(
-                    graph, node, layer)
+                init_param_inputs = cls.make_init_param_inputs(graph, node,
+                                                               layer)
                 if layer + 1 < num_layers:
                     rnn_outputs = 3
                     output_y = None
@@ -634,8 +623,8 @@ class RNN():
             for layer in range(num_layers):
                 param_inputs = cls.make_param_inputs(graph, node, layer,
                                                      hidden_size, num_layers)
-                init_param_inputs = cls.make_init_param_inputs(
-                    graph, node, layer)
+                init_param_inputs = cls.make_init_param_inputs(graph, node,
+                                                               layer)
                 if layer + 1 < num_layers:
                     rnn_outputs = 2
                     output_y = None
@@ -643,8 +632,8 @@ class RNN():
                     rnn_outputs = [1] + node.output('State')
                     output_y = node.output('Out')
                 attrs = {
-                    'direction':
-                    'bidirectional' if node.attr('is_bidirec') else 'forward',
+                    'direction': 'bidirectional'
+                    if node.attr('is_bidirec') else 'forward',
                     'hidden_size': node.attr('hidden_size'),
                     'linear_before_reset': 1,
                 }
