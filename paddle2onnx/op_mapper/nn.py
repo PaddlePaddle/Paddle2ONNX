@@ -37,6 +37,11 @@ class Conv():
         pads = node.attr('paddings')
         if len(pads) == 2:
             pads = pads + pads
+        # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
+        if len(pads) == 4:
+            tmp_val = pads[2]
+            pads[2] = pads[1]
+            pads[1] = tmp_val
         attrs = {
             'dilations': dilations,
             'kernel_shape': kernel_shape,
