@@ -29,24 +29,6 @@ def compare(result, expect, delta=1e-10, rtol=1e-10, input_data=None):
     """
     if type(result) == np.ndarray:
         expect = np.array(expect)
-        # logging.info(result - expect)
-        # diff = (result - expect)
-        # abs_diff = abs(result - expect)
-        # logging.info("max diff is : {}".format(np.amax(abs_diff)))
-        # nums = np.sum(abs_diff>1e-4)
-        # logging.info("max diff is : {}".format(diff[abs_diff>1e-4]))
-        # logging.info("max diff is : {}".format(diff[abs_diff>1e-4]*127))
-        # data = input_data[abs_diff>1e-4]*127/(diff[abs_diff>1e-4]*127)
-        # logging.info("quanti is : {}".format(data))
-        # data = expect[abs_diff>1e-4]*127/(diff[abs_diff>1e-4]*127)
-        # logging.info("expect quanti is : {}".format(data))
-        # data = result[abs_diff>1e-4]*127/(diff[abs_diff>1e-4]*127)
-        # logging.info("result quanti is : {}".format(data))
-        # logging.info("result is : {}".format(result[abs_diff>1e-4]))
-        # logging.info("expect is : {}".format(expect[abs_diff>1e-4]))
-        # logging.info("input is : {}".format(input_data[abs_diff>1e-4]))
-        # # logging.info("index is : {}".format(np.where(diff>1e-4)))
-        # logging.info("max diff is numbers : {}".format(nums))
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
         if res is False:
@@ -80,9 +62,9 @@ class APIOnnx(object):
     """
 
     def __init__(self, func, name, ver_list, delta=1e-6, rtol=1e-5):
-        # self.seed = 33
-        # np.random.seed(self.seed)
-        # paddle.seed(self.seed)
+        self.seed = 33
+        np.random.seed(self.seed)
+        paddle.seed(self.seed)
         self.func = func
         if paddle.device.is_compiled_with_cuda() is True:
             self.places = ['gpu', 'cpu']

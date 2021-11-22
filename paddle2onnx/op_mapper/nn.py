@@ -51,11 +51,6 @@ class Conv():
         else:
             attrs['pads'] = pads
         input_name = graph.get_name(node.input('Input', 0), with_remove=True)
-        # graph.make_node(
-        #     'Conv',
-        #     inputs=node.input('Input') + node.input('Filter'),
-        #     outputs=node.output('Output'),
-        #     attrs=attrs)
         graph.make_node(
             'Conv',
             inputs=[input_name] + node.input('Filter'),
