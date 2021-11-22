@@ -9,7 +9,7 @@ A: This is a warning and model conversion will not be influenced. The operator f
 A: This implies an error, and the input shape of the model should be fixed:
 
 - If the model is originated from PaddleX, you can designate it with --fixed_input_shape=[Height,Width]. Details please refer to [Exporting models in PaddleX](https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/export_model.md).
-- If the model is originated from PaddleDetection, you can designate it with TestReader.inputs_def.image_shape=[Channel,Height,Width]. Details please refer to [Exporting models in PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/deploy/EXPORT_MODEL.md).
+- If the model is originated from PaddleDetection, you can designate it with TestReader.inputs_def.image_shape=[Channel,Height,Width]. Details please refer to [Exporting models in PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/deploy/EXPORT_ONNX_MODEL.md).
 - If the network of the model is built manually, you can designate it in fluid.data(shape=[]) by setting the shape parameter to fix the input size.
 
 ### Q4: Fixed shape is required, refer this doc for more information
