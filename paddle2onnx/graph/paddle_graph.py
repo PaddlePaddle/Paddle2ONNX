@@ -120,13 +120,6 @@ class PaddleGraph(Graph):
         if attrs is None:
             attrs = kw
         attrs.update(kw)
-        if op.type == 'conv2d':
-            if attrs['data_format'] == 'NCHW':
-                pass
-            else:
-                raise TypeError(
-                    "The input data format should be 'NCHW', but received data format is %s."
-                    % attrs['data_format'])
 
         if inputs is None:
             inputs = {}
