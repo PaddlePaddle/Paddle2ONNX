@@ -147,7 +147,6 @@ class ONNXGraph(Graph):
                 if name in one_input and node.type not in check_op_list:
                     result_layer_name.append(layer_name)
 
-        print("result_layer_name:", result_layer_name)
         node_list = []
         if copy_node:
             for i in range(len(result_layer_name)):
