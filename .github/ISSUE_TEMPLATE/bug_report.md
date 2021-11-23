@@ -17,12 +17,13 @@ A clear and concise description of what the bug is.
 
 
 
-**Desktop (please complete the following information):**
+**Informations (please complete the following information):**
  - Inference engine for deployment(用于部署的推理引擎):
  - Why convert to onnx(为什么需要转换为ONNX格式)：
  - OS(操作系统): 
  - Paddle Version(Paddle版本):
  - Paddle2ONNX Version(Paddle2ONNX版本):
+ - Email/Wechat/Phone(你的联系方式):
 
 **To Reproduce**
 **复现步骤**
