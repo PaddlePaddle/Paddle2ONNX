@@ -27,13 +27,14 @@
 | concat | 1~12 |
 | conv2d | 1~12 |
 | conv2d_transpose | 1~12 |
+| conv3d | 1~12 |
 | depthwise_conv2d_transpose | 1~12 |
 | collect_fpn_proposals | 11~12 |
 | cumsum | 11~12 |
 | deformable_conv | 11~12 |
 | depthwise_conv2d | 1~12 |
 | distribute_fpn_proposals | 11~12 |
-| dist | 7~12 | 
+| dist | 7~12 |
 | dropout | 7~12 |
 | dot | 7~13 |
 | elementwise_add | 7~12 |
@@ -111,6 +112,7 @@
 | pad3d | 1~12 |
 | pixel_shuffle | 11~12 |
 | pool2d | 1~12 | limited supported |
+| pool3d | 1~12 | limited supported |
 | pow | 8~12 |
 | prior_box | 1~12 |
 | prelu | 1~12 |
