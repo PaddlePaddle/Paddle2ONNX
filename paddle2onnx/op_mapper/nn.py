@@ -35,7 +35,9 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
+                            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+                            "is %s." % node.attrs['data_format']
         # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
         if len(pads) == 2 or len(pads) == 3:
             pads = pads + pads
@@ -212,6 +214,10 @@ class Pool3D():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
+                            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+                            "is %s." % node.attrs['data_format']
+
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1, 1]):
             onnx_node = graph.make_node(
