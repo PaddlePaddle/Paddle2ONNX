@@ -35,6 +35,11 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
+        assert node.attrs['data_format'] == 'NCHW', "The conv data format should be 'NCHW', but received data format " \
+                                                    "is %s." % node.attrs['data_format']
+        # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
+        if len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
         if len(pads) == 2:
             pads = pads + pads
         attrs = {
