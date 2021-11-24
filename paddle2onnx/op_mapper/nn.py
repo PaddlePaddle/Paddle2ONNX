@@ -117,6 +117,9 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        assert node.attrs['data_format'] == 'NCHW',  \
+                            "The conv data format should be 'NCHW', but received data format " \
+                            "is %s." % node.attrs['data_format']
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1]):
             onnx_node = graph.make_node(
@@ -214,8 +217,8 @@ class Pool3D():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
-                            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+        assert node.attrs['data_format'] == 'NCDHW',  \
+                            "The conv data format should be 'NCDHW', but received data format " \
                             "is %s." % node.attrs['data_format']
 
         if node.attr('global_pooling') or (node.attr('adaptive') and
