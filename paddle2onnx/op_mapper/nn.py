@@ -35,7 +35,14 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-        pads = pads + pads
+
+        # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
+        if len(pads) == 2 or len(pads) == 3:
+            pads = pads + pads
+        elif len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        elif len(pads) == 6:
+            pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
         attrs = {
             'dilations': dilations,
             'kernel_shape': kernel_shape,
