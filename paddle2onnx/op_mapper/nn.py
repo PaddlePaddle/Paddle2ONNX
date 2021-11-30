@@ -68,29 +68,40 @@ class ConvTranspose():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        kernel_shape = node.input_shape('Filter', 0)
         output_padding = node.attr('output_padding')
-        if output_padding and len(node.attr('output_padding')) > 0:
-            node = graph.make_node(
-                'ConvTranspose',
-                inputs=node.input('Input') + node.input('Filter'),
-                outputs=node.output('Output'),
-                dilations=node.attr('dilations'),
-                kernel_shape=kernel_shape[-2:],
-                strides=node.attr('strides'),
-                group=node.attr('groups'),
-                pads=node.attr('paddings') + node.attr('output_padding'),
-                output_padding=node.attr('output_padding'))
+        kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[-2:]
+        strides = node.attr('strides')
+        group = node.attr('groups')
+        pads = node.attr('paddings')
+        assert node.attrs['data_format'] == 'NCHW', "The input data format should be 'NCHW', but received data format " \
+                                                    "is %s." % node.attrs['data_format']
+        if len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        if len(pads) == 2:
+            pads = pads + pads
+
+        attrs = {
+            'dilations': dilations,
+            'kernel_shape': kernel_shape,
+            'strides': strides,
+            'group': group
+        }
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
         else:
-            node = graph.make_node(
-                'ConvTranspose',
-                inputs=node.input('Input') + node.input('Filter'),
-                outputs=node.output('Output'),
-                dilations=node.attr('dilations'),
-                kernel_shape=kernel_shape[-2:],
-                strides=node.attr('strides'),
-                group=node.attr('groups'),
-                pads=node.attr('paddings') + node.attr('paddings'))
+            attrs['pads'] = pads
+        if output_padding and len(output_padding) > 0:
+            attrs['output_padding'] = output_padding
+        graph.make_node(
+            'ConvTranspose',
+            inputs=node.input('Input') + node.input('Filter'),
+            outputs=node.output('Output'),
+            attrs=attrs)
 
 
 @op_mapper('pool2d')
