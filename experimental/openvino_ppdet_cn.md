@@ -51,6 +51,7 @@ cd experimental
 import paddle2onnx
 import paddle
 from openvino_ppdet import nms_mapper
+# 通过上面的`nms_mapper`的import来启用插件，替换了paddle2onnx原始的nms_mapper
 
 model_prefix = "/User/XXX/PaddleDetection/inference_model/yolov3_darknet53_270e_coco/model"
 model = paddle.jit.load(model_prefix)
