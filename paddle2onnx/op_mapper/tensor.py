@@ -951,7 +951,7 @@ class Resize():
             )
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
             in_shape, out_shape = cls.compute_output_shape(
-                graph, node, opset_version=9)
+                graph, node, node.input('X')[0], opset_version=9)
             cast_shape_node2 = graph.make_node(
                 'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
             cast_shape_node0 = graph.make_node(
@@ -997,7 +997,7 @@ class Resize():
                 " 'asymmetric', Try converting with opset_version 11"
             )
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            in_shape, out_shape = cls.compute_output_shape(graph, node)
+            in_shape, out_shape = cls.compute_output_shape(graph, node, node.input('X')[0])
             cast_shape_node2 = graph.make_node(
                 'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
             cast_shape_node0 = graph.make_node(
