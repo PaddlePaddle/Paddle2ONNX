@@ -22,10 +22,31 @@ class Net(paddle.nn.Layer):
     simple Net
     """
 
-    def __init__(self):
+    def __init__(self,
+                 in_channels=1,
+                 out_channels=2,
+                 kernel_size=3,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 padding_mode='zeros',
+                 weight_attr=None,
+                 bias_attr=None,
+                 data_format="NCL"):
         super(Net, self).__init__()
         self._conv1d = paddle.nn.Conv1D(
-            in_channels=1, out_channels=2, kernel_size=3)
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            padding_mode=padding_mode,
+            weight_attr=weight_attr,
+            bias_attr=bias_attr,
+            data_format=data_format)
 
     def forward(self, inputs):
         """
@@ -95,3 +116,55 @@ def test_Conv1D_12():
         paddle.to_tensor(
             randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
     obj.run()
+
+
+def test_Conv1D_11_padding_0():
+    """
+    api: paddle.nn.Conv1D
+    op version: 11
+    """
+    op = Net(padding=[[0, 0], [0, 0], [1, 2]])
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_Conv1D', [11])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+    obj.run()
+
+
+def test_Conv1D_11_padding_1():
+    """
+    api: paddle.nn.Conv1D
+    op version: 11
+    """
+    op = Net(padding=[1, 2])
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_Conv1D', [11])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+    obj.run()
+
+
+def test_Conv1D_11_padding_2():
+    """
+    api: paddle.nn.Conv1D
+    op version: 11
+    """
+    op = Net(padding=0)
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_Conv1D', [9, 10, 11, 12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+    obj.run()
+
+
+if __name__ == '__main__':
+    test_Conv1D_11_padding_2()

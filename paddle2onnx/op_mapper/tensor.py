@@ -598,6 +598,10 @@ class Squeeze():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
+        # axes is list of non-negative integers
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        if graph.opset_version < 11:
+            axes = [axe + ndim for axe in axes if axe < 0]
         graph.make_node(
             'Squeeze',
             inputs=[node.input('X', 0)],
@@ -738,11 +742,16 @@ class Unsqueeze():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         if len(node.attr('axes')) > 0:
+            axes = node.attr('axes')
+            # axes is list of non-negative integers
+            ndim = node.block.vars[node.input('X')[0]].ndim
+            if graph.opset_version < 11:
+                axes = [axe + ndim + 1 for axe in axes if axe < 0]
             graph.make_node(
                 'Unsqueeze',
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
-                axes=node.attr('axes'))
+                axes=axes)
         else:
             axis_input = node.input('AxesTensor')
             for name, param in graph.parameters.items():
