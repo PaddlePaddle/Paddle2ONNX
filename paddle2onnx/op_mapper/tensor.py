@@ -600,7 +600,9 @@ class Squeeze():
         axes = node.attr('axes')
         # axes is list of non-negative integers
         ndim = node.block.vars[node.input('X')[0]].ndim
-        axes = [axe + ndim for axe in axes if axe < 0]
+        for i, axe in enumerate(axes):
+            if axe < 0:
+                axes[i] = axe + ndim
         graph.make_node(
             'Squeeze',
             inputs=[node.input('X', 0)],
@@ -753,7 +755,9 @@ class Unsqueeze():
             axes = node.attr('axes')
             # axes is list of non-negative integers
             ndim = node.block.vars[node.input('X')[0]].ndim
-            axes = [axe + ndim + 1 for axe in axes if axe < 0]
+            for i, axe in enumerate(axes):
+                if axe < 0:
+                    axes[i] = axe + ndim + 1
             graph.make_node(
                 'Unsqueeze',
                 inputs=node.input('X'),
