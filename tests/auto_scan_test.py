@@ -165,10 +165,10 @@ class OPConvertAutoScanTest(AutoScanTest):
     def run_test(self, configs=None):
         self.model.eval()
         self.num_ran_programs += 1
+
         # net, name, ver_list, delta=1e-6, rtol=1e-5
         obj = APIOnnx(self.model, self.op_name, self.opset_version,
                       self.op_name, self.input_spec_shape)
-
         input_type_list = self.test_data_type[0]
         for i in range(1, len(self.test_data_type)):
             temp = self.test_data_type[i]

@@ -40,7 +40,6 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             logging.error(
                 "Different output data types! res type is: {}, and expect type is: {}".
                 format(result.dtype, expect.dtype))
-
         assert res
         assert result.shape == expect.shape
         assert result.dtype == expect.dtype
