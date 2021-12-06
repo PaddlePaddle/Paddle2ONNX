@@ -156,6 +156,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         self.op_name = "conv2d"
         self.test_data_shape = [input_shape, kernel_size]
         self.input_spec_shape = [[-1, input_shape[1], -1, -1], kernel_size]
+        self.test_data_type = [['float32'], ['float32']]
 
         return config
 
