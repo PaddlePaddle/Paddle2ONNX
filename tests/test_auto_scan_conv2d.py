@@ -160,7 +160,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         return config
 
     def test(self):
-        self.run_and_statis(max_examples=30, opset_version=[9, 10, 11, 12])
+        self.run_and_statis(max_examples=25, opset_version=[9, 10, 11, 12])
 
 
 if __name__ == "__main__":
