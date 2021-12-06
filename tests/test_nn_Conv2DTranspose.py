@@ -23,6 +23,8 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self,
+                 in_channels=1,
+                 out_channels=2,
                  stride=1,
                  padding=0,
                  output_padding=0,
@@ -33,8 +35,8 @@ class Net(paddle.nn.Layer):
                  data_format="NCHW"):
         super(Net, self).__init__()
         self._conv2d_t = paddle.nn.Conv2DTranspose(
-            in_channels=1,
-            out_channels=2,
+            in_channels=in_channels,
+            out_channels=out_channels,
             kernel_size=3,
             stride=stride,
             padding=padding,
@@ -53,15 +55,15 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_Conv2DTranspose_9():
+def test_Conv2DTranspose_9_10_11_12():
     """
     api: paddle.Conv2DTranspose
-    op version: 9
+    op version: 9, 10, 11, 12
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Conv2DTranspose', [9])
+    obj = APIOnnx(op, 'nn_Conv2DTranspose', [9, 10, 11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -135,49 +137,24 @@ def test_Conv2DTranspose_9_output_padding_3():
     obj.run()
 
 
-def test_Conv2DTranspose_10():
+def test_Conv2DTranspose_9_10_11_12_group():
     """
-    api: paddle.nn.Conv2DTranspose
-    op version: 10
+    api: paddle.Conv2DTranspose
+    op version: 9
     """
-    op = Net()
+    op = Net(in_channels=16,
+             out_channels=16,
+             groups=16,
+             padding=[[0, 0], [0, 0], [1, 2], [2, 3]])
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Conv2DTranspose', [10])
+    obj = APIOnnx(op, 'nn_Conv2DTranspose', [9, 10, 11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+            randtool("float", -1, 1, [16, 16, 10, 10]).astype('float32')))
     obj.run()
 
 
-def test_Conv2DTranspose_11():
-    """
-    api: paddle.nn.Conv2DTranspose
-    op version: 11
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Conv2DTranspose', [11])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
-    obj.run()
-
-
-def test_Conv2DTranspose_12():
-    """
-    api: paddle.nn.Conv2DTranspose
-    op version: 12
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Conv2DTranspose', [12])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
-    obj.run()
+if __name__ == '__main__':
+    test_Conv2DTranspose_9_10_11_12_group()
