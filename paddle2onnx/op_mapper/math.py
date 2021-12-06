@@ -96,29 +96,6 @@ class Erf():
             'Erf', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper('isinf_v2')
-class IsInf():
-    support_opset_version_range = (10, 12)
-
-    @classmethod
-    def opset_10(cls, graph, node, **kw):
-        graph.make_node(
-            'IsInf', inputs=node.input('X'), outputs=node.output('Out'))
-
-
-@op_mapper('isnan')
-class IsNaN():
-    support_opset_version_range = (9, 12)
-
-    @classmethod
-    def opset_9(cls, graph, node, **kw):
-        isnan = graph.make_node('IsNaN', inputs=node.input('X'))
-        cast_node = graph.make_node(
-            'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
-        graph.make_node(
-            'ReduceMax', inputs=[cast_node], outputs=node.output('Out'))
-
-
 @op_mapper('acos')
 class Acos():
     supports_opset_version_range = (7, 12)
@@ -197,28 +174,6 @@ class Cosh():
     def opset_9(cls, graph, node, **kw):
         graph.make_node(
             'Cosh', inputs=node.input('X'), outputs=node.output('Out'))
-
-
-@op_mapper('isnan_v2')
-class IsNaN():
-    support_opset_version_range = (9, 12)
-
-    @classmethod
-    def opset_9(cls, graph, node, **kw):
-        graph.make_node(
-            'IsNaN', inputs=node.input('X'), outputs=node.output('Out'))
-
-
-@op_mapper('less_than')
-class Less_than():
-    support_opset_version_range = (7, 12)
-
-    @classmethod
-    def opset_7(cls, graph, node, **kw):
-        graph.make_node(
-            'Less',
-            inputs=[node.input('X', 0), node.input('Y', 0)],
-            outputs=node.output('Out'), )
 
 
 @op_mapper('log2')
@@ -858,66 +813,6 @@ class Sign():
             'Sign', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-#
-#@op_mapper('scale')
-#class Scale():
-#    support_opset_version_range = (1, 12)
-#
-#    @classmethod
-#    def opset_1(cls, graph, node, **kw):
-#        scale = node.attr('scale')
-#        bias = node.attr('bias')
-#        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
-#            graph.make_node(
-#                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-#        else:
-#            raise Exception(
-#                "please try to convert OP:scale with opset_version >= 7.")
-#
-#    @classmethod
-#    def opset_7(cls, graph, node, **kw):
-#        scale = node.attr('scale')
-#        bias = node.attr('bias')
-#        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
-#            graph.make_node(
-#                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-#        else:
-#            cast_node = graph.make_node(
-#                'Cast', inputs=node.input('X'),
-#                attrs={'to': dtypes.ONNX.FLOAT})
-#            if np.fabs(scale - 1.0) < 1e-06:
-#                bias_node = graph.make_node(
-#                    'Constant',
-#                    attrs={'dtype': dtypes.ONNX.FLOAT,
-#                           'value': [bias]})
-#                graph.make_node('Add', inputs=[cast_node, bias_node], outputs=node.output('Out'))
-#            elif np.fabs(bias - 1.0) < 1e-06:
-#                scale_node = graph.make_node(
-#                   'Constant',
-#                   attrs={'dtype': dtypes.ONNX.FLOAT,
-#                          'value': [scale]})
-#                graph.make_node('Mul', inputs=[cast_node, scale_node], outputs=node.output('Out'))
-#            else:
-#                scale_node = graph.make_node(
-#                    'Constant',
-#                    attrs={'dtype': dtypes.ONNX.FLOAT,
-#                           'value': [scale]})
-#                bias_node = graph.make_node(
-#                    'Constant',
-#                    attrs={'dtype': dtypes.ONNX.FLOAT,
-#                           'value': [bias]})
-#                if node.attr('bias_after_scale'):
-#                    node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
-#                    node2 = graph.make_node(
-#                        'Add',
-#                        inputs=[node1, bias_node],
-#                        outputs=node.output('Out'))
-#                else:
-#                    node1 = graph.make_node('Add', inputs=[cast_node, bias_node])
-#                    node2 = graph.make_node(
-#                        'Mul',
-#                        inputs=[node1, scale_node],
-#                        outputs=[node.output('Out', 0)])
 @op_mapper('scale')
 class Scale():
     support_opset_version_range = (1, 12)
