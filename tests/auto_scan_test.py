@@ -71,7 +71,7 @@ class AutoScanTest(unittest.TestCase):
         self.name = None
         self.test_data_shape = None
         self.input_spec_shape = None
-        self.ops = []
+        self.op_name = []
         self.opset_version = []
 
     @abc.abstractmethod
@@ -80,9 +80,6 @@ class AutoScanTest(unittest.TestCase):
         Generate all config with the combination of different Input tensor shape and
         different Attr values.
         '''
-        raise NotImplementedError
-
-    def correct_running_configuration(self, config):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -108,7 +105,6 @@ class OPConvertAutoScanTest(AutoScanTest):
 
     def run_and_statis(self,
                        max_examples=100,
-                       ops=[],
                        opset_version=[9, 10, 11, 12],
                        reproduce=None,
                        min_success_num=25,
@@ -128,8 +124,7 @@ class OPConvertAutoScanTest(AutoScanTest):
             derandomize=True,
             report_multiple_bugs=False, )
         settings.load_profile("ci")
-        logging.info("example: {}".format(max_examples))
-        self.ops = ops
+
         self.opset_version = opset_version
 
         def sample_convert_generator(draw):
@@ -169,16 +164,14 @@ class OPConvertAutoScanTest(AutoScanTest):
         saved_modle = self.model
         saved_opset_version = self.opset_version
 
-        self.correct_running_configuration(configs)
-
         self.model.eval()
         self.num_ran_programs += 1
         # logging.info("Run model: {}, test_data_shape: {}".format(self.model, self.test_data_shape))
         logging.info("config: {}, test_data_shape: {}".format(
             configs, self.test_data_shape))
         # net, name, ver_list, delta=1e-6, rtol=1e-5
-        obj = APIOnnx(self.model, self.name, self.opset_version, self.ops,
-                      self.input_spec_shape)
+        obj = APIOnnx(self.model, self.op_name, self.opset_version,
+                      self.op_name, self.input_spec_shape)
 
         input_tensors = list()
         name = "input_data"
