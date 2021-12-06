@@ -58,11 +58,23 @@ def arg_parser():
         default=9,
         help="set onnx opset version to export")
     parser.add_argument(
+       "--input_shape_dict",
+       "-isd",
+       type=_text_type,
+       default="None",
+       help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
+       "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
+    parser.add_argument(
         "--enable_onnx_checker",
         type=ast.literal_eval,
-        default=False,
+        default=True,
         help="whether check onnx model validity, if True, please 'pip install onnx'"
     )
+    parser.add_argument(
+        "--enable_paddle_fallback",
+        type=ast.literal_eval,
+        default=False,
+        help="whether use PaddleFallback for custom op, default is False")
     parser.add_argument(
         "--version",
         "-v",
@@ -77,7 +89,9 @@ def program2onnx(model_dir,
                  model_filename=None,
                  params_filename=None,
                  opset_version=9,
-                 enable_onnx_checker=False):
+                 enable_onnx_checker=False,
+                 operator_export_type="ONNX",
+                 input_shape_dict=None):
     try:
         import paddle
     except:
@@ -104,6 +118,25 @@ def program2onnx(model_dir,
             exe,
             model_filename=model_filename,
             params_filename=params_filename)
+
+    OP_WITHOUT_KERNEL_SET = {
+        'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
+        'conditional_block', 'while', 'send', 'recv', 'listen_and_serv',
+        'fl_listen_and_serv', 'ncclInit', 'select', 'checkpoint_notify',
+        'gen_bkcl_id', 'c_gen_bkcl_id', 'gen_nccl_id', 'c_gen_nccl_id',
+        'c_comm_init', 'c_sync_calc_stream', 'c_sync_comm_stream',
+        'queue_generator', 'dequeue', 'enqueue', 'heter_listen_and_serv',
+        'c_wait_comm', 'c_wait_compute', 'c_gen_hccl_id', 'c_comm_init_hccl',
+        'copy_cross_scope'
+    }
+    if input_shape_dict is not None:
+        for k, v in input_shape_dict.items():
+            program.blocks[0].var(k).desc.set_shape(v)
+        for i in range(len(program.blocks[0].ops)):
+            if program.blocks[0].ops[i].type in OP_WITHOUT_KERNEL_SET:
+                continue
+            program.blocks[0].ops[i].desc.infer_shape(program.blocks[0].desc)
+
     p2o.program2onnx(
         program,
         fluid.global_scope(),
@@ -111,7 +144,8 @@ def program2onnx(model_dir,
         feed_var_names=feed_var_names,
         target_vars=fetch_vars,
         opset_version=opset_version,
-        enable_onnx_checker=enable_onnx_checker)
+        enable_onnx_checker=enable_onnx_checker,
+        operator_export_type=operator_export_type)
 
 
 def main():
@@ -133,13 +167,21 @@ def main():
 
     assert args.model_dir is not None, "--model_dir should be defined while translating paddle model to onnx"
     assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
+
+    input_shape_dict = eval(args.input_shape_dict)
+
+    operator_export_type = "ONNX"
+    if args.enable_paddle_fallback:
+        operator_export_type = "PaddleFallback"
     program2onnx(
         args.model_dir,
         args.save_file,
         args.model_filename,
         args.params_filename,
         opset_version=args.opset_version,
-        enable_onnx_checker=args.enable_onnx_checker)
+        enable_onnx_checker=args.enable_onnx_checker,
+        operator_export_type=operator_export_type,
+        input_shape_dict=input_shape_dict)
 
 
 if __name__ == "__main__":
