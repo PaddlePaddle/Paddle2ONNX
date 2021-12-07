@@ -72,7 +72,7 @@ class AutoScanTest(unittest.TestCase):
         self.name = None
         self.test_data_shape = None
         self.test_data_type = [['float32']]
-        self.input_spec_shape = None
+        self.input_spec_shape = []
         self.op_name = []
         self.opset_version = []
 
@@ -169,20 +169,25 @@ class OPConvertAutoScanTest(AutoScanTest):
         # net, name, ver_list, delta=1e-6, rtol=1e-5
         obj = APIOnnx(self.model, self.op_name, self.opset_version,
                       self.op_name, self.input_spec_shape)
-        input_type_list = self.test_data_type[0]
-        for i in range(1, len(self.test_data_type)):
-            temp = self.test_data_type[i]
-            input_type_list = list(product(input_type_list, temp))
-        if len(self.test_data_type) == 1:
+
+        input_type_list = list(product(*self.test_data_type))
+        if len(self.test_data_shape) == 1:
             input_type_list = [[i] for i in self.test_data_type[0]]
+        if len(self.test_data_shape) > 1 and len(self.test_data_type) == 1:
+            input_type_list = [
+                self.test_data_type[0] * len(self.test_data_shape)
+            ]
 
         for dtypes in input_type_list:
             i = 0
             input_tensors = list()
             name = "input_data"
             for shape in self.test_data_shape:
+                rand_dtype = "float"
+                if 'int' in dtypes[i]:
+                    rand_dtype = "int"
                 temp = paddle.to_tensor(
-                    randtool("float", -1, 1, shape).astype(dtypes[i]))
+                    randtool(rand_dtype, -1, 1, shape).astype(dtypes[i]))
                 input_tensors.append(temp)
                 i = i + 1
             input_tensors = tuple(input_tensors)

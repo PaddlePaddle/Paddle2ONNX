@@ -112,6 +112,8 @@ class APIOnnx(object):
                  rtol=1e-5,
                  **sup_params):
         self.ops = ops
+        if isinstance(self.ops, str):
+            self.ops = [self.ops]
         self.seed = 33
         np.random.seed(self.seed)
         paddle.seed(self.seed)

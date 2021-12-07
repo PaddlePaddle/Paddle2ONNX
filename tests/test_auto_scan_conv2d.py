@@ -56,7 +56,7 @@ class Net(paddle.nn.Layer):
 class TestConv2dConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.Conv2d
-    OPset version: 9, 10, 11, 12 
+    OPset version: 9
     1.OPset version需要根据op_mapper中定义的version来设置。
     2.测试中所有OP对应升级到Opset version 15。
     """
@@ -162,7 +162,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         return config
 
     def test(self):
-        self.run_and_statis(max_examples=25, opset_version=[9, 10, 11, 12])
+        self.run_and_statis(max_examples=25, opset_version=[9])
 
 
 if __name__ == "__main__":

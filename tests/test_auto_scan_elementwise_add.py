@@ -33,11 +33,11 @@ class Net(paddle.nn.Layer):
     def __init__(self, config):
         super(Net, self).__init__()
 
-    def forward(self, inputs):
+    def forward(self, inputs1, inputs2):
         """
         forward
         """
-        x = paddle.log10(inputs)
+        x = paddle.add(inputs1, inputs2)
         return x
 
 
@@ -48,21 +48,25 @@ class TestConv2dConvert(OPConvertAutoScanTest):
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input1_shape = draw(
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=1,
+                min_size=4,
                 max_size=4))
+        if draw(st.booleans()):
+            input2_shape = [input1_shape[3]]
+        else:
+            input2_shape = input1_shape
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
-        config = {"input_shape": input_shape, }
+        config = {"input_shape": [input1_shape, input2_shape], "dtype": dtype}
 
         self.model = Net(config)
-        self.op_name = "log10"
-        self.test_data_shape = [input_shape]
-        self.test_data_type = [[dtype]]
+        self.op_name = "elementwise_add"
+        self.test_data_shape = [input1_shape, input2_shape]
+        self.test_data_type = [[dtype], [dtype]]
         self.input_spec_shape = []
 
         return config
