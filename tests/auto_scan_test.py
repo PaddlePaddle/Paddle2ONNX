@@ -32,6 +32,7 @@ import hypothesis
 from hypothesis import given, settings, seed, reproduce_failure
 import hypothesis.strategies as st
 from onnxbase import APIOnnx, randtool, compare
+from itertools import product
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -70,7 +71,8 @@ class AutoScanTest(unittest.TestCase):
         self.model = None
         self.name = None
         self.test_data_shape = None
-        self.input_spec_shape = None
+        self.test_data_type = [['float32']]
+        self.input_spec_shape = []
         self.op_name = []
         self.opset_version = []
 
@@ -161,29 +163,37 @@ class OPConvertAutoScanTest(AutoScanTest):
             assert False
 
     def run_test(self, configs=None):
-        saved_modle = self.model
-        saved_opset_version = self.opset_version
-
         self.model.eval()
         self.num_ran_programs += 1
-        # logging.info("Run model: {}, test_data_shape: {}".format(self.model, self.test_data_shape))
-        logging.info("config: {}, test_data_shape: {}".format(
-            configs, self.test_data_shape))
+
         # net, name, ver_list, delta=1e-6, rtol=1e-5
         obj = APIOnnx(self.model, self.op_name, self.opset_version,
                       self.op_name, self.input_spec_shape)
 
-        input_tensors = list()
-        name = "input_data"
-        for shape in self.test_data_shape:
-            temp = paddle.to_tensor(
-                randtool("float", -1, 1, shape).astype('float32'))
-            input_tensors.append(temp)
-        input_tensors = tuple(input_tensors)
-        obj.set_input_data(name, input_tensors)
+        input_type_list = list(product(*self.test_data_type))
+        if len(self.test_data_shape) == 1:
+            input_type_list = [[i] for i in self.test_data_type[0]]
+        if len(self.test_data_shape) > 1 and len(self.test_data_type) == 1:
+            input_type_list = [
+                self.test_data_type[0] * len(self.test_data_shape)
+            ]
 
-        obj.run()
+        for dtypes in input_type_list:
+            i = 0
+            input_tensors = list()
+            name = "input_data"
+            for shape in self.test_data_shape:
+                rand_dtype = "float"
+                if 'int' in dtypes[i]:
+                    rand_dtype = "int"
+                temp = paddle.to_tensor(
+                    randtool(rand_dtype, -1, 1, shape).astype(dtypes[i]))
+                input_tensors.append(temp)
+                i = i + 1
+            input_tensors = tuple(input_tensors)
+            obj.set_input_data(name, input_tensors)
+            logging.info("config: {}, test_data_shape: {}, test_data_type: {}".
+                         format(configs, self.test_data_shape, dtypes))
+            obj.run()
 
-        self.model = saved_modle
-        self.opset_version = saved_opset_version
         logging.info("Run successfully！")

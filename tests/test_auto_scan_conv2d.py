@@ -56,7 +56,7 @@ class Net(paddle.nn.Layer):
 class TestConv2dConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.Conv2d
-    OPset version: 9, 10, 11, 12 
+    OPset version: 9
     1.OPset version需要根据op_mapper中定义的version来设置。
     2.测试中所有OP对应升级到Opset version 15。
     """
@@ -133,6 +133,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
                             min_value=1, max_value=5),
                         min_size=4,
                         max_size=4))
+
         dilations = draw(
             st.lists(
                 st.integers(
@@ -156,11 +157,12 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         self.op_name = "conv2d"
         self.test_data_shape = [input_shape, kernel_size]
         self.input_spec_shape = [[-1, input_shape[1], -1, -1], kernel_size]
+        self.test_data_type = [['float32'], ['float32']]
 
         return config
 
     def test(self):
-        self.run_and_statis(max_examples=25, opset_version=[9, 10, 11, 12])
+        self.run_and_statis(max_examples=25, opset_version=[9])
 
 
 if __name__ == "__main__":
