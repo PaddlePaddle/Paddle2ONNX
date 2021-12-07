@@ -41,7 +41,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
-class TestConv2dConvert(OPConvertAutoScanTest):
+class TestElementwiseAddConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.Conv2d
     OPset version: 9
