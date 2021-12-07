@@ -55,7 +55,7 @@ class TestLog10Convert(OPConvertAutoScanTest):
                 min_size=1,
                 max_size=4))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {"input_shape": input_shape, }
 

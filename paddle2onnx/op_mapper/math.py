@@ -18,6 +18,7 @@ import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
+import paddle.fluid.core as core
 
 
 @op_mapper('matmul')
@@ -505,8 +506,10 @@ class Log10():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         _ln10 = 2.30258509299404568401
-        _ln10 = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=_ln10)
+        dtype = dtypes.ONNX.FLOAT
+        if node.input_dtype('X', 0) == core.VarDesc.VarType.FP64:
+            dtype = dtypes.ONNX.DOUBLE
+        _ln10 = graph.make_node('Constant', dtype=dtype, value=_ln10)
         lnx = graph.make_node('Log', inputs=node.input('X'))
         graph.make_node('Div', inputs=[lnx, _ln10], outputs=node.output('Out'))
 
