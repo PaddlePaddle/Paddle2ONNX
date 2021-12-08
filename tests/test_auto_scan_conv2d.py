@@ -12,31 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest
+from auto_scan_test import OPConvertAutoScanTest, BaseNet
+from hypothesis import reproduce_failure
+import hypothesis.strategies as st
 import numpy as np
-import paddle.inference as paddle_infer
-from functools import partial
-from typing import Optional, List, Callable, Dict, Any, Set
 import unittest
 import paddle
 
-import hypothesis
-from hypothesis import given, settings, seed, example, assume, reproduce_failure
-import hypothesis.strategies as st
 
-
-class Net(paddle.nn.Layer):
+class Net(BaseNet):
     """
     simple Net
     """
-
-    def __init__(self, config):
-        super(Net, self).__init__()
-        self.stride = config["stride"]
-        self.padding = config["padding"]
-        self.dilation = config["dilation"]
-        self.groups = config["groups"]
-        self.data_format = config["data_format"]
 
     def forward(self, inputs, weight):
         """
@@ -45,11 +32,11 @@ class Net(paddle.nn.Layer):
         x = paddle.nn.functional.conv2d(
             inputs,
             weight,
-            stride=self.stride,
-            padding=self.padding,
-            dilation=self.dilation,
-            groups=self.groups,
-            data_format=self.data_format)
+            stride=self.config["stride"],
+            padding=self.config["padding"],
+            dilation=self.config["dilation"],
+            groups=self.config["groups"],
+            data_format=self.config["data_format"])
         return x
 
 
@@ -144,6 +131,11 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             dilations = 1
 
         config = {
+            "op_names": "conv2d",
+            "test_data_shapes": [input_shape, kernel_size],
+            "test_data_types": [['float32'], ['float32']],
+            "opset_version": [9],
+            "input_spec_shape": [[-1, input_shape[1], -1, -1], kernel_size],
             "data_format": data_format,
             "stride": strides,
             "dilation": dilations,
@@ -151,18 +143,16 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             "groups": groups,
             "input_shape": input_shape,
             "kernel_size": kernel_size,
+            "delta": 1e-4,
+            "rtol": 1e-4
         }
 
-        self.model = Net(config)
-        self.op_name = "conv2d"
-        self.test_data_shape = [input_shape, kernel_size]
-        self.input_spec_shape = [[-1, input_shape[1], -1, -1], kernel_size]
-        self.test_data_type = [['float32'], ['float32']]
+        models = Net(config)
 
-        return config
+        return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=25, opset_version=[9])
+        self.run_and_statis(max_examples=25)
 
 
 if __name__ == "__main__":

@@ -12,26 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest
+from auto_scan_test import OPConvertAutoScanTest, BaseNet
+from hypothesis import reproduce_failure
+import hypothesis.strategies as st
 import numpy as np
-import paddle.inference as paddle_infer
-from functools import partial
-from typing import Optional, List, Callable, Dict, Any, Set
 import unittest
 import paddle
 
-import hypothesis
-from hypothesis import given, settings, seed, example, assume, reproduce_failure
-import hypothesis.strategies as st
 
-
-class Net(paddle.nn.Layer):
+class Net(BaseNet):
     """
     simple Net
     """
-
-    def __init__(self, config):
-        super(Net, self).__init__()
 
     def forward(self, inputs1, inputs2):
         """
@@ -43,7 +35,7 @@ class Net(paddle.nn.Layer):
 
 class TestElementwiseAddConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.Conv2d
+    api: paddle.add
     OPset version: 9
     """
 
@@ -61,18 +53,20 @@ class TestElementwiseAddConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
-        config = {"input_shape": [input1_shape, input2_shape], "dtype": dtype}
+        config = {
+            "op_names": "elementwise_add",
+            "test_data_shapes": [input1_shape, input2_shape],
+            "test_data_types": [[dtype], [dtype]],
+            "opset_version": [9],
+            "input_spec_shape": []
+        }
 
-        self.model = Net(config)
-        self.op_name = "elementwise_add"
-        self.test_data_shape = [input1_shape, input2_shape]
-        self.test_data_type = [[dtype], [dtype]]
-        self.input_spec_shape = []
+        models = Net(config)
 
-        return config
+        return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=25, opset_version=[9])
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":
