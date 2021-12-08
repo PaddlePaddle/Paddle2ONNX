@@ -32,7 +32,8 @@ def export_onnx(paddle_graph,
                 verbose=False):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
                                  operator_export_type, verbose)
-    onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
+    onnx_graph = PassManager.run_pass(
+        onnx_graph, ['inplace_node_pass', 'remove_isolated_node_pass'])
 
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
 

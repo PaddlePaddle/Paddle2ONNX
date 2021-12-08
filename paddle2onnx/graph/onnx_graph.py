@@ -117,7 +117,6 @@ class ONNXGraph(Graph):
                         change_input_name = ori_input_name + ".paddleadd" + str(
                             num)
                         inputs[i] = change_input_name
-                        print(inputs)
                         node = self.update_node(node, inputs=inputs)
                         self.sort_name_dict[node.layer_name] = all_q_dq[num]
                         num = num + 1
