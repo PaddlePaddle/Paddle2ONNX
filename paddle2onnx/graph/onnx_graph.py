@@ -139,7 +139,10 @@ class ONNXGraph(Graph):
         self.node_map = temp_node_map
 
     def get_another_node_by_input(self, name, copy_node=False):
-        check_op_list = ['fake_quantize_dequantize_moving_average_abs_max']
+        check_op_list = [
+            'fake_quantize_dequantize_moving_average_abs_max',
+            'fake_quantize_moving_average_abs_max'
+        ]
         result_layer_name = []
         for layer_name, node in self.ctx.node_map.items():
             inputs = node.inputs
@@ -175,12 +178,13 @@ class ONNXGraph(Graph):
 
     def get_name(self, name, with_remove=False):
         if name in self.name_dict.keys():
-            if self.name_dict[name]["num"] >= self.name_dict[name]["total"]:
-                raise ValueError('name num {}, but total name nums is {}.'.
-                                 format(self.name_dict[name]["num"],
-                                        self.name_dict[name]["total"]))
-
-            re_name = self.name_dict[name]["names"][self.name_dict[name]["num"]]
+            if self.name_dict[name]["num"] == self.name_dict[name]["total"]:
+                self.name_dict[name]["num"] = self.name_dict[name]["num"] - 1
+                re_name = self.name_dict[name]["names"][self.name_dict[name][
+                    "num"]]
+            else:
+                re_name = self.name_dict[name]["names"][self.name_dict[name][
+                    "num"]]
             if with_remove:
                 self.name_dict[name]["num"] = self.name_dict[name]["num"] + 1
             return re_name
