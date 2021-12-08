@@ -35,10 +35,7 @@ class Concat():
             axis = axis + len(node.input_shape('X', 0))
 
         node = graph.make_node(
-            'Concat',
-            inputs=inputs,
-            outputs=node.output('Out'),
-            axis=axis)
+            'Concat', inputs=inputs, outputs=node.output('Out'), axis=axis)
 
 
 @op_mapper('assign')
@@ -83,6 +80,7 @@ class Stack():
             outputs=node.output('Y'),
             axis=axis)
 
+
 @op_mapper('unstack')
 class Unstack():
     support_opset_version_range = (1, 12)
@@ -91,10 +89,10 @@ class Unstack():
     def opset_1(cls, graph, node, **kw):
         print(node)
         graph.make_node(
-                'Split',
-                inputs=node.input('X'),
-                outputs=node.output('Y'),
-                axis=node.attr('axis'))
+            'Split',
+            inputs=node.input('X'),
+            outputs=node.output('Y'),
+            axis=node.attr('axis'))
 
 
 @op_mapper('expand_as_v2')
@@ -508,36 +506,6 @@ class FillConstantBatchSizeLike():
                 outputs=node.output('Out'))
 
 
-#    @classmethod
-#    def opset_11(cls, graph, node, **kw):
-#        input_dim_idx = tensor_shape = graph.make_node(
-#            'Constant',
-#            dtype=dtypes.ONNX.INT64,
-#            dims=[1],
-#            value=node.attr('input_dim_idx'))
-#        output_dim_idx = tensor_shape = graph.make_node(
-#            'Constant',
-#            dtype=dtypes.ONNX.INT64,
-#            dims=[1],
-#            value=node.attr('output_dim_idx'))
-#        input_shape = graph.make_node('Shape', inputs=node.input('Input'))
-#        updates = graph.make_node('Gather', inputs=[input_shape, input_dim_idx])
-#        tensor_shape = tensor_shape = graph.make_node(
-#            'Constant',
-#            attrs={'dtype': dtypes.ONNX.INT64,
-#                   'value': node.attr('shape')})
-#        tensor_shape = graph.make_node(
-#            'ScatterND', inputs=[tensor_shape, output_dim_idx, updates])
-#        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
-#        graph.make_node(
-#            'ConstantOfShape',
-#            inputs=[tensor_shape],
-#            outputs=node.output('Out'),
-#            dims=[1],
-#            dtype=dtype,
-#            value=node.attr('value'))
-
-
 @op_mapper('fill_any_like')
 class FullLike():
     '''
@@ -769,11 +737,22 @@ class Unsqueeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        graph.make_node(
-            'Unsqueeze',
-            inputs=node.input('X'),
-            outputs=node.output('Out'),
-            axes=node.attr('axes'))
+        if len(node.attr('axes')) > 0:
+            graph.make_node(
+                'Unsqueeze',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                axes=node.attr('axes'))
+        else:
+            axis_input = node.input('AxesTensor')
+            for name, param in graph.parameters.items():
+                if name in axis_input:
+                    axis_data = param.attribute[0].t.int64_data
+            graph.make_node(
+                'Unsqueeze',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                axes=axis_data)
 
 
 @op_mapper('reciprocal')
@@ -894,23 +873,21 @@ class Pad():
         #TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
             onnx_paddings = [
-                0, 0, paddings[0], paddings[2],
-                0, 0, paddings[1], paddings[3]
+                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
             ]
         elif node.attr('data_format') == 'NHWC':
             onnx_paddings = [
-                0, paddings[0], paddings[2], 0,
-                0, paddings[1], paddings[3], 0
+                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
             ]
         elif node.attr('data_format') == 'NCDHW':
             onnx_paddings = [
-                0, 0, paddings[4], paddings[2], paddings[0],
-                0, 0, paddings[5], paddings[3], paddings[1]
+                0, 0, paddings[4], paddings[2], paddings[0], 0, 0, paddings[5],
+                paddings[3], paddings[1]
             ]
         elif node.attr('data_format') == 'NDHWC':
             onnx_paddings = [
-                0, paddings[4], paddings[2], paddings[0], 0,
-                0, paddings[5], paddings[3], paddings[1], 0
+                0, paddings[4], paddings[2], paddings[0], 0, 0, paddings[5],
+                paddings[3], paddings[1], 0
             ]
         return onnx_paddings
 
