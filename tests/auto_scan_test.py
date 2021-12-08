@@ -124,7 +124,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
                 format(min_success_num, successful_ran_programs))
             assert False
         used_time = time.time() - start_time
-        logging.info("Used time: {} s".format(used_time))
+        logging.info("Used time: {} s".format(round(used_time, 2)))
         if max_duration > 0 and used_time > max_duration:
             logging.error(
                 "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`.".
