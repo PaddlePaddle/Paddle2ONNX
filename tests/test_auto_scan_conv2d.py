@@ -131,7 +131,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             dilations = 1
 
         config = {
-            "op_names": "conv2d",
+            "op_names": ["conv2d"],
             "test_data_shapes": [input_shape, kernel_size],
             "test_data_types": [['float32'], ['float32']],
             "opset_version": [9],

@@ -54,7 +54,7 @@ class TestElementwiseAddConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
-            "op_names": "elementwise_add",
+            "op_names": ["elementwise_add"],
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [9],

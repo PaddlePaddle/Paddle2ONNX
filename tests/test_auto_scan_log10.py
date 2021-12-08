@@ -50,7 +50,7 @@ class TestLog10Convert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": "log10",
+            "op_names": ["log10"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [9],
