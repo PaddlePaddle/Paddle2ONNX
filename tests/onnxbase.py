@@ -262,26 +262,18 @@ class APIOnnx(object):
         self.set_input_spec()
         for place in self.places:
             paddle.set_device(place)
-            # logging.info("begin to test device: {}".format(place))
+
             exp = self._mk_dygraph_exp(self._func)
             res_fict = {}
             # export onnx models and make onnx res
             for v in self._version:
                 self.check_ops(v)
-                # logging.info("export op version {} to onnx...".format(str(v)))
                 self._dygraph_to_onnx(instance=self._func, ver=v)
-                # logging.info("make op version {} res of onnx...".format(str(v)))
                 res_fict[str(v)] = self._mk_onnx_res(ver=v)
-            # compare dygraph exp with onnx res
+
             for v in self._version:
-                # logging.info("compare dygraph exp with onnx version {} res...".
-                #              format(str(v)))
                 compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
-                # logging.info(
-                #     "comparing dygraph exp with onnx version {} res is done.".
-                #     format(str(v)))
+
             # dygraph model jit save
             if self.static is True and place == 'gpu':
-                # logging.info("start to jit save...")
                 self._dygraph_jit_save(instance=self._func)
-                # logging.info("jit save is already...")
