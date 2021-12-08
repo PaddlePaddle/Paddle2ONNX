@@ -14,18 +14,15 @@
 
 import numpy as np
 import unittest
-import abc
 import os
-import enum
 import time
 import logging
-import shutil
 import paddle
 
 import hypothesis
 from hypothesis import given, settings, seed, reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import APIOnnx, randtool, compare
+from onnxbase import APIOnnx, randtool
 from itertools import product
 
 paddle.set_device("cpu")
