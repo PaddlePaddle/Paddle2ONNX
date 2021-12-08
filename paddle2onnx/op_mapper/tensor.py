@@ -927,14 +927,18 @@ class UniformRandom():
 
 @op_mapper(
     [
-        'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
-        'nearest_interp_v2'
+        'linear_interp_v2',
+        'bilinear_interp_v2',
+        'trilinear_interp_v2',
+        'nearest_interp_v2',
+        'bicubic_interp_v2',
     ],
     mapper_dict={
-        'bilinear_interp': 'linear',
-        'nearest_interp': 'nearest',
+        'linear_interp_v2': 'linear',
         'bilinear_interp_v2': 'linear',
-        'nearest_interp_v2': 'nearest'
+        'trilinear_interp_v2': 'linear',
+        'nearest_interp_v2': 'nearest',
+        'bicubic_interp_v2': 'cubic',
     })
 class Resize():
     support_opset_version_range = (9, 12)
@@ -943,46 +947,47 @@ class Resize():
     def opset_9(cls, graph, node, **kw):
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
-        if node.attr('align_corners') or node.attr('align_mode') == 0:
+
+        if node.attr('align_corners') or resize_type in ["cubic"]:
             raise Exception(
                 "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
                 "'asymmetric', Try converting with opset_version 11"
             )
-        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            in_shape, out_shape = cls.compute_output_shape(
-                graph, node, opset_version=9)
-            cast_shape_node2 = graph.make_node(
-                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
-            cast_shape_node0 = graph.make_node(
-                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
-            node_h_w_scales = graph.make_node(
-                'Div', inputs=[cast_shape_node2, cast_shape_node0])
-            inputs.append(node_h_w_scales)
-        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            scale = node.input('Scale')[0]
-            inputs.append(out_shape)
+        if node.attr('align_mode') == 0 and resize_type in [
+                "bilinear", "linear", "trilinear"
+        ]:
+            raise Exception(
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
+                "'asymmetric', Try converting with opset_version 11"
+            )
+        assert node.attrs['data_layout'] == 'NCHW', \
+            "The conv data layout should be 'NCHW' , but received data format " \
+            "is %s." % node.attrs['data_format']
+
+        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
+        shape = node.block.vars[node.input('X')[0]].shape
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        scale = node.attr('scale')
+        scaleValue = [1, 1]
+        count_one = out_shape.count(-1)
+        if ndim == 3 or ndim == 4 or ndim == 5:
+            if count_one <= 2:
+                scale = []
+                for i, v in enumerate(out_shape):
+                    if v == -1:
+                        continue
+                    scale.append(out_shape[i] / shape[i - count_one + 2])
         else:
-            out_shape = [node.attr('out_h'), node.attr('out_w')]
-            scale = node.attr('scale')
-            if isinstance(scale, (tuple, list)):
-                scale_h = scale[0]
-                scale_w = scale[1]
-            else:
-                scale_h = scale
-                scale_w = scale
-            if out_shape.count(-1) > 0:
-                scale_node = graph.make_node(
-                    'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': [1, 1, scale_h, scale_w]
-                    })
-                inputs.append(scale_node)
-            else:
-                raise Exception("Unexpected situation happend")
+            raise Exception("Unexpected situation happend")
+
+        assert len(scale) > 0, Exception("scale size should > 0!")
+        scale_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.FLOAT,
+                   'value': scaleValue + scale})
         graph.make_node(
             'Upsample',
-            inputs=inputs,
+            inputs=inputs + [scale_node],
             outputs=node.output('Out'),
             mode=resize_type)
 
@@ -990,58 +995,71 @@ class Resize():
     def opset_10(cls, graph, node, **kw):
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
-        if node.attr('align_corners') or node.attr('align_mode') == 0:
+
+        if node.attr('align_corners') or resize_type in ["cubic"]:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode:" \
-                " 'asymmetric', Try converting with opset_version 11"
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
+                "'asymmetric', Try converting with opset_version 11"
             )
-        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            in_shape, out_shape = cls.compute_output_shape(graph, node)
-            cast_shape_node2 = graph.make_node(
-                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
-            cast_shape_node0 = graph.make_node(
-                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
-            node_h_w_scales = graph.make_node(
-                'Div', inputs=[cast_shape_node2, cast_shape_node0])
-            inputs.append(node_h_w_scales)
-        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            scale = node.input('Scale')[0]
-            inputs.append(scale)
+        if node.attr('align_mode') == 0 and resize_type in [
+                "bilinear", "linear", "trilinear"
+        ]:
+            raise Exception(
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
+                "'asymmetric', Try converting with opset_version 11"
+            )
+        assert node.attrs['data_layout'] == 'NCHW', \
+            "The conv data layout should be 'NCHW' , but received data format " \
+            "is %s." % node.attrs['data_format']
+
+        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
+        shape = node.block.vars[node.input('X')[0]].shape
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        scale = node.attr('scale')
+        scaleValue = [1, 1]
+        count_one = out_shape.count(-1)
+        if ndim == 3 or ndim == 4 or ndim == 5:
+            if count_one <= 2:
+                scale = []
+                for i, v in enumerate(out_shape):
+                    if v == -1:
+                        continue
+                    scale.append(out_shape[i] / shape[i - count_one + 2])
         else:
-            out_shape = [node.attr('out_h'), node.attr('out_w')]
-            scale = node.attr('scale')
-            if isinstance(scale, float):
-                scale = [1, 1, scale, scale]
-            else:
-                scale = [1, 1] + scale
-            if out_shape.count(-1) > 0:
-                scale_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': scale})
-                inputs.append(scale_node)
-            else:
-                raise Exception("Unexpected situation happend")
+            raise Exception("Unexpected situation happend")
+
+        assert len(scale) > 0, Exception("scale size should > 0!")
+        scale_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.FLOAT,
+                   'value': scaleValue + scale})
         graph.make_node(
             'Resize',
-            inputs=inputs,
+            inputs=inputs + [scale_node],
             outputs=node.output('Out'),
             mode=resize_type)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
-        node_lists = []
         resize_type = kw['mapper_dict'][node.type]
-        coordinate_transformation_mode = ''
+        scale = node.attr('scale')
+
+        assert node.attrs['data_layout'] == 'NCHW', \
+            "The conv data layout should be 'NCHW' , but received data format " \
+            "is %s." % node.attrs['data_format']
+
         if node.attr('align_corners'):
             coordinate_transformation_mode = 'align_corners'
         elif node.type == 'nearest_interp':
             coordinate_transformation_mode = 'half_pixel'
         else:
-            if node.attr('align_mode') == 1:
+            if node.attr('align_mode') == 1 and resize_type is not 'cubic':
                 coordinate_transformation_mode = 'asymmetric'
             else:
-                coordinate_transformation_mode = 'half_pixel'
+                if resize_type == 'nearest' and len(scale) == 0:
+                    coordinate_transformation_mode = 'asymmetric'
+                else:
+                    coordinate_transformation_mode = 'half_pixel'
         roi_node = graph.make_node(
             'Constant',
             attrs={
@@ -1049,59 +1067,41 @@ class Resize():
                 'value': [1, 1, 1, 1, 1, 1, 1, 1]
             })
         inputs = [node.input('X')[0], roi_node]
-        node_lists.append(roi_node)
-
-        out_size = node.input('OutSize')
-        size_tensor = node.input('SizeTensor')
-        scale = node.input('Scale')
-        if (out_size is not None and len(out_size) > 0) or (
-                size_tensor is not None and len(size_tensor) > 0):
-            empty_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': []})
-            inputs.append(empty_node)
-            _, out_shape = cls.compute_output_shape(graph, node)
-            inputs.append(out_shape)
-        elif scale is not None and len(scale) > 0:
-            scale = node.input('Scale')[0]
-            inputs.append(scale)
+        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
+        shape = node.block.vars[node.input('X')[0]].shape
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        scaleValue = [1, 1]
+        count_one = out_shape.count(-1)
+        if ndim == 3 or ndim == 4 or ndim == 5:
+            if count_one <= 2:
+                scaleValue = []
+                scale = []
         else:
-            out_shape = [node.attr('out_h'), node.attr('out_w')]
-            scale = node.attr('scale')
-            if isinstance(scale, float):
-                scale = [1, 1, scale, scale]
-            else:
-                scale = [1, 1] + scale
+            raise Exception("Unexpected situation happend")
 
-            if out_shape.count(-1) > 0:
-                scale_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': scale})
-                inputs.append(scale_node)
-            else:
-                empty_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': []})
-                in_shape, out_shape = cls.compute_output_shape_by_size(graph,
-                                                                       node)
-                inputs += [empty_node, out_shape]
+        scale_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.FLOAT,
+                   'value': scaleValue + scale})
+        inputs.append(scale_node)
+        if len(scale) == 0:
+            # out_shape = cls.compute_output_shape_by_size(graph, node)
+            out_shape = [val for val in out_shape if val > 0]
+            out_node = graph.make_node(
+                'Constant',
+                attrs={
+                    'dtype': dtypes.ONNX.INT64,
+                    'value': [shape[0], shape[1]] + out_shape
+                })
+            inputs.append(out_node)
+        attrs = {
+            'mode': resize_type,
+            'coordinate_transformation_mode': coordinate_transformation_mode
+        }
         if resize_type == 'nearest' and coordinate_transformation_mode == 'asymmetric':
-            graph.make_node(
-                'Resize',
-                inputs=inputs,
-                outputs=node.output('Out'),
-                mode=resize_type,
-                coordinate_transformation_mode=coordinate_transformation_mode,
-                nearest_mode='floor')
-        else:
-            graph.make_node(
-                'Resize',
-                inputs=inputs,
-                outputs=node.output('Out'),
-                mode=resize_type,
-                coordinate_transformation_mode=coordinate_transformation_mode)
+            attrs['nearest_mode'] = 'floor'
+        graph.make_node(
+            'Resize', inputs=inputs, outputs=node.output('Out'), attrs=attrs)
 
     @classmethod
     def compute_output_shape(cls, graph, node, opset_version=10):
@@ -1145,13 +1145,14 @@ class Resize():
                                    'value': [2]})
             shape_node1 = graph.make_node(
                 'Slice', inputs=[shape_node0, starts_node, ends_node])
-        out_shape = [node.attr('out_h'), node.attr('out_w')]
+        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
+        out_shape = [val for val in out_shape if val > 0]
         shape_node2 = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': out_shape})
         shape_node3 = graph.make_node(
             'Concat', inputs=[shape_node1, shape_node2], axis=0)
-        return shape_node0, shape_node3
+        return shape_node3
 
 
 @op_mapper('pixel_shuffle')
