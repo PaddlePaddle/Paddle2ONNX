@@ -26,7 +26,7 @@ op_api_map = {
 
 class Net(BaseNet):
     def forward(self, inputs):
-        return op_api_map[self.others_list[0]](inputs)
+        return op_api_map[self.config["op_names"]](inputs)
 
 
 class TestUnaryOPConvert(OPConvertAutoScanTest):
@@ -50,7 +50,8 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
         models = list()
         op_names = list()
         for op_name, i in op_api_map.items():
-            models.append(Net(config, op_name))
+            config["op_names"] = op_name
+            models.append(Net(config))
             op_names.append(op_name)
         config["op_names"] = op_names
         return (config, models)

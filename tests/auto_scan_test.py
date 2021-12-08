@@ -24,6 +24,7 @@ from hypothesis import given, settings, seed, reproduce_failure
 import hypothesis.strategies as st
 from onnxbase import APIOnnx, randtool
 from itertools import product
+import copy
 
 paddle.set_device("cpu")
 
@@ -57,11 +58,9 @@ class BaseNet(paddle.nn.Layer):
     define Net
     """
 
-    def __init__(self, config, *args, **kwargs):
+    def __init__(self, config):
         super(BaseNet, self).__init__()
-        self.config = config
-        self.others_list = args
-        self.others_dict = kwargs
+        self.config = copy.copy(config)
 
     def forward(self, *args, **kwargs):
         raise NotImplementedError
