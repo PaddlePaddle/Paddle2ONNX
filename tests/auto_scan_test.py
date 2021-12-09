@@ -75,7 +75,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
     def run_and_statis(self,
                        max_examples=100,
-                       opset_version=[9, 10, 11, 12],
+                       opset_version=[7, 9, 15],
                        reproduce=None,
                        min_success_num=25,
                        max_duration=180):
@@ -145,6 +145,9 @@ class OPConvertAutoScanTest(unittest.TestCase):
         ), "config must include opset_version in dict keys"
         assert "input_spec_shape" in config.keys(
         ), "config must include input_spec_shape in dict keys"
+
+        assert 15 in config[
+            "opset_version"], "must include opset version 15 in opset_version"
 
         op_names = config["op_names"]
         test_data_shapes = config["test_data_shapes"]
