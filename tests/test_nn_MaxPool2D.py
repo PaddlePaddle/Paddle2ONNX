@@ -174,3 +174,14 @@ def test_MaxPool2D_base_Padding_4():
         paddle.to_tensor(
             randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
     obj.run()
+
+
+# if __name__ == '__main__':
+#     test_MaxPool2D_base_Padding_4()
+#     test_MaxPool2D_base_Padding_3()
+#     test_MaxPool2D_base_Padding_2()
+#     test_MaxPool2D_base_Padding_1()
+#     test_MaxPool2D_base_Padding_0()
+#     test_MaxPool2D_base_SAME()
+#     test_MaxPool2D_base_VALID()
+#     test_MaxPool2D_base()

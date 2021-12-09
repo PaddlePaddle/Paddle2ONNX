@@ -183,5 +183,12 @@ def test_Conv3DTranspose_output_padding_2_9_10_11_12():
     obj.run()
 
 
-if __name__ == '__main__':
-    test_Conv3DTranspose_output_padding_2_9_10_11_12()
+# if __name__ == '__main__':
+#     test_Conv3DTranspose_output_padding_2_9_10_11_12()
+#     test_Conv3DTranspose_dilation_2_9_10_11_12()
+#     test_Conv3DTranspose_groups_2_9_10_11_12()
+#     test_Conv3DTranspose_groups_1_9_10_11_12()
+#     test_Conv3DTranspose_padding_2_9_10_11_12()
+#     test_Conv3DTranspose_padding_1_9_10_11_12()
+#     test_Conv3DTranspose_padding_0_9_10_11_12()
+#     test_Conv3DTranspose_9_10_11_12()

@@ -156,5 +156,10 @@ def test_Conv2DTranspose_9_10_11_12_group():
     obj.run()
 
 
-if __name__ == '__main__':
-    test_Conv2DTranspose_9_10_11_12_group()
+# if __name__ == '__main__':
+#     test_Conv2DTranspose_9_10_11_12_group()
+#     test_Conv2DTranspose_9_output_padding_3()
+#     test_Conv2DTranspose_9_output_padding_2()
+#     test_Conv2DTranspose_9_output_padding_1()
+#     test_Conv2DTranspose_9_output_padding()
+#     test_Conv2DTranspose_9_10_11_12()

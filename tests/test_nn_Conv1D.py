@@ -164,3 +164,11 @@ def test_Conv1D_11_padding_2():
         paddle.to_tensor(
             randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
     obj.run()
+
+
+# if __name__ == '__main__':
+#     test_Conv1D_11()
+#     test_Conv1D_12()
+#     test_Conv1D_11_padding_0()
+#     test_Conv1D_11_padding_1()
+#     test_Conv1D_11_padding_2()
