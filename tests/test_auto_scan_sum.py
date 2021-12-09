@@ -11,53 +11,60 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-
-op_api_map = {
-    "relu": paddle.nn.functional.relu,
-    "sigmoid": paddle.nn.functional.sigmoid
-}
+import logging
 
 
 class Net(BaseNet):
-    def forward(self, inputs):
-        return op_api_map[self.config["op_names"]](inputs)
+    """
+    simple Net
+    """
+
+    def forward(self, inputs1, inputs2):
+        """
+        forward
+        """
+        inputs = [inputs1, inputs2]
+        x = paddle.add_n(inputs)
+        return x
 
 
-class TestUnaryOPConvert(OPConvertAutoScanTest):
-    """Testcases for all the unary operators."""
+class TestSumConvert(OPConvertAutoScanTest):
+    """
+    api: paddle.sum
+    OPset version: 7,9,15
+    """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=4, max_size=4))
+                    min_value=20, max_value=100),
+                min_size=1,
+                max_size=4))
 
-        data_shapes = input_shape
-        input_specs = [-1, input_shape[1], -1, -1]
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+
         config = {
-            "op_names": "",
-            "test_data_shapes": [data_shapes],
-            "test_data_types": [['float32']],
+            "op_names": ["sum"],
+            "test_data_shapes": [input_shape, input_shape],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [input_specs],
+            "input_spec_shape": [],
         }
-        models = list()
-        op_names = list()
-        for op_name, i in op_api_map.items():
-            config["op_names"] = op_name
-            models.append(Net(config))
-            op_names.append(op_name)
-        config["op_names"] = op_names
+
+        models = Net(config)
+
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=40)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":
