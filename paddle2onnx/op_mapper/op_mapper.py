@@ -91,7 +91,6 @@ class OpMapper(object):
                         OpMapper.OPSETS[op] = {}
                     opset_dict = OpMapper.OPSETS[op]
                     opset_dict[version] = (v, self.kwargs)
-        return cls
 
     @staticmethod
     def mapping(graph, node, operator_export_type="ONNX"):

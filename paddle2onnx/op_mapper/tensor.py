@@ -1260,27 +1260,7 @@ class Scatter():
         reshape_index = graph.make_node('Reshape',
                                         inputs=[node.input('Ids', 0), shape])
         if not node.attr('overwrite'):
-            input = graph.make_node(
-                'ScatterND',
-                inputs=[
-                    node.input('X', 0), reshape_index,
-                    graph.make_node('ConstantOfShape',
-                                    inputs=[
-                                        graph.make_node('Shape',
-                                                        inputs=node.input(
-                                                            'Updates', 0))
-                                    ],
-                                    dims=[1],
-                                    dtype=dtypes.ONNX.FLOAT,
-                                    value=[0])
-                ])
-            node.inputs['X'] = [input]
-            node.inputs['Index'] = [reshape_index]
-            node.inputs['Ids'] = []
-            node.set_inputs(node.inputs)
-            from paddle2onnx.op_mapper.tensor import ScatterndAdd
-            ScatterndAdd.opset_11(graph, node, **kw)
-
+            raise Exception("overwrite = False not support yet.")
         else:
             graph.make_node('ScatterND',
                             inputs=[
