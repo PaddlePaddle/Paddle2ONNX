@@ -16,7 +16,7 @@ from paddle2onnx.passes import PassManager
 from paddle2onnx.utils import logging
 
 
-@PassManager('remove_isolated_pass')
+@PassManager('remove_isolated_node_pass')
 class RemoveIsolatedNodePass(object):
     @classmethod
     def run_pass(cls, onnx_graph):
