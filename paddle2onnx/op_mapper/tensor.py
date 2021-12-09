@@ -964,30 +964,57 @@ class Resize():
             "The conv data layout should be 'NCHW' , but received data format " \
             "is %s." % node.attrs['data_format']
 
-        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
-        shape = node.block.vars[node.input('X')[0]].shape
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        scale = node.attr('scale')
-        scaleValue = [1, 1]
-        count_one = out_shape.count(-1)
-        if ndim == 3 or ndim == 4 or ndim == 5:
-            if count_one <= 2:
-                scale = []
-                for i, v in enumerate(out_shape):
-                    if v == -1:
-                        continue
-                    scale.append(out_shape[i] / shape[i - count_one + 2])
+        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
+            in_shape, out_shape = cls.compute_output_shape(
+                graph, node, opset_version=9)
+            cast_shape_node2 = graph.make_node(
+                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
+            cast_shape_node0 = graph.make_node(
+                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
+            node_h_w_scales = graph.make_node(
+                'Div', inputs=[cast_shape_node2, cast_shape_node0])
+            inputs.append(node_h_w_scales)
+        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
+            scale = node.input('Scale')[0]
+            cast_scale = graph.make_node(
+                'Cast', inputs=[scale], to=dtypes.ONNX.FLOAT)
+            const_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [1, 1]})
+            scale_node = graph.make_node(
+                'Concat', inputs=[const_node, cast_scale], axis=0)
+            inputs.append(scale_node)
         else:
-            raise Exception("Unexpected situation happend")
+            out_shape = [
+                node.attr('out_d'), node.attr('out_h'), node.attr('out_w')
+            ]
+            shape = node.block.vars[node.input('X')[0]].shape
+            ndim = node.block.vars[node.input('X')[0]].ndim
+            scale = node.attr('scale')
+            scaleValue = [1, 1]
+            count_one = out_shape.count(-1)
+            if ndim == 3 or ndim == 4 or ndim == 5:
+                if count_one <= 2:
+                    scale = []
+                    for i, v in enumerate(out_shape):
+                        if v == -1:
+                            continue
+                        scale.append(out_shape[i] / shape[i - count_one + 2])
+            else:
+                raise Exception("Unexpected situation happend")
 
-        assert len(scale) > 0, Exception("scale size should > 0!")
-        scale_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': scaleValue + scale})
+            assert len(scale) > 0, Exception("scale size should > 0!")
+            scale_node = graph.make_node(
+                'Constant',
+                attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': scaleValue + scale
+                })
+            inputs.append(scale_node)
         graph.make_node(
             'Upsample',
-            inputs=inputs + [scale_node],
+            inputs=inputs,
             outputs=node.output('Out'),
             mode=resize_type)
 
@@ -1012,30 +1039,56 @@ class Resize():
             "The conv data layout should be 'NCHW' , but received data format " \
             "is %s." % node.attrs['data_format']
 
-        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
-        shape = node.block.vars[node.input('X')[0]].shape
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        scale = node.attr('scale')
-        scaleValue = [1, 1]
-        count_one = out_shape.count(-1)
-        if ndim == 3 or ndim == 4 or ndim == 5:
-            if count_one <= 2:
-                scale = []
-                for i, v in enumerate(out_shape):
-                    if v == -1:
-                        continue
-                    scale.append(out_shape[i] / shape[i - count_one + 2])
+        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
+            in_shape, out_shape = cls.compute_output_shape(graph, node)
+            cast_shape_node2 = graph.make_node(
+                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
+            cast_shape_node0 = graph.make_node(
+                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
+            node_h_w_scales = graph.make_node(
+                'Div', inputs=[cast_shape_node2, cast_shape_node0])
+            inputs.append(node_h_w_scales)
+        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
+            scale = node.input('Scale')[0]
+            cast_scale = graph.make_node(
+                'Cast', inputs=[scale], to=dtypes.ONNX.FLOAT)
+            const_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [1, 1]})
+            scale_node = graph.make_node(
+                'Concat', inputs=[const_node, cast_scale], axis=0)
+            inputs.append(scale_node)
         else:
-            raise Exception("Unexpected situation happend")
+            out_shape = [
+                node.attr('out_d'), node.attr('out_h'), node.attr('out_w')
+            ]
+            shape = node.block.vars[node.input('X')[0]].shape
+            ndim = node.block.vars[node.input('X')[0]].ndim
+            scale = node.attr('scale')
+            scaleValue = [1, 1]
+            count_one = out_shape.count(-1)
+            if ndim == 3 or ndim == 4 or ndim == 5:
+                if count_one <= 2:
+                    scale = []
+                    for i, v in enumerate(out_shape):
+                        if v == -1:
+                            continue
+                        scale.append(out_shape[i] / shape[i - count_one + 2])
+            else:
+                raise Exception("Unexpected situation happend")
 
-        assert len(scale) > 0, Exception("scale size should > 0!")
-        scale_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': scaleValue + scale})
+            assert len(scale) > 0, Exception("scale size should > 0!")
+            scale_node = graph.make_node(
+                'Constant',
+                attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': scaleValue + scale
+                })
+            inputs.append(scale_node)
         graph.make_node(
             'Resize',
-            inputs=inputs + [scale_node],
+            inputs=inputs,
             outputs=node.output('Out'),
             mode=resize_type)
 
@@ -1067,33 +1120,61 @@ class Resize():
                 'value': [1, 1, 1, 1, 1, 1, 1, 1]
             })
         inputs = [node.input('X')[0], roi_node]
-        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
-        shape = node.block.vars[node.input('X')[0]].shape
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        scaleValue = [1, 1]
-        count_one = out_shape.count(-1)
-        if ndim == 3 or ndim == 4 or ndim == 5:
-            if count_one <= 2:
-                scaleValue = []
-                scale = []
-        else:
-            raise Exception("Unexpected situation happend")
+        out_size = node.input('OutSize')
+        size_tensor = node.input('SizeTensor')
+        scale_tensor = node.input('Scale')
 
-        scale_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': scaleValue + scale})
-        inputs.append(scale_node)
-        if len(scale) == 0:
-            # out_shape = cls.compute_output_shape_by_size(graph, node)
-            out_shape = [val for val in out_shape if val > 0]
-            out_node = graph.make_node(
+        if (out_size is not None and len(out_size) > 0) or (
+                size_tensor is not None and len(size_tensor) > 0):
+            empty_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': []})
+            inputs.append(empty_node)
+            _, out_shape = cls.compute_output_shape(graph, node)
+            inputs.append(out_shape)
+        elif scale_tensor is not None and len(scale_tensor) > 0:
+            scale = node.input('Scale')[0]
+            cast_scale = graph.make_node(
+                'Cast', inputs=[scale], to=dtypes.ONNX.FLOAT)
+            const_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [1, 1]})
+            scale_node = graph.make_node(
+                'Concat', inputs=[const_node, cast_scale], axis=0)
+            inputs.append(scale_node)
+        else:
+            out_shape = [
+                node.attr('out_d'), node.attr('out_h'), node.attr('out_w')
+            ]
+            shape = node.block.vars[node.input('X')[0]].shape
+            ndim = node.block.vars[node.input('X')[0]].ndim
+            scaleValue = [1, 1]
+            count_one = out_shape.count(-1)
+            if ndim == 3 or ndim == 4 or ndim == 5:
+                if count_one <= 2:
+                    scaleValue = []
+                    scale = []
+            else:
+                raise Exception("Unexpected situation happend")
+
+            scale_node = graph.make_node(
                 'Constant',
                 attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [shape[0], shape[1]] + out_shape
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': scaleValue + scale
                 })
-            inputs.append(out_node)
+            inputs.append(scale_node)
+            if len(scale) == 0:
+                # out_shape = cls.compute_output_shape_by_size(graph, node)
+                out_shape = [val for val in out_shape if val > 0]
+                out_node = graph.make_node(
+                    'Constant',
+                    attrs={
+                        'dtype': dtypes.ONNX.INT64,
+                        'value': [shape[0], shape[1]] + out_shape
+                    })
+                inputs.append(out_node)
         attrs = {
             'mode': resize_type,
             'coordinate_transformation_mode': coordinate_transformation_mode
