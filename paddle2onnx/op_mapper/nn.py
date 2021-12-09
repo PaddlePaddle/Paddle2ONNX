@@ -201,7 +201,7 @@ class Pool():
             if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
                 k_size[1] = input_shape[3] + pads[1]
 
-            intput_x = node.input('X')
+            input_x = node.input('X')
             if max(k_size) <= max(pads):
                 onnx_paddings = [0, 0, pads[0], pads[1], 0, 0, pads[2], pads[3]]
                 attrs_pad = {'mode': 'constant', }
@@ -216,12 +216,12 @@ class Pool():
                         'Constant',
                         attrs={'dtype': dtypes.ONNX.FLOAT,
                                'value': 0.0})
-                    intput_x = intput_x + [pads_node, value_node]
+                    input_x = input_x + [pads_node, value_node]
                 else:
                     attrs_pad['pads'] = onnx_paddings
                     attrs_pad['value'] = 0.0
-                intput_x = graph.make_node(
-                    'Pad', inputs=intput_x, attrs=attrs_pad)
+                input_x = graph.make_node(
+                    'Pad', inputs=input_x, attrs=attrs_pad)
                 pads = [0, 0, 0, 0]
 
             attrs = {
@@ -246,7 +246,7 @@ class Pool():
                 attrs['count_include_pad'] = not node.attr('exclusive')
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][0],
-                inputs=intput_x,
+                inputs=input_x,
                 outputs=node.output('Out'),
                 attrs=attrs)
 
