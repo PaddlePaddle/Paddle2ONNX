@@ -20,7 +20,9 @@ import paddle
 
 op_api_map = {
     "relu": paddle.nn.functional.relu,
-    "sigmoid": paddle.nn.functional.sigmoid
+    "sigmoid": paddle.nn.functional.sigmoid,
+    "floor": paddle.floor,
+    "softsign": paddle.nn.functional.softsign
 }
 
 
@@ -44,7 +46,7 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
             "op_names": "",
             "test_data_shapes": [data_shapes],
             "test_data_types": [['float32']],
-            "opset_version": [9],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [input_specs],
         }
         models = list()

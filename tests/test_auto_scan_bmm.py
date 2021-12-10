@@ -29,14 +29,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.add(inputs1, inputs2)
+        x = paddle.bmm(inputs1, inputs2)
         return x
 
 
-class TestElementwiseAddConvert(OPConvertAutoScanTest):
+class TestBmmConvert(OPConvertAutoScanTest):
     """
-    api: paddle.add
-    OPset version: 9
+    api: paddle.bmm
+    OPset version: 7, 9, 15 
     """
 
     def sample_convert_config(self, draw):
@@ -44,17 +44,23 @@ class TestElementwiseAddConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[3]]
-        else:
-            input2_shape = input1_shape
+                min_size=3,
+                max_size=3))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        input2_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=20, max_value=100),
+                min_size=3,
+                max_size=3))
+
+        input2_shape[0] = input1_shape[0]
+        input2_shape[1] = input1_shape[2]
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["elementwise_add"],
+            "op_names": ["bmm"],
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
