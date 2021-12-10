@@ -95,8 +95,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
             report_multiple_bugs=False, )
         settings.load_profile("ci")
 
-        self.opset_version = opset_version
-
         def sample_convert_generator(draw):
             return self.sample_convert_config(draw)
 
@@ -141,15 +139,15 @@ class OPConvertAutoScanTest(unittest.TestCase):
         ), "config must include test_data_shapes in dict keys"
         assert "test_data_types" in config.keys(
         ), "config must include test_data_types in dict keys"
-        assert "opset_version" in config.keys(
-        ), "config must include opset_version in dict keys"
+        assert "opset_versions" in config.keys(
+        ), "config must include opset_versions in dict keys"
         assert "input_spec_shape" in config.keys(
         ), "config must include input_spec_shape in dict keys"
 
         op_names = config["op_names"]
         test_data_shapes = config["test_data_shapes"]
         test_data_types = config["test_data_types"]
-        opset_version = config["opset_version"]
+        opset_versions = config["opset_versions"]
         input_specs = config["input_spec_shape"]
 
         self.num_ran_models += 1
@@ -158,6 +156,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             models = [models]
         if not isinstance(op_names, (tuple, list)):
             op_names = [op_names]
+        if not isinstance(opset_versions[0], (tuple, list)):
+            opset_versions = [opset_versions]
 
         assert len(models) == len(
             op_names), "Length of models should be equal to length of op_names"
@@ -182,7 +182,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         for i, model in enumerate(models):
             model.eval()
-            obj = APIOnnx(model, op_names[i], opset_version, op_names[i],
+            obj = APIOnnx(model, op_names[i], opset_versions[i], op_names[i],
                           input_specs, delta, rtol)
             for input_type in input_type_list:
                 input_tensors = list()
