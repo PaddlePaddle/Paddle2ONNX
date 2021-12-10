@@ -82,7 +82,7 @@ opset_version_map = {
     "softsign": [7],
     "sqrt": [7, 13],
     "square": [7, 13, 14],
-    "swish": [7, 13],
+    "swish": [7, 13, 14],
     "tanh": [7, 13],
 }
 
