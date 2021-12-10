@@ -400,12 +400,12 @@ class AffineChannel():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            assert node.attrs['data_layout'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_layout']
         if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            assert node.attrs['data_format'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
@@ -418,12 +418,12 @@ class AffineChannel():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            assert node.attrs['data_layout'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_layout']
         if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            assert node.attrs['data_format'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)

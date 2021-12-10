@@ -20,7 +20,9 @@ import paddle
 
 op_api_map = {
     "relu": paddle.nn.functional.relu,
-    "sigmoid": paddle.nn.functional.sigmoid
+    "sigmoid": paddle.nn.functional.sigmoid,
+    "floor": paddle.floor,
+    "softsign": paddle.nn.functional.softsign
 }
 
 

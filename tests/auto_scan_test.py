@@ -146,8 +146,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
         assert "input_spec_shape" in config.keys(
         ), "config must include input_spec_shape in dict keys"
 
-        assert 15 in config[
-            "opset_version"], "must include opset version 15 in opset_version"
+        # assert 15 in config[
+        #     "opset_version"], "must include opset version 15 in opset_version"
 
         op_names = config["op_names"]
         test_data_shapes = config["test_data_shapes"]
