@@ -106,7 +106,7 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
             "op_names": "",
             "test_data_shapes": [data_shapes],
             "test_data_types": [['float32']],
-            "opset_versions": [9],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [input_specs],
         }
         models = list()

@@ -249,7 +249,8 @@ class APIOnnx(object):
             for key, val in paddle_graph.node_map.items():
                 if op in key:
                     status = True
-        assert status is True, "{} op in not in convert OPs".format(self.ops)
+        assert status is True, "{} op in not in convert OPs, all OPs :{}".format(
+            self.ops, paddle_graph.node_map.keys())
 
     def run(self):
         """
