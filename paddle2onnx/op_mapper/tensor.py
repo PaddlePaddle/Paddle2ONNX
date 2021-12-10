@@ -18,6 +18,8 @@ import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
+import copy
+import paddle
 
 
 @op_mapper('concat')
@@ -451,10 +453,88 @@ class Embedding():
         if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
             ids = graph.make_node(
                 'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
+        padding_idx = node.attr('padding_idx')
+        input_shape = node.input_shape('W', 0)
+        if padding_idx != -1 and padding_idx != input_shape[0] - 1:
+            key = node.input('W', 0)
+            weight = None
+            weight_name = None
+            for name, param in graph.parameters.items():
+                print(name)
+                if name in [key]:
+                    weight = param['data']
+            if weight is None:
+                assert False, "opset version < 11 do not support padding_idx !=-1 and weight is tensor, please set opset version > 11"
+            else:
+                weight[padding_idx] = 0.0
+                tensor = helper.make_tensor(
+                    name=key,
+                    dims=param['shape'],
+                    data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
+                    vals=weight.flatten().tolist())
+                node = helper.make_node(
+                    'Constant', inputs=[], outputs=[key], value=tensor)
+                graph.parameters[key] = node
+
         graph.make_node(
             'Gather',
             inputs=[node.input('W', 0), ids],
             outputs=node.output('Out'))
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        ids = node.input('Ids', 0)
+        if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
+            ids = graph.make_node(
+                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
+
+        padding_idx = node.attr('padding_idx')
+        input_shape = node.input_shape('W', 0)
+        if padding_idx != -1 and padding_idx != input_shape[0] - 1:
+            key = node.input('W', 0)
+            weight = None
+            for name, param in graph.parameters.items():
+                if name in [key]:
+                    weight = param['data']
+            if weight is None:
+                dtype = dtypes.ONNX.FLOAT
+                if node.input_dtype('W', 0) == paddle.float64:
+                    dtype = dtypes.ONNX.DOUBLE
+                replace_shape = list(copy.copy(input_shape))
+                del (replace_shape[0])
+                replace_data = constant = graph.make_node(
+                    'Constant',
+                    dtype=dtype,
+                    dims=replace_shape,
+                    value=[0.0] * np.prod(replace_shape))
+                index = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[padding_idx])
+                Scatter_node = graph.make_node(
+                    'ScatterND',
+                    inputs=[node.input('W', 0), index, replace_data])
+                graph.make_node(
+                    'Gather',
+                    inputs=[Scatter_node, ids],
+                    outputs=node.output('Out'))
+            else:
+                weight[padding_idx] = 0.0
+                tensor = helper.make_tensor(
+                    name=key,
+                    dims=param['shape'],
+                    data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
+                    vals=weight.flatten().tolist())
+                node = helper.make_node(
+                    'Constant', inputs=[], outputs=[key], value=tensor)
+                graph.parameters[key] = node
+                graph.make_node(
+                    'Gather',
+                    inputs=[node.input('W', 0), ids],
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Gather',
+                inputs=[node.input('W', 0), ids],
+                outputs=node.output('Out'))
 
 
 @op_mapper('fill_constant_batch_size_like')

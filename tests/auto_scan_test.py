@@ -25,6 +25,7 @@ import hypothesis.strategies as st
 from onnxbase import APIOnnx, randtool
 from itertools import product
 import copy
+from inspect import isfunction
 
 paddle.set_device("cpu")
 
@@ -146,9 +147,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
         assert "input_spec_shape" in config.keys(
         ), "config must include input_spec_shape in dict keys"
 
-        # assert 15 in config[
-        #     "opset_version"], "must include opset version 15 in opset_version"
-
         op_names = config["op_names"]
         test_data_shapes = config["test_data_shapes"]
         test_data_types = config["test_data_types"]
@@ -190,6 +188,11 @@ class OPConvertAutoScanTest(unittest.TestCase):
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
+                    if isfunction(shape):
+                        data = shape()
+                        data = data.astype(input_type[j])
+                        input_tensors.append(paddle.to_tensor(data))
+                        continue
                     if input_type[j].count('int') > 0:
                         input_tensors.append(
                             paddle.to_tensor(
