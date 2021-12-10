@@ -14,24 +14,19 @@
 
 import numpy as np
 import unittest
-import abc
 import os
-import enum
 import time
 import logging
-import shutil
 import paddle
-import paddle.fluid as fluid
-from paddle.fluid.initializer import NumpyArrayInitializer
-from paddle.fluid.core import PassVersionChecker
-import paddle.fluid.core as core
-from paddle import compat as cpt
-from typing import Optional, List, Callable, Dict, Any, Set
 
 import hypothesis
 from hypothesis import given, settings, seed, reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import APIOnnx, randtool, compare
+from onnxbase import APIOnnx, randtool
+from itertools import product
+import copy
+
+paddle.set_device("cpu")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -58,50 +53,25 @@ else:
     settings.load_profile("dev")
 
 
-class AutoScanTest(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        np.random.seed(1024)
-        paddle.enable_static()
-        super(AutoScanTest, self).__init__(*args, **kwargs)
-        abs_dir = os.path.abspath(os.path.dirname(__file__))
-        self.cache_dir = os.path.join(abs_dir,
-                                      str(self.__module__) + '_cache_dir')
-        self.num_ran_programs = 0
-        self.model = None
-        self.name = None
-        self.test_data_shape = None
-        self.input_spec_shape = None
-        self.op_name = []
-        self.opset_version = []
+class BaseNet(paddle.nn.Layer):
+    """
+    define Net
+    """
 
-    @abc.abstractmethod
-    def sample_convert_configs(self):
-        '''
-        Generate all config with the combination of different Input tensor shape and
-        different Attr values.
-        '''
+    def __init__(self, config):
+        super(BaseNet, self).__init__()
+        self.config = copy.copy(config)
+
+    def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def run_test(self, quant=False):
-        raise NotImplementedError
 
-    @abc.abstractmethod
-    def ignore_log(self, msg: str):
-        logging.warning("SKIP: " + msg)
-
-    @abc.abstractmethod
-    def fail_log(self, msg: str):
-        logging.error("FAIL: " + msg)
-
-    @abc.abstractmethod
-    def success_log(self, msg: str):
-        logging.info("SUCCESS: " + msg)
-
-
-class OPConvertAutoScanTest(AutoScanTest):
+class OPConvertAutoScanTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(OPConvertAutoScanTest, self).__init__(*args, **kwargs)
+        np.random.seed(1024)
+        paddle.enable_static()
+        self.num_ran_models = 0
 
     def run_and_statis(self,
                        max_examples=100,
@@ -130,8 +100,8 @@ class OPConvertAutoScanTest(AutoScanTest):
         def sample_convert_generator(draw):
             return self.sample_convert_config(draw)
 
-        def run_test(config):
-            return self.run_test(configs=config)
+        def run_test(configs):
+            return self.run_test(configs=configs)
 
         generator = st.composite(sample_convert_generator)
         loop_func = given(generator())(run_test)
@@ -145,8 +115,8 @@ class OPConvertAutoScanTest(AutoScanTest):
         logging.info(
             "===================Statistical Information===================")
         logging.info("Number of Generated Programs: {}".format(
-            self.num_ran_programs))
-        successful_ran_programs = int(self.num_ran_programs)
+            self.num_ran_models))
+        successful_ran_programs = int(self.num_ran_models)
         if successful_ran_programs < min_success_num:
             logging.warning("satisfied_programs = ran_programs")
             logging.error(
@@ -154,37 +124,81 @@ class OPConvertAutoScanTest(AutoScanTest):
                 format(min_success_num, successful_ran_programs))
             assert False
         used_time = time.time() - start_time
+        logging.info("Used time: {} s".format(round(used_time, 2)))
         if max_duration > 0 and used_time > max_duration:
             logging.error(
                 "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`.".
                 format(max_duration))
             assert False
 
-    def run_test(self, configs=None):
-        saved_modle = self.model
-        saved_opset_version = self.opset_version
+    def run_test(self, configs):
+        config, models = configs
+        logging.info("Run configs: {}".format(config))
 
-        self.model.eval()
-        self.num_ran_programs += 1
-        logging.info("config: {}, test_data_shape: {}".format(
-            configs, self.test_data_shape))
-        # net, name, ver_list, delta=1e-6, rtol=1e-5
-        print("11111111:",self.input_spec_shape)
-        print("22222222:",self.test_data_shape)
-        obj = APIOnnx(self.model, self.op_name, self.opset_version,
-                      self.op_name, self.input_spec_shape)
+        assert "op_names" in config.keys(
+        ), "config must include op_names in dict keys"
+        assert "test_data_shapes" in config.keys(
+        ), "config must include test_data_shapes in dict keys"
+        assert "test_data_types" in config.keys(
+        ), "config must include test_data_types in dict keys"
+        assert "opset_version" in config.keys(
+        ), "config must include opset_version in dict keys"
+        assert "input_spec_shape" in config.keys(
+        ), "config must include input_spec_shape in dict keys"
 
-        input_tensors = list()
-        name = "input_data"
-        for shape in self.test_data_shape:
-            temp = paddle.to_tensor(
-                randtool("float", -1, 1, shape).astype('float32'))
-            input_tensors.append(temp)
-        input_tensors = tuple(input_tensors)
-        obj.set_input_data(name, input_tensors)
+        op_names = config["op_names"]
+        test_data_shapes = config["test_data_shapes"]
+        test_data_types = config["test_data_types"]
+        opset_version = config["opset_version"]
+        input_specs = config["input_spec_shape"]
 
-        obj.run()
+        self.num_ran_models += 1
 
-        self.model = saved_modle
-        self.opset_version = saved_opset_version
-        logging.info("Run successfully！")
+        if not isinstance(models, (tuple, list)):
+            models = [models]
+        if not isinstance(op_names, (tuple, list)):
+            op_names = [op_names]
+
+        assert len(models) == len(
+            op_names), "Length of models should be equal to length of op_names"
+
+        input_type_list = None
+        if len(test_data_types) > 1:
+            input_type_list = list(product(*test_data_types))
+        elif len(test_data_types) == 1:
+            if isinstance(test_data_types[0], str):
+                input_type_list = [test_data_types[0]]
+            else:
+                input_type_list = test_data_types
+        elif len(test_data_types) == 0:
+            input_type_list = [["float32"] * len(test_data_shapes)]
+
+        delta = 1e-5
+        rtol = 1e-5
+        if "delta" in config.keys():
+            delta = config["delta"]
+        if "rtol" in config.keys():
+            rtol = config["rtol"]
+
+        for i, model in enumerate(models):
+            model.eval()
+            obj = APIOnnx(model, op_names[i], opset_version, op_names[i],
+                          input_specs, delta, rtol)
+            for input_type in input_type_list:
+                input_tensors = list()
+                for j, shape in enumerate(test_data_shapes):
+                    if input_type[j].count('int') > 0:
+                        input_tensors.append(
+                            paddle.to_tensor(
+                                randtool("int", -20, 20, shape).astype(
+                                    input_type[j])))
+                    else:
+                        input_tensors.append(
+                            paddle.to_tensor(
+                                randtool("float", -2, 2, shape).astype(
+                                    input_type[j])))
+                obj.set_input_data("input_data", tuple(input_tensors))
+                logging.info("Now Run >>> dtype: {}, op_name: {}".format(
+                    input_type, op_names[i]))
+                obj.run()
+        logging.info("Run Successfully!")
