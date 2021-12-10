@@ -763,17 +763,15 @@ class Unsqueeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        axes = []
         ndim = node.block.vars[node.input('X')[0]].ndim
         if len(node.attr('axes')) > 0:
             axes = node.attr('axes')
         else:
             axis_input = node.input('AxesTensor')
-            for name, param in graph.parameters.items():
-                if name in axis_input:
-                    axes = param.attribute[0].t.int64_data
-        assert 0 < len(
-            axes) <= 2, "axis only support len of axis should less equal 2."
+            axes = graph.parameters[axis_input[0]].attribute[0].t.int64_data
+
+        assert 0 < len( axes) <= 2, \
+            "axis only support len of axis should less equal 2."
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
@@ -789,17 +787,14 @@ class Unsqueeze():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
-        axes = []
         ndim = node.block.vars[node.input('X')[0]].ndim
         if len(node.attr('axes')) > 0:
             axes = node.attr('axes')
         else:
             axis_input = node.input('AxesTensor')
-            for name, param in graph.parameters.items():
-                if name in axis_input:
-                    axes = param.attribute[0].t.int64_data
-        assert 0 < len(
-            axes) <= 2, "axis only support len of axis should less equal 2."
+            axes = graph.parameters[axis_input[0]].attribute[0].t.int64_data
+        assert 0 < len(axes) <= 2, \
+            "axis only support len of axis should less equal 2."
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
@@ -815,7 +810,6 @@ class Unsqueeze():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        axes = []
         ndim = node.block.vars[node.input('X')[0]].ndim
         if len(node.attr('axes')) > 0:
             axes = node.attr('axes')
@@ -824,11 +818,10 @@ class Unsqueeze():
                                    'value': axes})
         else:
             axes_node = node.input('AxesTensor')[0]
-            for name, param in graph.parameters.items():
-                if name in axes_node:
-                    axes = param.attribute[0].t.int64_data
-        assert 0 < len(
-            axes) <= 2, "axis only support len of axis should less equal 2."
+            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+
+        assert 0 < len(axes) <= 2, \
+            "axis only support len of axis should less equal 2."
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
