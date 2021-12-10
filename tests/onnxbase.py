@@ -197,12 +197,23 @@ class APIOnnx(object):
         """
         paddle dygraph layer to onnx
         """
+        print("33333333:",self.input_spec)
+        onnx_path = os.path.join(self.pwd, self.name, self.name + str(ver))
+        print(onnx_path)
+        if os.path.exists(onnx_path+ ".onnx"):
+            os.system("rm -rf %s" % onnx_path+ ".onnx")
+        print("44444444:",instance)
         paddle.onnx.export(
             instance,
-            os.path.join(self.pwd, self.name, self.name + str(ver)),
-            input_spec=self.input_spec,
+            onnx_path,
+            # input_spec=self.input_spec,
             opset_version=ver,
             enable_onnx_checker=True)
+        # dygraph2onnx(
+        #     instance,
+        #     onnx_path,
+        #     input_spec=self.input_spec,
+        #     opset_version=ver)
 
     def _dygraph_jit_save(self, instance):
         """
@@ -217,6 +228,7 @@ class APIOnnx(object):
         """
         make onnx res
         """
+        print("444444444:",os.path.join(self.pwd, self.name, self.name + str(ver) + '.onnx'))
         sess = InferenceSession(
             os.path.join(self.pwd, self.name, self.name + str(ver) + '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)

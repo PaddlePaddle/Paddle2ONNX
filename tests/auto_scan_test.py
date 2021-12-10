@@ -166,10 +166,11 @@ class OPConvertAutoScanTest(AutoScanTest):
 
         self.model.eval()
         self.num_ran_programs += 1
-        # logging.info("Run model: {}, test_data_shape: {}".format(self.model, self.test_data_shape))
         logging.info("config: {}, test_data_shape: {}".format(
             configs, self.test_data_shape))
         # net, name, ver_list, delta=1e-6, rtol=1e-5
+        print("11111111:",self.input_spec_shape)
+        print("22222222:",self.test_data_shape)
         obj = APIOnnx(self.model, self.op_name, self.opset_version,
                       self.op_name, self.input_spec_shape)
 
