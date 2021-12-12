@@ -395,10 +395,18 @@ class Mul():
 
 @op_mapper('affine_channel')
 class AffineChannel():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        if "data_layout" in node.attrs.keys():
+            assert node.attrs['data_layout'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
+                                "is %s." % node.attrs['data_layout']
+        if "data_format" in node.attrs.keys():
+            assert node.attrs['data_format'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
+                                "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
         scale = node.input('Scale', 0)
@@ -407,10 +415,30 @@ class AffineChannel():
         x = graph.make_node('Mul', inputs=[x, scale])
         x = graph.make_node('Add', inputs=[x, bias], outputs=node.output('Out'))
 
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        if "data_layout" in node.attrs.keys():
+            assert node.attrs['data_layout'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
+                                "is %s." % node.attrs['data_layout']
+        if "data_format" in node.attrs.keys():
+            assert node.attrs['data_format'] == 'NCHW',  \
+                                "The affine_channel data format should be 'NCHW', but received data format " \
+                                "is %s." % node.attrs['data_format']
+        x = node.input('X', 0)
+        bias = node.input('Bias', 0)
+        scale = node.input('Scale', 0)
+        axis = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[0, 2, 3])
+        scale = graph.make_node('Unsqueeze', inputs=[scale, axis])
+        bias = graph.make_node('Unsqueeze', inputs=[bias, axis])
+        x = graph.make_node('Mul', inputs=[x, scale])
+        x = graph.make_node('Add', inputs=[x, bias], outputs=node.output('Out'))
+
 
 @op_mapper('bmm')
 class BMM():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -422,71 +450,58 @@ class BMM():
 
 @op_mapper('p_norm')
 class PNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', 0)
         axis = node.attr('axis')
+        if isinstance(axis, (int, float)):
+            axis = [axis]
         p = node.attr('porder')
         keepdim = node.attr('keepdim')
-        epsilon = node.attr('epsilon')
-        assert axis == 1, "Only axis == 1 is supported for p_norm"
-        if p == 1 or p == 2 and not keepdim:
-            graph.make_node(
-                'LpNormalization',
-                inputs=[x],
-                outputs=node.output('Out'),
-                axis=1,
-                p=p)
-        else:
-            pnode = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[p])
-            mul = graph.make_node('Pow', inputs=[x, pnode])
-            reduce_sum = graph.make_node(
-                'ReduceSum', inputs=[mul], axes=[1], keepdims=keepdim)
-            pnode1 = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0 / p])
-            graph.make_node(
-                'Pow', inputs=[reduce_sum, pnode1], outputs=node.output('Out'))
+        dtype = dtypes.ONNX.FLOAT
+        if node.input_dtype('X', 0) == paddle.float64:
+            dtype = dtypes.ONNX.DOUBLE
+
+        pnode = graph.make_node('Constant', dtype=dtype, value=[p])
+
+        abs_node = graph.make_node('Abs', inputs=[x])
+        pow_node = graph.make_node('Pow', inputs=[abs_node, pnode])
+        reduce_sum = graph.make_node(
+            'ReduceSum', inputs=[pow_node], axes=axis, keepdims=keepdim)
+        pnode1 = graph.make_node('Constant', dtype=dtype, value=[1.0 / p])
+        graph.make_node(
+            'Pow', inputs=[reduce_sum, pnode1], outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
         x = node.input('X', 0)
         axis = node.attr('axis')
+        if isinstance(axis, (int, float)):
+            axis = [axis]
         p = node.attr('porder')
         keepdim = node.attr('keepdim')
-        epsilon = node.attr('epsilon')
-        assert axis == 1, "Only axis == 1 is supported for p_norm"
-        if (p == 1 or p == 2) and not keepdim:
-            graph.make_node(
-                'LpNormalization',
-                inputs=[x],
-                outputs=node.output('Out'),
-                axis=1,
-                p=p)
-        else:
-            pnode = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[p])
-            mul = graph.make_node('Pow', inputs=[x, pnode])
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
-            reduce_sum = graph.make_node(
-                'ReduceSum', inputs=[mul, axes], keepdims=keepdim)
-            pnode1 = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0 / p])
-            graph.make_node(
-                'Pow', inputs=[reduce_sum, pnode1], outputs=node.output('Out'))
+        pnode = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=[p])
+        abs_node = graph.make_node('Abs', inputs=[x])
+        pow_node = graph.make_node('Pow', inputs=[abs_node, pnode])
+        axes = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=axis)
+        reduce_sum = graph.make_node(
+            'ReduceSum', inputs=[pow_node, axes], keepdims=keepdim)
+        pnode1 = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0 / p])
+        graph.make_node(
+            'Pow', inputs=[reduce_sum, pnode1], outputs=node.output('Out'))
 
 
 @op_mapper('sum')
 class Sum():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
-            'sum', inputs=node.input('X'), outputs=node.output('Out'))
+            'Sum', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper('floor')
@@ -501,7 +516,7 @@ class Floor():
 
 @op_mapper('log10')
 class Log10():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -516,13 +531,14 @@ class Log10():
 
 @op_mapper('log1p')
 class Log1p():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
-        one = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': [1]})
+        dtype = dtypes.ONNX.FLOAT
+        if node.input_dtype('X', 0) == paddle.float64:
+            dtype = dtypes.ONNX.DOUBLE
+        one = graph.make_node('Constant', attrs={'dtype': dtype, 'value': [1]})
         add_node = graph.make_node('Add', inputs=[node.input('X', 0), one])
         graph.make_node('Log', inputs=add_node, outputs=node.output('Out'))
 
