@@ -119,7 +119,7 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
         for op_name, vs in opset_version_map.items():
             opset_versions.append(vs)
         config["op_names"] = op_names
-        config["opset_versions"] = opset_versions
+        config["opset_version"] = opset_versions
         return (config, models)
 
     def test(self):

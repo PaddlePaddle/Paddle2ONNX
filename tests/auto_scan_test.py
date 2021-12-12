@@ -139,18 +139,15 @@ class OPConvertAutoScanTest(unittest.TestCase):
         ), "config must include test_data_shapes in dict keys"
         assert "test_data_types" in config.keys(
         ), "config must include test_data_types in dict keys"
-        assert "opset_versions" in config.keys(
-        ), "config must include opset_versions in dict keys"
+        assert "opset_version" in config.keys(
+        ), "config must include opset_version in dict keys"
         assert "input_spec_shape" in config.keys(
         ), "config must include input_spec_shape in dict keys"
-
-        # assert 15 in config[
-        #     "opset_version"], "must include opset version 15 in opset_version"
 
         op_names = config["op_names"]
         test_data_shapes = config["test_data_shapes"]
         test_data_types = config["test_data_types"]
-        opset_versions = config["opset_versions"]
+        opset_version = config["opset_version"]
         input_specs = config["input_spec_shape"]
 
         self.num_ran_models += 1
@@ -159,8 +156,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             models = [models]
         if not isinstance(op_names, (tuple, list)):
             op_names = [op_names]
-        if not isinstance(opset_versions[0], (tuple, list)):
-            opset_versions = [opset_versions]
+        if not isinstance(opset_version[0], (tuple, list)):
+            opset_version = [opset_version]
 
         assert len(models) == len(
             op_names), "Length of models should be equal to length of op_names"
@@ -185,7 +182,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         for i, model in enumerate(models):
             model.eval()
-            obj = APIOnnx(model, op_names[i], opset_versions[i], op_names[i],
+            obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
                           input_specs, delta, rtol)
             for input_type in input_type_list:
                 input_tensors = list()
