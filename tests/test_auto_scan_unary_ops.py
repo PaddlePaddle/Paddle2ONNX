@@ -32,6 +32,7 @@ op_api_map = {
     "hard_shrink": paddle.nn.functional.hardshrink,
     "brelu": paddle.nn.functional.hardtanh,
     "log": paddle.log,
+    "log1p": paddle.log1p,
     "log2": paddle.log2,
     "log10": paddle.log10,
     "reciprocal": paddle.reciprocal,
@@ -66,6 +67,7 @@ opset_version_map = {
     "hard_shrink": [9],
     "brelu": [9],
     "log": [7, 13],
+    "log1p": [7, 13, 14],
     "log2": [7, 13],
     "log10": [7, 13],
     "reciprocal": [7, 13],
@@ -102,10 +104,11 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
 
         data_shapes = input_shape
         input_specs = [-1, input_shape[1], -1, -1]
+        dtype = draw(st.sampled_from(["float32"]))
         config = {
             "op_names": "",
             "test_data_shapes": [data_shapes],
-            "test_data_types": [['float32']],
+            "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [input_specs],
         }
