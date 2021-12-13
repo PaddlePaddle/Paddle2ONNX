@@ -179,7 +179,7 @@ class Cosh():
 
 @op_mapper('log2')
 class Log2():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -241,7 +241,7 @@ class LogSumExp():
         'elementwise_pow': 'Pow'
     })
 class ElementwiseOps():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -378,7 +378,7 @@ class ElementWiseMod():
 
 @op_mapper('elementwise_floordiv')
 class ElementWiseFloorDiv():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
