@@ -32,14 +32,14 @@ Support UNet, HRNet, DeepLab and so on. Test models are from PaddleSeg [release/
 
 | Models | Source |
 |-------|--------|
-|BiSeNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/v2.1/configs/bisenet) |
-|DANet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/danet) |
-|DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/deeplabv3) |
-|Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/deeplabv3p) |
-|FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/fcn) |
-|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/gcnet) |
-|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/ocrnet) |
-|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/unet) |
+|BiSeNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.1/configs/bisenet) |
+|DANet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/danet) |
+|DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/deeplabv3) |
+|Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/deeplabv3p) |
+|FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/fcn) |
+|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/gcnet) |
+|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/ocrnet) |
+|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/unet) |
 
 ## object detection
 Support 8 object detection archtectures. Test models are from PaddleDetection [release/2.1](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
