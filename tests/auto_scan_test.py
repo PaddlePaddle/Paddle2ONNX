@@ -190,6 +190,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
+                    # 判断是否为用户自定义的数据生成函数
                     if isfunction(shape):
                         data = shape()
                         data = data.astype(input_type[j])
