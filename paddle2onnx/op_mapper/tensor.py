@@ -601,7 +601,7 @@ class Squeeze():
         # axes is list of non-negative integers
         ndim = node.block.vars[node.input('X')[0]].ndim
         axes = [
-            axis + ndim + i + 1 if axis < 0 else axis
+            axis + ndim + i if axis < 0 else axis
             for i, axis in enumerate(axes)
         ]
         graph.make_node(
