@@ -19,12 +19,74 @@ import unittest
 import paddle
 
 op_api_map = {
-    "relu": paddle.nn.functional.relu,
-    "sigmoid": paddle.nn.functional.sigmoid,
+    "abs": paddle.abs,
+    "acos": paddle.acos,
+    "asin": paddle.asin,
+    "atan": paddle.atan,
+    "ceil": paddle.ceil,
+    "cos": paddle.cos,
+    "cosh": paddle.cosh,
+    "erf": paddle.erf,
+    "exp": paddle.exp,
     "floor": paddle.floor,
-    "softsign": paddle.nn.functional.softsign
+    "hard_shrink": paddle.nn.functional.hardshrink,
+    "brelu": paddle.nn.functional.hardtanh,
+    "log": paddle.log,
+    "log1p": paddle.log1p,
+    "log2": paddle.log2,
+    "log10": paddle.log10,
+    "reciprocal": paddle.reciprocal,
+    "relu": paddle.nn.functional.relu,
+    "relu6": paddle.nn.functional.relu6,
+    "round": paddle.round,
+    "rsqrt": paddle.rsqrt,
+    "selu": paddle.nn.functional.selu,
+    "sigmoid": paddle.nn.functional.sigmoid,
+    "sign": paddle.sign,
+    "sin": paddle.sin,
+    "sinh": paddle.sinh,
+    "softplus": paddle.nn.functional.softplus,
+    "softsign": paddle.nn.functional.softsign,
+    "sqrt": paddle.sqrt,
+    "square": paddle.square,
+    "swish": paddle.nn.functional.swish,
+    "tanh": paddle.tanh,
 }
 
+opset_version_map = {
+    "abs": [7, 13],
+    "acos": [7],
+    "asin": [7],
+    "atan": [7],
+    "ceil": [7, 13],
+    "cos": [7],
+    "cosh": [9],
+    "erf": [9, 13],
+    "exp": [7, 13],
+    "floor": [7, 13],
+    "hard_shrink": [9],
+    "brelu": [9],
+    "log": [7, 13],
+    "log1p": [7, 13, 14],
+    "log2": [7, 13],
+    "log10": [7, 13],
+    "reciprocal": [7, 13],
+    "relu": [7, 13, 14],
+    "relu6": [7, 13, 14],
+    "round": [11],
+    "rsqrt": [7, 13],
+    "selu": [7],
+    "sigmoid": [7, 13],
+    "sign": [9, 13],
+    "sin": [7],
+    "sinh": [9],
+    "softplus": [7],
+    "softsign": [7],
+    "sqrt": [7, 13],
+    "square": [7, 13, 14],
+    "swish": [7, 13, 14],
+    "tanh": [7, 13],
+}
 
 class Net(BaseNet):
     def forward(self, inputs):
@@ -42,24 +104,29 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
 
         data_shapes = input_shape
         input_specs = [-1, input_shape[1], -1, -1]
+        dtype = draw(st.sampled_from(["float32"]))
         config = {
             "op_names": "",
             "test_data_shapes": [data_shapes],
-            "test_data_types": [['float32']],
+            "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [input_specs],
         }
         models = list()
         op_names = list()
+        opset_versions = list()
         for op_name, i in op_api_map.items():
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)
+        for op_name, vs in opset_version_map.items():
+            opset_versions.append(vs)
         config["op_names"] = op_names
+        config["opset_version"] = opset_versions
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=40)
+        self.run_and_statis(max_examples=40, max_duration=600)
 
 
 if __name__ == "__main__":
