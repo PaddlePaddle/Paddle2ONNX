@@ -506,36 +506,6 @@ class FillConstantBatchSizeLike():
                 outputs=node.output('Out'))
 
 
-#    @classmethod
-#    def opset_11(cls, graph, node, **kw):
-#        input_dim_idx = tensor_shape = graph.make_node(
-#            'Constant',
-#            dtype=dtypes.ONNX.INT64,
-#            dims=[1],
-#            value=node.attr('input_dim_idx'))
-#        output_dim_idx = tensor_shape = graph.make_node(
-#            'Constant',
-#            dtype=dtypes.ONNX.INT64,
-#            dims=[1],
-#            value=node.attr('output_dim_idx'))
-#        input_shape = graph.make_node('Shape', inputs=node.input('Input'))
-#        updates = graph.make_node('Gather', inputs=[input_shape, input_dim_idx])
-#        tensor_shape = tensor_shape = graph.make_node(
-#            'Constant',
-#            attrs={'dtype': dtypes.ONNX.INT64,
-#                   'value': node.attr('shape')})
-#        tensor_shape = graph.make_node(
-#            'ScatterND', inputs=[tensor_shape, output_dim_idx, updates])
-#        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
-#        graph.make_node(
-#            'ConstantOfShape',
-#            inputs=[tensor_shape],
-#            outputs=node.output('Out'),
-#            dims=[1],
-#            dtype=dtype,
-#            value=node.attr('value'))
-
-
 @op_mapper('fill_any_like')
 class FullLike():
     '''
@@ -787,7 +757,7 @@ class Unsqueeze():
 
 @op_mapper('reciprocal')
 class Reciprocal():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
