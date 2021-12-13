@@ -85,7 +85,7 @@ opset_version_map = {
     "sqrt": [7, 13, 15],
     "square": [7, 13, 14, 15],
     "swish": [7, 13, 14, 15],
-    "tanh": [7, 13, 15],
+    "tanh": [7, 13, 15],    
 }
 
 class Net(BaseNet):
