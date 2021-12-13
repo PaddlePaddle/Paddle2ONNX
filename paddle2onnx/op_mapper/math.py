@@ -184,7 +184,10 @@ class Log2():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         _ln2 = 0.693147180559945309
-        _ln2 = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=_ln2)
+        dtype = dtypes.ONNX.FLOAT
+        if node.input_dtype('X', 0) == paddle.float64:
+            dtype = dtypes.ONNX.DOUBLE
+        _ln2 = graph.make_node('Constant', dtype=dtype, value=_ln2)
         lnx = graph.make_node('Log', inputs=node.input('X'))
         graph.make_node('Div', inputs=[lnx, _ln2], outputs=node.output('Out'))
 
@@ -224,14 +227,9 @@ class LogSumExp():
 
 @op_mapper(
     [
-        'elementwise_add',
-        'elementwise_sub',
-        'elementwise_div',
-        'elementwise_mul',
-        'elementwise_min',
-        'elementwise_max',
-        'elementwise_pow',
-        'elementwise_mod',
+        'elementwise_add', 'elementwise_sub', 'elementwise_div',
+        'elementwise_mul', 'elementwise_min', 'elementwise_max',
+        'elementwise_pow'
     ],
     mapper_dict={
         'elementwise_add': 'Add',
@@ -240,20 +238,23 @@ class LogSumExp():
         'elementwise_mul': 'Mul',
         'elementwise_min': 'Min',
         'elementwise_max': 'Max',
-        'elementwise_pow': 'Pow',
-        'elementwise_mod': 'Mod',
+        'elementwise_pow': 'Pow'
     })
 class ElementwiseOps():
     support_opset_version_range = (7, 12)
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
+        if node.type in ["elementwise_min", "elementwise_max"]:
+            assert False, "when opset version < 8, the shape and dtype of {} op must be same".format(
+                node.type)
+
         op_type = kw['mapper_dict'][node.type]
         axis = node.attr('axis')
         x = node.input('X', 0)
         y = node.input('Y', 0)
-        x_shape = node.input_shape('X', 0)
-        y_shape = node.input_shape('Y', 0)
 
         if axis == -1 or axis == (len(x_shape) - 1
                                   ) or len(x_shape) == len(y_shape):
@@ -270,6 +271,109 @@ class ElementwiseOps():
                 'Reshape', inputs=[y, broadcast_shape_node])
             onnx_node = graph.make_node(
                 op_type, inputs=[x, y_node], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_8(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+        x = node.input('X', 0)
+        y = node.input('Y', 0)
+        axis = node.attr('axis')
+        if axis == -1 or axis == (len(x_shape) - 1
+                                  ) or len(x_shape) == len(y_shape):
+            onnx_node = graph.make_node(
+                op_type, inputs=[x, y], outputs=node.output('Out'))
+        else:
+            broadcast_shape = [1] * len(x_shape)
+            broadcast_shape[axis:axis + len(y_shape)] = y_shape
+            broadcast_shape_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=list(broadcast_shape))
+            y_node = graph.make_node(
+                'Reshape', inputs=[y, broadcast_shape_node])
+            onnx_node = graph.make_node(
+                op_type, inputs=[x, y_node], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+        x = node.input('X', 0)
+        y = node.input('Y', 0)
+        axis = node.attr('axis')
+        if axis == -1 or axis == (len(x_shape) - 1
+                                  ) or len(x_shape) == len(y_shape):
+            onnx_node = graph.make_node(
+                op_type, inputs=[x, y], outputs=node.output('Out'))
+        else:
+            broadcast_shape = [1] * len(x_shape)
+            broadcast_shape[axis:axis + len(y_shape)] = y_shape
+            broadcast_shape_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=list(broadcast_shape))
+            y_node = graph.make_node(
+                'Reshape', inputs=[y, broadcast_shape_node])
+            onnx_node = graph.make_node(
+                op_type, inputs=[x, y_node], outputs=node.output('Out'))
+
+
+@op_mapper('elementwise_mod')
+class ElementWiseMod():
+    support_opset_version_range = (10, 15)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
+        axis = node.attr('axis')
+        x = node.input('X', 0)
+        y = node.input('Y', 0)
+        fmod = 0
+        if node.input_dtype('Y', 0) == paddle.float64 or node.input_dtype(
+                'Y', 0) == paddle.float32:
+            fmod = 1
+
+        abs_x_node = graph.make_node("Abs", inputs=[x])
+        abs_y_node = graph.make_node("Abs", inputs=[y])
+
+        mod_node = graph.make_node(
+            "Mod", inputs=[abs_x_node, abs_y_node], fmod=fmod)
+
+        dtype = dtypes.ONNX.FLOAT
+        val_0 = [0.0]
+        val_1 = [-1.0]
+        if node.input_dtype('Y', 0) == paddle.float64:
+            dtype = dtypes.ONNX.DOUBLE
+        if node.input_dtype('Y', 0) == paddle.int32:
+            dtype = dtypes.ONNX.INT32
+            val_0 = [0]
+            val_1 = [-1]
+        if node.input_dtype('Y', 0) == paddle.int64:
+            dtype = dtypes.ONNX.INT64
+            val_0 = [0]
+            val_1 = [-1]
+        zero_node = graph.make_node('Constant', dtype=dtype, value=val_0)
+        one_node = graph.make_node('Constant', dtype=dtype, value=val_1)
+
+        minus_node = graph.make_node("Mul", inputs=[mod_node, one_node])
+
+        condition_dtype = graph.make_node("Less", inputs=[x, zero_node])
+        condition = graph.make_node(
+            'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
+
+        mod_res = graph.make_node(
+            "Where", inputs=[condition, minus_node, mod_node])
+
+        add_node = graph.make_node("Add", inputs=[mod_res, y])
+
+        condition_dtype_1 = graph.make_node("Less", inputs=[mod_res, zero_node])
+        condition_1 = graph.make_node(
+            'Cast', inputs=[condition_dtype_1], to=dtypes.ONNX.BOOL)
+
+        graph.make_node(
+            "Where",
+            inputs=[condition_1, add_node, mod_res],
+            outputs=node.output('Out'))
 
 
 @op_mapper('elementwise_floordiv')
@@ -404,7 +508,7 @@ class AffineChannel():
                                 "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_layout']
         if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCHW',  \
+            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'AnyLayout',  \
                                 "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_format']
         x = node.input('X', 0)

@@ -445,7 +445,7 @@ class Constant():
 
 @op_mapper(['lookup_table_v2', 'lookup_table'])
 class Embedding():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -457,29 +457,28 @@ class Embedding():
         input_shape = node.input_shape('W', 0)
         if padding_idx != -1 and padding_idx != input_shape[0] - 1:
             key = node.input('W', 0)
-            weight = None
-            weight_name = None
-            for name, param in graph.parameters.items():
-                print(name)
-                if name in [key]:
-                    weight = param['data']
-            if weight is None:
-                assert False, "opset version < 11 do not support padding_idx !=-1 and weight is tensor, please set opset version > 11"
+            if -1 in input_shape:
+                assert False, "opset version < 11 do not support padding_idx !=-1 and weight is tensor with dynamic shape, please set opset version > 11 or use input_spec to set input shape"
             else:
-                weight[padding_idx] = 0.0
-                tensor = helper.make_tensor(
-                    name=key,
-                    dims=param['shape'],
-                    data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
-                    vals=weight.flatten().tolist())
-                node = helper.make_node(
-                    'Constant', inputs=[], outputs=[key], value=tensor)
-                graph.parameters[key] = node
-
-        graph.make_node(
-            'Gather',
-            inputs=[node.input('W', 0), ids],
-            outputs=node.output('Out'))
+                data = np.ones(shape=input_shape, dtype=np.float32)
+                data[padding_idx] = 0.0
+                dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('W', 0)]
+                constant = graph.make_node(
+                    'Constant',
+                    dtype=dtype,
+                    dims=input_shape,
+                    value=data.flatten().tolist())
+                weight_node = graph.make_node(
+                    'Mul', inputs=[node.input('W', 0), constant])
+                graph.make_node(
+                    'Gather',
+                    inputs=[weight_node, ids],
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Gather',
+                inputs=[node.input('W', 0), ids],
+                outputs=node.output('Out'))
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -491,12 +490,7 @@ class Embedding():
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
         if padding_idx != -1 and padding_idx != input_shape[0] - 1:
-            key = node.input('W', 0)
-            weight = None
-            for name, param in graph.parameters.items():
-                if name in [key]:
-                    weight = param['data']
-            if weight is None:
+            if input_shape[0] == -1:
                 dtype = dtypes.ONNX.FLOAT
                 if node.input_dtype('W', 0) == paddle.float64:
                     dtype = dtypes.ONNX.DOUBLE
@@ -517,18 +511,19 @@ class Embedding():
                     inputs=[Scatter_node, ids],
                     outputs=node.output('Out'))
             else:
-                weight[padding_idx] = 0.0
-                tensor = helper.make_tensor(
-                    name=key,
-                    dims=param['shape'],
-                    data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
-                    vals=weight.flatten().tolist())
-                node = helper.make_node(
-                    'Constant', inputs=[], outputs=[key], value=tensor)
-                graph.parameters[key] = node
+                data = np.ones(shape=input_shape, dtype=np.float32)
+                data[padding_idx] = 0.0
+                dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('W', 0)]
+                constant = graph.make_node(
+                    'Constant',
+                    dtype=dtype,
+                    dims=input_shape,
+                    value=data.flatten().tolist())
+                weight_node = graph.make_node(
+                    'Mul', inputs=[node.input('W', 0), constant])
                 graph.make_node(
                     'Gather',
-                    inputs=[node.input('W', 0), ids],
+                    inputs=[weight_node, ids],
                     outputs=node.output('Out'))
         else:
             graph.make_node(
