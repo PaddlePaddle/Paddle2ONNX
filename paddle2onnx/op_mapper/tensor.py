@@ -597,22 +597,8 @@ class Squeeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        axes = node.attr('axes')
-        # axes is list of non-negative integers
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        axes = [
-            axis + ndim + i if axis < 0 else axis
-            for i, axis in enumerate(axes)
-        ]
-        graph.make_node(
-            'Squeeze',
-            inputs=[node.input('X', 0)],
-            outputs=node.output('Out'),
-            axes=axes)
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        axes = node.attr('axes')
+        axes = cls.compute_axes(node)
+        axes.sort()
         graph.make_node(
             'Squeeze',
             inputs=[node.input('X', 0)],
@@ -621,7 +607,7 @@ class Squeeze():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        axes = node.attr('axes')
+        axes = cls.compute_axes(node)
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': axes})
@@ -629,6 +615,26 @@ class Squeeze():
             'Squeeze',
             inputs=[node.input('X', 0)] + [axes_node],
             outputs=node.output('Out'))
+
+    @classmethod
+    def compute_axes(cls, node):
+        axes = node.attr('axes')
+        input_x = node.input('X')[0]
+        ndim = node.block.vars[input_x].ndim
+        shape = node.block.vars[input_x].shape
+        if len(axes) == 0:
+            axes = [i for i, axis in enumerate(shape) if axis == 1]
+            assert len(
+                axes
+            ) > 0, "axes response to input data shape should at least have 1."
+        else:
+            axes = [
+                axis + ndim if axis < 0 else axis for i, axis in enumerate(axes)
+            ]
+            for axis in axes:
+                assert shape[
+                    axis] == 1, "axes response to input data shape should is 1."
+        return axes
 
 
 @op_mapper('assign_value')
