@@ -769,45 +769,7 @@ class Unsqueeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        if len(node.attr('axes')) > 0:
-            axes = node.attr('axes')
-        else:
-            axis_input = node.input('AxesTensor')
-            axes = graph.parameters[axis_input[0]].attribute[0].t.int64_data
-
-        assert 0 < len( axes) <= 2, \
-            "axis only support len of axis should less equal 2."
-        # axes is list of non-negative integers
-        axes = [
-            axis + ndim + i + 1 if axis < 0 else axis
-            for i, axis in enumerate(axes)
-        ]
-        if len(axes) == 2 and axes[0] == axes[1]:
-            raise ValueError("'axes' has a duplicate axis")
-        graph.make_node(
-            'Unsqueeze',
-            inputs=node.input('X'),
-            outputs=node.output('Out'),
-            axes=axes)
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        if len(node.attr('axes')) > 0:
-            axes = node.attr('axes')
-        else:
-            axis_input = node.input('AxesTensor')
-            axes = graph.parameters[axis_input[0]].attribute[0].t.int64_data
-        assert 0 < len(axes) <= 2, \
-            "axis only support len of axis should less equal 2."
-        # axes is list of non-negative integers
-        axes = [
-            axis + ndim + i + 1 if axis < 0 else axis
-            for i, axis in enumerate(axes)
-        ]
-        if len(axes) == 2 and axes[0] == axes[1]:
-            raise ValueError("'axes' has a duplicate axis")
+        axes, _ = cls.compute_node(graph, node)
         graph.make_node(
             'Unsqueeze',
             inputs=node.input('X'),
@@ -816,12 +778,22 @@ class Unsqueeze():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        if len(node.attr('axes')) > 0:
-            axes = node.attr('axes')
+        axes, axes_node = cls.compute_node(graph, node)
+        if axes_node is None:
             axes_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                    'value': axes})
+        graph.make_node(
+            'Unsqueeze',
+            inputs=node.input('X') + [axes_node],
+            outputs=node.output('Out'))
+
+    @classmethod
+    def compute_node(cls, graph, node):
+        axes_node = None
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        if len(node.attr('axes')) > 0:
+            axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
             axes = graph.parameters[axes_node].attribute[0].t.int64_data
@@ -835,10 +807,7 @@ class Unsqueeze():
         ]
         if len(axes) == 2 and axes[0] == axes[1]:
             raise ValueError("'axes' has a duplicate axis")
-        graph.make_node(
-            'Unsqueeze',
-            inputs=node.input('X') + [axes_node],
-            outputs=node.output('Out'))
+        return axes, axes_node
 
 
 @op_mapper('reciprocal')
