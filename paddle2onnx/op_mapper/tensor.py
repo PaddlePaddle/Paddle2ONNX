@@ -992,7 +992,7 @@ class Resize():
             shape = node.block.vars[node.input('X')[0]].shape
             ndim = node.block.vars[node.input('X')[0]].ndim
             scale = node.attr('scale')
-            scaleValue = [1, 1]
+            scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
                 if count_one <= 2:
@@ -1009,7 +1009,7 @@ class Resize():
                 'Constant',
                 attrs={
                     'dtype': dtypes.ONNX.FLOAT,
-                    'value': scaleValue + scale
+                    'value': scale_value + scale
                 })
             inputs.append(scale_node)
         graph.make_node(
@@ -1066,7 +1066,7 @@ class Resize():
             shape = node.block.vars[node.input('X')[0]].shape
             ndim = node.block.vars[node.input('X')[0]].ndim
             scale = node.attr('scale')
-            scaleValue = [1, 1]
+            scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
                 if count_one <= 2:
@@ -1083,7 +1083,7 @@ class Resize():
                 'Constant',
                 attrs={
                     'dtype': dtypes.ONNX.FLOAT,
-                    'value': scaleValue + scale
+                    'value': scale_value + scale
                 })
             inputs.append(scale_node)
         graph.make_node(
@@ -1149,11 +1149,11 @@ class Resize():
             ]
             shape = node.block.vars[node.input('X')[0]].shape
             ndim = node.block.vars[node.input('X')[0]].ndim
-            scaleValue = [1, 1]
+            scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
                 if count_one <= 2:
-                    scaleValue = []
+                    scale_value = []
                     scale = []
             else:
                 raise Exception("Unexpected situation happend")
@@ -1162,7 +1162,7 @@ class Resize():
                 'Constant',
                 attrs={
                     'dtype': dtypes.ONNX.FLOAT,
-                    'value': scaleValue + scale
+                    'value': scale_value + scale
                 })
             inputs.append(scale_node)
             if len(scale) == 0:
