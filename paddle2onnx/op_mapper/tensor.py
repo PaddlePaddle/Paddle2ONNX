@@ -950,15 +950,14 @@ class Resize():
 
         if node.attr('align_corners') or resize_type in ["cubic"]:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
-                "'asymmetric', Try converting with opset_version 11"
-            )
+                "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
+                "Try converting with opset_version 11 ")
         if node.attr('align_mode') == 0 and resize_type in [
                 "bilinear", "linear", "trilinear"
         ]:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
-                "'asymmetric', Try converting with opset_version 11"
+                "When align_mode == 0 and resize_type is 'bilinear' or 'linear or 'trilinear', the case isn't "
+                "supported in onnx(opset<=10), Try converting with opset_version 11 "
             )
         assert node.attrs['data_layout'] == 'NCHW', \
             "The conv data layout should be 'NCHW' , but received data format " \
@@ -1025,15 +1024,14 @@ class Resize():
 
         if node.attr('align_corners') or resize_type in ["cubic"]:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
-                "'asymmetric', Try converting with opset_version 11"
-            )
+                "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
+                "Try converting with opset_version 11 ")
         if node.attr('align_mode') == 0 and resize_type in [
                 "bilinear", "linear", "trilinear"
         ]:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: " \
-                "'asymmetric', Try converting with opset_version 11"
+                "When align_mode == 0 and resize_type is 'bilinear' or 'linear or 'trilinear', the case isn't "
+                "supported in onnx(opset<=10), Try converting with opset_version 11 "
             )
         assert node.attrs['data_layout'] == 'NCHW', \
             "The conv data layout should be 'NCHW' , but received data format " \
