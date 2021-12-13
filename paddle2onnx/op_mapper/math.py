@@ -294,28 +294,6 @@ class ElementwiseOps():
             onnx_node = graph.make_node(
                 op_type, inputs=[x, y_node], outputs=node.output('Out'))
 
-    @classmethod
-    def opset_10(cls, graph, node, **kw):
-        op_type = kw['mapper_dict'][node.type]
-        x = node.input('X', 0)
-        y = node.input('Y', 0)
-        axis = node.attr('axis')
-        if axis == -1 or axis == (len(x_shape) - 1
-                                  ) or len(x_shape) == len(y_shape):
-            onnx_node = graph.make_node(
-                op_type, inputs=[x, y], outputs=node.output('Out'))
-        else:
-            broadcast_shape = [1] * len(x_shape)
-            broadcast_shape[axis:axis + len(y_shape)] = y_shape
-            broadcast_shape_node = graph.make_node(
-                'Constant',
-                dtype=dtypes.ONNX.INT64,
-                value=list(broadcast_shape))
-            y_node = graph.make_node(
-                'Reshape', inputs=[y, broadcast_shape_node])
-            onnx_node = graph.make_node(
-                op_type, inputs=[x, y_node], outputs=node.output('Out'))
-
 
 @op_mapper('elementwise_mod')
 class ElementWiseMod():
