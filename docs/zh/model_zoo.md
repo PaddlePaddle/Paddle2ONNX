@@ -32,14 +32,14 @@ Paddle2ONNX支持将飞桨模型转换为ONNX格式存储。
 
 | Models | Source |
 |-------|--------|
-|BiSeNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/v2.1/configs/bisenet) |
-|DANet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/danet) |
-|DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/deeplabv3) |
-|Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/deeplabv3p) |
-|FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/fcn) |
-|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/gcnet) |
-|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/ocrnet) |
-|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/v2.1/configs/unet) |
+|BiSeNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.1/configs/bisenet) |
+|DANet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/danet) |
+|DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/deeplabv3) |
+|Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/deeplabv3p) |
+|FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/fcn) |
+|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/gcnet) |
+|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/ocrnet) |
+|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/unet) |
 
 ## 目标检测
 支持目标检测模型库中8种检测结构 [release/2.1](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)

@@ -205,7 +205,7 @@ class APIOnnx(object):
         """
         paddle.onnx.export(
             instance,
-            os.path.join(self.pwd, self.name, self.name + str(ver)),
+            os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
             enable_onnx_checker=True)
@@ -224,7 +224,7 @@ class APIOnnx(object):
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + str(ver) + '.onnx'))
+            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) + '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         return ort_outs[0]
 
@@ -249,7 +249,8 @@ class APIOnnx(object):
             for key, val in paddle_graph.node_map.items():
                 if op in key:
                     status = True
-        assert status is True, "{} op in not in convert OPs".format(self.ops)
+        assert status is True, "{} op in not in convert OPs, all OPs :{}".format(
+            self.ops, paddle_graph.node_map.keys())
 
     def run(self):
         """
