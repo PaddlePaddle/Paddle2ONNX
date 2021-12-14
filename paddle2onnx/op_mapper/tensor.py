@@ -769,7 +769,7 @@ class Unsqueeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        axes, _ = cls.compute_node(graph, node)
+        axes = cls.get_axes(graph, node)
         graph.make_node(
             'Unsqueeze',
             inputs=node.input('X'),
@@ -778,18 +778,14 @@ class Unsqueeze():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        axes, axes_node = cls.compute_node(graph, node)
-        if axes_node is None:
-            axes_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': axes})
+        axes_node = cls.get_axes(graph, node, return_node=True)
         graph.make_node(
             'Unsqueeze',
             inputs=node.input('X') + [axes_node],
             outputs=node.output('Out'))
 
     @classmethod
-    def compute_node(cls, graph, node):
+    def get_axes(cls, graph, node, return_node=False):
         axes_node = None
         ndim = node.block.vars[node.input('X')[0]].ndim
         if len(node.attr('axes')) > 0:
@@ -807,7 +803,14 @@ class Unsqueeze():
         ]
         if len(axes) == 2 and axes[0] == axes[1]:
             raise ValueError("'axes' has a duplicate axis")
-        return axes, axes_node
+        if return_node:
+            if axes_node is None:
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': axes})
+            return axes_node
+        return axes
 
 
 @op_mapper('reciprocal')
