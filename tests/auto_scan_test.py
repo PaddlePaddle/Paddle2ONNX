@@ -79,7 +79,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
                        opset_version=[7, 9, 15],
                        reproduce=None,
                        min_success_num=25,
-                       max_duration=180):
+                       max_duration=-1):
         if os.getenv('HYPOTHESIS_TEST_PROFILE', 'ci') == "dev":
             max_examples *= 10
             min_success_num *= 10
