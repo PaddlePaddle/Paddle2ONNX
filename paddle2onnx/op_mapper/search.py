@@ -160,3 +160,62 @@ class IndexSelect():
                     node.input('Index', 0)],
             axis=node.attr('dim'),
             outputs=node.output('Out'))
+
+
+@op_mapper('unique')
+class Unique():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        if node.attr('axis') == []:
+            graph.make_node(
+                'Unique',
+                inputs=node.input('X'),
+                outputs=[
+                    node.output('Out', 0),
+                    node.output('Indices', 0),
+                    node.output('Index', 0),
+                    node.output('Counts', 0)
+                ])
+        else:
+            graph.make_node(
+                'Unique',
+                inputs=node.input('X'),
+                axis=node.attr('axis')[0],
+                outputs=[
+                    node.output('Out', 0),
+                    node.output('Indices', 0),
+                    node.output('Index', 0),
+                    node.output('Counts', 0)
+                ])
+
+
+@op_mapper('where')
+class Where():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Where',
+            inputs=[
+                node.input('Condition', 0),
+                node.input('X', 0),
+                node.input('Y', 0)
+            ],
+            outputs=node.output('Out'))
+
+
+@op_mapper('masked_select')
+class MaskSelect():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        index = graph.make_node('NonZero', inputs=node.input('Mask', 0))
+        index = graph.make_node('Transpose', inputs=[index], perm=[1, 0])
+        graph.make_node(
+            'GatherND',
+            inputs=[node.input('X', 0), index],
+            outputs=node.output('Y'))
