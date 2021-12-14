@@ -236,6 +236,17 @@ class PaddleGraph(Graph):
                         'dtype': param.dtype,
                         'shape': param.shape
                     }
+            for param in layer.buffers():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
             if input_spec is not None:
                 logging.warning(
                     "Although input_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
@@ -262,6 +273,17 @@ class PaddleGraph(Graph):
                 if param.name.endswith('feed') or param.name.endswith('fetch'):
                     continue
                 if not param.persistable:
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            for param in layer.buffers():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
                     continue
                 if param.name in pruned_vars:
                     parameters_dict[param.name] = {

@@ -18,7 +18,8 @@ import numpy as np
 import paddle
 from paddle.fluid import layers
 from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
-
+from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 class AnchorGenerator(CustomPaddleOp):
     def __init__(self, node, **kw):
@@ -78,5 +79,19 @@ class AnchorGenerator(CustomPaddleOp):
             vars, repeat_times=(h, w, tensor_len_shape, tensor_one))
         return {'Anchors': [anchors], 'Variances': [vars]}
 
+@op_mapper('anchor_generator')
+class Anchors_generator:
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        node = graph.make_node(
+            'anchor_generator',
+            inputs=node.input('Input'),
+            outputs=node.output('Anchors') + node.output('Variances'),
+            anchor_sizes = node.attr('anchor_sizes'),
+            aspect_ratios = node.attr('aspect_ratios'),
+            offset = node.attr('offset'),
+            strides = node.attr('stride'),
+            variances = node.attr('variances'),
+            domain = 'custom')
 
 register_custom_paddle_op('anchor_generator', AnchorGenerator)

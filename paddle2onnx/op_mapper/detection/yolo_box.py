@@ -56,6 +56,8 @@ class YOLOBox():
             1, input_height * input_width * int(num_anchors), class_num
         ]
 
+        opset_version = graph.opset_version
+
         im_outputs = []
 
         x_shape = [1, num_anchors, 5 + class_num, input_height, input_width]
@@ -254,7 +256,21 @@ class YOLOBox():
         node_conf_sub = graph.make_node(
             'Sub', inputs=[node_conf_sigmoid, node_conf_thresh_reshape])
 
-        node_conf_clip = graph.make_node('Clip', inputs=[node_conf_sub])
+        if (opset_version >= 11):
+            min_const = graph.make_node(
+                'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=0.0)
+
+            max_const = graph.make_node(
+                'Constant',
+                inputs=[],
+                dtype=dtypes.ONNX.FLOAT,
+                value=MAX_FLOAT32)
+
+            node_conf_clip = graph.make_node(
+                'Clip', inputs=[node_conf_sub, min_const, max_const])
+        else:
+            node_conf_clip = graph.make_node(
+                'Clip', inputs=[node_conf_sub], min=0.0, max=float(MAX_FLOAT32))
 
         zeros = [0]
         node_zeros = graph.make_node(

@@ -29,8 +29,10 @@ class MultiClassNMS():
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
-        logging.warning("Operator:{} only supports input[batch_size] == 1.".
-                        format(node.type))
+        if node.input_shape("BBoxes", 0)[0] != 1:
+            logging.warning(
+                "Due to the operator:{}, the converted ONNX model will only supports input[batch_size] == 1.".
+                format(node.type))
         scores = node.input('Scores', 0)
         bboxes = node.input('BBoxes', 0)
         num_class = node.input_shape('Scores', 0)[1]
