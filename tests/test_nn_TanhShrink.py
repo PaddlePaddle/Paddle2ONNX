@@ -24,74 +24,71 @@ class Net(paddle.nn.Layer):
 
     def __init__(self):
         super(Net, self).__init__()
+        self._tanhshrink = paddle.nn.Tanhshrink()
 
-    def forward(self, inputs, inputs_):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.dot(inputs, inputs_)
+        x = self._tanhshrink(inputs)
         return x
 
 
-def test_dot_9():
+def test_nn_tanhshrink_9():
     """
-    api: paddle.dot
+    api: paddle.nn.tanhshrink
     op version: 9
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [9])
+    obj = APIOnnx(op, 'nn_tanhshrink', [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_dot_10():
+def test_nn_tanhshrink_10():
     """
-    api: paddle.dot
+    api: paddle.nn.tanhshrink
     op version: 10
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [10])
+    obj = APIOnnx(op, 'nn_tanhshrink', [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_dot_12():
+def test_nn_tanhshrink_11():
     """
-    api: paddle.dot
+    api: paddle.nn.tanhshrink
+    op version: 11
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_tanhshrink', [11])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_nn_tanhshrink_12():
+    """
+    api: paddle.nn.tanhshrink
     op version: 12
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [12])
+    obj = APIOnnx(op, 'nn_tanhshrink', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('float32')))
-    obj.run()
-
-
-def test_dot_1D():
-    """
-    api: paddle.dot
-    op version: 12
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [12])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [4]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [4]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
