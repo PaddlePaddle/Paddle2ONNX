@@ -71,7 +71,8 @@ class TestElementwiseopsConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32"]))
 
         def generator_data():
-            input_data = randtool("float", 1.0, 2.0, input2_shape)
+            input_data = randtool("float", -2.0, 2.0, input2_shape)
+            input_data[input_data == 0.0] = 1.0
             return input_data
 
         config = {

@@ -314,9 +314,6 @@ class ElementWiseMod():
         abs_x_node = graph.make_node("Abs", inputs=[x])
         abs_y_node = graph.make_node("Abs", inputs=[y])
 
-        mod_node = graph.make_node(
-            "Mod", inputs=[abs_x_node, abs_y_node], fmod=fmod)
-
         dtype = dtypes.ONNX.FLOAT
         val_0 = [0.0]
         val_1 = [-1.0]
@@ -333,6 +330,9 @@ class ElementWiseMod():
         zero_node = graph.make_node('Constant', dtype=dtype, value=val_0)
         one_node = graph.make_node('Constant', dtype=dtype, value=val_1)
 
+        mod_node = graph.make_node(
+            "Mod", inputs=[abs_x_node, abs_y_node], fmod=fmod)
+
         minus_node = graph.make_node("Mul", inputs=[mod_node, one_node])
 
         condition_dtype = graph.make_node("Less", inputs=[x, zero_node])
@@ -344,7 +344,9 @@ class ElementWiseMod():
 
         add_node = graph.make_node("Add", inputs=[mod_res, y])
 
-        condition_dtype_1 = graph.make_node("Less", inputs=[mod_res, zero_node])
+        mod_y_mul_node = graph.make_node("Mul", inputs=[mod_res, y])
+        condition_dtype_1 = graph.make_node(
+            "Less", inputs=[mod_y_mul_node, zero_node])
         condition_1 = graph.make_node(
             'Cast', inputs=[condition_dtype_1], to=dtypes.ONNX.BOOL)
 
