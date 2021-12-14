@@ -372,7 +372,7 @@ class ELU():
 
 @op_mapper('softsign')
 class SoftSign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -382,7 +382,7 @@ class SoftSign():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
