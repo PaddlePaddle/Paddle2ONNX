@@ -75,7 +75,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
     def run_and_statis(self,
                        max_examples=100,
-                       opset_version=[9, 10, 11, 12],
+                       opset_version=[7, 9, 15],
                        reproduce=None,
                        min_success_num=25,
                        max_duration=180):
@@ -94,8 +94,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
             derandomize=True,
             report_multiple_bugs=False, )
         settings.load_profile("ci")
-
-        self.opset_version = opset_version
 
         def sample_convert_generator(draw):
             return self.sample_convert_config(draw)
@@ -158,6 +156,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             models = [models]
         if not isinstance(op_names, (tuple, list)):
             op_names = [op_names]
+        if not isinstance(opset_version[0], (tuple, list)):
+            opset_version = [opset_version]
 
         assert len(models) == len(
             op_names), "Length of models should be equal to length of op_names"
@@ -182,7 +182,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         for i, model in enumerate(models):
             model.eval()
-            obj = APIOnnx(model, op_names[i], opset_version, op_names[i],
+            obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
                           input_specs, delta, rtol)
             for input_type in input_type_list:
                 input_tensors = list()

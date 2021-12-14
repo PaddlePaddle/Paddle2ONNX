@@ -25,40 +25,40 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs1, inputs2):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.add(inputs1, inputs2)
+        x = paddle.nn.functional.log_sigmoid(inputs)
         return x
 
 
-class TestElementwiseAddConvert(OPConvertAutoScanTest):
+class TestLogsigmoidConvert(OPConvertAutoScanTest):
     """
-    api: paddle.add
-    OPset version: 9
+    api: paddle.nn.functional.log_sigmoid
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input1_shape = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
                 min_size=4,
                 max_size=4))
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[3]]
-        else:
-            input2_shape = input1_shape
+        input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["elementwise_add"],
-            "test_data_shapes": [input1_shape, input2_shape],
-            "test_data_types": [[dtype], [dtype]],
+            "op_names": ["logsigmoid"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": []
+            "input_spec_shape": [input_spec],
+            "alpha": alpha
         }
 
         models = Net(config)

@@ -757,7 +757,7 @@ class Unsqueeze():
 
 @op_mapper('reciprocal')
 class Reciprocal():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1248,3 +1248,79 @@ class PixelShuffle():
             outputs=node.output('Out'),
             blocksize=upscale_factor,
             mode='CRD')
+
+
+@op_mapper('scatter')
+class Scatter():
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        shape = graph.make_node(
+            'Constant',
+            value=[node.input_shape('Ids', 0)[0], 1],
+            dtype=dtypes.ONNX.INT64)
+        reshape_index = graph.make_node(
+            'Reshape', inputs=[node.input('Ids', 0), shape])
+        if not node.attr('overwrite'):
+            raise Exception("overwrite = False not support yet.")
+        else:
+            graph.make_node(
+                'ScatterND',
+                inputs=[
+                    node.input('X', 0), reshape_index, node.input('Updates', 0)
+                ],
+                outputs=node.output('Out'))
+
+
+@op_mapper('scatter_nd_add')
+class ScatterndAdd():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        shape = graph.make_node('Shape', inputs=node.input('X', 0))
+        zero_like_node = graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape],
+            dims=[1],
+            dtype=dtypes.ONNX.FLOAT,
+            value=[0])
+        add_node = graph.make_node(
+            'ScatterND',
+            inputs=[
+                zero_like_node, node.input('Index', 0), node.input('Updates', 0)
+            ], )
+        graph.make_node(
+            'Add',
+            inputs=[node.input('X', 0), add_node],
+            outputs=node.output('Out'))
+
+
+@op_mapper('meshgrid')
+class Meshgrid():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        tensors = [t for t in list(node.input('X'))]
+        tensors_shape = [graph.make_node('Shape', inputs=t) for t in tensors]
+        out_shape = graph.make_node('Concat', inputs=tensors_shape, axis=0)
+        out = []
+        for i, t in enumerate(tensors):
+            shape_i = [
+                graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [1]})
+            ] * len(tensors)
+            shape_i[i] = tensors_shape[i]
+            t_reshaped = graph.make_node(
+                'Reshape',
+                inputs=[t, graph.make_node(
+                    'Concat', inputs=shape_i, axis=0)])
+            out.append(
+                graph.make_node(
+                    'Expand',
+                    inputs=[t_reshaped, out_shape],
+                    outputs=node.output('Out')[i]))

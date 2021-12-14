@@ -317,7 +317,7 @@ class ELU():
 
 @op_mapper('softsign')
 class SoftSign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -327,7 +327,7 @@ class SoftSign():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -359,6 +359,36 @@ class Norm():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('softshrink')
+class SoftShrink():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Shrink',
+            inputs=node.input('X'),
+            bias=node.attr('lambda'),
+            lambd=node.attr('lambda'),
+            outputs=node.output('Out'))
+
+
+@op_mapper('tanh_shrink')
+class TanhShrink():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        tanh_node = graph.make_node(
+            'Tanh',
+            inputs=node.input('X', 0),
+        )
+        graph.make_node(
+            'Sub',
+            inputs=[node.input('X', 0), tanh_node],
+            outputs=node.output('Out'))
 
 
 @op_mapper('log_softmax')
@@ -764,3 +794,16 @@ class RNN():
                     'Reshape',
                     inputs=[prev_output, prev_shape],
                     outputs=output_y)
+
+
+@op_mapper('thresholded_relu')
+class ThresholdedRelu():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'ThresholdedRelu',
+            inputs=node.input('X'),
+            alpha=node.attr('threshold'),
+            outputs=node.output('Out'))
