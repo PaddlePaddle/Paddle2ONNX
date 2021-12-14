@@ -793,16 +793,17 @@ class Unsqueeze():
         else:
             axes_node = node.input('AxesTensor')[0]
             axes = graph.parameters[axes_node].attribute[0].t.int64_data
-
-        assert 0 < len(axes) <= 2, \
-            "axis only support len of axis should less equal 2."
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
             for i, axis in enumerate(axes)
         ]
-        if len(axes) == 2 and axes[0] == axes[1]:
-            raise ValueError("'axes' has a duplicate axis")
+
+        axes_copy = axes.copy()
+        assert sorted(
+            axes) == axes_copy, "axes must be arranged in the following order"
+        assert len(set(axes)) == len(axes), "axes have duplicate axis"
+
         if return_node:
             if axes_node is None:
                 axes_node = graph.make_node(
