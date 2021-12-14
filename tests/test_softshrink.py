@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import paddle
+import paddle.nn as nn
 from onnxbase import APIOnnx
 from onnxbase import randtool
 
@@ -22,76 +23,88 @@ class Net(paddle.nn.Layer):
     simple Net
     """
 
-    def __init__(self):
+    def __init__(self, threshold=0.5):
         super(Net, self).__init__()
+        self.threshold = threshold
 
-    def forward(self, inputs, inputs_):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.dot(inputs, inputs_)
+        x = nn.functional.softshrink(inputs, threshold=self.threshold)
         return x
 
 
-def test_dot_9():
+def test_softshrink_9():
     """
-    api: paddle.dot
+    api: paddle.softshrink
     op version: 9
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [9])
+    obj = APIOnnx(op, 'softshrink', [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_dot_10():
+def test_softshrink_10():
     """
-    api: paddle.dot
+    api: paddle.softshrink
     op version: 10
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [10])
+    obj = APIOnnx(op, 'softshrink', [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_dot_12():
+def test_softshrink_11():
     """
-    api: paddle.dot
+    api: paddle.softshrink
+    op version: 11
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'softshrink', [11])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_softshrink_12():
+    """
+    api: paddle.softshrink
     op version: 12
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [12])
+    obj = APIOnnx(op, 'softshrink', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_dot_1D():
+def test_softshrink_threshold():
     """
-    api: paddle.dot
+    api: paddle.softshrink
     op version: 12
     """
-    op = Net()
+    op = Net(threshold=1)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'dot', [12])
+    obj = APIOnnx(op, 'softshrink', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [4]).astype('float32')),
-        paddle.to_tensor(randtool("float", 0, 1, [4]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
