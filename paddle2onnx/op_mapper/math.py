@@ -288,6 +288,8 @@ class ElementwiseOps():
         x = node.input('X', 0)
         y = node.input('Y', 0)
         axis = node.attr('axis')
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
         if axis == -1 or axis == (len(x_shape) - 1
                                   ) or len(x_shape) == len(y_shape):
             onnx_node = graph.make_node(
