@@ -90,7 +90,7 @@ Paddle OP的转换需要掌握Paddle OP的原理和使用方式，因此需要�
 
     class Net(paddle.nn.Layer):
     """
-    simplr Net
+    simple Net
     """
 
         def __init__(self):
