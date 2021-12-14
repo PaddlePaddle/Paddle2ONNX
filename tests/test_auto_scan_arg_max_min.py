@@ -39,7 +39,7 @@ class Net(BaseNet):
             dtype=self.config["dtype"])
 
 
-class TestUnaryOPConvert(OPConvertAutoScanTest):
+class TestArgOPConvert(OPConvertAutoScanTest):
     """Testcases for all the unary operators."""
 
     def sample_convert_config(self, draw):
@@ -56,7 +56,6 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
             st.integers(
                 min_value=-len(input_shape) + 1, max_value=len(input_shape) -
                 1))
-        print("test_wjj:", axis)
         keepdim = draw(st.booleans())
         config = {
             "op_names": "",
