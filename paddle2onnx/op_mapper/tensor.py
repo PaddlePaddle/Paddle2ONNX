@@ -597,12 +597,44 @@ class Squeeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        axes = node.attr('axes')
+        axes = cls.compute_axes(node)
+        axes.sort()
         graph.make_node(
             'Squeeze',
             inputs=[node.input('X', 0)],
             outputs=node.output('Out'),
             axes=axes)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        axes = cls.compute_axes(node)
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': axes})
+        graph.make_node(
+            'Squeeze',
+            inputs=[node.input('X', 0)] + [axes_node],
+            outputs=node.output('Out'))
+
+    @classmethod
+    def compute_axes(cls, node):
+        axes = node.attr('axes')
+        input_x = node.input('X')[0]
+        ndim = node.block.vars[input_x].ndim
+        shape = node.block.vars[input_x].shape
+        if len(axes) == 0:
+            axes = [i for i, axis in enumerate(shape) if axis == 1]
+            assert len(
+                axes
+            ) > 0, "axes response to input data shape should at least have 1."
+        else:
+            axes = [
+                axis + ndim if axis < 0 else axis for i, axis in enumerate(axes)
+            ]
+            for axis in axes:
+                assert shape[
+                    axis] == 1, "axes response to input data shape should is 1."
+        return axes
 
 
 @op_mapper('assign_value')
@@ -737,22 +769,49 @@ class Unsqueeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        axes = cls.get_axes(graph, node)
+        graph.make_node(
+            'Unsqueeze',
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            axes=axes)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        axes_node = cls.get_axes(graph, node, return_node=True)
+        graph.make_node(
+            'Unsqueeze',
+            inputs=node.input('X') + [axes_node],
+            outputs=node.output('Out'))
+
+    @classmethod
+    def get_axes(cls, graph, node, return_node=False):
+        axes_node = None
+        ndim = node.block.vars[node.input('X')[0]].ndim
         if len(node.attr('axes')) > 0:
-            graph.make_node(
-                'Unsqueeze',
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                axes=node.attr('axes'))
+            axes = node.attr('axes')
         else:
-            axis_input = node.input('AxesTensor')
-            for name, param in graph.parameters.items():
-                if name in axis_input:
-                    axis_data = param.attribute[0].t.int64_data
-            graph.make_node(
-                'Unsqueeze',
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                axes=axis_data)
+            axes_node = node.input('AxesTensor')[0]
+            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+        # axes is list of non-negative integers
+        axes = [
+            axis + ndim + i + 1 if axis < 0 else axis
+            for i, axis in enumerate(axes)
+        ]
+
+        axes_copy = axes.copy()
+        assert sorted(
+            axes) == axes_copy, "axes must be arranged in the following order"
+        assert len(set(axes)) == len(axes), "axes have duplicate axis"
+
+        if return_node:
+            if axes_node is None:
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': axes})
+            return axes_node
+        return axes
 
 
 @op_mapper('reciprocal')
@@ -767,7 +826,7 @@ class Reciprocal():
 
 @op_mapper('cast')
 class Cast():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -870,7 +929,7 @@ class Pad():
             raise Exception("Tensor input type is not supported, " \
                             "Please try input List or Int")
         onnx_paddings = None
-        #TODO support pads is Variable
+        # TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
             onnx_paddings = [
                 0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
