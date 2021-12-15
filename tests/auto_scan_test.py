@@ -201,6 +201,11 @@ class OPConvertAutoScanTest(unittest.TestCase):
                             paddle.to_tensor(
                                 randtool("int", -20, 20, shape).astype(
                                     input_type[j])))
+                    elif input_type[j].count('bool') > 0:
+                        input_tensors.append(
+                            paddle.to_tensor(
+                                randtool("bool", -2, 2, shape).astype(
+                                    input_type[j])))
                     else:
                         input_tensors.append(
                             paddle.to_tensor(
