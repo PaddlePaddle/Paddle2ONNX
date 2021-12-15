@@ -110,7 +110,8 @@ def test_Unsample_size_linear_tensor():
     api: paddle.Upsample
     op version: 9, 10, 11, 12
     """
-    op = Net(size=paddle.to_tensor(12),
+    op = Net(size=paddle.to_tensor(
+        12, dtype='int32'),
              mode='linear',
              data_format='NCW',
              align_mode=1)
@@ -121,7 +122,7 @@ def test_Unsample_size_linear_tensor():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+            randtool("float", -1, 1, [1, 1, 10]).astype('float32')))
     obj.run()
 
 
@@ -142,7 +143,7 @@ def test_Unsample_size_linear():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+            randtool("float", -1, 1, [1, 1, 10]).astype('float32')))
     obj.run()
 
 
@@ -163,7 +164,7 @@ def test_Unsample_scale_factor_linear():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+            randtool("float", -1, 1, [1, 1, 10]).astype('float32')))
     obj.run()
 
 
