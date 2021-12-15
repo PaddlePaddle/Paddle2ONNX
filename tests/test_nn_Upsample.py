@@ -28,23 +28,27 @@ class Net(paddle.nn.Layer):
                  mode='nearest',
                  align_corners=False,
                  align_mode=0,
-                 data_format='NCHW',
-                 name=None):
+                 data_format='NCHW'):
         super(Net, self).__init__()
-        self.unsample = paddle.nn.Upsample(
-            size=size,
-            scale_factor=scale_factor,
-            mode=mode,
-            align_corners=align_corners,
-            align_mode=align_mode,
-            data_format=data_format,
-            name=name)
+        self.size = size
+        self.scale_factor = scale_factor
+        self.mode = mode
+        self.align_corners = align_corners
+        self.align_mode = align_mode
+        self.data_format = data_format
 
     def forward(self, inputs):
         """
         forward
         """
-        x = self.unsample(inputs)
+        x = paddle.nn.functional.upsample(
+            x=inputs,
+            size=self.size,
+            scale_factor=self.scale_factor,
+            mode=self.mode,
+            align_corners=self.align_corners,
+            align_mode=self.align_mode,
+            data_format=self.data_format)
         return x
 
 
@@ -333,8 +337,8 @@ def test_Unsample_scale_factor_trilinear():
 
 # if __name__ == '__main__':
 #     test_Unsample_size()
-#     test_Unsample_size_linear_tensor()
 #     test_Unsample_scale_factor()
+#     test_Unsample_size_linear_tensor()
 #     test_Unsample_size_linear()
 #     test_Unsample_scale_factor_linear()
 #     test_Unsample_size_bilinear()
