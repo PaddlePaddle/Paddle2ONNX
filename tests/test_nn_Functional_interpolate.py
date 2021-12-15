@@ -122,7 +122,7 @@ def test_nn_functional_interpolate_nearest_date_format():
     api: paddle.nn.functional.interpolate
     op version: 11
     """
-    op = Net(size=[4, 12], data_format='NHWC')
+    op = Net(size=[4, 12], data_format='NCHW')
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'nn_functional_interpolate', [11])
