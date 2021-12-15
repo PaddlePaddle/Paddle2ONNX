@@ -991,6 +991,8 @@ class UniformRandom():
         'trilinear_interp_v2',
         'nearest_interp_v2',
         'bicubic_interp_v2',
+        'bilinear_interp',
+        'nearest_interp',
     ],
     mapper_dict={
         'linear_interp_v2': 'linear',
@@ -998,6 +1000,8 @@ class UniformRandom():
         'trilinear_interp_v2': 'linear',
         'nearest_interp_v2': 'nearest',
         'bicubic_interp_v2': 'cubic',
+        'bilinear_interp': 'linear',
+        'nearest_interp': 'nearest',
     })
 class Resize():
     support_opset_version_range = (9, 12)
