@@ -490,7 +490,7 @@ class Embedding():
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
         if padding_idx != -1 and padding_idx != input_shape[0] - 1:
-            if input_shape[0] == -1:
+            if -1 in input_shape:
                 dtype = dtypes.ONNX.FLOAT
                 if node.input_dtype('W', 0) == paddle.float64:
                     dtype = dtypes.ONNX.DOUBLE
