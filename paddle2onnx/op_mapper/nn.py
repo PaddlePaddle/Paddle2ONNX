@@ -55,6 +55,11 @@ class Conv():
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
             attrs['auto_pad'] = 'SAME_UPPER'
+            input_shape = node.block.vars[node.inputs['Input'][0]].shape[2:]
+            for i in range(0, len(input_shape)):
+                if input_shape[i] % strides[i] == 0:
+                    attrs['auto_pad'] = 'SAME_LOWER'
+                    break
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
@@ -438,8 +443,7 @@ class TanhShrink():
     def opset_7(cls, graph, node, **kw):
         tanh_node = graph.make_node(
             'Tanh',
-            inputs=node.input('X', 0),
-        )
+            inputs=node.input('X', 0), )
         graph.make_node(
             'Sub',
             inputs=[node.input('X', 0), tanh_node],
