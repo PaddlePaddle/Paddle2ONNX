@@ -341,11 +341,28 @@ class Pool3D():
                 k_size[1] = input_shape[3] + paddings[1]
             if input_shape[4] > 0 and input_shape[4] + paddings[2] < k_size[2]:
                 k_size[2] = input_shape[4] + paddings[2]
+
+            pads = paddings
+            if len(pads) == 2 or len(pads) == 3:
+                pads = pads + pads
+            elif len(pads) == 4:
+                pads = [pads[i] for i in [0, 2, 1, 3]]
+            elif len(pads) == 6:
+                pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+
+            strides = node.attr('strides')
             attrs = {
                 'kernel_shape': k_size,
-                'strides': node.attr('strides'),
-                'pads': node.attr('paddings') + node.attr('paddings'),
+                'strides': strides,
             }
+            auto_pad = node.attr('padding_algorithm')
+            if auto_pad == 'SAME':
+                attrs['auto_pad'] = 'SAME_UPPER'
+            elif auto_pad == 'VALID':
+                attrs['auto_pad'] = 'VALID'
+            else:
+                attrs['pads'] = pads
+
             if node.attr('ceil_mode') and graph.opset_version < 10:
                 raise Exception(
                     "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
