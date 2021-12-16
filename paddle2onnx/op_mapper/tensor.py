@@ -1161,7 +1161,8 @@ class Resize():
     def opset_11(cls, graph, node, **kw):
         resize_type = kw['mapper_dict'][node.type]
         scale = node.attr('scale')
-
+        if isinstance(scale, (float, int)):
+            scale = [scale]
         assert node.attrs['data_layout'] == 'NCHW', \
             "The conv data layout should be 'NCHW' , but received data format " \
             "is %s." % node.attrs['data_format']
@@ -1222,8 +1223,7 @@ class Resize():
                     scale = []
             else:
                 raise Exception("Unexpected situation happend")
-            if isinstance(scale, (float, int)):
-                scale = [scale]
+
             scale_node = graph.make_node(
                 'Constant',
                 attrs={
