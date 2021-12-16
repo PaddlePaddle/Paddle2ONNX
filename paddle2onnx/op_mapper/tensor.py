@@ -1054,6 +1054,8 @@ class Resize():
             shape = node.block.vars[node.input('X')[0]].shape
             ndim = node.block.vars[node.input('X')[0]].ndim
             scale = node.attr('scale')
+            if isinstance(scale, (float, int)):
+                scale = [scale]
             scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
@@ -1127,6 +1129,8 @@ class Resize():
             shape = node.block.vars[node.input('X')[0]].shape
             ndim = node.block.vars[node.input('X')[0]].ndim
             scale = node.attr('scale')
+            if isinstance(scale, (float, int)):
+                scale = [scale]
             scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
@@ -1218,7 +1222,8 @@ class Resize():
                     scale = []
             else:
                 raise Exception("Unexpected situation happend")
-
+            if isinstance(scale, (float, int)):
+                scale = [scale]
             scale_node = graph.make_node(
                 'Constant',
                 attrs={
