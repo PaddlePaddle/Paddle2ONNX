@@ -35,6 +35,7 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
+
         assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
                             "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
                             "is %s." % node.attrs['data_format']
@@ -65,35 +66,51 @@ class Conv():
             attrs=attrs)
 
 
-@op_mapper(['conv2d_transpose', 'depthwise_conv2d_transpose'])
+@op_mapper(
+    ['conv2d_transpose', 'depthwise_conv2d_transpose', 'conv3d_transpose'])
 class ConvTranspose():
     support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        kernel_shape = node.input_shape('Filter', 0)
         output_padding = node.attr('output_padding')
-        if output_padding and len(node.attr('output_padding')) > 0:
-            node = graph.make_node(
-                'ConvTranspose',
-                inputs=node.input('Input') + node.input('Filter'),
-                outputs=node.output('Output'),
-                dilations=node.attr('dilations'),
-                kernel_shape=kernel_shape[-2:],
-                strides=node.attr('strides'),
-                group=node.attr('groups'),
-                pads=node.attr('paddings') + node.attr('output_padding'),
-                output_padding=node.attr('output_padding'))
+        kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[2:]
+        strides = node.attr('strides')
+        group = node.attr('groups')
+        pads = node.attr('paddings')
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW', \
+            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            "is %s." % node.attrs['data_format']
+
+        if len(pads) == 2 or len(pads) == 3:
+            pads = pads + pads
+        elif len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        elif len(pads) == 6:
+            pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+
+        attrs = {
+            'dilations': dilations,
+            'kernel_shape': kernel_shape,
+            'strides': strides,
+            'group': group
+        }
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
         else:
-            node = graph.make_node(
-                'ConvTranspose',
-                inputs=node.input('Input') + node.input('Filter'),
-                outputs=node.output('Output'),
-                dilations=node.attr('dilations'),
-                kernel_shape=kernel_shape[-2:],
-                strides=node.attr('strides'),
-                group=node.attr('groups'),
-                pads=node.attr('paddings') + node.attr('paddings'))
+            attrs['pads'] = pads
+        if output_padding and len(output_padding) > 0:
+            attrs['output_padding'] = output_padding
+        graph.make_node(
+            'ConvTranspose',
+            inputs=node.input('Input') + node.input('Filter'),
+            outputs=node.output('Output'),
+            attrs=attrs)
 
 
 @op_mapper('pool2d')
@@ -117,6 +134,7 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+
         assert node.attrs['data_format'] == 'NCHW',  \
                             "The conv data format should be 'NCHW', but received data format " \
                             "is %s." % node.attrs['data_format']
@@ -170,16 +188,53 @@ class Pool():
         else:
             input_shape = node.input_shape('X', 0)
             k_size = node.attr('ksize')
-            paddings = node.attr('paddings')
-            if input_shape[2] > 0 and input_shape[2] + paddings[0] < k_size[0]:
-                k_size[0] = input_shape[2] + paddings[0]
-            if input_shape[3] > 0 and input_shape[3] + paddings[1] < k_size[1]:
-                k_size[1] = input_shape[3] + paddings[1]
+            pads = node.attr('paddings')
+            strides = node.attr('strides')
+
+            if len(pads) == 2:
+                pads = pads + pads
+            elif len(pads) == 4:
+                pads = [pads[i] for i in [0, 2, 1, 3]]
+
+            if input_shape[2] > 0 and input_shape[2] + pads[0] < k_size[0]:
+                k_size[0] = input_shape[2] + pads[0]
+            if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
+                k_size[1] = input_shape[3] + pads[1]
+
+            input_x = node.input('X')
+            if max(k_size) <= max(pads):
+                onnx_paddings = [0, 0, pads[0], pads[1], 0, 0, pads[2], pads[3]]
+                attrs_pad = {'mode': 'constant', }
+                if graph.opset_version >= 11:
+                    pads_node = graph.make_node(
+                        'Constant',
+                        attrs={
+                            'dtype': dtypes.ONNX.INT64,
+                            'value': onnx_paddings
+                        })
+                    value_node = graph.make_node(
+                        'Constant',
+                        attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': 0.0})
+                    input_x = input_x + [pads_node, value_node]
+                else:
+                    attrs_pad['pads'] = onnx_paddings
+                    attrs_pad['value'] = 0.0
+                input_x = graph.make_node(
+                    'Pad', inputs=input_x, attrs=attrs_pad)
+                pads = [0, 0, 0, 0]
+
             attrs = {
                 'kernel_shape': k_size,
-                'strides': node.attr('strides'),
-                'pads': node.attr('paddings') + node.attr('paddings'),
+                'strides': strides,
             }
+            auto_pad = node.attr('padding_algorithm')
+            if auto_pad == 'SAME':
+                attrs['auto_pad'] = 'SAME_UPPER'
+            elif auto_pad == 'VALID':
+                attrs['auto_pad'] = 'VALID'
+            else:
+                attrs['pads'] = pads
             if node.attr('ceil_mode') and graph.opset_version < 10:
                 raise Exception(
                     "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
@@ -191,7 +246,7 @@ class Pool():
                 attrs['count_include_pad'] = not node.attr('exclusive')
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][0],
-                inputs=node.input('X'),
+                inputs=input_x,
                 outputs=node.output('Out'),
                 attrs=attrs)
 
@@ -317,7 +372,7 @@ class ELU():
 
 @op_mapper('softsign')
 class SoftSign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -327,7 +382,7 @@ class SoftSign():
 
 @op_mapper('hard_shrink')
 class Hardshrink():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -359,6 +414,36 @@ class Norm():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             axis=node.attr('axis'))
+
+
+@op_mapper('softshrink')
+class SoftShrink():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Shrink',
+            inputs=node.input('X'),
+            bias=node.attr('lambda'),
+            lambd=node.attr('lambda'),
+            outputs=node.output('Out'))
+
+
+@op_mapper('tanh_shrink')
+class TanhShrink():
+    support_opset_version_range = (7, 12)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        tanh_node = graph.make_node(
+            'Tanh',
+            inputs=node.input('X', 0),
+        )
+        graph.make_node(
+            'Sub',
+            inputs=[node.input('X', 0), tanh_node],
+            outputs=node.output('Out'))
 
 
 @op_mapper('log_softmax')
@@ -764,3 +849,16 @@ class RNN():
                     'Reshape',
                     inputs=[prev_output, prev_shape],
                     outputs=output_y)
+
+
+@op_mapper('thresholded_relu')
+class ThresholdedRelu():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'ThresholdedRelu',
+            inputs=node.input('X'),
+            alpha=node.attr('threshold'),
+            outputs=node.output('Out'))

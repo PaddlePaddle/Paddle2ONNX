@@ -69,7 +69,7 @@ class MatMul():
 
 @op_mapper('exp')
 class Exp():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -79,7 +79,7 @@ class Exp():
 
 @op_mapper('abs')
 class Abs:
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -89,7 +89,7 @@ class Abs:
 
 @op_mapper('erf')
 class Erf():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -99,7 +99,7 @@ class Erf():
 
 @op_mapper('acos')
 class Acos():
-    supports_opset_version_range = (7, 12)
+    supports_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -109,7 +109,7 @@ class Acos():
 
 @op_mapper('asin')
 class Asin():
-    supports_opset_version_range = (7, 12)
+    supports_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -119,7 +119,7 @@ class Asin():
 
 @op_mapper('sinh')
 class Sinh():
-    supports_opset_version_range = (9, 12)
+    supports_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -129,7 +129,7 @@ class Sinh():
 
 @op_mapper('sin')
 class Sin():
-    supports_opset_version_range = (7, 12)
+    supports_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -139,7 +139,7 @@ class Sin():
 
 @op_mapper('atan')
 class Atan():
-    supports_opset_version_range = (7, 12)
+    supports_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -147,9 +147,19 @@ class Atan():
             'Atan', inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('tan')
+class Tan():
+    supports_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        graph.make_node(
+            'Tan', inputs=node.input('X'), outputs=node.output('Out'))
+
+
 @op_mapper('ceil')
 class Ceil():
-    supports_opset_version_range = (6, 12)
+    supports_opset_version_range = (7, 15)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -159,7 +169,7 @@ class Ceil():
 
 @op_mapper('cos')
 class Cos():
-    supports_opset_version_range = (7, 12)
+    supports_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -169,7 +179,7 @@ class Cos():
 
 @op_mapper('cosh')
 class Cosh():
-    supports_opset_version_range = (9, 12)
+    supports_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -179,7 +189,7 @@ class Cosh():
 
 @op_mapper('log2')
 class Log2():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -340,7 +350,7 @@ class Pow():
 
 @op_mapper('square')
 class Square():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -399,14 +409,6 @@ class AffineChannel():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-                                "is %s." % node.attrs['data_layout']
-        if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-                                "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
         scale = node.input('Scale', 0)
@@ -417,14 +419,6 @@ class AffineChannel():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
-        if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-                                "is %s." % node.attrs['data_layout']
-        if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
-                                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-                                "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
         scale = node.input('Scale', 0)
@@ -506,7 +500,7 @@ class Sum():
 
 @op_mapper('floor')
 class Floor():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -700,7 +694,7 @@ class ArgMin():
 
 @op_mapper('brelu')
 class Hardtanh():
-    support_opset_version_range = (6, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -803,7 +797,7 @@ class Dist():
 
 @op_mapper('round')
 class Round():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -813,7 +807,7 @@ class Round():
 
 @op_mapper('rsqrt')
 class Rsqrt():
-    support_opset_version_range = (6, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -824,7 +818,7 @@ class Rsqrt():
 
 @op_mapper('sign')
 class Sign():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
