@@ -19,6 +19,7 @@ import paddle
 from .convert import dygraph2onnx, program2onnx
 from .op_mapper import register_op_mapper
 from typing import TypeVar
+from paddle2onnx.utils import logging
 
 OP_WITHOUT_KERNEL_SET = {
     'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
@@ -33,8 +34,18 @@ OP_WITHOUT_KERNEL_SET = {
 
 
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
+    paddle_version = paddle.__version__
     if isinstance(model, paddle.static.Program):
         if input_shape_dict is not None:
+            model_version = model.desc._version()
+            major_ver = model_version // 1000000
+            minor_ver = (model_version - major_ver * 1000000) // 1000
+            patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
+            model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
+            if model_version != paddle_version:
+                logging.warning(
+                    "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
+                    format(model_version, paddle_version))
             for k, v in input_shape_dict.items():
                 model.blocks[0].var(k).desc.set_shape(v)
             for i in range(len(model.blocks[0].ops)):
@@ -60,6 +71,16 @@ def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
             opset_version=opset_version,
             enable_onnx_checker=True)
     elif isinstance(model, paddle.jit.TranslatedLayer):
+        model_version = model.program().desc._version()
+        major_ver = model_version // 1000000
+        minor_ver = (model_version - major_ver * 1000000) // 1000
+        patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
+        model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
+        if model_version != paddle_version:
+            logging.warning(
+                "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
+                format(model_version, paddle_version))
+
         if input_shape_dict is not None:
             for k, v in input_shape_dict.items():
                 model.program().blocks[0].var(k).desc.set_shape(v)

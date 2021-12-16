@@ -130,6 +130,17 @@ def program2onnx(model_dir,
         'copy_cross_scope'
     }
     if input_shape_dict is not None:
+        paddle_version = paddle.__version__
+        model_version = model.program().desc._version()
+        major_ver = model_version // 1000000
+        minor_ver = (model_version - major_ver * 1000000) // 1000
+        patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
+        model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
+        if model_version != paddle_version:
+            logging.warning(
+                "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
+                format(model_version, paddle_version))
+
         for k, v in input_shape_dict.items():
             program.blocks[0].var(k).desc.set_shape(v)
         for i in range(len(program.blocks[0].ops)):
