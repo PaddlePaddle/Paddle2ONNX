@@ -1055,7 +1055,10 @@ class Resize():
             ndim = node.block.vars[node.input('X')[0]].ndim
             scale = node.attr('scale')
             if isinstance(scale, (float, int)):
-                scale = [scale]
+                scales = []
+                for i in range(0, ndim - 2):
+                    scales.append(scale)
+                scale = scales
             scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
@@ -1130,7 +1133,10 @@ class Resize():
             ndim = node.block.vars[node.input('X')[0]].ndim
             scale = node.attr('scale')
             if isinstance(scale, (float, int)):
-                scale = [scale]
+                scales = []
+                for i in range(0, ndim - 2):
+                    scales.append(scale)
+                scale = scales
             scale_value = [1, 1]
             count_one = out_shape.count(-1)
             if ndim == 3 or ndim == 4 or ndim == 5:
@@ -1160,9 +1166,13 @@ class Resize():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         resize_type = kw['mapper_dict'][node.type]
+        ndim = node.block.vars[node.input('X')[0]].ndim
         scale = node.attr('scale')
         if isinstance(scale, (float, int)):
-            scale = [scale]
+            scales = []
+            for i in range(0, ndim - 2):
+                scales.append(scale)
+            scale = scales
         assert node.attrs['data_layout'] == 'NCHW', \
             "The conv data layout should be 'NCHW' , but received data format " \
             "is %s." % node.attrs['data_format']
