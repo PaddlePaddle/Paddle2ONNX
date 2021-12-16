@@ -17,11 +17,13 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+import paddle
+from paddle2onnx.utils import logging
 
 
 @op_mapper('greater_equal')
 class GreaterOrEqual():
-    support_opset_version_range = (12, )
+    support_opset_version_range = (12, 15)
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
@@ -33,10 +35,28 @@ class GreaterOrEqual():
 
 @op_mapper('equal')
 class Equal():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        if node.input_dtype('X', 0) in [paddle.float32, paddle.float64]:
+            warning_info = "Equal only support int and bool input, but your input is {}, this may cause wrong result. please try opset version >= 11".format(
+                node.input_dtype('X', 0))
+            logging.warning(warning_info)
+            x_node = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.INT32)
+            y_node = graph.make_node(
+                'Cast', inputs=node.input('Y'), to=dtypes.ONNX.INT32)
+            onnx_node = graph.make_node(
+                'Equal', inputs=[x_node, y_node], outputs=node.output('Out'))
+        else:
+            onnx_node = graph.make_node(
+                'Equal',
+                inputs=[node.input('X', 0), node.input('Y', 0)],
+                outputs=node.output('Out'))
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
         onnx_node = graph.make_node(
             'Equal',
             inputs=[node.input('X', 0), node.input('Y', 0)],
@@ -45,10 +65,38 @@ class Equal():
 
 @op_mapper('not_equal')
 class NotEqual():
-    support_opset_version_range = (12, )
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        equal_val = None
+        if node.input_dtype('X', 0) in [paddle.float32, paddle.float64]:
+            warning_info = "Equal only support int and bool input, but your input is {}, this may cause wrong result. please try opset version >= 11".format(
+                node.input_dtype('X', 0))
+            logging.warning(warning_info)
+            x_node = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.INT32)
+            y_node = graph.make_node(
+                'Cast', inputs=node.input('Y'), to=dtypes.ONNX.INT32)
+            equal_val = graph.make_node(
+                'Equal', inputs=[x_node, y_node], outputs=node.output('Out'))
+        else:
+            equal_val = graph.make_node(
+                'Equal',
+                inputs=[node.input('X', 0), node.input('Y', 0)],
+                outputs=node.output('Out'))
+        k_node = graph.make_node(
+            'Cast', inputs=[equal_val], to=dtypes.ONNX.INT64)
+        const = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=1)
+        sub_ = graph.make_node('Sub', inputs=[const, k_node])
+        graph.make_node(
+            'Cast',
+            inputs=[sub_],
+            outputs=node.output('Out'),
+            to=dtypes.ONNX.BOOL)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
         equal_val = graph.make_node(
             'Equal', inputs=[node.input('X', 0), node.input('Y', 0)])
         k_node = graph.make_node(
@@ -64,10 +112,30 @@ class NotEqual():
 
 @op_mapper('greater_than')
 class GreaterThan():
-    support_opset_version_range = (1, )
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        if node.input_dtype('X', 0) in [paddle.int32, paddle.int64]:
+            warning_info = "Greater only support float input, but your input is {}, this may cause wrong result. please try opset version >= 11".format(
+                node.input_dtype('X', 0))
+            logging.warning(warning_info)
+            x_node = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.INT32)
+            y_node = graph.make_node(
+                'Cast', inputs=node.input('Y'), to=dtypes.ONNX.INT32)
+            graph.make_node(
+                'Greater',
+                inputs=[node.input('X', 0), node.input('Y', 0)],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Greater',
+                inputs=[node.input('X', 0), node.input('Y', 0)],
+                outputs=node.output('Out'))
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
         onnx_node = graph.make_node(
             'Greater',
             inputs=[node.input('X', 0), node.input('Y', 0)],
@@ -76,7 +144,7 @@ class GreaterThan():
 
 @op_mapper('logical_and')
 class LogicalAnd():
-    support_opset_version_range = (1, )
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -88,7 +156,7 @@ class LogicalAnd():
 
 @op_mapper('logical_not')
 class LogicalNot():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -98,7 +166,7 @@ class LogicalNot():
 
 @op_mapper('logical_or')
 class LogicalOr():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -110,7 +178,7 @@ class LogicalOr():
 
 @op_mapper('logical_xor')
 class LogicalXOr():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -122,7 +190,7 @@ class LogicalXOr():
 
 @op_mapper('less_equal')
 class LessOrEqual():
-    support_opset_version_range = (12, )
+    support_opset_version_range = (12, 15)
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
@@ -134,10 +202,30 @@ class LessOrEqual():
 
 @op_mapper('less_than')
 class Less_than():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
+        if node.input_dtype('X', 0) in [paddle.int32, paddle.int64]:
+            warning_info = "Less only support float input, but your input is {}, this may cause wrong result. please try opset version >= 9".format(
+                node.input_dtype('X', 0))
+            logging.warning(warning_info)
+            x_node = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.INT32)
+            y_node = graph.make_node(
+                'Cast', inputs=node.input('Y'), to=dtypes.ONNX.INT32)
+            graph.make_node(
+                'Less',
+                inputs=[node.input('X', 0), node.input('Y', 0)],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Less',
+                inputs=[node.input('X', 0), node.input('Y', 0)],
+                outputs=node.output('Out'))
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
         graph.make_node(
             'Less',
             inputs=[node.input('X', 0), node.input('Y', 0)],
