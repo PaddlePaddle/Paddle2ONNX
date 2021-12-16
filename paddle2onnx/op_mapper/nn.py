@@ -418,7 +418,7 @@ class Norm():
 
 @op_mapper('softshrink')
 class SoftShrink():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -432,14 +432,13 @@ class SoftShrink():
 
 @op_mapper('tanh_shrink')
 class TanhShrink():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
         tanh_node = graph.make_node(
             'Tanh',
-            inputs=node.input('X', 0),
-        )
+            inputs=node.input('X', 0), )
         graph.make_node(
             'Sub',
             inputs=[node.input('X', 0), tanh_node],
