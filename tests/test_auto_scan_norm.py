@@ -29,14 +29,15 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.log10(inputs)
+        x = paddle.fluid.layers.l2_normalize(
+            inputs, axis=self.config["axis"], epsilon=self.config["epsilon"])
         return x
 
 
-class TestLog10Convert(OPConvertAutoScanTest):
+class TestNormConvert(OPConvertAutoScanTest):
     """
-    api: paddle.log10
-    OPset version: 9
+    api: paddle.nn.functional.normalize
+    OPset version: 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -47,14 +48,25 @@ class TestLog10Convert(OPConvertAutoScanTest):
                 min_size=1,
                 max_size=4))
 
+        input_spec = [-1] * len(input_shape)
+
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape) + 1, max_value=len(input_shape) -
+                1))
+
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
+        epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
+
         config = {
-            "op_names": ["log10"],
+            "op_names": ["norm"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [9],
-            "input_spec_shape": []
+            "opset_version": [9, 15],
+            "input_spec_shape": [],
+            "epsilon": epsilon,
+            "axis": axis
         }
 
         models = Net(config)

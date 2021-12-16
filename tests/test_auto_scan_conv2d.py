@@ -134,7 +134,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             "op_names": ["conv2d"],
             "test_data_shapes": [input_shape, kernel_size],
             "test_data_types": [['float32'], ['float32']],
-            "opset_version": [9],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [[-1, input_shape[1], -1, -1], kernel_size],
             "data_format": data_format,
             "stride": strides,
