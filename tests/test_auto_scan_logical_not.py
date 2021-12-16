@@ -29,7 +29,7 @@ class Net(BaseNet):
 
 class TestLogicNotConvert(OPConvertAutoScanTest):
     """
-    api: logic_not ops
+    api: logical_not ops
     OPset version: 7, 9, 15
     """
 
@@ -41,10 +41,9 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
                 min_size=2,
                 max_size=4))
 
-        dtype = draw(st.sampled_from(["float32", "int32", "int64", "bool"]))
-
+        dtype = "bool"
         config = {
-            "op_names": ["logic_not"],
+            "op_names": ["logical_not"],
             "test_data_shapes": [input1_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
@@ -53,7 +52,7 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
 
         model = Net(config)
 
-        return (config, models)
+        return (config, model)
 
     def test(self):
         self.run_and_statis(max_examples=30, max_duration=-1)
