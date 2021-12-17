@@ -63,10 +63,12 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
             input_data = randtool("int", 0, weight_shape[0] - 1, input_shape)
             return input_data
 
-        padding_idx = draw(
-            st.integers(
-                min_value=-1 * weight_shape[0] + 1,
-                max_value=weight_shape[0] - 1))
+        padding_idx = None
+        if draw(st.booleans()):
+            padding_idx = draw(
+                st.integers(
+                    min_value=-1 * weight_shape[0] + 1,
+                    max_value=weight_shape[0] - 1))
 
         sparse = draw(st.booleans())
 
@@ -88,7 +90,7 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=50)
 
 
 if __name__ == "__main__":

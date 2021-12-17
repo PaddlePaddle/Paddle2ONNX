@@ -455,7 +455,7 @@ class Embedding():
                 'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
-        if padding_idx != -1 and padding_idx != input_shape[0] - 1:
+        if padding_idx != -1:
             key = node.input('W', 0)
             if -1 in input_shape:
                 assert False, "opset version < 11 do not support padding_idx !=-1 and weight is tensor with dynamic shape, please set opset version > 11 or use input_spec to set input shape"
@@ -489,7 +489,7 @@ class Embedding():
 
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
-        if padding_idx != -1 and padding_idx != input_shape[0] - 1:
+        if padding_idx != -1:
             if -1 in input_shape:
                 dtype = dtypes.ONNX.FLOAT
                 if node.input_dtype('W', 0) == paddle.float64:
