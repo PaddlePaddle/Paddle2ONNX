@@ -158,6 +158,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             op_names = [op_names]
         if not isinstance(opset_version[0], (tuple, list)):
             opset_version = [opset_version]
+        if len(opset_version) == 1 and len(models) != len(opset_version):
+            opset_version = opset_version * len(models)
 
         assert len(models) == len(
             op_names), "Length of models should be equal to length of op_names"
