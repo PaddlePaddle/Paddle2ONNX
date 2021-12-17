@@ -146,7 +146,7 @@ class Less_than():
 
 @op_mapper('isfinite_v2')
 class Isfinite():
-    support_opset_version_range = (10, 12)
+    support_opset_version_range = (10, 15)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -158,7 +158,7 @@ class Isfinite():
 
 @op_mapper('isinf_v2')
 class IsInf():
-    support_opset_version_range = (10, 12)
+    support_opset_version_range = (10, 15)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -168,7 +168,7 @@ class IsInf():
 
 @op_mapper('isnan_v2')
 class IsNaN():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -178,7 +178,7 @@ class IsNaN():
 
 @op_mapper('isnan')
 class IsNaN():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
