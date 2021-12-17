@@ -54,24 +54,26 @@ class Conv():
         }
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
-            # attrs['auto_pad'] = 'SAME_UPPER'
             input_shape = node.block.vars[node.inputs['Input'][0]].shape[2:]
-            output_spatial_shape = (
-                np.array(input_shape) + strides - 1) // strides
-            total_pad = (output_spatial_shape - 1) * strides + (
-                (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
-            pads = []
-            for i in range(len(total_pad)):
-                pad = max(0, total_pad[i])
-                pad_head = pad >> 1
-                pad_tail = pad - pad_head
-                pads = pads + [pad_head, pad_tail]
+            if input_shape[1] > 0 and input_shape[0] > 0:
+                output_spatial_shape = (
+                    np.array(input_shape) + strides - 1) // strides
+                total_pad = (output_spatial_shape - 1) * strides + (
+                    (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
+                pads = []
+                for i in range(len(total_pad)):
+                    pad = max(0, total_pad[i])
+                    pad_head = pad >> 1
+                    pad_tail = pad - pad_head
+                    pads = pads + [pad_head, pad_tail]
 
-            if len(pads) == 4:
-                pads = [pads[i] for i in [0, 2, 1, 3]]
-            elif len(pads) == 6:
-                pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
-            attrs['pads'] = pads
+                if len(pads) == 4:
+                    pads = [pads[i] for i in [0, 2, 1, 3]]
+                elif len(pads) == 6:
+                    pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+                attrs['pads'] = pads
+            else:
+                attrs['auto_pad'] = 'SAME_UPPER'
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
