@@ -36,9 +36,9 @@ class Conv():
         group = node.attr('groups')
         pads = node.attr('paddings')
 
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
-                            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW', \
+            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            "is %s." % node.attrs['data_format']
         # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
         if len(pads) == 2 or len(pads) == 3:
             pads = pads + pads
@@ -54,12 +54,24 @@ class Conv():
         }
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
-            attrs['auto_pad'] = 'SAME_UPPER'
+            # attrs['auto_pad'] = 'SAME_UPPER'
             input_shape = node.block.vars[node.inputs['Input'][0]].shape[2:]
-            for i in range(0, len(input_shape)):
-                if input_shape[i] % strides[i] == 0:
-                    attrs['auto_pad'] = 'SAME_LOWER'
-                    break
+            output_spatial_shape = (
+                np.array(input_shape) + strides - 1) // strides
+            total_pad = (output_spatial_shape - 1) * strides + (
+                (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
+            pads = []
+            for i in range(len(total_pad)):
+                pad = max(0, total_pad[i])
+                pad_head = pad >> 1
+                pad_tail = pad - pad_head
+                pads = pads + [pad_head, pad_tail]
+
+            if len(pads) == 4:
+                pads = [pads[i] for i in [0, 2, 1, 3]]
+            elif len(pads) == 6:
+                pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+            attrs['pads'] = pads
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
@@ -140,9 +152,9 @@ class Pool():
     @classmethod
     def opset_1(cls, graph, node, **kw):
 
-        assert node.attrs['data_format'] == 'NCHW',  \
-                            "The conv data format should be 'NCHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
+        assert node.attrs['data_format'] == 'NCHW', \
+            "The conv data format should be 'NCHW', but received data format " \
+            "is %s." % node.attrs['data_format']
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1]):
             onnx_node = graph.make_node(
@@ -160,7 +172,7 @@ class Pool():
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
 
-            #check if kernel_size is fixed.
+            # check if kernel_size is fixed.
             if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
                     input_w, output_w):
                 raise Exception(
@@ -277,9 +289,9 @@ class Pool3D():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCDHW',  \
-                            "The conv data format should be 'NCDHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
+        assert node.attrs['data_format'] == 'NCDHW', \
+            "The conv data format should be 'NCDHW', but received data format " \
+            "is %s." % node.attrs['data_format']
 
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1, 1]):
@@ -300,7 +312,7 @@ class Pool3D():
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
 
-            #check if kernel_size is fixed.
+            # check if kernel_size is fixed.
             if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
                     input_w, output_w) or not cls.is_same_span(input_d,
                                                                output_d):
