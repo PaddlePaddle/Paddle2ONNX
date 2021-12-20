@@ -74,12 +74,16 @@ class Conv():
                     pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
                 attrs['pads'] = pads
             else:
-                if graph.opset_version >= 11:
+                if max(kernel_shape) >= max(strides):
+                    attrs['auto_pad'] = 'SAME_UPPER'
+                elif graph.opset_version >= 11:
                     input_x = cls.autopad(graph, node, strides, kernel_shape,
                                           dilations)
                 else:
-                    # has a bug
-                    attrs['auto_pad'] = 'SAME_UPPER'
+                    raise Exception(
+                        "Conv in onnx should need opset_version>=11, when kernel_shape < strides," \
+                        "Try converting with opset_version>=11 "
+                    )
 
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
