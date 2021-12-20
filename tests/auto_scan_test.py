@@ -25,6 +25,7 @@ import hypothesis.strategies as st
 from onnxbase import APIOnnx, randtool
 from itertools import product
 import copy
+from inspect import isfunction
 
 paddle.set_device("cpu")
 
@@ -187,7 +188,13 @@ class OPConvertAutoScanTest(unittest.TestCase):
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
-                    if input_type[j].count('int') > 0:
+                    # Custom generated data
+                    if isfunction(shape):
+                        data = shape()
+                        data = data.astype(input_type[j])
+                        input_tensors.append(paddle.to_tensor(data))
+                        continue
+                    elif input_type[j].count('int') > 0:
                         input_tensors.append(
                             paddle.to_tensor(
                                 randtool("int", -20, 20, shape).astype(

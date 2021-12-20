@@ -839,12 +839,13 @@ class Cast():
 
 @op_mapper('clip')
 class Clip():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         min_value = node.attr('min')
         max_value = node.attr('max')
+        x_dtype = node.input_dtype('X', 0)
         if node.input('Max', 0) is None or len(node.input('Max')) == 0:
             max_ = max_value
         else:
@@ -857,13 +858,15 @@ class Clip():
         if node.input('Min', 0) is None or len(node.input('Min')) == 0:
             min_ = min_value
         else:
-            min_ = node.input('min', 0)
+            min_ = node.input('Min', 0)
             shape = node.input_shape('Min', 0)
             if len(list(shape)) > 0:
-                max_ = graph.make_node('ReduceSum', inputs=[min_], keepdims=0)
+                shape_tensor = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, dims=[1], value=-1)
+                min_ = graph.make_node('Reshape', inputs=[min_, shape_tensor])
         mapper_helper.clip_helper(graph,
                                   node.input('X', 0), max_, min_,
-                                  node.output('Out', 0))
+                                  node.output('Out', 0), x_dtype)
 
 
 @op_mapper(['pad2d', 'pad3d'])
@@ -1056,7 +1059,8 @@ class Resize():
                 " 'asymmetric', Try converting with opset_version 11"
             )
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            in_shape, out_shape = cls.compute_output_shape(graph, node, node.input('X')[0])
+            in_shape, out_shape = cls.compute_output_shape(graph, node,
+                                                           node.input('X')[0])
             cast_shape_node2 = graph.make_node(
                 'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
             cast_shape_node0 = graph.make_node(
@@ -1077,10 +1081,8 @@ class Resize():
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': scale
-                    })
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': scale})
                 inputs.append(scale_node)
             else:
                 raise Exception("Unexpected situation happend")
@@ -1131,14 +1133,11 @@ class Resize():
         out_size = node.input('OutSize')
         size_tensor = node.input('SizeTensor')
         scale = node.input('Scale')
-        if (out_size is not None
-                and len(out_size) > 0) or (size_tensor is not None
-                                           and len(size_tensor) > 0):
+        if (out_size is not None and len(out_size) > 0) or (
+                size_tensor is not None and len(size_tensor) > 0):
             empty_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.FLOAT,
-                    'value': []
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': []})
             inputs.append(empty_node)
             _, out_shape = cls.compute_output_shape(graph, node, input)
             inputs.append(out_shape)
@@ -1150,9 +1149,7 @@ class Resize():
                 out_shape = [node.attr('out_h'), node.attr('out_w')]
             else:
                 out_shape = [
-                    node.attr('out_d'),
-                    node.attr('out_h'),
-                    node.attr('out_w')
+                    node.attr('out_d'), node.attr('out_h'), node.attr('out_w')
                 ]
 
             scale = node.attr('scale')
@@ -1164,17 +1161,14 @@ class Resize():
             if out_shape.count(-1) > 0:
                 scale_node = graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': scale
-                    })
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': scale})
                 inputs.append(scale_node)
             else:
                 empty_node = graph.make_node(
-                    'Constant', attrs={
-                        'dtype': dtypes.ONNX.FLOAT,
-                        'value': []
-                    })
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': []})
                 in_shape, out_shape = cls.compute_output_shape_by_size(
                     graph, node, input, dim)
                 inputs += [empty_node, out_shape]
@@ -1184,8 +1178,7 @@ class Resize():
                     'Resize',
                     inputs=inputs,
                     mode=resize_type,
-                    coordinate_transformation_mode=
-                    coordinate_transformation_mode,
+                    coordinate_transformation_mode=coordinate_transformation_mode,
                     nearest_mode='floor')
             else:
                 out_node = graph.make_node(
@@ -1206,8 +1199,7 @@ class Resize():
                     inputs=inputs,
                     outputs=node.output('Out'),
                     mode=resize_type,
-                    coordinate_transformation_mode=
-                    coordinate_transformation_mode,
+                    coordinate_transformation_mode=coordinate_transformation_mode,
                     nearest_mode='floor')
             else:
                 graph.make_node(
@@ -1226,15 +1218,11 @@ class Resize():
                 'Slice', inputs=[shape_node0], starts=[0], ends=[2])
         else:
             starts_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [0]
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
             ends_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [2]
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [2]})
             shape_node1 = graph.make_node(
                 'Slice', inputs=[shape_node0, starts_node, ends_node])
         if len(node.input('OutSize')) > 0:
@@ -1262,30 +1250,22 @@ class Resize():
                 'Slice', inputs=[shape_node0], starts=[0], ends=[2])
         else:
             starts_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [0]
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
             ends_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [2]
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [2]})
             shape_node1 = graph.make_node(
                 'Slice', inputs=[shape_node0, starts_node, ends_node])
         if dim == 4:
             out_shape = [node.attr('out_h'), node.attr('out_w')]
         else:
             out_shape = [
-                node.attr('out_d'),
-                node.attr('out_h'),
-                node.attr('out_w')
+                node.attr('out_d'), node.attr('out_h'), node.attr('out_w')
             ]
         shape_node2 = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.INT64,
-                'value': out_shape
-            })
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': out_shape})
         shape_node3 = graph.make_node(
             'Concat', inputs=[shape_node1, shape_node2], axis=0)
         return shape_node0, shape_node3
@@ -1313,20 +1293,21 @@ class Scatter():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
-        shape = graph.make_node('Constant',
-                                value=[node.input_shape('Ids', 0)[0], 1],
-                                dtype=dtypes.ONNX.INT64)
-        reshape_index = graph.make_node('Reshape',
-                                        inputs=[node.input('Ids', 0), shape])
+        shape = graph.make_node(
+            'Constant',
+            value=[node.input_shape('Ids', 0)[0], 1],
+            dtype=dtypes.ONNX.INT64)
+        reshape_index = graph.make_node(
+            'Reshape', inputs=[node.input('Ids', 0), shape])
         if not node.attr('overwrite'):
             raise Exception("overwrite = False not support yet.")
         else:
-            graph.make_node('ScatterND',
-                            inputs=[
-                                node.input('X', 0), reshape_index,
-                                node.input('Updates', 0)
-                            ],
-                            outputs=node.output('Out'))
+            graph.make_node(
+                'ScatterND',
+                inputs=[
+                    node.input('X', 0), reshape_index, node.input('Updates', 0)
+                ],
+                outputs=node.output('Out'))
 
 
 @op_mapper('scatter_nd_add')
@@ -1336,22 +1317,21 @@ class ScatterndAdd():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
-        zero_like_node = graph.make_node('ConstantOfShape',
-                                         inputs=[shape],
-                                         dims=[1],
-                                         dtype=dtypes.ONNX.FLOAT,
-                                         value=[0])
+        zero_like_node = graph.make_node(
+            'ConstantOfShape',
+            inputs=[shape],
+            dims=[1],
+            dtype=dtypes.ONNX.FLOAT,
+            value=[0])
         add_node = graph.make_node(
             'ScatterND',
             inputs=[
-                zero_like_node,
-                node.input('Index', 0),
-                node.input('Updates', 0)
-            ],
-        )
-        graph.make_node('Add',
-                        inputs=[node.input('X', 0), add_node],
-                        outputs=node.output('Out'))
+                zero_like_node, node.input('Index', 0), node.input('Updates', 0)
+            ], )
+        graph.make_node(
+            'Add',
+            inputs=[node.input('X', 0), add_node],
+            outputs=node.output('Out'))
 
 
 @op_mapper('meshgrid')
@@ -1368,15 +1348,14 @@ class Meshgrid():
             shape_i = [
                 graph.make_node(
                     'Constant',
-                    attrs={
-                        'dtype': dtypes.ONNX.INT64,
-                        'value': [1]
-                    })
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [1]})
             ] * len(tensors)
             shape_i[i] = tensors_shape[i]
             t_reshaped = graph.make_node(
                 'Reshape',
-                inputs=[t, graph.make_node('Concat', inputs=shape_i, axis=0)])
+                inputs=[t, graph.make_node(
+                    'Concat', inputs=shape_i, axis=0)])
             out.append(
                 graph.make_node(
                     'Expand',
