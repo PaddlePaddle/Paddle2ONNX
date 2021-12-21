@@ -79,7 +79,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
                        opset_version=[7, 9, 15],
                        reproduce=None,
                        min_success_num=25,
-                       max_duration=180):
+                       max_duration=-1):
         if os.getenv('HYPOTHESIS_TEST_PROFILE', 'ci') == "dev":
             max_examples *= 10
             min_success_num *= 10
@@ -159,6 +159,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             op_names = [op_names]
         if not isinstance(opset_version[0], (tuple, list)):
             opset_version = [opset_version]
+        if len(opset_version) == 1 and len(models) != len(opset_version):
+            opset_version = opset_version * len(models)
 
         assert len(models) == len(
             op_names), "Length of models should be equal to length of op_names"
@@ -188,13 +190,13 @@ class OPConvertAutoScanTest(unittest.TestCase):
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
-                    # Custom generated data
+                    # Determine whether it is a user-defined data generation function
                     if isfunction(shape):
                         data = shape()
                         data = data.astype(input_type[j])
                         input_tensors.append(paddle.to_tensor(data))
                         continue
-                    elif input_type[j].count('int') > 0:
+                    if input_type[j].count('int') > 0:
                         input_tensors.append(
                             paddle.to_tensor(
                                 randtool("int", -20, 20, shape).astype(
