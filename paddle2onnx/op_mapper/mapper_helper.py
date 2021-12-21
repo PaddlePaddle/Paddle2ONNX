@@ -68,10 +68,14 @@ def constant_helper(graph, dtype, value, shape=None, outputs=[]):
 def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
     if (isinstance(min, six.string_types) or
             isinstance(max, six.string_types)) and graph.opset_version < 11:
-        raise "min or max of Clip is Tensor, please try with higher onnx opset_version."
+        raise Exception(
+            "min or max of Clip is Tensor, please try with higher onnx opset_version."
+        )
     if graph.opset_version < 11:
         if x_dtype == paddle.float64:
-            raise "When opset is less than 11, the input is not supported as float64 type."
+            raise Exception(
+                "When opset is less than 11, the input is not supported as float64 type."
+            )
         clip = graph.make_node(
             'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
