@@ -15,28 +15,26 @@
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
+from onnxbase import randtool
 import numpy as np
 import unittest
 import paddle
 
+op_api_map = {"elementwise_floordiv": paddle.floor_divide}
+
+opset_version_map = {"elementwise_floordiv": [7, 9, 15], }
+
 
 class Net(BaseNet):
-    """
-    simple Net
-    """
-
     def forward(self, inputs1, inputs2):
-        """
-        forward
-        """
-        x = paddle.add(inputs1, inputs2)
+        x = op_api_map[self.config["op_names"]](inputs1, inputs2)
         return x
 
 
-class TestElementwiseAddConvert(OPConvertAutoScanTest):
+class TestfloordivConvert(OPConvertAutoScanTest):
     """
-    api: paddle.add
-    OPset version: 9
+    api: paddle.floor_divide
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -44,24 +42,39 @@ class TestElementwiseAddConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=2,
                 max_size=4))
+
         if draw(st.booleans()):
-            input2_shape = [input1_shape[3]]
+            input2_shape = [input1_shape[-1]]
         else:
             input2_shape = input1_shape
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["int32", "int64"]))
+
+        def generator_data():
+            input_data = randtool("int", 1.0, 20.0, input2_shape)
+            return input_data
 
         config = {
-            "op_names": ["elementwise_add"],
-            "test_data_shapes": [input1_shape, input2_shape],
+            "op_names": ["elementwise_floordiv"],
+            "test_data_shapes": [input1_shape, generator_data],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": []
         }
 
-        models = Net(config)
+        models = list()
+        op_names = list()
+        opset_versions = list()
+        for op_name, i in op_api_map.items():
+            config["op_names"] = op_name
+            models.append(Net(config))
+            op_names.append(op_name)
+        for op_name, i in op_api_map.items():
+            opset_versions.append(opset_version_map[op_name])
+        config["op_names"] = op_names
+        config["opset_version"] = opset_versions
 
         return (config, models)
 
