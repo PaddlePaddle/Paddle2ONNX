@@ -799,10 +799,11 @@ class Dist():
                 inputs=[min_node],
                 outputs=node.output('Out'))
         else:
-            dtype = dtypes.ONNX.FLOAT
-            if node.input_dtype('X', 0) == paddle.float64:
-                dtype = dtypes.ONNX.DOUBLE
-            p = graph.make_node('Constant', dtype=dtype, value=node.attr('p'))
+            x_dtype = node.input_dtype('X', 0)
+            p = graph.make_node(
+                'Constant',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=node.attr('p'))
             pow_node = graph.make_node(
                 'Pow',
                 inputs=[abs_node, p], )
@@ -852,10 +853,11 @@ class Dist():
                 inputs=[min_node, axes],
                 outputs=node.output('Out'))
         else:
-            dtype = dtypes.ONNX.FLOAT
-            if node.input_dtype('X', 0) == paddle.float64:
-                dtype = dtypes.ONNX.DOUBLE
-            p = graph.make_node('Constant', dtype=dtype, value=node.attr('p'))
+            x_dtype = node.input_dtype('X', 0)
+            p = graph.make_node(
+                'Constant',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=node.attr('p'))
             pow_node = graph.make_node(
                 'Pow',
                 inputs=[abs_node, p], )

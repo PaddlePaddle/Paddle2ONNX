@@ -76,29 +76,21 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
             'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
         if not isinstance(min, six.string_types):
-            if x_dtype == paddle.float64:
-                min = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.DOUBLE,
-                           'value': min})
-            else:
-                min = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': min})
+            min = graph.make_node(
+                'Constant',
+                attrs={
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                    'value': min
+                })
         else:
             min = graph.make_node('Squeeze', min)
         if not isinstance(max, six.string_types):
-            if x_dtype == paddle.float64:
-                max = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.DOUBLE,
-                           'value': max})
-            else:
-                max = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': max})
+            max = graph.make_node(
+                'Constant',
+                attrs={
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                    'value': max
+                })
         else:
             max = graph.make_node('Squeeze', max)
         clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
