@@ -40,7 +40,7 @@ class Equal():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         if node.input_dtype('X', 0) in [paddle.float32, paddle.float64]:
-            warning_info = "Equal only support int and bool input, but your input is {}, this may cause wrong result. please try opset version >= 11".format(
+            warning_info = "Operator 'Equal' only support input with dtype of int/bool, now the dtype of input is {}, this may cause wrong results, it is more recommend converting this model with opset version >= 11.".format(
                 node.input_dtype('X', 0))
             logging.warning(warning_info)
             x_node = graph.make_node(
@@ -71,7 +71,7 @@ class NotEqual():
     def opset_7(cls, graph, node, **kw):
         equal_val = None
         if node.input_dtype('X', 0) in [paddle.float32, paddle.float64]:
-            warning_info = "Equal only support int and bool input, but your input is {}, this may cause wrong result. please try opset version >= 11".format(
+            warning_info = "Operator 'not_equal' only support input with dtype of int/bool, now the dtype of input is {}, this may cause wrong results, it is more recommend converting this model with opset version >= 11.".format(
                 node.input_dtype('X', 0))
             logging.warning(warning_info)
             x_node = graph.make_node(
@@ -117,7 +117,7 @@ class GreaterThan():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         if node.input_dtype('X', 0) in [paddle.int32, paddle.int64]:
-            warning_info = "Greater only support float input, but your input is {}, this may cause wrong result. please try opset version >= 11".format(
+            warning_info = "Operator 'greater_than' only support input with dtype of float/double, now the dtype of input is {}, this may cause wrong results, it is more recommend converting this model with opset version >= 11.".format(
                 node.input_dtype('X', 0))
             logging.warning(warning_info)
             x_node = graph.make_node(
@@ -207,7 +207,7 @@ class Less_than():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         if node.input_dtype('X', 0) in [paddle.int32, paddle.int64]:
-            warning_info = "Less only support float input, but your input is {}, this may cause wrong result. please try opset version >= 9".format(
+            warning_info = "Operator 'less_than' only support input with dtype of float/double, now the dtype of input is {}, this may cause wrong results, it is more recommend converting this model with opset version >= 11.".format(
                 node.input_dtype('X', 0))
             logging.warning(warning_info)
             x_node = graph.make_node(
