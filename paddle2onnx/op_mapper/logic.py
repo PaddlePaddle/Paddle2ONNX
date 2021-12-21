@@ -234,7 +234,7 @@ class Less_than():
 
 @op_mapper('isfinite_v2')
 class Isfinite():
-    support_opset_version_range = (10, 12)
+    support_opset_version_range = (10, 15)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -246,7 +246,7 @@ class Isfinite():
 
 @op_mapper('isinf_v2')
 class IsInf():
-    support_opset_version_range = (10, 12)
+    support_opset_version_range = (10, 15)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -256,7 +256,7 @@ class IsInf():
 
 @op_mapper('isnan_v2')
 class IsNaN():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -266,12 +266,29 @@ class IsNaN():
 
 @op_mapper('isnan')
 class IsNaN():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
         isnan = graph.make_node('IsNaN', inputs=node.input('X'))
         cast_node = graph.make_node(
             'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
+        reduce_node = graph.make_node(
+            'ReduceMax', inputs=[cast_node], keepdims=False)
         graph.make_node(
-            'ReduceMax', inputs=[cast_node], outputs=node.output('Out'))
+            'Unsqueeze',
+            inputs=[reduce_node],
+            outputs=node.output('Out'),
+            axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        isnan = graph.make_node('IsNaN', inputs=node.input('X'))
+        cast_node = graph.make_node(
+            'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
+        reduce_node = graph.make_node(
+            'ReduceMax', inputs=[cast_node], keepdims=False)
+
+        axis = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
+        graph.make_node(
+            'Unsqueeze', inputs=[reduce_node, axis], outputs=node.output('Out'))
