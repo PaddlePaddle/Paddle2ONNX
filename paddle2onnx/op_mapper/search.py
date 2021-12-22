@@ -21,7 +21,7 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 @op_mapper('where_index')
 class WhereIndex():
-    support_opset_verison_range = (9, 13)
+    support_opset_version_range = (9, 13)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -36,7 +36,7 @@ class WhereIndex():
 
 @op_mapper('top_k_v2')
 class TopKV2():
-    support_opset_verison_range = (11, )
+    support_opset_version_range = (11, )
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -49,19 +49,173 @@ class TopKV2():
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)],
                 largest=node.attr('largest'),
                 sorted=node.attr('sorted'),
                 axis=node.attr('axis'))
         else:
             k = node.attr('k')
             k_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': [k]})
+                'Constant', attrs={
+                    'dtype': dtypes.ONNX.INT64,
+                    'value': [k]
+                })
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)],
                 largest=node.attr('largest'),
                 sorted=node.attr('sorted'),
                 axis=node.attr('axis'))
+
+
+@op_mapper('top_k')
+class TopK():
+    support_opset_version_range = (11, )
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        if 'K' in node.inputs and len(node.input('K')) > 0:
+            k_node = node.input('K', 0)
+            k_node_dtype = node.input_dtype('K', 0)
+            if dtypes.DTYPE_PADDLE_STR_MAP[k_node_dtype] != 'int64':
+                k_node = graph.make_node(
+                    'Cast', inputs=[k_node], to=dtypes.ONNX.INT64)
+            graph.make_node(
+                'TopK',
+                inputs=[node.input('X', 0), k_node],
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)])
+        else:
+            k = node.attr('k')
+            k_node = graph.make_node(
+                'Constant', attrs={
+                    'dtype': dtypes.ONNX.INT64,
+                    'value': [k]
+                })
+            graph.make_node(
+                'TopK',
+                inputs=[node.input('X', 0), k_node],
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)])
+
+
+@op_mapper('argsort')
+class ArgSort():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        shape = graph.make_node('Shape', inputs=node.input('X', 0))
+        k_node = graph.make_node(
+            'Constant',
+            attrs={
+                'dtype': dtypes.ONNX.INT64,
+                'value': [node.attr('axis')]
+            })
+        dim_size = graph.make_node('Gather', inputs=[shape, k_node])
+        if not node.attr('descending'):
+            graph.make_node(
+                'TopK',
+                inputs=[node.input('X', 0), dim_size],
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)],
+                axis=node.attr('axis'),
+                largest=0)
+        else:
+            graph.make_node(
+                'TopK',
+                inputs=[node.input('X', 0), dim_size],
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)],
+                axis=node.attr('axis'),
+                largest=1)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        k = node.input_var('X', 0).shape[node.attr('axis')]
+        if not node.attr('descending'):
+            raise Exception("descending=False only support opset version>=11.")
+        else:
+            graph.make_node(
+                'TopK',
+                inputs=node.input('X', 0),
+                outputs=[node.output('Out', 0),
+                         node.output('Indices', 0)],
+                axis=node.attr('axis'),
+                k=k)
+
+
+@op_mapper('index_select')
+class IndexSelect():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        graph.make_node(
+            'Gather',
+            inputs=[node.input('X', 0),
+                    node.input('Index', 0)],
+            axis=node.attr('dim'),
+            outputs=node.output('Out'))
+
+
+@op_mapper('unique')
+class Unique():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        if node.attr('axis') == []:
+            graph.make_node(
+                'Unique',
+                inputs=node.input('X'),
+                outputs=[
+                    node.output('Out', 0),
+                    node.output('Indices', 0),
+                    node.output('Index', 0),
+                    node.output('Counts', 0)
+                ])
+        else:
+            graph.make_node(
+                'Unique',
+                inputs=node.input('X'),
+                axis=node.attr('axis')[0],
+                outputs=[
+                    node.output('Out', 0),
+                    node.output('Indices', 0),
+                    node.output('Index', 0),
+                    node.output('Counts', 0)
+                ])
+
+
+@op_mapper('where')
+class Where():
+    support_opset_version_range = (9, 12)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Where',
+            inputs=[
+                node.input('Condition', 0),
+                node.input('X', 0),
+                node.input('Y', 0)
+            ],
+            outputs=node.output('Out'))
+
+
+@op_mapper('masked_select')
+class MaskSelect():
+    support_opset_version_range = (11, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        index = graph.make_node('NonZero', inputs=node.input('Mask', 0))
+        index = graph.make_node('Transpose', inputs=[index], perm=[1, 0])
+        graph.make_node(
+            'GatherND',
+            inputs=[node.input('X', 0), index],
+            outputs=node.output('Y'))
