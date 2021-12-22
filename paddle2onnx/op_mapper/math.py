@@ -650,8 +650,16 @@ class ReduceAll():
             if node.attr('keep_dim'):
                 unsqueeze_node = graph.make_node(op_type, inputs=squeeze_node)
                 for i in range(len(node.input_shape('X', 0)) - 1):
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', axes=[0], inputs=[unsqueeze_node])
+                    if graph.opset_version < 13:
+                        unsqueeze_node = graph.make_node(
+                            'Unsqueeze', axes=[0], inputs=[unsqueeze_node])
+                    else:
+                        axes_node = graph.make_node(
+                            'Constant',
+                            attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+                        unsqueeze_node = graph.make_node(
+                            'Unsqueeze', inputs=[unsqueeze_node] + [axes_node])
                 graph.make_node(
                     'Cast',
                     inputs=[unsqueeze_node],
