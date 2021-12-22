@@ -45,10 +45,12 @@ class TestCumsumConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
 
-        axis = draw(st.integers(min_value=-4, max_value=3))
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
@@ -56,7 +58,7 @@ class TestCumsumConvert(OPConvertAutoScanTest):
             "op_names": ["cumsum"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 12, 13, 14, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
             "axis": axis,
             "dtype": dtype,
@@ -67,7 +69,7 @@ class TestCumsumConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=100)
 
 
 if __name__ == "__main__":
