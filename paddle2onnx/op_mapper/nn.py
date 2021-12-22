@@ -195,6 +195,7 @@ class ConvTranspose():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         output_padding = node.attr('output_padding')
+        output_size = node.attr('output_size')
         kernel_shape = node.input_shape('Filter', 0)
         dilations = node.attr('dilations')
         kernel_shape = kernel_shape[2:]
@@ -213,25 +214,113 @@ class ConvTranspose():
             pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
 
         attrs = {
-            'dilations': dilations,
             'kernel_shape': kernel_shape,
             'strides': strides,
             'group': group
         }
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
-            attrs['auto_pad'] = 'SAME_UPPER'
+            input_shape = node.block.vars[node.input('Input')[0]].shape[2:]
+            if input_shape[0] > 0 and input_shape[1] > 0:
+                n_input_dims = len(input_shape)
+                pads, dilations = cls.paddle_pad(
+                    input_shape, kernel_shape, strides, dilations, n_input_dims)
+                # pads1 = cls.onnx_pad(kernel_shape, strides, dilations, n_input_dims)
+                # input = cls.autopad(graph, node, strides, input_shape, kernel_shape, dilations)
+                attrs['pads'] = pads
+            else:
+                attrs['auto_pad'] = 'SAME_UPPER'
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
             attrs['pads'] = pads
+
+        attrs['dilations'] = dilations
         if output_padding and len(output_padding) > 0:
             attrs['output_padding'] = output_padding
+        if output_size and len(output_size) > 0:
+            attrs['output_size'] = output_size
         graph.make_node(
             'ConvTranspose',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
+
+    @classmethod
+    def paddle_pad(cls, input_shape, kernel_shape, strides, dilations,
+                   n_input_dims):
+        pads = [0] * n_input_dims * 2
+        for i in range(len(input_shape)):
+            out_size = (input_shape[i] + strides[i] - 1) // strides[i]
+            pad_sum = max(
+                (out_size - 1) * strides[i] + kernel_shape[i] - input_shape[i],
+                0)
+            half_pad_small = pad_sum // 2
+            half_pad_big = pad_sum - half_pad_small
+            pads[i] = half_pad_small
+            pads[i + n_input_dims] = half_pad_big
+            dilations[i] = 1
+        return pads, dilations
+
+    @classmethod
+    def onnx_pad(cls, kernel_shape, strides, dilations, n_input_dims):
+        effective_kernel_shape = list(kernel_shape)
+        for i in range(len(kernel_shape)):
+            effective_kernel_shape[i] = (kernel_shape[i] - 1) * dilations[i] + 1
+
+        pads = [0] * n_input_dims * 2
+        input_dims_size = n_input_dims
+        for i in range(input_dims_size):
+            total_pad = effective_kernel_shape[i] - strides[i]
+            if total_pad < 0:
+                total_pad = 0
+            half_pad_small = total_pad >> 1
+            half_pad_big = total_pad - half_pad_small
+            pads[i] = half_pad_small
+            pads[i + input_dims_size] = half_pad_big
+        return pads
+
+    @classmethod
+    def autopad(cls, graph, node, strides, input_shape, kernel_shape,
+                dilations):
+        # get attributes as constants
+        strides = strides
+        dilated_kernel_shape = np.array(
+            [(kernel - 1) * dilation + 1
+             for kernel, dilation in zip(kernel_shape, dilations)])
+        # get input shape
+        shape = input_shape
+        # set up integer constants
+        zero = 0
+        one = 1
+        two = 2
+        # Calculate total padding
+        mod = np.mod(shape, strides)
+        left = np.maximum(dilated_kernel_shape - strides, zero)
+        right = np.maximum(dilated_kernel_shape - mod, zero)
+        total_pad = np.where(np.equal(mod, zero), left, right)
+        if True:
+            total_pad = np.array(kernel_shape) - one - total_pad
+        # split total padding into before and after
+        pad_before = total_pad // two
+        pad_after = total_pad - pad_before
+        zero0 = np.zeros([2], dtype='int64')
+        pad0 = np.concatenate((zero0, pad_before, zero0, pad_after), axis=0)
+        input_x = node.inputs['Input']
+        attrs_pad = {'mode': 'constant', }
+        if graph.opset_version >= 11:
+            pads_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': list(pad0)})
+            value_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                                   'value': 0.0})
+            input_x = input_x + [pads_node, value_node]
+        else:
+            pass
+        input_x = graph.make_node('Pad', inputs=input_x, attrs=attrs_pad)
+        return input_x
 
 
 @op_mapper('pool2d')
