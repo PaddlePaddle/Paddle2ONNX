@@ -692,27 +692,63 @@ class ReduceMean():
                 need_unsqueeze = True
 
         if not need_unsqueeze:
-            graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
+            if graph.opset_version >= 13 and op_type == "reduce_sum":
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={
+                        'dtype': dtypes.ONNX.INT64,
+                        'value': node.attr('dim')
+                    })
+                graph.make_node(
+                    op_type,
+                    inputs=node.input('X') + [axes_node],
+                    outputs=node.output('Out'),
+                    attrs={'keepdims': node.attr('keep_dim')})
+            else:
+                graph.make_node(
+                    op_type,
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    attrs={
+                        'axes': node.attr('dim'),
+                        'keepdims': node.attr('keep_dim')
+                    })
         else:
-            reduce_node = graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[reduce_node],
-                outputs=node.output('Out'),
-                axes=[0])
+            if graph.opset_version >= 13 and op_type == "reduce_sum":
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={
+                        'dtype': dtypes.ONNX.INT64,
+                        'value': node.attr('dim')
+                    })
+                reduce_node = graph.make_node(
+                    op_type,
+                    inputs=node.input('X') + [axes_node],
+                    attrs={'keepdims': node.attr('keep_dim')})
+            else:
+                reduce_node = graph.make_node(
+                    op_type,
+                    inputs=node.input('X'),
+                    attrs={
+                        'axes': node.attr('dim'),
+                        'keepdims': node.attr('keep_dim')
+                    })
+
+            if graph.opset_version < 13:
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node],
+                    outputs=node.output('Out'),
+                    axes=[0])
+            else:
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [0]})
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node] + [axes_node],
+                    outputs=node.output('Out'))
 
 
 @op_mapper('mean')
