@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -29,7 +30,11 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.mul(inputs1, inputs2)
+        x = paddle.fluid.layers.mul(
+            inputs1,
+            inputs2,
+            x_num_col_dims=self.config["x_num_col_dims"],
+            y_num_col_dims=self.config["y_num_col_dims"])
         return x
 
 
@@ -43,12 +48,12 @@ class TestAffinechannelConvert(OPConvertAutoScanTest):
         input_shape0 = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=2))
-
-        input_shape1 = [input_shape0[i] for i in [1, 0]]
-
+                    min_value=2, max_value=10), min_size=2, max_size=4))
+        input_shape1 = input_shape0.copy()
+        input_shape1.reverse()
+        size = len(input_shape0)
+        x_num_col_dims = random.randint(1, size - 1)
+        y_num_col_dims = size - x_num_col_dims
         input_spec = [-1] * len(input_shape0)
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
@@ -58,7 +63,9 @@ class TestAffinechannelConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape0, input_shape1],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": []
+            "input_spec_shape": [],
+            "x_num_col_dims": x_num_col_dims,
+            "y_num_col_dims": y_num_col_dims
         }
 
         models = Net(config)
