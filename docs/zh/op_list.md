@@ -30,7 +30,7 @@
 | conv2d_transpose | 1~12 |
 | conv3d | 1~12 |
 | collect_fpn_proposals | 11~12 |
-| cumsum | 11~12 |
+| cumsum | 11~15 |
 | deformable_conv | 11~12 |
 | depthwise_conv2d | 1~12 |
 | depthwise_conv2d_transpose | 1~12 |
