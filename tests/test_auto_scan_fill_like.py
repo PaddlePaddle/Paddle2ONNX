@@ -19,6 +19,11 @@ import numpy as np
 import unittest
 import paddle
 
+op_api_map = {
+    "fill_any_like": paddle.ones_like,
+    "fill_zeros_like": paddle.fluid.layers.zeros_like,
+}
+
 
 class Net(BaseNet):
     """
@@ -29,14 +34,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.ones_like(x, dtype=self.config["dtype"])
+        x = op_api_map[self.config["op_names"]](x)
         x = x.astype("int32")
         return x
 
 
-class TestFillanylikeConvert(OPConvertAutoScanTest):
+class TestFillLikeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.ones_like
+    api: paddle.ones_like && paddle.zeros_like
     OPset version: 9, 13, 15
     """
 
@@ -51,19 +56,21 @@ class TestFillanylikeConvert(OPConvertAutoScanTest):
         dtype = draw(
             st.sampled_from(["bool", "int32", "int64", "float32", "float64"]))
 
-        output_dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
-
         config = {
-            "op_names": ["fill_any_like"],
+            "op_names": "",
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [9, 13, 15],
             "input_spec_shape": [],
-            "dtype": output_dtype,
         }
 
-        models = Net(config)
+        models = list()
+        op_names = list()
+        for op_name, i in op_api_map.items():
+            config["op_names"] = op_name
+            models.append(Net(config))
+            op_names.append(op_name)
+        config["op_names"] = op_names
 
         return (config, models)
 
