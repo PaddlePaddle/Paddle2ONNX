@@ -914,31 +914,24 @@ class Cast():
 
 @op_mapper('clip')
 class Clip():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         min_value = node.attr('min')
         max_value = node.attr('max')
+        x_dtype = node.input_dtype('X', 0)
         if node.input('Max', 0) is None or len(node.input('Max')) == 0:
             max_ = max_value
         else:
             max_ = node.input('Max', 0)
-            shape = node.input_shape('Max', 0)
-            if len(list(shape)) > 0:
-                shape_tensor = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, dims=[1], value=-1)
-                max_ = graph.make_node('Reshape', inputs=[max_, shape_tensor])
         if node.input('Min', 0) is None or len(node.input('Min')) == 0:
             min_ = min_value
         else:
-            min_ = node.input('min', 0)
-            shape = node.input_shape('Min', 0)
-            if len(list(shape)) > 0:
-                max_ = graph.make_node('ReduceSum', inputs=[min_], keepdims=0)
+            min_ = node.input('Min', 0)
         mapper_helper.clip_helper(graph,
                                   node.input('X', 0), max_, min_,
-                                  node.output('Out', 0))
+                                  node.output('Out', 0), x_dtype)
 
 
 @op_mapper(['pad2d', 'pad3d'])
