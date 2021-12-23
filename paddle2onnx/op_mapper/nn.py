@@ -36,9 +36,9 @@ class Conv():
         group = node.attr('groups')
         pads = node.attr('paddings')
 
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW', \
-            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-            "is %s." % node.attrs['data_format']
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
+                            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+                            "is %s." % node.attrs['data_format']
         # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
         if len(pads) == 2 or len(pads) == 3:
             pads = pads + pads
@@ -344,10 +344,10 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == "AnyLayout",  \
+                            "The conv data format should be 'NCHW', but received data format " \
+                            "is %s." % node.attrs['data_format']
 
-        assert node.attrs['data_format'] == 'NCHW', \
-            "The conv data format should be 'NCHW', but received data format " \
-            "is %s." % node.attrs['data_format']
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1]):
             onnx_node = graph.make_node(
@@ -482,9 +482,9 @@ class Pool3D():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCDHW', \
-            "The conv data format should be 'NCDHW', but received data format " \
-            "is %s." % node.attrs['data_format']
+        assert node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
+                            "The conv data format should be 'NCDHW', but received data format " \
+                            "is %s." % node.attrs['data_format']
 
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1, 1]):
@@ -645,7 +645,7 @@ class Norm():
 
 @op_mapper('softshrink')
 class SoftShrink():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -659,7 +659,7 @@ class SoftShrink():
 
 @op_mapper('tanh_shrink')
 class TanhShrink():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):

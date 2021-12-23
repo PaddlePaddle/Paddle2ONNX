@@ -87,8 +87,9 @@ opset_version_map = {
     "square": [7, 13, 14, 15],
     "swish": [7, 13, 14, 15],
     "tanh": [7, 13, 15],
-    "tan": [7, 15],    
+    "tan": [7, 15],
 }
+
 
 class Net(BaseNet):
     def forward(self, inputs):
