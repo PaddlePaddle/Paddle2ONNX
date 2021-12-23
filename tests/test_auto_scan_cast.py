@@ -36,8 +36,8 @@ class Net(BaseNet):
 
 class TestCastConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.normalize
-    OPset version: 9, 15
+    api: paddle.cast
+    OPset version: 7, 9, 13, 15
     """
 
     def sample_convert_config(self, draw):
@@ -50,9 +50,11 @@ class TestCastConvert(OPConvertAutoScanTest):
 
         input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        dtype = draw(
+            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
 
-        output_dtype = draw(st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        output_dtype = draw(
+            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["cast"],
