@@ -20,6 +20,16 @@ import unittest
 import paddle
 import random
 
+op_api_map = {
+    "reduce_all": paddle.fluid.layers.reduce_all,
+    "reduce_any": paddle.fluid.layers.reduce_any,
+}
+
+opset_version_map = {
+    "reduce_all": [7, 9, 15],
+    "reduce_any": [7, 9, 15],
+}
+
 
 class Net(BaseNet):
     """
@@ -30,15 +40,15 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.reduce_any(
+        x = op_api_map[self.config["op_names"]](
             inputs, dim=self.config["dim"], keep_dim=self.config["keep_dim"])
         x = x.astype('int32')
         return x
 
 
-class TestReduceAnyConvert(OPConvertAutoScanTest):
+class TestReduceAllConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.reduce_any
+    api: paddle.fluid.layers.reduce_all
     OPset version: 7, 9, 15
     """
 
@@ -57,7 +67,6 @@ class TestReduceAnyConvert(OPConvertAutoScanTest):
             "list",
             "int",
         ]))
-
         if axis_type == "int":
             dim = draw(
                 st.integers(
@@ -69,8 +78,9 @@ class TestReduceAnyConvert(OPConvertAutoScanTest):
             for i in range(lenSize):
                 dim.append(random.choice([i, i - len(input_shape)]))
         keep_dim = draw(st.booleans())
+
         config = {
-            "op_names": ["reduce_any"],
+            "op_names": ["reduce_all"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
@@ -79,12 +89,21 @@ class TestReduceAnyConvert(OPConvertAutoScanTest):
             "input_spec_shape": []
         }
 
-        models = Net(config)
+        models = list()
+        op_names = list()
+        opset_versions = list()
+        for op_name, i in op_api_map.items():
+            config["op_names"] = op_name
+            models.append(Net(config))
+            op_names.append(op_name)
+            opset_versions.append(opset_version_map[op_name])
+        config["op_names"] = op_names
+        config["opset_version"] = opset_versions
 
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 if __name__ == "__main__":
