@@ -586,7 +586,7 @@ class FullLike():
     '''
     fill_any_like is kernel for paddle op::full_like & ones_like
     '''
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
