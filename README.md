@@ -1,4 +1,9 @@
 # Paddle2ONNX
+[![PyPI - Paddle2ONNX Version](https://img.shields.io/pypi/v/paddle2onnx.svg?label=pip&logo=PyPI&logoColor=white)](https://pypi.org/project/paddle2onnx/)
+[![PyPI Status](https://pepy.tech/badge/paddle2onnx/month)](https://pepy.tech/project/paddle2onnx)
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/github/release/PaddlePaddle/paddle2onnx.svg)](https://github.com/PaddlePaddle/paddle2onnx/releases)
+![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
 
 [简体中文](README_zh.md) | English
 
