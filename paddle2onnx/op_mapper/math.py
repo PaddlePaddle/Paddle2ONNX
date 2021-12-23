@@ -838,7 +838,7 @@ class Dot():
 
 @op_mapper('dist')
 class Dist():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -877,13 +877,72 @@ class Dist():
                 inputs=[min_node],
                 outputs=node.output('Out'))
         else:
+            x_dtype = node.input_dtype('X', 0)
             p = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('p'))
+                'Constant',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=node.attr('p'))
             pow_node = graph.make_node(
                 'Pow',
                 inputs=[abs_node, p], )
             sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
             sum_node = graph.make_node('Unsqueeze', axes=[0], inputs=[sum_node])
+            p_1 = graph.make_node('Reciprocal', inputs=p)
+            graph.make_node(
+                'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        sub_node = graph.make_node(
+            'Sub', inputs=[node.input('X', 0), node.input('Y', 0)])
+        abs_node = graph.make_node('Abs', inputs=sub_node)
+        if node.attr('p') == 0:
+            sign_node = graph.make_node('Sign', inputs=abs_node)
+            sum_node = graph.make_node(
+                'ReduceSum', inputs=sign_node, keepdims=0)
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[sum_node, axes],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('inf'):
+            max_node = graph.make_node(
+                'ReduceMax',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[max_node, axes],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('-inf'):
+            min_node = graph.make_node(
+                'ReduceMin',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[min_node, axes],
+                outputs=node.output('Out'))
+        else:
+            x_dtype = node.input_dtype('X', 0)
+            p = graph.make_node(
+                'Constant',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=node.attr('p'))
+            pow_node = graph.make_node(
+                'Pow',
+                inputs=[abs_node, p], )
+            sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            sum_node = graph.make_node('Unsqueeze', inputs=[sum_node, axes])
             p_1 = graph.make_node('Reciprocal', inputs=p)
             graph.make_node(
                 'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
