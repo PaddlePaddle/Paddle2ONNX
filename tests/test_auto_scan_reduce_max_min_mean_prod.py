@@ -20,6 +20,20 @@ import unittest
 import paddle
 import random
 
+op_api_map = {
+    "reduce_max": paddle.fluid.layers.reduce_max,
+    "reduce_min": paddle.fluid.layers.reduce_min,
+    "reduce_mean": paddle.fluid.layers.reduce_mean,
+    "reduce_prod": paddle.fluid.layers.reduce_prod,
+}
+
+opset_version_map = {
+    "reduce_max": [7, 9, 15],
+    "reduce_min": [7, 9, 15],
+    "reduce_mean": [7, 9, 15],
+    "reduce_prod": [7, 9, 15],
+}
+
 
 class Net(BaseNet):
     """
@@ -30,14 +44,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.reduce_max(
+        x = op_api_map[self.config["op_names"]](
             inputs, dim=self.config["dim"], keep_dim=self.config["keep_dim"])
         return x
 
 
-class TestReduceMaxConvert(OPConvertAutoScanTest):
+class TestReduceAllConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.reduce_max
+    api: paddle.fluid.layers.reduce_max/min/mean/prod
     OPset version: 7, 9, 15
     """
 
@@ -46,7 +60,7 @@ class TestReduceMaxConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
 
         input_spec = [-1] * len(input_shape)
@@ -57,27 +71,17 @@ class TestReduceMaxConvert(OPConvertAutoScanTest):
             "int",
         ]))
         if axis_type == "int":
-            dim = draw(st.integers(min_value=0, max_value=3))
+            dim = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
         elif axis_type == "list":
-            dim = np.array(
-                draw(
-                    st.lists(
-                        st.integers(
-                            min_value=0, max_value=3),
-                        min_size=1,
-                        max_size=4))).tolist()
-            list = [0, 1, 2, 3]
-            if len(dim) == 4:
-                random.shuffle(list)
-                dim = list
-            elif len(dim) == 3:
-                dim = random.sample(list, 3)
-            elif len(dim) == 2:
-                dim = random.sample(list, 2)
-            else:
-                dim = random.sample(list, 1)
-        keep_dim = draw(st.integers(min_value=0, max_value=1))
-        keep_dim = bool(keep_dim)
+            lenSize = random.randint(1, len(input_shape))
+            dim = []
+            for i in range(lenSize):
+                dim.append(random.choice([i, i - len(input_shape)]))
+        keep_dim = draw(st.booleans())
+
         config = {
             "op_names": ["reduce_max"],
             "test_data_shapes": [input_shape],
@@ -88,12 +92,24 @@ class TestReduceMaxConvert(OPConvertAutoScanTest):
             "input_spec_shape": []
         }
 
-        models = Net(config)
+        models = list()
+        op_names = list()
+        opset_versions = list()
+        for op_name, i in op_api_map.items():
+            config["op_names"] = op_name
+            # onnxruntime is not supported "float64"
+            if op_name == "reduce_prod":
+                config["test_data_types"] = [["float32"]]
+            models.append(Net(config))
+            op_names.append(op_name)
+            opset_versions.append(opset_version_map[op_name])
+        config["op_names"] = op_names
+        config["opset_version"] = opset_versions
 
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=100)
+        self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 if __name__ == "__main__":
