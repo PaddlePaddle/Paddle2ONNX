@@ -44,9 +44,7 @@ class TestCumsumConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=1, max_size=4))
 
         axis = draw(
             st.integers(
@@ -69,7 +67,7 @@ class TestCumsumConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=100)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":
