@@ -636,7 +636,7 @@ class Log1p():
     mapper_dict={'reduce_all': 'ReduceMin',
                  'reduce_any': 'ReduceMax'})
 class ReduceAll():
-    support_opset_version_range = (6, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
@@ -659,7 +659,7 @@ class ReduceAll():
                             attrs={'dtype': dtypes.ONNX.INT64,
                                    'value': [0]})
                         unsqueeze_node = graph.make_node(
-                            'Unsqueeze', inputs=[unsqueeze_node] + [axes_node])
+                            'Unsqueeze', inputs=[unsqueeze_node, axes_node])
                 graph.make_node(
                     'Cast',
                     inputs=[unsqueeze_node],

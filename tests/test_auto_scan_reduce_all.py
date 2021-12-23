@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -46,7 +47,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
 
         input_spec = [-1] * len(input_shape)
@@ -57,20 +58,16 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "int",
         ]))
         if axis_type == "int":
-            dim = draw(st.integers(min_value=0, max_value=3))
+            dim = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
         elif axis_type == "list":
-            dim = np.array(
-                draw(
-                    st.lists(
-                        st.integers(
-                            min_value=0, max_value=3),
-                        min_size=1,
-                        max_size=2))).tolist()
-            if len(dim) > len(set(dim)):
-                dim[0] = dim[0] - 1
-
-        keep_dim = draw(st.integers(min_value=0, max_value=1))
-        keep_dim = bool(keep_dim)
+            lenSize = random.randint(1, len(input_shape))
+            dim = []
+            for i in range(lenSize):
+                dim.append(random.choice([i, i - len(input_shape)]))
+        keep_dim = draw(st.booleans())
         config = {
             "op_names": ["reduce_all"],
             "test_data_shapes": [input_shape],
