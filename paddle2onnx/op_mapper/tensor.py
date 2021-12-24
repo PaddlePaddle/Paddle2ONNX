@@ -586,7 +586,7 @@ class FullLike():
     '''
     fill_any_like is kernel for paddle op::full_like & ones_like
     '''
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -610,9 +610,9 @@ class FullLike():
 @op_mapper('fill_zeros_like')
 class FullZeroLike():
     '''
-    fill_any_like is kernel for paddle op::full_like & ones_like
+    fill_zeros_like is kernel for paddle op::zeros_like
     '''
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -765,27 +765,30 @@ class Flatten():
 
 @op_mapper('flatten_contiguous_range')
 class FlattenContiguousRange():
-    support_opset_version_range = (5, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_5(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         dims = len(node.input_shape('X', 0))
         start_axis = node.attr('start_axis')
         end_axis = node.attr('stop_axis')
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
-        slice1 = mapper_helper.slice_helper(
-            graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
-        slices = [
-            slice1, graph.make_node(
-                'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
-        ]
         if end_axis < dims - 1:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
             slice3 = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[end_axis + 1],
                 ends=[dims])
             slices = [
                 slice1, graph.make_node(
                     'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+            ]
+        else:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
             ]
         final_shape = graph.make_node('Concat', inputs=slices, axis=0)
         graph.make_node(
