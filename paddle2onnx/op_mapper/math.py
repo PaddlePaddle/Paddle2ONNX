@@ -820,7 +820,17 @@ class Mv():
 
 @op_mapper('dot')
 class Dot():
-    support_opset_version_range = (7, 13)
+    support_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0), node.input('Y', 0)])
+        graph.make_node(
+            'ReduceSum',
+            inputs=[mul_node],
+            axes=[len(node.input_shape('X', 0)) - 1],
+            outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -832,16 +842,6 @@ class Dot():
             value=[len(node.input_shape('X', 0)) - 1])
         graph.make_node(
             'ReduceSum', inputs=[mul_node, one], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_7(cls, graph, node, **kw):
-        mul_node = graph.make_node(
-            'Mul', inputs=[node.input('X', 0), node.input('Y', 0)])
-        graph.make_node(
-            'ReduceSum',
-            inputs=[mul_node],
-            axes=[len(node.input_shape('X', 0)) - 1],
-            outputs=node.output('Out'))
 
 
 @op_mapper('dist')
