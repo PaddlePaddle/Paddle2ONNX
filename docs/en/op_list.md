@@ -135,7 +135,7 @@
 | roi_align | 10~12 |
 | round | 11~12 |
 | rsqrt | 6~12 |
-| softmax | 1~12 |
+| softmax | 1~15 |
 | scale | 1~12 | opset 1~6 limited supported |
 | scatter | 1~15 |
 | scatter_nd_add | 11~12 |
