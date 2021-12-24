@@ -21,17 +21,13 @@ import paddle
 import random
 
 op_api_map = {
-    "reduce_all": paddle.fluid.layers.reduce_all,
-    "reduce_any": paddle.fluid.layers.reduce_any,
-    "all": paddle.all,
-    "any": paddle.any,
+    "reduce_all": paddle.all,
+    "reduce_any": paddle.any,
 }
 
 opset_version_map = {
     "reduce_all": [7, 9, 15],
     "reduce_any": [7, 9, 15],
-    "all": [7, 9, 15],
-    "any": [7, 9, 15]
 }
 
 
@@ -44,16 +40,9 @@ class Net(BaseNet):
         """
         forward
         """
-        if self.config["op_names"] in ["reduce_all", "reduce_any"]:
-            x = op_api_map[self.config["op_names"]](
-                inputs,
-                dim=self.config["dim"],
-                keep_dim=self.config["keep_dim"])
-        else:
-            x = op_api_map[self.config["op_names"]](
-                inputs,
-                axis=self.config["dim"],
-                keepdim=self.config["keep_dim"])
+        x = op_api_map[self.config["op_names"]](inputs,
+                                                axis=self.config["dim"],
+                                                keepdim=self.config["keep_dim"])
         x = x.astype('int32')
         return x
 
