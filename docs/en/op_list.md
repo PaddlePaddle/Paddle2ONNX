@@ -78,7 +78,7 @@
 | isinf | 10~12 |
 | isnan | 9~12 |
 | isfinite | 10~12 |
-| layer_norm | 9~12 |
+| layer_norm | 9~15 |
 | leaky_relu | 1~12 |
 | less_than | 1~12 | opset 7~12 limited supported
 | less_equal| 12~ |

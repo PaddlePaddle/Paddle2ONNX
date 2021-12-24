@@ -458,7 +458,7 @@ class LogSoftmax():
 
 @op_mapper('layer_norm')
 class LayerNorm():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -470,10 +470,11 @@ class LayerNorm():
             axes = [-i for i in range(len(normalized_shape), 0, -1)]
         else:
             axes = [i for i in range(normalized_shape, ipt_dims)]
-
+        dtype = node.block.vars[node.input('X', 0)].dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
         epsilon = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('epsilon'))
-        two = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=2.0)
+            'Constant', dtype=dtype, value=node.attr('epsilon'))
+        two = graph.make_node('Constant', dtype=dtype, value=2.0)
         mean = graph.make_node("ReduceMean", inputs=[ipt], axes=axes)
         numerator = graph.make_node("Sub", inputs=[ipt, mean])
         pow_num = graph.make_node("Pow", inputs=[numerator, two])
@@ -481,7 +482,8 @@ class LayerNorm():
         add_eps = graph.make_node("Add", inputs=[variance, epsilon])
         denominator = graph.make_node("Sqrt", inputs=[add_eps])
 
-        if 'Bias' in node.inputs and 'Scale' in node.inputs:
+        if 'Bias' in node.inputs and 'Scale' in node.inputs and len(
+                node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
             ipt_shape = graph.make_node("Shape", inputs=[ipt])
             weight_shape = mapper_helper.slice_helper(
                 graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
@@ -493,7 +495,7 @@ class LayerNorm():
             layer_norm = graph.make_node("Mul", inputs=[layer_norm, scale])
             graph.make_node(
                 "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
-        elif 'Bias' in node.inputs:
+        elif 'Bias' in node.inputs and len(node.input('Bias')) > 0:
             ipt_shape = graph.make_node("Shape", inputs=[ipt])
             weight_shape = mapper_helper.slice_helper(
                 graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
@@ -502,7 +504,7 @@ class LayerNorm():
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
             graph.make_node(
                 "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
-        elif 'Scale' in node.inputs:
+        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
             ipt_shape = graph.make_node("Shape", inputs=[ipt])
             weight_shape = mapper_helper.slice_helper(
                 graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
