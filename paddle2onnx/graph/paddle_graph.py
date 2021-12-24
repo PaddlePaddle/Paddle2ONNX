@@ -205,11 +205,28 @@ class PaddleGraph(Graph):
                 continue
             if not var.persistable:
                 continue
-            parameters_dict[name] = {
-                'data': np.array(scope.var(name).get_tensor()),
-                'dtype': var.dtype,
-                'shape': var.shape
-            }
+            try:
+                get_selected_rows = scope.var(name).get_selected_rows()
+                height = scope.var(name).get_selected_rows().height()
+                rows = scope.var(name).get_selected_rows().rows()
+                shape = scope.var(name).get_selected_rows().get_tensor().shape()
+                vals = np.array(
+                    scope.var(name).get_selected_rows().get_tensor())
+                total_shape = [height] + shape[1:]
+                zeros = np.zeros(shape=total_shape)
+                for i in range(len(rows)):
+                    zeros[rows[i]] = vals[i]
+                parameters_dict[name] = {
+                    'data': zeros,
+                    'dtype': var.dtype,
+                    'shape': var.shape
+                }
+            except:
+                parameters_dict[name] = {
+                    'data': np.array(scope.var(name).get_tensor()),
+                    'dtype': var.dtype,
+                    'shape': var.shape
+                }
 
         graph = PaddleGraph(program, parameters_dict, feed_var_names,
                             fetch_vars)
