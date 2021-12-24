@@ -20,6 +20,23 @@ import unittest
 import paddle
 import random
 
+op_api_map = {
+    #  paddle.max/min has a bug
+    # "reduce_max": paddle.max,
+    # "reduce_min": paddle.min,
+    "reduce_mean": paddle.mean,
+    "reduce_sum": paddle.sum,
+    "reduce_prod": paddle.prod,
+}
+
+opset_version_map = {
+    # "reduce_max": [7, 9, 15],
+    # "reduce_min": [7, 9, 15],
+    "reduce_mean": [7, 9, 15],
+    "reduce_sum": [7, 9, 15],
+    "reduce_prod": [7, 9, 15],
+}
+
 
 class Net(BaseNet):
     """
@@ -30,14 +47,15 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.reduce_sum(
-            inputs, dim=self.config["dim"], keep_dim=self.config["keep_dim"])
+        x = op_api_map[self.config["op_names"]](inputs,
+                                                axis=self.config["dim"],
+                                                keepdim=self.config["keep_dim"])
         return x
 
 
-class TestReduceSumConvert(OPConvertAutoScanTest):
+class TestReduceAllConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.reduce_sum
+    api: paddle.fluid.layers.reduce_max/min/mean/sum/prod/
     OPset version: 7, 9, 15
     """
 
@@ -45,9 +63,7 @@ class TestReduceSumConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=2, max_value=10), min_size=1, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 
@@ -69,21 +85,35 @@ class TestReduceSumConvert(OPConvertAutoScanTest):
         keep_dim = draw(st.booleans())
 
         config = {
-            "op_names": ["reduce_sum"],
+            "op_names": ["reduce_max"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "dim": dim,
             "keep_dim": keep_dim,
-            "input_spec_shape": []
+            "input_spec_shape": [],
+            "delta": 1e-4,
+            "rtol": 1e-4
         }
 
-        models = Net(config)
+        models = list()
+        op_names = list()
+        opset_versions = list()
+        for op_name, i in op_api_map.items():
+            config["op_names"] = op_name
+            # onnxruntime is not supported "float64"
+            if op_name == "reduce_prod":
+                config["test_data_types"] = [["float32"]]
+            models.append(Net(config))
+            op_names.append(op_name)
+            opset_versions.append(opset_version_map[op_name])
+        config["op_names"] = op_names
+        config["opset_version"] = opset_versions
 
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 if __name__ == "__main__":
