@@ -639,12 +639,17 @@ class Gather():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        if node.input('Axis', 0) != None:
+            raise Exception(
+                "Currently does not support the axis parameter as tensor!")
+        axis = node.attr('axis')
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
                 'Gather',
                 inputs=[node.input('X', 0), node.input('Index', 0)],
-                outputs=node.output('Out'))
+                outputs=node.output('Out'),
+                attrs={'axis': axis, })
         else:
             raise Exception(
                 "please try to convert OP:gather(indices's rank >1) with opset_version >= 11."
@@ -652,18 +657,34 @@ class Gather():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        if node.input('Axis', 0) != None:
+            raise Exception(
+                "Currently does not support the axis parameter as tensor!")
+        axis = node.attr('axis')
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
                 'Gather',
                 inputs=[node.input('X', 0), node.input('Index', 0)],
-                outputs=node.output('Out'))
+                outputs=node.output('Out'),
+                attrs={'axis': axis, })
         else:
-            # gather_nd 
-            graph.make_node(
-                'GatherND',
-                inputs=[node.input('X', 0), node.input('Index', 0)],
-                outputs=node.output('Out'))
+            # gather_nd
+            index_dtype = node.input_dtype('Index', 0)
+            if index_dtype == paddle.int32:
+                index_node = graph.make_node(
+                    'Cast',
+                    inputs=[node.input('Index', 0)],
+                    to=dtypes.ONNX.INT64)
+                graph.make_node(
+                    'GatherND',
+                    inputs=[node.input('X', 0), index_node],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'GatherND',
+                    inputs=[node.input('X', 0), node.input('Index', 0)],
+                    outputs=node.output('Out'))
 
 
 @op_mapper('squeeze2')
