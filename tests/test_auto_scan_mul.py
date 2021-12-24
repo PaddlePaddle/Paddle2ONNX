@@ -54,7 +54,6 @@ class TestAffinechannelConvert(OPConvertAutoScanTest):
         size = len(input_shape0)
         x_num_col_dims = random.randint(1, size - 1)
         y_num_col_dims = size - x_num_col_dims
-        input_spec = [-1] * len(input_shape0)
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
