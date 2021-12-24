@@ -93,6 +93,8 @@ class Erf():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        if node.input_dtype('X', 0) == paddle.float64:
+            raise Exception("Erf does not support the input type as double")
         graph.make_node(
             'Erf', inputs=node.input('X'), outputs=node.output('Out'))
 
