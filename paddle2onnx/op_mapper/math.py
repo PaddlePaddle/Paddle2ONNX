@@ -692,7 +692,7 @@ class ReduceMean():
                 need_unsqueeze = True
 
         if not need_unsqueeze:
-            if graph.opset_version >= 13 and op_type == "reduce_sum":
+            if graph.opset_version >= 13 and op_type == "ReduceSum":
                 axes_node = graph.make_node(
                     'Constant',
                     attrs={
@@ -714,7 +714,7 @@ class ReduceMean():
                         'keepdims': node.attr('keep_dim')
                     })
         else:
-            if graph.opset_version >= 13 and op_type == "reduce_sum":
+            if graph.opset_version >= 13 and op_type == "ReduceSum":
                 axes_node = graph.make_node(
                     'Constant',
                     attrs={
