@@ -29,36 +29,37 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.hardshrink(
-            inputs, threshold=self.config["threshold"])
+        x = paddle.cumsum(
+            inputs, axis=self.config["axis"], dtype=self.config["dtype"])
         return x
 
 
-class TestHardshinkConvert(OPConvertAutoScanTest):
+class TestCumsumConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.hardshrink
-    OPset version: 7, 9, 15
+    api: paddle.cumsum
+    OPset version: 11, 14, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=1, max_size=4))
 
-        threshold = draw(st.floats(min_value=0.1, max_value=1.0))
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
-            "op_names": ["hard_shrink"],
+            "op_names": ["cumsum"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
-            "threshold": threshold
+            "axis": axis,
+            "dtype": dtype,
         }
 
         models = Net(config)
