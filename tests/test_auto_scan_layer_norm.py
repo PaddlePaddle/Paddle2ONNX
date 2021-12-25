@@ -59,7 +59,6 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
             normalized_shape = input_shape[axis:]
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
-
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
 
         config = {
