@@ -57,7 +57,7 @@ class TestSoftmaxConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "axis": axis,
+            "axis": axis
         }
 
         models = Net(config)
