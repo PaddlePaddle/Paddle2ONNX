@@ -44,7 +44,7 @@ def check_model(onnx_model):
     except Exception:
         raise Exception('ONNX model is not valid.')
     finally:
-        logging.info('ONNX model genarated is valid.')
+        logging.info('ONNX model generated is valid.')
 
 
 levels = {0: 'ERROR', 1: 'WARNING', 2: 'INFO', 3: 'DEBUG'}

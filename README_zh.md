@@ -56,11 +56,15 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 |--save_file | 指定转换后的模型保存目录路径 |
 |--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
 |--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
+|--enable_paddle_fallback| **[可选]**  配置custom op是否使用paddle_fallback模式导出, 默认为False|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
 - PaddlePaddle模型的两种存储形式：
    - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
    - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
+- 使用onnxruntime验证转换模型：
+   - 若使用onnxruntime验证转换后的onnx模型，请注意onnxruntime和onnx的版本匹配。[onnxruntime和onnx版本要求](https://github.com/microsoft/onnxruntime/blob/master/docs/Versioning.md)
+- 若模型转换中提示OP不支持，欢迎开发者自己开发并向我们提PR，具体请参考文档[OP开发指南](docs/zh/Paddle2ONNX_Development_Guide.md)
 
 #### IPython教程
 

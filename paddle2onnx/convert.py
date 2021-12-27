@@ -28,11 +28,16 @@ def export_onnx(paddle_graph,
                 save_file,
                 opset_version=9,
                 enable_onnx_checker=False,
+                operator_export_type="ONNX",
                 verbose=False):
-    onnx_graph = ONNXGraph.build(paddle_graph, opset_version, verbose)
+    onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
+                                 operator_export_type, verbose)
     onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
 
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
+
+    if save_file is None:
+        return onnx_proto
 
     path, _ = os.path.split(save_file)
     if path != '' and not os.path.isdir(path):
@@ -49,6 +54,7 @@ def program2onnx(program,
                  target_vars=None,
                  opset_version=9,
                  enable_onnx_checker=False,
+                 operator_export_type="ONNX",
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -74,7 +80,8 @@ def program2onnx(program,
 
         paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
                                                       target_vars, scope)
-        export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker)
+        return export_onnx(paddle_graph, save_file, opset_version,
+                           enable_onnx_checker, operator_export_type)
     else:
         raise TypeError(
             "the input 'program' should be 'Program', but received type is %s."
@@ -117,11 +124,11 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
             raise TypeError(
                 "The output_spec should be 'list', but received type is %s." %
                 type(output_spec))
-            for var in output_spec:
-                if not isinstance(var, core.VarBase):
-                    raise TypeError(
-                        "The element in output_spec list should be 'Variable', but received element's type is %s."
-                        % type(var))
+        for var in output_spec:
+            if not isinstance(var, core.VarBase):
+                raise TypeError(
+                    "The element in output_spec list should be 'Variable', but received element's type is %s."
+                    % type(var))
 
     verbose = False
     if 'verbose' in configs:
@@ -141,7 +148,23 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
                 "The 'enable_onnx_checker' should be 'bool', but received type is %s."
                 % type(configs['enable_onnx_checker']))
 
+    operator_export_type = "ONNX"
+    enable_paddle_fallback = False
+    if 'enable_paddle_fallback' in configs:
+        if isinstance(configs['enable_paddle_fallback'], bool):
+            enable_paddle_fallback = configs['enable_paddle_fallback']
+            if enable_paddle_fallback:
+                operator_export_type = "PaddleFallback"
+        else:
+            raise TypeError(
+                "The 'enable_paddle_fallback' should be 'bool', but received type is %s."
+                % type(configs['enable_paddle_fallback']))
+
     paddle_graph = PaddleGraph.build_from_dygraph(layer, inner_input_spec,
                                                   output_spec)
-    export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
-                verbose)
+
+    if 'get_paddle_graph' in configs:
+        return paddle_graph
+
+    return export_onnx(paddle_graph, save_file, opset_version,
+                       enable_onnx_checker, operator_export_type, verbose)
