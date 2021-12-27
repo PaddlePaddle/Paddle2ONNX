@@ -643,13 +643,15 @@ class Gather():
             raise Exception(
                 "Currently does not support the axis parameter as tensor!")
         axis = node.attr('axis')
+        if axis == None:
+            axis = 0
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
                 'Gather',
                 inputs=[node.input('X', 0), node.input('Index', 0)],
                 outputs=node.output('Out'),
-                attrs={'axis': axis, })
+                attrs={'axis': axis})
         else:
             raise Exception(
                 "please try to convert OP:gather(indices's rank >1) with opset_version >= 11."
@@ -661,13 +663,15 @@ class Gather():
             raise Exception(
                 "Currently does not support the axis parameter as tensor!")
         axis = node.attr('axis')
+        if axis == None:
+            axis = 0
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
                 'Gather',
                 inputs=[node.input('X', 0), node.input('Index', 0)],
                 outputs=node.output('Out'),
-                attrs={'axis': axis, })
+                attrs={'axis': axis})
         else:
             # gather_nd
             index_dtype = node.input_dtype('Index', 0)
