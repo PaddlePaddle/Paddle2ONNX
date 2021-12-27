@@ -31,7 +31,7 @@
 | conv3d | 1~12 |
 | depthwise_conv2d_transpose | 1~12 |
 | collect_fpn_proposals | 11~12 |
-| cumsum | 11~12 |
+| cumsum | 11~15 |
 | deformable_conv | 11~12 |
 | depthwise_conv2d | 1~12 |
 | distribute_fpn_proposals | 11~12 |
@@ -103,7 +103,7 @@
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
 | meshgrid | 1~12 |
-| mul | 1~12 |
+| mul | 5~15 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
 | mv | 1~12 |

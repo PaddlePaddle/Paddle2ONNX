@@ -25,19 +25,18 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, x, y):
         """
         forward
         """
-        x = paddle.cast(inputs, dtype=self.config["dtype"])
-        x = x.astype("int32")
+        x = paddle.dot(x, y)
         return x
 
 
-class TestCastConvert(OPConvertAutoScanTest):
+class TestDotConvert(OPConvertAutoScanTest):
     """
-    api: paddle.cast
-    OPset version: 7, 9, 13, 15
+    api: paddle.dot
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -46,23 +45,16 @@ class TestCastConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=20, max_value=100),
                 min_size=1,
-                max_size=4))
+                max_size=2))
 
-        input_spec = [-1] * len(input_shape)
-
-        dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
-
-        output_dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
         config = {
-            "op_names": ["cast"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 13, 15],
+            "op_names": ["dot"],
+            "test_data_shapes": [input_shape, input_shape],
+            "test_data_types": [[dtype], [dtype]],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "dtype": output_dtype,
         }
 
         models = Net(config)
