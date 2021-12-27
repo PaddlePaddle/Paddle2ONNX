@@ -1029,7 +1029,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1058,6 +1058,14 @@ class Softmax():
                 inputs=[softmax_node],
                 outputs=node.output('Out'),
                 attrs={'perm': perm})
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        graph.make_node(
+            'Softmax',
+            inputs=node.input('X'),
+            axis=node.attr('axis'),
+            outputs=node.output('Out'))
 
 
 @op_mapper('softmax_with_cross_entropy')
