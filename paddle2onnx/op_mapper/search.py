@@ -49,26 +49,25 @@ class TopKV2():
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)],
+                outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 largest=node.attr('largest'),
                 sorted=node.attr('sorted'),
                 axis=node.attr('axis'))
         else:
             k = node.attr('k')
             k_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [k]
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [k]})
+            largest = 1 if node.attr('largest') else 0
+            sorted = 1 if node.attr('sorted') else 0
+            axis = node.attr('axis')
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)],
-                largest=node.attr('largest'),
-                sorted=node.attr('sorted'),
-                axis=node.attr('axis'))
+                outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                largest=largest,
+                sorted=sorted,
+                axis=axis)
 
 
 @op_mapper('top_k')
@@ -86,20 +85,16 @@ class TopK():
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)])
+                outputs=[node.output('Out', 0), node.output('Indices', 0)])
         else:
             k = node.attr('k')
             k_node = graph.make_node(
-                'Constant', attrs={
-                    'dtype': dtypes.ONNX.INT64,
-                    'value': [k]
-                })
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [k]})
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)])
+                outputs=[node.output('Out', 0), node.output('Indices', 0)])
 
 
 @op_mapper('argsort')
@@ -111,25 +106,21 @@ class ArgSort():
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
         k_node = graph.make_node(
             'Constant',
-            attrs={
-                'dtype': dtypes.ONNX.INT64,
-                'value': [node.attr('axis')]
-            })
+            attrs={'dtype': dtypes.ONNX.INT64,
+                   'value': [node.attr('axis')]})
         dim_size = graph.make_node('Gather', inputs=[shape, k_node])
         if not node.attr('descending'):
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), dim_size],
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)],
+                outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 axis=node.attr('axis'),
                 largest=0)
         else:
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), dim_size],
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)],
+                outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 axis=node.attr('axis'),
                 largest=1)
 
@@ -142,8 +133,7 @@ class ArgSort():
             graph.make_node(
                 'TopK',
                 inputs=node.input('X', 0),
-                outputs=[node.output('Out', 0),
-                         node.output('Indices', 0)],
+                outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 axis=node.attr('axis'),
                 k=k)
 
@@ -156,8 +146,7 @@ class IndexSelect():
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'Gather',
-            inputs=[node.input('X', 0),
-                    node.input('Index', 0)],
+            inputs=[node.input('X', 0), node.input('Index', 0)],
             axis=node.attr('dim'),
             outputs=node.output('Out'))
 
@@ -173,10 +162,8 @@ class Unique():
                 'Unique',
                 inputs=node.input('X'),
                 outputs=[
-                    node.output('Out', 0),
-                    node.output('Indices', 0),
-                    node.output('Index', 0),
-                    node.output('Counts', 0)
+                    node.output('Out', 0), node.output('Indices', 0),
+                    node.output('Index', 0), node.output('Counts', 0)
                 ])
         else:
             graph.make_node(
@@ -184,10 +171,8 @@ class Unique():
                 inputs=node.input('X'),
                 axis=node.attr('axis')[0],
                 outputs=[
-                    node.output('Out', 0),
-                    node.output('Indices', 0),
-                    node.output('Index', 0),
-                    node.output('Counts', 0)
+                    node.output('Out', 0), node.output('Indices', 0),
+                    node.output('Index', 0), node.output('Counts', 0)
                 ])
 
 
@@ -200,8 +185,7 @@ class Where():
         graph.make_node(
             'Where',
             inputs=[
-                node.input('Condition', 0),
-                node.input('X', 0),
+                node.input('Condition', 0), node.input('X', 0),
                 node.input('Y', 0)
             ],
             outputs=node.output('Out'))

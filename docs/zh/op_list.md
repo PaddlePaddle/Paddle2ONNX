@@ -173,5 +173,5 @@
 | unique | 11~12 |
 | unsqueeze2 | 1~12 |
 | where | 9~12 |
-| where_index | 9~12 |
+| where_index | 9~15 |
 | yolo_box | 9~12 |
