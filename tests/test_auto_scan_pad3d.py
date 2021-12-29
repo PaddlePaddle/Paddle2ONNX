@@ -106,78 +106,68 @@ class TestPadopsConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=25, max_duration=-1)
 
 
-# class Net2(BaseNet):
-#     def forward(self, inputs):
-#         pad_shape = self.config["pad"]
-#         data = np.ones(shape=[len(pad_shape)], dtype="int32")
-#         pad = paddle.to_tensor(data, dtype='int32')
-#         mode = self.config["mode"]
-#         value = self.config["value"]
-#         data_format = self.config["data_format"]
-#         x = paddle.nn.functional.pad(
-#             inputs, pad, mode=mode, value=value, data_format=data_format)
-#         return x
+class Net2(BaseNet):
+    def forward(self, inputs):
+        data = np.ones(shape=[6], dtype="int32")
+        pad = paddle.to_tensor(data, dtype='int32')
+        mode = self.config["mode"]
+        value = self.config["value"]
+        data_format = self.config["data_format"]
+        x = paddle.nn.functional.pad(inputs,
+                                     pad,
+                                     mode=mode,
+                                     value=value,
+                                     data_format=data_format)
+        return x
 
-# class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
-#     """
-#     api: pad2d
-#     OPset version:
-#     """
 
-#     def sample_convert_config(self, draw):
-#         input_shape = draw(
-#             st.lists(
-#                 st.integers(
-#                     min_value=10, max_value=100),
-#                 min_size=4,
-#                 max_size=5))
+class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
+    """
+    api: pad2d
+    OPset version:
+    """
 
-#         dtype = "float32"
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=10, max_value=100),
+                min_size=5,
+                max_size=5))
 
-#         mode = draw(st.sampled_from(["constant", "reflect", "replicate"]))
+        dtype = "float32"
 
-#         value = draw(st.floats(min_value=0, max_value=10))
+        mode = draw(st.sampled_from(["constant", "reflect", "replicate"]))
 
-#         data_format = None
-#         if len(input_shape) == 4:
-#             data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
-#         else:
-#             data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
+        value = draw(st.floats(min_value=0, max_value=10))
 
-#         pad = None
-#         if len(input_shape) == 4:
-#             pad = draw(
-#                 st.lists(
-#                     st.integers(
-#                         min_value=0, max_value=4),
-#                     min_size=4,
-#                     max_size=4))
-#         else:
-#             pad = draw(
-#                 st.lists(
-#                     st.integers(
-#                         min_value=0, max_value=4),
-#                     min_size=6,
-#                     max_size=6))
+        data_format = None
+        data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
 
-#         config = {
-#             "op_names": ["pad3d"],
-#             "test_data_shapes": [input_shape],
-#             "test_data_types": [[dtype]],
-#             "opset_version": [11],
-#             "input_spec_shape": [],
-#             "mode": mode,
-#             "value": value,
-#             "pad": pad,
-#             "data_format": data_format
-#         }
+        pad = draw(
+            st.lists(
+                st.integers(
+                    min_value=0, max_value=4), min_size=6, max_size=6))
 
-#         model = Net2(config)
+        config = {
+            "op_names": ["pad3d"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [11],
+            "input_spec_shape": [],
+            "mode": mode,
+            "value": value,
+            "pad": pad,
+            "data_format": data_format
+        }
 
-#         return (config, model)
+        model = Net2(config)
 
-#     def test(self):
-#         self.run_and_statis(max_examples=25, max_duration=-1)
+        return (config, model)
+
+    def test(self):
+        self.run_and_statis(max_examples=25, max_duration=-1)
+
 
 if __name__ == "__main__":
     unittest.main()
