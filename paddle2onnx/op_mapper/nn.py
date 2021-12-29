@@ -662,10 +662,11 @@ class Dropout():
             onnx_node = graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         elif dropout_mode == 'downgrade_in_infer':
+            dtype = node.block.vars[node.input('X', 0)].dtype
+            dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
             scale_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': 1 - dropout_prob})
+                'Constant', attrs={'dtype': dtype,
+                                   'value': 1 - dropout_prob})
             graph.make_node(
                 "Mul",
                 inputs=[node.input('X')[0], scale_node],
