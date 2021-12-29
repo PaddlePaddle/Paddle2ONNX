@@ -100,7 +100,6 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             opset_versions.append(opset_version_map[op_name])
         config["op_names"] = op_names
         config["opset_version"] = opset_versions
-
         return (config, models)
 
     def test(self):
