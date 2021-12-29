@@ -42,7 +42,7 @@ class ActivationOps():
 
 @op_mapper('leaky_relu')
 class LeakyRelu():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -173,7 +173,7 @@ class Selu():
 
 @op_mapper('hard_sigmoid')
 class HardSigmoid():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -208,7 +208,7 @@ class Swish():
 
 @op_mapper('hard_swish')
 class HardSwish():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):

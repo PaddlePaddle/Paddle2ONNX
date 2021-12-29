@@ -215,21 +215,50 @@ class Log2():
 
 @op_mapper('logsumexp')
 class LogSumExp():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
 
         if node.attr('reduce_all'):
             if not node.attr('keepdim'):
                 reduce_node = graph.make_node(
                     'ReduceLogSumExp',
                     inputs=node.input('X'),
-                    keepdims=node.attr('keepdim'), )
+                    keepdims=node.attr('keepdim'))
                 graph.make_node(
                     'Unsqueeze',
                     inputs=[reduce_node],
                     axes=[0],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ReduceLogSumExp',
+                inputs=node.input('X'),
+                keepdims=node.attr('keepdim'),
+                axes=node.attr('axis'),
+                outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+
+        if node.attr('reduce_all'):
+            if not node.attr('keepdim'):
+                reduce_node = graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'))
+                axes = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node, axes],
                     outputs=node.output('Out'))
             else:
                 graph.make_node(
@@ -1040,7 +1069,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1069,6 +1098,14 @@ class Softmax():
                 inputs=[softmax_node],
                 outputs=node.output('Out'),
                 attrs={'perm': perm})
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        graph.make_node(
+            'Softmax',
+            inputs=node.input('X'),
+            axis=node.attr('axis'),
+            outputs=node.output('Out'))
 
 
 @op_mapper('softmax_with_cross_entropy')
