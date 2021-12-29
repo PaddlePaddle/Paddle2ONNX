@@ -198,6 +198,7 @@ class PaddleGraph(Graph):
                            fetch_vars=None,
                            scope=None):
         parameters_dict = {}
+        lds_dict = {}
         vars = program.global_block().vars
         for name in vars:
             var = program.global_block().var(name)
@@ -210,16 +211,20 @@ class PaddleGraph(Graph):
                 height = scope.var(name).get_selected_rows().height()
                 rows = scope.var(name).get_selected_rows().rows()
                 shape = scope.var(name).get_selected_rows().get_tensor().shape()
+                id_to_index = get_selected_rows.get_id_to_index()
                 vals = np.array(
                     scope.var(name).get_selected_rows().get_tensor())
                 total_shape = [height] + shape[1:]
                 zeros = np.zeros(shape=total_shape)
                 for i in range(len(rows)):
-                    zeros[rows[i]] = vals[i]
+                    index = id_to_index[rows[i]]
+                    if index == -1:
+                        continue
+                    zeros[index] = vals[i]
                 parameters_dict[name] = {
                     'data': zeros,
                     'dtype': var.dtype,
-                    'shape': var.shape
+                    'shape': zeros.shape
                 }
             except:
                 parameters_dict[name] = {
