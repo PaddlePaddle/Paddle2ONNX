@@ -29,13 +29,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.log_sigmoid(inputs)
+        x = paddle.nn.functional.hardsigmoid(
+            inputs, slope=self.config["slope"], offset=self.config["offset"])
         return x
 
 
-class TestLogsigmoidConvert(OPConvertAutoScanTest):
+class TestHardsigmoidConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.log_sigmoid
+    api: paddle.nn.functional.hardsigmoid
     OPset version: 7, 9, 15
     """
 
@@ -44,18 +45,22 @@ class TestLogsigmoidConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
-        input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        slope = draw(st.floats(min_value=0, max_value=1.0))
+        offset = draw(st.floats(min_value=0.5, max_value=5))
+
+        dtype = draw(st.sampled_from(["float32"]))
 
         config = {
-            "op_names": ["logsigmoid"],
+            "op_names": ["hard_sigmoid"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [input_spec],
+            "input_spec_shape": [],
+            "slope": slope,
+            "offset": offset,
         }
 
         models = Net(config)

@@ -103,7 +103,7 @@
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
 | meshgrid | 1~12 |
-| mul | 1~12 |
+| mul | 5~15 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
 | mv | 1~12 |
