@@ -54,20 +54,20 @@ class MatMul():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', idx=0)
-        if node.input_dtype('X', 0) == paddle.float64:
-            x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
         y = node.input('Y', idx=0)
-        if node.input_dtype('Y', 0) == paddle.float64:
-            y = graph.make_node('Cast', inputs=y, to=dtypes.ONNX.FLOAT)
         out = node.output('Out')
         if node.attr('trans_x'):
             perm = list(range(len(node.input_shape('X', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
             x = graph.make_node('Transpose', inputs=[x], perm=perm)
+            if node.input_dtype('X', 0) == paddle.float64:
+                x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
         if node.attr('trans_y'):
             perm = list(range(len(node.input_shape('Y', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
             y = graph.make_node('Transpose', inputs=[y], perm=perm)
+            if node.input_dtype('Y', 0) == paddle.float64:
+                y = graph.make_node('Cast', inputs=y, to=dtypes.ONNX.FLOAT)
         if node.input_dtype('X', 0) == paddle.float64:
             output_node = graph.make_node('MatMul', inputs=[x, y])
             graph.make_node(
