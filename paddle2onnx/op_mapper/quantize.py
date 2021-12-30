@@ -36,11 +36,11 @@ class Fake_quantize_dequantize_moving_average_abs_max():
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
-        key = node.input('InScale')
+        key = node.input('InScale', 0)
         InScale = None
-        for name, param in graph.origin_parameters.items():
-            if name in key:
-                InScale = param['data']
+        if key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[key]
+            InScale = param['data']
 
         Minus_InScale = -1.0 * InScale
 
@@ -107,16 +107,16 @@ class Fake_channel_wise_quantize_dequantize_abs_max():
     @classmethod
     def opset_13(cls, graph, node, **kw):
         paddle.disable_static()
-        key = node.input('X')
 
+        key = node.input('X', 0)
         update_param = None
         update_name = None
         weight = None
-        for name, param in graph.origin_parameters.items():
-            if name in key:
-                weight = param['data']
-                update_name = name
-                update_param = param
+        if key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[key]
+            weight = param['data']
+            update_name = key
+            update_param = param
 
         tensor = paddle.to_tensor(weight)
         abs_tensor = paddle.abs(tensor)
@@ -373,11 +373,11 @@ class Fake_channel_wise_dequantize_max_abs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        key = node.input('Scales')
+        key = node.input('Scales', 0)
         InScale = None
-        for name, param in graph.origin_parameters.items():
-            if name in key:
-                InScale = param['data']
+        if key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[key]
+            InScale = param['data']
         InScale = paddle.to_tensor(InScale)
         input_shape = node.input_shape('X', 0)
         zero_node = None
