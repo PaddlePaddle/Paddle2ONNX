@@ -18,57 +18,46 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
+
+op_api_map = {"log1p": paddle.log1p, "log10": paddle.log10}
 
 
 class Net(BaseNet):
-    """
-    simple Net
-    """
-
-    def forward(self, inputs1, inputs2):
-        """
-        forward
-        """
-        x = paddle.fluid.layers.mul(
-            inputs1,
-            inputs2,
-            x_num_col_dims=self.config["x_num_col_dims"],
-            y_num_col_dims=self.config["y_num_col_dims"])
-        return x
+    def forward(self, inputs):
+        return op_api_map[self.config["op_names"]](inputs)
 
 
-class TestAffinechannelConvert(OPConvertAutoScanTest):
+class TestLogConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.mul
+    api: paddle.log10、 paddle.log10
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape0 = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=10), min_size=2, max_size=4))
-        input_shape1 = input_shape0.copy()
-        input_shape1.reverse()
-        size = len(input_shape0)
-
-        x_num_col_dims = random.randint(1, size - 1)
-        y_num_col_dims = size - x_num_col_dims
+                    min_value=20, max_value=100),
+                min_size=1,
+                max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["mul"],
-            "test_data_shapes": [input_shape0, input_shape1],
-            "test_data_types": [[dtype], [dtype]],
+            "op_names": ["log10"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [],
-            "x_num_col_dims": x_num_col_dims,
-            "y_num_col_dims": y_num_col_dims
+            "input_spec_shape": []
         }
 
-        models = Net(config)
+        models = list()
+        op_names = list()
+        for op_name, i in op_api_map.items():
+            config["op_names"] = op_name
+            models.append(Net(config))
+            op_names.append(op_name)
+        config["op_names"] = op_names
 
         return (config, models)
 
