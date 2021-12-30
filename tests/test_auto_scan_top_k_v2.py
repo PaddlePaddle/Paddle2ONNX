@@ -35,7 +35,7 @@ class Net(BaseNet):
             axis=self.config['axis'],
             largest=self.config['largest'],
             sorted=self.config['sorted'])
-        return x[0]
+        return x
 
 
 class TestTopkv2Convert(OPConvertAutoScanTest):
@@ -48,9 +48,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=2, max_value=5), min_size=2, max_size=4))
 
         axis = None
         if draw(st.booleans()):
@@ -63,16 +61,25 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
 
         largest = draw(st.booleans())
         sortedVal = draw(st.booleans())
+        k = 1
         if draw(st.booleans()):
-            k = 2
-        else:
-            k = paddle.to_tensor(1)
+            k = paddle.to_tensor(k)
+
+        def generator_data():
+            import random
+            import numpy as np
+            t = 1
+            for i in range(len(input_shape)):
+                t = t * input_shape[i]
+            input_data = np.array(random.sample(range(-500, 500), t))
+            input_data = input_data.reshape(input_shape)
+            return input_data
 
         config = {
             "op_names": ["top_k_v2"],
-            "test_data_shapes": [input_shape],
+            "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [11],
             "input_spec_shape": [],
             "axis": axis,
             "largest": largest,
@@ -85,9 +92,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(
-            max_examples=30,
-            reproduce=reproduce_failure('6.27.3', b'AAEAAAAAAAAB'))
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":
