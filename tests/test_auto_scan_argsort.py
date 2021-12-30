@@ -30,7 +30,10 @@ class Net(BaseNet):
         forward
         """
 
-        x = paddle.argsort(input, axis=self.config['axis'], descending=False)
+        x = paddle.argsort(
+            input,
+            axis=self.config['axis'],
+            descending=self.config['descending'])
         return x
 
 
@@ -44,19 +47,28 @@ class TestArgsortConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=2, max_value=5), min_size=2, max_size=4))
 
         axis = draw(
             st.integers(
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
+
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         descending = draw(st.booleans())
 
+        def generator_data():
+            import random
+            import numpy as np
+            t = 1
+            for i in range(len(input_shape)):
+                t = t * input_shape[i]
+            input_data = np.array(random.sample(range(-500, 500), t))
+            input_data = input_data.reshape(input_shape)
+            return input_data
+
         config = {
             "op_names": ["argsort"],
-            "test_data_shapes": [input_shape],
+            "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
