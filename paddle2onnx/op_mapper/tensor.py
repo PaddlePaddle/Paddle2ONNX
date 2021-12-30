@@ -706,9 +706,6 @@ class Squeeze():
             axes = [
                 axis + ndim if axis < 0 else axis for i, axis in enumerate(axes)
             ]
-            for axis in axes:
-                assert shape[
-                    axis] == 1, "axes response to input data shape should is 1."
         return axes
 
 
