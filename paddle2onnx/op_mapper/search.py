@@ -178,7 +178,7 @@ class Unique():
 
 @op_mapper('where')
 class Where():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -193,7 +193,7 @@ class Where():
 
 @op_mapper('masked_select')
 class MaskSelect():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):

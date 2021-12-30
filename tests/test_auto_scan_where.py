@@ -25,18 +25,18 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x, y):
+    def forward(self, inputs1, inputs2):
         """
         forward
         """
-        x = paddle.where(x > 1, x, y)
+        x = paddle.where(inputs1 < inputs2, inputs1, inputs2)
         return x
 
 
 class TestWhereConvert(OPConvertAutoScanTest):
     """
     api: paddle.where
-    OPset version: 7, 9, 15
+    OPset version: 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -45,7 +45,7 @@ class TestWhereConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=20, max_value=100),
                 min_size=1,
-                max_size=2))
+                max_size=4))
 
         dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
@@ -53,7 +53,7 @@ class TestWhereConvert(OPConvertAutoScanTest):
             "op_names": ["where"],
             "test_data_shapes": [input_shape, input_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
         }
 
