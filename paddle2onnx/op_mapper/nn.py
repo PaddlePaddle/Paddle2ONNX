@@ -357,7 +357,7 @@ class Pool3D():
 
 @op_mapper('elu')
 class ELU():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -445,10 +445,38 @@ class TanhShrink():
 
 @op_mapper('log_softmax')
 class LogSoftmax():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        shape = node.output_shape('Out', 0)
+        if axis is None:
+            axis = -1
+        if axis < 0:
+            axis += len(shape)
+        if axis == len(shape) - 1:
+            node = graph.make_node(
+                'LogSoftmax',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                attrs={'axis': axis})
+        else:
+            perm = [i for i in range(len(shape))]
+            perm[-1] = axis
+            perm[axis] = len(shape) - 1
+            transpose_node = graph.make_node(
+                'Transpose', inputs=node.input('X'), attrs={'perm': perm})
+            softmax_node = graph.make_node(
+                'LogSoftmax', inputs=[transpose_node], axis=-1)
+            transpose_node1 = graph.make_node(
+                'Transpose',
+                inputs=[softmax_node],
+                outputs=node.output('Out'),
+                attrs={'perm': perm})
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
         graph.make_node(
             'LogSoftmax',
             inputs=node.input('X'),

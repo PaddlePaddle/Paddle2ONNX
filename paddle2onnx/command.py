@@ -131,7 +131,7 @@ def program2onnx(model_dir,
     }
     if input_shape_dict is not None:
         paddle_version = paddle.__version__
-        model_version = model.program().desc._version()
+        model_version = program.desc._version()
         major_ver = model_version // 1000000
         minor_ver = (model_version - major_ver * 1000000) // 1000
         patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
