@@ -74,7 +74,7 @@
 | has_nan | 9~12 |
 | im2sequence | 1~12 |
 | instance_norm | 1~12 |
-| index_select | 1~12 |
+| index_select | 1~15 |
 | isinf | 10~12 |
 | isnan | 9~12 |
 | isfinite | 10~12 |

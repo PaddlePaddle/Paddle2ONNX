@@ -29,9 +29,9 @@ class Net(BaseNet):
         """
         forward
         """
-
-        x = paddle.index_select(
-            input, index=self.config['index'], axis=self.config['axis'])
+        t = self.config['index']
+        index = paddle.to_tensor([1, 2])
+        x = paddle.index_select(input, index=index, axis=self.config['axis'])
         return x
 
 
@@ -45,17 +45,13 @@ class TestIndexselectConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
-
+                    min_value=3, max_value=100), min_size=2, max_size=2))
         axis = draw(
             st.integers(
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
-        data_index = np.array([0, 1, 1, 1, 1]).astype('int32')
-        index = paddle.to_tensor(data_index)
+        index = paddle.to_tensor([1, 2])
 
         config = {
             "op_names": ["index_select"],

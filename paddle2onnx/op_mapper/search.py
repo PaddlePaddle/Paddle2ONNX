@@ -140,7 +140,7 @@ class ArgSort():
 
 @op_mapper('index_select')
 class IndexSelect():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
