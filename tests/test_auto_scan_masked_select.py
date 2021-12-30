@@ -25,11 +25,11 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, input):
+    def forward(self, x, y):
         """
         forward
         """
-        x = paddle.masked_select(input, mask=self.config['mask'])
+        x = paddle.masked_select(x, y)
         return x
 
 
@@ -43,22 +43,16 @@ class TestMaskedselectConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=4, max_value=4), min_size=1, max_size=1))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-
-        mask = np.zeros(shape=input_shape)
-        mask = paddle.to_tensor(mask)
+        dtype = draw(st.sampled_from(["float32"]))
 
         config = {
             "op_names": ["masked_select"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "test_data_shapes": [input_shape, input_shape],
+            "test_data_types": [[dtype], ['bool']],
+            "opset_version": [11],
             "input_spec_shape": [],
-            "mask": mask,
         }
 
         models = Net(config)
