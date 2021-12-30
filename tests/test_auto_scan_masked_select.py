@@ -43,7 +43,7 @@ class TestMaskedselectConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=4), min_size=1, max_size=1))
+                    min_value=4, max_value=20), min_size=1, max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
 
@@ -51,7 +51,7 @@ class TestMaskedselectConvert(OPConvertAutoScanTest):
             "op_names": ["masked_select"],
             "test_data_shapes": [input_shape, input_shape],
             "test_data_types": [[dtype], ['bool']],
-            "opset_version": [11],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
         }
 

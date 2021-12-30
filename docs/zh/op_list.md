@@ -98,7 +98,7 @@
 | logical_xor | 1~12 | opset 7~12 limited supported |
 | logsigmoid | 1~12 |
 | logsoftmax | 1~12 |
-| masked_select | 11~12 |
+| masked_select | 11~15 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
