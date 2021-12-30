@@ -170,7 +170,7 @@
 | trilinear_interp_v2 | 9~12 |
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
-| unique | 11~12 |
+| unique | 11~15 |
 | unsqueeze2 | 1~12 |
 | where | 9~15 |
 | where_index | 9~15 |
