@@ -36,7 +36,7 @@ class WhereIndex():
 
 @op_mapper('top_k_v2')
 class TopKV2():
-    support_opset_version_range = (11, )
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
