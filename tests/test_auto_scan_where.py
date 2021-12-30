@@ -53,7 +53,7 @@ class TestWhereConvert(OPConvertAutoScanTest):
             "op_names": ["where"],
             "test_data_shapes": [input_shape, input_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [9, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
         }
 
