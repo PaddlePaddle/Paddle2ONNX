@@ -52,6 +52,7 @@ class TestAffinechannelConvert(OPConvertAutoScanTest):
         input_shape1 = input_shape0.copy()
         input_shape1.reverse()
         size = len(input_shape0)
+
         x_num_col_dims = random.randint(1, size - 1)
         y_num_col_dims = size - x_num_col_dims
 
