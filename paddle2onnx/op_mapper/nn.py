@@ -22,7 +22,6 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx import utils
 from paddle2onnx.utils import logging
-import math
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d', 'conv3d'])
@@ -112,50 +111,6 @@ class ConvTranspose():
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
-
-
-@op_mapper('sequence_pool')
-class Sequencepool():
-    support_opset_version_range = (11, 15)
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        pooltype = node.attr('pooltype')
-        # print("pooltype",pooltype)
-        # logging.warning(
-        #         "Due to the operator:{}, the converted ONNX model will only supports input[batch_size] == 1.".
-        #         format(node.type))
-        if pooltype == "SUM":
-            # axis_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=0)
-            name = node.input("X", 0)
-            graph.make_node(
-                'ReduceSum',
-                inputs=[node.input('X', 0)],
-                axes=[0],
-                outputs=node.output('Out'))
-        if pooltype == "AVERAGE":
-            name = node.input("X", 0)
-            graph.make_node(
-                'ReduceMean',
-                inputs=[node.input('X', 0)],
-                axes=[0],
-                outputs=node.output('Out'))
-        if pooltype == "SQRT":
-            if node.input_shape('X', 0)[0] == -1:
-                logging.warning(
-                    "Due to the operator:{}, must use input_spec to specify input.".
-                    format(node.type))
-                return
-            batch = math.sqrt(node.input_shape('X', 0)[0])
-            batch_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[batch])
-            name = node.input("X", 0)
-            sum_node = graph.make_node(
-                'ReduceSum', inputs=[node.input('X', 0)], axes=[0])
-            graph.make_node(
-                'Div',
-                inputs=[sum_node, batch_node],
-                outputs=node.output('Out'))
 
 
 @op_mapper('pool2d')

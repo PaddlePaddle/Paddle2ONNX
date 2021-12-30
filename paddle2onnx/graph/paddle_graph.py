@@ -198,7 +198,6 @@ class PaddleGraph(Graph):
                            fetch_vars=None,
                            scope=None):
         parameters_dict = {}
-        lds_dict = {}
         vars = program.global_block().vars
         for name in vars:
             var = program.global_block().var(name)
