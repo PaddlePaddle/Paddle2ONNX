@@ -25,6 +25,7 @@ import hypothesis.strategies as st
 from onnxbase import APIOnnx, randtool
 from itertools import product
 import copy
+from inspect import isfunction
 
 paddle.set_device("cpu")
 
@@ -75,10 +76,10 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
     def run_and_statis(self,
                        max_examples=100,
-                       opset_version=[9, 10, 11, 12],
+                       opset_version=[7, 9, 15],
                        reproduce=None,
                        min_success_num=25,
-                       max_duration=180):
+                       max_duration=-1):
         if os.getenv('HYPOTHESIS_TEST_PROFILE', 'ci') == "dev":
             max_examples *= 10
             min_success_num *= 10
@@ -94,8 +95,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
             derandomize=True,
             report_multiple_bugs=False, )
         settings.load_profile("ci")
-
-        self.opset_version = opset_version
 
         def sample_convert_generator(draw):
             return self.sample_convert_config(draw)
@@ -158,6 +157,10 @@ class OPConvertAutoScanTest(unittest.TestCase):
             models = [models]
         if not isinstance(op_names, (tuple, list)):
             op_names = [op_names]
+        if not isinstance(opset_version[0], (tuple, list)):
+            opset_version = [opset_version]
+        if len(opset_version) == 1 and len(models) != len(opset_version):
+            opset_version = opset_version * len(models)
 
         assert len(models) == len(
             op_names), "Length of models should be equal to length of op_names"
@@ -182,15 +185,26 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         for i, model in enumerate(models):
             model.eval()
-            obj = APIOnnx(model, op_names[i], opset_version, op_names[i],
+            obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
                           input_specs, delta, rtol)
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
+                    # Determine whether it is a user-defined data generation function
+                    if isfunction(shape):
+                        data = shape()
+                        data = data.astype(input_type[j])
+                        input_tensors.append(paddle.to_tensor(data))
+                        continue
                     if input_type[j].count('int') > 0:
                         input_tensors.append(
                             paddle.to_tensor(
                                 randtool("int", -20, 20, shape).astype(
+                                    input_type[j])))
+                    elif input_type[j].count('bool') > 0:
+                        input_tensors.append(
+                            paddle.to_tensor(
+                                randtool("bool", -2, 2, shape).astype(
                                     input_type[j])))
                     else:
                         input_tensors.append(

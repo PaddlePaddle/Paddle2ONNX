@@ -29,14 +29,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.log10(inputs)
+        x = paddle.nn.functional.hardswish(inputs)
         return x
 
 
-class TestLog10Convert(OPConvertAutoScanTest):
+class TestHardswishConvert(OPConvertAutoScanTest):
     """
-    api: paddle.log10
-    OPset version: 9
+    api: paddle.nn.functional.hardswish
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -47,14 +47,14 @@ class TestLog10Convert(OPConvertAutoScanTest):
                 min_size=1,
                 max_size=4))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32"]))
 
         config = {
-            "op_names": ["log10"],
+            "op_names": ["hard_swish"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [9],
-            "input_spec_shape": []
+            "opset_version": [7, 9, 15],
+            "input_spec_shape": [],
         }
 
         models = Net(config)

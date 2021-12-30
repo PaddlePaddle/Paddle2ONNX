@@ -25,40 +25,48 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs1, inputs2):
+    def forward(self, x):
         """
         forward
         """
-        x = paddle.add(inputs1, inputs2)
+        x = paddle.flatten(
+            x,
+            start_axis=self.config["start_axis"],
+            stop_axis=self.config["stop_axis"])
         return x
 
 
-class TestElementwiseAddConvert(OPConvertAutoScanTest):
+class TestFlattenConvert(OPConvertAutoScanTest):
     """
-    api: paddle.add
-    OPset version: 9
+    api: paddle.flatten
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input1_shape = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[3]]
-        else:
-            input2_shape = input1_shape
+                    min_value=1, max_value=20), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
+
+        start_axis = draw(
+            st.integers(
+                min_value=0, max_value=len(input_shape) // 2))
+
+        stop_axis = draw(
+            st.integers(
+                min_value=len(input_shape) // 2, max_value=len(input_shape) -
+                1))
 
         config = {
-            "op_names": ["elementwise_add"],
-            "test_data_shapes": [input1_shape, input2_shape],
-            "test_data_types": [[dtype], [dtype]],
-            "opset_version": [9],
-            "input_spec_shape": []
+            "op_names": ["flatten_contiguous_range"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 9, 15],
+            "input_spec_shape": [],
+            "start_axis": start_axis,
+            "stop_axis": stop_axis,
         }
 
         models = Net(config)
