@@ -56,18 +56,19 @@ class MatMul():
         x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
         out = node.output('Out')
+        ## TODO(wangjunjie06): The current addition of cast op is only for onnxruntime optimization, after onnxruntime is repaired, remove this logic
         if node.attr('trans_x'):
             perm = list(range(len(node.input_shape('X', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
-            x = graph.make_node('Transpose', inputs=[x], perm=perm)
             if node.input_dtype('X', 0) == paddle.float64:
                 x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
+            x = graph.make_node('Transpose', inputs=[x], perm=perm)
         if node.attr('trans_y'):
             perm = list(range(len(node.input_shape('Y', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
-            y = graph.make_node('Transpose', inputs=[y], perm=perm)
             if node.input_dtype('Y', 0) == paddle.float64:
                 y = graph.make_node('Cast', inputs=y, to=dtypes.ONNX.FLOAT)
+            y = graph.make_node('Transpose', inputs=[y], perm=perm)
         if node.input_dtype('X', 0) == paddle.float64:
             output_node = graph.make_node('MatMul', inputs=[x, y])
             graph.make_node(
