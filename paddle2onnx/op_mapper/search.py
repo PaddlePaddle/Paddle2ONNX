@@ -99,7 +99,7 @@ class TopK():
 
 @op_mapper('argsort')
 class ArgSort():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -127,6 +127,7 @@ class ArgSort():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         k = node.input_var('X', 0).shape[node.attr('axis')]
+
         if not node.attr('descending'):
             raise Exception("descending=False only support opset version>=11.")
         else:
