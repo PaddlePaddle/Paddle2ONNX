@@ -758,15 +758,25 @@ class ReduceMean():
 
 @op_mapper('mean')
 class Mean():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        mean_node = graph.make_node(
+            'ReduceMean', inputs=node.input('X'), keepdims=0)
         graph.make_node(
-            'ReduceMean',
-            inputs=node.input('X'),
+            'Unsqueeze',
+            inputs=[mean_node],
             outputs=node.output('Out'),
-            keepdims=0)
+            axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        mean_node = graph.make_node(
+            'ReduceMean', inputs=node.input('X'), keepdims=0)
+        axes = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
+        graph.make_node(
+            'Unsqueeze', inputs=[mean_node, axes], outputs=node.output('Out'))
 
 
 @op_mapper('arg_max')
@@ -841,7 +851,7 @@ class Hardtanh():
 
 @op_mapper('mv')
 class Mv():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
