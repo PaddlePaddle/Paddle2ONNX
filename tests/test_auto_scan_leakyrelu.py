@@ -18,7 +18,6 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
 
 
 class Net(BaseNet):
@@ -26,46 +25,39 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs1, inputs2):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.fluid.layers.mul(
-            inputs1,
-            inputs2,
-            x_num_col_dims=self.config["x_num_col_dims"],
-            y_num_col_dims=self.config["y_num_col_dims"])
+        x = paddle.nn.functional.leaky_relu(
+            inputs, negative_slope=self.config["negative_slope"])
         return x
 
 
-class TestAffinechannelConvert(OPConvertAutoScanTest):
+class TestLeakyreluConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.mul
+    api: paddle.nn.functional.leaky_relu
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape0 = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=10), min_size=2, max_size=4))
-        input_shape1 = input_shape0.copy()
-        input_shape1.reverse()
-        size = len(input_shape0)
+                    min_value=20, max_value=100),
+                min_size=1,
+                max_size=4))
 
-        x_num_col_dims = random.randint(1, size - 1)
-        y_num_col_dims = size - x_num_col_dims
-
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32"]))
+        negative_slope = draw(st.floats(min_value=0, max_value=1))
 
         config = {
-            "op_names": ["mul"],
-            "test_data_shapes": [input_shape0, input_shape1],
-            "test_data_types": [[dtype], [dtype]],
+            "op_names": ["leaky_relu"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "x_num_col_dims": x_num_col_dims,
-            "y_num_col_dims": y_num_col_dims
+            "negative_slope": negative_slope,
         }
 
         models = Net(config)
