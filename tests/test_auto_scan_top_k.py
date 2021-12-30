@@ -30,7 +30,6 @@ class Net(BaseNet):
         forward
         """
         x = paddle.fluid.layers.topk(input, k=self.config['k'])
-
         return x
 
 
@@ -44,15 +43,12 @@ class TestTopkConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=4, max_value=10), min_size=1, max_size=4))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         k = 1
-
         config = {
-            "op_names": ["topk"],
+            "op_names": ["top_k_0"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [11, 15],
