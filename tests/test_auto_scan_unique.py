@@ -29,45 +29,52 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.unique(
+        out = paddle.unique(
             input,
-            return_index=False,
+            return_index=True,
             return_inverse=False,
             return_counts=False,
             axis=self.config['axis'],
-            dtype=self.config['dtype'])
-        return x
+            # dtype=self.config['xdtype']
+        )
+
+        return out
 
 
 class TestUniqueConvert(OPConvertAutoScanTest):
     """
     api: paddle.unique
-    OPset version: 7, 9, 15
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=2, max_value=10), min_size=1, max_size=4))
+
+        return_index = draw(st.booleans())
+        return_inverse = draw(st.booleans())
+        return_counts = draw(st.booleans())
+
         axis = None
         if draw(st.booleans()):
             axis = draw(
                 st.integers(
-                    min_value=-len(input_shape), max_value=len(input_shape) -
-                    1))
-        dtype = draw(st.sampled_from(["int64"]))
-
+                    min_value=0, max_value=len(input_shape) - 1))
+        dtype = draw(st.sampled_from(["float32"]))
+        xdtype = draw(st.sampled_from(["int32", "int64"]))
         config = {
             "op_names": ["unique"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
+            "return_index": return_index,
+            "return_inverse": return_inverse,
+            "return_counts": return_counts,
             "axis": axis,
-            "dtype": dtype,
+            "xdtype": xdtype,
         }
 
         models = Net(config)

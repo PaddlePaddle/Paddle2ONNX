@@ -29,7 +29,10 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     :param delta: 误差值
     :return:
     """
-    if type(result) == np.ndarray:
+    if type(result) == np.ndarray or (type(result) == list and
+                                      len(result) == 1):
+        if type(result) == list:
+            result = result[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
@@ -227,9 +230,10 @@ class APIOnnx(object):
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) + '.onnx'))
+            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
+                         '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
-        return ort_outs[0]
+        return ort_outs
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
         """
