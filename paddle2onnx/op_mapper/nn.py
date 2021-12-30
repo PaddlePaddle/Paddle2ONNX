@@ -606,8 +606,6 @@ class GroupNorm():
         assert len(
             ipt_shape) == 4, "Only support 4D-Tensor as input for GroupNorm"
 
-        scale = node.input('Scale')[0]
-        bias = node.input('Bias')[0]
         shape = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[0, num_groups, -1])
         reshape_input = graph.make_node('Reshape', inputs=[ipt, shape])
@@ -620,15 +618,27 @@ class GroupNorm():
             inputs=[reshape_input, scale_, bias_],
             epsilon=epsilon)
         origin_shape = graph.make_node('Shape', inputs=[ipt])
-        output = graph.make_node(
-            'Reshape', inputs=[reshaped_output, origin_shape])
-        axes = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=[1, 2])
-        unsqueezed_scale = graph.make_node('Unsqueeze', inputs=[scale, axes])
-        unsqueezed_bias = graph.make_node('Unsqueeze', inputs=[bias, axes])
-        part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
-        graph.make_node(
-            'Add', inputs=[part0, unsqueezed_bias], outputs=node.output('Y'))
+
+        if len(node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
+            output = graph.make_node(
+                'Reshape', inputs=[reshaped_output, origin_shape])
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[1, 2])
+            scale = node.input('Scale')[0]
+            bias = node.input('Bias')[0]
+            unsqueezed_scale = graph.make_node(
+                'Unsqueeze', inputs=[scale, axes])
+            unsqueezed_bias = graph.make_node('Unsqueeze', inputs=[bias, axes])
+            part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
+            graph.make_node(
+                'Add',
+                inputs=[part0, unsqueezed_bias],
+                outputs=node.output('Y'))
+        else:
+            output = graph.make_node(
+                'Reshape',
+                inputs=[reshaped_output, origin_shape],
+                outputs=node.output('Y'))
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -640,8 +650,6 @@ class GroupNorm():
         assert len(
             ipt_shape) == 4, "Only support 4D-Tensor as input for GroupNorm"
 
-        scale = node.input('Scale')[0]
-        bias = node.input('Bias')[0]
         shape = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[0, num_groups, -1])
         reshape_input = graph.make_node('Reshape', inputs=[ipt, shape])
@@ -654,15 +662,26 @@ class GroupNorm():
             inputs=[reshape_input, scale_, bias_],
             epsilon=epsilon)
         origin_shape = graph.make_node('Shape', inputs=[ipt])
-        output = graph.make_node(
-            'Reshape', inputs=[reshaped_output, origin_shape])
-        unsqueezed_scale = graph.make_node(
-            'Unsqueeze', inputs=[scale], axes=[1, 2])
-        unsqueezed_bias = graph.make_node(
-            'Unsqueeze', inputs=[bias], axes=[1, 2])
-        part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
-        graph.make_node(
-            'Add', inputs=[part0, unsqueezed_bias], outputs=node.output('Y'))
+
+        if len(node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
+            output = graph.make_node(
+                'Reshape', inputs=[reshaped_output, origin_shape])
+            scale = node.input('Scale')[0]
+            bias = node.input('Bias')[0]
+            unsqueezed_scale = graph.make_node(
+                'Unsqueeze', inputs=[scale], axes=[1, 2])
+            unsqueezed_bias = graph.make_node(
+                'Unsqueeze', inputs=[bias], axes=[1, 2])
+            part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
+            graph.make_node(
+                'Add',
+                inputs=[part0, unsqueezed_bias],
+                outputs=node.output('Y'))
+        else:
+            output = graph.make_node(
+                'Reshape',
+                inputs=[reshaped_output, origin_shape],
+                outputs=node.output('Y'))
 
 
 @op_mapper('instance_norm')
