@@ -29,13 +29,13 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.log_sigmoid(inputs)
+        x = paddle.fluid.layers.mean(inputs)
         return x
 
 
-class TestLogsigmoidConvert(OPConvertAutoScanTest):
+class TestMeanConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.log_sigmoid
+    api: paddle.fluid.layers.mean
     OPset version: 7, 9, 15
     """
 
@@ -44,18 +44,17 @@ class TestLogsigmoidConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
-        input_spec = [-1] * len(input_shape)
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["logsigmoid"],
+            "op_names": ["mean"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [input_spec],
+            "input_spec_shape": [],
         }
 
         models = Net(config)

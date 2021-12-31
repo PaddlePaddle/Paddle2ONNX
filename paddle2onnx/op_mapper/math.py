@@ -204,21 +204,50 @@ class Log2():
 
 @op_mapper('logsumexp')
 class LogSumExp():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
 
         if node.attr('reduce_all'):
             if not node.attr('keepdim'):
                 reduce_node = graph.make_node(
                     'ReduceLogSumExp',
                     inputs=node.input('X'),
-                    keepdims=node.attr('keepdim'), )
+                    keepdims=node.attr('keepdim'))
                 graph.make_node(
                     'Unsqueeze',
                     inputs=[reduce_node],
                     axes=[0],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ReduceLogSumExp',
+                inputs=node.input('X'),
+                keepdims=node.attr('keepdim'),
+                axes=node.attr('axis'),
+                outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+
+        if node.attr('reduce_all'):
+            if not node.attr('keepdim'):
+                reduce_node = graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'))
+                axes = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node, axes],
                     outputs=node.output('Out'))
             else:
                 graph.make_node(
@@ -462,7 +491,7 @@ class CumSum():
 
 @op_mapper('mul')
 class Mul():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (5, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -717,15 +746,25 @@ class ReduceMean():
 
 @op_mapper('mean')
 class Mean():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        mean_node = graph.make_node(
+            'ReduceMean', inputs=node.input('X'), keepdims=0)
         graph.make_node(
-            'ReduceMean',
-            inputs=node.input('X'),
+            'Unsqueeze',
+            inputs=[mean_node],
             outputs=node.output('Out'),
-            keepdims=0)
+            axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        mean_node = graph.make_node(
+            'ReduceMean', inputs=node.input('X'), keepdims=0)
+        axes = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
+        graph.make_node(
+            'Unsqueeze', inputs=[mean_node, axes], outputs=node.output('Out'))
 
 
 @op_mapper('arg_max')
@@ -800,7 +839,7 @@ class Hardtanh():
 
 @op_mapper('mv')
 class Mv():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -812,7 +851,17 @@ class Mv():
 
 @op_mapper('dot')
 class Dot():
-    support_opset_version_range = (7, 13)
+    support_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0), node.input('Y', 0)])
+        graph.make_node(
+            'ReduceSum',
+            inputs=[mul_node],
+            axes=[len(node.input_shape('X', 0)) - 1],
+            outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -824,16 +873,6 @@ class Dot():
             value=[len(node.input_shape('X', 0)) - 1])
         graph.make_node(
             'ReduceSum', inputs=[mul_node, one], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_7(cls, graph, node, **kw):
-        mul_node = graph.make_node(
-            'Mul', inputs=[node.input('X', 0), node.input('Y', 0)])
-        graph.make_node(
-            'ReduceSum',
-            inputs=[mul_node],
-            axes=[len(node.input_shape('X', 0)) - 1],
-            outputs=node.output('Out'))
 
 
 @op_mapper('dist')
@@ -1029,7 +1068,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1058,6 +1097,14 @@ class Softmax():
                 inputs=[softmax_node],
                 outputs=node.output('Out'),
                 attrs={'perm': perm})
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        graph.make_node(
+            'Softmax',
+            inputs=node.input('X'),
+            axis=node.attr('axis'),
+            outputs=node.output('Out'))
 
 
 @op_mapper('softmax_with_cross_entropy')

@@ -25,37 +25,37 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, x, y):
         """
         forward
         """
-        x = paddle.nn.functional.log_sigmoid(inputs)
+        x = paddle.mv(x, y)
         return x
 
 
-class TestLogsigmoidConvert(OPConvertAutoScanTest):
+class TestMvConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.log_sigmoid
+    api: paddle.mv
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input_shape1 = draw(
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
-        input_spec = [-1] * len(input_shape)
+                min_size=2,
+                max_size=2))
 
+        input_shape2 = input_shape1[1:]
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["logsigmoid"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
+            "op_names": ["mv"],
+            "test_data_shapes": [input_shape1, input_shape2],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [input_spec],
+            "input_spec_shape": [],
         }
 
         models = Net(config)

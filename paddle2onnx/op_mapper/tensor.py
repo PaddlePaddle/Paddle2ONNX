@@ -586,7 +586,7 @@ class FullLike():
     '''
     fill_any_like is kernel for paddle op::full_like & ones_like
     '''
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -610,9 +610,9 @@ class FullLike():
 @op_mapper('fill_zeros_like')
 class FullZeroLike():
     '''
-    fill_any_like is kernel for paddle op::full_like & ones_like
+    fill_zeros_like is kernel for paddle op::zeros_like
     '''
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -706,9 +706,6 @@ class Squeeze():
             axes = [
                 axis + ndim if axis < 0 else axis for i, axis in enumerate(axes)
             ]
-            for axis in axes:
-                assert shape[
-                    axis] == 1, "axes response to input data shape should is 1."
         return axes
 
 
@@ -765,27 +762,30 @@ class Flatten():
 
 @op_mapper('flatten_contiguous_range')
 class FlattenContiguousRange():
-    support_opset_version_range = (5, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_5(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         dims = len(node.input_shape('X', 0))
         start_axis = node.attr('start_axis')
         end_axis = node.attr('stop_axis')
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
-        slice1 = mapper_helper.slice_helper(
-            graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
-        slices = [
-            slice1, graph.make_node(
-                'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
-        ]
         if end_axis < dims - 1:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
             slice3 = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[end_axis + 1],
                 ends=[dims])
             slices = [
                 slice1, graph.make_node(
                     'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+            ]
+        else:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
             ]
         final_shape = graph.make_node('Concat', inputs=slices, axis=0)
         graph.make_node(
@@ -948,6 +948,35 @@ class Pad():
         else:
             mode = node.attr('mode')
         pads = cls.convert_padding(node, **kw)
+        if pads is None:
+            key = node.input('Paddings', 0)
+            padding = None
+            if key in graph.parameters.keys():
+                paddings = graph.parameters[key].attribute[0].t.int32_data
+                if node.attr('data_format') == 'NCHW':
+                    pads = [
+                        0, 0, paddings[0], paddings[2], 0, 0, paddings[1],
+                        paddings[3]
+                    ]
+                elif node.attr('data_format') == 'NHWC':
+                    pads = [
+                        0, paddings[0], paddings[2], 0, 0, paddings[1],
+                        paddings[3], 0
+                    ]
+                elif node.attr('data_format') == 'NCDHW':
+                    pads = [
+                        0, 0, paddings[4], paddings[2], paddings[0], 0, 0,
+                        paddings[5], paddings[3], paddings[1]
+                    ]
+                elif node.attr('data_format') == 'NDHWC':
+                    pads = [
+                        0, paddings[4], paddings[2], paddings[0], 0, 0,
+                        paddings[5], paddings[3], paddings[1], 0
+                    ]
+            else:
+                raise Exception("In Pad op, padding can not be tensor" \
+                            "Please set opset version >= 11")
+
         value = None
         if node.attr('pad_value') is not None:
             value = node.attr('pad_value')
@@ -971,17 +1000,92 @@ class Pad():
                             "Please try the other three ways")
         else:
             mode = node.attr('mode')
-        pads_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': pads})
+        pads_node = None
+        if isinstance(pads, list):
+            pads_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': pads})
+        else:
+            key = node.input('Paddings', 0)
+            padding = None
+            if key in graph.parameters.keys():
+                paddings = graph.parameters[key].attribute[0].t.int32_data
+                onnx_paddings = None
+                if node.attr('data_format') == 'NCHW':
+                    onnx_paddings = [
+                        0, 0, paddings[0], paddings[2], 0, 0, paddings[1],
+                        paddings[3]
+                    ]
+                elif node.attr('data_format') == 'NHWC':
+                    onnx_paddings = [
+                        0, paddings[0], paddings[2], 0, 0, paddings[1],
+                        paddings[3], 0
+                    ]
+                elif node.attr('data_format') == 'NCDHW':
+                    onnx_paddings = [
+                        0, 0, paddings[4], paddings[2], paddings[0], 0, 0,
+                        paddings[5], paddings[3], paddings[1]
+                    ]
+                elif node.attr('data_format') == 'NDHWC':
+                    onnx_paddings = [
+                        0, paddings[4], paddings[2], paddings[0], 0, 0,
+                        paddings[5], paddings[3], paddings[1], 0
+                    ]
+
+                pads_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': onnx_paddings})
+            else:
+                padding_node = node.input('Paddings', 0)
+                casted_padding_node = graph.make_node(
+                    'Cast', inputs=[padding_node], to=dtypes.ONNX.FLOAT)
+                zero_node = None
+                if node.attr('data_format') == 'NCHW' or node.attr(
+                        'data_format') == 'NHWC':
+                    zero_node = graph.make_node(
+                        'Constant', dtype=dtypes.ONNX.FLOAT, value=[0] * 8)
+                else:
+                    zero_node = graph.make_node(
+                        'Constant', dtype=dtypes.ONNX.FLOAT, value=[0] * 10)
+                index = None
+                if node.attr('data_format') == 'NCHW':
+                    index = graph.make_node(
+                        'Constant', dtype=dtypes.ONNX.INT32,
+                        value=[2, 6, 3, 7])
+                elif node.attr('data_format') == 'NHWC':
+                    index = graph.make_node(
+                        'Constant', dtype=dtypes.ONNX.INT32,
+                        value=[1, 5, 2, 6])
+                elif node.attr('data_format') == 'NCDHW':
+                    index = graph.make_node(
+                        'Constant',
+                        dtype=dtypes.ONNX.INT32,
+                        value=[4, 9, 3, 8, 2, 7])
+                elif node.attr('data_format') == 'NDHWC':
+                    index = graph.make_node(
+                        'Constant',
+                        dtype=dtypes.ONNX.INT32,
+                        value=[3, 8, 2, 7, 1, 6])
+
+                float_paddle_node = graph.make_node(
+                    'ScatterElements',
+                    inputs=[zero_node, index, casted_padding_node])
+                paddle_node = graph.make_node(
+                    'Cast', inputs=[float_paddle_node], to=dtypes.ONNX.INT64)
+                pads_node = paddle_node
+
         value = None
         if node.attr('pad_value') is not None:
             value = node.attr('pad_value')
         elif node.attr('value') is not None:
             value = node.attr('value')
         value_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': value})
+            'Constant',
+            attrs={
+                'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+                'value': value
+            })
 
         graph.make_node(
             'Pad',
@@ -994,10 +1098,8 @@ class Pad():
         x_shape = node.input_shape('X', 0)
         paddings = node.attr('paddings')
         if paddings == []:
-            raise Exception("Tensor input type is not supported, " \
-                            "Please try input List or Int")
+            return None
         onnx_paddings = None
-        # TODO support pads is Variable
         if node.attr('data_format') == 'NCHW':
             onnx_paddings = [
                 0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
