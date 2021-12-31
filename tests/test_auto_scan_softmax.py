@@ -45,7 +45,7 @@ class TestSoftmaxConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=50), min_size=1, max_size=4))
+                    min_value=4, max_value=10), min_size=1, max_size=5))
 
         axis = draw(
             st.integers(
