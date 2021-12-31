@@ -57,7 +57,7 @@ class TestScaleConvert(OPConvertAutoScanTest):
         if draw(st.booleans()):
             scale = paddle.to_tensor(scale)
 
-        bias = draw(st.floats(min_value=10, max_value=100))
+        bias = draw(st.floats(min_value=-20, max_value=20))
         bias_after_scale = draw(st.booleans())
 
         config = {
