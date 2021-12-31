@@ -45,7 +45,9 @@ class TestConcatConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=8), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(
+            st.sampled_from(
+                ["float16", "float32", "float64", "int32", "int64"]))
 
         axis = draw(
             st.integers(
