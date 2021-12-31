@@ -29,7 +29,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.concat([inputs, inputs_])
+        x = paddle.concat([inputs, inputs_], axis=self.config['axis'])
         return x
 
 
@@ -43,9 +43,15 @@ class TestConcatConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
+                    min_value=4, max_value=8), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32"]))
+
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        if draw(st.booleans()):
+            axis = paddle.to_tensor(axis)
 
         config = {
             "op_names": ["concat"],
@@ -53,6 +59,7 @@ class TestConcatConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "axis": axis,
         }
 
         models = Net(config)
