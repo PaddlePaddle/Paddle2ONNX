@@ -230,9 +230,9 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
                          '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
-        if (type(ort_outs) == list and len(ort_outs) == 1):
-            return ort_outs[0]
-        return ort_outs
+        if len(ort_outs) > 1:
+            return ort_outs
+        return ort_outs[0]
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
         """
