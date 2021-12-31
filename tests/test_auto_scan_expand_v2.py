@@ -45,7 +45,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=2, max_size=2))
         input_shape = [3, 10]
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["expand_v2"],
