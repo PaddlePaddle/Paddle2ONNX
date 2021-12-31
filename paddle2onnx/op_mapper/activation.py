@@ -18,6 +18,7 @@ import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
+import paddle
 
 
 @op_mapper(
@@ -73,14 +74,22 @@ class Softplus():
 
 @op_mapper('prelu')
 class PRelu():
-    support_opset_version_range = (9, 13)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
+        x = node.input('X')[0]
+        x_dtype = node.input_dtype('X', 0)
+        if x_dtype == paddle.float64:
+            x = graph.make_node('Cast', inputs=[x], to=dtypes.ONNX.FLOAT)
         slope_shape = node.input_shape('Alpha', 0)
         input_shape = node.input_shape('X', 0)
 
         slope_node = node.input('Alpha')[0]
+        slope_dtype = node.input_dtype('Alpha', 0)
+        if slope_dtype == paddle.float64:
+            slope_node = graph.make_node(
+                'Cast', inputs=[slope_node], to=dtypes.ONNX.FLOAT)
         if len(input_shape) != len(slope_shape):
             assert len(
                 slope_shape) == 1, "Slope shape is not expected for prelu"
@@ -88,20 +97,34 @@ class PRelu():
             axes = [i for i in range(len(input_shape))]
             del axes[1]
             unsqueezed_slope = graph.make_node(
-                'Unsqueeze', inputs=[node.input('Alpha')[0]], axes=axes)
+                'Unsqueeze', inputs=[slope_node], axes=axes)
             slope_node = graph.make_node(
                 'Expand', inputs=[unsqueezed_slope, shape_node])
-        onnx_node = graph.make_node(
-            'PRelu',
-            inputs=[node.input('X')[0], slope_node],
-            outputs=node.output('Out'))
+        if x_dtype == paddle.float64:
+            onnx_node = graph.make_node('PRelu', inputs=[x, slope_node])
+            graph.make_node(
+                'Cast',
+                inputs=[onnx_node],
+                to=dtypes.ONNX.DOUBLE,
+                outputs=node.output('Out'))
+        else:
+            onnx_node = graph.make_node(
+                'PRelu', inputs=[x, slope_node], outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
+        x = node.input('X')[0]
+        x_dtype = node.input_dtype('X', 0)
+        if x_dtype == paddle.float64:
+            x = graph.make_node('Cast', inputs=[x], to=dtypes.ONNX.FLOAT)
         slope_shape = node.input_shape('Alpha', 0)
         input_shape = node.input_shape('X', 0)
 
         slope_node = node.input('Alpha')[0]
+        slope_dtype = node.input_dtype('Alpha', 0)
+        if slope_dtype == paddle.float64:
+            slope_node = graph.make_node(
+                'Cast', inputs=[slope_node], to=dtypes.ONNX.FLOAT)
         if len(input_shape) != len(slope_shape):
             assert len(
                 slope_shape) == 1, "Slope shape is not expected for prelu"
@@ -111,13 +134,19 @@ class PRelu():
             axes = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=value)
             unsqueezed_slope = graph.make_node(
-                'Unsqueeze', inputs=[node.input('Alpha')[0], axes])
+                'Unsqueeze', inputs=[slope_node, axes])
             slope_node = graph.make_node(
                 'Expand', inputs=[unsqueezed_slope, shape_node])
-        onnx_node = graph.make_node(
-            'PRelu',
-            inputs=[node.input('X')[0], slope_node],
-            outputs=node.output('Out'))
+        if x_dtype == paddle.float64:
+            onnx_node = graph.make_node('PRelu', inputs=[x, slope_node])
+            graph.make_node(
+                'Cast',
+                inputs=[onnx_node],
+                to=dtypes.ONNX.DOUBLE,
+                outputs=node.output('Out'))
+        else:
+            onnx_node = graph.make_node(
+                'PRelu', inputs=[x, slope_node], outputs=node.output('Out'))
 
 
 @op_mapper('relu6')
