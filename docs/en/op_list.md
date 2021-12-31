@@ -13,7 +13,7 @@
 | all | 6~12 |
 | atan | 7~12 |
 | any | 6~12 |
-| batch_norm | 1~12 |
+| batch_norm | 9~15 |
 | bicubic_interp_v2 | 9~12 |
 | bilinear_interp | 9~12 |
 | bilinear_interp_v2 | 9~12 |
