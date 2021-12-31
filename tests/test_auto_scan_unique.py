@@ -31,9 +31,9 @@ class Net(BaseNet):
         """
         out = paddle.unique(
             input,
-            return_index=True,
-            return_inverse=False,
-            return_counts=False,
+            return_index=self.config['return_index'],
+            return_inverse=self.config['return_inverse'],
+            return_counts=self.config['return_counts'],
             axis=self.config['axis'],
             # dtype=self.config['xdtype']
         )
