@@ -29,7 +29,9 @@ class Net(BaseNet):
         """
         forward
         """
+
         x = paddle.nn.functional.softmax(inputs, axis=self.config["axis"])
+
         return x
 
 
