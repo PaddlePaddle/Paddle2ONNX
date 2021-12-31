@@ -29,15 +29,15 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.cast(inputs, dtype=self.config["dtype"])
-        x = x.astype("int32")
+        x = paddle.nn.functional.leaky_relu(
+            inputs, negative_slope=self.config["negative_slope"])
         return x
 
 
-class TestCastConvert(OPConvertAutoScanTest):
+class TestLeakyreluConvert(OPConvertAutoScanTest):
     """
-    api: paddle.cast
-    OPset version: 7, 9, 13, 15
+    api: paddle.nn.functional.leaky_relu
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -48,21 +48,16 @@ class TestCastConvert(OPConvertAutoScanTest):
                 min_size=1,
                 max_size=4))
 
-        input_spec = [-1] * len(input_shape)
-
-        dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
-
-        output_dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32"]))
+        negative_slope = draw(st.floats(min_value=0, max_value=1))
 
         config = {
-            "op_names": ["cast"],
+            "op_names": ["leaky_relu"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 13, 15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "dtype": output_dtype,
+            "negative_slope": negative_slope,
         }
 
         models = Net(config)

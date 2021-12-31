@@ -25,18 +25,20 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, x):
         """
         forward
         """
-        x = paddle.nn.functional.hardshrink(
-            inputs, threshold=self.config["threshold"])
+        x = paddle.flatten(
+            x,
+            start_axis=self.config["start_axis"],
+            stop_axis=self.config["stop_axis"])
         return x
 
 
-class TestHardshinkConvert(OPConvertAutoScanTest):
+class TestFlattenConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.hardshrink
+    api: paddle.flatten
     OPset version: 7, 9, 15
     """
 
@@ -44,21 +46,27 @@ class TestHardshinkConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=1, max_value=20), min_size=2, max_size=5))
 
-        threshold = draw(st.floats(min_value=0.1, max_value=1.0))
+        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        start_axis = draw(
+            st.integers(
+                min_value=0, max_value=len(input_shape) // 2))
+
+        stop_axis = draw(
+            st.integers(
+                min_value=len(input_shape) // 2, max_value=len(input_shape) -
+                1))
 
         config = {
-            "op_names": ["hard_shrink"],
+            "op_names": ["flatten_contiguous_range"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "threshold": threshold
+            "start_axis": start_axis,
+            "stop_axis": stop_axis,
         }
 
         models = Net(config)
