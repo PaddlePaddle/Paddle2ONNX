@@ -691,7 +691,17 @@ class InstanceNorm():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         onnx_attr = {'epsilon': node.attr('epsilon'), }
-        inputs = node.input('X') + node.input('Scale') + node.input('Bias')
+        num_groups = node.block.vars[node.input('X')[0]].shape[1]
+        if len(node.input('Scale')) == 0 and len(node.input('Bias')) == 0:
+            scale_ = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0] * num_groups)
+            bias_ = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.0] * num_groups)
+        else:
+            scale_ = node.input('Scale')[0]
+            bias_ = node.input('Bias')[0]
+
+        inputs = node.input('X') + [scale_] + [bias_]
         onnx_node = graph.make_node(
             'InstanceNormalization',
             inputs=inputs,
