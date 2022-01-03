@@ -172,6 +172,8 @@ class MultiClassNMS():
             nonzero = graph.make_node('NonZero', inputs=[filter_index])
 
         class_id = graph.make_node('Gather', inputs=[class_id, nonzero], axis=0)
+        ckass_id = graph.make_node(
+            'Cast', inputs=[class_id], to=dtypes.ONNX.INT64)
 
         bbox_id = graph.make_node('Gather', inputs=[bbox_id, nonzero], axis=0)
 
