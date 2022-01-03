@@ -131,9 +131,7 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=5,
-                max_size=5))
+                    min_value=4, max_value=10), min_size=5, max_size=5))
 
         dtype = "float32"
 
