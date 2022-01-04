@@ -444,10 +444,10 @@ class ElementWiseFloorDiv():
 
 @op_mapper('pow')
 class Pow():
-    support_opset_version_range = (8, 15)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_8(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         x = node.input('X', 0)
         x_dtype = node.input_dtype('X', 0)
         factor = node.attr('factor')
@@ -467,11 +467,8 @@ class Pow():
                 dims=[1],
                 dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
                 value=factor)
-        x_shape = graph.make_node('Shape', inputs=[x])
-        factor_broadcast = graph.make_node(
-            'Expand', inputs=[factor_node, x_shape])
         if x_dtype == paddle.int32 or x_dtype == paddle.int64:
-            onnx_node = graph.make_node('Pow', inputs=[x, factor_broadcast])
+            onnx_node = graph.make_node('Pow', inputs=[x, factor_node])
             graph.make_node(
                 'Cast',
                 inputs=[onnx_node],
@@ -479,7 +476,7 @@ class Pow():
                 outputs=node.output('Out'))
         else:
             graph.make_node(
-                'Pow', inputs=[x, factor_broadcast], outputs=node.output('Out'))
+                'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
@@ -491,11 +488,8 @@ class Pow():
             dims=[1],
             dtype=dtypes.ONNX.FLOAT,
             value=factor)
-        x_shape = graph.make_node('Shape', inputs=[x])
-        factor_broadcast = graph.make_node(
-            'Expand', inputs=[factor_node, x_shape])
         onnx_node = graph.make_node(
-            'Pow', inputs=[x, factor_broadcast], outputs=node.output('Out'))
+            'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
 
 
 @op_mapper('square')

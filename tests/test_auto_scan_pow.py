@@ -36,7 +36,7 @@ class Net(BaseNet):
 class TestPowConvert(OPConvertAutoScanTest):
     """
     api: paddle.pow
-    OPset version: 8, 11, 15
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -54,7 +54,7 @@ class TestPowConvert(OPConvertAutoScanTest):
             "op_names": ["pow"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [8, 11, 15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "y": y
         }
