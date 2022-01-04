@@ -29,13 +29,15 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.log_sigmoid(inputs)
+
+        x = paddle.nn.functional.softmax(inputs, axis=self.config["axis"])
+
         return x
 
 
-class TestLogsigmoidConvert(OPConvertAutoScanTest):
+class TestSoftmaxConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.log_sigmoid
+    api: paddle.nn.functional.softmax
     OPset version: 7, 9, 15
     """
 
@@ -43,19 +45,21 @@ class TestLogsigmoidConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
-        input_spec = [-1] * len(input_shape)
+                    min_value=4, max_value=10), min_size=1, max_size=5))
+
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["logsigmoid"],
+            "op_names": ["softmax"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [input_spec],
+            "input_spec_shape": [],
+            "axis": axis
         }
 
         models = Net(config)
