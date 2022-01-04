@@ -53,7 +53,7 @@ class TestScaleConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
-        scale = draw(st.floats(min_value=0.0, max_value=1.0))
+        scale = draw(st.floats(min_value=-20, max_value=20))
         if draw(st.booleans()):
             scale = paddle.to_tensor(scale)
 
