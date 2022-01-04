@@ -22,18 +22,24 @@ from paddle import ParamAttr
 
 
 class Net(BaseNet):
+    """
+    simple Net
+    """
+
     def __init__(self, config=None):
         super(Net, self).__init__(config)
-        param_shape = [1]
-        self._dtype = 'float32'
-        self._mean = self.create_parameter(
+        param_shape = [self.config['input_shape'][1]]
+        self.dtype = self.config['dtype']
+
+        self.mean = self.create_parameter(
             dtype=self._dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(0.0),
                 trainable=False,
                 do_model_average=True),
             shape=param_shape)
-        self._variance = self.create_parameter(
+
+        self.variance = self.create_parameter(
             dtype=self._dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(1.0),
@@ -49,26 +55,26 @@ class Net(BaseNet):
         self.bias = self.create_parameter(
             shape=param_shape, dtype=self._dtype, is_bias=True)
 
-    """
-    simple Net
-    """
-
     def forward(self, inputs):
         """
         forward
         """
         x = paddle.nn.functional.batch_norm(
             inputs,
-            self._mean,
-            self._variance,
+            running_mean=self.mean,
+            running_var=self.variance,
             weight=self.weight,
-            bias=self.bias, )
+            bias=self.bias,
+            momentum=self.config['momentum'],
+            epsilon=self.config['epsilon'],
+            data_format="NCHW",
+            use_global_stats=None)
         return x
 
 
-class TestInstanceNormConvert(OPConvertAutoScanTest):
+class TestBatchNormConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.instance_norm
+    api: paddle.nn.functional.batch_norm
     OPset version: 7, 9, 15
     """
 
@@ -76,23 +82,24 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
-        input_shape = [3, 1, 10, 10]
+                    min_value=4, max_value=8), min_size=3, max_size=5))
+
         input_spec = [-1] * len(input_shape)
 
         dtype = draw(st.sampled_from(["float32"]))
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
+        momentum = draw(st.floats(min_value=0.1, max_value=0.9))
 
         config = {
             "op_names": ["batch_norm"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [9, 11, 15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "epsilon": epsilon,
-            "momentum": 0.9,
+            "momentum": momentum,
+            "input_shape": input_shape,
+            "dtype": dtype,
         }
 
         models = Net(config)

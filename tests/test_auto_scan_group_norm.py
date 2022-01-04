@@ -50,7 +50,7 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
+                    min_value=4, max_value=10), min_size=4, max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
 
@@ -60,7 +60,7 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
             "op_names": ["group_norm_0"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "epsilon": epsilon,
         }

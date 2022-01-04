@@ -486,10 +486,10 @@ class LogSoftmax():
 
 @op_mapper('layer_norm')
 class LayerNorm():
-    support_opset_version_range = (9, 15)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         ipt = node.input('X', 0)
         ipt_dims = len(node.input_shape('X', 0))
         normalized_shape = node.attr('begin_norm_axis')
@@ -550,7 +550,7 @@ class LayerNorm():
 
 @op_mapper('batch_norm')
 class BatchNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def make_attrs_and_inputs(cls, graph, node, **kw):
@@ -574,7 +574,7 @@ class BatchNorm():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
-        onnx_attr['spatial'] = 0
+        onnx_attr['spatial'] = 1
         onnx_node = graph.make_node(
             'BatchNormalization',
             inputs=inputs,
@@ -582,9 +582,9 @@ class BatchNorm():
             **onnx_attr)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
-        onnx_attr['is_test'] = 1
+        onnx_attr['is_test'] = 0
         onnx_node = graph.make_node(
             'BatchNormalization',
             inputs=inputs,
@@ -594,7 +594,7 @@ class BatchNorm():
 
 @op_mapper('group_norm')
 class GroupNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -641,7 +641,7 @@ class GroupNorm():
                 outputs=node.output('Y'))
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         num_groups = node.attr('groups')
         epsilon = node.attr('epsilon')
         ipt = node.input('X')[0]
@@ -650,13 +650,16 @@ class GroupNorm():
         assert len(
             ipt_shape) == 4, "Only support 4D-Tensor as input for GroupNorm"
 
+        dtype = node.block.vars[node.input('X', 0)].dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+
         shape = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[0, num_groups, -1])
         reshape_input = graph.make_node('Reshape', inputs=[ipt, shape])
         scale_ = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0] * num_groups)
+            'Constant', dtype=dtype, value=[1.0] * num_groups)
         bias_ = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.0] * num_groups)
+            'Constant', dtype=dtype, value=[0.0] * num_groups)
         reshaped_output = graph.make_node(
             'InstanceNormalization',
             inputs=[reshape_input, scale_, bias_],
@@ -686,17 +689,21 @@ class GroupNorm():
 
 @op_mapper('instance_norm')
 class InstanceNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         onnx_attr = {'epsilon': node.attr('epsilon'), }
         num_groups = node.block.vars[node.input('X')[0]].shape[1]
+
+        dtype = node.block.vars[node.input('X', 0)].dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+
         if len(node.input('Scale')) == 0 and len(node.input('Bias')) == 0:
             scale_ = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0] * num_groups)
+                'Constant', dtype=dtype, value=[1.0] * num_groups)
             bias_ = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.0] * num_groups)
+                'Constant', dtype=dtype, value=[0.0] * num_groups)
         else:
             scale_ = node.input('Scale')[0]
             bias_ = node.input('Bias')[0]
