@@ -36,7 +36,7 @@ class Net(BaseNet):
 class TestPreluConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.prelu
-    OPset version: 9, 15
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -51,7 +51,7 @@ class TestPreluConvert(OPConvertAutoScanTest):
             "op_names": ["prelu"],
             "test_data_shapes": [input_shape, [1]],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [9, 15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
         }
 
