@@ -912,6 +912,64 @@ class Cast():
             to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('out_dtype')])
 
 
+@op_mapper('linspace')
+class Linspace():
+    support_opset_version_range = (9, 15)
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        start = node.input('Start', 0)
+        stop = node.input('Stop', 0)
+        num = node.input('Num', 0)
+        dtype = node.attr('dtype')
+
+        start = graph.make_node('Cast', inputs=[start], to=dtypes.ONNX.FLOAT)
+        stop = graph.make_node('Cast', inputs=[stop], to=dtypes.ONNX.FLOAT)
+
+        sub_a_node = graph.make_node('Sub', inputs=[stop, start])
+
+        one_node = graph.make_node(
+            'Constant',
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('Num', 0)],
+            value=[1])
+
+        sub_b_node = graph.make_node('Sub', inputs=[num, one_node])
+
+        sub_b_float_node = graph.make_node(
+            'Cast', inputs=[sub_b_node], to=dtypes.ONNX.FLOAT)
+
+        step = graph.make_node('Div', inputs=[sub_a_node, sub_b_float_node])
+
+        range_tensor = graph.make_node(
+            'Cast', inputs=[num], to=dtypes.ONNX.INT64)
+
+        one_like_node = graph.make_node(
+            'ConstantOfShape',
+            inputs=[range_tensor],
+            dtype=dtypes.ONNX.FLOAT,
+            value=[1])
+
+        none_zero_node = graph.make_node('NonZero', inputs=[one_like_node])
+
+        trans_none_zero_node = graph.make_node(
+            'Transpose', inputs=[none_zero_node], perm=[1, 0])
+
+        trans_squeeze = mapper_helper.squeeze_helper(graph,
+                                                     trans_none_zero_node, [1])
+
+        trans_squeeze = graph.make_node(
+            'Cast', inputs=[trans_squeeze], to=dtypes.ONNX.FLOAT)
+
+        mul_node = graph.make_node('Mul', inputs=[trans_squeeze, step])
+
+        add_node = graph.make_node('Add', inputs=[mul_node, start])
+        graph.make_node(
+            'Cast',
+            inputs=[add_node],
+            outputs=node.output('Out'),
+            to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('Start', 0)])
+
+
 @op_mapper('clip')
 class Clip():
     support_opset_version_range = (7, 15)
