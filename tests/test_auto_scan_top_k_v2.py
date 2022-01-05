@@ -41,7 +41,7 @@ class Net(BaseNet):
 class TestTopkv2Convert(OPConvertAutoScanTest):
     """
     api: paddle.topk
-    OPset version: 7, 9, 15
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
@@ -71,7 +71,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
             t = 1
             for i in range(len(input_shape)):
                 t = t * input_shape[i]
-            input_data = np.array(random.sample(range(-500, 500), t))
+            input_data = np.array(random.sample(range(-5000, 5000), t))
             input_data = input_data.reshape(input_shape)
             return input_data
 
@@ -79,7 +79,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
             "op_names": ["top_k_v2"],
             "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
-            "opset_version": [11],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
             "axis": axis,
             "largest": largest,

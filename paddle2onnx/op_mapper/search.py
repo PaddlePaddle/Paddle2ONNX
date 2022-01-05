@@ -58,8 +58,8 @@ class TopKV2():
             k_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                    'value': [k]})
-            largest = 1 if node.attr('largest') else 0
-            sorted = 1 if node.attr('sorted') else 0
+            largest = node.attr('largest')
+            sorted = node.attr('sorted')
             axis = node.attr('axis')
             graph.make_node(
                 'TopK',

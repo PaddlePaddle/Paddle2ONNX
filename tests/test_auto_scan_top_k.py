@@ -48,7 +48,7 @@ class TestTopkConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64"]))
         k = 1
         config = {
-            "op_names": ["top_k_0"],
+            "op_names": ["top_k"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [11, 15],
