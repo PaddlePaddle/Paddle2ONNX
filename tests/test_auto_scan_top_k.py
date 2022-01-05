@@ -26,11 +26,13 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, input):
+    def forward(self, input, k):
         """
         forward
         """
-        x = paddle.fluid.layers.topk(input, k=self.config['k'])
+        if not self.config['isTensor']:
+            k = k.numpy()
+        x = paddle.fluid.layers.topk(input, k=k)
         return x
 
 
@@ -48,13 +50,19 @@ class TestTopkConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         k = random.randint(1, min(input_shape))
+        isTensor = draw(st.booleans())
+
+        def generator_k():
+            input_data = np.array([k])
+            return input_data
+
         config = {
             "op_names": ["top_k"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
+            "test_data_shapes": [input_shape, generator_k],
+            "test_data_types": [[dtype], ["int32"]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
-            "k": k,
+            'isTensor': isTensor
         }
 
         models = Net(config)

@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -25,13 +26,15 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, input):
+    def forward(self, input, k):
         """
         forward
         """
+        if not self.config['isTensor']:
+            k = k.numpy()
         x = paddle.topk(
             input,
-            k=self.config['k'],
+            k=k,
             axis=self.config['axis'],
             largest=self.config['largest'],
             sorted=self.config['sorted'])
@@ -48,7 +51,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=4))
+                    min_value=2, max_value=5), min_size=1, max_size=5))
 
         axis = None
         if draw(st.booleans()):
@@ -60,14 +63,9 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         largest = draw(st.booleans())
-        sortedVal = draw(st.booleans())
-        k = 1
-        if draw(st.booleans()):
-            k = paddle.to_tensor(k)
+        sortedVal = True  # has a diff when sortedVal is False
 
         def generator_data():
-            import random
-            import numpy as np
             t = 1
             for i in range(len(input_shape)):
                 t = t * input_shape[i]
@@ -75,16 +73,23 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
             input_data = input_data.reshape(input_shape)
             return input_data
 
+        k = random.randint(1, min(input_shape))
+        isTensor = draw(st.booleans())
+
+        def generator_k():
+            input_data = np.array([k])
+            return input_data
+
         config = {
             "op_names": ["top_k_v2"],
-            "test_data_shapes": [generator_data],
-            "test_data_types": [[dtype]],
+            "test_data_shapes": [generator_data, generator_k],
+            "test_data_types": [[dtype], ["int32"]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
             "axis": axis,
             "largest": largest,
             'sorted': sortedVal,
-            'k': k
+            'isTensor': isTensor
         }
 
         models = Net(config)

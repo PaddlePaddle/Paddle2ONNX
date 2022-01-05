@@ -58,16 +58,13 @@ class TopKV2():
             k_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                    'value': [k]})
-            largest = node.attr('largest')
-            sorted = node.attr('sorted')
-            axis = node.attr('axis')
             graph.make_node(
                 'TopK',
                 inputs=[node.input('X', 0), k_node],
                 outputs=[node.output('Out', 0), node.output('Indices', 0)],
-                largest=largest,
-                sorted=sorted,
-                axis=axis)
+                largest=node.attr('largest'),
+                sorted=node.attr('sorted'),
+                axis=node.attr('axis'))
 
 
 @op_mapper('top_k')
