@@ -127,9 +127,12 @@ class ArgSort():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         k = node.input_var('X', 0).shape[node.attr('axis')]
-
-        if not node.attr('descending'):
-            raise Exception("descending=False only support opset version>=11.")
+        x_node_dtype = node.input_dtype('X', 0)
+        dtype = dtypes.DTYPE_PADDLE_STR_MAP[x_node_dtype]
+        if not node.attr('descending') or dtype in ["int32", "int64"]:
+            raise Exception(
+                "descending=False or dtype is int32 or int64 only support opset version>=11."
+            )
         else:
             graph.make_node(
                 'TopK',

@@ -40,14 +40,14 @@ class Net(BaseNet):
 class TestArgsortConvert(OPConvertAutoScanTest):
     """
     api: paddle.argsort
-    OPset version: 7, 9, 15
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=4))
+                    min_value=2, max_value=5), min_size=2, max_size=5))
 
         axis = draw(
             st.integers(
@@ -62,7 +62,7 @@ class TestArgsortConvert(OPConvertAutoScanTest):
             t = 1
             for i in range(len(input_shape)):
                 t = t * input_shape[i]
-            input_data = np.array(random.sample(range(-500, 500), t))
+            input_data = np.array(random.sample(range(-5000, 5000), t))
             input_data = input_data.reshape(input_shape)
             return input_data
 
