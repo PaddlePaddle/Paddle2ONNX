@@ -43,16 +43,12 @@ class TestBmmConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=3,
-                max_size=3))
+                    min_value=20, max_value=40), min_size=3, max_size=3))
 
         input2_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=3,
-                max_size=3))
+                    min_value=20, max_value=40), min_size=3, max_size=3))
 
         input2_shape[0] = input1_shape[0]
         input2_shape[1] = input1_shape[2]
@@ -63,7 +59,7 @@ class TestBmmConvert(OPConvertAutoScanTest):
             "op_names": ["bmm"],
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [15],
             "input_spec_shape": []
         }
 

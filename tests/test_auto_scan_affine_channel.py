@@ -44,9 +44,7 @@ class TestAffinechannelConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=20, max_value=40), min_size=4, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 
@@ -59,7 +57,7 @@ class TestAffinechannelConvert(OPConvertAutoScanTest):
             "op_names": ["affine_channel"],
             "test_data_shapes": [input_shape, scale_shape, bias_shape],
             "test_data_types": [[dtype], [dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [9, 15],
             "input_spec_shape": []
         }
 
