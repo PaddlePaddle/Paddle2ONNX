@@ -177,7 +177,7 @@ class MultiClassNMS():
 
         bbox_id = graph.make_node('Gather', inputs=[bbox_id, nonzero], axis=0)
         bbox_id = graph.make_node(
-            'Cast', inputs=[bbox_id], to_dtypes.ONNX.INT64)
+            'Cast', inputs=[bbox_id], to=dtypes.ONNX.INT64)
 
         # get the shape of scores
         shape_scores = graph.make_node('Shape', inputs=scores)
