@@ -215,4 +215,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
                 logging.info("Now Run >>> dtype: {}, op_name: {}".format(
                     input_type, op_names[i]))
                 obj.run()
+            if len(input_type_list) == 0:
+                obj.run()
         logging.info("Run Successfully!")
