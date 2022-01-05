@@ -468,10 +468,10 @@ class Pow():
                 dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
                 value=factor)
         if x_dtype == paddle.int32 or x_dtype == paddle.int64:
-            onnx_node = graph.make_node('Pow', inputs=[x, factor_node])
+            pow_node = graph.make_node('Pow', inputs=[x, factor_node])
             graph.make_node(
                 'Cast',
-                inputs=[onnx_node],
+                inputs=[pow_node],
                 to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
                 outputs=node.output('Out'))
         else:
@@ -488,7 +488,7 @@ class Pow():
             dims=[1],
             dtype=dtypes.ONNX.FLOAT,
             value=factor)
-        onnx_node = graph.make_node(
+        pow_node = graph.make_node(
             'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
 
 

@@ -89,14 +89,14 @@ class PRelu():
             slope_node = graph.make_node(
                 'Cast', inputs=[slope_node], to=dtypes.ONNX.FLOAT)
         if x_dtype == paddle.float64:
-            onnx_node = graph.make_node('PRelu', inputs=[x, slope_node])
+            prelu_node = graph.make_node('PRelu', inputs=[x, slope_node])
             graph.make_node(
                 'Cast',
-                inputs=[onnx_node],
+                inputs=[prelu_node],
                 to=dtypes.ONNX.DOUBLE,
                 outputs=node.output('Out'))
         else:
-            onnx_node = graph.make_node(
+            prelu_node = graph.make_node(
                 'PRelu', inputs=[x, slope_node], outputs=node.output('Out'))
 
 
