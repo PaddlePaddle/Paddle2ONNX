@@ -52,6 +52,10 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 
     paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
+If you need to configure the input shape, use the following command:
+
+    paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True  --input_shape_dict "{'x': [1, 3, 224, 224]}"
+
 #### Parameters
 | Parameters | Description |
 |----------|--------------|
@@ -62,6 +66,7 @@ Combined PaddlePaddle model(parameters saved in one binary file)
 |--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
 |--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|
 |--enable_paddle_fallback| **[Optional]**  Whether custom op is exported using paddle_fallback mode. Default value is False|
+|--input_shape_dict| **[Optional]**  Configure the input shape, the default is empty|
 |--version |**[Optional]** check the version of paddle2onnx |
 
 - Two types of PaddlePaddle models
