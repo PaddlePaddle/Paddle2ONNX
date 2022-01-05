@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -36,17 +37,17 @@ class Net(BaseNet):
 class TestTopkConvert(OPConvertAutoScanTest):
     """
     api: paddle.fluid.layers.topk
-    OPset version: 7, 9, 15
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=4))
+                    min_value=4, max_value=10), min_size=1, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
-        k = 1
+        k = random.randint(1, min(input_shape))
         config = {
             "op_names": ["top_k"],
             "test_data_shapes": [input_shape],
