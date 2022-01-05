@@ -21,7 +21,7 @@ from paddle2onnx.op_mapper import OpMapper as op_mapper
 
 @op_mapper('where_index')
 class WhereIndex():
-    support_opset_version_range = (9, 13)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):

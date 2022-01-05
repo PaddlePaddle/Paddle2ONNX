@@ -43,11 +43,9 @@ class TestWhereConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=1, max_size=4))
 
-        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["where"],

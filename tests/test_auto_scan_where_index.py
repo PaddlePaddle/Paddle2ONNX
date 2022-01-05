@@ -38,18 +38,16 @@ class Net(BaseNet):
 class TestWhereIndexConvert(OPConvertAutoScanTest):
     """
     api: paddle.fluid.layers.where
-    OPset version: 7, 9, 15
+    OPset version: 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=2, max_size=4))
 
-        dtype = draw(st.sampled_from(["int32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["where_index"],

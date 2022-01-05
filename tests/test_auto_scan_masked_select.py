@@ -36,7 +36,7 @@ class Net(BaseNet):
 class TestMaskedselectConvert(OPConvertAutoScanTest):
     """
     api: paddle.masked_select
-    OPset version: 7, 9, 15
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
@@ -45,7 +45,7 @@ class TestMaskedselectConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=20), min_size=1, max_size=4))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["masked_select"],
