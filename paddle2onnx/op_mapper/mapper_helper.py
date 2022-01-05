@@ -63,6 +63,19 @@ def squeeze_helper(graph, input, axes):
         return squeeze_node
 
 
+def split_helper(graph, inputs, outputs, axis, split):
+    if graph.opset_version < 13:
+        split_node = graph.make_node(
+            "Split", inputs=inputs, outputs=outputs, axis=axis, split=split)
+        return split_node
+    else:
+        split_const = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=split)
+        split_node = graph.make_node(
+            "Split", inputs=inputs + [split_const], outputs=outputs, axis=axis)
+        return split_node
+
+
 def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     constant = graph.make_node(
         'Constant',

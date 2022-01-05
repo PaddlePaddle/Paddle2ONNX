@@ -36,6 +36,7 @@ class YOLOBox():
 
     @classmethod
     def front(cls, graph, node, **kw):
+        print("get yolo_box op")
         model_name = node.output('Boxes', 0)
         input_shape = node.input_shape('X', 0)
         mapper_helper.is_static_shape(input_shape)
@@ -78,8 +79,9 @@ class YOLOBox():
             range_y.append(j)
 
         node_range_x = graph.make_node(
-            'Constant', attrs={
-                'dtype': dtypes.ONNX.FLOAT,
+            'Constant',
+            attrs={
+                'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
                 'value': range_x,
             })
 
@@ -87,7 +89,7 @@ class YOLOBox():
             'Constant',
             inputs=[],
             attrs={
-                'dtype': dtypes.ONNX.FLOAT,
+                'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
                 'value': range_y,
             })
 
@@ -122,16 +124,11 @@ class YOLOBox():
         node_box_h = model_name + "@box_h"
         node_conf = model_name + "@conf"
         node_prob = model_name + "@prob"
-
-        node_split_input = graph.make_node(
-            "Split",
-            inputs=[node_x_transpose],
-            outputs=[
-                node_box_x, node_box_y, node_box_w, node_box_h, node_conf,
-                node_prob
-            ],
-            axis=-1,
-            split=[1, 1, 1, 1, 1, class_num])
+        output = [
+            node_box_x, node_box_y, node_box_w, node_box_h, node_conf, node_prob
+        ]
+        node_split_input = mapper_helper.split_helper(
+            graph, [node_x_transpose], output, -1, [1, 1, 1, 1, 1, class_num])
 
         node_box_x_sigmoid = graph.make_node("Sigmoid", inputs=[node_box_x])
 
@@ -141,13 +138,19 @@ class YOLOBox():
             bias_x_y = -0.5 * (scale_x_y - 1.0)
             scale_x_y_node = graph.make_node(
                 'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': scale_x_y})
+                attrs={
+                    'dtype':
+                    dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+                    'value': scale_x_y
+                })
 
             bias_x_y_node = graph.make_node(
                 'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': bias_x_y})
+                attrs={
+                    'dtype':
+                    dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+                    'value': bias_x_y
+                })
             node_box_x_sigmoid = graph.make_node(
                 "Mul", inputs=[node_box_x_sigmoid, scale_x_y_node])
             node_box_x_sigmoid = graph.make_node(
@@ -156,11 +159,11 @@ class YOLOBox():
                 "Mul", inputs=[node_box_y_sigmoid, scale_x_y_node])
             node_box_y_sigmoid = graph.make_node(
                 "Add", inputs=[node_box_y_sigmoid, bias_x_y_node])
-        node_box_x_squeeze = graph.make_node(
-            'Squeeze', inputs=[node_box_x_sigmoid], axes=[4])
 
-        node_box_y_squeeze = graph.make_node(
-            'Squeeze', inputs=[node_box_y_sigmoid], axes=[4])
+        node_box_x_squeeze = mapper_helper.squeeze_helper(
+            graph, node_box_x_sigmoid, [4])
+        node_box_y_squeeze = mapper_helper.squeeze_helper(
+            graph, node_box_y_sigmoid, [4])
 
         node_box_x_add_grid = graph.make_node(
             "Add", inputs=[node_grid_x, node_box_x_squeeze])
@@ -171,11 +174,13 @@ class YOLOBox():
         node_input_h = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=dtypes.ONNX.FLOAT,
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
             value=[input_height])
 
         node_input_w = graph.make_node(
-            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT,
+            'Constant',
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
             value=[input_width])
 
         node_box_x_encode = graph.make_node(
@@ -185,7 +190,10 @@ class YOLOBox():
             'Div', inputs=[node_box_y_add_grid, node_input_h])
 
         node_anchor_tensor = graph.make_node(
-            "Constant", inputs=[], dtype=dtypes.ONNX.FLOAT, value=anchors)
+            "Constant",
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=anchors)
 
         anchor_shape = [int(num_anchors), 2]
         node_anchor_shape = graph.make_node(
@@ -195,7 +203,10 @@ class YOLOBox():
             "Reshape", inputs=[node_anchor_tensor, node_anchor_shape])
 
         node_input_size = graph.make_node(
-            "Constant", inputs=[], dtype=dtypes.ONNX.FLOAT, value=[input_size])
+            "Constant",
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=[input_size])
 
         node_anchors_div_input_size = graph.make_node(
             "Div", inputs=[node_anchor_tensor_reshape, node_input_size])
@@ -203,12 +214,9 @@ class YOLOBox():
         node_anchor_w = model_name + "@anchor_w"
         node_anchor_h = model_name + "@anchor_h"
 
-        node_anchor_split = graph.make_node(
-            'Split',
-            inputs=[node_anchors_div_input_size],
-            outputs=[node_anchor_w, node_anchor_h],
-            axis=1,
-            split=[1, 1])
+        output = [node_anchor_w, node_anchor_h]
+        node_anchor_split = mapper_helper.split_helper(
+            graph, [node_anchors_div_input_size], output, 1, [1, 1])
 
         new_anchor_shape = [1, int(num_anchors), 1, 1]
         node_new_anchor_shape = graph.make_node(
@@ -223,11 +231,10 @@ class YOLOBox():
         node_anchor_h_reshape = graph.make_node(
             'Reshape', inputs=[node_anchor_h, node_new_anchor_shape])
 
-        node_box_w_squeeze = graph.make_node(
-            'Squeeze', inputs=[node_box_w], axes=[4])
-
-        node_box_h_squeeze = graph.make_node(
-            'Squeeze', inputs=[node_box_h], axes=[4])
+        node_box_w_squeeze = mapper_helper.squeeze_helper(graph, node_box_w,
+                                                          [4])
+        node_box_h_squeeze = mapper_helper.squeeze_helper(graph, node_box_h,
+                                                          [4])
 
         node_box_w_exp = graph.make_node("Exp", inputs=[node_box_w_squeeze])
         node_box_h_exp = graph.make_node("Exp", inputs=[node_box_h_squeeze])
@@ -243,7 +250,7 @@ class YOLOBox():
         node_conf_thresh = graph.make_node(
             'Constant',
             inputs=[],
-            dtype=dtypes.ONNX.FLOAT,
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
             value=conf_thresh_mat)
 
         conf_shape = [1, int(num_anchors), input_height, input_width, 1]
@@ -256,31 +263,27 @@ class YOLOBox():
         node_conf_sub = graph.make_node(
             'Sub', inputs=[node_conf_sigmoid, node_conf_thresh_reshape])
 
-        if (opset_version >= 11):
-            min_const = graph.make_node(
-                'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=0.0)
-
-            max_const = graph.make_node(
-                'Constant',
-                inputs=[],
-                dtype=dtypes.ONNX.FLOAT,
-                value=MAX_FLOAT32)
-
-            node_conf_clip = graph.make_node(
-                'Clip', inputs=[node_conf_sub, min_const, max_const])
-        else:
-            node_conf_clip = graph.make_node(
-                'Clip', inputs=[node_conf_sub], min=0.0, max=float(MAX_FLOAT32))
+        node_conf_clip = mapper_helper.clip_helper(
+            graph,
+            node_conf_sub,
+            float(MAX_FLOAT32),
+            0.0,
+            x_dtype=node.input_dtype('X', 0))
 
         zeros = [0]
         node_zeros = graph.make_node(
-            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=zeros)
+            'Constant',
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=zeros)
 
         node_conf_clip_bool = graph.make_node(
             'Greater', inputs=[node_conf_clip, node_zeros])
 
         node_conf_clip_cast = graph.make_node(
-            'Cast', inputs=[node_conf_clip_bool], to=1)
+            'Cast',
+            inputs=[node_conf_clip_bool],
+            to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
 
         node_conf_set_zero = graph.make_node(
             'Mul', inputs=[node_conf_sigmoid, node_conf_clip_cast])
@@ -322,7 +325,10 @@ class YOLOBox():
                    node_box_w_new_shape, node_box_h_new_shape],
             axis=4)
 
-        node_conf_cast = graph.make_node('Cast', inputs=[node_conf_bool], to=1)
+        node_conf_cast = graph.make_node(
+            'Cast',
+            inputs=[node_conf_bool],
+            to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
 
         node_pred_box_mul_conf = graph.make_node(
             'Mul', inputs=[node_pred_box, node_conf_cast])
@@ -349,7 +355,10 @@ class YOLOBox():
             axis=2)
 
         node_number_two = graph.make_node(
-            "Constant", inputs=[], dtype=dtypes.ONNX.FLOAT, value=[2])
+            "Constant",
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=[2])
 
         node_half_w = graph.make_node(
             "Div", inputs=[node_pred_box_w, node_number_two])
@@ -369,23 +378,24 @@ class YOLOBox():
         node_pred_box_y2 = graph.make_node(
             'Add', inputs=[node_pred_box_y, node_half_h])
 
-        node_sqeeze_image_size = graph.make_node(
-            "Squeeze", inputs=image_size, axes=[0])
+        node_sqeeze_image_size = mapper_helper.squeeze_helper(
+            graph, image_size[0], [0])
 
         node_img_height = model_name + "@img_height"
         node_img_width = model_name + "@img_width"
-        node_image_size_split = graph.make_node(
-            "Split",
-            inputs=[node_sqeeze_image_size],
-            outputs=[node_img_height, node_img_width],
-            axis=-1,
-            split=[1, 1])
+        node_image_size_split = mapper_helper.split_helper(
+            graph, [node_sqeeze_image_size], [node_img_height, node_img_width],
+            -1, [1, 1])
 
         node_img_width_cast = graph.make_node(
-            'Cast', inputs=[node_img_width], to=1)
+            'Cast',
+            inputs=[node_img_width],
+            to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
 
         node_img_height_cast = graph.make_node(
-            'Cast', inputs=[node_img_height], to=1)
+            'Cast',
+            inputs=[node_img_height],
+            to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
 
         cls.node_pred_box_x1_decode = graph.make_node(
             'Mul', inputs=[node_pred_box_x1, node_img_width_cast])
@@ -400,7 +410,10 @@ class YOLOBox():
             'Mul', inputs=[node_pred_box_y2, node_img_height_cast])
 
         node_number_one = graph.make_node(
-            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=[1])
+            'Constant',
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=[1])
 
         node_new_img_height = graph.make_node(
             'Sub', inputs=[node_img_height_cast, node_number_one])
@@ -471,10 +484,16 @@ class YOLOBox():
     def opset_11(cls, graph, node, **kw):
         cls.front(graph, node, **kw)
         min_const = graph.make_node(
-            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=0.0)
+            'Constant',
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=0.0)
 
         max_const = graph.make_node(
-            'Constant', inputs=[], dtype=dtypes.ONNX.FLOAT, value=MAX_FLOAT32)
+            'Constant',
+            inputs=[],
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+            value=MAX_FLOAT32)
 
         node_pred_box_x1_clip = graph.make_node(
             'Clip', inputs=[cls.node_pred_box_x1_decode, min_const, max_const])
