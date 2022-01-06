@@ -464,10 +464,42 @@ class ElementWiseFloorDiv():
 
 @op_mapper('pow')
 class Pow():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_8(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        x_dtype = node.input_dtype('X', 0)
+        factor = node.attr('factor')
+        # Pow-7 Only support input type as float and double
+        if x_dtype == paddle.int32 or x_dtype == paddle.int64:
+            x = graph.make_node('Cast', inputs=[x], to=dtypes.ONNX.FLOAT)
+            factor_node = graph.make_node(
+                'Constant',
+                inputs=[],
+                dims=[1],
+                dtype=dtypes.ONNX.FLOAT,
+                value=factor)
+        else:
+            factor_node = graph.make_node(
+                'Constant',
+                inputs=[],
+                dims=[1],
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=factor)
+        if x_dtype == paddle.int32 or x_dtype == paddle.int64:
+            pow_node = graph.make_node('Pow', inputs=[x, factor_node])
+            graph.make_node(
+                'Cast',
+                inputs=[pow_node],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_12(cls, graph, node, **kw):
         x = node.input('X', 0)
         factor = node.attr('factor')
         factor_node = graph.make_node(
@@ -476,11 +508,8 @@ class Pow():
             dims=[1],
             dtype=dtypes.ONNX.FLOAT,
             value=factor)
-        x_shape = graph.make_node('Shape', inputs=[x])
-        factor_broadcast = graph.make_node(
-            'Expand', inputs=[factor_node, x_shape])
-        onnx_node = graph.make_node(
-            'Pow', inputs=[x, factor_broadcast], outputs=node.output('Out'))
+        pow_node = graph.make_node(
+            'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
 
 
 @op_mapper('square')
