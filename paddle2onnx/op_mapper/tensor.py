@@ -1212,6 +1212,23 @@ class UniformRandom():
             shape=shape)
 
 
+@op_mapper('gaussian_random')
+class GaussianRandom():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        shape = node.output_shape('Out', 0)
+        graph.make_node(
+            'RandomNormal',
+            outputs=node.output('Out'),
+            mean=node.attr('mean'),
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+            seed=float(node.attr('seed')),
+            shape=shape
+        )
+
+
 @op_mapper(
     [
         'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
