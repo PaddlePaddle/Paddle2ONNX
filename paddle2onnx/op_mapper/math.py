@@ -103,10 +103,18 @@ class Erf():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
-        if node.input_dtype('X', 0) == paddle.float64:
-            raise Exception("Erf does not support the input type as double")
-        graph.make_node(
-            'Erf', inputs=node.input('X'), outputs=node.output('Out'))
+        x_dtype = node.input_dtype('X', 0)
+        x = node.input('X', 0)
+        if x_dtype == paddle.float64:
+            x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
+            erf_node = graph.make_node('Erf', inputs=[x])
+            graph.make_node(
+                'Cast',
+                inputs=[erf_node],
+                to=dtypes.ONNX.DOUBLE,
+                outputs=node.output('Out'))
+        else:
+            graph.make_node('Erf', inputs=[x], outputs=node.output('Out'))
 
 
 @op_mapper('acos')
