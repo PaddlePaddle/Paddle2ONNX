@@ -35,6 +35,21 @@ class Net0(BaseNet):
         return x
 
 
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, x, index):
+        """
+        forward
+        """
+        axis = self.config["axis"]
+        axis = paddle.to_tensor(axis)
+        x = paddle.gather(x, index, axis=axis)
+        return x
+
+
 class TestGatherConvert0(OPConvertAutoScanTest):
     """
     api: paddle.gather
@@ -67,6 +82,45 @@ class TestGatherConvert0(OPConvertAutoScanTest):
         }
 
         models = Net0(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+class TestGatherConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.gather
+    OPset version: 7, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=2, max_value=20), min_size=1, max_size=4))
+
+        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
+        index_dtype = draw(st.sampled_from(["int32", "int64"]))
+
+        axis = draw(st.integers(min_value=0, max_value=len(input_shape) - 1))
+
+        def generator_index():
+            index_list = [i for i in range(input_shape[axis])]
+            index_select = sample(index_list, 2)
+            return np.array(index_select)
+
+        config = {
+            "op_names": ["gather"],
+            "test_data_shapes": [input_shape, generator_index],
+            "test_data_types": [[dtype], [index_dtype]],
+            "opset_version": [7, 9],
+            "input_spec_shape": [],
+            "axis": axis,
+        }
+
+        models = Net1(config)
 
         return (config, models)
 

@@ -639,10 +639,13 @@ class Gather():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        if node.input('Axis', 0) != None:
-            raise Exception(
-                "Currently does not support the axis parameter as tensor!")
         axis = node.attr('axis')
+        if node.input('Axis', 0) != None:
+            axis_node = node.input('Axis', 0)
+            # When axis is tensor, only int32 and int64 are supported
+            axis = graph.parameters[axis_node].attribute[0].t.int32_data
+            if axis is None or len(axis) < 1:
+                axis = graph.parameters[axis_node].attribute[0].t.int64_data[0]
         if axis == None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
@@ -659,10 +662,13 @@ class Gather():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
-        if node.input('Axis', 0) != None:
-            raise Exception(
-                "Currently does not support the axis parameter as tensor!")
         axis = node.attr('axis')
+        if node.input('Axis', 0) != None:
+            axis_node = node.input('Axis', 0)
+            # When axis is tensor, only int32 and int64 are supported
+            axis = graph.parameters[axis_node].attribute[0].t.int32_data
+            if axis is None or len(axis) < 1:
+                axis = graph.parameters[axis_node].attribute[0].t.int64_data[0]
         if axis == None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:

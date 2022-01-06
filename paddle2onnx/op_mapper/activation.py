@@ -155,10 +155,10 @@ class Gelu():
         x = graph.make_node('Add', inputs=[x, one])
         x = graph.make_node('Mul', inputs=[input, x])
         if node.input_dtype('X', 0) == paddle.float64:
-            Mul_node = graph.make_node('Mul', inputs=[x, zero_point_five])
+            mul_node = graph.make_node('Mul', inputs=[x, zero_point_five])
             graph.make_node(
                 'Cast',
-                inputs=[Mul_node],
+                inputs=[mul_node],
                 to=dtypes.ONNX.DOUBLE,
                 outputs=node.output('Out'))
         else:
