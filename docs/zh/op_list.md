@@ -25,7 +25,7 @@
 | clip | 1~12 |
 | cos | 7~12 |
 | cosh | 9~12 |
-| concat | 1~12 |
+| concat | 4~12 |
 | conv2d | 1~12 |
 | conv2d_transpose | 1~12 |
 | conv3d | 1~12 |

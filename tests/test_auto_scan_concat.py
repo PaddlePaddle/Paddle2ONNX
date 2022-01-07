@@ -25,11 +25,14 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, inputs_):
+    def forward(self, inputs1, inputs2):
         """
         forward
         """
-        x = paddle.concat([inputs, inputs_], axis=self.config['axis'])
+        axis = self.config['axis']
+        if self.config['isTensor']:
+            axis = paddle.to_tensor(axis)
+        x = paddle.concat([inputs1, inputs2], axis=axis)
         return x
 
 
@@ -52,9 +55,8 @@ class TestConcatConvert(OPConvertAutoScanTest):
         axis = draw(
             st.integers(
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
-        if draw(st.booleans()):
-            axis = paddle.to_tensor(axis)
 
+        isTensor = draw(st.booleans())
         config = {
             "op_names": ["concat"],
             "test_data_shapes": [input_shape, input_shape],
@@ -62,6 +64,7 @@ class TestConcatConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "axis": axis,
+            "isTensor": isTensor,
         }
 
         models = Net(config)

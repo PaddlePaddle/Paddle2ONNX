@@ -24,7 +24,7 @@ import paddle
 
 @op_mapper('concat')
 class Concat():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (4, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -32,7 +32,12 @@ class Concat():
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        axis = node.attr('axis')
+        if len(node.input('AxisTensor')) > 0:
+            axes_node = node.input('AxisTensor')[0]
+            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            axis = axes[0]
+        else:
+            axis = node.attr('axis')
         if axis < 0:
             axis = axis + len(node.input_shape('X', 0))
 
