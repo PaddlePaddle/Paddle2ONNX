@@ -1221,10 +1221,10 @@ class GaussianRandom():
         shape = node.output_shape('Out', 0)
         graph.make_node(
             'RandomNormal',
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
             outputs=node.output('Out'),
             mean=node.attr('mean'),
-            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
-            seed=float(node.attr('seed')),
+            scale=node.attr('std'),
             shape=shape
         )
 
