@@ -796,10 +796,10 @@ class FlattenContiguousRange():
 
 @op_mapper('reshape2')
 class Reshape():
-    support_opset_version_range = (5, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_5(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         shape_name = 'ShapeTensor'
         if shape_name not in node.inputs or len(node.input(shape_name)) == 0:
             shape_name = 'Shape'
