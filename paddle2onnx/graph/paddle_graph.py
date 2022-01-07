@@ -217,12 +217,14 @@ class PaddleGraph(Graph):
                 rows = scope.var(name).get_selected_rows().rows()
                 shape = scope.var(name).get_selected_rows().get_tensor().shape()
                 id_to_index = get_selected_rows.get_id_to_index()
+                list_key = list(id_to_index.keys())
+                max_val = np.amax(np.array(list_key))
                 vals = np.array(
                     scope.var(name).get_selected_rows().get_tensor())
-                total_shape = [height] + shape[1:]
+                total_shape = [max_val] + shape[1:]
                 zeros = np.zeros(shape=total_shape)
                 for i in range(len(rows)):
-                    index = id_to_index[rows[i]]
+                    index = rows[i]
                     if index == -1:
                         continue
                     zeros[index] = vals[i]
