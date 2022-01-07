@@ -643,7 +643,7 @@ class Gather():
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
             # When axis is tensor, only int32 and int64 are supported
-            if graph.parameters[axis_node] is None:
+            if axis_node not in graph.parameters:
                 raise Exception(
                     "Currently does not support the axis parameter as input tensor!"
                 )
@@ -672,7 +672,7 @@ class Gather():
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
             # When axis is tensor, only int32 and int64 are supported
-            if graph.parameters[axis_node] is None:
+            if axis_node not in graph.parameters:
                 raise Exception(
                     "Currently does not support the axis parameter as input tensor!"
                 )

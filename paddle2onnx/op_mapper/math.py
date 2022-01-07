@@ -105,13 +105,13 @@ class Erf():
     def opset_9(cls, graph, node, **kw):
         x_dtype = node.input_dtype('X', 0)
         x = node.input('X', 0)
-        if x_dtype == paddle.float64:
+        if x_dtype != paddle.float32:
             x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
             erf_node = graph.make_node('Erf', inputs=[x])
             graph.make_node(
                 'Cast',
                 inputs=[erf_node],
-                to=dtypes.ONNX.DOUBLE,
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
                 outputs=node.output('Out'))
         else:
             graph.make_node('Erf', inputs=[x], outputs=node.output('Out'))
