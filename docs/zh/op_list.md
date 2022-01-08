@@ -110,7 +110,7 @@
 | nearest_interp | 9~12 |
 | nearest_interp_v2 | 9~12 |
 | norm | 1~12 |
-| numel | 1~12 |
+| numel | 1~15 |
 | pad1d | 2~12 |
 | pad2d | 1~12 |
 | pad3d | 1~12 |

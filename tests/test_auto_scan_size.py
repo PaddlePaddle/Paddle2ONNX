@@ -36,22 +36,22 @@ class Net(BaseNet):
 class TestNumelConvert(OPConvertAutoScanTest):
     """
     api: paddle.numel
-    OPset version: 7, 9, 12
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=3, max_size=3))
+                    min_value=2, max_value=6), min_size=3, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["size"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 12],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
         }
 

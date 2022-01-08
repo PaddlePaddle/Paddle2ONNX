@@ -180,13 +180,25 @@ class Shape():
 
 @op_mapper('size')
 class Numel():
-    supports_opset_version_range = (1, 12)
+    supports_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         size_node = graph.make_node('Size', inputs=node.input('Input'))
-        graph.make_node(
-            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
+        if graph.opset_version > 12:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[size_node, axes_node],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Unsqueeze',
+                inputs=size_node,
+                axes=[0],
+                outputs=node.output('Out'))
 
 
 @op_mapper('split')
