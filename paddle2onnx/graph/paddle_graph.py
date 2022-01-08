@@ -70,6 +70,9 @@ class PaddleNode(Node):
     def output_shape(self, name, idx):
         return self.block.var(self.output(name, idx)).shape
 
+    def output_dtype(self, name, idx):
+        return self.block.var(self.output(name, idx)).dtype
+
     def input_shape(self, name, idx):
         return self.block.var(self.input(name, idx)).shape
 

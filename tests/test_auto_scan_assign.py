@@ -29,8 +29,16 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.assign(inputs)
-        return x
+        np.random.seed(13)
+        x1 = np.random.random(self.config['input_shape']).astype("float32")
+        if self.config['input_dtype'] == "ndarray":
+            x = x1
+        elif self.config['input_dtype'] == "list":
+            x = x1.tolist()
+        elif self.config['input_dtype'] == "tensor":
+            x = paddle.to_tensor(x1)
+        x = paddle.assign(x)
+        return x + inputs
 
 
 class TestAssignConvert(OPConvertAutoScanTest):
@@ -45,7 +53,8 @@ class TestAssignConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=8), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32"]))
+        input_dtype = draw(st.sampled_from(["tensor", "ndarray"]))
 
         config = {
             "op_names": ["assign"],
@@ -53,6 +62,9 @@ class TestAssignConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "dtype": dtype,
+            "input_dtype": input_dtype,
+            "input_shape": input_shape,
         }
 
         models = Net(config)
