@@ -25,34 +25,38 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, inputs_):
+    def forward(self, inputs1, inputs2):
         """
         forward
         """
-        x = paddle.stack([inputs, inputs_])
+        x = paddle.stack([inputs1, inputs2], axis=self.config['axis'])
         return x
 
 
 class TestStackConvert(OPConvertAutoScanTest):
     """
     api: paddle.stack
-    OPset version: 7, 9, 12
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
+                    min_value=4, max_value=8), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
         config = {
             "op_names": ["stack"],
             "test_data_shapes": [input_shape, input_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 12],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "axis": axis,
         }
 
         models = Net(config)

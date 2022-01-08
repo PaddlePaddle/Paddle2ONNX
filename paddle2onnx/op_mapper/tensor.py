@@ -67,7 +67,7 @@ class LodReset():
 
 @op_mapper('stack')
 class Stack():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (4, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -78,8 +78,16 @@ class Stack():
 
         unsqueezed_inputs = list()
         for ipt in inputs:
-            unsqueezed_ipt = graph.make_node(
-                'Unsqueeze', inputs=[ipt], axes=[axis])
+            if graph.opset_version > 12:
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': axis})
+                unsqueezed_ipt = graph.make_node(
+                    'Unsqueeze', inputs=[ipt, axes_node])
+            else:
+                unsqueezed_ipt = graph.make_node(
+                    'Unsqueeze', inputs=[ipt], axes=[axis])
             unsqueezed_inputs.append(unsqueezed_ipt)
         graph.make_node(
             'Concat',

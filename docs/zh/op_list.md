@@ -155,7 +155,7 @@
 | squeeze2 | 1~12 |
 | square | 7~12 |
 | sqrt | 1~12 |
-| stack | 1~12 |
+| stack | 4~15 |
 | stride_slice | 1~12 |
 | sum | 1~12 |
 | swish | 1~12 |
