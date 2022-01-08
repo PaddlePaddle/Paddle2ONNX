@@ -150,7 +150,7 @@
 | sign | 9~12 |
 | sin | 7~12 |
 | sinh | 9~12 |
-| slice | 1~12 |
+| slice | 1~15 |
 | split | 1~12 |
 | squeeze2 | 1~12 |
 | square | 7~12 |

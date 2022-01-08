@@ -225,7 +225,7 @@ class Split():
 
 @op_mapper(['slice', 'strided_slice'])
 class Slice():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def decrease_axis(cls, node):

@@ -45,7 +45,9 @@ class TestNumelConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=2, max_value=6), min_size=3, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(
+            st.sampled_from(
+                ["float16", "float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["size"],
