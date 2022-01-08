@@ -136,7 +136,7 @@ class ExpandAsV2():
 
 @op_mapper('expand_v2')
 class ExpandV2():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -148,17 +148,16 @@ class ExpandV2():
                 'Cast', inputs=[shape], to=dtypes.ONNX.INT64)
         else:
             if len(node.input('Shape')) > 0:
-                shape = mapper_helper.cast(graph,
-                                           node.input('Shape', 0),
-                                           node.input_dtype('Shape', 0),
-                                           'int64')
+                shape_node = node.input('Shape')[0]
+                shape = graph.parameters[shape_node].attribute[0].t.int64_data
+                shape = [value for _, value in enumerate(shape)]
             elif len(node.attr('shape')) > 0:
                 shape = node.attr('shape')
                 for idx in range(len(shape)):
                     if shape[idx] == -1:
                         shape[idx] = 1
-                shape = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=shape)
+            shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=shape)
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],

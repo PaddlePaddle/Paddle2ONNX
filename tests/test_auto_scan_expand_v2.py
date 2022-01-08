@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -29,30 +30,40 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.expand(inputs, shape=[2, 3, 10])
+        if self.config['isTensor']:
+            shape = paddle.to_tensor(self.config['shape'])
+        else:
+            shape = self.config['shape']
+        x = paddle.expand(inputs, shape=shape)
         return x
 
 
 class TestExpandConvert(OPConvertAutoScanTest):
     """
     api: paddle.expand
-    OPset version: 8, 9, 15
+    OPset version: 8, 9, 12, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
-        input_shape = [3, 10]
+                    min_value=2, max_value=6), min_size=2, max_size=5))
+
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        isTensor = draw(st.booleans())
+
+        n = random.randint(1, 6 - len(input_shape))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
 
         config = {
             "op_names": ["expand_v2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [8, 9, 15],
+            "opset_version": [8, 9, 12],
             "input_spec_shape": [],
+            "isTensor": isTensor,
+            "shape": pre_shape + input_shape,
         }
 
         models = Net(config)
