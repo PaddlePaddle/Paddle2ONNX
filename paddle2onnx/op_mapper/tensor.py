@@ -166,7 +166,7 @@ class ExpandV2():
 
 @op_mapper('shape')
 class Shape():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
