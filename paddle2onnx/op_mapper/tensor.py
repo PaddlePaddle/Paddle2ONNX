@@ -365,7 +365,7 @@ class SequenceExpand():
 
 @op_mapper(['expand', 'tile'])
 class Expand():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):

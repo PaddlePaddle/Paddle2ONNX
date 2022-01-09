@@ -163,7 +163,7 @@
 | tanh_shrink | 7~12 |
 | tan | 8~12 |
 | thresholded_relu | 1~12 |
-| tile | 11~12 |
+| tile | 11~15 |
 | top_k_v2 | 11~12 |
 | top_k | 11~12 |
 | transpose2 | 1~12 |

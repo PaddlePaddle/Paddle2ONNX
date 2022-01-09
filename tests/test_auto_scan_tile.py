@@ -29,7 +29,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.tile(inputs, repeat_times=[2, 1])
+        repeat_times = self.config['repeat_times']
+        if self.config['repeat_times_dtype'] == "list":
+            repeat_times = repeat_times
+        elif self.config['repeat_times_dtype'] == "Tensor":
+            repeat_times = paddle.to_tensor(repeat_times)
+        x = paddle.tile(inputs, repeat_times=repeat_times)
         return x
 
 
@@ -43,9 +48,10 @@ class TestTileConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
+                    min_value=2, max_value=5), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
 
         config = {
             "op_names": ["tile"],
@@ -53,6 +59,8 @@ class TestTileConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
+            "repeat_times_dtype": repeat_times_dtype,
+            "repeat_times": input_shape,
         }
 
         models = Net(config)
