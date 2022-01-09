@@ -114,7 +114,7 @@
 | pad1d | 2~12 |
 | pad2d | 1~12 |
 | pad3d | 1~12 |
-| pixel_shuffle | 11~12 |
+| pixel_shuffle | 11~15 |
 | pool2d | 1~12 | limited supported |
 | pool3d | 1~12 | limited supported |
 | pow | 8~12 |

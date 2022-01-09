@@ -29,7 +29,8 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.pixel_shuffle(inputs, upscale_factor=3)
+        x = paddle.nn.functional.pixel_shuffle(
+            inputs, upscale_factor=self.config['upscale_factor'])
 
         return x
 
@@ -44,9 +45,11 @@ class TestPixelshuffleConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=4, max_size=4))
-        input_shape = [2, 9, 4, 4]
-        dtype = draw(st.sampled_from(["float32"]))
+                    min_value=4, max_value=6), min_size=4, max_size=4))
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+        upscale_factor = draw(st.integers(min_value=1, max_value=4))
+        input_shape[1] = 2 * upscale_factor * upscale_factor
 
         config = {
             "op_names": ["pixel_shuffle"],
@@ -54,6 +57,7 @@ class TestPixelshuffleConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
+            "upscale_factor": upscale_factor
         }
 
         models = Net(config)
