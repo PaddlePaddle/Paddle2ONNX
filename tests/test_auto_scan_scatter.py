@@ -26,18 +26,18 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, _index, _updates):
+    def forward(self, inputs, index, updates):
         """
         forward
         """
-        x = paddle.scatter(inputs, _index, _updates, overwrite=True)
+        x = paddle.scatter(inputs, index, updates, overwrite=True)
         return x
 
 
 class TestScatterConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scatter
-    OPset version: 11, 12
+    api: paddle.scatter_nd_add
+    OPset version: 11, 12, 15
     """
 
     def sample_convert_config(self, draw):
@@ -46,7 +46,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=2, max_size=2))
         input_shape = [3, 2]
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         update_shape = [3]
 
         def generator_data():
@@ -57,7 +57,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
             "op_names": ["scatter"],
             "test_data_shapes": [input_shape, generator_data, input_shape],
             "test_data_types": [[dtype], ['int64'], [dtype]],
-            "opset_version": [11, 12],
+            "opset_version": [11, 12, 15],
             "input_spec_shape": [],
         }
 

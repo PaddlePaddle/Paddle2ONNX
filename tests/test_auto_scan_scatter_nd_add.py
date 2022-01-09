@@ -26,11 +26,11 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, _index, _updates):
+    def forward(self, inputs, index, updates):
         """
         forward
         """
-        x = paddle.scatter_nd_add(inputs, _index, _updates)
+        x = paddle.scatter_nd_add(inputs, index, updates)
         return x
 
 
@@ -60,7 +60,7 @@ class TestScatterndaddConvert(OPConvertAutoScanTest):
             "op_names": ["scatter_nd_add"],
             "test_data_shapes": [input_shape, generator_data, input_shape],
             "test_data_types": [[dtype], ['int64'], [dtype]],
-            "opset_version": [11, 12],
+            "opset_version": [11, 12, 15],
             "input_spec_shape": [],
         }
 

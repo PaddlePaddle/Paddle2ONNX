@@ -1578,7 +1578,7 @@ class Scatter():
 
 @op_mapper('scatter_nd_add')
 class ScatterndAdd():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -1602,7 +1602,7 @@ class ScatterndAdd():
 
 @op_mapper('meshgrid')
 class Meshgrid():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
