@@ -30,7 +30,8 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.scatter(inputs, index, updates, overwrite=True)
+        x = paddle.scatter(
+            inputs, index, updates, overwrite=self.config['overwrite'])
         return x
 
 
@@ -49,6 +50,8 @@ class TestScatterConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64"]))
         update_shape = [3]
 
+        overwrite = True  # False is not supported
+
         def generator_data():
             input_data = randtool("int", 1, 2, update_shape)
             return input_data
@@ -59,6 +62,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype], ['int64'], [dtype]],
             "opset_version": [11, 12, 15],
             "input_spec_shape": [],
+            "overwrite": overwrite,
         }
 
         models = Net(config)
