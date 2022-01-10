@@ -73,6 +73,19 @@ class Net3(BaseNet):
         return x
 
 
+class Net4(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        x = paddle.clip(inputs)
+        return x
+
+
 class TestClipConvert0(OPConvertAutoScanTest):
     """
     api: paddle.clip
@@ -224,6 +237,41 @@ class TestClipConvert3(OPConvertAutoScanTest):
         models.append(Net3(config3))
 
         return (config3, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+class TestClipConvert4(OPConvertAutoScanTest):
+    """
+    api: paddle.clip
+    OPset version: 7, 9, 13, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=20, max_value=100),
+                min_size=1,
+                max_size=4))
+
+        input_spec = [-1] * len(input_shape)
+
+        dtype = draw(st.sampled_from(["float32"]))
+
+        models = list()
+        config0 = {
+            "op_names": ["clip"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 9, 13, 15],
+            "input_spec_shape": [],
+        }
+
+        models.append(Net4(config0))
+
+        return (config0, models)
 
     def test(self):
         self.run_and_statis(max_examples=30)

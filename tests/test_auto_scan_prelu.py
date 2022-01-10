@@ -18,7 +18,6 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
 
 
 class Net(BaseNet):
@@ -26,46 +25,34 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs1, inputs2):
+    def forward(self, inputs, weights):
         """
         forward
         """
-        x = paddle.fluid.layers.mul(
-            inputs1,
-            inputs2,
-            x_num_col_dims=self.config["x_num_col_dims"],
-            y_num_col_dims=self.config["y_num_col_dims"])
+        x = paddle.nn.functional.prelu(inputs, weight=weights)
         return x
 
 
-class TestMulConvert(OPConvertAutoScanTest):
+class TestPreluConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.mul
+    api: paddle.nn.functional.prelu
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape0 = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=10), min_size=2, max_size=4))
-        input_shape1 = input_shape0.copy()
-        input_shape1.reverse()
-        size = len(input_shape0)
-
-        x_num_col_dims = random.randint(1, size - 1)
-        y_num_col_dims = size - x_num_col_dims
+                    min_value=5, max_value=20), min_size=1, max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["mul"],
-            "test_data_shapes": [input_shape0, input_shape1],
+            "op_names": ["prelu"],
+            "test_data_shapes": [input_shape, [1]],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "x_num_col_dims": x_num_col_dims,
-            "y_num_col_dims": y_num_col_dims
         }
 
         models = Net(config)
