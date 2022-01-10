@@ -25,6 +25,7 @@ from paddle.fluid.framework import Operator
 from paddle2onnx.graph import Node, Graph
 from paddle2onnx.constant import NodeDomain
 from paddle2onnx.utils import logging
+from functools import reduce
 
 
 class PaddleNode(Node):
@@ -219,19 +220,38 @@ class PaddleGraph(Graph):
                 id_to_index = get_selected_rows.get_id_to_index()
                 list_key = list(id_to_index.keys())
                 max_val = np.amax(np.array(list_key))
+                min_val = np.amin(np.array(list_key))
+
                 vals = np.array(
                     scope.var(name).get_selected_rows().get_tensor())
-                total_shape = [max_val] + shape[1:]
-                zeros = np.zeros(shape=total_shape)
+
+                index_val_shape = [reduce(lambda x, y: x * y, vals.shape)
+                                   ] + [len(vals.shape)]
+                index_val = np.zeros(shape=index_val_shape, dtype=np.int64)
+
+                dense_shape = [max_val + 1] + list(vals.shape[1:])
+
+                zeros = np.zeros(shape=vals.shape, dtype=np.float32)
+                rows.sort()
+
+                size = vals.shape[1]
+                line_data = np.linspace(0, size - 1, size, dtype=np.int64)
                 for i in range(len(rows)):
-                    index = rows[i]
+                    index = id_to_index[rows[i]]
                     if index == -1:
                         continue
-                    zeros[index] = vals[i]
+
+                    zeros[i] = vals[index]
+
+                    index_val[i * size:i * size + size, 0] = rows[i]
+                    index_val[i * size:i * size + size, 1] = line_data
+
                 parameters_dict[name] = {
                     'data': zeros,
                     'dtype': var.dtype,
-                    'shape': zeros.shape
+                    'shape': dense_shape,
+                    'index': index_val,
+                    'index_shape': index_val_shape
                 }
 
         graph = PaddleGraph(program, parameters_dict, feed_var_names,
