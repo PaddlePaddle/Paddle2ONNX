@@ -31,6 +31,8 @@ class Net(BaseNet):
         """
         x = paddle.nn.functional.layer_norm(
             inputs,
+            weight=None,
+            bias=None,
             normalized_shape=self.config["normalized_shape"],
             epsilon=self.config["epsilon"])
         return x
@@ -39,7 +41,7 @@ class Net(BaseNet):
 class TestLayerNormConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.layer_norm
-    OPset version: 9, 15
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):

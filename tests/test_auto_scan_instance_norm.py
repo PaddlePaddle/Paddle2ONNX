@@ -29,10 +29,10 @@ class Net(BaseNet):
     def __init__(self, config=None):
         super(Net, self).__init__(config)
         param_shape = [self.config['input_shape'][1]]
-        self.dtype = self.config['dtype']
+        dtype = self.config['dtype']
 
         self.mean = self.create_parameter(
-            dtype=self._dtype,
+            dtype=dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(0.0),
                 trainable=False,
@@ -40,7 +40,7 @@ class Net(BaseNet):
             shape=param_shape)
 
         self.variance = self.create_parameter(
-            dtype=self._dtype,
+            dtype=dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(1.0),
                 trainable=False,
@@ -49,11 +49,11 @@ class Net(BaseNet):
 
         self.weight = self.create_parameter(
             shape=param_shape,
-            dtype=self._dtype,
+            dtype=dtype,
             default_initializer=paddle.nn.initializer.Constant(1.0))
 
         self.bias = self.create_parameter(
-            shape=param_shape, dtype=self._dtype, is_bias=True)
+            shape=param_shape, dtype=dtype, is_bias=True)
 
     def forward(self, inputs):
         """
@@ -63,8 +63,8 @@ class Net(BaseNet):
             inputs,
             running_mean=self.mean,
             running_var=self.variance,
-            weight=self.weight,
-            bias=self.bias,
+            weight=self.weight if self.config['has_weight'] else None,
+            bias=self.bias if self.config['has_bias'] else None,
             use_input_stats=True,
             momentum=self.config['momentum'],
             eps=self.config['epsilon'],
@@ -90,7 +90,8 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
 
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
         momentum = draw(st.floats(min_value=0.1, max_value=0.9))
-
+        has_weight = draw(st.booleans())
+        has_bias = draw(st.booleans())
         config = {
             "op_names": ["instance_norm"],
             "test_data_shapes": [input_shape],
@@ -101,6 +102,8 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
             "momentum": momentum,
             "input_shape": input_shape,
             "dtype": dtype,
+            "has_weight": has_weight,
+            "has_bias": has_bias,
         }
 
         models = Net(config)

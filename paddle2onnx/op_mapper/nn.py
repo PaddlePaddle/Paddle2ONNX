@@ -550,7 +550,7 @@ class LayerNorm():
 
 @op_mapper('batch_norm')
 class BatchNorm():
-    support_opset_version_range = (7, 15)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def make_attrs_and_inputs(cls, graph, node, **kw):
@@ -585,6 +585,7 @@ class BatchNorm():
     def opset_6(cls, graph, node, **kw):
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
         onnx_attr['is_test'] = 0
+        onnx_attr['spatial'] = 1
         onnx_node = graph.make_node(
             'BatchNormalization',
             inputs=inputs,
@@ -699,13 +700,15 @@ class InstanceNorm():
         dtype = node.block.vars[node.input('X', 0)].dtype
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
 
-        if len(node.input('Scale')) == 0 and len(node.input('Bias')) == 0:
+        if len(node.input('Scale')) == 0:
             scale_ = graph.make_node(
                 'Constant', dtype=dtype, value=[1.0] * num_groups)
+        else:
+            scale_ = node.input('Scale')[0]
+        if len(node.input('Bias')) == 0:
             bias_ = graph.make_node(
                 'Constant', dtype=dtype, value=[0.0] * num_groups)
         else:
-            scale_ = node.input('Scale')[0]
             bias_ = node.input('Bias')[0]
 
         inputs = node.input('X') + [scale_] + [bias_]
