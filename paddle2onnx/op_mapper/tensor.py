@@ -709,7 +709,7 @@ class Gather():
 
 @op_mapper('squeeze2')
 class Squeeze():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

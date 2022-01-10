@@ -29,7 +29,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.squeeze(inputs, axis=0)
+        x = paddle.squeeze(inputs, axis=self.config['axis'])
         return x
 
 
@@ -45,7 +45,7 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=3, max_size=3))
         input_shape[0] = 1
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["squeeze"],
@@ -53,6 +53,7 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "axis": 0,
         }
 
         models = Net(config)
