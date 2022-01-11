@@ -676,16 +676,32 @@ class FullZeroLike():
 
 @op_mapper('gather')
 class Gather():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        if node.input('Axis', 0) != None:
+            axis_node = node.input('Axis', 0)
+            # When axis is tensor, only int32 and int64 are supported
+            if axis_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axis = graph.parameters[axis_node].attribute[0].t.int32_data
+                if axis is None or len(axis) < 1:
+                    axis = graph.parameters[axis_node].attribute[
+                        0].t.int64_data[0]
+        if axis is None:
+            axis = 0
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
                 'Gather',
                 inputs=[node.input('X', 0), node.input('Index', 0)],
-                outputs=node.output('Out'))
+                outputs=node.output('Out'),
+                attrs={'axis': axis})
         else:
             raise Exception(
                 "please try to convert OP:gather(indices's rank >1) with opset_version >= 11."
@@ -693,18 +709,45 @@ class Gather():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        if node.input('Axis', 0) != None:
+            axis_node = node.input('Axis', 0)
+            # When axis is tensor, only int32 and int64 are supported
+            if axis_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axis = graph.parameters[axis_node].attribute[0].t.int32_data
+                if axis is None or len(axis) < 1:
+                    axis = graph.parameters[axis_node].attribute[
+                        0].t.int64_data[0]
+        if axis is None:
+            axis = 0
         if len(node.input_shape('Index', 0)) == 1:
             # gather
             graph.make_node(
                 'Gather',
                 inputs=[node.input('X', 0), node.input('Index', 0)],
-                outputs=node.output('Out'))
+                outputs=node.output('Out'),
+                attrs={'axis': axis})
         else:
-            # gather_nd 
-            graph.make_node(
-                'GatherND',
-                inputs=[node.input('X', 0), node.input('Index', 0)],
-                outputs=node.output('Out'))
+            # gather_nd
+            index_dtype = node.input_dtype('Index', 0)
+            if index_dtype != paddle.int64:
+                index_node = graph.make_node(
+                    'Cast',
+                    inputs=[node.input('Index', 0)],
+                    to=dtypes.ONNX.INT64)
+                graph.make_node(
+                    'GatherND',
+                    inputs=[node.input('X', 0), index_node],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'GatherND',
+                    inputs=[node.input('X', 0), node.input('Index', 0)],
+                    outputs=node.output('Out'))
 
 
 @op_mapper('squeeze2')
@@ -837,10 +880,10 @@ class FlattenContiguousRange():
 
 @op_mapper('reshape2')
 class Reshape():
-    support_opset_version_range = (5, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_5(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         shape_name = 'ShapeTensor'
         if shape_name not in node.inputs or len(node.input(shape_name)) == 0:
             shape_name = 'Shape'
@@ -1218,6 +1261,46 @@ class Pad():
                 paddings[3], paddings[1], 0
             ]
         return onnx_paddings
+
+
+@op_mapper('gaussian_random')
+class GaussianRandom():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        shape_input_list = node.input('ShapeTensorList')
+        shape_input = None
+        if len(shape_input_list) == 0:
+            shape_input = node.input('ShapeTensor')
+        else:
+            shape_input = [shape_input_list[0]]
+        if shape_input is None or len(shape_input) == 0:
+            graph.make_node(
+                'RandomNormal',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                shape=node.attr('shape'),
+                seed=float(node.attr('seed')),
+                mean=node.attr('mean'),
+                scale=node.attr('std'), )
+        else:
+            cast_input_shape = graph.make_node(
+                'Cast', inputs=shape_input, to=dtypes.ONNX.INT64)
+            zero_like_node = graph.make_node(
+                'ConstantOfShape',
+                inputs=cast_input_shape,
+                dims=[1],
+                dtype=dtypes.ONNX.FLOAT,
+                value=[0])
+            graph.make_node(
+                'RandomNormalLike',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                inputs=zero_like_node,
+                seed=float(node.attr('seed')),
+                mean=node.attr('mean'),
+                scale=node.attr('std'))
 
 
 @op_mapper('uniform_random_batch_size_like')

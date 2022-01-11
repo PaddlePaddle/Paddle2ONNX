@@ -38,7 +38,7 @@ class Net(BaseNet):
         return x
 
 
-class TestAffinechannelConvert(OPConvertAutoScanTest):
+class TestMulConvert(OPConvertAutoScanTest):
     """
     api: paddle.fluid.layers.mul
     OPset version: 7, 9, 15
