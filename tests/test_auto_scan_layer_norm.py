@@ -27,16 +27,14 @@ class Net(BaseNet):
 
     def __init__(self, config=None):
         super(Net, self).__init__(config)
-        param_shape = [self.config['input_shape'][1]]
-        dtype = self.config['dtype']
-
+        param_shape = [np.prod(self.config["normalized_shape"])]
         self.weight = self.create_parameter(
+            attr=None,
             shape=param_shape,
-            dtype=dtype,
             default_initializer=paddle.nn.initializer.Constant(1.0))
 
         self.bias = self.create_parameter(
-            shape=param_shape, dtype=dtype, is_bias=True)
+            attr=None, shape=param_shape, is_bias=True)
 
     def forward(self, inputs):
         """
@@ -44,10 +42,8 @@ class Net(BaseNet):
         """
         x = paddle.nn.functional.layer_norm(
             inputs,
-            # weight=self.weight if self.config['has_weight_bias'] else None,
-            # bias=self.bias if self.config['has_weight_bias'] else None,
-            weight=None,
-            bias=None,
+            weight=self.weight if self.config['has_weight_bias'] else None,
+            bias=self.bias if self.config['has_weight_bias'] else None,
             normalized_shape=self.config["normalized_shape"],
             epsilon=self.config["epsilon"])
         return x
@@ -63,7 +59,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=8), min_size=3, max_size=5))
+                    min_value=2, max_value=8), min_size=2, max_size=5))
 
         input_spec = [-1] * len(input_shape)
 
@@ -75,7 +71,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
         else:
             normalized_shape = input_shape[axis:]
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32"]))
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
         has_weight_bias = draw(st.booleans())
 
