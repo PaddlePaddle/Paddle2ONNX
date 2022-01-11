@@ -551,7 +551,7 @@ class LayerNorm():
 
 @op_mapper('batch_norm')
 class BatchNorm():
-    support_opset_version_range = (6, 15)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def make_attrs_and_inputs(cls, graph, node, **kw):
