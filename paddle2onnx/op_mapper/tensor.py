@@ -451,8 +451,8 @@ class Embedding():
     def opset_1(cls, graph, node, **kw):
         ids = node.input('Ids', 0)
         if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
-            ids = graph.make_node(
-                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
+            ids = mapper_helper.squeeze_helper(graph,
+                                               node.input('Ids', 0), [-1])
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
         if padding_idx != -1:
@@ -1252,7 +1252,8 @@ class GaussianRandom():
         if len(shape_input_list) == 0:
             shape_input = node.input('ShapeTensor')
         else:
-            shape_input = [shape_input_list[0]]
+            shape_input = graph.make_node(
+                "Concat", inputs=node.input('ShapeTensorList'), axis=0)
         if shape_input is None or len(shape_input) == 0:
             graph.make_node(
                 'RandomNormal',
@@ -1261,7 +1262,7 @@ class GaussianRandom():
                 shape=node.attr('shape'),
                 seed=float(node.attr('seed')),
                 mean=node.attr('mean'),
-                scale=node.attr('std'), )
+                scale=node.attr('std'))
         else:
             cast_input_shape = graph.make_node(
                 'Cast', inputs=shape_input, to=dtypes.ONNX.INT64)
