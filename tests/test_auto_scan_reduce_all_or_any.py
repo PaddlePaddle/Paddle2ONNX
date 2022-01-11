@@ -57,9 +57,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=2, max_value=20), min_size=1, max_size=5))
 
         input_spec = [-1] * len(input_shape)
 
