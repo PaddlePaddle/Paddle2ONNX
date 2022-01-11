@@ -1220,6 +1220,46 @@ class Pad():
         return onnx_paddings
 
 
+@op_mapper('gaussian_random')
+class GaussianRandom():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        shape_input_list = node.input('ShapeTensorList')
+        shape_input = None
+        if len(shape_input_list) == 0:
+            shape_input = node.input('ShapeTensor')
+        else:
+            shape_input = [shape_input_list[0]]
+        if shape_input is None or len(shape_input) == 0:
+            graph.make_node(
+                'RandomNormal',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                shape=node.attr('shape'),
+                seed=float(node.attr('seed')),
+                mean=node.attr('mean'),
+                scale=node.attr('std'), )
+        else:
+            cast_input_shape = graph.make_node(
+                'Cast', inputs=shape_input, to=dtypes.ONNX.INT64)
+            zero_like_node = graph.make_node(
+                'ConstantOfShape',
+                inputs=cast_input_shape,
+                dims=[1],
+                dtype=dtypes.ONNX.FLOAT,
+                value=[0])
+            graph.make_node(
+                'RandomNormalLike',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                inputs=zero_like_node,
+                seed=float(node.attr('seed')),
+                mean=node.attr('mean'),
+                scale=node.attr('std'))
+
+
 @op_mapper('uniform_random_batch_size_like')
 class UniformRandom():
     support_opset_version_range = (1, 12)
