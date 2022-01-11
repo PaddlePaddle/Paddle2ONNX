@@ -40,16 +40,21 @@ class TestMeshgridConvert(OPConvertAutoScanTest):
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
-        input_shape = [3]
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape2 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["meshgrid"],
-            "test_data_shapes": [input_shape, input_shape],
+            "test_data_shapes": [input_shape1, input_shape2],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [8, 9, 15],
             "input_spec_shape": [],
