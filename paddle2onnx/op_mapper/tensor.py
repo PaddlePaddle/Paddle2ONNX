@@ -391,9 +391,9 @@ class Range():
         start = node.input('Start', 0)
         end = node.input('End', 0)
         step = node.input('Step', 0)
-        start_t = graph.make_node('Squeeze', inputs=[start], axes=[0])
-        end_t = graph.make_node('Squeeze', inputs=[end], axes=[0])
-        step_t = graph.make_node('Squeeze', inputs=[step], axes=[0])
+        start_t = mapper_helper.squeeze_helper(graph, start, [0])
+        end_t = mapper_helper.squeeze_helper(graph, end, [0])
+        step_t = mapper_helper.squeeze_helper(graph, step, [0])
         graph.make_node(
             "Range",
             inputs=[start_t, end_t, step_t],
