@@ -770,6 +770,40 @@ class ReduceMean():
                 need_unsqueeze = True
 
         if not need_unsqueeze:
+            graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+        else:
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[reduce_node],
+                outputs=node.output('Out'),
+                axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+
+        output_shape = node.output_shape('Out', 0)
+        need_unsqueeze = False
+        if not node.attr('keep_dim'):
+            if list(output_shape) == [1]:
+                need_unsqueeze = True
+
+        if not need_unsqueeze:
             if graph.opset_version >= 13 and op_type == "ReduceSum":
                 axes_node = graph.make_node(
                     'Constant',
