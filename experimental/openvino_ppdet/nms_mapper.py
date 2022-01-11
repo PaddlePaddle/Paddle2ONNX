@@ -176,7 +176,11 @@ class MultiClassNMS():
         #
         #        bbox_id = graph.make_node('Gather', inputs=[bbox_id, nonzero], axis=0)
         class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
+        class_id = graph.make_node(
+            'Cast', inputs=[class_id], to=dtypes.ONNX.INT64)
         bbox_id = graph.make_node('Unsqueeze', inputs=[bbox_id], axes=[0])
+        bbox_id = graph.make_node(
+            'Cast', inputs=[bbox_id], to=dtypes.ONNX.INT64)
 
         # get the shape of scores
         shape_scores = graph.make_node('Shape', inputs=scores)
