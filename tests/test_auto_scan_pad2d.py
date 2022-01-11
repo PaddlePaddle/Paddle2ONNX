@@ -46,9 +46,7 @@ class TestPadopsConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=4, max_size=4))
 
         dtype = "float32"
 
@@ -79,8 +77,8 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
         return (config, model)
 
-    # def test(self):
-    #     self.run_and_statis(max_examples=30, max_duration=-1)
+    def test(self):
+        self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 class Net2(BaseNet):
@@ -107,9 +105,7 @@ class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=4, max_size=4))
 
         dtype = "float32"
 
@@ -117,7 +113,7 @@ class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
 
         mode = draw(st.sampled_from(["constant", "reflect", "edge"]))
 
-        pad_value = draw(st.floats(min_value=10, max_value=100))
+        pad_value = draw(st.floats(min_value=10, max_value=20))
 
         data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
 
@@ -171,9 +167,7 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=4, max_size=4))
 
         dtype = "float32"
 
