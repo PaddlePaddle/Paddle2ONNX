@@ -21,17 +21,16 @@ import paddle
 import random
 
 op_api_map = {
-    #  paddle.max/min has a bug
-    # "reduce_max": paddle.max,
-    # "reduce_min": paddle.min,
+    "reduce_max": paddle.max,
+    "reduce_min": paddle.min,
     "reduce_mean": paddle.mean,
     "reduce_sum": paddle.sum,
     "reduce_prod": paddle.prod,
 }
 
 opset_version_map = {
-    # "reduce_max": [7, 9, 15],
-    # "reduce_min": [7, 9, 15],
+    "reduce_max": [7, 9, 15],
+    "reduce_min": [7, 9, 15],
     "reduce_mean": [7, 9, 15],
     "reduce_sum": [7, 9, 15],
     "reduce_prod": [7, 9, 15],
@@ -73,15 +72,20 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "int",
         ]))
         if axis_type == "int":
-            dim = draw(
+            axes = draw(
                 st.integers(
                     min_value=-len(input_shape), max_value=len(input_shape) -
                     1))
         elif axis_type == "list":
             lenSize = random.randint(1, len(input_shape))
-            dim = []
+            axes = []
             for i in range(lenSize):
-                dim.append(random.choice([i, i - len(input_shape)]))
+                axes.append(random.choice([i, i - len(input_shape)]))
+            # paddle.max/min has a bug when aixs < 0
+            axes = [
+                axis + len(input_shape) if axis < 0 else axis
+                for i, axis in enumerate(axes)
+            ]
         keep_dim = draw(st.booleans())
 
         config = {
@@ -89,7 +93,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "dim": dim,
+            "dim": axes,
             "keep_dim": keep_dim,
             "input_spec_shape": [],
             "delta": 1e-4,
