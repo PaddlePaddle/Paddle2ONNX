@@ -66,7 +66,7 @@ class TestGatherNDConvert(OPConvertAutoScanTest):
             "op_names": ["gather_nd"],
             "test_data_shapes": [input_shape, generator_data],
             "test_data_types": [[dtype], [dtype2]],
-            "opset_version": [15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
         }
 
