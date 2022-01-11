@@ -227,23 +227,38 @@ class Split():
         else:
             axis = node.attr('axis')
         if len(sections) > 0:
-            if graph.opset_version > 12:
-                split_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': sections})
-                graph.make_node(
-                    'Split',
-                    inputs=[node.input('X')[0], split_node],
-                    outputs=node.output('Out'),
-                    axis=axis)
-            else:
-                graph.make_node(
-                    'Split',
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    axis=axis,
-                    split=sections)
+            graph.make_node(
+                'Split',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                axis=axis,
+                split=sections)
+        else:
+            graph.make_node(
+                'Split',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                axis=axis)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        sections = node.attr('sections')
+        if len(node.input('AxisTensor')) > 0:
+            axes_node = node.input('AxisTensor')[0]
+            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            axis = axes[0]
+        else:
+            axis = node.attr('axis')
+        if len(sections) > 0:
+            split_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': sections})
+            graph.make_node(
+                'Split',
+                inputs=[node.input('X')[0], split_node],
+                outputs=node.output('Out'),
+                axis=axis)
         else:
             graph.make_node(
                 'Split',
