@@ -786,7 +786,6 @@ class ReduceMean():
                     'axes': node.attr('dim'),
                     'keepdims': node.attr('keep_dim')
                 })
-
             graph.make_node(
                 'Unsqueeze',
                 inputs=[reduce_node],
@@ -846,21 +845,13 @@ class ReduceMean():
                         'keepdims': node.attr('keep_dim')
                     })
 
-            if graph.opset_version < 13:
-                graph.make_node(
-                    'Unsqueeze',
-                    inputs=[reduce_node],
-                    outputs=node.output('Out'),
-                    axes=[0])
-            else:
-                axes_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [0]})
-                graph.make_node(
-                    'Unsqueeze',
-                    inputs=[reduce_node] + [axes_node],
-                    outputs=node.output('Out'))
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[reduce_node] + [axes_node],
+                outputs=node.output('Out'))
 
 
 @op_mapper('mean')
