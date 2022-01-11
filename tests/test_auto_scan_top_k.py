@@ -30,8 +30,6 @@ class Net(BaseNet):
         """
         forward
         """
-        if not self.config['isTensor']:
-            k = k.numpy()
         x = paddle.fluid.layers.topk(input, k=k)
         return x
 
@@ -62,10 +60,54 @@ class TestTopkConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype], ["int32"]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
-            'isTensor': isTensor
         }
 
         models = Net(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, input):
+        """
+        forward
+        """
+        x = paddle.fluid.layers.topk(input, k=self.config['k'])
+        return x
+
+
+class TestTopkConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.fluid.layers.topk
+    OPset version: 11, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=10), min_size=1, max_size=5))
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+        k = random.randint(1, min(input_shape))
+
+        config = {
+            "op_names": ["top_k"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [11, 15],
+            "input_spec_shape": [],
+            "k": k,
+        }
+
+        models = Net1(config)
 
         return (config, models)
 

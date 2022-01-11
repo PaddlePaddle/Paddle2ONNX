@@ -26,12 +26,13 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, input, k):
+    def forward(self, input):
         """
         forward
         """
-        if not self.config['isTensor']:
-            k = k.numpy()
+        k = self.config['k']
+        if self.config['isTensor']:
+            k = paddle.to_tensor(k)
         x = paddle.topk(
             input,
             k=k,
@@ -63,7 +64,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         largest = draw(st.booleans())
-        sortedVal = True  # has a diff when sortedVal is False
+        sorted = True  # has a diff when sorted is False
 
         def generator_data():
             t = 1
@@ -76,20 +77,17 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         k = random.randint(1, min(input_shape))
         isTensor = draw(st.booleans())
 
-        def generator_k():
-            input_data = np.array([k])
-            return input_data
-
         config = {
             "op_names": ["top_k_v2"],
-            "test_data_shapes": [generator_data, generator_k],
-            "test_data_types": [[dtype], ["int32"]],
+            "test_data_shapes": [generator_data],
+            "test_data_types": [[dtype]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
             "axis": axis,
             "largest": largest,
-            'sorted': sortedVal,
-            'isTensor': isTensor
+            'sorted': sorted,
+            'isTensor': isTensor,
+            'k': k,
         }
 
         models = Net(config)
