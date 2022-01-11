@@ -78,16 +78,29 @@ class Stack():
 
         unsqueezed_inputs = list()
         for ipt in inputs:
-            if graph.opset_version > 12:
-                axes_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': axis})
-                unsqueezed_ipt = graph.make_node(
-                    'Unsqueeze', inputs=[ipt, axes_node])
-            else:
-                unsqueezed_ipt = graph.make_node(
-                    'Unsqueeze', inputs=[ipt], axes=[axis])
+            unsqueezed_ipt = graph.make_node(
+                'Unsqueeze', inputs=[ipt], axes=[axis])
+            unsqueezed_inputs.append(unsqueezed_ipt)
+        graph.make_node(
+            'Concat',
+            inputs=unsqueezed_inputs,
+            outputs=node.output('Y'),
+            axis=axis)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        inputs = node.input('X')
+        input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
+        inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
+        axis = node.attr('axis')
+
+        unsqueezed_inputs = list()
+        for ipt in inputs:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': axis})
+            unsqueezed_ipt = graph.make_node(
+                'Unsqueeze', inputs=[ipt, axes_node])
             unsqueezed_inputs.append(unsqueezed_ipt)
         graph.make_node(
             'Concat',
@@ -189,7 +202,7 @@ class Numel():
             'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
 
     @classmethod
-    def opset_12(cls, graph, node, **kw):
+    def opset_13(cls, graph, node, **kw):
         size_node = graph.make_node('Size', inputs=node.input('Input'))
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
