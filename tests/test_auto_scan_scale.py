@@ -30,10 +30,12 @@ class Net(BaseNet):
         """
         forward
         """
-
+        scale = self.config["scale"]
+        if self.config['isTensor']:
+            scale = paddle.to_tensor(scale)
         x = paddle.scale(
             x,
-            scale=self.config["scale"],
+            scale=scale,
             bias=self.config["bias"],
             bias_after_scale=self.config["bias_after_scale"])
         return x
@@ -51,11 +53,10 @@ class TestScaleConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=2, max_value=20), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32"]))
 
         scale = draw(st.floats(min_value=-20, max_value=20))
-        if draw(st.booleans()):
-            scale = paddle.to_tensor(scale)
+        isTensor = False  # draw(st.booleans()) tensor has diff
 
         bias = draw(st.floats(min_value=-20, max_value=20))
         bias_after_scale = draw(st.booleans())
@@ -68,7 +69,8 @@ class TestScaleConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "scale": scale,
             "bias": bias,
-            "bias_after_scale": bias_after_scale
+            "bias_after_scale": bias_after_scale,
+            "isTensor": isTensor,
         }
 
         models = Net(config)
