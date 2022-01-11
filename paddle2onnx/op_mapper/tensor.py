@@ -633,6 +633,25 @@ class FullZeroLike():
             value=np.array(value).astype(np_dtype))
 
 
+@op_mapper('gather_nd')
+class Gather_nd():
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        data = node.input('X', 0)
+        index = node.input('Index', 0)
+        index_dtype = node.input_dtype('Index', 0)
+        index_node = None
+        if index_dtype != paddle.int64:
+            index_node = graph.make_node(
+                'Cast', inputs=[node.input('Index', 0)], to=dtypes.ONNX.INT64)
+        else:
+            index_node = index
+        graph.make_node(
+            'GatherND', inputs=[data, index_node], outputs=node.output('Out'))
+
+
 @op_mapper('gather')
 class Gather():
     support_opset_version_range = (7, 15)
