@@ -47,7 +47,7 @@ class Concat():
 
 @op_mapper('assign')
 class Assign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -185,20 +185,19 @@ class Numel():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         size_node = graph.make_node('Size', inputs=node.input('Input'))
-        if graph.opset_version > 12:
-            axes_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': [0]})
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[size_node, axes_node],
-                outputs=node.output('Out'))
-        else:
-            graph.make_node(
-                'Unsqueeze',
-                inputs=size_node,
-                axes=[0],
-                outputs=node.output('Out'))
+        graph.make_node(
+            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_12(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [0]})
+        graph.make_node(
+            'Unsqueeze',
+            inputs=[size_node, axes_node],
+            outputs=node.output('Out'))
 
 
 @op_mapper('split')

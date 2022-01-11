@@ -30,10 +30,9 @@ class Net(BaseNet):
         """
         forward
         """
+        shape = self.config['shape']
         if self.config['isTensor']:
-            shape = paddle.to_tensor(self.config['shape'])
-        else:
-            shape = self.config['shape']
+            shape = paddle.to_tensor(shape)
         x = paddle.expand(inputs, shape=shape)
         return x
 
@@ -51,7 +50,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=6), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        isTensor = draw(st.booleans())
+        isTensor = False  # draw(st.booleans()) future to valid
 
         n = random.randint(1, 6 - len(input_shape))
         pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
@@ -60,7 +59,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
             "op_names": ["expand_v2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [8, 9, 12],
+            "opset_version": [8, 9, 15],
             "input_spec_shape": [],
             "isTensor": isTensor,
             "shape": pre_shape + input_shape,
