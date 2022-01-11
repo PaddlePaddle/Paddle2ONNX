@@ -67,7 +67,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
 
         input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         axis_type = draw(st.sampled_from([
             "list",
             "int",
