@@ -45,9 +45,7 @@ class TestPadopsConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=4,
-                max_size=5))
+                    min_value=10, max_value=20), min_size=4, max_size=5))
 
         dtype = "float32"
 
