@@ -50,7 +50,7 @@ class TestDropoutConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=2, max_size=5))
+                    min_value=2, max_value=8), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         p = random.random()
