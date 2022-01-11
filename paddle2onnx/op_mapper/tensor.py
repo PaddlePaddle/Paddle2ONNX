@@ -290,10 +290,21 @@ class Slice():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        if len(node.input('StartsTensor')) > 0:
+            starts_node = node.input('StartsTensor')[0]
+            starts = graph.parameters[starts_node].attribute[0].t.int64_data
+            starts = [value for _, value in enumerate(starts)]
+        else:
+            starts = node.attr('starts')
 
+        if len(node.input('EndsTensor')) > 0:
+            ends_node = node.input('EndsTensor')[0]
+            ends = graph.parameters[ends_node].attribute[0].t.int64_data
+            ends = [value for _, value in enumerate(ends)]
+        else:
+            ends = node.attr('ends')
+
+        steps = node.attr('strides', [1] * len(ends))
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
             axis = axes[i]
@@ -329,10 +340,21 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        if len(node.input('StartsTensor')) > 0:
+            starts_node = node.input('StartsTensor')[0]
+            starts = graph.parameters[starts_node].attribute[0].t.int64_data
+            starts = [value for _, value in enumerate(starts)]
+        else:
+            starts = node.attr('starts')
 
+        if len(node.input('EndsTensor')) > 0:
+            ends_node = node.input('EndsTensor')[0]
+            ends = graph.parameters[ends_node].attribute[0].t.int64_data
+            ends = [value for _, value in enumerate(ends)]
+        else:
+            ends = node.attr('ends')
+
+        steps = node.attr('strides', [1] * len(ends))
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
             axis = axes[i]

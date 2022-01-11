@@ -29,7 +29,13 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.slice(inputs, axes=[0, 1], starts=[1, 0], ends=[4, 7])
+        starts = [1, 0]
+        ends = [4, 7]
+        if self.config['isStartsTensor']:
+            starts = paddle.to_tensor(starts)
+        if self.config['isEndsTensor']:
+            ends = paddle.to_tensor(ends)
+        x = paddle.slice(inputs, axes=[0, 1], starts=starts, ends=ends)
         return x
 
 
@@ -46,13 +52,16 @@ class TestSliceConvert(OPConvertAutoScanTest):
                     min_value=4, max_value=6), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-
+        isStartsTensor = draw(st.booleans())
+        isEndsTensor = draw(st.booleans())
         config = {
             "op_names": ["slice"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "isStartsTensor": isStartsTensor,
+            "isEndsTensor": isEndsTensor,
         }
 
         models = Net(config)
