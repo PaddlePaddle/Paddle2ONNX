@@ -82,7 +82,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
             "op_names": ["nearest_interp_v2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11],
+            "opset_version": [9],
             "input_spec_shape": [],
             "size": size,
             "scale_factor": scale_factor,
