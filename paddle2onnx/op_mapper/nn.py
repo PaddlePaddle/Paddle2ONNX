@@ -36,7 +36,6 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-
         assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
                             "is %s." % node.attrs['data_format']
@@ -54,138 +53,17 @@ class Conv():
             'group': group
         }
         auto_pad = node.attr('padding_algorithm')
-        input_x = node.input('Input')[0]
         if auto_pad == 'SAME':
-            input_shape = node.block.vars[input_x].shape[2:]
-            if input_shape[1] > 0 and input_shape[0] > 0:
-                output_spatial_shape = (
-                    np.array(input_shape) + strides - 1) // strides
-                total_pad = (output_spatial_shape - 1) * strides + (
-                    (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
-                pads = []
-                for i in range(len(total_pad)):
-                    pad = max(0, total_pad[i])
-                    pad_head = pad >> 1
-                    pad_tail = pad - pad_head
-                    pads = pads + [pad_head, pad_tail]
-
-                if len(pads) == 4:
-                    pads = [pads[i] for i in [0, 2, 1, 3]]
-                elif len(pads) == 6:
-                    pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
-                attrs['pads'] = pads
-            else:
-                if max(kernel_shape) >= max(strides):
-                    attrs['auto_pad'] = 'SAME_UPPER'
-                elif graph.opset_version >= 11:
-                    input_x = cls.autopad(graph, node, strides, kernel_shape,
-                                          dilations)
-                else:
-                    raise Exception(
-                        "Conv in onnx should need opset_version>=11, when kernel_shape < strides," \
-                        "Try converting with opset_version>=11 "
-                    )
-
+            attrs['auto_pad'] = 'SAME_UPPER'
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
             attrs['pads'] = pads
         graph.make_node(
             'Conv',
-            inputs=[input_x] + node.input('Filter'),
+            inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
-
-    @classmethod
-    def compute_output_shape(cls, graph, node):
-        input_node = graph.make_node('Shape', inputs=node.input('Input')[0])
-        ndim = node.block.vars[node.input('Input')[0]].ndim
-        if graph.opset_version < 10:
-            shape_node = graph.make_node(
-                'Slice', inputs=[input_node], starts=[2], ends=[ndim])
-        else:
-            starts_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': [2]})
-            ends_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': [ndim]})
-            shape_node = graph.make_node(
-                'Slice', inputs=[input_node, starts_node, ends_node])
-        return shape_node
-
-    @classmethod
-    def autopad(cls, graph, node, strides, kernel_shape, dilations):
-        out_shape = cls.compute_output_shape(graph, node)
-        strides_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': strides})
-        dilated_kernel_shape = [
-            (kernel - 1) * dilation + 1
-            for kernel, dilation in zip(kernel_shape, dilations)
-        ]
-        dilated_kernel_shape_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.INT64,
-                   'value': dilated_kernel_shape})
-
-        zero = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': 0})
-        # one = graph.make_node(
-        #     'Constant', attrs={
-        #         'dtype': dtypes.ONNX.INT64,
-        #         'value': 1
-        #     })
-        two = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': 2})
-
-        mod = graph.make_node('Mod', inputs=[out_shape, strides_node])
-        leftSub = graph.make_node(
-            'Sub', inputs=[dilated_kernel_shape_node, strides_node])
-        rightSub = graph.make_node(
-            'Sub', inputs=[dilated_kernel_shape_node, mod])
-        if graph.opset_version < 12:
-            cast_leftSub = graph.make_node(
-                'Cast', inputs=[leftSub], to=dtypes.ONNX.FLOAT)
-            cast_zero = graph.make_node(
-                'Cast', inputs=[zero], to=dtypes.ONNX.FLOAT)
-            left = graph.make_node('Max', inputs=[cast_leftSub, cast_zero])
-            cast_rightSub = graph.make_node(
-                'Cast', inputs=[rightSub], to=dtypes.ONNX.FLOAT)
-            right = graph.make_node('Max', inputs=[cast_rightSub, cast_zero])
-
-            left = graph.make_node('Cast', inputs=[left], to=dtypes.ONNX.INT64)
-            right = graph.make_node(
-                'Cast', inputs=[right], to=dtypes.ONNX.INT64)
-        else:
-            left = graph.make_node('Max', inputs=[leftSub, zero])
-            right = graph.make_node('Max', inputs=[rightSub, zero])
-
-        equal_node = graph.make_node('Equal', inputs=[mod, zero])
-        total_pad_node = graph.make_node(
-            'Where', inputs=[equal_node, left, right])
-
-        two_zero = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [0, 0]})
-
-        pad_before = graph.make_node('Div', inputs=[total_pad_node, two])
-        pad_after = graph.make_node('Sub', inputs=[total_pad_node, pad_before])
-
-        pad_node = graph.make_node(
-            'Concat',
-            inputs=[two_zero, pad_before, two_zero, pad_after],
-            axis=0)
-        attrs_pad = {'mode': 'constant'}
-        value_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': 0.0})
-        input = node.input('Input') + [pad_node, value_node]
-        input = graph.make_node('Pad', inputs=input, attrs=attrs_pad)
-        return input
 
 
 @op_mapper(
@@ -196,7 +74,6 @@ class ConvTranspose():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         output_padding = node.attr('output_padding')
-        output_size = node.attr('output_size')
         kernel_shape = node.input_shape('Filter', 0)
         dilations = node.attr('dilations')
         kernel_shape = kernel_shape[2:]
@@ -215,113 +92,25 @@ class ConvTranspose():
             pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
 
         attrs = {
+            'dilations': dilations,
             'kernel_shape': kernel_shape,
             'strides': strides,
             'group': group
         }
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
-            input_shape = node.block.vars[node.input('Input')[0]].shape[2:]
-            if input_shape[0] > 0 and input_shape[1] > 0:
-                n_input_dims = len(input_shape)
-                pads, dilations = cls.paddle_pad(
-                    input_shape, kernel_shape, strides, dilations, n_input_dims)
-                # pads1 = cls.onnx_pad(kernel_shape, strides, dilations, n_input_dims)
-                # input = cls.autopad(graph, node, strides, input_shape, kernel_shape, dilations)
-                attrs['pads'] = pads
-            else:
-                attrs['auto_pad'] = 'SAME_UPPER'
+            attrs['auto_pad'] = 'SAME_UPPER'
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
             attrs['pads'] = pads
-
-        attrs['dilations'] = dilations
         if output_padding and len(output_padding) > 0:
             attrs['output_padding'] = output_padding
-        if output_size and len(output_size) > 0:
-            attrs['output_size'] = output_size
         graph.make_node(
             'ConvTranspose',
             inputs=node.input('Input') + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
-
-    @classmethod
-    def paddle_pad(cls, input_shape, kernel_shape, strides, dilations,
-                   n_input_dims):
-        pads = [0] * n_input_dims * 2
-        for i in range(len(input_shape)):
-            out_size = (input_shape[i] + strides[i] - 1) // strides[i]
-            pad_sum = max(
-                (out_size - 1) * strides[i] + kernel_shape[i] - input_shape[i],
-                0)
-            half_pad_small = pad_sum // 2
-            half_pad_big = pad_sum - half_pad_small
-            pads[i] = half_pad_small
-            pads[i + n_input_dims] = half_pad_big
-            dilations[i] = 1
-        return pads, dilations
-
-    @classmethod
-    def onnx_pad(cls, kernel_shape, strides, dilations, n_input_dims):
-        effective_kernel_shape = list(kernel_shape)
-        for i in range(len(kernel_shape)):
-            effective_kernel_shape[i] = (kernel_shape[i] - 1) * dilations[i] + 1
-
-        pads = [0] * n_input_dims * 2
-        input_dims_size = n_input_dims
-        for i in range(input_dims_size):
-            total_pad = effective_kernel_shape[i] - strides[i]
-            if total_pad < 0:
-                total_pad = 0
-            half_pad_small = total_pad >> 1
-            half_pad_big = total_pad - half_pad_small
-            pads[i] = half_pad_small
-            pads[i + input_dims_size] = half_pad_big
-        return pads
-
-    @classmethod
-    def autopad(cls, graph, node, strides, input_shape, kernel_shape,
-                dilations):
-        # get attributes as constants
-        strides = strides
-        dilated_kernel_shape = np.array(
-            [(kernel - 1) * dilation + 1
-             for kernel, dilation in zip(kernel_shape, dilations)])
-        # get input shape
-        shape = input_shape
-        # set up integer constants
-        zero = 0
-        one = 1
-        two = 2
-        # Calculate total padding
-        mod = np.mod(shape, strides)
-        left = np.maximum(dilated_kernel_shape - strides, zero)
-        right = np.maximum(dilated_kernel_shape - mod, zero)
-        total_pad = np.where(np.equal(mod, zero), left, right)
-        if True:
-            total_pad = np.array(kernel_shape) - one - total_pad
-        # split total padding into before and after
-        pad_before = total_pad // two
-        pad_after = total_pad - pad_before
-        zero0 = np.zeros([2], dtype='int64')
-        pad0 = np.concatenate((zero0, pad_before, zero0, pad_after), axis=0)
-        input_x = node.inputs['Input']
-        attrs_pad = {'mode': 'constant', }
-        if graph.opset_version >= 11:
-            pads_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': list(pad0)})
-            value_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': 0.0})
-            input_x = input_x + [pads_node, value_node]
-        else:
-            pass
-        input_x = graph.make_node('Pad', inputs=input_x, attrs=attrs_pad)
-        return input_x
 
 
 @op_mapper('pool2d')
@@ -348,7 +137,6 @@ class Pool():
         assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCHW', but received data format " \
                             "is %s." % node.attrs['data_format']
-
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1]):
             onnx_node = graph.make_node(
@@ -366,7 +154,7 @@ class Pool():
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
 
-            # check if kernel_size is fixed.
+            #check if kernel_size is fixed.
             if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
                     input_w, output_w):
                 raise Exception(
@@ -506,7 +294,7 @@ class Pool3D():
             kernel_h = input_h - (output_h - 1) * stride_h
             kernel_w = input_w - (output_w - 1) * stride_w
 
-            # check if kernel_size is fixed.
+            #check if kernel_size is fixed.
             if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
                     input_w, output_w) or not cls.is_same_span(input_d,
                                                                output_d):
@@ -547,28 +335,11 @@ class Pool3D():
                 k_size[1] = input_shape[3] + paddings[1]
             if input_shape[4] > 0 and input_shape[4] + paddings[2] < k_size[2]:
                 k_size[2] = input_shape[4] + paddings[2]
-
-            pads = paddings
-            if len(pads) == 2 or len(pads) == 3:
-                pads = pads + pads
-            elif len(pads) == 4:
-                pads = [pads[i] for i in [0, 2, 1, 3]]
-            elif len(pads) == 6:
-                pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
-
-            strides = node.attr('strides')
             attrs = {
                 'kernel_shape': k_size,
-                'strides': strides,
+                'strides': node.attr('strides'),
+                'pads': node.attr('paddings') + node.attr('paddings'),
             }
-            auto_pad = node.attr('padding_algorithm')
-            if auto_pad == 'SAME':
-                attrs['auto_pad'] = 'SAME_UPPER'
-            elif auto_pad == 'VALID':
-                attrs['auto_pad'] = 'VALID'
-            else:
-                attrs['pads'] = pads
-
             if node.attr('ceil_mode') and graph.opset_version < 10:
                 raise Exception(
                     "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
