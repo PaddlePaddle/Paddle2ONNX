@@ -21,6 +21,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx import utils
+import paddle
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d', 'conv3d'])
@@ -879,12 +880,24 @@ class RNN():
 
 @op_mapper('thresholded_relu')
 class ThresholdedRelu():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (10, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        graph.make_node(
-            'ThresholdedRelu',
-            inputs=node.input('X'),
-            alpha=node.attr('threshold'),
-            outputs=node.output('Out'))
+    def opset_10(cls, graph, node, **kw):
+        x_dtype = node.input_dtype('X', 0)
+        if x_dtype != paddle.float32:
+            x = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.FLOAT)
+            threshholdedrelu_node = graph.make_node(
+                'ThresholdedRelu', inputs=[x], alpha=node.attr('threshold'))
+            graph.make_node(
+                'Cast',
+                inputs=[threshholdedrelu_node],
+                outputs=node.output('Out'),
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+        else:
+            graph.make_node(
+                'ThresholdedRelu',
+                inputs=node.input('X'),
+                alpha=node.attr('threshold'),
+                outputs=node.output('Out'))
