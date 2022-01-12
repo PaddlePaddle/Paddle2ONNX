@@ -33,7 +33,7 @@ class Net(BaseNet):
         if self.config['repeat_times_dtype'] == "list":
             repeat_times = repeat_times
         elif self.config['repeat_times_dtype'] == "Tensor":
-            repeat_times = paddle.to_tensor(repeat_times)
+            repeat_times = paddle.to_tensor(repeat_times, dtype="int32")
         x = paddle.tile(inputs, repeat_times=repeat_times)
         return x
 
