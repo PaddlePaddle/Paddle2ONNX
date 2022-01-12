@@ -32,19 +32,22 @@ class Net(BaseNet):
         x = paddle.nn.functional.conv2d_transpose(
             inputs,
             weight,
+            bias=None,
             stride=self.config["stride"],
             padding=self.config["padding"],
-            dilation=self.config["dilation"],
             output_padding=self.config["output_padding"],
+            dilation=self.config["dilation"],
             groups=self.config["groups"],
+            output_size=None,
             data_format=self.config["data_format"])
+
         return x
 
 
 class TestConv2dTransposeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.Conv2dTranspose
-    OPset version: 9
+    api: paddle.nn.functional.conv2d_transpose
+    OPset version: 7, 9, 15
     1.OPset version需要根据op_mapper中定义的version来设置。
     2.测试中所有OP对应升级到Opset version 15。
     """
@@ -136,10 +139,12 @@ class TestConv2dTransposeConvert(OPConvertAutoScanTest):
         if padding == "SAME":
             dilations = 1
 
+        dtype = draw(st.sampled_from(["float32"]))
+
         config = {
             "op_names": ["conv2d_transpose"],
             "test_data_shapes": [input_shape, kernel_size],
-            "test_data_types": [['float32'], ['float32']],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape":
             [input_shape, kernel_size],  # [-1, input_shape[1], -1, -1]
