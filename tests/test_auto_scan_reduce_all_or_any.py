@@ -43,9 +43,6 @@ class Net(BaseNet):
         x = op_api_map[self.config["op_names"]](inputs,
                                                 axis=self.config["dim"],
                                                 keepdim=self.config["keep_dim"])
-        x = op_api_map[self.config["op_names"]](inputs,
-                                                axis=self.config["dim"],
-                                                keepdim=self.config["keep_dim"])
         x = paddle.unsqueeze(x, axis=0)
         x = x.astype("int32")
         return x
