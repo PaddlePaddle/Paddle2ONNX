@@ -29,35 +29,30 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+        x = paddle.nn.functional.gelu(inputs, approximate=False)
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestGeluConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
-    OPset version: 7, 9, 15
+    api: paddle.nn.functional.gelu
+    OPset version: 9, 13, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=5, max_value=20), min_size=1, max_size=4))
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
-
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["elu"],
+            "op_names": ["gelu"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [9, 13, 15],
             "input_spec_shape": [],
-            "alpha": alpha
         }
 
         models = Net(config)
