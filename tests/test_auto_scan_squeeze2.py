@@ -43,17 +43,30 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=3, max_size=3))
-        input_shape[0] = 1
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+                    min_value=4, max_value=10), min_size=3, max_size=5))
 
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        axis = None
+        axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
+        if axis_dtype == "list":
+            input_shape[0] = 1
+            input_shape[1] = 1
+            axis = [0, 1]
+        elif axis_dtype == "int":
+            axis = draw(
+                st.integers(
+                    min_value=0, max_value=len(input_shape) - 1))
+            if draw(st.booleans()):
+                input_shape[axis] = 1
+        else:
+            input_shape[0] = 1
         config = {
             "op_names": ["squeeze"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "axis": 0,
+            "axis": axis,
         }
 
         models = Net(config)
