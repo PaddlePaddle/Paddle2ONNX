@@ -26,7 +26,7 @@ import paddle
 
 @op_mapper(['conv2d', 'depthwise_conv2d', 'conv3d'])
 class Conv():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

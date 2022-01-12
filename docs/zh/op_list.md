@@ -26,7 +26,7 @@
 | cos | 7~12 |
 | cosh | 9~12 |
 | concat | 1~12 |
-| conv2d | 1~12 |
+| conv2d | 1~15 |
 | conv2d_transpose | 1~12 |
 | conv3d | 1~12 |
 | collect_fpn_proposals | 11~12 |
