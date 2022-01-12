@@ -719,7 +719,8 @@ class ReduceAll():
     @classmethod
     def opset_6(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
-
+        input_dtype = node.block.vars[node.input('X', 0)].dtype
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
         all_node = graph.make_node(
             'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.FLOAT)
         if node.attr('reduce_all'):
@@ -730,28 +731,28 @@ class ReduceAll():
                 for i in range(len(node.input_shape('X', 0)) - 1):
                     unsqueeze_node = graph.make_node(
                         'Unsqueeze', axes=[0], inputs=[unsqueeze_node])
-                graph.make_node(
-                    'Cast',
-                    inputs=[unsqueeze_node],
-                    to=dtypes.ONNX.FLOAT,
-                    outputs=node.output('Out'))
+                output_node = unsqueeze_node
             else:
-                graph.make_node(
-                    op_type, inputs=squeeze_node, outputs=node.output('Out'))
+                output_node = graph.make_node(op_type, inputs=squeeze_node)
         else:
-            graph.make_node(
+            output_node = graph.make_node(
                 op_type,
                 inputs=all_node,
                 keepdims=node.attr('keep_dim'),
-                axes=node.attr('dim'),
-                outputs=node.output('Out'))
+                axes=node.attr('dim'))
+        graph.make_node(
+            'Cast',
+            inputs=[output_node],
+            to=input_dtype,
+            outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
-
+        input_dtype = node.block.vars[node.input('X', 0)].dtype
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
         all_node = graph.make_node(
-            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.FLOAT)
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
         if node.attr('reduce_all'):
             flatten_x = graph.make_node('Flatten', inputs=all_node, axis=0)
             squeeze_node = graph.make_node('Squeeze', inputs=[flatten_x])
@@ -764,21 +765,20 @@ class ReduceAll():
                                'value': [0]})
                     unsqueeze_node = graph.make_node(
                         'Unsqueeze', inputs=[unsqueeze_node, axes_node])
-                graph.make_node(
-                    'Cast',
-                    inputs=[unsqueeze_node],
-                    to=dtypes.ONNX.FLOAT,
-                    outputs=node.output('Out'))
+                output_node = unsqueeze_node
             else:
-                graph.make_node(
-                    op_type, inputs=squeeze_node, outputs=node.output('Out'))
+                output_node = graph.make_node(op_type, inputs=squeeze_node)
         else:
-            graph.make_node(
+            output_node = graph.make_node(
                 op_type,
                 inputs=all_node,
                 keepdims=node.attr('keep_dim'),
-                axes=node.attr('dim'),
-                outputs=node.output('Out'))
+                axes=node.attr('dim'))
+        graph.make_node(
+            'Cast',
+            inputs=[output_node],
+            to=input_dtype,
+            outputs=node.output('Out'))
 
 
 @op_mapper(
