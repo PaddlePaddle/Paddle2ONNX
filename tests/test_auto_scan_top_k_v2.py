@@ -32,7 +32,7 @@ class Net(BaseNet):
         """
         k = self.config['k']
         if self.config['isTensor']:
-            k = paddle.to_tensor(k)
+            k = paddle.to_tensor(k, dtype="int32")
         x = paddle.topk(
             input,
             k=k,
