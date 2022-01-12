@@ -25,39 +25,43 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, x, y):
         """
         forward
         """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+        x = paddle.matmul(
+            x,
+            y,
+            transpose_x=self.config["transpose_x"],
+            transpose_y=self.config["transpose_y"])
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestMatmulConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
+    api: paddle.matmul
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
-
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
-
-        dtype = draw(st.sampled_from(["float32"]))
+                    min_value=5, max_value=20), min_size=3, max_size=5))
+        # broadcast
+        input_shape2 = input_shape1[-2:]
+        input_shape2.reverse()
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+        transpose = draw(st.booleans())
 
         config = {
-            "op_names": ["elu"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
+            "op_names": ["matmul_v2"],
+            "test_data_shapes": [input_shape1, input_shape2],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "alpha": alpha
+            "transpose_x": transpose,
+            "transpose_y": transpose,
         }
 
         models = Net(config)
