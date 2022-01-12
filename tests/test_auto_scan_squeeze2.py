@@ -56,8 +56,7 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
             axis = draw(
                 st.integers(
                     min_value=0, max_value=len(input_shape) - 1))
-            if draw(st.booleans()):
-                input_shape[axis] = 1
+            input_shape[axis] = 1
         else:
             input_shape[0] = 1
         config = {
