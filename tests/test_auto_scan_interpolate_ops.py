@@ -31,8 +31,12 @@ class Net(BaseNet):
         """
         scale_factor = self.config['scale_factor']
         size = self.config['size']
+        align_mode = self.config['align_mode']
         x = paddle.nn.functional.interpolate(
-            x=inputs, size=size, scale_factor=scale_factor)
+            x=inputs,
+            size=size,
+            scale_factor=scale_factor,
+            align_mode=align_mode, )
         return x
 
 
@@ -63,7 +67,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
 
         mode = 'nearest',
         align_corners = False,
-        align_mode = 0,
+        align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = 'NCHW',
         config = {
             "op_names": ["nearest_interp_v2"],
