@@ -40,7 +40,7 @@ class Net(BaseNet):
 class TestExpandConvert(OPConvertAutoScanTest):
     """
     api: paddle.expand
-    OPset version: 8, 9, 12, 15
+    OPset version: 8, 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -50,7 +50,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=6), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        isTensor = False  # draw(st.booleans()) future to valid
+        isTensor = False  # draw(st.booleans()) # future to valid
 
         n = random.randint(1, 6 - len(input_shape))
         pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)

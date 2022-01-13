@@ -161,16 +161,14 @@ class ExpandV2():
                 'Cast', inputs=[shape], to=dtypes.ONNX.INT64)
         else:
             if len(node.input('Shape')) > 0:
-                shape_node = node.input('Shape')[0]
-                shape = graph.parameters[shape_node].attribute[0].t.int64_data
-                shape = [value for _, value in enumerate(shape)]
+                shape = node.input('Shape')[0]
             elif len(node.attr('shape')) > 0:
                 shape = node.attr('shape')
                 for idx in range(len(shape)):
                     if shape[idx] == -1:
                         shape[idx] = 1
-            shape = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=shape)
+                shape = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=shape)
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],
