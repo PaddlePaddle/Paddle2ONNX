@@ -1090,16 +1090,17 @@ class Scale():
             graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
-            dtype = node.block.vars[node.input('X', 0)].dtype
-            dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
             scale_node = graph.make_node(
-                'Constant', attrs={'dtype': dtype,
-                                   'value': [scale]})
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [scale]})
             bias_node = graph.make_node(
-                'Constant', attrs={'dtype': dtype,
-                                   'value': [bias]})
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [bias]})
             cast_node = graph.make_node(
-                'Cast', inputs=node.input('X'), attrs={'to': dtype})
+                'Cast', inputs=node.input('X'),
+                attrs={'to': dtypes.ONNX.FLOAT})
             if node.attr('bias_after_scale'):
                 node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(
