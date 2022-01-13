@@ -96,6 +96,24 @@ class Unstack():
             outputs=node.output('Y'),
             axis=node.attr('axis'))
 
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        sections = node.attr('sections')
+        if len(sections) > 0:
+            const_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=sections)
+            graph.make_node(
+                'Split',
+                inputs=node.input('X') + [const_node],
+                outputs=node.output('Out'),
+                axis=node.attr('axis'))
+        else:
+            graph.make_node(
+                'Split',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                axis=node.attr('axis'))
+
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
