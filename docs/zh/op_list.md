@@ -14,9 +14,9 @@
 | atan | 7~12 |
 | any | 6~12 |
 | batch_norm | 1~12 |
-| bicubic_interp_v2 | 9~12 |
-| bilinear_interp | 9~12 |
-| bilinear_interp_v2 | 9~12 |
+| bicubic_interp_v2 | 11~15 |
+| bilinear_interp | 7~15 |
+| bilinear_interp_v2 | 7~15 |
 | bmm | 1~12 |
 | box_coder | 7~12 |
 | box_clip | 11~12 |
@@ -107,8 +107,8 @@
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
 | mv | 1~12 |
-| nearest_interp | 9~12 |
-| nearest_interp_v2 | 9~12 |
+| nearest_interp | 7~15 |
+| nearest_interp_v2 | 7~15 |
 | norm | 1~12 |
 | numel | 1~12 |
 | pad1d | 2~12 |
@@ -167,7 +167,7 @@
 | top_k_v2 | 11~12 |
 | top_k | 11~12 |
 | transpose2 | 1~12 |
-| trilinear_interp_v2 | 9~12 |
+| trilinear_interp_v2 | 7~15 |
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~12 |
