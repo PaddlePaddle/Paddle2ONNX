@@ -25,8 +25,8 @@ op_api_map = {
     'trilinear': 'trilinear_interp_v2',
     'nearest': 'nearest_interp_v2',
     'bicubic': 'bicubic_interp_v2',
-    # 'bilinear_interp': 'linear',
-    # 'nearest_interp': 'nearest',
+    'nearest_v1': 'nearest_interp',
+    'bilinear_v1': 'bilinear_interp',
 }
 
 data_format_map = {
@@ -35,8 +35,8 @@ data_format_map = {
     'trilinear': 'NCDHW',
     'nearest': 'NCHW',
     'bicubic': 'NCHW',
-    # 'bilinear_interp': 'linear',
-    # 'nearest_interp': 'nearest',
+    'nearest_v1': 'NCHW',
+    'bilinear_v1': 'NCHW',
 }
 
 op_set_map = {
@@ -44,9 +44,9 @@ op_set_map = {
     'bilinear': [11],
     'trilinear': [11],
     'nearest': [9],
-    'bicubic': [11]
-    # 'bilinear_interp': 'linear',
-    # 'nearest_interp': 'nearest',
+    'bicubic': [11],
+    'nearest_v1': [11],
+    'bilinear_v1': [11],
 }
 
 
@@ -161,6 +161,95 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         }
 
         models = Net(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        if self.config['mode'] == 'nearest_v1':
+            x = paddle.fluid.layers.resize_nearest(inputs, scale=2.0)
+        else:
+            x = paddle.fluid.layers.resize_bilinear(inputs, scale=2.0)
+        return x
+
+
+class TestInterpolateConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.nn.functional.interpolate
+    OPset version: 9, 11, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=2, max_value=8), min_size=5, max_size=6))
+
+        dtype = draw(st.sampled_from(["float32"]))
+        # mode = draw(st.sampled_from(["nearest_v1"]))
+        # mode = draw(st.sampled_from(["bilinear_v1"]))
+        mode = draw(st.sampled_from(["nearest_v1", "bilinear_v1"]))
+        align_corners = draw(st.booleans()),
+        align_mode = draw(st.integers(min_value=0, max_value=1))
+        data_format = data_format_map[mode]
+        if data_format == "NCW":
+            input_shape = np.random.choice(input_shape, 3)
+        elif data_format == "NCHW":
+            input_shape = np.random.choice(input_shape, 4)
+        else:
+            input_shape = np.random.choice(input_shape, 5)
+        if draw(st.booleans()):
+            size = None
+            if draw(st.booleans()):
+                # float
+                scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
+            else:
+                # list
+                scale_factor = [1.2, 1.3, 1.4, 1.5, 1.6]
+                if data_format == "NCW":
+                    scale_factor = np.random.choice(scale_factor, 1).tolist()
+                elif data_format == "NCHW":
+                    scale_factor = np.random.choice(scale_factor, 2).tolist()
+                else:
+                    scale_factor = np.random.choice(scale_factor, 3).tolist()
+        else:
+            scale_factor = None
+            # list
+            size = [12, 13, 14, 15, 16]
+            if data_format == "NCW":
+                size = np.random.choice(size, 1).tolist()
+            elif data_format == "NCHW":
+                size = np.random.choice(size, 2).tolist()
+            else:
+                size = np.random.choice(size, 3).tolist()
+        op_name = op_api_map[mode]
+        opset_version = op_set_map[mode]
+        config = {
+            "op_names": [op_name],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": opset_version,
+            "input_spec_shape": [],
+            "size": size,
+            "scale_factor": scale_factor,
+            "mode": mode,
+            "align_corners": align_corners,
+            "align_mode": align_mode,
+            "data_format": data_format,
+        }
+
+        models = Net1(config)
 
         return (config, models)
 
