@@ -22,7 +22,7 @@ import paddle
 op_api_map = {
     'linear': 'linear_interp_v2',
     # 'bilinear_interp_v2': 'linear',
-    # 'trilinear_interp_v2': 'linear',
+    'trilinear': 'trilinear_interp_v2',
     'nearest': 'nearest_interp_v2',
     # 'bicubic_interp_v2': 'cubic',
     # 'bilinear_interp': 'linear',
@@ -47,19 +47,20 @@ class Net(BaseNet):
         data_format = self.config['data_format']
         if mode == "nearest":
             align_corners = False
-            data_format = 'NCHW'
         elif mode == "linear":
             align_corners = False
             align_mode = 1
-
+        else:
+            align_corners = False
+            align_mode = 1
         x = paddle.nn.functional.interpolate(
             x=inputs,
             size=size,
             scale_factor=scale_factor,
             mode=mode,
-            align_corners=align_corners,
-            align_mode=align_mode,
-            data_format=self.config['data_format'])
+            align_corners=False,
+            align_mode=1,
+            data_format=data_format)
         return x
 
 
@@ -73,32 +74,47 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=8), min_size=4, max_size=4))
+                    min_value=2, max_value=8), min_size=5, max_size=6))
 
         dtype = draw(st.sampled_from(["float32"]))
-        mode = draw(st.sampled_from(["linear"]))
+        # mode = draw(st.sampled_from(["linear"]))
+        # mode = draw(st.sampled_from(["nearest"]))
+        mode = draw(st.sampled_from(["trilinear"]))
         align_corners = draw(st.booleans()),
         align_mode = draw(st.integers(min_value=0, max_value=1))
-        data_format = draw(st.sampled_from(["NCW"]))
+        # data_format = draw(st.sampled_from(["NCW"]))
+        # data_format = draw(st.sampled_from(["NCHW"]))
+        data_format = draw(st.sampled_from(["NCDHW"]))
         if data_format == "NCW":
             input_shape = np.random.choice(input_shape, 3)
-
+        elif data_format == "NCHW":
+            input_shape = np.random.choice(input_shape, 4)
+        else:
+            input_shape = np.random.choice(input_shape, 5)
         if draw(st.booleans()):
             size = None
             if draw(st.booleans()):
+                # float
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
+                # list
+                scale_factor = [1.2, 1.3, 1.4, 1.5, 1.5]
                 if data_format == "NCW":
-                    scale_factor = [1.5]
+                    scale_factor = np.random.choice(size, 1)
                 elif data_format == "NCHW":
-                    scale_factor = [1.5, 2.0]
+                    scale_factor = np.random.choice(size, 2)
+                else:
+                    scale_factor = np.random.choice(size, 3)
         else:
             scale_factor = None
+            # list
+            size = [12, 13, 14]
             if data_format == "NCW":
-                size = [12]
+                size = np.random.choice(size, 1)
             elif data_format == "NCHW":
-                size = [12, 10]
-
+                size = np.random.choice(size, 2)
+            else:
+                size = np.random.choice(size, 3)
         op_name = op_api_map[mode]
         config = {
             "op_names": [op_name],
