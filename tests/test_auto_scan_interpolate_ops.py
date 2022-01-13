@@ -19,6 +19,16 @@ import numpy as np
 import unittest
 import paddle
 
+op_api_map = {
+    'linear': 'linear_interp_v2',
+    # 'bilinear_interp_v2': 'linear',
+    # 'trilinear_interp_v2': 'linear',
+    'nearest': 'nearest_interp_v2',
+    # 'bicubic_interp_v2': 'cubic',
+    # 'bilinear_interp': 'linear',
+    # 'nearest_interp': 'nearest',
+}
+
 
 class Net(BaseNet):
     """
@@ -38,6 +48,10 @@ class Net(BaseNet):
         if mode == "nearest":
             align_corners = False
             data_format = 'NCHW'
+        elif mode == "linear":
+            align_corners = False
+            align_mode = 1
+
         x = paddle.nn.functional.interpolate(
             x=inputs,
             size=size,
@@ -59,27 +73,35 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=10), min_size=4, max_size=4))
+                    min_value=2, max_value=8), min_size=4, max_size=4))
 
-        input_shape = [2, 3, 6, 10]
         dtype = draw(st.sampled_from(["float32"]))
+        mode = draw(st.sampled_from(["linear"]))
+        align_corners = draw(st.booleans()),
+        align_mode = draw(st.integers(min_value=0, max_value=1))
+        data_format = draw(st.sampled_from(["NCW"]))
+        if data_format == "NCW":
+            input_shape = np.random.choice(input_shape, 3)
 
         if draw(st.booleans()):
             size = None
             if draw(st.booleans()):
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
-                scale_factor = [1.5, 2]
+                if data_format == "NCW":
+                    scale_factor = [1.5]
+                elif data_format == "NCHW":
+                    scale_factor = [1.5, 2.0]
         else:
             scale_factor = None
-            size = [12, 20]
+            if data_format == "NCW":
+                size = [12]
+            elif data_format == "NCHW":
+                size = [12, 10]
 
-        mode = draw(st.sampled_from(["nearest"]))
-        align_corners = draw(st.booleans()),
-        align_mode = draw(st.integers(min_value=0, max_value=1))
-        data_format = draw(st.sampled_from(["NCHW"]))
+        op_name = op_api_map[mode]
         config = {
-            "op_names": ["nearest_interp_v2"],
+            "op_names": [op_name],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [9],
