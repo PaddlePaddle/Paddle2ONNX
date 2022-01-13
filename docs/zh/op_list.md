@@ -30,7 +30,7 @@
 | conv2d_transpose | 1~12 |
 | conv3d | 1~12 |
 | collect_fpn_proposals | 11~12 |
-| cumsum | 11~12 |
+| cumsum | 11~15 |
 | deformable_conv | 11~12 |
 | depthwise_conv2d | 1~12 |
 | depthwise_conv2d_transpose | 1~12 |
@@ -103,7 +103,7 @@
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
 | meshgrid | 1~12 |
-| mul | 1~12 |
+| mul | 5~15 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
 | mv | 1~12 |
@@ -135,7 +135,7 @@
 | roi_align | 10~12 |
 | round | 11~12 |
 | rsqrt | 6~12 |
-| softmax | 1~12 |
+| softmax | 1~15 |
 | scale | 1~12 | opset 1~6 limited supported |
 | scatter | 1~12 |
 | scatter_nd_add | 11~12 |

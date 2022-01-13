@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
+from onnxbase import randtool
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
@@ -25,44 +26,48 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, input1, input2):
         """
         forward
         """
-        x = paddle.cast(inputs, dtype=self.config["dtype"])
-        x = x.astype("int32")
+        x = paddle.gather_nd(input1, input2)
         return x
 
 
-class TestCastConvert(OPConvertAutoScanTest):
+class TestGatherNDConvert(OPConvertAutoScanTest):
     """
-    api: paddle.cast
-    OPset version: 7, 9, 13, 15
+    api: paddle.gather_nd
+    OPset version: 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=2, max_size=5))
 
-        input_spec = [-1] * len(input_shape)
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
-        dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        dtype2 = draw(st.sampled_from(["int32", "int64"]))
 
-        output_dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        input2_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=10, max_value=20), min_size=2, max_size=4))
+        input2_shape[-1] = draw(
+            st.integers(
+                min_value=1, max_value=len(input_shape)))
+
+        def generator_data():
+            input_data = randtool("int", 0, 10, input2_shape)
+            return input_data
 
         config = {
-            "op_names": ["cast"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 13, 15],
+            "op_names": ["gather_nd"],
+            "test_data_shapes": [input_shape, generator_data],
+            "test_data_types": [[dtype], [dtype2]],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
-            "dtype": output_dtype,
         }
 
         models = Net(config)

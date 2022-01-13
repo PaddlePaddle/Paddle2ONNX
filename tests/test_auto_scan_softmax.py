@@ -29,40 +29,37 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.cast(inputs, dtype=self.config["dtype"])
-        x = x.astype("int32")
+
+        x = paddle.nn.functional.softmax(inputs, axis=self.config["axis"])
+
         return x
 
 
-class TestCastConvert(OPConvertAutoScanTest):
+class TestSoftmaxConvert(OPConvertAutoScanTest):
     """
-    api: paddle.cast
-    OPset version: 7, 9, 13, 15
+    api: paddle.nn.functional.softmax
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=4, max_value=10), min_size=1, max_size=5))
 
-        input_spec = [-1] * len(input_shape)
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
-        dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
-
-        output_dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["cast"],
+            "op_names": ["softmax"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 13, 15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "dtype": output_dtype,
+            "axis": axis
         }
 
         models = Net(config)
