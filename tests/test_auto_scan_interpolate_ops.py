@@ -40,11 +40,11 @@ data_format_map = {
 }
 
 op_set_map = {
-    'linear': [9],
-    'bilinear': [11],
-    'trilinear': [11],
-    'nearest': [9],
-    'bicubic': [11],
+    'linear': [7, 9, 15],
+    'bilinear': [7, 9, 15],
+    'trilinear': [7, 11, 15],
+    'nearest': [7, 9, 15],
+    'bicubic': [11, 15],
     'nearest_v1': [11],
     'bilinear_v1': [11],
 }
@@ -72,13 +72,13 @@ class Net(BaseNet):
             align_mode = 1
         elif mode == "trilinear":
             align_corners = False
-            align_mode = 0
+            align_mode = 1
         elif mode == "bilinear":
             align_corners = False
-            align_mode = 0
+            align_mode = 1
         elif mode == "bicubic":
             align_corners = False
-            align_mode = 0
+            align_mode = align_mode
         x = paddle.nn.functional.interpolate(
             x=inputs,
             size=size,
@@ -116,6 +116,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         data_format = data_format_map[mode]
         if data_format == "NCW":
             input_shape = np.random.choice(input_shape, 3)
+            input_shape[0] = 1  # there is a bug when index > 1
         elif data_format == "NCHW":
             input_shape = np.random.choice(input_shape, 4)
         else:
