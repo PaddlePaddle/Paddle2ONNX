@@ -46,7 +46,7 @@ op_set_map = {
     'nearest': [7, 9, 15],
     'bicubic': [11, 15],
     'nearest_v1': [7, 11, 15],
-    'bilinear_v1': [11, 15],
+    'bilinear_v1': [7, 11, 15],
 }
 
 
@@ -178,10 +178,13 @@ class Net1(BaseNet):
         """
         forward
         """
+        align_corners = self.config['align_corners'][0]
         if self.config['mode'] == 'nearest_v1':
-            x = paddle.fluid.layers.resize_nearest(inputs, scale=2.0)
+            x = paddle.fluid.layers.resize_nearest(
+                inputs, out_shape=None, scale=2.0, align_corners=align_corners)
         else:
-            x = paddle.fluid.layers.resize_bilinear(inputs, scale=2.0)
+            x = paddle.fluid.layers.resize_bilinear(
+                inputs, scale=2.0, align_corners=False)
         return x
 
 
@@ -198,9 +201,9 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
                     min_value=2, max_value=8), min_size=5, max_size=6))
 
         dtype = draw(st.sampled_from(["float32"]))
-        mode = draw(st.sampled_from(["nearest_v1"]))
-        mode = draw(st.sampled_from(["bilinear_v1"]))
-        # mode = draw(st.sampled_from(["nearest_v1", "bilinear_v1"]))
+        # mode = draw(st.sampled_from(["nearest_v1"]))
+        # mode = draw(st.sampled_from(["bilinear_v1"]))
+        mode = draw(st.sampled_from(["nearest_v1", "bilinear_v1"]))
         align_corners = draw(st.booleans()),
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
