@@ -36,7 +36,6 @@ class YOLOBox():
 
     @classmethod
     def front(cls, graph, node, **kw):
-        print("get yolo_box op")
         model_name = node.output('Boxes', 0)
         input_shape = node.input_shape('X', 0)
         mapper_helper.is_static_shape(input_shape)
