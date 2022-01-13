@@ -1158,46 +1158,57 @@ class Softmax():
 
 @op_mapper('softmax_with_cross_entropy')
 class SoftmaxCrossEntropyLoss():
-    support_opset_version_range = (12, 12)
+    support_opset_version_range = (12, 15)
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
         if node.attr('soft_label'):
             raise Exception(
                 "SoftmaxCrossEntropyLoss in onnx not support soft label.")
-
-        labels = node.input('Label', 0)
         scores = node.input('Logits', 0)
+        labels = node.input('Label', 0)
 
         outputs = [node.output('Loss', 0)]
         if 'Softmax' in node.outputs:
             outputs.append(node.output('Softmax', 0))
 
         shape = node.input_shape('Logits', 0)
+        if len(shape) < 2:
+            raise Exception(
+                "SoftmaxCrossEntropyLoss in onnx not support 1D logits.")
         axis = node.attr('axis')
         if axis < 0:
             axis += len(shape)
-        if axis == len(shape) - 1:
-            graph.make_node(
+        if axis == 1:
+            squeeze_node = graph.make_node(
+                'Squeeze', inputs=[labels], axes=[axis])
+            softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
-                inputs=[scores, labels],
-                outputs=outputs,
+                inputs=[scores, squeeze_node],
                 ignore_index=node.attr('ignore_index'),
-                reduction='mean')
+                reduction='none')
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[softmax_node],
+                outputs=outputs,
+                axes=[axis])
         else:
             perm = [i for i in range(len(shape))]
-            perm[-1] = axis
-            perm[axis] = len(shape) - 1
-            transpose_node = graph.make_node(
-                'Transpose', inputs=node.input('X'), attrs={'perm': perm})
-            node = graph.make_node(
+            perm[1] = axis
+            perm[axis] = 1
+            transpose_scores = graph.make_node(
+                'Transpose', inputs=[scores], perm=perm)
+            transpose_labels = graph.make_node(
+                'Transpose', inputs=[labels], perm=perm)
+            squeeze_labels = graph.make_node(
+                'Squeeze', inputs=[transpose_labels], axes=[1])
+
+            softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
-                inputs=[scores, labels],
-                outputs=outputs,
+                inputs=[transpose_scores, squeeze_labels],
                 ignore_index=node.attr('ignore_index'),
-                reduction='mean')
-            transpose_node1 = graph.make_node(
-                'Transpose',
-                inputs=[softmax_node],
-                outputs=node.output('Out'),
-                attrs={'perm': perm})
+                reduction='none')
+            output_node = graph.make_node(
+                'Unsqueeze', inputs=[softmax_node], axes=[1])
+            outputs = graph.make_node(
+                'Transpose', inputs=output_node, outputs=outputs, perm=perm)
