@@ -21,10 +21,30 @@ import paddle
 
 op_api_map = {
     'linear': 'linear_interp_v2',
-    # 'bilinear_interp_v2': 'linear',
+    'bilinear': 'bilinear_interp_v2',
     'trilinear': 'trilinear_interp_v2',
     'nearest': 'nearest_interp_v2',
-    # 'bicubic_interp_v2': 'cubic',
+    'bicubic': 'bicubic_interp_v2',
+    # 'bilinear_interp': 'linear',
+    # 'nearest_interp': 'nearest',
+}
+
+data_format_map = {
+    'linear': 'NCW',
+    'bilinear': 'NCHW',
+    'trilinear': 'NCDHW',
+    'nearest': 'NCHW',
+    'bicubic': 'NCHW',
+    # 'bilinear_interp': 'linear',
+    # 'nearest_interp': 'nearest',
+}
+
+op_set_map = {
+    'linear': [9],
+    'bilinear': [11],
+    'trilinear': [11],
+    'nearest': [9],
+    'bicubic': [11]
     # 'bilinear_interp': 'linear',
     # 'nearest_interp': 'nearest',
 }
@@ -50,16 +70,22 @@ class Net(BaseNet):
         elif mode == "linear":
             align_corners = False
             align_mode = 1
-        else:
+        elif mode == "trilinear":
             align_corners = False
-            align_mode = 1
+            align_mode = 0
+        elif mode == "bilinear":
+            align_corners = False
+            align_mode = 0
+        elif mode == "bicubic":
+            align_corners = False
+            align_mode = 0
         x = paddle.nn.functional.interpolate(
             x=inputs,
             size=size,
             scale_factor=scale_factor,
             mode=mode,
-            align_corners=False,
-            align_mode=1,
+            align_corners=align_corners,
+            align_mode=align_mode,
             data_format=data_format)
         return x
 
@@ -79,12 +105,15 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32"]))
         # mode = draw(st.sampled_from(["linear"]))
         # mode = draw(st.sampled_from(["nearest"]))
-        mode = draw(st.sampled_from(["trilinear"]))
+        # mode = draw(st.sampled_from(["bilinear"]))
+        # mode = draw(st.sampled_from(["bicubic"]))
+        # mode = draw(st.sampled_from(["trilinear"]))
+        mode = draw(
+            st.sampled_from(
+                ["linear", "nearest", "bilinear", "bicubic", "trilinear"]))
         align_corners = draw(st.booleans()),
         align_mode = draw(st.integers(min_value=0, max_value=1))
-        # data_format = draw(st.sampled_from(["NCW"]))
-        # data_format = draw(st.sampled_from(["NCHW"]))
-        data_format = draw(st.sampled_from(["NCDHW"]))
+        data_format = data_format_map[mode]
         if data_format == "NCW":
             input_shape = np.random.choice(input_shape, 3)
         elif data_format == "NCHW":
@@ -98,29 +127,30 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
                 # list
-                scale_factor = [1.2, 1.3, 1.4, 1.5, 1.5]
+                scale_factor = [1.2, 1.3, 1.4, 1.5, 1.6]
                 if data_format == "NCW":
-                    scale_factor = np.random.choice(size, 1)
+                    scale_factor = np.random.choice(scale_factor, 1).tolist()
                 elif data_format == "NCHW":
-                    scale_factor = np.random.choice(size, 2)
+                    scale_factor = np.random.choice(scale_factor, 2).tolist()
                 else:
-                    scale_factor = np.random.choice(size, 3)
+                    scale_factor = np.random.choice(scale_factor, 3).tolist()
         else:
             scale_factor = None
             # list
-            size = [12, 13, 14]
+            size = [12, 13, 14, 15, 16]
             if data_format == "NCW":
-                size = np.random.choice(size, 1)
+                size = np.random.choice(size, 1).tolist()
             elif data_format == "NCHW":
-                size = np.random.choice(size, 2)
+                size = np.random.choice(size, 2).tolist()
             else:
-                size = np.random.choice(size, 3)
+                size = np.random.choice(size, 3).tolist()
         op_name = op_api_map[mode]
+        opset_version = op_set_map[mode]
         config = {
             "op_names": [op_name],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [9],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "size": size,
             "scale_factor": scale_factor,
@@ -135,7 +165,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=25)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":
