@@ -722,7 +722,7 @@ class ReduceAll():
         input_dtype = node.block.vars[node.input('X', 0)].dtype
         input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
         all_node = graph.make_node(
-            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.FLOAT)
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
 
         attrs = {'keepdims': node.attr('keep_dim'), }
         if not node.attr('reduce_all'):
@@ -744,7 +744,7 @@ class ReduceAll():
         input_dtype = node.block.vars[node.input('X', 0)].dtype
         input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
         all_node = graph.make_node(
-            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.FLOAT)
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
 
         attrs = {'keepdims': node.attr('keep_dim'), }
         if not node.attr('reduce_all'):
