@@ -23,20 +23,20 @@ op_api_map = {
     "arg_min": paddle.argmin,
 }
 
-## TODO: support for 15
 opset_version_map = {
-    "arg_max": [7, 11, 12, 13, 14],
-    "arg_min": [7, 11, 12, 13, 14],
+    "arg_max": [7, 9, 15],
+    "arg_min": [7, 9, 15],
 }
 
 
 class Net(BaseNet):
     def forward(self, inputs):
-        return op_api_map[self.config["op_names"]](
-            inputs,
-            axis=self.config["axis"],
-            keepdim=self.config["keepdim"],
-            dtype=self.config["dtype"])
+        x = op_api_map[self.config["op_names"]](inputs,
+                                                axis=self.config["axis"],
+                                                keepdim=self.config["keepdim"],
+                                                dtype=self.config["dtype"])
+        y = paddle.reshape(x, shape=[-1])
+        return y
 
 
 class TestArgOPConvert(OPConvertAutoScanTest):
