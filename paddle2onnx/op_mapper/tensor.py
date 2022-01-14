@@ -391,9 +391,9 @@ class Range():
         start = node.input('Start', 0)
         end = node.input('End', 0)
         step = node.input('Step', 0)
-        start_t = graph.make_node('Squeeze', inputs=[start], axes=[0])
-        end_t = graph.make_node('Squeeze', inputs=[end], axes=[0])
-        step_t = graph.make_node('Squeeze', inputs=[step], axes=[0])
+        start_t = mapper_helper.squeeze_helper(graph, start, [0])
+        end_t = mapper_helper.squeeze_helper(graph, end, [0])
+        step_t = mapper_helper.squeeze_helper(graph, step, [0])
         graph.make_node(
             "Range",
             inputs=[start_t, end_t, step_t],
@@ -451,8 +451,8 @@ class Embedding():
     def opset_1(cls, graph, node, **kw):
         ids = node.input('Ids', 0)
         if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
-            ids = graph.make_node(
-                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
+            ids = mapper_helper.squeeze_helper(graph,
+                                               node.input('Ids', 0), [-1])
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
         if padding_idx != -1:
@@ -631,6 +631,25 @@ class FullZeroLike():
             dims=[1],
             dtype=onnx_dtype,
             value=np.array(value).astype(np_dtype))
+
+
+@op_mapper('gather_nd')
+class Gather_nd():
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        data = node.input('X', 0)
+        index = node.input('Index', 0)
+        index_dtype = node.input_dtype('Index', 0)
+        index_node = None
+        if index_dtype != paddle.int64:
+            index_node = graph.make_node(
+                'Cast', inputs=[node.input('Index', 0)], to=dtypes.ONNX.INT64)
+        else:
+            index_node = index
+        graph.make_node(
+            'GatherND', inputs=[data, index_node], outputs=node.output('Out'))
 
 
 @op_mapper('gather')
@@ -1220,6 +1239,47 @@ class Pad():
                 paddings[3], paddings[1], 0
             ]
         return onnx_paddings
+
+
+@op_mapper('gaussian_random')
+class GaussianRandom():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        shape_input_list = node.input('ShapeTensorList')
+        shape_input = None
+        if len(shape_input_list) == 0:
+            shape_input = node.input('ShapeTensor')
+        else:
+            shape_input = graph.make_node(
+                "Concat", inputs=node.input('ShapeTensorList'), axis=0)
+        if shape_input is None or len(shape_input) == 0:
+            graph.make_node(
+                'RandomNormal',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                shape=node.attr('shape'),
+                seed=float(node.attr('seed')),
+                mean=node.attr('mean'),
+                scale=node.attr('std'))
+        else:
+            cast_input_shape = graph.make_node(
+                'Cast', inputs=shape_input, to=dtypes.ONNX.INT64)
+            zero_like_node = graph.make_node(
+                'ConstantOfShape',
+                inputs=cast_input_shape,
+                dims=[1],
+                dtype=dtypes.ONNX.FLOAT,
+                value=[0])
+            graph.make_node(
+                'RandomNormalLike',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                inputs=zero_like_node,
+                seed=float(node.attr('seed')),
+                mean=node.attr('mean'),
+                scale=node.attr('std'))
 
 
 @op_mapper('uniform_random_batch_size_like')
