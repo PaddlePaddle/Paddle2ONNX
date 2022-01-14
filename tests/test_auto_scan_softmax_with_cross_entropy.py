@@ -70,7 +70,7 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
             "op_names": ["softmax_with_cross_entropy"],
             "test_data_shapes": [input_shape, generator_label],
             "test_data_types": [[dtype], [label_dtype]],
-            "opset_version": [12],
+            "opset_version": [12, 15],
             "input_spec_shape": [],
             "axis": axis,
             "return_softmax": False,
