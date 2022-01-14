@@ -16,6 +16,7 @@ import paddle.fluid.core as core
 import six
 import copy
 from paddle2onnx.constant import dtypes
+import paddle
 
 
 def is_static_shape(shape):
@@ -51,6 +52,17 @@ def slice_helper(graph, input, axes, starts, ends, outputs=[]):
         return slice_node
 
 
+def squeeze_helper(graph, input, axes):
+    if graph.opset_version < 13:
+        squeeze_node = graph.make_node("Squeeze", inputs=input, axes=axes)
+        return squeeze_node
+    else:
+        axes_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=axes)
+        squeeze_node = graph.make_node("Squeeze", inputs=[input, axes_node])
+        return squeeze_node
+
+
 def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     constant = graph.make_node(
         'Constant',
@@ -64,26 +76,38 @@ def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     return constant
 
 
-def clip_helper(graph, input, max, min, output=[]):
+def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
     if (isinstance(min, six.string_types) or
             isinstance(max, six.string_types)) and graph.opset_version < 11:
-        raise "min or max of Clip is Tensor, please try with higher onnx opset_version."
+        raise Exception(
+            "min or max of Clip is Tensor, please try with higher onnx opset_version."
+        )
     if graph.opset_version < 11:
+        if x_dtype == paddle.float64:
+            raise Exception(
+                "When opset is less than 11, the input is not supported as float64 type."
+            )
         clip = graph.make_node(
             'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
         if not isinstance(min, six.string_types):
             min = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': min})
+                'Constant',
+                attrs={
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                    'value': min
+                })
         else:
-            min = graph.make_node('Squeeze', min, axes=[0])
+            min = graph.make_node('Squeeze', min)
         if not isinstance(max, six.string_types):
             max = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': max})
+                'Constant',
+                attrs={
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                    'value': max
+                })
         else:
-            max = graph.make_node('Squeeze', max, axes=[0])
+            max = graph.make_node('Squeeze', max)
         clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
     return clip
 

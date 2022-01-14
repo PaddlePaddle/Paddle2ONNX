@@ -48,8 +48,6 @@ class TestLogsigmoidConvert(OPConvertAutoScanTest):
                 max_size=4))
         input_spec = [-1] * len(input_shape)
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
-
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
@@ -58,7 +56,6 @@ class TestLogsigmoidConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [input_spec],
-            "alpha": alpha
         }
 
         models = Net(config)

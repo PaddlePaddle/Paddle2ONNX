@@ -25,17 +25,17 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, inputs, weights):
         """
         forward
         """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+        x = paddle.nn.functional.prelu(inputs, weight=weights)
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestPreluConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
+    api: paddle.nn.functional.prelu
     OPset version: 7, 9, 15
     """
 
@@ -43,21 +43,16 @@ class TestEluConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=5, max_value=20), min_size=1, max_size=4))
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
-
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["elu"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
+            "op_names": ["prelu"],
+            "test_data_shapes": [input_shape, [1]],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "alpha": alpha
         }
 
         models = Net(config)

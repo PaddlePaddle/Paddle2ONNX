@@ -29,13 +29,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+        x = paddle.nn.functional.leaky_relu(
+            inputs, negative_slope=self.config["negative_slope"])
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestLeakyreluConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
+    api: paddle.nn.functional.leaky_relu
     OPset version: 7, 9, 15
     """
 
@@ -44,20 +45,19 @@ class TestEluConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
-
         dtype = draw(st.sampled_from(["float32"]))
+        negative_slope = draw(st.floats(min_value=0, max_value=1))
 
         config = {
-            "op_names": ["elu"],
+            "op_names": ["leaky_relu"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "alpha": alpha
+            "negative_slope": negative_slope,
         }
 
         models = Net(config)

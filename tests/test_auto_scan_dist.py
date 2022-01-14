@@ -25,39 +25,55 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, x, y):
         """
         forward
         """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+        x = paddle.dist(x, y, p=self.config["p"])
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestDistConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
+    api: paddle.dist
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input1_shape = draw(
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                min_size=3,
+                max_size=3))
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
+        input2_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=20, max_value=100),
+                min_size=2,
+                max_size=2))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        input2_shape[0] = input1_shape[1]
+        input2_shape[1] = input1_shape[2]
+
+        p = 1
+        p_type = draw(st.sampled_from(["str", "float"]))
+        if p_type == "str":
+            p = draw(st.sampled_from(["inf", "-inf"]))
+            p = float(p)
+        elif p_type == "float":
+            p = draw(st.floats(min_value=0, max_value=4.0))
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["elu"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
+            "op_names": ["dist"],
+            "test_data_shapes": [input1_shape, input2_shape],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "alpha": alpha
+            "p": p,
         }
 
         models = Net(config)

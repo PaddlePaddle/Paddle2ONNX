@@ -49,22 +49,32 @@ class MatMul():
 
 @op_mapper('matmul_v2')
 class MatMul():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
         out = node.output('Out')
+        ## TODO(wangjunjie06): The current addition of cast op is only for onnxruntime optimization, after onnxruntime is repaired, remove this logic
         if node.attr('trans_x'):
             perm = list(range(len(node.input_shape('X', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
+            if node.input_dtype('X', 0) == paddle.float64:
+                x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
             x = graph.make_node('Transpose', inputs=[x], perm=perm)
         if node.attr('trans_y'):
             perm = list(range(len(node.input_shape('Y', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
+            if node.input_dtype('Y', 0) == paddle.float64:
+                y = graph.make_node('Cast', inputs=y, to=dtypes.ONNX.FLOAT)
             y = graph.make_node('Transpose', inputs=[y], perm=perm)
-        graph.make_node('MatMul', inputs=[x, y], outputs=out)
+        if node.input_dtype('X', 0) == paddle.float64:
+            output_node = graph.make_node('MatMul', inputs=[x, y])
+            graph.make_node(
+                'Cast', inputs=output_node, to=dtypes.ONNX.DOUBLE, outputs=out)
+        else:
+            graph.make_node('MatMul', inputs=[x, y], outputs=out)
 
 
 @op_mapper('exp')
@@ -93,8 +103,18 @@ class Erf():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
-        graph.make_node(
-            'Erf', inputs=node.input('X'), outputs=node.output('Out'))
+        x_dtype = node.input_dtype('X', 0)
+        x = node.input('X', 0)
+        if x_dtype != paddle.float32:
+            x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
+            erf_node = graph.make_node('Erf', inputs=[x])
+            graph.make_node(
+                'Cast',
+                inputs=[erf_node],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node('Erf', inputs=[x], outputs=node.output('Out'))
 
 
 @op_mapper('acos')
@@ -194,24 +214,27 @@ class Log2():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         _ln2 = 0.693147180559945309
-        _ln2 = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=_ln2)
+        dtype = dtypes.ONNX.FLOAT
+        if node.input_dtype('X', 0) == paddle.float64:
+            dtype = dtypes.ONNX.DOUBLE
+        _ln2 = graph.make_node('Constant', dtype=dtype, value=_ln2)
         lnx = graph.make_node('Log', inputs=node.input('X'))
         graph.make_node('Div', inputs=[lnx, _ln2], outputs=node.output('Out'))
 
 
 @op_mapper('logsumexp')
 class LogSumExp():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
 
         if node.attr('reduce_all'):
             if not node.attr('keepdim'):
                 reduce_node = graph.make_node(
                     'ReduceLogSumExp',
                     inputs=node.input('X'),
-                    keepdims=node.attr('keepdim'), )
+                    keepdims=node.attr('keepdim'))
                 graph.make_node(
                     'Unsqueeze',
                     inputs=[reduce_node],
@@ -231,17 +254,41 @@ class LogSumExp():
                 axes=node.attr('axis'),
                 outputs=node.output('Out'))
 
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+
+        if node.attr('reduce_all'):
+            if not node.attr('keepdim'):
+                reduce_node = graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'))
+                axes = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                graph.make_node(
+                    'Unsqueeze',
+                    inputs=[reduce_node, axes],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'ReduceLogSumExp',
+                    inputs=node.input('X'),
+                    keepdims=node.attr('keepdim'),
+                    outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ReduceLogSumExp',
+                inputs=node.input('X'),
+                keepdims=node.attr('keepdim'),
+                axes=node.attr('axis'),
+                outputs=node.output('Out'))
+
 
 @op_mapper(
     [
-        'elementwise_add',
-        'elementwise_sub',
-        'elementwise_div',
-        'elementwise_mul',
-        'elementwise_min',
-        'elementwise_max',
-        'elementwise_pow',
-        'elementwise_mod',
+        'elementwise_add', 'elementwise_sub', 'elementwise_div',
+        'elementwise_mul', 'elementwise_min', 'elementwise_max',
+        'elementwise_pow'
     ],
     mapper_dict={
         'elementwise_add': 'Add',
@@ -250,20 +297,23 @@ class LogSumExp():
         'elementwise_mul': 'Mul',
         'elementwise_min': 'Min',
         'elementwise_max': 'Max',
-        'elementwise_pow': 'Pow',
-        'elementwise_mod': 'Mod',
+        'elementwise_pow': 'Pow'
     })
 class ElementwiseOps():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
+        if node.type in ["elementwise_min", "elementwise_max"]:
+            assert False, "when opset version < 8, the shape and dtype of {} op must be same".format(
+                node.type)
+
         op_type = kw['mapper_dict'][node.type]
         axis = node.attr('axis')
         x = node.input('X', 0)
         y = node.input('Y', 0)
-        x_shape = node.input_shape('X', 0)
-        y_shape = node.input_shape('Y', 0)
 
         if axis == -1 or axis == (len(x_shape) - 1
                                   ) or len(x_shape) == len(y_shape):
@@ -281,10 +331,95 @@ class ElementwiseOps():
             onnx_node = graph.make_node(
                 op_type, inputs=[x, y_node], outputs=node.output('Out'))
 
+    @classmethod
+    def opset_8(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+        x = node.input('X', 0)
+        y = node.input('Y', 0)
+        axis = node.attr('axis')
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
+        if axis == -1 or axis == (len(x_shape) - 1
+                                  ) or len(x_shape) == len(y_shape):
+            onnx_node = graph.make_node(
+                op_type, inputs=[x, y], outputs=node.output('Out'))
+        else:
+            broadcast_shape = [1] * len(x_shape)
+            broadcast_shape[axis:axis + len(y_shape)] = y_shape
+            broadcast_shape_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=list(broadcast_shape))
+            y_node = graph.make_node(
+                'Reshape', inputs=[y, broadcast_shape_node])
+            onnx_node = graph.make_node(
+                op_type, inputs=[x, y_node], outputs=node.output('Out'))
+
+
+@op_mapper('elementwise_mod')
+class ElementWiseMod():
+    support_opset_version_range = (10, 15)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        x_shape = node.input_shape('X', 0)
+        y_shape = node.input_shape('Y', 0)
+        axis = node.attr('axis')
+        x = node.input('X', 0)
+        y = node.input('Y', 0)
+        fmod = 0
+        if node.input_dtype('Y', 0) == paddle.float64 or node.input_dtype(
+                'Y', 0) == paddle.float32:
+            fmod = 1
+
+        abs_x_node = graph.make_node("Abs", inputs=[x])
+        abs_y_node = graph.make_node("Abs", inputs=[y])
+
+        dtype = dtypes.ONNX.FLOAT
+        val_0 = [0.0]
+        val_1 = [-1.0]
+        if node.input_dtype('Y', 0) == paddle.float64:
+            dtype = dtypes.ONNX.DOUBLE
+        if node.input_dtype('Y', 0) == paddle.int32:
+            dtype = dtypes.ONNX.INT32
+            val_0 = [0]
+            val_1 = [-1]
+        if node.input_dtype('Y', 0) == paddle.int64:
+            dtype = dtypes.ONNX.INT64
+            val_0 = [0]
+            val_1 = [-1]
+        zero_node = graph.make_node('Constant', dtype=dtype, value=val_0)
+        one_node = graph.make_node('Constant', dtype=dtype, value=val_1)
+
+        mod_node = graph.make_node(
+            "Mod", inputs=[abs_x_node, abs_y_node], fmod=fmod)
+
+        minus_node = graph.make_node("Mul", inputs=[mod_node, one_node])
+
+        condition_dtype = graph.make_node("Less", inputs=[x, zero_node])
+        condition = graph.make_node(
+            'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
+
+        mod_res = graph.make_node(
+            "Where", inputs=[condition, minus_node, mod_node])
+
+        add_node = graph.make_node("Add", inputs=[mod_res, y])
+
+        mod_y_mul_node = graph.make_node("Mul", inputs=[mod_res, y])
+        condition_dtype_1 = graph.make_node(
+            "Less", inputs=[mod_y_mul_node, zero_node])
+        condition_1 = graph.make_node(
+            'Cast', inputs=[condition_dtype_1], to=dtypes.ONNX.BOOL)
+
+        graph.make_node(
+            "Where",
+            inputs=[condition_1, add_node, mod_res],
+            outputs=node.output('Out'))
+
 
 @op_mapper('elementwise_floordiv')
 class ElementWiseFloorDiv():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -329,10 +464,42 @@ class ElementWiseFloorDiv():
 
 @op_mapper('pow')
 class Pow():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_8(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        x = node.input('X', 0)
+        x_dtype = node.input_dtype('X', 0)
+        factor = node.attr('factor')
+        # Pow-7 Only support input type as float and double
+        if x_dtype == paddle.int32 or x_dtype == paddle.int64:
+            x = graph.make_node('Cast', inputs=[x], to=dtypes.ONNX.FLOAT)
+            factor_node = graph.make_node(
+                'Constant',
+                inputs=[],
+                dims=[1],
+                dtype=dtypes.ONNX.FLOAT,
+                value=factor)
+        else:
+            factor_node = graph.make_node(
+                'Constant',
+                inputs=[],
+                dims=[1],
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=factor)
+        if x_dtype == paddle.int32 or x_dtype == paddle.int64:
+            pow_node = graph.make_node('Pow', inputs=[x, factor_node])
+            graph.make_node(
+                'Cast',
+                inputs=[pow_node],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_12(cls, graph, node, **kw):
         x = node.input('X', 0)
         factor = node.attr('factor')
         factor_node = graph.make_node(
@@ -341,11 +508,8 @@ class Pow():
             dims=[1],
             dtype=dtypes.ONNX.FLOAT,
             value=factor)
-        x_shape = graph.make_node('Shape', inputs=[x])
-        factor_broadcast = graph.make_node(
-            'Expand', inputs=[factor_node, x_shape])
-        onnx_node = graph.make_node(
-            'Pow', inputs=[x, factor_broadcast], outputs=node.output('Out'))
+        pow_node = graph.make_node(
+            'Pow', inputs=[x, factor_node], outputs=node.output('Out'))
 
 
 @op_mapper('square')
@@ -361,7 +525,7 @@ class Square():
 
 @op_mapper('cumsum')
 class CumSum():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -376,7 +540,7 @@ class CumSum():
 
 @op_mapper('mul')
 class Mul():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (5, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -410,13 +574,9 @@ class AffineChannel():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW',  \
+            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == "AnyLayout",  \
                                 "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_layout']
-        if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW',  \
-                                "The affine_channel data format should be 'NCHW', but received data format " \
-                                "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
         scale = node.input('Scale', 0)
@@ -428,13 +588,9 @@ class AffineChannel():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW',  \
+            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == "AnyLayout",  \
                                 "The affine_channel data format should be 'NCHW', but received data format " \
                                 "is %s." % node.attrs['data_layout']
-        if "data_format" in node.attrs.keys():
-            assert node.attrs['data_format'] == 'NCHW',  \
-                                "The affine_channel data format should be 'NCHW', but received data format " \
-                                "is %s." % node.attrs['data_format']
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
         scale = node.input('Scale', 0)
@@ -558,37 +714,54 @@ class Log1p():
     mapper_dict={'reduce_all': 'ReduceMin',
                  'reduce_any': 'ReduceMax'})
 class ReduceAll():
-    support_opset_version_range = (6, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
-
+        input_dtype = node.block.vars[node.input('X', 0)].dtype
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
         all_node = graph.make_node(
-            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.FLOAT)
-        if node.attr('reduce_all'):
-            flatten_x = graph.make_node('Flatten', inputs=all_node, axis=0)
-            squeeze_node = graph.make_node('Squeeze', inputs=[flatten_x])
-            if node.attr('keep_dim'):
-                unsqueeze_node = graph.make_node(op_type, inputs=squeeze_node)
-                for i in range(len(node.input_shape('X', 0)) - 1):
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', axes=[0], inputs=[unsqueeze_node])
-                graph.make_node(
-                    'Cast',
-                    inputs=[unsqueeze_node],
-                    to=dtypes.ONNX.FLOAT,
-                    outputs=node.output('Out'))
-            else:
-                graph.make_node(
-                    op_type, inputs=squeeze_node, outputs=node.output('Out'))
-        else:
-            graph.make_node(
-                op_type,
-                inputs=all_node,
-                keepdims=node.attr('keep_dim'),
-                axes=node.attr('dim'),
-                outputs=node.output('Out'))
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
+
+        attrs = {'keepdims': node.attr('keep_dim'), }
+        if not node.attr('reduce_all'):
+            attrs['axes'] = node.attr('dim')
+        output_node = graph.make_node(op_type, inputs=[all_node], attrs=attrs)
+
+        if node.attr('reduce_all') and not node.attr('keep_dim'):
+            output_node = graph.make_node(
+                "Unsqueeze", inputs=[output_node], axes=[0])
+        graph.make_node(
+            'Cast',
+            inputs=[output_node],
+            to=input_dtype,
+            outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+        input_dtype = node.block.vars[node.input('X', 0)].dtype
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
+        all_node = graph.make_node(
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
+
+        attrs = {'keepdims': node.attr('keep_dim'), }
+        if not node.attr('reduce_all'):
+            attrs['axes'] = node.attr('dim')
+        output_node = graph.make_node(op_type, inputs=[all_node], attrs=attrs)
+
+        if node.attr('reduce_all') and not node.attr('keep_dim'):
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            output_node = graph.make_node(
+                'Unsqueeze', inputs=[output_node, axes_node])
+        graph.make_node(
+            'Cast',
+            inputs=[output_node],
+            to=input_dtype,
+            outputs=node.output('Out'))
 
 
 @op_mapper(
@@ -601,7 +774,7 @@ class ReduceAll():
         'reduce_prod': 'ReduceProd'
     })
 class ReduceMean():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -613,41 +786,94 @@ class ReduceMean():
             if list(output_shape) == [1]:
                 need_unsqueeze = True
 
+        outputs = None
         if not need_unsqueeze:
-            graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
-        else:
-            reduce_node = graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
+            outputs = node.output('Out')
+
+        reduce_node = graph.make_node(
+            op_type,
+            inputs=node.input('X'),
+            outputs=outputs,
+            attrs={
+                'axes': node.attr('dim'),
+                'keepdims': node.attr('keep_dim')
+            })
+        if need_unsqueeze:
             graph.make_node(
                 'Unsqueeze',
                 inputs=[reduce_node],
                 outputs=node.output('Out'),
                 axes=[0])
 
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+
+        output_shape = node.output_shape('Out', 0)
+        need_unsqueeze = False
+        if not node.attr('keep_dim'):
+            if list(output_shape) == [1]:
+                need_unsqueeze = True
+
+        outputs = None
+        if not need_unsqueeze:
+            outputs = node.output('Out')
+
+        reduce_node = cls.compute_reduce_node(graph, node, op_type, outputs)
+        if need_unsqueeze:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[reduce_node] + [axes_node],
+                outputs=node.output('Out'))
+
+    @classmethod
+    def compute_reduce_node(cls, graph, node, op_type, outputs):
+        if op_type == "ReduceSum":
+            axes_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': node.attr('dim')})
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X') + [axes_node],
+                outputs=outputs,
+                attrs={'keepdims': node.attr('keep_dim')})
+        else:
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                outputs=outputs,
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+        return reduce_node
+
 
 @op_mapper('mean')
 class Mean():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        mean_node = graph.make_node(
+            'ReduceMean', inputs=node.input('X'), keepdims=0)
         graph.make_node(
-            'ReduceMean',
-            inputs=node.input('X'),
+            'Unsqueeze',
+            inputs=[mean_node],
             outputs=node.output('Out'),
-            keepdims=0)
+            axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        mean_node = graph.make_node(
+            'ReduceMean', inputs=node.input('X'), keepdims=0)
+        axes = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
+        graph.make_node(
+            'Unsqueeze', inputs=[mean_node, axes], outputs=node.output('Out'))
 
 
 @op_mapper('arg_max')
@@ -736,7 +962,7 @@ class Hardtanh():
 
 @op_mapper('mv')
 class Mv():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -748,7 +974,17 @@ class Mv():
 
 @op_mapper('dot')
 class Dot():
-    support_opset_version_range = (7, 13)
+    support_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        mul_node = graph.make_node(
+            'Mul', inputs=[node.input('X', 0), node.input('Y', 0)])
+        graph.make_node(
+            'ReduceSum',
+            inputs=[mul_node],
+            axes=[len(node.input_shape('X', 0)) - 1],
+            outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -761,20 +997,10 @@ class Dot():
         graph.make_node(
             'ReduceSum', inputs=[mul_node, one], outputs=node.output('Out'))
 
-    @classmethod
-    def opset_7(cls, graph, node, **kw):
-        mul_node = graph.make_node(
-            'Mul', inputs=[node.input('X', 0), node.input('Y', 0)])
-        graph.make_node(
-            'ReduceSum',
-            inputs=[mul_node],
-            axes=[len(node.input_shape('X', 0)) - 1],
-            outputs=node.output('Out'))
-
 
 @op_mapper('dist')
 class Dist():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
@@ -813,13 +1039,72 @@ class Dist():
                 inputs=[min_node],
                 outputs=node.output('Out'))
         else:
+            x_dtype = node.input_dtype('X', 0)
             p = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('p'))
+                'Constant',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=node.attr('p'))
             pow_node = graph.make_node(
                 'Pow',
                 inputs=[abs_node, p], )
             sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
             sum_node = graph.make_node('Unsqueeze', axes=[0], inputs=[sum_node])
+            p_1 = graph.make_node('Reciprocal', inputs=p)
+            graph.make_node(
+                'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        sub_node = graph.make_node(
+            'Sub', inputs=[node.input('X', 0), node.input('Y', 0)])
+        abs_node = graph.make_node('Abs', inputs=sub_node)
+        if node.attr('p') == 0:
+            sign_node = graph.make_node('Sign', inputs=abs_node)
+            sum_node = graph.make_node(
+                'ReduceSum', inputs=sign_node, keepdims=0)
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[sum_node, axes],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('inf'):
+            max_node = graph.make_node(
+                'ReduceMax',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[max_node, axes],
+                outputs=node.output('Out'))
+        elif node.attr('p') == float('-inf'):
+            min_node = graph.make_node(
+                'ReduceMin',
+                inputs=abs_node,
+                keepdims=0,
+                outputs=node.output('Out'))
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[min_node, axes],
+                outputs=node.output('Out'))
+        else:
+            x_dtype = node.input_dtype('X', 0)
+            p = graph.make_node(
+                'Constant',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                value=node.attr('p'))
+            pow_node = graph.make_node(
+                'Pow',
+                inputs=[abs_node, p], )
+            sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            sum_node = graph.make_node('Unsqueeze', inputs=[sum_node, axes])
             p_1 = graph.make_node('Reciprocal', inputs=p)
             graph.make_node(
                 'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
@@ -906,7 +1191,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -935,6 +1220,14 @@ class Softmax():
                 inputs=[softmax_node],
                 outputs=node.output('Out'),
                 attrs={'perm': perm})
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        graph.make_node(
+            'Softmax',
+            inputs=node.input('X'),
+            axis=node.attr('axis'),
+            outputs=node.output('Out'))
 
 
 @op_mapper('softmax_with_cross_entropy')

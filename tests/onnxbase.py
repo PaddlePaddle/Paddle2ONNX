@@ -61,6 +61,9 @@ def randtool(dtype, low, high, shape):
     elif dtype == "float":
         return low + (high - low) * np.random.random(shape)
 
+    elif dtype == "bool":
+        return np.random.randint(low, high, shape).astype("bool")
+
 
 class BuildFunc(paddle.nn.Layer):
     """

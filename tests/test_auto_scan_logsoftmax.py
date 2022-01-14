@@ -29,13 +29,13 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+        x = paddle.nn.functional.log_softmax(inputs, axis=self.config["axis"])
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestLogSoftmaxConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
+    api: paddle.nn.functional.log_softmax
     OPset version: 7, 9, 15
     """
 
@@ -44,20 +44,23 @@ class TestEluConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=100),
-                min_size=4,
+                min_size=1,
                 max_size=4))
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
-
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+        output_dtype = draw(st.sampled_from(["float32", "float64"]))
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
         config = {
-            "op_names": ["elu"],
+            "op_names": ["log_softmax"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "alpha": alpha
+            "axis": axis,
+            "dtype": output_dtype,
         }
 
         models = Net(config)

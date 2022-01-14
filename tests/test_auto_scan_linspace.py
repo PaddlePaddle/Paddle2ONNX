@@ -15,57 +15,55 @@
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
+from onnxbase import randtool
 import numpy as np
 import unittest
 import paddle
 
 
 class Net(BaseNet):
-    """
-    simple Net
-    """
-
-    def forward(self, inputs):
-        """
-        forward
-        """
-        x = paddle.nn.functional.elu(inputs, alpha=self.config["alpha"])
+    def forward(self):
+        start = self.config["start"]
+        stop = self.config["stop"]
+        num = self.config["num"]
+        dtype = self.config["dtype"]
+        x = paddle.linspace(start=start, stop=stop, num=num, dtype=dtype)
         return x
 
 
-class TestEluConvert(OPConvertAutoScanTest):
+class TestLinspaceConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.elu
-    OPset version: 7, 9, 15
+    api: linspace
+    OPset version:
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+        start = draw(st.integers(min_value=1, max_value=10))
 
-        alpha = draw(st.floats(min_value=1.0, max_value=10.0))
+        stop = draw(st.integers(min_value=20, max_value=30))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        num = draw(st.integers(min_value=2, max_value=100))
+
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
-            "op_names": ["elu"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "op_names": ["linspace"],
+            "test_data_shapes": [],
+            "test_data_types": [],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
-            "alpha": alpha
+            "start": start,
+            "stop": stop,
+            "num": num,
+            "dtype": dtype
         }
 
-        models = Net(config)
+        model = Net(config)
 
-        return (config, models)
+        return (config, model)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 if __name__ == "__main__":

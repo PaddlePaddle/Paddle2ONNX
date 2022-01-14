@@ -21,6 +21,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx import utils
+import paddle
 
 
 @op_mapper(['conv2d', 'depthwise_conv2d', 'conv3d'])
@@ -35,8 +36,7 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW',  \
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
                             "is %s." % node.attrs['data_format']
         # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
@@ -134,8 +134,7 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-
-        assert node.attrs['data_format'] == 'NCHW',  \
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCHW', but received data format " \
                             "is %s." % node.attrs['data_format']
         if node.attr('global_pooling') or (node.attr('adaptive') and
@@ -272,7 +271,7 @@ class Pool3D():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCDHW',  \
+        assert node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCDHW', but received data format " \
                             "is %s." % node.attrs['data_format']
 
@@ -359,7 +358,7 @@ class Pool3D():
 
 @op_mapper('elu')
 class ELU():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -418,7 +417,7 @@ class Norm():
 
 @op_mapper('softshrink')
 class SoftShrink():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
@@ -432,14 +431,13 @@ class SoftShrink():
 
 @op_mapper('tanh_shrink')
 class TanhShrink():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
         tanh_node = graph.make_node(
             'Tanh',
-            inputs=node.input('X', 0),
-        )
+            inputs=node.input('X', 0), )
         graph.make_node(
             'Sub',
             inputs=[node.input('X', 0), tanh_node],
@@ -448,10 +446,38 @@ class TanhShrink():
 
 @op_mapper('log_softmax')
 class LogSoftmax():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        shape = node.output_shape('Out', 0)
+        if axis is None:
+            axis = -1
+        if axis < 0:
+            axis += len(shape)
+        if axis == len(shape) - 1:
+            node = graph.make_node(
+                'LogSoftmax',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                attrs={'axis': axis})
+        else:
+            perm = [i for i in range(len(shape))]
+            perm[-1] = axis
+            perm[axis] = len(shape) - 1
+            transpose_node = graph.make_node(
+                'Transpose', inputs=node.input('X'), attrs={'perm': perm})
+            softmax_node = graph.make_node(
+                'LogSoftmax', inputs=[transpose_node], axis=-1)
+            transpose_node1 = graph.make_node(
+                'Transpose',
+                inputs=[softmax_node],
+                outputs=node.output('Out'),
+                attrs={'perm': perm})
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
         graph.make_node(
             'LogSoftmax',
             inputs=node.input('X'),
@@ -853,12 +879,24 @@ class RNN():
 
 @op_mapper('thresholded_relu')
 class ThresholdedRelu():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (10, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        graph.make_node(
-            'ThresholdedRelu',
-            inputs=node.input('X'),
-            alpha=node.attr('threshold'),
-            outputs=node.output('Out'))
+    def opset_10(cls, graph, node, **kw):
+        x_dtype = node.input_dtype('X', 0)
+        if x_dtype != paddle.float32:
+            x = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.FLOAT)
+            threshholdedrelu_node = graph.make_node(
+                'ThresholdedRelu', inputs=[x], alpha=node.attr('threshold'))
+            graph.make_node(
+                'Cast',
+                inputs=[threshholdedrelu_node],
+                outputs=node.output('Out'),
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+        else:
+            graph.make_node(
+                'ThresholdedRelu',
+                inputs=node.input('X'),
+                alpha=node.attr('threshold'),
+                outputs=node.output('Out'))

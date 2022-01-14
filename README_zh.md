@@ -47,6 +47,10 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 
     paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
+如需配置输入的大小，请使用如下命令:
+
+    paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True --input_shape_dict "{'x': [1, 3, 224, 224]}"
+
 #### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
@@ -57,6 +61,7 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 |--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
 |--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
 |--enable_paddle_fallback| **[可选]**  配置custom op是否使用paddle_fallback模式导出, 默认为False|
+|--input_shape_dict| **[可选]**  配置输入的shape, 默认为空|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
 - PaddlePaddle模型的两种存储形式：
