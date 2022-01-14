@@ -775,7 +775,7 @@ class ReduceAll():
         'reduce_prod': 'ReduceProd'
     })
 class ReduceMean():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -787,28 +787,71 @@ class ReduceMean():
             if list(output_shape) == [1]:
                 need_unsqueeze = True
 
+        outputs = None
         if not need_unsqueeze:
-            graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
-        else:
-            reduce_node = graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
+            outputs = node.output('Out')
+
+        reduce_node = graph.make_node(
+            op_type,
+            inputs=node.input('X'),
+            outputs=outputs,
+            attrs={
+                'axes': node.attr('dim'),
+                'keepdims': node.attr('keep_dim')
+            })
+        if need_unsqueeze:
             graph.make_node(
                 'Unsqueeze',
                 inputs=[reduce_node],
                 outputs=node.output('Out'),
                 axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+
+        output_shape = node.output_shape('Out', 0)
+        need_unsqueeze = False
+        if not node.attr('keep_dim'):
+            if list(output_shape) == [1]:
+                need_unsqueeze = True
+
+        outputs = None
+        if not need_unsqueeze:
+            outputs = node.output('Out')
+
+        reduce_node = cls.compute_reduce_node(graph, node, op_type, outputs)
+        if need_unsqueeze:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[reduce_node] + [axes_node],
+                outputs=node.output('Out'))
+
+    @classmethod
+    def compute_reduce_node(cls, graph, node, op_type, outputs):
+        if op_type == "ReduceSum":
+            axes_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': node.attr('dim')})
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X') + [axes_node],
+                outputs=outputs,
+                attrs={'keepdims': node.attr('keep_dim')})
+        else:
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                outputs=outputs,
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+        return reduce_node
 
 
 @op_mapper('mean')
