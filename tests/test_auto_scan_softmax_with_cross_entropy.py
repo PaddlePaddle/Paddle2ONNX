@@ -73,7 +73,7 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
             "opset_version": [12, 15],
             "input_spec_shape": [],
             "axis": axis,
-            "return_softmax": False,
+            "return_softmax": return_softmax,
         }
 
         models = Net(config)

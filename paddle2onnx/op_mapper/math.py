@@ -1227,7 +1227,8 @@ class SoftmaxCrossEntropyLoss():
                 "SoftmaxCrossEntropyLoss in onnx not support soft label.")
         scores = node.input('Logits', 0)
         labels = node.input('Label', 0)
-        outputs = [node.output('Loss', 0)]
+        # Whether return_softmax is True or False, the model will have two outputs
+        outputs = [node.output('Loss', 0), node.output('Softmax', 0)]
 
         shape = node.input_shape('Logits', 0)
         if len(shape) < 2:
@@ -1239,16 +1240,19 @@ class SoftmaxCrossEntropyLoss():
         if axis == 1:
             squeeze_node = graph.make_node(
                 'Squeeze', inputs=[labels], axes=[axis])
-            softmax_node = graph.make_node(
+            loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
                 inputs=[scores, squeeze_node],
+                outputs=2,
                 ignore_index=node.attr('ignore_index'),
                 reduction='none')
-            graph.make_node(
+            loss_node = graph.make_node(
                 'Unsqueeze',
-                inputs=[softmax_node],
-                outputs=outputs,
+                inputs=[loss_node],
+                outputs=outputs[0],
                 axes=[axis])
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
         else:
             perm = [i for i in range(len(shape))]
             perm[1] = axis
@@ -1260,15 +1264,20 @@ class SoftmaxCrossEntropyLoss():
             squeeze_labels = graph.make_node(
                 'Squeeze', inputs=[transpose_labels], axes=[1])
 
-            softmax_node = graph.make_node(
+            loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
                 inputs=[transpose_scores, squeeze_labels],
                 ignore_index=node.attr('ignore_index'),
+                outputs=2,
                 reduction='none')
             output_node = graph.make_node(
-                'Unsqueeze', inputs=[softmax_node], axes=[1])
+                'Unsqueeze', inputs=[loss_node], axes=[1])
             graph.make_node(
-                'Transpose', inputs=output_node, outputs=outputs, perm=perm)
+                'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
+            softmax_node = graph.make_node(
+                'Transpose', inputs=softmax_node, perm=perm)
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -1277,7 +1286,8 @@ class SoftmaxCrossEntropyLoss():
                 "SoftmaxCrossEntropyLoss in onnx not support soft label.")
         scores = node.input('Logits', 0)
         labels = node.input('Label', 0)
-        outputs = [node.output('Loss', 0)]
+        # Whether return_softmax is True or False, the model will have two outputs
+        outputs = [node.output('Loss', 0), node.output('Softmax', 0)]
 
         shape = node.input_shape('Logits', 0)
         if len(shape) < 2:
@@ -1291,32 +1301,40 @@ class SoftmaxCrossEntropyLoss():
                 'Constant', dtype=dtypes.ONNX.INT64, value=[axis])
             squeeze_node = graph.make_node(
                 'Squeeze', inputs=[labels, axis_node])
-            softmax_node = graph.make_node(
+            loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
                 inputs=[scores, squeeze_node],
+                outputs=2,
                 ignore_index=node.attr('ignore_index'),
                 reduction='none')
-            graph.make_node(
-                'Unsqueeze', inputs=[softmax_node, axis_node], outputs=outputs)
+            loss_node = graph.make_node(
+                'Unsqueeze', inputs=[loss_node, axis_node], outputs=outputs[0])
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
         else:
             perm = [i for i in range(len(shape))]
             perm[1] = axis
             perm[axis] = 1
+            constant_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
             transpose_scores = graph.make_node(
                 'Transpose', inputs=[scores], perm=perm)
             transpose_labels = graph.make_node(
                 'Transpose', inputs=[labels], perm=perm)
-            constant_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
             squeeze_labels = graph.make_node(
                 'Squeeze', inputs=[transpose_labels, constant_node])
 
-            softmax_node = graph.make_node(
+            loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
                 inputs=[transpose_scores, squeeze_labels],
                 ignore_index=node.attr('ignore_index'),
+                outputs=2,
                 reduction='none')
             output_node = graph.make_node(
-                'Unsqueeze', inputs=[softmax_node, constant_node])
-            outputs = graph.make_node(
-                'Transpose', inputs=output_node, outputs=outputs, perm=perm)
+                'Unsqueeze', inputs=[loss_node, constant_node])
+            graph.make_node(
+                'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
+            softmax_node = graph.make_node(
+                'Transpose', inputs=softmax_node, perm=perm)
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
