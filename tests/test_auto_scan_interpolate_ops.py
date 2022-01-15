@@ -45,8 +45,8 @@ op_set_map = {
     'trilinear': [7, 11, 15],
     'nearest': [7, 9, 15],
     'bicubic': [11, 15],
-    'nearest_v1': [7, 11, 15],
-    'bilinear_v1': [7, 11, 15],
+    'nearest_v1': [11, 15],
+    'bilinear_v1': [11, 15],
 }
 
 
@@ -178,13 +178,18 @@ class Net1(BaseNet):
         """
         forward
         """
-        align_corners = self.config['align_corners'][0]
+        # align_corners = self.config['align_corners'][0]
+        # if self.config['mode'] == 'nearest_v1':
+        #     x = paddle.fluid.layers.resize_nearest(
+        #         inputs, out_shape=None, scale=2.0, align_corners=align_corners)
+        # else:
+        #     x = paddle.fluid.layers.resize_bilinear(
+        #         inputs, scale=2.0, align_corners=False)
         if self.config['mode'] == 'nearest_v1':
-            x = paddle.fluid.layers.resize_nearest(
-                inputs, out_shape=None, scale=2.0, align_corners=align_corners)
+            x = paddle.fluid.layers.resize_nearest(inputs, scale=2.0)
         else:
-            x = paddle.fluid.layers.resize_bilinear(
-                inputs, scale=2.0, align_corners=False)
+            x = paddle.fluid.layers.resize_bilinear(inputs, scale=2.0)
+
         return x
 
 

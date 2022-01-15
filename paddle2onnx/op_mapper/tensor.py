@@ -1342,9 +1342,7 @@ class Resize():
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
 
-        if node.attr('align_corners') and node.type not in [
-                "nearest_interp"
-        ] or resize_type in ["cubic"]:
+        if node.attr('align_corners') or resize_type in ["cubic"]:
             raise Exception(
                 "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
                 "Try converting with opset_version 11 ")
@@ -1430,9 +1428,7 @@ class Resize():
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
 
-        if node.attr('align_corners') and node.type not in [
-                "nearest_interp"
-        ] or resize_type in ["cubic"]:
+        if node.attr('align_corners') or resize_type in ["cubic"]:
             raise Exception(
                 "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
                 "Try converting with opset_version 11 ")
