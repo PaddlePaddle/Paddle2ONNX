@@ -20,6 +20,7 @@ from onnx import TensorProto
 ONNX = TensorProto
 
 DTYPE_PADDLE_ONNX_MAP = {
+    TensorProto.FLOAT16: core.VarDesc.VarType.FP16,
     TensorProto.FLOAT: core.VarDesc.VarType.FP32,
     TensorProto.DOUBLE: core.VarDesc.VarType.FP64,
     TensorProto.INT16: core.VarDesc.VarType.INT16,
@@ -27,6 +28,7 @@ DTYPE_PADDLE_ONNX_MAP = {
     TensorProto.INT64: core.VarDesc.VarType.INT64,
     TensorProto.BOOL: core.VarDesc.VarType.BOOL,
     TensorProto.UINT8: core.VarDesc.VarType.UINT8,
+    core.VarDesc.VarType.FP16: TensorProto.FLOAT16,
     core.VarDesc.VarType.FP32: TensorProto.FLOAT,
     core.VarDesc.VarType.FP64: TensorProto.DOUBLE,
     core.VarDesc.VarType.INT16: TensorProto.INT16,
