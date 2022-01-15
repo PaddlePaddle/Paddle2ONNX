@@ -31,7 +31,7 @@ class Net(BaseNet):
         """
         x = paddle.fluid.layers.nn.group_norm(
             inputs,
-            groups=inputs.shape[1],
+            groups=self.config['groups'],
             epsilon=self.config['epsilon'],
             param_attr=None,
             bias_attr=None,
@@ -53,7 +53,8 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
                     min_value=4, max_value=10), min_size=4, max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
-
+        data_layout = draw(st.sampled_from(["NCHW"]))
+        groups = input_shape[1]
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
 
         config = {
@@ -63,6 +64,8 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "epsilon": epsilon,
+            "data_layout": data_layout,
+            "groups": groups,
         }
 
         models = Net(config)

@@ -68,7 +68,7 @@ class Net(BaseNet):
             use_input_stats=self.config['use_input_stats'],
             momentum=self.config['momentum'],
             eps=self.config['epsilon'],
-            data_format="NCHW", )
+            data_format=self.config['data_format'])
         return x
 
 
@@ -88,6 +88,15 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32"]))
 
+        if len(input_shape) == 2:
+            data_format = "NC"
+        elif len(input_shape) == 3:
+            data_format = draw(st.sampled_from(["NCL"]))
+        elif len(input_shape) == 4:
+            data_format = draw(st.sampled_from(["NCHW"]))
+        else:
+            data_format = "NCDHW"
+
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
         momentum = draw(st.floats(min_value=0.1, max_value=0.9))
         has_weight = draw(st.booleans())
@@ -106,6 +115,7 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
             "has_weight": has_weight,
             "has_bias": has_bias,
             "use_input_stats": use_input_stats,
+            "data_format": data_format,
         }
 
         models = Net(config)
