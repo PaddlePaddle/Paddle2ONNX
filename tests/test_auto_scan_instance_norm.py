@@ -65,7 +65,7 @@ class Net(BaseNet):
             running_var=self.variance,
             weight=self.weight if self.config['has_weight'] else None,
             bias=self.bias if self.config['has_bias'] else None,
-            use_input_stats=True,
+            use_input_stats=self.config['use_input_stats'],
             momentum=self.config['momentum'],
             eps=self.config['epsilon'],
             data_format="NCHW", )
@@ -92,6 +92,7 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
         momentum = draw(st.floats(min_value=0.1, max_value=0.9))
         has_weight = draw(st.booleans())
         has_bias = draw(st.booleans())
+        use_input_stats = draw(st.booleans())
         config = {
             "op_names": ["instance_norm"],
             "test_data_shapes": [input_shape],
@@ -104,6 +105,7 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
             "dtype": dtype,
             "has_weight": has_weight,
             "has_bias": has_bias,
+            "use_input_stats": use_input_stats,
         }
 
         models = Net(config)

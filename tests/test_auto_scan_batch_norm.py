@@ -28,7 +28,10 @@ class Net(BaseNet):
 
     def __init__(self, config=None):
         super(Net, self).__init__(config)
-        param_shape = [self.config['input_shape'][1]]
+        if self.config['data_format'] in ["NC", "NCL", "NCHW", "NCDHW", "NCHW"]:
+            param_shape = [self.config['input_shape'][1]]
+        else:
+            param_shape = [self.config['input_shape'][-1]]
         dtype = self.config['dtype']
 
         self.mean = self.create_parameter(
@@ -67,8 +70,8 @@ class Net(BaseNet):
             bias=self.bias,
             momentum=self.config['momentum'],
             epsilon=self.config['epsilon'],
-            data_format="NCHW",
-            use_global_stats=None)
+            data_format=self.config['data_format'],
+            use_global_stats=self.config['use_global_stats'])
         return x
 
 
@@ -82,13 +85,27 @@ class TestBatchNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=8), min_size=3, max_size=5))
+                    min_value=4, max_value=8), min_size=2, max_size=5))
 
         input_spec = [-1] * len(input_shape)
-
         dtype = draw(st.sampled_from(["float32", "float64"]))
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
         momentum = draw(st.floats(min_value=0.1, max_value=0.9))
+        if len(input_shape) == 2:
+            data_format = "NC"
+        elif len(input_shape) == 3:
+            data_format = draw(st.sampled_from(["NCL", "NLC"]))
+        elif len(input_shape) == 4:
+            data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
+        else:
+            data_format = "NDHWC"
+
+        use_global_stats = None
+        is_use_global_stats = draw(st.sampled_from(["None", "False", "True"]))
+        if is_use_global_stats == "False":
+            use_global_stats = None  # has a diff
+        elif is_use_global_stats == "True":
+            use_global_stats = True
 
         config = {
             "op_names": ["batch_norm"],
@@ -100,6 +117,8 @@ class TestBatchNormConvert(OPConvertAutoScanTest):
             "momentum": momentum,
             "input_shape": input_shape,
             "dtype": dtype,
+            "data_format": data_format,
+            "use_global_stats": use_global_stats,
         }
 
         models = Net(config)
