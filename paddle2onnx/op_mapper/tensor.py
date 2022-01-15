@@ -1335,10 +1335,10 @@ class UniformRandom():
         'nearest_interp': 'nearest',
     })
 class Resize():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (9, 15)
 
     @classmethod
-    def opset_7(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
 
@@ -1403,25 +1403,18 @@ class Resize():
                 raise Exception("Unexpected situation happend")
 
             assert len(scale) > 0, Exception("scale size should > 0!")
-            scales = scale_value + scale
-            if graph.opset_version < 9:
-                graph.make_node(
-                    'Upsample',
-                    inputs=inputs,
-                    outputs=node.output('Out'),
-                    mode=resize_type,
-                    scales=scales)
-            else:
-                scale_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': scales})
-                inputs.append(scale_node)
-                graph.make_node(
-                    'Upsample',
-                    inputs=inputs,
-                    outputs=node.output('Out'),
-                    mode=resize_type)
+            scale_node = graph.make_node(
+                'Constant',
+                attrs={
+                    'dtype': dtypes.ONNX.FLOAT,
+                    'value': scale_value + scale
+                })
+            inputs.append(scale_node)
+        graph.make_node(
+            'Upsample',
+            inputs=inputs,
+            outputs=node.output('Out'),
+            mode=resize_type)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):

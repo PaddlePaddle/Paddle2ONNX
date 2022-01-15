@@ -40,10 +40,10 @@ data_format_map = {
 }
 
 op_set_map = {
-    'linear': [7, 9, 15],
-    'bilinear': [7, 9, 15],
-    'trilinear': [7, 11, 15],
-    'nearest': [7, 9, 15],
+    'linear': [9, 15],
+    'bilinear': [9, 15],
+    'trilinear': [11, 15],
+    'nearest': [9, 15],
     'bicubic': [11, 15],
     'nearest_v1': [11, 15],
     'bilinear_v1': [11, 15],
