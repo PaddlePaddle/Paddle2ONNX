@@ -95,6 +95,8 @@ class TestBatchNormConvert(OPConvertAutoScanTest):
             data_format = "NC"
         elif len(input_shape) == 3:
             data_format = draw(st.sampled_from(["NCL", "NLC"]))
+            if data_format == "NLC":
+                input_shape[-1] = 4
         elif len(input_shape) == 4:
             data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
         else:
