@@ -57,6 +57,7 @@ def program2onnx(program,
                  opset_version=9,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
+                 auto_update_opset=True,
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -83,7 +84,8 @@ def program2onnx(program,
         paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
                                                       target_vars, scope)
         return export_onnx(paddle_graph, save_file, opset_version,
-                           enable_onnx_checker, operator_export_type)
+                           enable_onnx_checker, operator_export_type,
+                           auto_update_opset)
     else:
         raise TypeError(
             "the input 'program' should be 'Program', but received type is %s."
