@@ -43,7 +43,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         assert res
         assert result.shape == expect.shape
         assert result.dtype == expect.dtype
-    elif type(result) == list:
+    elif type(result) == list or type(result) == tuple:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
                 compare(result[i], expect[i], delta, rtol)
@@ -227,8 +227,11 @@ class APIOnnx(object):
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) + '.onnx'))
+            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
+                         '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
+        if len(ort_outs) > 1:
+            return ort_outs
         return ort_outs[0]
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
