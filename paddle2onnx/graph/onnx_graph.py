@@ -70,13 +70,19 @@ class ONNXNode(Node):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, paddle_graph, opset_version, operator_export_type="ONNX" ,block=None):
+    def __init__(self,
+                 paddle_graph,
+                 opset_version,
+                 operator_export_type="ONNX",
+                 block=None,
+                 auto_update_opset=True):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
         self.ctx = paddle_graph
         self.custom = []
-        self.update_opset_version()
+        if auto_update_opset:
+            self.update_opset_version()
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -133,7 +139,8 @@ class ONNXGraph(Graph):
         else:
             real_outputs = outputs
 
-        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name, domain)
+        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name,
+                        domain)
 
         self.insert_node(node)
         if len(node.outputs) == 1:
@@ -158,7 +165,8 @@ class ONNXGraph(Graph):
             attrs = node.attrs
         attrs.update(kw)
 
-        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name, node.domain)
+        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name,
+                        node.domain)
         self.insert_node(node)
         return node
 
@@ -191,7 +199,9 @@ class ONNXGraph(Graph):
 
     def update_opset_version(self):
         node_map = self.ctx.node_map
-        self.opset_version = OpMapper.get_recommend_opset_version(node_map, self.opset_version)
+        self.opset_version = OpMapper.get_recommend_opset_version(
+            node_map, self.opset_version)
+
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
@@ -236,8 +246,16 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     @staticmethod
-    def build(paddle_graph, opset_version, operator_export_type="ONNX", verbose=False):
-        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version, operator_export_type=operator_export_type)
+    def build(paddle_graph,
+              opset_version,
+              operator_export_type="ONNX",
+              verbose=False,
+              auto_update_opset=True):
+        onnx_graph = ONNXGraph(
+            paddle_graph,
+            opset_version=opset_version,
+            operator_export_type=operator_export_type,
+            auto_update_opset=auto_update_opset)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
