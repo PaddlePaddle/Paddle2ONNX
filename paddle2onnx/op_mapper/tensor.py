@@ -184,14 +184,14 @@ class Split():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         sections = node.attr('sections')
-        input_x = node.input('X')[0]
-        input_shape = node.block.vars[input_x].shape
-        if len(node.input('AxisTensor')) > 0:
-            axes_node = node.input('AxisTensor')[0]
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
-            axis = axes[0]
-        else:
-            axis = node.attr('axis')
+        axis = cls.get_axis(graph, node)
+
+        input_shape = node.block.vars[node.input('X')[0]].shape
+        input_index = [i for i, val in enumerate(input_shape) if val == -1]
+        section_index = [i for i, val in enumerate(sections) if val == -1]
+        if len(input_index) == 0 and len(section_index) == 1:
+            sections[section_index[0]] = input_shape[axis] - (sum(sections) + 1)
+
         if len(sections) > 0:
             graph.make_node(
                 'Split',
@@ -209,12 +209,14 @@ class Split():
     @classmethod
     def opset_13(cls, graph, node, **kw):
         sections = node.attr('sections')
-        if len(node.input('AxisTensor')) > 0:
-            axes_node = node.input('AxisTensor')[0]
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
-            axis = axes[0]
-        else:
-            axis = node.attr('axis')
+        axis = cls.get_axis(graph, node)
+
+        input_shape = node.block.vars[node.input('X')[0]].shape
+        input_index = [i for i, val in enumerate(input_shape) if val == -1]
+        section_index = [i for i, val in enumerate(sections) if val == -1]
+        if len(input_index) == 0 and len(section_index) == 1:
+            sections[section_index[0]] = input_shape[axis] - (sum(sections) + 1)
+
         if len(sections) > 0:
             split_node = graph.make_node(
                 'Constant',
@@ -231,6 +233,24 @@ class Split():
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
                 axis=axis)
+
+    @classmethod
+    def get_axis(cls, graph, node):
+        if len(node.input('AxisTensor')) > 0:
+            axis_node = node.input('AxisTensor')[0]
+            # When axis is tensor, only int32 and int64 are supported
+            if axis_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axis = graph.parameters[axis_node].attribute[0].t.int32_data
+                if axis is None or len(axis) < 1:
+                    axis = graph.parameters[axis_node].attribute[
+                        0].t.int64_data[0]
+        else:
+            axis = node.attr('axis')
+        return axis
 
 
 @op_mapper(['slice', 'strided_slice'])

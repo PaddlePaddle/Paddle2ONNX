@@ -32,7 +32,7 @@ class Net(BaseNet):
         """
         axis = self.config['axis']
         if self.config['isAxisTensor']:
-            axis = paddle.to_tensor(axis)
+            axis = paddle.to_tensor(axis, dtype=self.config['axis_dtype'])
         x = paddle.split(
             inputs, num_or_sections=self.config['num_or_sections'], axis=axis)
         return x
@@ -52,6 +52,7 @@ class TestSplitConvert(OPConvertAutoScanTest):
         # float64 not supported
         dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
 
+        axis_dtype = draw(st.sampled_from(["int32", "int64"]))
         isAxisTensor = draw(st.booleans())
         axis = draw(
             st.integers(
@@ -67,6 +68,14 @@ class TestSplitConvert(OPConvertAutoScanTest):
             index = draw(st.integers(min_value=0, max_value=len(data_list) - 1))
             num_or_sections = list(data_list[index])
             random.shuffle(num_or_sections)
+            if draw(st.booleans()):
+                if len(num_or_sections) == 1:
+                    num_or_sections[0] = -1
+                else:
+                    idx = draw(
+                        st.integers(
+                            min_value=0, max_value=len(num_or_sections) - 1))
+                    num_or_sections[idx] = -1
         else:
             num_or_sections = draw(st.integers(min_value=2, max_value=5))
             scale = draw(st.integers(min_value=2, max_value=3))
@@ -79,6 +88,7 @@ class TestSplitConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "axis": axis,
+            "axis_dtype": axis_dtype,
             "isAxisTensor": isAxisTensor,
             "num_or_sections": num_or_sections
         }
