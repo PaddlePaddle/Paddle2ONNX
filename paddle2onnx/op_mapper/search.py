@@ -96,7 +96,7 @@ class TopK():
 
 @op_mapper('argsort')
 class ArgSort():
-    support_opset_version_range = (1, 15)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -122,21 +122,30 @@ class ArgSort():
                 largest=1)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         k = node.input_var('X', 0).shape[node.attr('axis')]
-        x_node_dtype = node.input_dtype('X', 0)
-        dtype = dtypes.DTYPE_PADDLE_STR_MAP[x_node_dtype]
-        if not node.attr('descending') or dtype in ["int32", "int64"]:
-            raise Exception(
-                "descending=False or dtype is int32 or int64 only support opset version>=11."
-            )
+        input_dtype = node.input_dtype('X', 0)
+        dtype = dtypes.DTYPE_PADDLE_STR_MAP[input_dtype]
+        inputs = node.input('X', 0)
+        if dtype in ["int32", "int64"]:
+            inputs = graph.make_node(
+                'Cast', inputs=inputs, to=dtypes.ONNX.FLOAT)
+        if not node.attr('descending'):
+            raise Exception("descending=False only support opset version>=11.")
         else:
+            output_node = node.output('Out', 0)
             graph.make_node(
                 'TopK',
-                inputs=node.input('X', 0),
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                inputs=[inputs],
+                outputs=[output_node, node.output('Indices', 0)],
                 axis=node.attr('axis'),
                 k=k)
+            if dtype in ["int32", "int64"]:
+                graph.make_node(
+                    'Cast',
+                    inputs=[output_node],
+                    to=dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype],
+                    outputs=[output_node])
 
 
 @op_mapper('index_select')

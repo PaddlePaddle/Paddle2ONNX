@@ -66,11 +66,15 @@ class TestArgsortConvert(OPConvertAutoScanTest):
             input_data = input_data.reshape(input_shape)
             return input_data
 
+        if descending:
+            opset_version = [7, 11, 15]
+        else:
+            opset_version = [11, 15]
         config = {
             "op_names": ["argsort"],
             "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "axis": axis,
             "descending": descending,

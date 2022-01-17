@@ -6,7 +6,7 @@
 | acos | 7~12 |
 | arg_max | 1~12 |
 | arg_min | 1~12 |
-| arg_sort | 1~15 |
+| arg_sort | 6~15 |
 | asin | 7~12 |
 | anchor_generator | 11~12 |
 | assign_value | 1~12 |
