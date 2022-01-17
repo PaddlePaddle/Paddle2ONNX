@@ -722,7 +722,7 @@ class InstanceNorm():
 
 @op_mapper('dropout')
 class Dropout():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
