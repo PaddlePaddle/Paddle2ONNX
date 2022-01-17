@@ -63,10 +63,8 @@ class TestSplitConvert(OPConvertAutoScanTest):
             axis_index = len(input_shape) + axis
         num_or_sections_dtype = draw(st.sampled_from(["int", "list"]))
         if num_or_sections_dtype == "list":
-            x = [i + 1 for i in range(input_shape[axis_index])]
-            data_list = self.generate_data(x)
-            index = draw(st.integers(min_value=0, max_value=len(data_list) - 1))
-            num_or_sections = list(data_list[index])
+            input_shape[axis_index] = 6
+            num_or_sections = [3, 2, 1]
             random.shuffle(num_or_sections)
             if draw(st.booleans()):
                 if len(num_or_sections) == 1:
@@ -99,50 +97,6 @@ class TestSplitConvert(OPConvertAutoScanTest):
 
     def test(self):
         self.run_and_statis(max_examples=30)
-
-    def generate_data(self, input):
-        def max_values(n, x):
-            max_value = 0
-            iters = np.arange(0, x, 1)
-            for i in iters:
-                max_value = np.power((n - x + 2), i) * (n - x + 1) + max_value
-            return max_value
-
-        def min_values(n, x):
-            min_value = 0
-            iters = np.arange(0, x, 1)
-            for i in iters:
-                min_value = np.power((n - x + 2), i) * 1 + min_value
-            return min_value
-
-        def f(n, x):
-            a = range(1, 30, 1)
-            b = []
-            while True:
-                s = n // x
-                y = n % x
-                b = b + [y]
-                if s == 0:
-                    break
-                n = s
-            b.reverse()
-            b = list(b)
-            return b
-
-        a = list(set(input))
-        iters = np.arange(1, a.__len__() + 1, 1)
-        contianer = list()
-        discontianer = list()
-        for i in iters:
-            for j in (np.arange(
-                    min_values(a.__len__(), i),
-                    max_values(a.__len__(), i) + 1, 1)):
-                b = f(j, a.__len__() - i + 2)
-                if sum(b) == a.__len__() and (0 not in b):
-                    t = sorted(b)
-                    contianer.append(tuple(t))
-                    discontianer = list(set(contianer))
-        return discontianer
 
 
 if __name__ == "__main__":
