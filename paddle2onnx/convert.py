@@ -29,9 +29,11 @@ def export_onnx(paddle_graph,
                 opset_version=9,
                 enable_onnx_checker=False,
                 operator_export_type="ONNX",
-                verbose=False):
+                verbose=False,
+                auto_update_opset=True):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
-                                 operator_export_type, verbose)
+                                 operator_export_type, verbose,
+                                 auto_update_opset)
     onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
 
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
@@ -55,6 +57,7 @@ def program2onnx(program,
                  opset_version=9,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
+                 auto_update_opset=True,
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -81,7 +84,8 @@ def program2onnx(program,
         paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
                                                       target_vars, scope)
         return export_onnx(paddle_graph, save_file, opset_version,
-                           enable_onnx_checker, operator_export_type)
+                           enable_onnx_checker, operator_export_type,
+                           auto_update_opset)
     else:
         raise TypeError(
             "the input 'program' should be 'Program', but received type is %s."
@@ -166,5 +170,15 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
     if 'get_paddle_graph' in configs:
         return paddle_graph
 
+    auto_update_opset = True
+    if 'auto_update_opset' in configs:
+        if isinstance(configs['auto_update_opset'], bool):
+            auto_update_opset = configs['auto_update_opset']
+        else:
+            raise TypeError(
+                "The auto_update_opset should be 'bool', but received type is %s."
+                % type(configs['auto_update_opset']))
+
     return export_onnx(paddle_graph, save_file, opset_version,
-                       enable_onnx_checker, operator_export_type, verbose)
+                       enable_onnx_checker, operator_export_type, verbose,
+                       auto_update_opset)
