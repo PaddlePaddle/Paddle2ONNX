@@ -25,18 +25,25 @@ class Net(BaseNet):
     simple Net
     """
 
+    def __init__(self, config=None):
+        super(Net, self).__init__(config)
+        groups = self.config['groups']
+        epsilon = self.config['epsilon']
+        num_channels = self.config['num_channels']
+        data_format = self.config['data_format']
+        self.group_norm = paddle.nn.GroupNorm(
+            num_groups=groups,
+            num_channels=num_channels,
+            epsilon=epsilon,
+            weight_attr=None if self.config['has_weight_attr'] else False,
+            bias_attr=None if self.config['has_bias_attr'] else False,
+            data_format=data_format)
+
     def forward(self, inputs):
         """
         forward
         """
-        x = paddle.fluid.layers.nn.group_norm(
-            inputs,
-            groups=self.config['groups'],
-            epsilon=self.config['epsilon'],
-            param_attr=None,
-            bias_attr=None,
-            act=None,
-            data_layout='NCHW')
+        x = self.group_norm(inputs)
         return x
 
 
@@ -53,19 +60,24 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
                     min_value=4, max_value=10), min_size=4, max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
-        data_layout = draw(st.sampled_from(["NCHW"]))
+        data_format = draw(st.sampled_from(["NCHW"]))
         groups = input_shape[1]
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
+        has_weight_attr = draw(st.booleans())
+        has_bias_attr = draw(st.booleans())
 
         config = {
-            "op_names": ["group_norm_0"],
+            "op_names": ["group_norm"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "epsilon": epsilon,
-            "data_layout": data_layout,
+            "data_format": data_format,
             "groups": groups,
+            "num_channels": input_shape[1],
+            "has_weight_attr": has_weight_attr,
+            "has_bias_attr": has_bias_attr,
         }
 
         models = Net(config)
