@@ -582,17 +582,6 @@ class BatchNorm():
             outputs=node.output('Y'),
             **onnx_attr)
 
-    @classmethod
-    def opset_6(cls, graph, node, **kw):
-        onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
-        onnx_attr['is_test'] = 0
-        onnx_attr['spatial'] = 1
-        onnx_node = graph.make_node(
-            'BatchNormalization',
-            inputs=inputs,
-            outputs=node.output('Y'),
-            **onnx_attr)
-
 
 @op_mapper('group_norm')
 class GroupNorm():
