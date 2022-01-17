@@ -31,7 +31,7 @@ class Net(BaseNet):
         """
         axis = self.config['axis']
         if self.config['isTensor']:
-            axis = paddle.to_tensor(axis)
+            axis = paddle.to_tensor(axis, dtype=self.config['axis_dtype'])
         x = paddle.concat([inputs1, inputs2], axis=axis)
         return x
 
@@ -47,6 +47,7 @@ class TestConcatConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=4, max_value=8), min_size=2, max_size=5))
+        axis_dtype = draw(st.sampled_from(["int32", "int64"]))
 
         dtype = draw(
             st.sampled_from(
@@ -64,6 +65,7 @@ class TestConcatConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "axis": axis,
+            "axis_dtype": axis_dtype,
             "isTensor": isTensor,
         }
 
