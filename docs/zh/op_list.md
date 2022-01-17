@@ -36,7 +36,7 @@
 | depthwise_conv2d_transpose | 1~12 |
 | distribute_fpn_proposals | 11~12 |
 | dist | 7~12 |
-| dropout | 7~12 |
+| dropout | 7~15 |
 | dot | 7~12 |
 | elementwise_add | 7~12 |
 | elementwise_div | 7~12 |
@@ -136,7 +136,7 @@
 | round | 11~12 |
 | rsqrt | 6~12 |
 | softmax | 1~15 |
-| scale | 1~12 | opset 1~6 limited supported |
+| scale | 1~15 | opset 1~6 limited supported |
 | scatter | 1~12 |
 | scatter_nd_add | 11~12 |
 | sequence_expand | 1~12 |
