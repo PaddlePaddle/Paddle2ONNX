@@ -68,5 +68,124 @@ class TestMeshgridConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs1, inputs2, inputs3):
+        """
+        forward
+        """
+        x = paddle.meshgrid([inputs1, inputs2, inputs3])
+        return x
+
+
+class TestMeshgridConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.meshgrid
+    OPset version: 8, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape1 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape2 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape3 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+
+        config = {
+            "op_names": ["meshgrid"],
+            "test_data_shapes": [input_shape1, input_shape2, input_shape3],
+            "test_data_types": [[dtype], [dtype], [dtype]],
+            "opset_version": [8, 9, 15],
+            "input_spec_shape": [],
+        }
+
+        models = Net1(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+class Net2(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs1, inputs2, inputs3, inputs4, inputs5):
+        """
+        forward
+        """
+        x = paddle.meshgrid([inputs1, inputs2, inputs3, inputs4, inputs5])
+        return x
+
+
+class TestMeshgridConvert2(OPConvertAutoScanTest):
+    """
+    api: paddle.meshgrid
+    OPset version: 8, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape1 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape2 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape3 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape4 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        input_shape5 = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=8), min_size=1, max_size=1))
+
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+
+        config = {
+            "op_names": ["meshgrid"],
+            "test_data_shapes": [
+                input_shape1, input_shape2, input_shape3, input_shape4,
+                input_shape5
+            ],
+            "test_data_types": [[dtype], [dtype], [dtype], [dtype], [dtype]],
+            "opset_version": [8, 9, 15],
+            "input_spec_shape": [],
+        }
+
+        models = Net2(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
 if __name__ == "__main__":
     unittest.main()
