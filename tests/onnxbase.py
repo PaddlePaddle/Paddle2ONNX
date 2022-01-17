@@ -211,7 +211,8 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+            auto_update_opset=False)
 
     def _dygraph_jit_save(self, instance):
         """
