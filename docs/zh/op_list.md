@@ -13,7 +13,7 @@
 | all | 6~12 |
 | atan | 7~12 |
 | any | 6~12 |
-| batch_norm | 1~12 |
+| batch_norm | 7~15 |
 | bicubic_interp_v2 | 9~12 |
 | bilinear_interp | 9~12 |
 | bilinear_interp_v2 | 9~12 |
@@ -36,7 +36,7 @@
 | depthwise_conv2d_transpose | 1~12 |
 | distribute_fpn_proposals | 11~12 |
 | dist | 7~12 |
-| dropout | 7~12 |
+| dropout | 7~15 |
 | dot | 7~12 |
 | elementwise_add | 7~12 |
 | elementwise_div | 7~12 |
@@ -66,19 +66,19 @@
 | gather | 1~12 |  opset 1~10 limited supported |
 | generate_proposals | 12~ |   |
 | greater_equal | 12~ |   |
-| group_norm | 1~12 |   |
+| group_norm | 6~15 |   |
 | hardshrink | 9~12 |
 | hardtanh | 6~12 |
 | hard_sigmoid | 1~12 |
 | hard_swish | 1~12 |
 | has_nan | 9~12 |
 | im2sequence | 1~12 |
-| instance_norm | 1~12 |
+| instance_norm | 6~15 |
 | index_select | 1~12 |
 | isinf | 10~12 |
 | isnan | 9~12 |
 | isfinite | 10~12 |
-| layer_norm | 9~12 |
+| layer_norm | 7~15 |
 | leaky_relu | 1~12 |
 | less_than | 1~12 | opset 7~12 limited supported
 | less_equal| 12~ |
@@ -136,7 +136,7 @@
 | round | 11~12 |
 | rsqrt | 6~12 |
 | softmax | 1~15 |
-| scale | 1~12 | opset 1~6 limited supported |
+| scale | 1~15 | opset 1~6 limited supported |
 | scatter | 1~12 |
 | scatter_nd_add | 11~12 |
 | sequence_expand | 1~12 |
