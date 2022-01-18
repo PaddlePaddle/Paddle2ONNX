@@ -15,26 +15,23 @@
 from __future__ import absolute_import
 
 import os
-import paddle
 import numpy as np
-from paddle.nn import Layer
-from paddle.fluid import layers
-from paddle.fluid import core
-from paddle.fluid.framework import Variable, program_guard
-from paddle.fluid.dygraph.dygraph_to_static import program_translator
-from paddle.fluid.dygraph.jit import declarative
+import inspect
+import six
+import paddle
+from paddle.fluid.io import _get_valid_program
+from paddle.fluid.dygraph.dygraph_to_static.program_translator import ProgramTranslator, StaticFunction
+from paddle.fluid.layers.utils import flatten, pack_sequence_as
+from collections import OrderedDict
 from paddle.fluid import dygraph
+from paddle.fluid.dygraph.jit import declarative
+from paddle.fluid.framework import Variable, program_guard
+from paddle.fluid import core
+from paddle.fluid import layers
+from paddle.nn import Layer
 
 from paddle2onnx.utils import logging
 from paddle2onnx.graph.graph_helper import prepend_feed_ops, append_fetch_ops
-
-import inspect
-# from paddle.jit import _get_output_vars, _get_input_var_names
-from paddle.fluid.io import _get_valid_program
-from paddle.fluid.dygraph.dygraph_to_static.program_translator import ProgramTranslator, StaticFunction, unwrap_decorators
-from paddle.fluid.layers.utils import flatten, pack_sequence_as
-from collections import OrderedDict
-import six
 
 
 def _get_input_var_names(inputs, input_spec):
@@ -116,7 +113,7 @@ def _get_output_vars(outputs, output_spec):
 @dygraph.base.switch_to_static_graph
 def get_program(layer, input_spec, output_spec, **configs):
     paddle.jit.set_verbosity(0)
-    prog_translator = program_translator.ProgramTranslator()
+    prog_translator = ProgramTranslator()
     if not prog_translator.enable_to_static:
         raise RuntimeError(
             "The Paddle2onnx doesn't work when setting ProgramTranslator.enable to False."
@@ -351,57 +348,3 @@ def get_program(layer, input_spec, output_spec, **configs):
     main_program._copy_dist_param_info_from(origin_program)
 
     return main_program, feeded_var_names, target_vars
-
-
-@dygraph.base.switch_to_static_graph
-def get_program_old(layer, input_spec, output_spec, **configs):
-    paddle.jit.set_verbosity(0)
-    prog_translator = program_translator.ProgramTranslator()
-    if not prog_translator.enable_to_static:
-        raise RuntimeError(
-            "The Paddle2onnx doesn't work when setting ProgramTranslator.enable to False."
-        )
-    if isinstance(layer, Layer):
-        if isinstance(layer.forward, program_translator.StaticFunction):
-            concrete_program = layer.forward.concrete_program
-        else:
-            # transform in jit.save, if input_spec is incomplete, declarative will throw error
-            layer = paddle.jit.to_static(layer, input_spec=input_spec)
-            concrete_program = layer.forward.concrete_program
-            # the input_spec has been used in declarative, which is equal to 
-            # @declarative with input_spec and jit.save without input_spec,
-            # avoid needless warning
-            input_spec = None
-    else:
-        raise TypeError(
-            "The input Layer should be 'Layer', but received  type is %s." %
-            type(layer))
-    feed_var_names = paddle.fluid.dygraph.jit._get_input_var_names(
-        concrete_program.inputs, input_spec)
-    target_vars = paddle.fluid.dygraph.jit._get_output_vars(
-        concrete_program.outputs, output_spec)
-    main_program = concrete_program.main_program.clone()
-    with program_guard(main_program):
-        uniq_target_vars = []
-        for i, var in enumerate(target_vars):
-            if isinstance(var, Variable):
-                var = layers.scale(
-                    var, 1., name="save_infer_model/scale_{}".format(i))
-            uniq_target_vars.append(var)
-        target_vars = uniq_target_vars
-    global_block = main_program.global_block()
-    need_to_remove_op_index = []
-    for i, op in enumerate(global_block.ops):
-        op.desc.set_is_target(False)
-        if op.type == "feed" or op.type == "fetch":
-            need_to_remove_op_index.append(i)
-    for index in need_to_remove_op_index[::-1]:
-        global_block._remove_op(index)
-    main_program.desc.flush()
-    main_program = main_program._prune_with_input(
-        feeded_var_names=feed_var_names, targets=target_vars)
-    main_program = main_program._inference_optimize(prune_read_op=True)
-    fetch_var_names = [v.name for v in target_vars]
-    prepend_feed_ops(main_program, feed_var_names)
-    append_fetch_ops(main_program, fetch_var_names)
-    return main_program, feed_var_names, target_vars
