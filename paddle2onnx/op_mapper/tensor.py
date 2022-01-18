@@ -895,10 +895,10 @@ class Assign():
 
 @op_mapper('transpose2')
 class Transpose():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Transpose',
             inputs=node.input('X'),
