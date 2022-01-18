@@ -265,11 +265,42 @@ class Slice():
         return None
 
     @classmethod
+    def get_start_end_node(cls, graph, node):
+        if len(node.input('StartsTensor')) > 0:
+            starts_node = node.input('StartsTensor')[0]
+            if starts_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the starts parameter as input tensor!"
+                )
+            else:
+                starts = graph.parameters[starts_node].attribute[0].t.int32_data
+                if starts is None or len(starts) < 1:
+                    starts = graph.parameters[starts_node].attribute[
+                        0].t.int64_data
+                    starts = [value for _, value in enumerate(starts)]
+        else:
+            starts = node.attr('starts')
+
+        if len(node.input('EndsTensor')) > 0:
+            ends_node = node.input('EndsTensor')[0]
+            if ends_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the ends parameter as input tensor!"
+                )
+            else:
+                ends = graph.parameters[ends_node].attribute[0].t.int32_data
+                if ends is None or len(ends) < 1:
+                    ends = graph.parameters[ends_node].attribute[0].t.int64_data
+                    ends = [value for _, value in enumerate(ends)]
+        else:
+            ends = node.attr('ends')
+        return starts, ends
+
+    @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        starts, ends = cls.get_start_end_node(graph, node)
+        steps = node.attr('strides', [1] * len(axes))
 
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
@@ -306,9 +337,8 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        starts, ends = cls.get_start_end_node(graph, node)
+        steps = node.attr('strides', [1] * len(axes))
 
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
