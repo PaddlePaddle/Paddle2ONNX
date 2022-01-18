@@ -145,7 +145,7 @@
 | softplus | 1~12 |
 | softsign | 1~12 |
 | softshrink | 9~12 |
-| shape | 1~15 |
+| shape | 6~15 |
 | sigmoid | 1~12 |
 | sign | 9~12 |
 | sin | 7~12 |
