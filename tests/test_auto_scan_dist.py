@@ -30,6 +30,7 @@ class Net(BaseNet):
         forward
         """
         x = paddle.dist(x, y, p=self.config["p"])
+        x = x + x
         return x
 
 

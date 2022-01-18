@@ -31,6 +31,7 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.dist(inputs, _inputs, p=self.p)
+        x = x + 1
         return x
 
 
@@ -45,8 +46,10 @@ def test_dist_9():
     obj = APIOnnx(op, 'dist', [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
 
@@ -61,8 +64,10 @@ def test_dist_10():
     obj = APIOnnx(op, 'dist', [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
 
@@ -77,8 +82,10 @@ def test_dist_11():
     obj = APIOnnx(op, 'dist', [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
 
@@ -93,8 +100,10 @@ def test_dist_12():
     obj = APIOnnx(op, 'dist', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
 
@@ -109,8 +118,10 @@ def test_dist_0():
     obj = APIOnnx(op, 'dist', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
 
@@ -125,8 +136,10 @@ def test_dist_inf():
     obj = APIOnnx(op, 'dist', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
 
@@ -141,6 +154,8 @@ def test_dist___inf():
     obj = APIOnnx(op, 'dist', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')),
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()

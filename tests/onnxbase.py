@@ -124,7 +124,7 @@ class APIOnnx(object):
         paddle.seed(self.seed)
         self.func = func
         if paddle.device.is_compiled_with_cuda() is True:
-            self.places = ['gpu', 'cpu']
+            self.places = ['gpu']
         else:
             self.places = ['cpu']
         self.name = file_name
