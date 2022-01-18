@@ -30,7 +30,6 @@ class Net(BaseNet):
         forward
         """
         x = paddle.cast(inputs, dtype=self.config["dtype"])
-        #x = x.astype("int32")
         return x
 
 

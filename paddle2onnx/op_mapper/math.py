@@ -1047,11 +1047,7 @@ class Dist():
                 inputs=[sum_node, axes],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('inf'):
-            max_node = graph.make_node(
-                'ReduceMax',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            max_node = graph.make_node('ReduceMax', inputs=abs_node, keepdims=0)
             axes = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0])
             graph.make_node(
@@ -1059,11 +1055,7 @@ class Dist():
                 inputs=[max_node, axes],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('-inf'):
-            min_node = graph.make_node(
-                'ReduceMin',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            min_node = graph.make_node('ReduceMin', inputs=abs_node, keepdims=0)
             axes = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0])
             graph.make_node(

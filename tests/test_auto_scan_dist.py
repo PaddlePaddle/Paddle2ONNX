@@ -30,7 +30,6 @@ class Net(BaseNet):
         forward
         """
         x = paddle.dist(x, y, p=self.config["p"])
-        x = x + x
         return x
 
 
@@ -44,9 +43,7 @@ class TestDistConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=3,
-                max_size=3))
+                    min_value=10, max_value=20), min_size=3, max_size=3))
 
         input2_shape = draw(
             st.lists(
