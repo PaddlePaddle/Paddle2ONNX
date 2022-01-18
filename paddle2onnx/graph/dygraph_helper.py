@@ -25,10 +25,11 @@ from paddle.fluid.layers.utils import flatten, pack_sequence_as
 from collections import OrderedDict
 from paddle.fluid import dygraph
 from paddle.fluid.dygraph.jit import declarative
-from paddle.fluid.framework import Variable, program_guard
 from paddle.fluid import core
 from paddle.fluid import layers
 from paddle.nn import Layer
+from paddle.fluid.framework import Block, ParamBase, Program, Variable, Parameter, program_guard
+from paddle.fluid.dygraph.layers import Layer
 
 from paddle2onnx.utils import logging
 from paddle2onnx.graph.graph_helper import prepend_feed_ops, append_fetch_ops
