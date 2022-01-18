@@ -30,6 +30,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     :return:
     """
     if type(result) == np.ndarray:
+        if type(expect) == list:
+            expect = expect[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
