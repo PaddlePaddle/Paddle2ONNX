@@ -24,7 +24,7 @@ import paddle
 
 @op_mapper('concat')
 class Concat():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (4, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -32,7 +32,20 @@ class Concat():
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        axis = node.attr('axis')
+        if len(node.input('AxisTensor')) > 0:
+            axis_node = node.input('AxisTensor')[0]
+            # When axis is tensor, only int32 and int64 are supported
+            if axis_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axis = graph.parameters[axis_node].attribute[0].t.int32_data
+                if axis is None or len(axis) < 1:
+                    axis = graph.parameters[axis_node].attribute[
+                        0].t.int64_data[0]
+        else:
+            axis = node.attr('axis')
         if axis < 0:
             axis = axis + len(node.input_shape('X', 0))
 
@@ -62,7 +75,7 @@ class LodReset():
 
 @op_mapper('stack')
 class Stack():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (4, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -75,6 +88,27 @@ class Stack():
         for ipt in inputs:
             unsqueezed_ipt = graph.make_node(
                 'Unsqueeze', inputs=[ipt], axes=[axis])
+            unsqueezed_inputs.append(unsqueezed_ipt)
+        graph.make_node(
+            'Concat',
+            inputs=unsqueezed_inputs,
+            outputs=node.output('Y'),
+            axis=axis)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        inputs = node.input('X')
+        input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
+        inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
+        axis = node.attr('axis')
+
+        unsqueezed_inputs = list()
+        for ipt in inputs:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': axis})
+            unsqueezed_ipt = graph.make_node(
+                'Unsqueeze', inputs=[ipt, axes_node])
             unsqueezed_inputs.append(unsqueezed_ipt)
         graph.make_node(
             'Concat',
@@ -154,7 +188,7 @@ class ExpandV2():
 
 @op_mapper('shape')
 class Shape():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -168,13 +202,24 @@ class Shape():
 
 @op_mapper('size')
 class Numel():
-    supports_opset_version_range = (1, 12)
+    supports_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         size_node = graph.make_node('Size', inputs=node.input('Input'))
         graph.make_node(
             'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [0]})
+        graph.make_node(
+            'Unsqueeze',
+            inputs=[size_node, axes_node],
+            outputs=node.output('Out'))
 
 
 @op_mapper('split')
@@ -1653,7 +1698,7 @@ class Resize():
 
 @op_mapper('pixel_shuffle')
 class PixelShuffle():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -1716,7 +1761,7 @@ class ScatterndAdd():
 
 @op_mapper('meshgrid')
 class Meshgrid():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
