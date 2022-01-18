@@ -217,92 +217,84 @@ class PaddleGraph(Graph):
 
     @staticmethod
     def build_from_dygraph(layer, input_spec=None, output_spec=None):
-        paddle.jit.save(layer, "./save_model_test/model", input_spec=input_spec)
-        print("saved!")
-        model = paddle.jit.load("./save_model_test/model")
-        print(dir(model), model.program())
-        program = model.program()
-        paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
-                                                      target_vars, scope)
-        # return graph
-        # from paddle.nn import Layer
-        # from paddle.fluid import core
-        # from paddle.fluid.framework import Variable
-        # from paddle2onnx.graph import dygraph_helper as dg_helper
-        # if isinstance(layer, dygraph.TranslatedLayer):
-        #     program = layer.program()
-        #     parameters_dict = {}
-        #     pruned_vars = program.global_block().vars
-        #     for param in layer.parameters():
-        #         if param.name.endswith('feed') or param.name.endswith('fetch'):
-        #             continue
-        #         if not param.persistable:
-        #             continue
-        #         if param.name in pruned_vars:
-        #             parameters_dict[param.name] = {
-        #                 'data': np.array(param.value().get_tensor()),
-        #                 'dtype': param.dtype,
-        #                 'shape': param.shape
-        #             }
-        #     for param in layer.buffers():
-        #         if param.name.endswith('feed') or param.name.endswith('fetch'):
-        #             continue
-        #         if not param.value().get_tensor()._is_initialized():
-        #             continue
-        #         if param.name in pruned_vars:
-        #             parameters_dict[param.name] = {
-        #                 'data': np.array(param.value().get_tensor()),
-        #                 'dtype': param.dtype,
-        #                 'shape': param.shape
-        #             }
-        #     if input_spec is not None:
-        #         logging.warning(
-        #             "Although input_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
-        #         )
-        #         input_spec = layer._input_spec()
-        #     if output_spec is not None:
-        #         logging.warning(
-        #             "Although output_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
-        #         )
-        #     feed_var_names = [ipt.name for ipt in layer._input_spec()]
-        #     fetch_vars = [
-        #         program.global_block().var(opt.name)
-        #         for opt in layer._output_spec()
-        #     ]
-        #     graph = PaddleGraph(program, parameters_dict, feed_var_names,
-        #                         fetch_vars)
-        #     return graph
-        # elif isinstance(layer, Layer):
-        #     program, feed_var_names, fetch_vars = dg_helper.get_program(
-        #         layer, input_spec, output_spec)
-        #     parameters_dict = {}
-        #     pruned_vars = program.global_block().vars
-        #     for param in layer.parameters():
-        #         if param.name.endswith('feed') or param.name.endswith('fetch'):
-        #             continue
-        #         if not param.persistable:
-        #             continue
-        #         if param.name in pruned_vars:
-        #             parameters_dict[param.name] = {
-        #                 'data': np.array(param.value().get_tensor()),
-        #                 'dtype': param.dtype,
-        #                 'shape': param.shape
-        #             }
-        #     for param in layer.buffers():
-        #         if param.name.endswith('feed') or param.name.endswith('fetch'):
-        #             continue
-        #         if not param.value().get_tensor()._is_initialized():
-        #             continue
-        #         if param.name in pruned_vars:
-        #             parameters_dict[param.name] = {
-        #                 'data': np.array(param.value().get_tensor()),
-        #                 'dtype': param.dtype,
-        #                 'shape': param.shape
-        #             }
-        #     graph = PaddleGraph(program, parameters_dict, feed_var_names,
-        #                         fetch_vars)
-        #     return graph
-        # else:
-        #     raise TypeError(
-        #         "The input Layer should be 'Layer' or 'TranslatedLayer', but received  type is %s."
-        #         % type(layer))
+        from paddle.nn import Layer
+        from paddle.fluid import core
+        from paddle.fluid.framework import Variable
+        from paddle2onnx.graph import dygraph_helper as dg_helper
+        if isinstance(layer, dygraph.TranslatedLayer):
+            program = layer.program()
+            parameters_dict = {}
+            pruned_vars = program.global_block().vars
+            for param in layer.parameters():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.persistable:
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            for param in layer.buffers():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            if input_spec is not None:
+                logging.warning(
+                    "Although input_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
+                )
+                input_spec = layer._input_spec()
+            if output_spec is not None:
+                logging.warning(
+                    "Although output_spec is specified, TranslatedLayer is not support prune. An Complete network will be exported."
+                )
+            feed_var_names = [ipt.name for ipt in layer._input_spec()]
+            fetch_vars = [
+                program.global_block().var(opt.name)
+                for opt in layer._output_spec()
+            ]
+            graph = PaddleGraph(program, parameters_dict, feed_var_names,
+                                fetch_vars)
+            return graph
+        elif isinstance(layer, Layer):
+            program, feed_var_names, fetch_vars = dg_helper.get_program(
+                layer, input_spec, output_spec)
+            parameters_dict = {}
+            pruned_vars = program.global_block().vars
+            for param in layer.parameters():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.persistable:
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            for param in layer.buffers():
+                if param.name.endswith('feed') or param.name.endswith('fetch'):
+                    continue
+                if not param.value().get_tensor()._is_initialized():
+                    continue
+                if param.name in pruned_vars:
+                    parameters_dict[param.name] = {
+                        'data': np.array(param.value().get_tensor()),
+                        'dtype': param.dtype,
+                        'shape': param.shape
+                    }
+            graph = PaddleGraph(program, parameters_dict, feed_var_names,
+                                fetch_vars)
+            return graph
+        else:
+            raise TypeError(
+                "The input Layer should be 'Layer' or 'TranslatedLayer', but received  type is %s."
+                % type(layer))
