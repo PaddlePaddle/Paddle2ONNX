@@ -6,7 +6,7 @@
 | acos | 7~12 |
 | arg_max | 1~12 |
 | arg_min | 1~12 |
-| arg_sort | 1~12 |
+| arg_sort | 6~15 |
 | asin | 7~12 |
 | anchor_generator | 11~12 |
 | assign_value | 1~12 |
@@ -74,7 +74,7 @@
 | has_nan | 9~12 |
 | im2sequence | 1~12 |
 | instance_norm | 6~15 |
-| index_select | 1~12 |
+| index_select | 1~15 |
 | isinf | 10~12 |
 | isnan | 9~12 |
 | isfinite | 10~12 |
@@ -98,7 +98,7 @@
 | logical_xor | 1~12 | opset 7~12 limited supported |
 | logsigmoid | 1~12 |
 | logsoftmax | 1~12 |
-| masked_select | 11~12 |
+| masked_select | 11~15 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
@@ -164,7 +164,7 @@
 | tan | 8~12 |
 | thresholded_relu | 1~12 |
 | tile | 11~12 |
-| top_k | 11~12 |
+| top_k | 11~15 |
 | top_k_v2 | 11~12 |
 | transpose2 | 1~12 |
 | trilinear_interp_v2 | 9~12 |
@@ -172,6 +172,6 @@
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~12 |
 | unsqueeze2 | 1~12 |
-| where | 9~12 |
-| where_index | 9~12 |
+| where | 9~15 |
+| where_index | 9~15 |
 | yolo_box | 9~12 |
