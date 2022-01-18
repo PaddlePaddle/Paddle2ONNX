@@ -30,6 +30,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     :return:
     """
     if type(result) == np.ndarray:
+        if type(expect) == list:
+            expect = expect[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
@@ -211,7 +213,8 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+            auto_update_opset=False)
 
     def _dygraph_jit_save(self, instance):
         """
