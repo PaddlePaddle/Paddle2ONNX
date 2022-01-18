@@ -31,7 +31,6 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.dist(inputs, _inputs, p=self.p)
-        x = x + 1
         return x
 
 

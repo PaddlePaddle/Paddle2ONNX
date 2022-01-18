@@ -1003,22 +1003,14 @@ class Dist():
                 inputs=[sum_node],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('inf'):
-            max_node = graph.make_node(
-                'ReduceMax',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            max_node = graph.make_node('ReduceMax', inputs=abs_node, keepdims=0)
             graph.make_node(
                 'Unsqueeze',
                 axes=[0],
                 inputs=[max_node],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('-inf'):
-            min_node = graph.make_node(
-                'ReduceMin',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            min_node = graph.make_node('ReduceMin', inputs=abs_node, keepdims=0)
             graph.make_node(
                 'Unsqueeze',
                 axes=[0],
