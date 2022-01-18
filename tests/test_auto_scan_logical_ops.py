@@ -57,7 +57,7 @@ class Net(BaseNet):
             inputs1 = inputs1.astype('int32')
             inputs2 = inputs2.astype('int32')
         x = op_api_map[self.config["op_names"]](inputs1, inputs2)
-        return x.astype('float32')
+        return x
 
 
 class TestLogicopsConvert(OPConvertAutoScanTest):
