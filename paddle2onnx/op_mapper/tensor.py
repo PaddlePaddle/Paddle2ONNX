@@ -321,44 +321,44 @@ class Slice():
         output = []
         if len(node.input('StartsTensor')) > 0:
             starts_node = node.input('StartsTensor')[0]
-            if starts_node not in graph.parameters:
-                if graph.opset_version < 10:
+            if graph.opset_version >= 10:
+                output.append(starts_node)
+            else:
+                if starts_node not in graph.parameters:
                     raise Exception(
                         "Currently does not support the starts parameter as input tensor!,"
                         " Try converting with opset_version >=10 ")
                 else:
-                    output.append(starts_node)
-            else:
-                starts = graph.parameters[starts_node].attribute[0].t.int32_data
-                if starts is None or len(starts) < 1:
                     starts = graph.parameters[starts_node].attribute[
-                        0].t.int64_data
-                starts = [value for _, value in enumerate(starts)]
-                output.append(starts)
-
+                        0].t.int32_data
+                    if starts is None or len(starts) < 1:
+                        starts = graph.parameters[starts_node].attribute[
+                            0].t.int64_data
+                    starts = [value for _, value in enumerate(starts)]
+                    output.append(starts)
         else:
             starts = node.attr('starts')
             output.append(starts)
 
         if len(node.input('EndsTensor')) > 0:
             ends_node = node.input('EndsTensor')[0]
-            if ends_node not in graph.parameters:
-                if graph.opset_version < 10:
+            if graph.opset_version >= 10:
+                output.append(ends_node)
+            else:
+                if ends_node not in graph.parameters:
                     raise Exception(
                         "Currently does not support the ends parameter as input tensor!,"
                         "Try converting with opset_version >=10 ")
                 else:
-                    output.append(ends_node)
-            else:
-                ends = graph.parameters[ends_node].attribute[0].t.int32_data
-                if ends is None or len(ends) < 1:
-                    ends = graph.parameters[ends_node].attribute[0].t.int64_data
-                ends = [value for _, value in enumerate(ends)]
-                output.append(ends)
+                    ends = graph.parameters[ends_node].attribute[0].t.int32_data
+                    if ends is None or len(ends) < 1:
+                        ends = graph.parameters[ends_node].attribute[
+                            0].t.int64_data
+                    ends = [value for _, value in enumerate(ends)]
+                    output.append(ends)
         else:
             ends = node.attr('ends')
             output.append(ends)
-
         return output
 
     @classmethod
@@ -376,13 +376,8 @@ class Slice():
             else:
                 steps = strides
 
-        input_shape = node.input_shape('Input', 0)
-        for i, e in enumerate(ends):
-            axis = axes[i]
-            if e > input_shape[axis] and input_shape[axis] > 0:
-                ends[i] = input_shape[axis]
-
-        if steps != [1] * len(ends):
+        steps = [i for i, val in enumerate(steps) if val == 1]
+        if len(steps) != len(ends):
             raise Exception(
                 "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
             )
@@ -424,32 +419,22 @@ class Slice():
             else:
                 steps = strides
 
-        input_shape = node.input_shape('Input', 0)
-        if isinstance(starts, list):
-            for i, s in enumerate(starts):
-                axis = axes[i]
-                if s < 0 and input_shape[axis] > 0:
-                    starts[i] = input_shape[axis] + s
-        if isinstance(ends, list):
-            for i, e in enumerate(ends):
-                axis = axes[i]
-                if e > input_shape[axis] and input_shape[axis] > 0:
-                    ends[i] = input_shape[axis]
-
         if isinstance(starts, list):
             starts_node = graph.make_node(
                 'Constant',
                 attrs={'dtype': dtypes.ONNX.INT64,
                        'value': starts})
         else:
-            starts_node = starts
+            starts_node = graph.make_node(
+                'Cast', inputs=[starts], to=dtypes.ONNX.INT64)
 
         if isinstance(ends, list):
             ends_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                    'value': ends})
         else:
-            ends_node = ends
+            ends_node = graph.make_node(
+                'Cast', inputs=[ends], to=dtypes.ONNX.INT64)
 
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,

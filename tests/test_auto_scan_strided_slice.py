@@ -54,16 +54,15 @@ class TestStridedsliceConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
+                    min_value=4, max_value=10), min_size=4, max_size=6))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isStartsTensor = draw(st.booleans())
         isEndsTensor = draw(st.booleans())
         isStridesTensor = draw(st.booleans())
 
-        input_shape = [3, 4, 5, 6]
         axes = [1, 2, 3]
-        starts = [-3, 0, 2]
+        starts = [0, 0, 2]
         ends = [3, 2, 4]
         if draw(st.booleans()):
             strides = [2, 1, 2]
