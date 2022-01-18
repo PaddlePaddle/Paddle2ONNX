@@ -33,6 +33,12 @@ class Net(BaseNet):
         starts = self.config['starts']
         ends = self.config['ends']
         strides = self.config['strides']
+        if self.config['isStartsTensor']:
+            starts = paddle.to_tensor(np.array(starts).astype('int32'))
+        if self.config['isEndsTensor']:
+            ends = paddle.to_tensor(np.array(ends).astype('int32'))
+        if self.config['isStridesTensor']:
+            strides = paddle.to_tensor(np.array(strides).astype('int32'))
         x = paddle.strided_slice(
             inputs, axes=axes, starts=starts, ends=ends, strides=strides)
         return x
@@ -51,23 +57,38 @@ class TestStridedsliceConvert(OPConvertAutoScanTest):
                     min_value=4, max_value=10), min_size=2, max_size=2))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        isStartsTensor = draw(st.booleans())
+        isEndsTensor = draw(st.booleans())
+        isStridesTensor = draw(st.booleans())
 
         input_shape = [3, 4, 5, 6]
         axes = [1, 2, 3]
         starts = [-3, 0, 2]
         ends = [3, 2, 4]
-        strides = [1, 1, 1]
+        if draw(st.booleans()):
+            strides = [2, 1, 2]
+        else:
+            strides = [1, 1, 1]
+
+        tmp = [i for i, val in enumerate(strides) if val == 1]
+        if len(tmp) == len(strides) and isStridesTensor is False:
+            opset_version = [7, 9, 15]
+        else:
+            opset_version = [10, 15]
 
         config = {
             "op_names": ["strided_slice"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "axes": axes,
             "starts": starts,
             "ends": ends,
             "strides": strides,
+            "isStartsTensor": isStartsTensor,
+            "isEndsTensor": isEndsTensor,
+            "isStridesTensor": isStridesTensor,
         }
 
         models = Net(config)
