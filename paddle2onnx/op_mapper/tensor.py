@@ -929,7 +929,14 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            if axes_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axes = graph.parameters[axes_node].attribute[0].t.int32_data
+                if axes is None or len(axes) < 1:
+                    axes = graph.parameters[axes_node].attribute[0].t.int64_data
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
