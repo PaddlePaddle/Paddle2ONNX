@@ -25,7 +25,7 @@
 | clip | 1~12 |
 | cos | 7~12 |
 | cosh | 9~12 |
-| concat | 1~12 |
+| concat | 4~15 |
 | conv2d | 1~12 |
 | conv2d_transpose | 1~12 |
 | conv3d | 1~12 |
@@ -102,7 +102,7 @@
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
 | mean | 1~12 |
-| meshgrid | 1~12 |
+| meshgrid | 8~15 |
 | mul | 5~15 |
 | muticlass_nms | 10~12 |
 | muticlass_nms2 | 10~12 |
@@ -110,11 +110,11 @@
 | nearest_interp | 9~12 |
 | nearest_interp_v2 | 9~12 |
 | norm | 1~12 |
-| numel | 1~12 |
+| numel | 1~15 |
 | pad1d | 2~12 |
 | pad2d | 1~12 |
 | pad3d | 1~12 |
-| pixel_shuffle | 11~12 |
+| pixel_shuffle | 11~15 |
 | pool2d | 1~12 | limited supported |
 | pool3d | 1~12 | limited supported |
 | pow | 8~12 |
@@ -145,7 +145,7 @@
 | softplus | 1~12 |
 | softsign | 1~12 |
 | softshrink | 9~12 |
-| shape | 1~12 |
+| shape | 1~15 |
 | sigmoid | 1~12 |
 | sign | 9~12 |
 | sin | 7~12 |
@@ -155,7 +155,7 @@
 | squeeze2 | 1~12 |
 | square | 7~12 |
 | sqrt | 1~12 |
-| stack | 1~12 |
+| stack | 4~15 |
 | stride_slice | 1~12 |
 | sum | 1~12 |
 | swish | 1~12 |
