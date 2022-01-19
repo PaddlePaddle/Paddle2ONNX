@@ -163,7 +163,7 @@
 | tanh_shrink | 7~12 |
 | tan | 8~12 |
 | thresholded_relu | 1~12 |
-| tile | 11~12 |
+| tile | 11~15 |
 | top_k_v2 | 11~12 |
 | top_k | 11~15 |
 | transpose2 | 1~12 |
@@ -171,7 +171,7 @@
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~12 |
-| unsqueeze2 | 1~12 |
+| unsqueeze2 | 1~15 |
 | where | 9~15 |
 | where_index | 9~15 |
 | yolo_box | 9~12 |
