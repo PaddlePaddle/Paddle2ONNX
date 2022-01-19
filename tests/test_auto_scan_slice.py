@@ -81,5 +81,73 @@ class TestSliceConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        axes = self.config['axes']
+        starts = self.config['starts']
+        ends = self.config['ends']
+        if self.config['isStartsTensor']:
+            starts = paddle.to_tensor(starts)
+        if self.config['isEndsTensor']:
+            ends = paddle.to_tensor(ends)
+        x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
+        return x
+
+
+class TestSliceConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.slice
+    OPset version: 7, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=6), min_size=4, max_size=4))
+
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        isStartsTensor = draw(st.booleans())
+        isEndsTensor = draw(st.booleans())
+
+        axes = [0, 1, 2, 3]
+        starts = [1, 0, 0, 0]
+        ends = [
+            input_shape[0] + 10, input_shape[1] + 10, input_shape[2] + 10,
+            input_shape[3] + 10
+        ]
+        if draw(st.booleans()):
+            starts = [1, 0]
+            ends = [input_shape[0], input_shape[2]]
+            axes = [0, 3]
+
+        config = {
+            "op_names": ["slice"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 9, 15],
+            "input_spec_shape": [],
+            "isStartsTensor": isStartsTensor,
+            "isEndsTensor": isEndsTensor,
+            "axes": axes,
+            "starts": starts,
+            "ends": ends,
+        }
+
+        models = Net1(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
 if __name__ == "__main__":
     unittest.main()

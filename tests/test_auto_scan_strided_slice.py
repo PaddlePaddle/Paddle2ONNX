@@ -62,8 +62,16 @@ class TestStridedsliceConvert(OPConvertAutoScanTest):
         isStridesTensor = draw(st.booleans())
 
         axes = [1, 2, 3]
-        starts = [0, 0, 2]
-        ends = [3, 2, 4]
+        if draw(st.booleans()):
+            starts = [-100, 0, 0]
+        else:
+            starts = [-input_shape[axes[0]], 0, -input_shape[axes[2]] - 22]
+
+        if draw(st.booleans()):
+            ends = [3, 2, 40000]
+        else:
+            ends = [-1, 2, 4]
+
         if draw(st.booleans()):
             strides = [2, 1, 2]
         else:
