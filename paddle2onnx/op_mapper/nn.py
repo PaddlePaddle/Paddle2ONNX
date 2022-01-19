@@ -490,7 +490,7 @@ class LayerNorm():
     support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         ipt = node.input('X', 0)
         ipt_dims = len(node.input_shape('X', 0))
         normalized_shape = node.attr('begin_norm_axis')
@@ -632,7 +632,7 @@ class GroupNorm():
                 outputs=node.output('Y'))
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         num_groups = node.attr('groups')
         epsilon = node.attr('epsilon')
         ipt = node.input('X')[0]

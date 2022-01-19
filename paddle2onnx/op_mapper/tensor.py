@@ -27,7 +27,7 @@ class Concat():
     support_opset_version_range = (4, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_4(cls, graph, node, **kw):
         inputs = node.input('X')
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
@@ -78,7 +78,7 @@ class Stack():
     support_opset_version_range = (4, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_4(cls, graph, node, **kw):
         inputs = node.input('X')
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
@@ -188,10 +188,10 @@ class ExpandV2():
 
 @op_mapper('shape')
 class Shape():
-    support_opset_version_range = (1, 15)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         shape_node = graph.make_node('Shape', inputs=node.input('Input'))
         graph.make_node(
             'Cast',
@@ -1787,7 +1787,7 @@ class Meshgrid():
     support_opset_version_range = (8, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_8(cls, graph, node, **kw):
         tensors = [t for t in list(node.input('X'))]
         tensors_shape = [graph.make_node('Shape', inputs=t) for t in tensors]
         out_shape = graph.make_node('Concat', inputs=tensors_shape, axis=0)
