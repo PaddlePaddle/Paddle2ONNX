@@ -373,6 +373,7 @@ class Fake_channel_wise_dequantize_max_abs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
+        paddle.disable_static()
         key = node.input('Scales', 0)
         InScale = None
         if key in graph.origin_parameters.keys():
