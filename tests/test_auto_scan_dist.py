@@ -43,16 +43,12 @@ class TestDistConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=3,
-                max_size=3))
+                    min_value=10, max_value=20), min_size=3, max_size=3))
 
         input2_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=2))
+                    min_value=10, max_value=20), min_size=2, max_size=2))
 
         input2_shape[0] = input1_shape[1]
         input2_shape[1] = input1_shape[2]
