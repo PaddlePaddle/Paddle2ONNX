@@ -827,17 +827,12 @@ class Gather():
 
 @op_mapper('squeeze2')
 class Squeeze():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        shape = node.input_shape('X', 0)
-        ret = [i for i, val in enumerate(shape) if val > 1]
-        if len(ret) == len(shape):
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-        else:
-            axes = cls.compute_axes(node)
+        axes = cls.compute_axes(graph, node)
+        if axes is not None:
             if len(axes) > 0:
                 axes.sort()
                 graph.make_node(
@@ -853,13 +848,8 @@ class Squeeze():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        shape = node.input_shape('X', 0)
-        ret = [i for i, val in enumerate(shape) if val > 1]
-        if len(ret) == len(shape):
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-        else:
-            axes = cls.compute_axes(node)
+        axes = cls.compute_axes(graph, node)
+        if axes is not None:
             if len(axes) > 0:
                 axes_node = graph.make_node(
                     'Constant',
@@ -876,15 +866,21 @@ class Squeeze():
                     outputs=node.output('Out'))
 
     @classmethod
-    def compute_axes(cls, node):
-        axes = node.attr('axes')
-        input_x = node.input('X')[0]
-        ndim = node.block.vars[input_x].ndim
-        if len(axes) > 0:
-            axes = [
-                axis + ndim if axis < 0 else axis for i, axis in enumerate(axes)
-            ]
-        return axes
+    def compute_axes(cls, graph, node):
+        shape = node.input_shape('X', 0)
+        ret = [i for i, val in enumerate(shape) if val > 1]
+        if len(ret) == len(shape):
+            graph.make_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+            return None
+        else:
+            axes = node.attr('axes')
+            if len(axes) > 0:
+                axes = [
+                    axis + len(shape) if axis < 0 else axis
+                    for i, axis in enumerate(axes)
+                ]
+            return axes
 
 
 @op_mapper('assign_value')
