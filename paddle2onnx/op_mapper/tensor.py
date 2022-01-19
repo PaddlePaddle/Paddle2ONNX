@@ -419,7 +419,16 @@ class SequenceExpand():
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper(['expand', 'tile'])
+@op_mapper(
+    ['expand', 'tile'],
+    times_tensor_dict={
+        'expand': 'expand_times_tensor',
+        'tile': 'repeat_times_tensor',
+    },
+    times_dict={
+        'expand': 'ExpandTimes',
+        'tile': 'RepeatTimes',
+    })
 class Expand():
     support_opset_version_range = (11, 15)
 
@@ -428,13 +437,13 @@ class Expand():
         expand_times = node.attr('expand_times')
         if expand_times is None:
             expand_times = node.attr('repeat_times')
-
-        if 'repeat_times_tensor' in node.inputs and len(
-                node.input('repeat_times_tensor')) > 0:
-            if len(node.input('repeat_times_tensor')) > 1:
-                repeat_times = node.input('repeat_times_tensor')
+        times_tensor = kw['times_tensor_dict'][node.type]
+        times = kw['times_dict'][node.type]
+        if times_tensor in node.inputs and len(node.input(times_tensor)) > 0:
+            if len(node.input(times_tensor)) > 1:
+                repeat_times = node.input(times_tensor)
                 repeat_times_dtypes = [
-                    node.input_dtype('repeat_times_tensor', i)
+                    node.input_dtype(times_tensor, i)
                     for i in range(len(repeat_times))
                 ]
                 repeat_times = mapper_helper.dtype_alignment(
@@ -454,12 +463,11 @@ class Expand():
                         node.input('X', 0), node.input('repeat_times_tensor', 0)
                     ],
                     outputs=node.output('Out'))
-        elif 'RepeatTimes' in node.inputs and len(node.input(
-                'RepeatTimes')) == 1:
+        elif times in node.inputs and len(node.input(times)) == 1:
             repeat_times = mapper_helper.cast(graph,
-                                              node.input('RepeatTimes', 0),
-                                              node.input_dtype('RepeatTimes',
-                                                               0), 'int64')
+                                              node.input(times, 0),
+                                              node.input_dtype(times, 0),
+                                              'int64')
             graph.make_node(
                 "Tile",
                 inputs=[node.input('X', 0), repeat_times],
@@ -1199,7 +1207,7 @@ class Pad():
                     ]
             else:
                 raise Exception("In Pad op, padding can not be tensor" \
-                            "Please set opset version >= 11")
+                                "Please set opset version >= 11")
 
         value = None
         if node.attr('pad_value') is not None:
