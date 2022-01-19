@@ -1161,7 +1161,7 @@ class Scale():
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_version_range = (7, 15)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

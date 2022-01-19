@@ -25,7 +25,7 @@
 | clip | 1~12 |
 | cos | 7~12 |
 | cosh | 9~12 |
-| concat | 1~15 |
+| concat | 4~15 |
 | conv2d | 1~12 |
 | conv2d_transpose | 1~12 |
 | conv3d | 1~12 |
@@ -145,7 +145,7 @@
 | softplus | 1~12 |
 | softsign | 1~12 |
 | softshrink | 9~12 |
-| shape | 1~15 |
+| shape | 6~15 |
 | sigmoid | 1~12 |
 | sign | 9~12 |
 | sin | 7~12 |
