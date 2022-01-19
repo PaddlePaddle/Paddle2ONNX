@@ -30,7 +30,7 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.logical_or(inputs, inputs_)
-        return x.astype('float32')
+        return x
 
 
 def test_logical_or_7():
