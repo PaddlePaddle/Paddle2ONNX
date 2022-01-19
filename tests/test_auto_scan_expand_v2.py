@@ -32,7 +32,7 @@ class Net(BaseNet):
         """
         shape = self.config['shape']
         if self.config['isTensor']:
-            shape = paddle.to_tensor(shape)
+            shape = paddle.to_tensor(np.array(shape).astype("int32"))
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
         x = paddle.reshape(
