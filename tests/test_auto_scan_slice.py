@@ -149,5 +149,63 @@ class TestSliceConvert1(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
+class Net2(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        axes = self.config['axes']
+        starts = self.config['starts']
+        starts = [1, 0, paddle.to_tensor(0), 0]
+        ends = self.config['ends']
+        ends = [10, 10, paddle.to_tensor(10), 10]
+        x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
+        return x
+
+
+class TestSliceConvert2(OPConvertAutoScanTest):
+    """
+    api: paddle.slice
+    OPset version: 7, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=6), min_size=4, max_size=4))
+
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        isStartsTensor = draw(st.booleans())
+        isEndsTensor = draw(st.booleans())
+
+        axes = [0, 1, 2, 3]
+        starts = [1, 0, 0, 0]
+        ends = [10, 10, 10, 10]
+        config = {
+            "op_names": ["slice"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [10, 15],
+            "input_spec_shape": [],
+            "isStartsTensor": isStartsTensor,
+            "isEndsTensor": isEndsTensor,
+            "axes": axes,
+            "starts": starts,
+            "ends": ends,
+        }
+
+        models = Net2(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
 if __name__ == "__main__":
     unittest.main()

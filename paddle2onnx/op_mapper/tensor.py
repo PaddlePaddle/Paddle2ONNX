@@ -336,6 +336,19 @@ class Slice():
                             0].t.int64_data
                     starts = [value for _, value in enumerate(starts)]
                     output.append(starts)
+        elif len(node.input('StartsTensorList')) > 0:
+            if graph.opset_version >= 10:
+                tensor_node = []
+                for i, val in enumerate(node.input('StartsTensorList')):
+                    cast_val = graph.make_node(
+                        'Cast', inputs=[val], to=dtypes.ONNX.INT64)
+                    tensor_node.append(cast_val)
+                out_node = graph.make_node("Concat", inputs=tensor_node, axis=0)
+                output.append(out_node)
+            else:
+                raise Exception(
+                    "Currently does not support the starts parameter as input tensor!,"
+                    " Try converting with opset_version >=10 ")
         else:
             starts = node.attr('starts')
             output.append(starts)
@@ -356,6 +369,19 @@ class Slice():
                             0].t.int64_data
                     ends = [value for _, value in enumerate(ends)]
                     output.append(ends)
+        elif len(node.input('EndsTensorList')) > 0:
+            if graph.opset_version >= 10:
+                tensor_node = []
+                for i, val in enumerate(node.input('EndsTensorList')):
+                    cast_val = graph.make_node(
+                        'Cast', inputs=[val], to=dtypes.ONNX.INT64)
+                    tensor_node.append(cast_val)
+                out_node = graph.make_node("Concat", inputs=tensor_node, axis=0)
+                output.append(out_node)
+            else:
+                raise Exception(
+                    "Currently does not support the starts parameter as input tensor!,"
+                    " Try converting with opset_version >=10 ")
         else:
             ends = node.attr('ends')
             output.append(ends)
