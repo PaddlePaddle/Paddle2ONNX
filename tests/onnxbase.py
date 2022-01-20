@@ -124,7 +124,7 @@ class APIOnnx(object):
         paddle.seed(self.seed)
         self.func = func
         if paddle.device.is_compiled_with_cuda() is True:
-            self.places = ['gpu', 'cpu']
+            self.places = ['gpu']
         else:
             self.places = ['cpu']
         self.name = file_name
@@ -248,16 +248,19 @@ class APIOnnx(object):
             return
         paddle_graph = dygraph2onnx(
             self._func,
-            "path",
+            "op_check_folder",
             input_spec=self.input_spec,
             opset_version=version,
             get_paddle_graph=True)
 
+        if len(paddle_graph.node_map.keys()) == 0:
+            paddle_graph.node_map[''] = 0
         status = False
         for op in self.ops:
             for key, val in paddle_graph.node_map.items():
-                if op in key:
+                if key.count(op):
                     status = True
+                    break
         assert status is True, "{} op in not in convert OPs, all OPs :{}".format(
             self.ops, paddle_graph.node_map.keys())
 

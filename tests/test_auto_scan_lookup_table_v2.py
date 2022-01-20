@@ -48,16 +48,12 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=2,
-                max_size=2))
+                    min_value=10, max_value=30), min_size=2, max_size=2))
 
         weight_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=100),
-                min_size=2,
-                max_size=2))
+                    min_value=10, max_value=30), min_size=2, max_size=2))
 
         def generator_data():
             input_data = randtool("int", 0, weight_shape[0] - 1, input_shape)

@@ -25,17 +25,17 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, x):
         """
         forward
         """
-        x = paddle.fluid.layers.mean(inputs)
+        x = paddle.transpose(x, perm=self.config["perm"])
         return x
 
 
-class TestMeanConvert(OPConvertAutoScanTest):
+class TestTransposeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.mean
+    api: paddle.transpose
     OPset version: 7, 9, 15
     """
 
@@ -43,16 +43,20 @@ class TestMeanConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=2, max_value=20), min_size=2, max_size=4))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
+
+        perm = [i for i in range(len(input_shape))]
+        perm[0], perm[1] = perm[1], perm[0]
 
         config = {
-            "op_names": ["mean"],
+            "op_names": ["transpose2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "perm": perm
         }
 
         models = Net(config)
