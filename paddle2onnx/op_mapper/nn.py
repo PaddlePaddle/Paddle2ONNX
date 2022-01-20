@@ -21,6 +21,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx import utils
+from paddle2onnx.utils import logging
 import paddle
 
 

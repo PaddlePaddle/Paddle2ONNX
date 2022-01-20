@@ -21,7 +21,7 @@ import numpy as np
 from paddle2onnx.graph import Node, Graph
 from paddle2onnx.constant import NodeDomain, PRODUCER, dtypes
 from paddle2onnx.op_mapper import OpMapper
-from onnx import helper
+from onnx import helper, SparseTensorProto, TensorProto
 from paddle2onnx.utils import check_model, logging
 
 
@@ -176,14 +176,30 @@ class ONNXGraph(Graph):
             weight = param['data']
             if weight is not np.ndarray:
                 weight = np.array(weight)
-            tensor = helper.make_tensor(
-                name=name,
-                dims=param['shape'],
-                data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
-                vals=weight.flatten().tolist())
-            node = helper.make_node(
-                'Constant', inputs=[], outputs=[name], value=tensor)
-            self.parameters[name] = node
+            if "index" in param.keys():
+                sparse = SparseTensorProto()
+                sparse.dims.extend(param['shape'])
+                values = weight.flatten().tolist()
+                nnz = len(values)
+                index = param['index'].flatten().tolist()
+                sparse.values.CopyFrom(
+                    helper.make_tensor(name + "_value", TensorProto.FLOAT, (
+                        nnz, ), values))
+                sparse.indices.CopyFrom(
+                    helper.make_tensor(name + '_spind', TensorProto.INT64,
+                                       param['index_shape'], index))
+                node = helper.make_node(
+                    'Constant', [], [name], sparse_value=sparse)
+                self.parameters[name] = node
+            else:
+                tensor = helper.make_tensor(
+                    name=name,
+                    dims=param['shape'],
+                    data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
+                    vals=weight.flatten().tolist())
+                node = helper.make_node(
+                    'Constant', inputs=[], outputs=[name], value=tensor)
+                self.parameters[name] = node
 
     def build_input_nodes(self, input_nodes):
         # build input nodes
