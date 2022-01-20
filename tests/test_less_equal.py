@@ -30,7 +30,7 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.less_equal(inputs, inputs_)
-        return x.astype('float32')
+        return x
 
 
 def test_less_equal_12():

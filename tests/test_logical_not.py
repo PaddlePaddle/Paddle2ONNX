@@ -30,7 +30,7 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.logical_not(inputs)
-        return x.astype('float32')
+        return x
 
 
 def test_logical_not_10():
