@@ -53,9 +53,7 @@ class TestShrinkopsConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=2, max_size=4))
 
         threshold = draw(st.floats(min_value=0.1, max_value=1.0))
 
