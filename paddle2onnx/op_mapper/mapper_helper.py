@@ -155,3 +155,37 @@ def cast(graph, input, origin_dtype, target_dtype):
             'Cast', inputs=input, to=dtypes.DTYPE_ONNX_STR_MAP[target_dtype])
         return cast_node
     return input
+
+
+def shape_alignment(graph, nodes, node_shapes):
+    assert len(nodes) == len(
+        node_shapes), "Length of nodes and node_shapes should be equal."
+    max_dim = -1
+    for shape in node_shapes:
+        dim = len(shape)
+        if dim > max_dim:
+            max_dim = dim
+
+    if max_dim < 0:
+        return nodes
+
+    unsqueeze_nodes = list()
+    for i, shape in enumerate(node_shapes):
+        dim = len(shape)
+        if dim != max_dim:
+            unsqueeze_node = nodes[i]
+            for j in range(max_dim - dim):
+                if graph.opset_version < 13:
+                    unsqueeze_node = graph.make_node(
+                        'Unsqueeze', inputs=[unsqueeze_node], axes=[0])
+                else:
+                    axes_node = graph.make_node(
+                        'Constant',
+                        attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': 0})
+                    unsqueeze_node = graph.make_node(
+                        'Unsqueeze', inputs=[unsqueeze_node, axes_node])
+            unsqueeze_nodes.append(unsqueeze_node)
+        else:
+            unsqueeze_nodes.append(nodes[i])
+    return unsqueeze_nodes

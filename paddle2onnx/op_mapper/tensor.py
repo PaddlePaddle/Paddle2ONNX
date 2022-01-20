@@ -298,7 +298,7 @@ class Split():
 
 @op_mapper(['slice', 'strided_slice'])
 class Slice():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def decrease_axis(cls, node):
@@ -346,9 +346,16 @@ class Slice():
                 starts_node_list = mapper_helper.dtype_alignment(
                     graph, starts_node_list, starts_node_dtypes)
 
-                # When OpSet>=11, Concat could use negative axis
+                starts_node_shapes = [
+                    node.input_shape('StartsTensorList', i)
+                    for i in range(len(starts_node_list))
+                ]
+                starts_node_list = mapper_helper.shape_alignment(
+                    graph, starts_node_list, starts_node_shapes)
+
                 starts_node = graph.make_node(
-                    'Concat', inputs=starts_node_list, axis=-1)
+                    "Concat", inputs=starts_node_list, axis=0)
+                starts_node = graph.make_node('Squeeze', inputs=[starts_node])
                 output.append(starts_node)
             else:
                 raise Exception(
@@ -384,9 +391,16 @@ class Slice():
                 ends_node_list = mapper_helper.dtype_alignment(
                     graph, ends_node_list, ends_node_dtypes)
 
-                # When OpSet>=11, Concat could use negative axis
+                ends_node_shapes = [
+                    node.input_shape('EndsTensorList', i)
+                    for i in range(len(ends_node_list))
+                ]
+                ends_node_list = mapper_helper.shape_alignment(
+                    graph, ends_node_list, ends_node_shapes)
+
                 ends_node = graph.make_node(
-                    'Concat', inputs=ends_node_list, axis=-1)
+                    "Concat", inputs=ends_node_list, axis=0)
+                ends_node = graph.make_node('Squeeze', inputs=[ends_node])
                 output.append(ends_node)
             else:
                 raise Exception(
