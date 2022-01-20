@@ -161,18 +161,36 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        if node.input('expand_shapes_tensor') is not None and len(
-                node.input('expand_shapes_tensor')) > 0:
-            shape = graph.make_node(
-                'Concat', inputs=node.input('expand_shapes_tensor'), axis=-1)
-            shape = graph.make_node(
-                'Cast', inputs=[shape], to=dtypes.ONNX.INT64)
+        if len(node.input('Shape')) > 0:
+            shape = mapper_helper.cast(graph,
+                                       node.input('Shape', 0),
+                                       node.input_dtype('Shape', 0), 'int64')
         else:
-            if len(node.input('Shape')) > 0:
-                shape = mapper_helper.cast(graph,
-                                           node.input('Shape', 0),
-                                           node.input_dtype('Shape', 0),
-                                           'int64')
+            if node.input('expand_shapes_tensor') is not None and len(
+                    node.input('expand_shapes_tensor')) > 0:
+                expand_shape = graph.make_node(
+                    'Concat',
+                    inputs=node.input('expand_shapes_tensor'),
+                    axis=-1)
+                expand_shape = graph.make_node(
+                    'Cast', inputs=[expand_shape], to=dtypes.ONNX.INT64)
+
+                input_shape = node.input_shape('X', 0)
+                input_shape = [i for i in input_shape]
+                input_shape_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=input_shape)
+
+                minus_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+                condition_dtype = graph.make_node(
+                    "Equal", inputs=[expand_shape, minus_node])
+                condition = graph.make_node(
+                    'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
+
+                shape = graph.make_node(
+                    "Where",
+                    inputs=[condition, input_shape_node, expand_shape])
+
             elif len(node.attr('shape')) > 0:
                 shape = node.attr('shape')
                 for idx in range(len(shape)):
@@ -402,11 +420,19 @@ class Slice():
                     node.input('Input')[0], starts_node, ends_node, axes_node,
                     steps_node
                 ])
-            graph.make_node(
-                'Squeeze',
-                inputs=[sliced],
-                outputs=node.output('Out'),
-                axes=decrease_axis)
+            if graph.opset_version < 13:
+                graph.make_node(
+                    'Squeeze',
+                    inputs=[sliced],
+                    outputs=node.output('Out'),
+                    axes=decrease_axis)
+            else:
+                axes_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=decrease_axis)
+                graph.make_node(
+                    'Squeeze',
+                    inputs=[sliced, axes_node],
+                    outputs=node.output('Out'))
 
 
 @op_mapper(['sequence_expand'])
