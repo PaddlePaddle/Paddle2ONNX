@@ -338,13 +338,18 @@ class Slice():
                     output.append(starts)
         elif len(node.input('StartsTensorList')) > 0:
             if graph.opset_version >= 10:
-                tensor_node = []
-                for i, val in enumerate(node.input('StartsTensorList')):
-                    cast_val = graph.make_node(
-                        'Cast', inputs=[val], to=dtypes.ONNX.INT64)
-                    tensor_node.append(cast_val)
-                out_node = graph.make_node("Concat", inputs=tensor_node, axis=0)
-                output.append(out_node)
+                starts_node_list = node.input('StartsTensorList')
+                starts_node_dtypes = [
+                    node.input_dtype('StartsTensorList', i)
+                    for i in range(len(starts_node_list))
+                ]
+                starts_node_list = mapper_helper.dtype_alignment(
+                    graph, starts_node_list, starts_node_dtypes)
+
+                # When OpSet>=11, Concat could use negative axis
+                starts_node = graph.make_node(
+                    'Concat', inputs=starts_node_list, axis=-1)
+                output.append(starts_node)
             else:
                 raise Exception(
                     "Currently does not support the starts parameter as input tensor!,"
@@ -371,13 +376,18 @@ class Slice():
                     output.append(ends)
         elif len(node.input('EndsTensorList')) > 0:
             if graph.opset_version >= 10:
-                tensor_node = []
-                for i, val in enumerate(node.input('EndsTensorList')):
-                    cast_val = graph.make_node(
-                        'Cast', inputs=[val], to=dtypes.ONNX.INT64)
-                    tensor_node.append(cast_val)
-                out_node = graph.make_node("Concat", inputs=tensor_node, axis=0)
-                output.append(out_node)
+                ends_node_list = node.input('EndsTensorList')
+                ends_node_dtypes = [
+                    node.input_dtype('EndsTensorList', i)
+                    for i in range(len(ends_node_list))
+                ]
+                ends_node_list = mapper_helper.dtype_alignment(
+                    graph, ends_node_list, ends_node_dtypes)
+
+                # When OpSet>=11, Concat could use negative axis
+                ends_node = graph.make_node(
+                    'Concat', inputs=ends_node_list, axis=-1)
+                output.append(ends_node)
             else:
                 raise Exception(
                     "Currently does not support the starts parameter as input tensor!,"
@@ -390,23 +400,17 @@ class Slice():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts, ends = cls.get_start_end_node(graph, node)
         strides = node.attr('strides')
-        if strides is not None and len(node.input('StridesTensor')) > 0:
-            raise Exception(
-                "Slice tensor in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
-            )
-        else:
-            if strides is None:
-                steps = node.attr('strides', [1] * len(axes))
-            else:
-                steps = strides
+        assert strides is None or len(node.input('StridesTensor')) == 0, \
+            "Slice tensor in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
+        steps = node.attr('strides',
+                          [1] * len(axes)) if strides is None else strides
         steps = [i for i, val in enumerate(steps) if val == 1]
-        if len(steps) != len(ends):
-            raise Exception(
-                "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
-            )
+        assert len(steps) == len(axes),\
+            "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
+
+        starts, ends = cls.get_start_end_node(graph, node)
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
             graph.make_node(
@@ -432,19 +436,18 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts, ends = cls.get_start_end_node(graph, node)
         strides = node.attr('strides')
         steps = None
         if strides is not None and len(node.input('StridesTensor')) > 0:
-            strides_node = node.input('StridesTensor')[0]
             strides_node = graph.make_node(
-                'Cast', inputs=[strides_node], to=dtypes.ONNX.INT64)
+                'Cast',
+                inputs=node.input('StridesTensor'),
+                to=dtypes.ONNX.INT64)
         else:
-            if strides is None:
-                steps = node.attr('strides', [1] * len(axes))
-            else:
-                steps = strides
+            steps = node.attr('strides',
+                              [1] * len(axes)) if strides is None else strides
 
+        starts, ends = cls.get_start_end_node(graph, node)
         if isinstance(starts, list):
             starts_node = graph.make_node(
                 'Constant',
