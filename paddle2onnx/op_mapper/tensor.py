@@ -24,15 +24,28 @@ import paddle
 
 @op_mapper('concat')
 class Concat():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (4, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_4(cls, graph, node, **kw):
         inputs = node.input('X')
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        axis = node.attr('axis')
+        if len(node.input('AxisTensor')) > 0:
+            axis_node = node.input('AxisTensor')[0]
+            # When axis is tensor, only int32 and int64 are supported
+            if axis_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axis = graph.parameters[axis_node].attribute[0].t.int32_data
+                if axis is None or len(axis) < 1:
+                    axis = graph.parameters[axis_node].attribute[
+                        0].t.int64_data[0]
+        else:
+            axis = node.attr('axis')
         if axis < 0:
             axis = axis + len(node.input_shape('X', 0))
 
@@ -62,10 +75,10 @@ class LodReset():
 
 @op_mapper('stack')
 class Stack():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (4, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_4(cls, graph, node, **kw):
         inputs = node.input('X')
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
@@ -75,6 +88,27 @@ class Stack():
         for ipt in inputs:
             unsqueezed_ipt = graph.make_node(
                 'Unsqueeze', inputs=[ipt], axes=[axis])
+            unsqueezed_inputs.append(unsqueezed_ipt)
+        graph.make_node(
+            'Concat',
+            inputs=unsqueezed_inputs,
+            outputs=node.output('Y'),
+            axis=axis)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        inputs = node.input('X')
+        input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
+        inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
+        axis = node.attr('axis')
+
+        unsqueezed_inputs = list()
+        for ipt in inputs:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': axis})
+            unsqueezed_ipt = graph.make_node(
+                'Unsqueeze', inputs=[ipt, axes_node])
             unsqueezed_inputs.append(unsqueezed_ipt)
         graph.make_node(
             'Concat',
@@ -154,10 +188,10 @@ class ExpandV2():
 
 @op_mapper('shape')
 class Shape():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         shape_node = graph.make_node('Shape', inputs=node.input('Input'))
         graph.make_node(
             'Cast',
@@ -168,7 +202,7 @@ class Shape():
 
 @op_mapper('size')
 class Numel():
-    supports_opset_version_range = (1, 12)
+    supports_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -176,27 +210,90 @@ class Numel():
         graph.make_node(
             'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
 
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        size_node = graph.make_node('Size', inputs=node.input('Input'))
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [0]})
+        graph.make_node(
+            'Unsqueeze',
+            inputs=[size_node, axes_node],
+            outputs=node.output('Out'))
+
 
 @op_mapper('split')
 class Split():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         sections = node.attr('sections')
+        axis = cls.get_axis(graph, node)
         if len(sections) > 0:
+            input_shape = node.block.vars[node.input('X')[0]].shape
+            input_index = [i for i, val in enumerate(input_shape) if val == -1]
+            section_index = [i for i, val in enumerate(sections) if val == -1]
+            if len(input_index) == 0 and len(section_index) == 1:
+                sections[section_index[0]] = input_shape[axis] - sum(
+                    sections) - 1
             graph.make_node(
                 'Split',
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
-                axis=node.attr('axis'),
+                axis=axis,
                 split=sections)
         else:
             graph.make_node(
                 'Split',
                 inputs=node.input('X'),
                 outputs=node.output('Out'),
-                axis=node.attr('axis'))
+                axis=axis)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        sections = node.attr('sections')
+        axis = cls.get_axis(graph, node)
+        if len(sections) > 0:
+            input_shape = node.block.vars[node.input('X')[0]].shape
+            input_index = [i for i, val in enumerate(input_shape) if val == -1]
+            section_index = [i for i, val in enumerate(sections) if val == -1]
+            if len(input_index) == 0 and len(section_index) == 1:
+                sections[section_index[0]] = input_shape[axis] - sum(
+                    sections) - 1
+            split_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': sections})
+            graph.make_node(
+                'Split',
+                inputs=[node.input('X')[0], split_node],
+                outputs=node.output('Out'),
+                axis=axis)
+        else:
+            graph.make_node(
+                'Split',
+                inputs=node.input('X'),
+                outputs=node.output('Out'),
+                axis=axis)
+
+    @classmethod
+    def get_axis(cls, graph, node):
+        if len(node.input('AxisTensor')) > 0:
+            axis_node = node.input('AxisTensor')[0]
+            # When axis is tensor, only int32 and int64 are supported
+            if axis_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axis = graph.parameters[axis_node].attribute[0].t.int32_data
+                if axis is None or len(axis) < 1:
+                    axis = graph.parameters[axis_node].attribute[
+                        0].t.int64_data[0]
+        else:
+            axis = node.attr('axis')
+        return axis
 
 
 @op_mapper(['slice', 'strided_slice'])
@@ -322,9 +419,68 @@ class SequenceExpand():
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper(['expand', 'tile'])
+@op_mapper('expand')
 class Expand():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        expand_times = node.attr('expand_times')
+        if expand_times is None:
+            expand_times = node.attr('repeat_times')
+        if 'expand_times_tensor' in node.inputs and len(
+                node.input('expand_times_tensor')) > 0:
+            if len(node.input('expand_times_tensor')) > 1:
+                repeat_times = node.input('expand_times_tensor')
+                repeat_times_dtypes = [
+                    node.input_dtype('expand_times_tensor', i)
+                    for i in range(len(repeat_times))
+                ]
+                repeat_times = mapper_helper.dtype_alignment(
+                    graph, repeat_times, repeat_times_dtypes)
+
+                # When OpSet>=11, Concat could use negative axis
+                repeat_times_tensor = graph.make_node(
+                    'Concat', inputs=repeat_times, axis=-1)
+                graph.make_node(
+                    "Tile",
+                    inputs=[node.input('X', 0), repeat_times_tensor],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    "Tile",
+                    inputs=[
+                        node.input('X', 0), node.input('repeat_times_tensor', 0)
+                    ],
+                    outputs=node.output('Out'))
+        elif 'ExpandTimes' in node.inputs and len(node.input(
+                'ExpandTimes')) == 1:
+            repeat_times = mapper_helper.cast(
+                graph,
+                node.input('ExpandTimes', 0),
+                node.input_dtype('ExpandTimes', 0), 'int64')
+            graph.make_node(
+                "Tile",
+                inputs=[node.input('X', 0), repeat_times],
+                outputs=node.output('Out'))
+        elif expand_times is None:
+            raise Exception("Not find attribute: 'repeat_times'.")
+        elif -1 not in expand_times:
+            expand_times_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': expand_times})
+            graph.make_node(
+                "Tile",
+                inputs=[node.input('X', 0), expand_times_node],
+                outputs=node.output('Out'))
+        else:
+            raise Exception("illegal Tensor: 'repeat_times'.")
+
+
+@op_mapper('tile')
+class Tile():
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -359,10 +515,10 @@ class Expand():
                     outputs=node.output('Out'))
         elif 'RepeatTimes' in node.inputs and len(node.input(
                 'RepeatTimes')) == 1:
-            repeat_times = mapper_helper.cast(graph,
-                                              node.input('RepeatTimes', 0),
-                                              node.input_dtype('RepeatTimes',
-                                                               0), 'int64')
+            repeat_times = mapper_helper.cast(
+                graph,
+                node.input('RepeatTimes', 0),
+                node.input_dtype('RepeatTimes', 0), 'int64')
             graph.make_node(
                 "Tile",
                 inputs=[node.input('X', 0), repeat_times],
@@ -798,10 +954,10 @@ class Assign():
 
 @op_mapper('transpose2')
 class Transpose():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Transpose',
             inputs=node.input('X'),
@@ -902,7 +1058,7 @@ class Reshape():
 
 @op_mapper('unsqueeze2')
 class Unsqueeze():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -929,7 +1085,14 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            if axes_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axes = graph.parameters[axes_node].attribute[0].t.int32_data
+                if axes is None or len(axes) < 1:
+                    axes = graph.parameters[axes_node].attribute[0].t.int64_data
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
@@ -1095,7 +1258,7 @@ class Pad():
                     ]
             else:
                 raise Exception("In Pad op, padding can not be tensor" \
-                            "Please set opset version >= 11")
+                                "Please set opset version >= 11")
 
         value = None
         if node.attr('pad_value') is not None:
@@ -1243,10 +1406,10 @@ class Pad():
 
 @op_mapper('gaussian_random')
 class GaussianRandom():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         shape_input_list = node.input('ShapeTensorList')
         shape_input = None
         if len(shape_input_list) == 0:
@@ -1300,19 +1463,42 @@ class UniformRandom():
 
 @op_mapper('uniform_random')
 class UniformRandom():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        shape = node.output_shape('Out', 0)
-        graph.make_node(
-            'RandomUniform',
-            outputs=node.output('Out'),
-            high=node.attr('max'),
-            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
-            low=node.attr('min'),
-            seed=float(node.attr('seed')),
-            shape=shape)
+    def opset_7(cls, graph, node, **kw):
+        shape_input_list = node.input('ShapeTensorList')
+        shape_input = None
+        if len(shape_input_list) == 0:
+            shape_input = node.input('ShapeTensor')
+        else:
+            shape_input = graph.make_node(
+                "Concat", inputs=node.input('ShapeTensorList'), axis=0)
+        if shape_input is None or len(shape_input) == 0:
+            graph.make_node(
+                'RandomUniform',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                shape=node.attr('shape'),
+                seed=float(node.attr('seed')),
+                low=node.attr('min'),
+                high=node.attr('max'))
+        else:
+            cast_input_shape = graph.make_node(
+                'Cast', inputs=shape_input, to=dtypes.ONNX.INT64)
+            zero_like_node = graph.make_node(
+                'ConstantOfShape',
+                inputs=cast_input_shape,
+                dtype=dtypes.ONNX.FLOAT,
+                value=[0])
+            graph.make_node(
+                'RandomUniformLike',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                inputs=zero_like_node,
+                seed=float(node.attr('seed')),
+                low=node.attr('min'),
+                high=node.attr('max'))
 
 
 @op_mapper(
@@ -1601,7 +1787,7 @@ class Resize():
 
 @op_mapper('pixel_shuffle')
 class PixelShuffle():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -1664,10 +1850,10 @@ class ScatterndAdd():
 
 @op_mapper('meshgrid')
 class Meshgrid():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_8(cls, graph, node, **kw):
         tensors = [t for t in list(node.input('X'))]
         tensors_shape = [graph.make_node('Shape', inputs=t) for t in tensors]
         out_shape = graph.make_node('Concat', inputs=tensors_shape, axis=0)

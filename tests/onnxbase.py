@@ -30,6 +30,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     :return:
     """
     if type(result) == np.ndarray:
+        if type(expect) == list:
+            expect = expect[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
@@ -43,7 +45,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         assert res
         assert result.shape == expect.shape
         assert result.dtype == expect.dtype
-    elif type(result) == list:
+    elif type(result) == list or type(result) == tuple:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
                 compare(result[i], expect[i], delta, rtol)
@@ -122,7 +124,7 @@ class APIOnnx(object):
         paddle.seed(self.seed)
         self.func = func
         if paddle.device.is_compiled_with_cuda() is True:
-            self.places = ['gpu', 'cpu']
+            self.places = ['gpu']
         else:
             self.places = ['cpu']
         self.name = file_name
@@ -211,7 +213,8 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+            auto_update_opset=False)
 
     def _dygraph_jit_save(self, instance):
         """
@@ -227,8 +230,11 @@ class APIOnnx(object):
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) + '.onnx'))
+            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
+                         '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
+        if len(ort_outs) > 1:
+            return ort_outs
         return ort_outs[0]
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
@@ -242,16 +248,19 @@ class APIOnnx(object):
             return
         paddle_graph = dygraph2onnx(
             self._func,
-            "path",
+            "op_check_folder",
             input_spec=self.input_spec,
             opset_version=version,
             get_paddle_graph=True)
 
+        if len(paddle_graph.node_map.keys()) == 0:
+            paddle_graph.node_map[''] = 0
         status = False
         for op in self.ops:
             for key, val in paddle_graph.node_map.items():
-                if op in key:
+                if key.count(op):
                     status = True
+                    break
         assert status is True, "{} op in not in convert OPs, all OPs :{}".format(
             self.ops, paddle_graph.node_map.keys())
 
