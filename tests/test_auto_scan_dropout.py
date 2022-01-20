@@ -75,7 +75,7 @@ class TestDropoutConvert(OPConvertAutoScanTest):
             "p": p
         }
         if axis is not None:
-            config["op_names"] = ["scale"]
+            config["op_names"] = ['']
         models = Net(config)
 
         return (config, models)
