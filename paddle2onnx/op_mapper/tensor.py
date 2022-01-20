@@ -895,10 +895,10 @@ class Assign():
 
 @op_mapper('transpose2')
 class Transpose():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         graph.make_node(
             'Transpose',
             inputs=node.input('X'),
@@ -1340,10 +1340,10 @@ class Pad():
 
 @op_mapper('gaussian_random')
 class GaussianRandom():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         shape_input_list = node.input('ShapeTensorList')
         shape_input = None
         if len(shape_input_list) == 0:
@@ -1397,19 +1397,42 @@ class UniformRandom():
 
 @op_mapper('uniform_random')
 class UniformRandom():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        shape = node.output_shape('Out', 0)
-        graph.make_node(
-            'RandomUniform',
-            outputs=node.output('Out'),
-            high=node.attr('max'),
-            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
-            low=node.attr('min'),
-            seed=float(node.attr('seed')),
-            shape=shape)
+    def opset_7(cls, graph, node, **kw):
+        shape_input_list = node.input('ShapeTensorList')
+        shape_input = None
+        if len(shape_input_list) == 0:
+            shape_input = node.input('ShapeTensor')
+        else:
+            shape_input = graph.make_node(
+                "Concat", inputs=node.input('ShapeTensorList'), axis=0)
+        if shape_input is None or len(shape_input) == 0:
+            graph.make_node(
+                'RandomUniform',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                shape=node.attr('shape'),
+                seed=float(node.attr('seed')),
+                low=node.attr('min'),
+                high=node.attr('max'))
+        else:
+            cast_input_shape = graph.make_node(
+                'Cast', inputs=shape_input, to=dtypes.ONNX.INT64)
+            zero_like_node = graph.make_node(
+                'ConstantOfShape',
+                inputs=cast_input_shape,
+                dtype=dtypes.ONNX.FLOAT,
+                value=[0])
+            graph.make_node(
+                'RandomUniformLike',
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')],
+                outputs=node.output('Out'),
+                inputs=zero_like_node,
+                seed=float(node.attr('seed')),
+                low=node.attr('min'),
+                high=node.attr('max'))
 
 
 @op_mapper(
