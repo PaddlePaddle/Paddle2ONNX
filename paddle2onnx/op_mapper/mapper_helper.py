@@ -169,6 +169,7 @@ def shape_alignment(graph, nodes, node_shapes):
     if max_dim < 0:
         return nodes
 
+    max_dim = 1 if max_dim == 0 else max_dim
     unsqueeze_nodes = list()
     for i, shape in enumerate(node_shapes):
         dim = len(shape)

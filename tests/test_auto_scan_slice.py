@@ -223,8 +223,13 @@ class Net3(BaseNet):
             paddle.to_tensor(0), 0
         ]
         ends = self.config['ends']
-        ends = [10, 10, paddle.to_tensor(np.array(10).astype("int64")), 10]
-        # ends = [paddle.to_tensor(np.array(10).astype("int64")), paddle.to_tensor(np.array(10).astype("int64")), paddle.to_tensor(np.array(10).astype("int64")), paddle.to_tensor(np.array(10).astype("int64"))]
+        # ends = [10, 10, paddle.to_tensor(np.array(10).astype("int64")), 10]
+        ends = [
+            paddle.to_tensor(np.array(10).astype("int64")),
+            paddle.to_tensor(np.array(10).astype("int64")),
+            paddle.to_tensor(np.array(10).astype("int64")),
+            paddle.to_tensor(np.array(10).astype("int64"))
+        ]
         x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
         return x
 
