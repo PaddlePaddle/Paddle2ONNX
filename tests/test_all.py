@@ -32,7 +32,7 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.all(inputs, axis=self.axis, keepdim=self.keepdim)
-        return x.astype('float32')
+        return x
 
 
 def test_all_10():

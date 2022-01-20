@@ -31,18 +31,18 @@ class Net_tensorlist(BaseNet):
         forward
         """
         inputs = [input_1, input_2, input_3]
-        x = paddle.tensor.random.gaussian(
+        x = paddle.tensor.random.uniform(
             inputs,
-            mean=self.config["mean"],
-            std=self.config["std"],
+            min=self.config["min"],
+            max=self.config["max"],
             dtype=self.config["out_dtype"])
         return x
 
 
-class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
+class TestUniformRandomConvert_tensorlist(OPConvertAutoScanTest):
     """
-    api: paddle.tensor.random.gaussian
-    OPset version: 7, 9, 15
+    api: paddle.tensor.random.uniform
+    OPset version: 9, 15
     """
 
     def sample_convert_config(self, draw):
@@ -51,9 +51,9 @@ class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
                 st.integers(
                     min_value=1, max_value=1), min_size=3, max_size=3))
 
-        mean = draw(st.floats(min_value=-1.0, max_value=1.0))
+        min = draw(st.floats(min_value=-1.0, max_value=1.0))
 
-        std = draw(st.floats(min_value=1.0, max_value=2.0))
+        max = draw(st.floats(min_value=1.0, max_value=2.0))
 
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
@@ -72,14 +72,14 @@ class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
         config = {
-            "op_names": ["gaussian_random"],
+            "op_names": ["uniform_random"],
             "test_data_shapes":
             [generator1_data, generator2_data, generator3_data],
             "test_data_types": [[dtype], [dtype], [dtype]],
-            "opset_version": [11],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
-            "mean": mean,
-            "std": std,
+            "min": min,
+            "max": max,
             "out_dtype": out_dtype,
             "delta": 1e11,
             "rtol": 1e11
@@ -102,17 +102,17 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.tensor.random.gaussian(
+        x = paddle.tensor.random.uniform(
             inputs,
-            mean=self.config["mean"],
-            std=self.config["std"],
+            min=self.config["min"],
+            max=self.config["max"],
             dtype=self.config["out_dtype"])
         return x
 
 
-class TestGaussianRandomConvert(OPConvertAutoScanTest):
+class TestUniformRandomConvert(OPConvertAutoScanTest):
     """
-    api: paddle.tensor.random.gaussian
+    api: paddle.tensor.random.uniform
     OPset version: 7, 9, 15
     """
 
@@ -122,9 +122,9 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=1, max_value=9), min_size=1, max_size=1))
 
-        mean = draw(st.floats(min_value=-1.0, max_value=1.0))
+        min = draw(st.floats(min_value=0, max_value=1.0))
 
-        std = draw(st.floats(min_value=1.0, max_value=2.0))
+        max = draw(st.floats(min_value=1.0, max_value=2.0))
 
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
@@ -135,13 +135,13 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
         config = {
-            "op_names": ["gaussian_random"],
+            "op_names": ["uniform_random"],
             "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
-            "opset_version": [15],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
-            "mean": mean,
-            "std": std,
+            "min": min,
+            "max": max,
             "out_dtype": out_dtype,
             "delta": 1e11,
             "rtol": 1e11
@@ -164,17 +164,17 @@ class Net_list(BaseNet):
         """
         forward
         """
-        x = paddle.tensor.random.gaussian(
+        x = paddle.tensor.random.uniform(
             shape=self.config["shape"],
-            mean=self.config["mean"],
-            std=self.config["std"],
+            min=self.config["min"],
+            max=self.config["max"],
             dtype=self.config["out_dtype"])
         return x
 
 
-class TestGaussianRandomConvert_list(OPConvertAutoScanTest):
+class TestUniformRandomConvert_list(OPConvertAutoScanTest):
     """
-    api: paddle.tensor.random.gaussian
+    api: paddle.tensor.random.uniform
     OPset version: 15
     """
 
@@ -184,22 +184,22 @@ class TestGaussianRandomConvert_list(OPConvertAutoScanTest):
                 st.integers(
                     min_value=1, max_value=10), min_size=1, max_size=5))
 
-        mean = draw(st.floats(min_value=-1.0, max_value=1.0))
+        min = draw(st.floats(min_value=-1.0, max_value=1.0))
 
-        std = draw(st.floats(min_value=1.0, max_value=2.0))
+        max = draw(st.floats(min_value=1.0, max_value=2.0))
 
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
         config = {
-            "op_names": ["gaussian_random"],
+            "op_names": ["uniform_random"],
             "test_data_shapes": [],
             "test_data_types": [],
-            "opset_version": [15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "mean": mean,
-            "std": std,
+            "min": min,
+            "max": max,
             "shape": input_shape,
             "out_dtype": out_dtype,
             "delta": 1e11,
