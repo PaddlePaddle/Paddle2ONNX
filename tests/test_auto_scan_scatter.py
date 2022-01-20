@@ -62,7 +62,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
             "op_names": ["scatter"],
             "test_data_shapes": [input_shape, generator_index, update_shape],
             "test_data_types": [[dtype], [index_dtype], [dtype]],
-            "opset_version": [11, 12, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
             "overwrite": overwrite,
         }
