@@ -437,9 +437,68 @@ class SequenceExpand():
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper(['expand', 'tile'])
+@op_mapper('expand')
 class Expand():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        expand_times = node.attr('expand_times')
+        if expand_times is None:
+            expand_times = node.attr('repeat_times')
+        if 'expand_times_tensor' in node.inputs and len(
+                node.input('expand_times_tensor')) > 0:
+            if len(node.input('expand_times_tensor')) > 1:
+                repeat_times = node.input('expand_times_tensor')
+                repeat_times_dtypes = [
+                    node.input_dtype('expand_times_tensor', i)
+                    for i in range(len(repeat_times))
+                ]
+                repeat_times = mapper_helper.dtype_alignment(
+                    graph, repeat_times, repeat_times_dtypes)
+
+                # When OpSet>=11, Concat could use negative axis
+                repeat_times_tensor = graph.make_node(
+                    'Concat', inputs=repeat_times, axis=-1)
+                graph.make_node(
+                    "Tile",
+                    inputs=[node.input('X', 0), repeat_times_tensor],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    "Tile",
+                    inputs=[
+                        node.input('X', 0), node.input('repeat_times_tensor', 0)
+                    ],
+                    outputs=node.output('Out'))
+        elif 'ExpandTimes' in node.inputs and len(node.input(
+                'ExpandTimes')) == 1:
+            repeat_times = mapper_helper.cast(
+                graph,
+                node.input('ExpandTimes', 0),
+                node.input_dtype('ExpandTimes', 0), 'int64')
+            graph.make_node(
+                "Tile",
+                inputs=[node.input('X', 0), repeat_times],
+                outputs=node.output('Out'))
+        elif expand_times is None:
+            raise Exception("Not find attribute: 'repeat_times'.")
+        elif -1 not in expand_times:
+            expand_times_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': expand_times})
+            graph.make_node(
+                "Tile",
+                inputs=[node.input('X', 0), expand_times_node],
+                outputs=node.output('Out'))
+        else:
+            raise Exception("illegal Tensor: 'repeat_times'.")
+
+
+@op_mapper('tile')
+class Tile():
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -474,10 +533,10 @@ class Expand():
                     outputs=node.output('Out'))
         elif 'RepeatTimes' in node.inputs and len(node.input(
                 'RepeatTimes')) == 1:
-            repeat_times = mapper_helper.cast(graph,
-                                              node.input('RepeatTimes', 0),
-                                              node.input_dtype('RepeatTimes',
-                                                               0), 'int64')
+            repeat_times = mapper_helper.cast(
+                graph,
+                node.input('RepeatTimes', 0),
+                node.input_dtype('RepeatTimes', 0), 'int64')
             graph.make_node(
                 "Tile",
                 inputs=[node.input('X', 0), repeat_times],
@@ -1017,7 +1076,7 @@ class Reshape():
 
 @op_mapper('unsqueeze2')
 class Unsqueeze():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1044,7 +1103,14 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            if axes_node not in graph.parameters:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor!"
+                )
+            else:
+                axes = graph.parameters[axes_node].attribute[0].t.int32_data
+                if axes is None or len(axes) < 1:
+                    axes = graph.parameters[axes_node].attribute[0].t.int64_data
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
@@ -1210,7 +1276,7 @@ class Pad():
                     ]
             else:
                 raise Exception("In Pad op, padding can not be tensor" \
-                            "Please set opset version >= 11")
+                                "Please set opset version >= 11")
 
         value = None
         if node.attr('pad_value') is not None:
