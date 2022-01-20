@@ -57,7 +57,7 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
         mode = draw(st.sampled_from(["constant", "reflect", "edge"]))
 
-        pad_value = draw(st.floats(min_value=10, max_value=100))
+        pad_value = draw(st.floats(min_value=10, max_value=20))
 
         data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
 
@@ -175,7 +175,7 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
 
         mode = draw(st.sampled_from(["constant", "reflect", "edge"]))
 
-        pad_value = draw(st.floats(min_value=10, max_value=100))
+        pad_value = draw(st.floats(min_value=10, max_value=20))
 
         data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
 
