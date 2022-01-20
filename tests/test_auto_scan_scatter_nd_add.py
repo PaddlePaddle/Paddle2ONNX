@@ -19,6 +19,7 @@ import numpy as np
 import unittest
 import paddle
 from onnxbase import randtool
+from random import shuffle
 
 
 class Net(BaseNet):
@@ -44,22 +45,26 @@ class TestScatterndaddConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
+                    min_value=1, max_value=10), min_size=1, max_size=5))
 
         dtype = draw(st.sampled_from(["float32"]))
+        index_dtype = draw(st.sampled_from(["int64"]))
+        update_shape = input_shape
 
-        input_shape = [3, 2]
-        update_shape = [3, 1]
+        def generator_index():
+            index_list = np.array([i for i in range(input_shape[0])])
+            index_list = index_list.reshape(input_shape[0], 1)
+            index_list = paddle.to_tensor(index_list).astype(index_dtype)
+            shuffle(index_list)
+            # index_list = paddle.to_tensor([[2], [3], [1], [0]]).astype('int64')
 
-        def generator_data():
-            input_data = randtool("int", 1, 2, update_shape)
-            input_data = paddle.to_tensor([[2], [1], [0]]).astype('int64')
-            return input_data
+            # index_list = randtool("int", 1, 2, [input_shape[0], 1])
+            return index_list
 
         config = {
             "op_names": ["scatter_nd_add"],
-            "test_data_shapes": [input_shape, generator_data, input_shape],
-            "test_data_types": [[dtype], ['int64'], [dtype]],
+            "test_data_shapes": [input_shape, generator_index, update_shape],
+            "test_data_types": [[dtype], [index_dtype], [dtype]],
             "opset_version": [11, 12, 15],
             "input_spec_shape": [],
         }

@@ -45,21 +45,23 @@ class TestScatterConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=2))
-        input_shape = [3, 2]
-        dtype = draw(st.sampled_from(["float32", "float64"]))
-        update_shape = [3]
+                    min_value=4, max_value=10), min_size=1, max_size=5))
 
+        index_shape = [input_shape[0]]
+        update_shape = input_shape
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+        index_dtype = draw(st.sampled_from(["int64"]))
         overwrite = True  # False is not supported
 
-        def generator_data():
-            input_data = randtool("int", 1, 2, update_shape)
-            return input_data
+        def generator_index():
+            index_list = randtool("int", 1, 2, index_shape)
+            return index_list
 
         config = {
             "op_names": ["scatter"],
-            "test_data_shapes": [input_shape, generator_data, input_shape],
-            "test_data_types": [[dtype], ['int64'], [dtype]],
+            "test_data_shapes": [input_shape, generator_index, update_shape],
+            "test_data_types": [[dtype], [index_dtype], [dtype]],
             "opset_version": [11, 12, 15],
             "input_spec_shape": [],
             "overwrite": overwrite,
