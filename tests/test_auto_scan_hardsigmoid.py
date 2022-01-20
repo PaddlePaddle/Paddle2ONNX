@@ -44,9 +44,7 @@ class TestHardsigmoidConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=1,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=1, max_size=4))
 
         slope = draw(st.floats(min_value=0, max_value=1.0))
         offset = draw(st.floats(min_value=0.5, max_value=5))
