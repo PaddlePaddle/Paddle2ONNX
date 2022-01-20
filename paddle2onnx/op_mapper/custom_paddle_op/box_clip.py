@@ -21,6 +21,7 @@ from paddle2onnx.op_mapper import CustomPaddleOp, register_custom_paddle_op
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 
+
 class BoxClip(CustomPaddleOp):
     def __init__(self, node, **kw):
         super(BoxClip, self).__init__(node)
@@ -30,6 +31,8 @@ class BoxClip(CustomPaddleOp):
         im_info = self.input('ImInfo', 0)
         im_info = paddle.reshape(im_info, shape=[3])
         h, w, s = paddle.tensor.split(im_info, axis=0, num_or_sections=3)
+        h = paddle.round(h / s)
+        w = paddle.round(w / s)
         tensor_one = paddle.full(shape=[1], dtype='float32', fill_value=1.0)
         tensor_zero = paddle.full(shape=[1], dtype='float32', fill_value=0.0)
         h = paddle.subtract(h, tensor_one)
@@ -44,13 +47,16 @@ class BoxClip(CustomPaddleOp):
 
         return {'Output': [cliped_box]}
 
+
 @op_mapper('box_clip')
-class Boxclip:
+class Boxclip():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'box_clip',
-            inputs=node.input('Input')+node.input('ImInfo'),
+            inputs=node.input('Input') + node.input('ImInfo'),
             outputs=node.output('Output'),
-            domain = 'custom')
+            domain='baidu')
+
+
 register_custom_paddle_op('box_clip', BoxClip)

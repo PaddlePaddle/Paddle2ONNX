@@ -49,9 +49,11 @@ class DeformConv2d(CustomPaddleOp):
         self.padded_x_h = node.input_shape('Input', 0)[2]
         self.padded_x_w = node.input_shape('Input', 0)[3]
         if self.padded_x_h > 0:
-            self.padded_x_h = self.padded_x_h + self.padding[0] + self.padding[1]
+            self.padded_x_h = self.padded_x_h + self.padding[0] + self.padding[
+                1]
         if self.padded_x_w > 0:
-            self.padded_x_w = self.padded_x_w + self.padding[2] + self.padding[3]
+            self.padded_x_w = self.padded_x_w + self.padding[2] + self.padding[
+                3]
 
         self.kernel_size = node.input_shape('Filter', 0)[2]
         self.N = self.kernel_size**2
@@ -278,19 +280,22 @@ class DeformConv2d(CustomPaddleOp):
                                              offset_w * self.kernel_size))
         return x_offset
 
+
 @op_mapper('deformable_conv')
-class Deformconv2d:
+class Deformconv2d():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'deformable_conv',
-            inputs=node.input('Input')+node.input('Filter')+node.input('Mask')+node.input('Offset'),
+            inputs=node.input('Input') + node.input('Filter') +
+            node.input('Mask') + node.input('Offset'),
             outputs=node.output('Output'),
-            stride = node.attr('strides'),
-            padding = node.attr('paddings'),
-            groups = node.attr('groups'),
-            dilation = node.attr('dilations'),
-            deformable_groups = node.attr('deformable_groups'),
-            domain = 'custom')
-            
+            stride=node.attr('strides'),
+            padding=node.attr('paddings'),
+            groups=node.attr('groups'),
+            dilation=node.attr('dilations'),
+            deformable_groups=node.attr('deformable_groups'),
+            domain='baidu')
+
+
 register_custom_paddle_op('deformable_conv', DeformConv2d)

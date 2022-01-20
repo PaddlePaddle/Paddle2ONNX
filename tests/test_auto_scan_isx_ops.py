@@ -56,7 +56,6 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
         dtype = "float32"
 
         def generator_data():
-            print(input_shape)
             input_data = np.ones(shape=input_shape)
             inf_data = np.ones(shape=input_shape)
             inf_data = np.ones(shape=input_shape)

@@ -41,15 +41,18 @@ class CollectFpnProposals(CustomPaddleOp):
         rois = paddle.gather(multi_level_rois, index, axis=0)
         return {"FpnRois": [rois]}
 
+
 @op_mapper('collect_fpn_proposals')
-class Collectfpnproposals:
+class Collectfpnproposals():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'collect_fpn_proposals',
-            inputs=node.input('MultiLevelRois')+ node.input('MultiLevelScores'),
+            inputs=node.input('MultiLevelRois') +
+            node.input('MultiLevelScores'),
             outputs=node.output('FpnRois'),
-            post_nms_top_n = node.attr('post_nms_topN'),
-            domain = 'custom')
-            
+            post_nms_top_n=node.attr('post_nms_topN'),
+            domain='baidu')
+
+
 register_custom_paddle_op('collect_fpn_proposals', CollectFpnProposals)
