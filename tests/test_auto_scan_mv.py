@@ -43,9 +43,7 @@ class TestMvConvert(OPConvertAutoScanTest):
         input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=2))
+                    min_value=10, max_value=20), min_size=2, max_size=2))
 
         input_shape2 = input_shape1[1:]
         dtype = draw(st.sampled_from(["float32", "float64"]))

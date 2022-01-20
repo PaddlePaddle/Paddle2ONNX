@@ -74,13 +74,15 @@ class ONNXGraph(Graph):
                  paddle_graph,
                  opset_version,
                  operator_export_type="ONNX",
-                 block=None):
+                 block=None,
+                 auto_update_opset=True):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
         self.ctx = paddle_graph
         self.custom = []
-        self.update_opset_version()
+        if auto_update_opset:
+            self.update_opset_version()
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -263,11 +265,13 @@ class ONNXGraph(Graph):
     def build(paddle_graph,
               opset_version,
               operator_export_type="ONNX",
-              verbose=False):
+              verbose=False,
+              auto_update_opset=True):
         onnx_graph = ONNXGraph(
             paddle_graph,
             opset_version=opset_version,
-            operator_export_type=operator_export_type)
+            operator_export_type=operator_export_type,
+            auto_update_opset=auto_update_opset)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)

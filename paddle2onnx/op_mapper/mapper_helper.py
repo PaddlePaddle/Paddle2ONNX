@@ -116,9 +116,13 @@ def dtype_alignment(graph, nodes, node_dtypes):
     assert len(nodes) == len(
         node_dtypes), "Length of nodes and node_dtypes should be equal."
     dtype_order = [
-        core.VarDesc.VarType.BOOL, core.VarDesc.VarType.INT16,
-        core.VarDesc.VarType.INT32, core.VarDesc.VarType.INT64,
-        core.VarDesc.VarType.FP16, core.VarDesc.VarType.FP32
+        core.VarDesc.VarType.BOOL,
+        core.VarDesc.VarType.INT16,
+        core.VarDesc.VarType.INT32,
+        core.VarDesc.VarType.INT64,
+        core.VarDesc.VarType.FP16,
+        core.VarDesc.VarType.FP32,
+        core.VarDesc.VarType.FP64,
     ]
     max_index = -1
     for dtype in node_dtypes:

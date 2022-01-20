@@ -104,7 +104,7 @@ def test_argsort_descending_1():
     op = Net(descending=True)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [1])
+    obj = APIOnnx(op, 'argsort', [7])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -120,7 +120,7 @@ def test_argsort_descending_1_axis():
     op = Net(descending=True, axis=1)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [1])
+    obj = APIOnnx(op, 'argsort', [7])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
