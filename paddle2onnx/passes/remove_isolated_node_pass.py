@@ -27,6 +27,15 @@ class RemoveIsolatedNodePass(object):
             outputs = node.outputs
             if len(inputs) > 0:
                 continue
+
+            keep = False
+            for node in onnx_graph.output_nodes:
+                if node.name in outputs:
+                    keep = True
+                    break
+            if keep:
+                continue
+
             keep = False
             for inner_idx in range(idx + 1, len(node_map)):
                 inner_name, inner_node = node_map[inner_idx]
