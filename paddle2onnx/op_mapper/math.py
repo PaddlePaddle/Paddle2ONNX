@@ -1137,7 +1137,9 @@ class Scale():
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)]
-            if input_dtype in [dtypes.ONNX.INT32, dtypes.ONNX.INT64]:
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
                 outputs = None
                 data_type = dtypes.ONNX.FLOAT
                 cast_node = graph.make_node(
