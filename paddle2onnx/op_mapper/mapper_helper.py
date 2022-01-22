@@ -99,6 +99,10 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
                 })
         else:
             min = graph.make_node('Squeeze', min)
+            min = graph.make_node(
+                'Cast',
+                inputs=min,
+                attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype]})
         if not isinstance(max, six.string_types):
             max = graph.make_node(
                 'Constant',
@@ -108,6 +112,10 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
                 })
         else:
             max = graph.make_node('Squeeze', max)
+            max = graph.make_node(
+                'Cast',
+                inputs=max,
+                attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype]})
         clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
     return clip
 

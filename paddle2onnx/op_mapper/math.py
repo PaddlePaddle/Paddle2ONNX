@@ -1170,7 +1170,9 @@ class Scale():
                 node2 = graph.make_node(
                     'Mul', inputs=[node1, scale_node], outputs=outputs)
 
-            if input_dtype in [dtypes.ONNX.INT32, dtypes.ONNX.INT64]:
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
                 cast_node = graph.make_node(
                     'Cast',
                     inputs=node2,
