@@ -317,19 +317,6 @@ class Slice():
         return None
 
     @classmethod
-    def get_tensor_list_node(cls, graph, node, name):
-        node_list = node.input(name)
-        node_dtypes = [node.input_dtype(name, i) for i in range(len(node_list))]
-        node_list = mapper_helper.dtype_alignment(graph, node_list, node_dtypes)
-
-        node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
-        node_list = mapper_helper.shape_alignment(graph, node_list, node_shapes)
-
-        node = graph.make_node("Concat", inputs=node_list, axis=0)
-        node = graph.make_node('Squeeze', inputs=[node])
-        return node
-
-    @classmethod
     def get_start_end_node(cls, graph, node):
         output = []
         if len(node.input('StartsTensor')) > 0:
@@ -351,8 +338,8 @@ class Slice():
                     output.append(starts)
         elif len(node.input('StartsTensorList')) > 0:
             if graph.opset_version >= 10:
-                starts_node = cls.get_tensor_list_node(graph, node,
-                                                       "StartsTensorList")
+                starts_node = mapper_helper.get_tensor_list_node(
+                    graph, node, "StartsTensorList")
                 output.append(starts_node)
             else:
                 raise Exception(
@@ -380,8 +367,8 @@ class Slice():
                     output.append(ends)
         elif len(node.input('EndsTensorList')) > 0:
             if graph.opset_version >= 10:
-                ends_node = cls.get_tensor_list_node(graph, node,
-                                                     "EndsTensorList")
+                ends_node = mapper_helper.get_tensor_list_node(graph, node,
+                                                               "EndsTensorList")
                 output.append(ends_node)
             else:
                 raise Exception(

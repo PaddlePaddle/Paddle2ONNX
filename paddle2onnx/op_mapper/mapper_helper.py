@@ -190,3 +190,16 @@ def shape_alignment(graph, nodes, node_shapes):
         else:
             unsqueeze_nodes.append(nodes[i])
     return unsqueeze_nodes
+
+
+def get_tensor_list_node(graph, node, name):
+    node_list = node.input(name)
+    node_dtypes = [node.input_dtype(name, i) for i in range(len(node_list))]
+    node_list = dtype_alignment(graph, node_list, node_dtypes)
+
+    node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
+    node_list = shape_alignment(graph, node_list, node_shapes)
+
+    node = graph.make_node("Concat", inputs=node_list, axis=0)
+    node = graph.make_node('Squeeze', inputs=[node])
+    return node
