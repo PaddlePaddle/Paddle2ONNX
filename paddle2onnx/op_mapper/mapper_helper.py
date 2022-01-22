@@ -155,3 +155,51 @@ def cast(graph, input, origin_dtype, target_dtype):
             'Cast', inputs=input, to=dtypes.DTYPE_ONNX_STR_MAP[target_dtype])
         return cast_node
     return input
+
+
+def shape_alignment(graph, nodes, node_shapes):
+    assert len(nodes) == len(
+        node_shapes), "Length of nodes and node_shapes should be equal."
+    max_dim = -1
+    for shape in node_shapes:
+        dim = len(shape)
+        if dim > max_dim:
+            max_dim = dim
+
+    if max_dim < 0:
+        return nodes
+
+    max_dim = 1 if max_dim == 0 else max_dim
+    unsqueeze_nodes = list()
+    for i, shape in enumerate(node_shapes):
+        dim = len(shape)
+        if dim != max_dim:
+            unsqueeze_node = nodes[i]
+            for j in range(max_dim - dim):
+                if graph.opset_version < 13:
+                    unsqueeze_node = graph.make_node(
+                        'Unsqueeze', inputs=[unsqueeze_node], axes=[0])
+                else:
+                    axes_node = graph.make_node(
+                        'Constant',
+                        attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': 0})
+                    unsqueeze_node = graph.make_node(
+                        'Unsqueeze', inputs=[unsqueeze_node, axes_node])
+            unsqueeze_nodes.append(unsqueeze_node)
+        else:
+            unsqueeze_nodes.append(nodes[i])
+    return unsqueeze_nodes
+
+
+def get_tensor_list_node(graph, node, name):
+    node_list = node.input(name)
+    node_dtypes = [node.input_dtype(name, i) for i in range(len(node_list))]
+    node_list = dtype_alignment(graph, node_list, node_dtypes)
+
+    node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
+    node_list = shape_alignment(graph, node_list, node_shapes)
+
+    node = graph.make_node("Concat", inputs=node_list, axis=0)
+    node = graph.make_node('Squeeze', inputs=[node])
+    return node

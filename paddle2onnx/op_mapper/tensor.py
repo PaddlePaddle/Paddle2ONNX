@@ -419,30 +419,68 @@ class SequenceExpand():
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper(['expand', 'tile'])
+@op_mapper(['expand'])
 class Expand():
     support_opset_version_range = (11, 12)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
         expand_times = node.attr('expand_times')
-        if expand_times is None:
-            expand_times = node.attr('repeat_times')
+
+        if 'expand_times_tensor' in node.inputs and len(
+                node.input('expand_times_tensor')) > 0:
+            if len(node.input('expand_times_tensor')) > 1:
+                expand_times_tensor = mapper_helper.get_tensor_list_node(
+                    graph, node, "expand_times_tensor")
+                graph.make_node(
+                    "Tile",
+                    inputs=[node.input('X', 0), expand_times_tensor],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    "Tile",
+                    inputs=[
+                        node.input('X', 0), node.input('expand_times_tensor', 0)
+                    ],
+                    outputs=node.output('Out'))
+        elif 'ExpandTimes' in node.inputs and len(node.input(
+                'ExpandTimes')) == 1:
+            expand_times = mapper_helper.cast(graph,
+                                              node.input('ExpandTimes', 0),
+                                              node.input_dtype('ExpandTimes',
+                                                               0), 'int64')
+            graph.make_node(
+                "Tile",
+                inputs=[node.input('X', 0), expand_times],
+                outputs=node.output('Out'))
+        elif expand_times is None:
+            raise Exception("Not find attribute: 'expand_times'.")
+        elif -1 not in expand_times:
+            expand_times_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': expand_times})
+            graph.make_node(
+                "Tile",
+                inputs=[node.input('X', 0), expand_times_node],
+                outputs=node.output('Out'))
+        else:
+            raise Exception("illegal Tensor: 'repeat_times'.")
+
+
+@op_mapper(['tile'])
+class Tile():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        repeat_times = node.attr('repeat_times')
 
         if 'repeat_times_tensor' in node.inputs and len(
                 node.input('repeat_times_tensor')) > 0:
             if len(node.input('repeat_times_tensor')) > 1:
-                repeat_times = node.input('repeat_times_tensor')
-                repeat_times_dtypes = [
-                    node.input_dtype('repeat_times_tensor', i)
-                    for i in range(len(repeat_times))
-                ]
-                repeat_times = mapper_helper.dtype_alignment(
-                    graph, repeat_times, repeat_times_dtypes)
-
-                # When OpSet>=11, Concat could use negative axis
-                repeat_times_tensor = graph.make_node(
-                    'Concat', inputs=repeat_times, axis=-1)
+                repeat_times_tensor = mapper_helper.get_tensor_list_node(
+                    graph, node, "repeat_times_tensor")
                 graph.make_node(
                     "Tile",
                     inputs=[node.input('X', 0), repeat_times_tensor],
@@ -464,16 +502,16 @@ class Expand():
                 "Tile",
                 inputs=[node.input('X', 0), repeat_times],
                 outputs=node.output('Out'))
-        elif expand_times is None:
+        elif repeat_times is None:
             raise Exception("Not find attribute: 'repeat_times'.")
-        elif -1 not in expand_times:
-            expand_times_node = graph.make_node(
+        elif -1 not in repeat_times:
+            repeat_times_node = graph.make_node(
                 'Constant',
                 attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': expand_times})
+                       'value': repeat_times})
             graph.make_node(
                 "Tile",
-                inputs=[node.input('X', 0), expand_times_node],
+                inputs=[node.input('X', 0), repeat_times_node],
                 outputs=node.output('Out'))
         else:
             raise Exception("illegal Tensor: 'repeat_times'.")
