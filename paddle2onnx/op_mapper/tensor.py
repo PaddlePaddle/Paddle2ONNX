@@ -421,7 +421,7 @@ class SequenceExpand():
 
 @op_mapper(['expand'])
 class Expand():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -470,7 +470,7 @@ class Expand():
 
 @op_mapper(['tile'])
 class Tile():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
