@@ -39,7 +39,7 @@ class Net(BaseNet):
         return x
 
 
-class TestUniformRandomConvert(OPConvertAutoScanTest):
+class TestUniformRandomBaTchSizeLikeConvert(OPConvertAutoScanTest):
     """
     api: paddle.fluid.layers.uniform_random_batch_size_like
     OPset version: 7, 9, 15
@@ -59,7 +59,7 @@ class TestUniformRandomConvert(OPConvertAutoScanTest):
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["uniform_random"],
+            "op_names": ["uniform_random_batch_size_like"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
