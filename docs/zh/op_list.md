@@ -171,7 +171,7 @@
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~12 |
-| unsqueeze2 | 1~12 |
+| unsqueeze2 | 1~15 |
 | where | 9~15 |
 | where_index | 9~15 |
 | yolo_box | 9~12 |
