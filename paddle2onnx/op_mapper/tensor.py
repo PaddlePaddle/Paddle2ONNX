@@ -298,7 +298,7 @@ class Split():
 
 @op_mapper(['slice', 'strided_slice'])
 class Slice():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def decrease_axis(cls, node):
@@ -319,10 +319,21 @@ class Slice():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        if len(node.input('StartsTensor')) > 0:
+            starts_node = node.input('StartsTensor')[0]
+            starts = graph.parameters[starts_node].attribute[0].t.int64_data
+            starts = [value for _, value in enumerate(starts)]
+        else:
+            starts = node.attr('starts')
 
+        if len(node.input('EndsTensor')) > 0:
+            ends_node = node.input('EndsTensor')[0]
+            ends = graph.parameters[ends_node].attribute[0].t.int64_data
+            ends = [value for _, value in enumerate(ends)]
+        else:
+            ends = node.attr('ends')
+
+        steps = node.attr('strides', [1] * len(ends))
         input_shape = node.input_shape('Input', 0)
         for i, e in enumerate(ends):
             axis = axes[i]
@@ -358,50 +369,96 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        starts_node = None
+        starts = None
+        if len(node.input('StartsTensor')) > 0:
+            # starts_node = node.input('StartsTensor', 0)
+            starts_node = graph.make_node(
+                'Cast',
+                inputs=[node.input('StartsTensor', 0)],
+                to=dtypes.ONNX.INT64)
+        else:
+            starts = node.attr('starts')
+
+        ends_node = None
+        ends = None
+        if len(node.input('EndsTensor')) > 0:
+            # ends_node = node.input('EndsTensor', 0)
+            ends_node = graph.make_node(
+                'Cast',
+                inputs=[node.input('EndsTensor', 0)],
+                to=dtypes.ONNX.INT64)
+        else:
+            ends = node.attr('ends')
+
+        strides = None
+        if node.attr('strides') is not None:
+            strides = node.attr('strides')
 
         input_shape = node.input_shape('Input', 0)
-        for i, e in enumerate(ends):
-            axis = axes[i]
-            if e > input_shape[axis] and input_shape[axis] > 0:
-                ends[i] = input_shape[axis]
+        if ends is not None:
+            for i, e in enumerate(ends):
+                axis = axes[i]
+                if e > input_shape[axis] and input_shape[axis] > 0:
+                    ends[i] = input_shape[axis]
 
-        for i, s in enumerate(starts):
-            axis = axes[i]
-            if s < 0 and input_shape[axis] > 0:
-                starts[i] = input_shape[axis] + s
+        if starts is not None:
+            for i, s in enumerate(starts):
+                axis = axes[i]
+                if s < 0 and input_shape[axis] > 0:
+                    starts[i] = input_shape[axis] + s
 
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': axes})
-        starts_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': starts})
-        ends_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': ends})
-        steps_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': steps})
-
+        if starts_node is None:
+            starts_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': starts})
+        if ends_node is None:
+            ends_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': ends})
+        strides_node = None
+        if strides is not None:
+            strides_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': strides})
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
-            sliced = graph.make_node(
-                "Slice",
-                inputs=[
-                    node.input('Input')[0], starts_node, ends_node, axes_node,
-                    steps_node
-                ],
-                outputs=node.output('Out'))
+            if strides is not None:
+                sliced = graph.make_node(
+                    "Slice",
+                    inputs=[
+                        node.input('Input')[0], starts_node, ends_node,
+                        axes_node, strides_node
+                    ],
+                    outputs=node.output('Out'))
+            else:
+                sliced = graph.make_node(
+                    "Slice",
+                    inputs=[
+                        node.input('Input')[0], starts_node, ends_node,
+                        axes_node
+                    ],
+                    outputs=node.output('Out'))
         else:
-            sliced = graph.make_node(
-                "Slice",
-                inputs=[
-                    node.input('Input')[0], starts_node, ends_node, axes_node,
-                    steps_node
-                ])
+            if strides is not None:
+                sliced = graph.make_node(
+                    "Slice",
+                    inputs=[
+                        node.input('Input')[0], starts_node, ends_node,
+                        axes_node, strides_node
+                    ])
+            else:
+                sliced = graph.make_node(
+                    "Slice",
+                    inputs=[
+                        node.input('Input')[0], starts_node, ends_node,
+                        axes_node
+                    ])
             graph.make_node(
                 'Squeeze',
                 inputs=[sliced],
