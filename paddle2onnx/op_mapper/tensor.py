@@ -32,7 +32,8 @@ class Concat():
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        if len(node.input('AxisTensor')) > 0:
+        node_axis = node.input('AxisTensor')
+        if node_axis is not None and len(node_axis) > 0:
             axis_node = node.input('AxisTensor')[0]
             # When axis is tensor, only int32 and int64 are supported
             if axis_node not in graph.parameters:
