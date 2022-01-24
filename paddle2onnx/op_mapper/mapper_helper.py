@@ -169,6 +169,7 @@ def shape_alignment(graph, nodes, node_shapes):
     if max_dim < 0:
         return nodes
 
+    assert max_dim == 1 or max_dim == 0, "max_dim is only supported when max_dim is 1 or 0."
     max_dim = 1 if max_dim == 0 else max_dim
     unsqueeze_nodes = list()
     for i, shape in enumerate(node_shapes):
@@ -199,7 +200,5 @@ def get_tensor_list_node(graph, node, name):
 
     node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
     node_list = shape_alignment(graph, node_list, node_shapes)
-
     node = graph.make_node("Concat", inputs=node_list, axis=0)
-    node = graph.make_node('Squeeze', inputs=[node])
     return node
