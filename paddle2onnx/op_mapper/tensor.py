@@ -832,8 +832,13 @@ class Squeeze():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        axes = cls.compute_axes(graph, node)
-        if axes is not None:
+        shape = node.input_shape('X', 0)
+        ret = [i for i, val in enumerate(shape) if val > 1]
+        if len(ret) == len(shape):
+            graph.make_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+        else:
+            axes = cls.compute_axes(graph, node)
             if len(axes) > 0:
                 axes.sort()
                 graph.make_node(
@@ -849,8 +854,13 @@ class Squeeze():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        axes = cls.compute_axes(graph, node)
-        if axes is not None:
+        shape = node.input_shape('X', 0)
+        ret = [i for i, val in enumerate(shape) if val > 1]
+        if len(ret) == len(shape):
+            graph.make_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+        else:
+            axes = cls.compute_axes(graph, node)
             if len(axes) > 0:
                 axes_node = graph.make_node(
                     'Constant',
@@ -869,19 +879,13 @@ class Squeeze():
     @classmethod
     def compute_axes(cls, graph, node):
         shape = node.input_shape('X', 0)
-        ret = [i for i, val in enumerate(shape) if val > 1]
-        if len(ret) == len(shape):
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-            return None
-        else:
-            axes = node.attr('axes')
-            if len(axes) > 0:
-                axes = [
-                    axis + len(shape) if axis < 0 else axis
-                    for i, axis in enumerate(axes)
-                ]
-            return axes
+        axes = node.attr('axes')
+        if len(axes) > 0:
+            axes = [
+                axis + len(shape) if axis < 0 else axis
+                for i, axis in enumerate(axes)
+            ]
+        return axes
 
 
 @op_mapper('assign_value')
