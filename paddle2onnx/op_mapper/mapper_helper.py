@@ -83,12 +83,15 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
             "min or max of Clip is Tensor, please try with higher onnx opset_version."
         )
     if graph.opset_version < 11:
-        if x_dtype == paddle.float64:
+        if x_dtype != paddle.float32:
             input = graph.make_node(
                 'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
             clip = graph.make_node('Clip', inputs=input, max=max, min=min)
             clip = graph.make_node(
-                'Cast', inputs=[clip], to=dtypes.ONNX.DOUBLE, outputs=output)
+                'Cast',
+                inputs=[clip],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                outputs=output)
         else:
             clip = graph.make_node(
                 'Clip', inputs=input, max=max, min=min, outputs=output)
