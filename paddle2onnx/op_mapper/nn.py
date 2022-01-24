@@ -487,10 +487,10 @@ class LogSoftmax():
 
 @op_mapper('layer_norm')
 class LayerNorm():
-    support_opset_version_range = (9, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         ipt = node.input('X', 0)
         ipt_dims = len(node.input_shape('X', 0))
         normalized_shape = node.attr('begin_norm_axis')
@@ -499,10 +499,11 @@ class LayerNorm():
             axes = [-i for i in range(len(normalized_shape), 0, -1)]
         else:
             axes = [i for i in range(normalized_shape, ipt_dims)]
-
+        dtype = node.block.vars[node.input('X', 0)].dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
         epsilon = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('epsilon'))
-        two = graph.make_node('Constant', dtype=dtypes.ONNX.FLOAT, value=2.0)
+            'Constant', dtype=dtype, value=node.attr('epsilon'))
+        two = graph.make_node('Constant', dtype=dtype, value=2.0)
         mean = graph.make_node("ReduceMean", inputs=[ipt], axes=axes)
         numerator = graph.make_node("Sub", inputs=[ipt, mean])
         pow_num = graph.make_node("Pow", inputs=[numerator, two])
@@ -510,7 +511,8 @@ class LayerNorm():
         add_eps = graph.make_node("Add", inputs=[variance, epsilon])
         denominator = graph.make_node("Sqrt", inputs=[add_eps])
 
-        if 'Bias' in node.inputs and 'Scale' in node.inputs:
+        if 'Bias' in node.inputs and 'Scale' in node.inputs and len(
+                node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
             ipt_shape = graph.make_node("Shape", inputs=[ipt])
             weight_shape = mapper_helper.slice_helper(
                 graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
@@ -522,7 +524,7 @@ class LayerNorm():
             layer_norm = graph.make_node("Mul", inputs=[layer_norm, scale])
             graph.make_node(
                 "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
-        elif 'Bias' in node.inputs:
+        elif 'Bias' in node.inputs and len(node.input('Bias')) > 0:
             ipt_shape = graph.make_node("Shape", inputs=[ipt])
             weight_shape = mapper_helper.slice_helper(
                 graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
@@ -531,7 +533,7 @@ class LayerNorm():
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
             graph.make_node(
                 "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
-        elif 'Scale' in node.inputs:
+        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
             ipt_shape = graph.make_node("Shape", inputs=[ipt])
             weight_shape = mapper_helper.slice_helper(
                 graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
@@ -549,7 +551,7 @@ class LayerNorm():
 
 @op_mapper('batch_norm')
 class BatchNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def make_attrs_and_inputs(cls, graph, node, **kw):
@@ -573,17 +575,7 @@ class BatchNorm():
     @classmethod
     def opset_7(cls, graph, node, **kw):
         onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
-        onnx_attr['spatial'] = 0
-        onnx_node = graph.make_node(
-            'BatchNormalization',
-            inputs=inputs,
-            outputs=node.output('Y'),
-            **onnx_attr)
-
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        onnx_attr, inputs = cls.make_attrs_and_inputs(graph, node, **kw)
-        onnx_attr['is_test'] = 1
+        onnx_attr['spatial'] = 1
         onnx_node = graph.make_node(
             'BatchNormalization',
             inputs=inputs,
@@ -593,7 +585,7 @@ class BatchNorm():
 
 @op_mapper('group_norm')
 class GroupNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -605,8 +597,6 @@ class GroupNorm():
         assert len(
             ipt_shape) == 4, "Only support 4D-Tensor as input for GroupNorm"
 
-        scale = node.input('Scale')[0]
-        bias = node.input('Bias')[0]
         shape = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[0, num_groups, -1])
         reshape_input = graph.make_node('Reshape', inputs=[ipt, shape])
@@ -619,18 +609,30 @@ class GroupNorm():
             inputs=[reshape_input, scale_, bias_],
             epsilon=epsilon)
         origin_shape = graph.make_node('Shape', inputs=[ipt])
-        output = graph.make_node(
-            'Reshape', inputs=[reshaped_output, origin_shape])
-        axes = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=[1, 2])
-        unsqueezed_scale = graph.make_node('Unsqueeze', inputs=[scale, axes])
-        unsqueezed_bias = graph.make_node('Unsqueeze', inputs=[bias, axes])
-        part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
-        graph.make_node(
-            'Add', inputs=[part0, unsqueezed_bias], outputs=node.output('Y'))
+
+        if len(node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
+            output = graph.make_node(
+                'Reshape', inputs=[reshaped_output, origin_shape])
+            axes = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[1, 2])
+            scale = node.input('Scale')[0]
+            bias = node.input('Bias')[0]
+            unsqueezed_scale = graph.make_node(
+                'Unsqueeze', inputs=[scale, axes])
+            unsqueezed_bias = graph.make_node('Unsqueeze', inputs=[bias, axes])
+            part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
+            graph.make_node(
+                'Add',
+                inputs=[part0, unsqueezed_bias],
+                outputs=node.output('Y'))
+        else:
+            output = graph.make_node(
+                'Reshape',
+                inputs=[reshaped_output, origin_shape],
+                outputs=node.output('Y'))
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         num_groups = node.attr('groups')
         epsilon = node.attr('epsilon')
         ipt = node.input('X')[0]
@@ -639,39 +641,67 @@ class GroupNorm():
         assert len(
             ipt_shape) == 4, "Only support 4D-Tensor as input for GroupNorm"
 
-        scale = node.input('Scale')[0]
-        bias = node.input('Bias')[0]
+        dtype = node.block.vars[node.input('X', 0)].dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+
         shape = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[0, num_groups, -1])
         reshape_input = graph.make_node('Reshape', inputs=[ipt, shape])
         scale_ = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0] * num_groups)
+            'Constant', dtype=dtype, value=[1.0] * num_groups)
         bias_ = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.0] * num_groups)
+            'Constant', dtype=dtype, value=[0.0] * num_groups)
         reshaped_output = graph.make_node(
             'InstanceNormalization',
             inputs=[reshape_input, scale_, bias_],
             epsilon=epsilon)
         origin_shape = graph.make_node('Shape', inputs=[ipt])
-        output = graph.make_node(
-            'Reshape', inputs=[reshaped_output, origin_shape])
-        unsqueezed_scale = graph.make_node(
-            'Unsqueeze', inputs=[scale], axes=[1, 2])
-        unsqueezed_bias = graph.make_node(
-            'Unsqueeze', inputs=[bias], axes=[1, 2])
-        part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
-        graph.make_node(
-            'Add', inputs=[part0, unsqueezed_bias], outputs=node.output('Y'))
+
+        if len(node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
+            output = graph.make_node(
+                'Reshape', inputs=[reshaped_output, origin_shape])
+            scale = node.input('Scale')[0]
+            bias = node.input('Bias')[0]
+            unsqueezed_scale = graph.make_node(
+                'Unsqueeze', inputs=[scale], axes=[1, 2])
+            unsqueezed_bias = graph.make_node(
+                'Unsqueeze', inputs=[bias], axes=[1, 2])
+            part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
+            graph.make_node(
+                'Add',
+                inputs=[part0, unsqueezed_bias],
+                outputs=node.output('Y'))
+        else:
+            output = graph.make_node(
+                'Reshape',
+                inputs=[reshaped_output, origin_shape],
+                outputs=node.output('Y'))
 
 
 @op_mapper('instance_norm')
 class InstanceNorm():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         onnx_attr = {'epsilon': node.attr('epsilon'), }
-        inputs = node.input('X') + node.input('Scale') + node.input('Bias')
+        num_groups = node.block.vars[node.input('X')[0]].shape[1]
+
+        dtype = node.block.vars[node.input('X', 0)].dtype
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+
+        if len(node.input('Scale')) == 0:
+            scale_ = graph.make_node(
+                'Constant', dtype=dtype, value=[1.0] * num_groups)
+        else:
+            scale_ = node.input('Scale')[0]
+        if len(node.input('Bias')) == 0:
+            bias_ = graph.make_node(
+                'Constant', dtype=dtype, value=[0.0] * num_groups)
+        else:
+            bias_ = node.input('Bias')[0]
+
+        inputs = node.input('X') + [scale_] + [bias_]
         onnx_node = graph.make_node(
             'InstanceNormalization',
             inputs=inputs,
@@ -681,7 +711,7 @@ class InstanceNorm():
 
 @op_mapper('dropout')
 class Dropout():
-    support_opset_version_range = (7, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
