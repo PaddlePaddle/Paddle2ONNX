@@ -21,6 +21,8 @@ from paddle2onnx.op_mapper import mapper_helper
 import copy
 import paddle
 
+from sys import maxsize as maxsize
+
 
 @op_mapper('concat')
 class Concat():
@@ -294,6 +296,81 @@ class Split():
         else:
             axis = node.attr('axis')
         return axis
+
+
+@op_mapper(['roll'])
+class Roll():
+    support_opset_version_range = (4, 15)
+
+    @classmethod
+    def opset_4(cls, graph, node, **kw):
+        dims = node.attr('axis')
+        shifts = node.attr('shifts')
+        input_x = node.input('X')[0]
+        if len(dims) > 0:
+            for i in range(len(shifts)):
+                shapes = []
+                shape = graph.make_node(
+                    "Slice",
+                    inputs=[input_x],
+                    axes=[dims[i]],
+                    starts=[-shifts[i]],
+                    ends=[maxsize])
+                shapes.append(shape)
+                shape = graph.make_node(
+                    "Slice",
+                    inputs=[input_x],
+                    axes=[dims[i]],
+                    starts=[0],
+                    ends=[-shifts[i]])
+                shapes.append(shape)
+                input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
+            graph.make_node(
+                'Identity', inputs=[input_x], outputs=node.output('Out'))
+        else:
+            raise Exception("axis is None, not supported ")
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        dims = node.attr('axis')
+        shifts = node.attr('shifts')
+        input_x = node.input('X')[0]
+        if len(dims) > 0:
+            for i in range(len(shifts)):
+                shapes = []
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [dims[i]]})
+                starts_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [-shifts[i]]})
+                ends_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [maxsize]})
+                shape = graph.make_node(
+                    "Slice",
+                    inputs=[input_x, starts_node, ends_node, axes_node], )
+                shapes.append(shape)
+                starts_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [0]})
+                ends_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': [-shifts[i]]})
+                shape = graph.make_node(
+                    "Slice",
+                    inputs=[input_x, starts_node, ends_node, axes_node], )
+                shapes.append(shape)
+                input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
+            graph.make_node(
+                'Identity', inputs=[input_x], outputs=node.output('Out'))
+        else:
+            raise Exception("axis is None, not supported ")
 
 
 @op_mapper(['slice', 'strided_slice'])
