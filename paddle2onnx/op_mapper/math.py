@@ -940,7 +940,7 @@ class Hardtanh():
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
-        mapper_helper.clip_helper(graph,
+        mapper_helper.clip_helper(graph, node,
                                   node.input('X', 0),
                                   node.attr('t_max'),
                                   node.attr('t_min'), node.output('Out', 0))
@@ -1151,8 +1151,11 @@ class Scale():
 
             if len(node.input('ScaleTensor')) > 0:
                 scale_node = node.input('ScaleTensor')[0]
-                scale_node = graph.make_node(
-                    'Cast', inputs=[scale_node], attrs={'to': data_type})
+                scale_type = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                    'ScaleTensor', 0)]
+                if scale_type != data_type:
+                    scale_node = graph.make_node(
+                        'Cast', inputs=[scale_node], attrs={'to': data_type})
             else:
                 scale_node = graph.make_node(
                     'Constant', attrs={'dtype': data_type,
