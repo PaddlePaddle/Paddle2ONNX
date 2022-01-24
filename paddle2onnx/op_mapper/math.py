@@ -1113,19 +1113,7 @@ class Sign():
 
 @op_mapper('scale')
 class Scale():
-    support_opset_version_range = (1, 15)
-
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        scale = node.attr('scale')
-        bias = node.attr('bias')
-        if len(node.input('ScaleTensor')) == 0 and np.fabs(
-                scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-        else:
-            raise Exception(
-                "please try to convert OP:scale with opset_version >= 7.")
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
