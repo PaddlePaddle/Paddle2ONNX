@@ -186,6 +186,61 @@ class Moving_average_abs_max_scale():
             outputs=node.output('Out'))
 
 
+@op_mapper('fake_quantize_dequantize_abs_max')
+class Fake_quantize_dequantize_abs_max():
+    support_opset_version_range = (10, 13)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        paddle.disable_static()
+        key = node.input('X', 0)
+        update_param = None
+        update_name = None
+        weight = None
+        if key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[key]
+            weight = param['data']
+            update_name = key
+            update_param = param
+
+        tensor = paddle.to_tensor(weight)
+        abs_tensor = paddle.abs(tensor)
+
+        reshape_tensor = paddle.reshape(abs_tensor, shape=[-1])
+        vals, _ = paddle.topk(reshape_tensor, k=1)
+
+        scale = vals / 127.0
+        zero_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT8, value=[0])
+
+        div = paddle.divide(tensor, scale)
+
+        numpy_data = np.around(div.numpy())
+        round_tensor = paddle.to_tensor(numpy_data)
+
+        round_numpy = np.round(div.numpy())
+
+        clip_tensor = round_tensor
+        dq_tensor = paddle.multiply(clip_tensor, scale)
+
+        update_param['data'] = dq_tensor.numpy()
+        graph.update_parameters(update_name, update_param)
+
+        scale_numpy = paddle.squeeze(scale).numpy().tolist()
+
+        scale_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+
+        quantize_node = graph.make_node(
+            'QuantizeLinear',
+            inputs=[node.input('X', 0), scale_node, zero_node])
+
+        graph.make_node(
+            'DequantizeLinear',
+            inputs=[quantize_node, scale_node, zero_node],
+            outputs=node.output('Out'))
+
+
 @op_mapper('fake_quantize_moving_average_abs_max')
 class Fake_quantize_moving_average_abs_max():
     support_opset_version_range = (10, 13)
