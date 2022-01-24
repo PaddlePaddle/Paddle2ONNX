@@ -133,6 +133,7 @@
 | reshape2 | 5~12 |
 | rnn | 1~12 |
 | roi_align | 10~12 |
+| roll | 4~15 |
 | round | 11~12 |
 | rsqrt | 6~12 |
 | softmax | 1~15 |
