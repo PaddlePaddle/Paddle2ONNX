@@ -84,11 +84,14 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
         )
     if graph.opset_version < 11:
         if x_dtype == paddle.float64:
-            raise Exception(
-                "When opset is less than 11, the input is not supported as float64 type."
-            )
-        clip = graph.make_node(
-            'Clip', inputs=input, max=max, min=min, outputs=output)
+            input = graph.make_node(
+                'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
+            clip = graph.make_node('Clip', inputs=input, max=max, min=min)
+            clip = graph.make_node(
+                'Cast', inputs=[clip], to=dtypes.ONNX.DOUBLE, outputs=output)
+        else:
+            clip = graph.make_node(
+                'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
         if not isinstance(min, six.string_types):
             min = graph.make_node(

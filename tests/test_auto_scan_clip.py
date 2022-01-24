@@ -248,7 +248,7 @@ class TestClipConvert4(OPConvertAutoScanTest):
 
         input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         models = list()
         config0 = {
