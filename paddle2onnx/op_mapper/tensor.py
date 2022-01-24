@@ -303,41 +303,17 @@ class Roll():
     support_opset_version_range = (4, 15)
 
     @classmethod
-    def opset_4(cls, graph, node, **kw):
-        dims = node.attr('axis')
-        shifts = node.attr('shifts')
-        input_x = node.input('X')[0]
-        if len(dims) > 0:
-            for i in range(len(shifts)):
-                shapes = []
+    def roll(cls, graph, input_x, dims, shifts):
+        for i in range(len(shifts)):
+            shapes = []
+            if graph.opset_version < 10:
                 shape = graph.make_node(
                     "Slice",
                     inputs=[input_x],
                     axes=[dims[i]],
                     starts=[-shifts[i]],
                     ends=[maxsize])
-                shapes.append(shape)
-                shape = graph.make_node(
-                    "Slice",
-                    inputs=[input_x],
-                    axes=[dims[i]],
-                    starts=[0],
-                    ends=[-shifts[i]])
-                shapes.append(shape)
-                input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
-            graph.make_node(
-                'Identity', inputs=[input_x], outputs=node.output('Out'))
-        else:
-            raise Exception("axis is None, not supported ")
-
-    @classmethod
-    def opset_10(cls, graph, node, **kw):
-        dims = node.attr('axis')
-        shifts = node.attr('shifts')
-        input_x = node.input('X')[0]
-        if len(dims) > 0:
-            for i in range(len(shifts)):
-                shapes = []
+            else:
                 axes_node = graph.make_node(
                     'Constant',
                     attrs={'dtype': dtypes.ONNX.INT64,
@@ -352,8 +328,17 @@ class Roll():
                            'value': [maxsize]})
                 shape = graph.make_node(
                     "Slice",
-                    inputs=[input_x, starts_node, ends_node, axes_node], )
-                shapes.append(shape)
+                    inputs=[input_x, starts_node, ends_node, axes_node])
+
+            shapes.append(shape)
+            if graph.opset_version < 10:
+                shape = graph.make_node(
+                    "Slice",
+                    inputs=[input_x],
+                    axes=[dims[i]],
+                    starts=[0],
+                    ends=[-shifts[i]])
+            else:
                 starts_node = graph.make_node(
                     'Constant',
                     attrs={'dtype': dtypes.ONNX.INT64,
@@ -364,13 +349,60 @@ class Roll():
                            'value': [-shifts[i]]})
                 shape = graph.make_node(
                     "Slice",
-                    inputs=[input_x, starts_node, ends_node, axes_node], )
-                shapes.append(shape)
-                input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
+                    inputs=[input_x, starts_node, ends_node, axes_node])
+            shapes.append(shape)
+            input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
+        return input_x
+
+    @classmethod
+    def flatten(cls, graph, node):
+        dims = len(node.input_shape('X', 0))
+        start_axis = 0
+        end_axis = dims - 1
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        if end_axis < dims - 1:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slice3 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[end_axis + 1],
+                ends=[dims])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+            ]
+        else:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
+            ]
+        final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        output = graph.make_node(
+            'Reshape', inputs=[node.input('X')[0], final_shape])
+        return output
+
+    @classmethod
+    def opset_4(cls, graph, node, **kw):
+        dims = node.attr('axis')
+        shifts = node.attr('shifts')
+        input_x = node.input('X')[0]
+        shape_x = node.input_shape('X', 0)
+        if len(dims) > 0:
+            input_x = cls.roll(graph, input_x, dims, shifts)
             graph.make_node(
                 'Identity', inputs=[input_x], outputs=node.output('Out'))
         else:
-            raise Exception("axis is None, not supported ")
+            input_x = cls.flatten(graph, node)
+            input_x = cls.roll(graph, input_x, [0], shifts)
+            shape_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': list(shape_x)})
+            graph.make_node(
+                'Reshape',
+                inputs=[input_x, shape_node],
+                outputs=node.output('Out'))
 
 
 @op_mapper(['slice', 'strided_slice'])

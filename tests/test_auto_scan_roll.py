@@ -45,10 +45,11 @@ class TestRollConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=50), min_size=2, max_size=5))
+                    min_value=1, max_value=10), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32"]))
-        if draw(st.booleans()):
+        axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
+        if axis_dtype == "int":
             axis = draw(
                 st.integers(
                     min_value=-len(input_shape), max_value=len(input_shape) -
@@ -58,7 +59,7 @@ class TestRollConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=-input_shape[axis_idx],
                     max_value=-input_shape[axis_idx]))
-        else:
+        elif axis_dtype == "list":
             axis = [0, 1]
             shifts = []
             sf0 = draw(
@@ -69,12 +70,17 @@ class TestRollConvert(OPConvertAutoScanTest):
                     min_value=-input_shape[1], max_value=-input_shape[1]))
             shifts.append(sf0)
             shifts.append(sf1)
+        else:
+            axis = None
+            shifts = draw(
+                st.integers(
+                    min_value=-input_shape[0], max_value=-input_shape[0]))
 
         config = {
             "op_names": ["roll"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [15],
             "input_spec_shape": [],
             "axis": axis,
             "shifts": shifts,
@@ -85,7 +91,7 @@ class TestRollConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=300)
 
 
 if __name__ == "__main__":
