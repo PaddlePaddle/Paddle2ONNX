@@ -45,7 +45,8 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=3, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(
+            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
         axis = None
         axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
         if axis_dtype == "list":
