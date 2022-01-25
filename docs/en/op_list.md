@@ -136,7 +136,7 @@
 | round | 11~12 |
 | rsqrt | 6~12 |
 | softmax | 1~15 |
-| scale | 1~15 | opset 1~6 limited supported |
+| scale | 7~15 |
 | scatter | 1~15 |
 | scatter_nd_add | 11~12 |
 | sequence_expand | 1~12 |

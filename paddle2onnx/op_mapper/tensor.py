@@ -906,7 +906,7 @@ class Assign():
                 value = np.array(node.attr('int64_values'))
             parameter = {
                 'data': value,
-                'dtype': node.attr('dtype'),
+                'dtype': node.output_dtype("Out", 0),
                 'shape': node.attr('shape')
             }
             parameters[node.output('Out', 0)] = parameter
@@ -1173,7 +1173,7 @@ class Clip():
             min_ = min_value
         else:
             min_ = node.input('Min', 0)
-        mapper_helper.clip_helper(graph,
+        mapper_helper.clip_helper(graph, node,
                                   node.input('X', 0), max_, min_,
                                   node.output('Out', 0), x_dtype)
 
