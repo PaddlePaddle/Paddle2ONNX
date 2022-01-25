@@ -151,6 +151,10 @@ class OPConvertAutoScanTest(unittest.TestCase):
         opset_version = config["opset_version"]
         input_specs = config["input_spec_shape"]
 
+        if len(input_specs) == 0:
+            for test_data in test_data_shapes:
+                input_specs.append([-1] * len(test_data))
+
         self.num_ran_models += 1
 
         if not isinstance(models, (tuple, list)):
