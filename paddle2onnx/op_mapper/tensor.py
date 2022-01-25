@@ -808,16 +808,7 @@ class Gather():
         axis = node.attr('axis')
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
-            # When axis is tensor, only int32 and int64 are supported
-            if axis_node not in graph.parameters:
-                raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axis = graph.parameters[axis_node].attribute[0].t.int32_data
-                if axis is None or len(axis) < 1:
-                    axis = graph.parameters[axis_node].attribute[
-                        0].t.int64_data[0]
+            axis = mapper_helper.get_value_from_parameters(graph, axis_node)[0]
         if axis is None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
@@ -837,16 +828,7 @@ class Gather():
         axis = node.attr('axis')
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
-            # When axis is tensor, only int32 and int64 are supported
-            if axis_node not in graph.parameters:
-                raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axis = graph.parameters[axis_node].attribute[0].t.int32_data
-                if axis is None or len(axis) < 1:
-                    axis = graph.parameters[axis_node].attribute[
-                        0].t.int64_data[0]
+            axis = mapper_helper.get_value_from_parameters(graph, axis_node)[0]
         if axis is None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
