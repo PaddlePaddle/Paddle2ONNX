@@ -235,14 +235,3 @@ def get_value_from_parameters(graph, input_node):
             data = graph.parameters[input_node].attribute[0].t.int64_data
         value = [val for _, val in enumerate(data)]
     return value
-
-
-def func(graph, axes_node):
-    if axes_node not in graph.parameters:
-        raise Exception(
-            "Currently does not support the axis parameter as input tensor!")
-    else:
-        axes = graph.parameters[axes_node].attribute[0].t.int32_data
-        if axes is None or len(axes) < 1:
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
-        return axes
