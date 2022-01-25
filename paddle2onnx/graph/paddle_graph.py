@@ -79,6 +79,9 @@ class PaddleNode(Node):
     def input_dtype(self, name, idx):
         return self.block.var(self.input(name, idx)).dtype
 
+    def output_dtype(self, name, idx):
+        return self.block.var(self.output(name, idx)).dtype
+
     def attr(self, name, default=None):
         if name in self.attrs:
             return self.attrs[name]
