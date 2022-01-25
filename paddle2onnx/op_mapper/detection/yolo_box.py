@@ -270,12 +270,8 @@ class YOLOBox():
         node_conf_sub = graph.make_node(
             'Sub', inputs=[node_conf_sigmoid, node_conf_thresh_reshape])
 
-        node_conf_clip = mapper_helper.clip_helper(
-            graph,
-            node_conf_sub,
-            float(MAX_FLOAT32),
-            0.0,
-            x_dtype=node.input_dtype('X', 0))
+        node_conf_clip = mapper_helper.clip_helper(graph, node, node_conf_sub,
+                                                   float(MAX_FLOAT32), 0.0)
 
         zeros = [0]
         node_zeros = graph.make_node(
