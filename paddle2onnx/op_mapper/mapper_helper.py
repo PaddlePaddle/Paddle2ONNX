@@ -76,20 +76,26 @@ def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     return constant
 
 
-def clip_helper(graph, node, input, max, min, output=[],
-                x_dtype=paddle.float32):
+def clip_helper(graph, node, input, max, min, output=[]):
+    x_dtype = node.input_dtype('X', 0)
     if (isinstance(min, six.string_types) or
             isinstance(max, six.string_types)) and graph.opset_version < 11:
         raise Exception(
             "min or max of Clip is Tensor, please try with higher onnx opset_version."
         )
     if graph.opset_version < 11:
-        if x_dtype == paddle.float64:
-            raise Exception(
-                "When opset is less than 11, the input is not supported as float64 type."
-            )
-        clip = graph.make_node(
-            'Clip', inputs=input, max=max, min=min, outputs=output)
+        if x_dtype != paddle.float32:
+            input = graph.make_node(
+                'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
+            clip = graph.make_node('Clip', inputs=input, max=max, min=min)
+            clip = graph.make_node(
+                'Cast',
+                inputs=[clip],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                outputs=output)
+        else:
+            clip = graph.make_node(
+                'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
         if not isinstance(min, six.string_types):
             min = graph.make_node(
