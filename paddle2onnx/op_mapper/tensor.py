@@ -309,43 +309,33 @@ class Slice():
         return None
 
     @classmethod
+    def get_node_value(cls, graph, node, node_tensor_name,
+                       node_tensor_list_name, tensor_name):
+        if len(node.input(node_tensor_name)) > 0:
+            value = node.input(node_tensor_name)[0]
+            if graph.opset_version < 10:
+                value = mapper_helper.get_value_from_parameters(graph, value)
+        elif len(node.input(node_tensor_list_name)) > 0:
+            if graph.opset_version >= 10:
+                value = mapper_helper.get_tensor_list_node(
+                    graph, node, node_tensor_list_name)
+            else:
+                raise Exception(
+                    "Currently does not support the node parameter as input tensor!,"
+                    " Try converting with opset_version >=10 ")
+        else:
+            value = node.attr(tensor_name)
+        return value
+
+    @classmethod
     def get_start_end_node(cls, graph, node):
         output = []
-        if len(node.input('StartsTensor')) > 0:
-            starts = node.input('StartsTensor')[0]
-            if graph.opset_version < 10:
-                starts = mapper_helper.get_value_from_parameters(graph, starts)
-            output.append(starts)
-        elif len(node.input('StartsTensorList')) > 0:
-            if graph.opset_version >= 10:
-                starts_node = mapper_helper.get_tensor_list_node(
-                    graph, node, "StartsTensorList")
-                output.append(starts_node)
-            else:
-                raise Exception(
-                    "Currently does not support the starts parameter as input tensor!,"
-                    " Try converting with opset_version >=10 ")
-        else:
-            starts = node.attr('starts')
-            output.append(starts)
-
-        if len(node.input('EndsTensor')) > 0:
-            ends = node.input('EndsTensor')[0]
-            if graph.opset_version < 10:
-                ends = mapper_helper.get_value_from_parameters(graph, ends)
-            output.append(ends)
-        elif len(node.input('EndsTensorList')) > 0:
-            if graph.opset_version >= 10:
-                ends_node = mapper_helper.get_tensor_list_node(graph, node,
-                                                               "EndsTensorList")
-                output.append(ends_node)
-            else:
-                raise Exception(
-                    "Currently does not support the starts parameter as input tensor!,"
-                    " Try converting with opset_version >=10 ")
-        else:
-            ends = node.attr('ends')
-            output.append(ends)
+        starts = cls.get_node_value(graph, node, 'StartsTensor',
+                                    'StartsTensorList', 'starts')
+        output.append(starts)
+        ends = cls.get_node_value(graph, node, 'EndsTensor', 'EndsTensorList',
+                                  'ends')
+        output.append(ends)
         return output
 
     @classmethod
@@ -395,11 +385,16 @@ class Slice():
             strides_node = mapper_helper.get_tensor_list_node(
                 graph, node, "StridesTensorList")
         else:
-            if strides is not None and len(node.input('StridesTensor')) > 0:
-                strides_node = graph.make_node(
-                    'Cast',
-                    inputs=node.input('StridesTensor'),
-                    to=dtypes.ONNX.INT64)
+            strides_node = node.input('StridesTensor')
+            if strides is not None and strides_node is not None and len(
+                    strides_node) > 0:
+                input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                    'StridesTensor', 0)]
+                if input_dtype != dtypes.ONNX.INT64:
+                    strides_node = graph.make_node(
+                        'Cast', inputs=strides_node, to=dtypes.ONNX.INT64)
+                else:
+                    strides_node = strides_node[0]
             else:
                 steps = node.attr('strides', [1] *
                                   len(axes)) if strides is None else strides
