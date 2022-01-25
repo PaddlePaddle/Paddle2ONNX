@@ -100,9 +100,9 @@ class TestClipConvert0(OPConvertAutoScanTest):
 
         input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
-        min_num = draw(st.floats(min_value=-4.0, max_value=-1.0))
+        min_num = draw(st.integers(min_value=-4.0, max_value=-1.0))
         max_num = draw(st.floats(min_value=0, max_value=4.0))
 
         models = list()
@@ -142,11 +142,15 @@ class TestClipConvert1(OPConvertAutoScanTest):
 
         min_num = draw(st.floats(min_value=-4.0, max_value=-2.0))
 
+        def generator_max():
+            input_data = randtool("int", 0, 10, [1])
+            return input_data
+
         models = list()
         config1 = {
             "op_names": ["clip"],
-            "test_data_shapes": [input_shape, [1]],
-            "test_data_types": [[dtype], [dtype]],
+            "test_data_shapes": [input_shape, generator_max],
+            "test_data_types": [[dtype], ["int32"]],
             "opset_version": [13, 15],
             "input_spec_shape": [],
             "min": min_num,
@@ -215,7 +219,7 @@ class TestClipConvert3(OPConvertAutoScanTest):
             return input_data
 
         def generator_max():
-            input_data = randtool("float", 0, 10, [1])
+            input_data = randtool("int", 0, 10, [1])
             return input_data
 
         models = list()
@@ -248,7 +252,7 @@ class TestClipConvert4(OPConvertAutoScanTest):
 
         input_spec = [-1] * len(input_shape)
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         models = list()
         config0 = {
