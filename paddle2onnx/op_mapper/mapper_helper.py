@@ -76,8 +76,8 @@ def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     return constant
 
 
-def clip_helper(graph, node, input, max, min, output=[],
-                x_dtype=paddle.float32):
+def clip_helper(graph, node, input, max, min, output=[]):
+    x_dtype = node.input_dtype('X', 0)
     if (isinstance(min, six.string_types) or
             isinstance(max, six.string_types)) and graph.opset_version < 11:
         raise Exception(
