@@ -106,5 +106,88 @@ class TestStridedsliceConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        axes = self.config['axes']
+        starts = self.config['starts']
+        ends = self.config['ends']
+        # strides = self.config['strides']
+        # strides = [1, paddle.to_tensor(1).astype('int32'), 1]
+        # strides = [1, paddle.to_tensor(1, dtype='int32'), 1]
+        strides = [1, paddle.to_tensor(np.array(1).astype("int32")), 1]
+        x = paddle.strided_slice(
+            inputs, axes=axes, starts=starts, ends=ends, strides=strides)
+        return x
+
+
+class TestStridedsliceConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.strided_slice
+    OPset version: 7, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=10), min_size=4, max_size=6))
+        input_shape = [4, 4, 4, 4]
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        isStartsTensor = False  # draw(st.booleans())
+        isEndsTensor = False  #draw(st.booleans())
+        isStridesTensor = False  #draw(st.booleans())
+
+        axes = [1, 2, 3]
+        if draw(st.booleans()):
+            starts = [-100, 0, 0]
+        else:
+            starts = [-input_shape[axes[0]], 0, -input_shape[axes[2]] - 22]
+
+        if draw(st.booleans()):
+            ends = [3, 2, 40000]
+        else:
+            ends = [-1, 2, 4]
+
+        # if draw(st.booleans()):
+        #     strides = [2, 1, 2]
+        # else:
+        strides = [1, 1, 1]
+
+        tmp = [i for i, val in enumerate(strides) if val == 1]
+        if len(tmp) == len(strides) and isStridesTensor is False:
+            opset_version = [10, 15]
+        else:
+            opset_version = [10, 15]
+
+        config = {
+            "op_names": ["strided_slice"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": opset_version,
+            "input_spec_shape": [],
+            "axes": axes,
+            "starts": starts,
+            "ends": ends,
+            "strides": strides,
+            "isStartsTensor": isStartsTensor,
+            "isEndsTensor": isEndsTensor,
+            "isStridesTensor": isStridesTensor,
+        }
+
+        models = Net1(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
 if __name__ == "__main__":
     unittest.main()

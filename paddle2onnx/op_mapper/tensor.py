@@ -384,7 +384,8 @@ class Slice():
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
         strides = node.attr('strides')
-        assert strides is None or len(node.input('StridesTensor')) == 0, \
+        strides_list = node.input('StridesTensorList')
+        assert strides is None or len(node.input('StridesTensor')) == 0 or strides_list is None or len(strides_list) == 0, \
             "Slice tensor in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
         steps = node.attr('strides',
@@ -421,14 +422,19 @@ class Slice():
         axes = node.attr('axes')
         strides = node.attr('strides')
         steps = None
-        if strides is not None and len(node.input('StridesTensor')) > 0:
-            strides_node = graph.make_node(
-                'Cast',
-                inputs=node.input('StridesTensor'),
-                to=dtypes.ONNX.INT64)
+        strides_list = node.input('StridesTensorList')
+        if strides_list is not None and len(strides_list) > 0:
+            strides_node = mapper_helper.get_tensor_list_node(
+                graph, node, "StridesTensorList")
         else:
-            steps = node.attr('strides',
-                              [1] * len(axes)) if strides is None else strides
+            if strides is not None and len(node.input('StridesTensor')) > 0:
+                strides_node = graph.make_node(
+                    'Cast',
+                    inputs=node.input('StridesTensor'),
+                    to=dtypes.ONNX.INT64)
+            else:
+                steps = node.attr('strides', [1] *
+                                  len(axes)) if strides is None else strides
 
         starts, ends = cls.get_start_end_node(graph, node)
         if isinstance(starts, list):
@@ -452,7 +458,11 @@ class Slice():
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': axes})
         if steps is None:
-            steps_node = strides_node
+            if strides_list is not None and len(strides_list) > 0:
+                steps_node = graph.make_node(
+                    'Cast', inputs=[strides_node], to=dtypes.ONNX.INT64)
+            else:
+                steps_node = strides_node
         else:
             steps_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
