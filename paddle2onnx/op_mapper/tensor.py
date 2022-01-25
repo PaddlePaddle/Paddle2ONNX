@@ -35,16 +35,7 @@ class Concat():
         node_axis = node.input('AxisTensor')
         if node_axis is not None and len(node_axis) > 0:
             axis_node = node.input('AxisTensor')[0]
-            # When axis is tensor, only int32 and int64 are supported
-            if axis_node not in graph.parameters:
-                raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axis = graph.parameters[axis_node].attribute[0].t.int32_data
-                if axis is None or len(axis) < 1:
-                    axis = graph.parameters[axis_node].attribute[
-                        0].t.int64_data[0]
+            axis = mapper_helper.get_value_from_parameters(graph, axis_node)[0]
         else:
             axis = node.attr('axis')
         if axis < 0:
@@ -321,22 +312,10 @@ class Slice():
     def get_start_end_node(cls, graph, node):
         output = []
         if len(node.input('StartsTensor')) > 0:
-            starts_node = node.input('StartsTensor')[0]
-            if graph.opset_version >= 10:
-                output.append(starts_node)
-            else:
-                if starts_node not in graph.parameters:
-                    raise Exception(
-                        "Currently does not support the starts parameter as input tensor!,"
-                        " Try converting with opset_version >=10 ")
-                else:
-                    starts = graph.parameters[starts_node].attribute[
-                        0].t.int32_data
-                    if starts is None or len(starts) < 1:
-                        starts = graph.parameters[starts_node].attribute[
-                            0].t.int64_data
-                    starts = [value for _, value in enumerate(starts)]
-                    output.append(starts)
+            starts = node.input('StartsTensor')[0]
+            if graph.opset_version < 10:
+                starts = mapper_helper.get_value_from_parameters(graph, starts)
+            output.append(starts)
         elif len(node.input('StartsTensorList')) > 0:
             if graph.opset_version >= 10:
                 starts_node = mapper_helper.get_tensor_list_node(
@@ -351,21 +330,10 @@ class Slice():
             output.append(starts)
 
         if len(node.input('EndsTensor')) > 0:
-            ends_node = node.input('EndsTensor')[0]
-            if graph.opset_version >= 10:
-                output.append(ends_node)
-            else:
-                if ends_node not in graph.parameters:
-                    raise Exception(
-                        "Currently does not support the ends parameter as input tensor!,"
-                        "Try converting with opset_version >=10 ")
-                else:
-                    ends = graph.parameters[ends_node].attribute[0].t.int32_data
-                    if ends is None or len(ends) < 1:
-                        ends = graph.parameters[ends_node].attribute[
-                            0].t.int64_data
-                    ends = [value for _, value in enumerate(ends)]
-                    output.append(ends)
+            ends = node.input('EndsTensor')[0]
+            if graph.opset_version < 10:
+                ends = mapper_helper.get_value_from_parameters(graph, ends)
+            output.append(ends)
         elif len(node.input('EndsTensorList')) > 0:
             if graph.opset_version >= 10:
                 ends_node = mapper_helper.get_tensor_list_node(graph, node,
@@ -1108,14 +1076,7 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
-            if axes_node not in graph.parameters:
-                raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axes = graph.parameters[axes_node].attribute[0].t.int32_data
-                if axes is None or len(axes) < 1:
-                    axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            axes = mapper_helper.get_value_from_parameters(graph, axes_node)
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
