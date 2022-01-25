@@ -106,7 +106,7 @@ class Relu6():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        mapper_helper.clip_helper(graph,
+        mapper_helper.clip_helper(graph, node,
                                   node.input('X', 0),
                                   node.attr('threshold'), 0.0,
                                   node.output('Out', 0))
@@ -210,7 +210,7 @@ class HardSwish():
                    'value': node.attr('offset')})
 
         node0 = graph.make_node('Add', inputs=[node.input('X')[0], offset_node])
-        node1 = mapper_helper.clip_helper(graph, node0,
+        node1 = mapper_helper.clip_helper(graph, node, node0,
                                           node.attr('threshold'), 0.0)
         node2 = graph.make_node('Mul', inputs=[node.input('X')[0], node1])
         node3 = graph.make_node(
