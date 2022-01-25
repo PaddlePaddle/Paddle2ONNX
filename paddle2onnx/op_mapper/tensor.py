@@ -391,7 +391,8 @@ class Roll():
         input_shape = node.input_shape('X', 0)
         # TODO shifts is Tensor
         shifts_node = node.input('ShiftsTensor')
-        assert len(shifts_node) == 0, "shift tensor is not supported."
+        assert shifts_node is None or len(
+            shifts_node) == 0, "shift tensor is not supported."
         if len(dims) > 0:
             axes = [
                 axis + len(input_shape) if axis < 0 else axis
