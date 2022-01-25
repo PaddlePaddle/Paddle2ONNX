@@ -60,14 +60,20 @@ class TestRollConvert(OPConvertAutoScanTest):
                     min_value=-input_shape[axis_idx],
                     max_value=-input_shape[axis_idx]))
         elif axis_dtype == "list":
-            axis = [0, 1]
+            axis = [0, -1]
+            axis_idx = [
+                axis + len(input_shape) if axis < 0 else axis
+                for i, axis in enumerate(axis)
+            ]
             shifts = []
             sf0 = draw(
                 st.integers(
-                    min_value=-input_shape[0], max_value=-input_shape[0]))
+                    min_value=-input_shape[axis_idx[0]],
+                    max_value=-input_shape[axis_idx[0]]))
             sf1 = draw(
                 st.integers(
-                    min_value=-input_shape[1], max_value=-input_shape[1]))
+                    min_value=-input_shape[axis_idx[1]],
+                    max_value=-input_shape[axis_idx[1]]))
             shifts.append(sf0)
             shifts.append(sf1)
         else:
@@ -80,7 +86,7 @@ class TestRollConvert(OPConvertAutoScanTest):
             "op_names": ["roll"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [15],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "axis": axis,
             "shifts": shifts,
@@ -91,7 +97,7 @@ class TestRollConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=300)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":

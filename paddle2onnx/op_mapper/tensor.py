@@ -387,9 +387,19 @@ class Roll():
         dims = node.attr('axis')
         shifts = node.attr('shifts')
         input_x = node.input('X')[0]
-        shape_x = node.input_shape('X', 0)
+        input_shape = node.input_shape('X', 0)
+        # TODO shifts is Tensor
         if len(dims) > 0:
-            input_x = cls.roll(graph, input_x, dims, shifts)
+            axes = [
+                axis + len(input_shape) if axis < 0 else axis
+                for i, axis in enumerate(dims)
+            ]
+            for i in range(0, len(axes)):
+                if input_shape[axes[i]] > 0:
+                    assert -input_shape[axes[i]] <= shifts[i] <= input_shape[axes[i]], \
+                        "the value of shifts in axis is less than the value of input_shape in axis."
+
+            input_x = cls.roll(graph, input_x, axes, shifts)
             graph.make_node(
                 'Identity', inputs=[input_x], outputs=node.output('Out'))
         else:
@@ -398,7 +408,7 @@ class Roll():
             shape_node = graph.make_node(
                 'Constant',
                 attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': list(shape_x)})
+                       'value': list(input_shape)})
             graph.make_node(
                 'Reshape',
                 inputs=[input_x, shape_node],
