@@ -19,6 +19,8 @@ import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
+from onnx import TensorProto
+import paddle
 
 MAX_FLOAT32 = 3.402823466E+38
 
@@ -127,7 +129,10 @@ class YOLOBox():
             node_box_x, node_box_y, node_box_w, node_box_h, node_conf, node_prob
         ]
         node_split_input = mapper_helper.split_helper(
-            graph, [node_x_transpose], output, -1, [1, 1, 1, 1, 1, class_num])
+            graph, [node_x_transpose],
+            output,
+            -1, [1, 1, 1, 1, 1, class_num],
+            dtype=node.input_dtype('X', 0))
 
         node_box_x_sigmoid = graph.make_node("Sigmoid", inputs=[node_box_x])
 
@@ -215,7 +220,10 @@ class YOLOBox():
 
         output = [node_anchor_w, node_anchor_h]
         node_anchor_split = mapper_helper.split_helper(
-            graph, [node_anchors_div_input_size], output, 1, [1, 1])
+            graph, [node_anchors_div_input_size],
+            output,
+            1, [1, 1],
+            dtype=node.input_dtype('X', 0))
 
         new_anchor_shape = [1, int(num_anchors), 1, 1]
         node_new_anchor_shape = graph.make_node(
@@ -343,7 +351,9 @@ class YOLOBox():
         node_pred_box_y = model_name + "@_pred_box_y"
         node_pred_box_w = model_name + "@_pred_box_w"
         node_pred_box_h = model_name + "@_pred_box_h"
-
+        if node.input_dtype('X', 0) == paddle.float64:
+            node_pred_box_new_shape = graph.make_node(
+                'Cast', inputs=[node_pred_box_new_shape], to=TensorProto.FLOAT)
         node_pred_box_split = graph.make_node(
             'Split',
             inputs=[node_pred_box_new_shape],
@@ -353,6 +363,23 @@ class YOLOBox():
             ],
             axis=2)
 
+        if node.input_dtype('X', 0) == paddle.float64:
+            node_pred_box_x = graph.make_node(
+                'Cast',
+                inputs=[node_pred_box_x],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
+            node_pred_box_y = graph.make_node(
+                'Cast',
+                inputs=[node_pred_box_y],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
+            node_pred_box_w = graph.make_node(
+                'Cast',
+                inputs=[node_pred_box_w],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
+            node_pred_box_h = graph.make_node(
+                'Cast',
+                inputs=[node_pred_box_h],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
         node_number_two = graph.make_node(
             "Constant",
             inputs=[],
@@ -384,7 +411,8 @@ class YOLOBox():
         node_img_width = model_name + "@img_width"
         node_image_size_split = mapper_helper.split_helper(
             graph, [node_sqeeze_image_size], [node_img_height, node_img_width],
-            -1, [1, 1])
+            -1, [1, 1],
+            dtype=node.input_dtype('X', 0))
 
         node_img_width_cast = graph.make_node(
             'Cast',

@@ -17,6 +17,7 @@ import six
 import copy
 from paddle2onnx.constant import dtypes
 import paddle
+from onnx import TensorProto
 
 
 def is_static_shape(shape):
@@ -63,17 +64,45 @@ def squeeze_helper(graph, input, axes):
         return squeeze_node
 
 
-def split_helper(graph, inputs, outputs, axis, split):
+def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
+    if dtype == paddle.float64:
+        if not isinstance(inputs, (list, tuple)):
+            inputs = [inputs]
+        for i in range(len(inputs)):
+            inputs[i] = graph.make_node(
+                'Cast', inputs=[inputs[i]], to=TensorProto.FLOAT)
+
+    split_node = None
     if graph.opset_version < 13:
         split_node = graph.make_node(
             "Split", inputs=inputs, outputs=outputs, axis=axis, split=split)
-        return split_node
     else:
         split_const = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=split)
         split_node = graph.make_node(
             "Split", inputs=inputs + [split_const], outputs=outputs, axis=axis)
-        return split_node
+
+    if dtype == paddle.float64:
+        for i in range(len(inputs)):
+            inputs[i] = graph.make_node(
+                'Cast', inputs=[inputs[i]], to=TensorProto.DOUBLE)
+        if not isinstance(outputs, (list, tuple)):
+            outputs = [outputs]
+        for i in range(len(outputs)):
+            outputs[i] = graph.make_node(
+                'Cast', inputs=[outputs[i]], to=TensorProto.DOUBLE)
+
+        if not isinstance(split_node, (list, tuple)):
+            split_node = [split_node]
+
+        for i in range(len(split_node)):
+            split_node[i] = graph.make_node(
+                'Cast',
+                inputs=[split_node[i]],
+                outputs=[split_node[i]],
+                to=TensorProto.DOUBLE)
+
+    return split_node
 
 
 def constant_helper(graph, dtype, value, shape=None, outputs=[]):

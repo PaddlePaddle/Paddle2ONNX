@@ -83,7 +83,7 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
 
         scale_x_y = draw(st.floats(min_value=1.0, max_value=2.0))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator_data():
             input_data = randtool("int", 320, 640, img_size)
@@ -91,11 +91,16 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
 
         input_shape[1] = num * (5 + class_num)
 
+        opset_version = None
+        if dtype == "float64":
+            opset_version = [15]
+        else:
+            opset_version = [9, 11, 15]
         config = {
             "op_names": ["yolo_box"],
             "test_data_shapes": [input_shape, generator_data],
             "test_data_types": [[dtype], ["int32"]],
-            "opset_version": [9, 11, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "anchors": anchors,
             "class_num": class_num,
