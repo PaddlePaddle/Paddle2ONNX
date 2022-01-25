@@ -30,9 +30,6 @@ class Net(BaseNet):
         forward
         """
         x = paddle.unstack(inputs, axis=self.config['axis'])
-        # TODO there's bug with expand operator
-        # x = paddle.reshape(
-        #     x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
         return x
 
 
@@ -46,14 +43,13 @@ class TestUnstackConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=8), min_size=2, max_size=5))
+                    min_value=1, max_value=8), min_size=1, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
         axis = draw(
             st.integers(
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
-        input_shape = [2, 3, 5]
-        axis = 1
+
         config = {
             "op_names": ["unstack"],
             "test_data_shapes": [input_shape],

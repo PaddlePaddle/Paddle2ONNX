@@ -119,16 +119,48 @@ class Stack():
 
 @op_mapper('unstack')
 class Unstack():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (2, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        print(node)
-        graph.make_node(
+    def opset_2(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        axis = axis + ndim if axis < 0 else axis
+        output_y = graph.make_node(
             'Split',
             inputs=node.input('X'),
-            outputs=node.output('Y'),
-            axis=node.attr('axis'))
+            axis=axis,
+            outputs=len(node.output('Y')))
+        if isinstance(output_y, str):
+            output_y = [output_y]
+
+        for i in range(len(output_y)):
+            graph.make_node(
+                'Squeeze',
+                inputs=[output_y[i]],
+                axes=[axis],
+                outputs=[node.output('Y', i)])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        axis = axis + ndim if axis < 0 else axis
+        output_y = graph.make_node(
+            'Split',
+            inputs=node.input('X'),
+            axis=axis,
+            outputs=len(node.output('Y')))
+        if isinstance(output_y, str):
+            output_y = [output_y]
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [axis]})
+        for i in range(len(output_y)):
+            graph.make_node(
+                'Squeeze',
+                inputs=[output_y[i], axes_node],
+                outputs=[node.output('Y', i)])
 
 
 @op_mapper('expand_as_v2')
