@@ -68,7 +68,7 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
                 else:
                     axis = [-3, -1]
         config = {
-            "op_names": ["unsqueeze"],
+            "op_names": ["unsqueeze2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
