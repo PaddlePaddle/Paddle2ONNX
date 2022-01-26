@@ -57,7 +57,7 @@ class Net(BaseNet):
             inputs1 = inputs1.astype('int32')
             inputs2 = inputs2.astype('int32')
         x = op_api_map[self.config["op_names"]](inputs1, inputs2)
-        return x.astype('float32')
+        return x
 
 
 class TestLogicopsConvert(OPConvertAutoScanTest):
@@ -70,9 +70,7 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=2, max_size=4))
 
         if draw(st.booleans()):
             input2_shape = [input1_shape[-1]]
@@ -125,9 +123,7 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=2,
-                max_size=4))
+                    min_value=10, max_value=20), min_size=2, max_size=4))
 
         dtype = "bool"
         config = {
