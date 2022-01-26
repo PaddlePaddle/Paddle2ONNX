@@ -131,7 +131,7 @@ def clip_helper(graph, node, input, max, min, output=[]):
     return clip
 
 
-def dtype_alignment(graph, nodes, node_dtypes, return_dtype=False):
+def dtype_alignment(graph, nodes, node_dtypes, to=None):
     assert len(nodes) == len(
         node_dtypes), "Length of nodes and node_dtypes should be equal."
     dtype_order = [
@@ -156,15 +156,18 @@ def dtype_alignment(graph, nodes, node_dtypes, return_dtype=False):
     cast_dtype = dtype_order[max_index]
     cast_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[cast_dtype]
     for i, dtype in enumerate(node_dtypes):
-        index = dtype_order.index(dtype)
-        if index != max_index:
+        if to is not None:
+            cast_dtype = to
+            condition = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype_order.index(
+                dtype)] != cast_dtype
+        else:
+            condition = dtype_order.index(dtype) != max_index
+        if condition:
             cast_node = graph.make_node(
                 'Cast', inputs=[nodes[i]], to=cast_dtype)
             casted_nodes.append(cast_node)
         else:
             casted_nodes.append(nodes[i])
-    if return_dtype:
-        return casted_nodes, cast_dtype
     return casted_nodes
 
 
@@ -214,16 +217,14 @@ def shape_alignment(graph, nodes, node_shapes):
     return unsqueeze_nodes
 
 
-def get_tensor_list_node(graph, node, name, return_dtype=False):
+def get_tensor_list_node(graph, node, name, dtype=None):
     node_list = node.input(name)
     node_dtypes = [node.input_dtype(name, i) for i in range(len(node_list))]
-    node_list, ret_dtype = dtype_alignment(graph, node_list, node_dtypes, True)
+    node_list = dtype_alignment(graph, node_list, node_dtypes, dtype)
 
     node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
     node_list = shape_alignment(graph, node_list, node_shapes)
     node = graph.make_node("Concat", inputs=node_list, axis=0)
-    if return_dtype:
-        return node, ret_dtype
     return node
 
 
