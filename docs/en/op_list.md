@@ -121,7 +121,7 @@
 | prior_box | 1~12 |
 | prelu | 1~12 |
 | p_norm | 1~12 |
-| range | 11~12 |
+| range | 11~15 |
 | reciprocal | 1~12 |
 | reduce_mean | 1~12 |
 | reduce_max | 1~12 |
