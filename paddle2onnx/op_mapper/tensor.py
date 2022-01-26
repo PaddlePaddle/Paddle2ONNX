@@ -317,8 +317,8 @@ class Slice():
                             node_attr_tensor_list_name,
                             return_list=False,
                             dtype=None):
-        if node.input(node_attr_tensor_name) is not None and \
-                                                len(node.input(node_attr_tensor_name)) > 0:
+        if node.input(node_attr_tensor_name) is not None \
+                and len(node.input(node_attr_tensor_name)) > 0:
             value = node.input(node_attr_tensor_name)[0]
             if return_list:
                 value = mapper_helper.get_value_from_parameters(graph, value)
@@ -329,9 +329,8 @@ class Slice():
                     value = graph.make_node(
                         'Cast', inputs=[value], to=dtypes.ONNX.INT64)
 
-        elif return_list is False and node.input(
-                node_attr_tensor_list_name) is not None and \
-                                                len(node.input(node_attr_tensor_list_name)) > 0:
+        elif return_list is False and node.input(node_attr_tensor_list_name) is not None \
+                and len(node.input(node_attr_tensor_list_name)) > 0:
             value = mapper_helper.get_tensor_list_node(
                 graph, node, node_attr_tensor_list_name, dtype)
         else:
@@ -345,14 +344,13 @@ class Slice():
             graph, node, 'strides', 'StridesTensor', 'StridesTensorList', True)
         strides = [1] * len(axes) if strides is None else strides
         steps = [i for i, val in enumerate(strides) if val == 1]
-        assert len(steps) == len(axes),\
+        assert len(steps) == len(axes), \
             "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
         starts = cls.get_node_attr_value(graph, node, 'starts', 'StartsTensor',
                                          'StartsTensorList', True)
         ends = cls.get_node_attr_value(graph, node, 'ends', 'EndsTensor',
                                        'EndsTensorList', True)
-
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
             graph.make_node(
@@ -1216,7 +1214,7 @@ class Pad():
                     ]
             else:
                 raise Exception("In Pad op, padding can not be tensor" \
-                            "Please set opset version >= 11")
+                                "Please set opset version >= 11")
 
         value = None
         if node.attr('pad_value') is not None:
