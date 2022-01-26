@@ -18,7 +18,6 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
 
 
 class Net(BaseNet):
@@ -26,24 +25,20 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x):
+    def forward(self, inputs):
         """
         forward
         """
-        scale = self.config["scale"]
+        axis = self.config['axis']
         if self.config['isTensor']:
-            scale = paddle.to_tensor(scale)
-        x = paddle.scale(
-            x,
-            scale=scale,
-            bias=self.config["bias"],
-            bias_after_scale=self.config["bias_after_scale"])
+            axis = paddle.to_tensor(axis)
+        x = paddle.unsqueeze(inputs, axis=axis)
         return x
 
 
-class TestScaleConvert(OPConvertAutoScanTest):
+class TestUnsqueezeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scale
+    api: paddle.unsqueeze
     OPset version: 7, 9, 15
     """
 
@@ -51,25 +46,34 @@ class TestScaleConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=2, max_size=5))
-        # int32, int64 has a bug
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+                    min_value=2, max_value=6), min_size=2, max_size=5))
 
-        scale = draw(st.floats(min_value=-20, max_value=20))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
         isTensor = draw(st.booleans())
 
-        bias = draw(st.floats(min_value=-20, max_value=20))
-        bias_after_scale = draw(st.booleans())
-
+        axis_dtype = draw(st.sampled_from(["int", "list"]))
+        if axis_dtype == "list":
+            if len(input_shape) == 5:
+                axis = [0]
+            if len(input_shape) == 4:
+                axis = [0, 1]
+            if len(input_shape) == 3:
+                axis = [1, 2, 3]
+            if len(input_shape) == 2:
+                if draw(st.booleans()):
+                    axis = [0, 1, 2]
+                else:
+                    axis = [-3, -1]
         config = {
-            "op_names": ["scale"],
+            "op_names": ["unsqueeze"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "scale": scale,
-            "bias": bias,
-            "bias_after_scale": bias_after_scale,
+            "axis": axis,
             "isTensor": isTensor,
         }
 
