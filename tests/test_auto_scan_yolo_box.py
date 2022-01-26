@@ -79,7 +79,6 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
         downsample_ratio = draw(st.sampled_from([32, 16, 8]))
 
         clip_bbox = draw(st.booleans())
-        clip_bbox = True
 
         scale_x_y = draw(st.floats(min_value=1.0, max_value=2.0))
 

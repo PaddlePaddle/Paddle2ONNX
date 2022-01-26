@@ -37,7 +37,7 @@ class YOLOBox():
     node_pred_box_y2_sub_h = None
 
     @classmethod
-    def front(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         model_name = node.output('Boxes', 0)
         input_shape = node.input_shape('X', 0)
         mapper_helper.is_static_shape(input_shape)
@@ -57,8 +57,6 @@ class YOLOBox():
         cls.score_shape = [
             1, input_height * input_width * int(num_anchors), class_num
         ]
-
-        opset_version = graph.opset_version
 
         im_outputs = []
 
@@ -273,12 +271,11 @@ class YOLOBox():
         node_conf_clip = mapper_helper.clip_helper(graph, node, node_conf_sub,
                                                    float(MAX_FLOAT32), 0.0)
 
-        zeros = [0]
         node_zeros = graph.make_node(
             'Constant',
             inputs=[],
             dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
-            value=zeros)
+            value=[0])
 
         node_conf_clip_bool = graph.make_node(
             'Greater', inputs=[node_conf_clip, node_zeros])
@@ -421,130 +418,147 @@ class YOLOBox():
             to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)])
 
         cls.node_pred_box_x1_decode = graph.make_node(
-            'Mul', inputs=[node_pred_box_x1, node_img_width_cast])
+            'Mul',
+            inputs=[node_pred_box_x1, node_img_width_cast])  #boxes[box_idx]
 
         cls.node_pred_box_y1_decode = graph.make_node(
-            'Mul', inputs=[node_pred_box_y1, node_img_height_cast])
+            'Mul', inputs=[node_pred_box_y1,
+                           node_img_height_cast])  #boxes[box_idx + 1]
 
         cls.node_pred_box_x2_decode = graph.make_node(
-            'Mul', inputs=[node_pred_box_x2, node_img_width_cast])
+            'Mul',
+            inputs=[node_pred_box_x2, node_img_width_cast])  #boxes[box_idx + 2]
 
         cls.node_pred_box_y2_decode = graph.make_node(
-            'Mul', inputs=[node_pred_box_y2, node_img_height_cast])
+            'Mul', inputs=[node_pred_box_y2,
+                           node_img_height_cast])  #boxes[box_idx + 3]
 
-        node_number_one = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
-            value=[1])
+        if node.attr('clip_bbox'):
+            node_number_one = graph.make_node(
+                'Constant',
+                inputs=[],
+                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
+                value=[1])
 
-        node_new_img_height = graph.make_node(
-            'Sub', inputs=[node_img_height_cast, node_number_one])
+            node_new_img_height = graph.make_node(
+                'Sub', inputs=[node_img_height_cast, node_number_one])
 
-        node_new_img_width = graph.make_node(
-            'Sub', inputs=[node_img_width_cast, node_number_one])
+            node_new_img_width = graph.make_node(
+                'Sub', inputs=[node_img_width_cast, node_number_one])
 
-        cls.node_pred_box_x2_sub_w = graph.make_node(
-            'Sub', inputs=[cls.node_pred_box_x2_decode, node_new_img_width])
+            cls.node_pred_box_x2_sub_w = graph.make_node(
+                'Sub',
+                inputs=[cls.node_pred_box_x2_decode, node_new_img_width])
 
-        cls.node_pred_box_y2_sub_h = graph.make_node(
-            'Sub', inputs=[cls.node_pred_box_y2_decode, node_new_img_height])
+            cls.node_pred_box_y2_sub_h = graph.make_node(
+                'Sub',
+                inputs=[cls.node_pred_box_y2_decode, node_new_img_height])
 
-    @classmethod
-    def opset_9(cls, graph, node, **kw):
-        cls.front(graph, node, **kw)
-        node_pred_box_x1_clip = graph.make_node(
-            'Clip',
-            inputs=[cls.node_pred_box_x1_decode],
-            min=0.0,
-            max=float(MAX_FLOAT32))
+            if graph.opset_version <= 9:
+                node_pred_box_x1_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_x1_decode],
+                    min=0.0,
+                    max=float(MAX_FLOAT32))
 
-        node_pred_box_y1_clip = graph.make_node(
-            'Clip',
-            inputs=[cls.node_pred_box_y1_decode],
-            min=0.0,
-            max=float(MAX_FLOAT32))
+                node_pred_box_y1_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_y1_decode],
+                    min=0.0,
+                    max=float(MAX_FLOAT32))
 
-        node_pred_box_x2_clip = graph.make_node(
-            'Clip',
-            inputs=[cls.node_pred_box_x2_sub_w],
-            min=0.0,
-            max=float(MAX_FLOAT32))
+                node_pred_box_x2_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_x2_sub_w],
+                    min=0.0,
+                    max=float(MAX_FLOAT32))
 
-        node_pred_box_y2_clip = graph.make_node(
-            'Clip',
-            inputs=[cls.node_pred_box_y2_sub_h],
-            min=0.0,
-            max=float(MAX_FLOAT32))
+                node_pred_box_y2_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_y2_sub_h],
+                    min=0.0,
+                    max=float(MAX_FLOAT32))
 
-        node_pred_box_x2_res = graph.make_node(
-            'Sub', inputs=[cls.node_pred_box_x2_decode, node_pred_box_x2_clip])
+                node_pred_box_x2_res = graph.make_node(
+                    'Sub',
+                    inputs=[
+                        cls.node_pred_box_x2_decode, node_pred_box_x2_clip
+                    ])
 
-        node_pred_box_y2_res = graph.make_node(
-            'Sub', inputs=[cls.node_pred_box_y2_decode, node_pred_box_y2_clip])
+                node_pred_box_y2_res = graph.make_node(
+                    'Sub',
+                    inputs=[
+                        cls.node_pred_box_y2_decode, node_pred_box_y2_clip
+                    ])
 
-        node_pred_box_result = graph.make_node(
-            'Concat',
-            inputs=[
-                node_pred_box_x1_clip, node_pred_box_y1_clip,
-                node_pred_box_x2_res, node_pred_box_y2_res
-            ],
-            outputs=node.output('Boxes'),
-            axis=-1)
+                node_pred_box_result = graph.make_node(
+                    'Concat',
+                    inputs=[
+                        node_pred_box_x1_clip, node_pred_box_y1_clip,
+                        node_pred_box_x2_res, node_pred_box_y2_res
+                    ],
+                    outputs=node.output('Boxes'),
+                    axis=-1)
+            else:
+                min_const = graph.make_node(
+                    'Constant',
+                    inputs=[],
+                    dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X',
+                                                                        0)],
+                    value=0.0)
 
-        node_score_shape = graph.make_node(
-            "Constant",
-            inputs=[],
-            dtype=dtypes.ONNX.INT64,
-            value=cls.score_shape)
+                max_const = graph.make_node(
+                    'Constant',
+                    inputs=[],
+                    dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X',
+                                                                        0)],
+                    value=MAX_FLOAT32)
 
-        node_score_new_shape = graph.make_node(
-            'Reshape',
-            inputs=[cls.node_score, node_score_shape],
-            outputs=node.output('Scores'))
+                node_pred_box_x1_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_x1_decode, min_const, max_const])
 
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        cls.front(graph, node, **kw)
-        min_const = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
-            value=0.0)
+                node_pred_box_y1_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_y1_decode, min_const, max_const])
 
-        max_const = graph.make_node(
-            'Constant',
-            inputs=[],
-            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
-            value=MAX_FLOAT32)
+                node_pred_box_x2_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_x2_sub_w, min_const, max_const])
 
-        node_pred_box_x1_clip = graph.make_node(
-            'Clip', inputs=[cls.node_pred_box_x1_decode, min_const, max_const])
+                node_pred_box_y2_clip = graph.make_node(
+                    'Clip',
+                    inputs=[cls.node_pred_box_y2_sub_h, min_const, max_const])
 
-        node_pred_box_y1_clip = graph.make_node(
-            'Clip', inputs=[cls.node_pred_box_y1_decode, min_const, max_const])
+                node_pred_box_x2_res = graph.make_node(
+                    'Sub',
+                    inputs=[
+                        cls.node_pred_box_x2_decode, node_pred_box_x2_clip
+                    ])
 
-        node_pred_box_x2_clip = graph.make_node(
-            'Clip', inputs=[cls.node_pred_box_x2_sub_w, min_const, max_const])
+                node_pred_box_y2_res = graph.make_node(
+                    'Sub',
+                    inputs=[
+                        cls.node_pred_box_y2_decode, node_pred_box_y2_clip
+                    ])
 
-        node_pred_box_y2_clip = graph.make_node(
-            'Clip', inputs=[cls.node_pred_box_y2_sub_h, min_const, max_const])
-
-        node_pred_box_x2_res = graph.make_node(
-            'Sub', inputs=[cls.node_pred_box_x2_decode, node_pred_box_x2_clip])
-
-        node_pred_box_y2_res = graph.make_node(
-            'Sub', inputs=[cls.node_pred_box_y2_decode, node_pred_box_y2_clip])
-
-        node_pred_box_result = graph.make_node(
-            'Concat',
-            inputs=[
-                node_pred_box_x1_clip, node_pred_box_y1_clip,
-                node_pred_box_x2_res, node_pred_box_y2_res
-            ],
-            outputs=node.output('Boxes'),
-            axis=-1)
-
+                node_pred_box_result = graph.make_node(
+                    'Concat',
+                    inputs=[
+                        node_pred_box_x1_clip, node_pred_box_y1_clip,
+                        node_pred_box_x2_res, node_pred_box_y2_res
+                    ],
+                    outputs=node.output('Boxes'),
+                    axis=-1)
+        else:
+            node_pred_box_result = graph.make_node(
+                'Concat',
+                inputs=[
+                    cls.node_pred_box_x1_decode, cls.node_pred_box_y1_decode,
+                    cls.node_pred_box_x2_decode, cls.node_pred_box_y2_decode
+                ],
+                outputs=node.output('Boxes'),
+                axis=-1)
         node_score_shape = graph.make_node(
             "Constant",
             inputs=[],
