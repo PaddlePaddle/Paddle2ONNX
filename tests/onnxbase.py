@@ -253,8 +253,6 @@ class APIOnnx(object):
             opset_version=version,
             get_paddle_graph=True)
 
-        if len(paddle_graph.node_map.keys()) == 0:
-            return
         included = False
         paddle_op_list = []
         for op in self.ops:
@@ -263,6 +261,10 @@ class APIOnnx(object):
                 if op == node.type:
                     included = True
                     break
+
+        if len(paddle_graph.node_map.keys()) == 0 and len(
+                self.ops) == 1 and self.ops[0] == '':
+            included = True
 
         assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
             self.ops, paddle_op_list)
