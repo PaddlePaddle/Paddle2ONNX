@@ -309,48 +309,20 @@ class Slice():
         return None
 
     @classmethod
-    def get_node_attr_value(cls,
-                            graph,
-                            node,
-                            node_attr_name,
-                            node_attr_tensor_name,
-                            node_attr_tensor_list_name,
-                            return_list=False,
-                            dtype=None):
-        if node.input(node_attr_tensor_name) is not None \
-                and len(node.input(node_attr_tensor_name)) > 0:
-            value = node.input(node_attr_tensor_name)[0]
-            if return_list:
-                value = mapper_helper.get_value_from_parameters(graph, value)
-            else:
-                input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
-                    node_attr_tensor_name, 0)]
-                if input_dtype != dtype:
-                    value = graph.make_node(
-                        'Cast', inputs=[value], to=dtypes.ONNX.INT64)
-
-        elif return_list is False and node.input(node_attr_tensor_list_name) is not None \
-                and len(node.input(node_attr_tensor_list_name)) > 0:
-            value = mapper_helper.get_tensor_list_node(
-                graph, node, node_attr_tensor_list_name, dtype)
-        else:
-            value = node.attr(node_attr_name)
-        return value
-
-    @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides = cls.get_node_attr_value(
+        strides = mapper_helper.get_node_attr_value(
             graph, node, 'strides', 'StridesTensor', 'StridesTensorList', True)
         strides = [1] * len(axes) if strides is None else strides
         steps = [i for i, val in enumerate(strides) if val == 1]
         assert len(steps) == len(axes), \
             "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
-        starts = cls.get_node_attr_value(graph, node, 'starts', 'StartsTensor',
-                                         'StartsTensorList', True)
-        ends = cls.get_node_attr_value(graph, node, 'ends', 'EndsTensor',
-                                       'EndsTensorList', True)
+        starts = mapper_helper.get_node_attr_value(
+            graph, node, 'starts', 'StartsTensor', 'StartsTensorList', True)
+        ends = mapper_helper.get_node_attr_value(
+            graph, node, 'ends', 'EndsTensor', 'EndsTensorList', True)
+
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
             graph.make_node(
@@ -376,7 +348,7 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides = cls.get_node_attr_value(
+        strides = mapper_helper.get_node_attr_value(
             graph,
             node,
             'strides',
@@ -385,20 +357,21 @@ class Slice():
             dtype=dtypes.ONNX.INT64)
         strides = [1] * len(axes) if strides is None else strides
 
-        starts = cls.get_node_attr_value(
+        starts = mapper_helper.get_node_attr_value(
             graph,
             node,
             'starts',
             'StartsTensor',
             'StartsTensorList',
             dtype=dtypes.ONNX.INT64)
-        ends = cls.get_node_attr_value(
+        ends = mapper_helper.get_node_attr_value(
             graph,
             node,
             'ends',
             'EndsTensor',
             'EndsTensorList',
             dtype=dtypes.ONNX.INT64)
+
         if isinstance(starts, list):
             starts_node = graph.make_node(
                 'Constant',

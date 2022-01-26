@@ -240,3 +240,31 @@ def get_value_from_parameters(graph, input_node):
             data = graph.parameters[input_node].attribute[0].t.int64_data
         value = [val for _, val in enumerate(data)]
     return value
+
+
+def get_node_attr_value(graph,
+                        node,
+                        node_attr_name,
+                        node_attr_tensor_name,
+                        node_attr_tensor_list_name,
+                        return_list=False,
+                        dtype=None):
+    if node.input(node_attr_tensor_name) is not None \
+            and len(node.input(node_attr_tensor_name)) > 0:
+        value = node.input(node_attr_tensor_name)[0]
+        if return_list:
+            value = get_value_from_parameters(graph, value)
+        else:
+            input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                node_attr_tensor_name, 0)]
+            if input_dtype != dtype:
+                value = graph.make_node(
+                    'Cast', inputs=[value], to=dtypes.ONNX.INT64)
+
+    elif return_list is False and node.input(node_attr_tensor_list_name) is not None \
+            and len(node.input(node_attr_tensor_list_name)) > 0:
+        value = get_tensor_list_node(graph, node, node_attr_tensor_list_name,
+                                     dtype)
+    else:
+        value = node.attr(node_attr_name)
+    return value
