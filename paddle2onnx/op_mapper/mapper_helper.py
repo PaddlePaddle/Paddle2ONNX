@@ -229,41 +229,43 @@ def get_tensor_list_node(graph, node, name, dtype=None):
 
 
 def get_value_from_parameters(graph, input_node):
-    if input_node not in graph.parameters:
-        raise Exception(
-            "Currently does not support the node {} parameter as input tensor!,"
-            "Try converting with opset_version > {} ".format(
-                input_node, graph.opset_version))
-    else:
-        data = graph.parameters[input_node].attribute[0].t.int32_data
-        if data is None or len(data) < 1:
-            data = graph.parameters[input_node].attribute[0].t.int64_data
-        value = [val for _, val in enumerate(data)]
+    assert input_node in graph.parameters, "{} is not in graph.parameters".format(
+        input_node)
+    data = graph.parameters[input_node].attribute[0].t.int32_data
+    if data is None or len(data) < 1:
+        data = graph.parameters[input_node].attribute[0].t.int64_data
+    value = [val for _, val in enumerate(data)]
     return value
 
 
 def get_node_attr_value(graph,
                         node,
-                        node_attr_name,
-                        node_attr_tensor_name,
-                        node_attr_tensor_list_name,
+                        attr_name,
+                        attr_tensor_name,
+                        attr_tensor_list_name,
                         return_list=False,
-                        dtype=None):
-    if node.input(node_attr_tensor_name) is not None \
-            and len(node.input(node_attr_tensor_name)) > 0:
-        value = node.input(node_attr_tensor_name)[0]
+                        dtype=None,
+                        opset_version=10):
+    attr_tensor = node.input(attr_tensor_name)
+    attr_tensor_list = node.input(attr_tensor_list_name)
+    if attr_tensor is not None and len(attr_tensor) > 0:
+        value = node.input(attr_tensor_name)[0]
         if return_list:
-            value = get_value_from_parameters(graph, value)
+            try:
+                value = get_value_from_parameters(graph, value)
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the {attr_name} parameter as input tensor, Try converting with opset_version >={}".
+                    format(attr_name, opset_version) + str(e))
         else:
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
-                node_attr_tensor_name, 0)]
+                attr_tensor_name, 0)]
             if input_dtype != dtype:
                 value = graph.make_node(
                     'Cast', inputs=[value], to=dtypes.ONNX.INT64)
-    elif return_list is False and node.input(node_attr_tensor_list_name) is not None \
-            and len(node.input(node_attr_tensor_list_name)) > 0:
-        value = get_tensor_list_node(graph, node, node_attr_tensor_list_name,
-                                     dtype)
+    elif return_list is False and attr_tensor_list is not None \
+            and len(attr_tensor_list) > 0:
+        value = get_tensor_list_node(graph, node, attr_tensor_list_name, dtype)
     else:
-        value = node.attr(node_attr_name)
+        value = node.attr(attr_name)
     return value

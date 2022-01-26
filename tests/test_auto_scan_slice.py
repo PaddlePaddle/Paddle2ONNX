@@ -274,5 +274,49 @@ class TestSliceConvert3(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
+class Net4(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        x = inputs[1:2, 2, :]
+        return x
+
+
+class TestSliceConvert4(OPConvertAutoScanTest):
+    """
+    api: paddle.slice
+    OPset version: 7, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=6), min_size=2, max_size=5))
+
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        input_shape = [5, 5, 5]
+
+        config = {
+            "op_names": ["slice"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 9, 15],
+            "input_spec_shape": [],
+        }
+
+        models = Net4(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
 if __name__ == "__main__":
     unittest.main()

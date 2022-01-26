@@ -35,7 +35,13 @@ class Concat():
         node_axis = node.input('AxisTensor')
         if node_axis is not None and len(node_axis) > 0:
             axis_node = node.input('AxisTensor')[0]
-            axis = mapper_helper.get_value_from_parameters(graph, axis_node)[0]
+            try:
+                axis = mapper_helper.get_value_from_parameters(graph,
+                                                               axis_node)[0]
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor"
+                    + str(e))
         else:
             axis = node.attr('axis')
         if axis < 0:
@@ -416,11 +422,12 @@ class Slice():
                     node.input('Input')[0], starts_node, ends_node, axes_node,
                     steps_node
                 ])
+            axes_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=decrease_axis)
             graph.make_node(
-                'Squeeze',
-                inputs=[sliced],
-                outputs=node.output('Out'),
-                axes=decrease_axis)
+                "Squeeze",
+                inputs=[sliced, axes_node],
+                outputs=node.output('Out'))
 
 
 @op_mapper(['sequence_expand'])
@@ -772,7 +779,13 @@ class Gather():
         axis = node.attr('axis')
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
-            axis = mapper_helper.get_value_from_parameters(graph, axis_node)[0]
+            try:
+                axis = mapper_helper.get_value_from_parameters(graph,
+                                                               axis_node)[0]
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor"
+                    + str(e))
         if axis is None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
@@ -792,7 +805,13 @@ class Gather():
         axis = node.attr('axis')
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
-            axis = mapper_helper.get_value_from_parameters(graph, axis_node)[0]
+            try:
+                axis = mapper_helper.get_value_from_parameters(graph,
+                                                               axis_node)[0]
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the axis parameter as input tensor"
+                    + str(e))
         if axis is None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
@@ -1022,7 +1041,12 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
-            axes = mapper_helper.get_value_from_parameters(graph, axes_node)
+            try:
+                axes = mapper_helper.get_value_from_parameters(graph, axes_node)
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the axes parameter as input tensor"
+                    + str(e))
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
