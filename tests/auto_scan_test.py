@@ -153,7 +153,12 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         if len(input_specs) == 0:
             for test_data in test_data_shapes:
-                input_specs.append([-1] * len(test_data))
+                if isfunction(test_data):
+                    data = test_data()
+                    input_specs.append([-1] * len(data.shape))
+                else:
+                    input_specs.append([-1] * len(test_data))
+        # logging.info("Now Run >>> input_specs: {}".format(input_specs))
 
         self.num_ran_models += 1
 
