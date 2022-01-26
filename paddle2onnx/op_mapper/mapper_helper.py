@@ -260,7 +260,6 @@ def get_node_attr_value(graph,
             if input_dtype != dtype:
                 value = graph.make_node(
                     'Cast', inputs=[value], to=dtypes.ONNX.INT64)
-
     elif return_list is False and node.input(node_attr_tensor_list_name) is not None \
             and len(node.input(node_attr_tensor_list_name)) > 0:
         value = get_tensor_list_node(graph, node, node_attr_tensor_list_name,
