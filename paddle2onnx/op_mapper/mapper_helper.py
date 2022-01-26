@@ -156,12 +156,12 @@ def dtype_alignment(graph, nodes, node_dtypes, to=None):
     cast_dtype = dtype_order[max_index]
     cast_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[cast_dtype]
     for i, dtype in enumerate(node_dtypes):
+        index = dtype_order.index(dtype)
         if to is not None:
             cast_dtype = to
-            condition = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype_order.index(
-                dtype)] != cast_dtype
+            condition = dtypes.DTYPE_PADDLE_ONNX_MAP[index] != cast_dtype
         else:
-            condition = dtype_order.index(dtype) != max_index
+            condition = index != max_index
         if condition:
             cast_node = graph.make_node(
                 'Cast', inputs=[nodes[i]], to=cast_dtype)
