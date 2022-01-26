@@ -25,25 +25,20 @@ class Net(BaseNet):
     simple Net
     """
 
-    def __init__(self, config=None):
-        super(Net, self).__init__(config)
-        output_size = self.config['output_size']
-        data_format = self.config['data_format']
-
-        self.max_pool = paddle.nn.AdaptiveAvgPool2D(
-            output_size, data_format=data_format)
-
     def forward(self, inputs):
         """
         forward
         """
-        x = self.max_pool(inputs)
+        output_size = self.config['output_size']
+        data_format = self.config['data_format']
+        x = paddle.nn.functional.adaptive_avg_pool2d(
+            inputs, output_size=output_size, data_format=data_format)
         return x
 
 
-class TestGroupNormConvert(OPConvertAutoScanTest):
+class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.nn.group_norm
+    api: paddle.nn.functional.adaptive_avg_pool2d
     OPset version: 7, 9, 15
     """
 
@@ -60,7 +55,7 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
         output_size = 3
 
         config = {
-            "op_names": ["pool"],
+            "op_names": ["pool2d"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
