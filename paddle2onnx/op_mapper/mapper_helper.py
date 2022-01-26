@@ -131,7 +131,7 @@ def clip_helper(graph, node, input, max, min, output=[]):
     return clip
 
 
-def dtype_alignment(graph, nodes, node_dtypes):
+def dtype_alignment(graph, nodes, node_dtypes, return_dtype=False):
     assert len(nodes) == len(
         node_dtypes), "Length of nodes and node_dtypes should be equal."
     dtype_order = [
@@ -163,6 +163,8 @@ def dtype_alignment(graph, nodes, node_dtypes):
             casted_nodes.append(cast_node)
         else:
             casted_nodes.append(nodes[i])
+    if return_dtype:
+        return casted_nodes, cast_dtype
     return casted_nodes
 
 
@@ -212,23 +214,25 @@ def shape_alignment(graph, nodes, node_shapes):
     return unsqueeze_nodes
 
 
-def get_tensor_list_node(graph, node, name):
+def get_tensor_list_node(graph, node, name, return_dtype=False):
     node_list = node.input(name)
     node_dtypes = [node.input_dtype(name, i) for i in range(len(node_list))]
-    node_list = dtype_alignment(graph, node_list, node_dtypes)
+    node_list, ret_dtype = dtype_alignment(graph, node_list, node_dtypes, True)
 
     node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
     node_list = shape_alignment(graph, node_list, node_shapes)
     node = graph.make_node("Concat", inputs=node_list, axis=0)
+    if return_dtype:
+        return node, ret_dtype
     return node
 
 
 def get_value_from_parameters(graph, input_node):
     if input_node not in graph.parameters:
         raise Exception(
-            "Currently does not support the input node parameter as input tensor!,"
-            "Try converting with opset_version > { } ".format(
-                graph.opset_version))
+            "Currently does not support the node {} parameter as input tensor!,"
+            "Try converting with opset_version > {} ".format(
+                input_node, graph.opset_version))
     else:
         data = graph.parameters[input_node].attribute[0].t.int32_data
         if data is None or len(data) < 1:
