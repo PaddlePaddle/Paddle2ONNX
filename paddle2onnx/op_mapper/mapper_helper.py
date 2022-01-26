@@ -255,7 +255,7 @@ def get_node_attr_value(graph,
                 value = get_value_from_parameters(graph, value)
             except Exception as e:
                 raise Exception(
-                    "Currently does not support the {attr_name} parameter as input tensor, Try converting with opset_version >={}".
+                    "Currently does not support the {} parameter as input tensor, Try converting with opset_version >={}".
                     format(attr_name, opset_version) + str(e))
         else:
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
