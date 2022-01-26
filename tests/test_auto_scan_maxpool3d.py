@@ -25,34 +25,30 @@ class Net(BaseNet):
     simple Net
     """
 
-    def __init__(self, config=None):
-        super(Net, self).__init__(config)
+    def forward(self, inputs):
+        """
+        forward
+        """
         kernel_size = self.config['kernel_size']
         stride = self.config['stride']
         padding = self.config['padding']
         ceil_mode = self.config['ceil_mode']
         return_mask = self.config['return_mask']
         data_format = self.config['data_format']
-
-        self.max_pool = paddle.nn.MaxPool3D(
+        x = paddle.nn.functional.max_pool3d(
+            inputs,
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
-            ceil_mode=ceil_mode,
             return_mask=return_mask,
+            ceil_mode=ceil_mode,
             data_format=data_format)
-
-    def forward(self, inputs):
-        """
-        forward
-        """
-        x = self.max_pool(inputs)
         return x
 
 
-class TestGroupNormConvert(OPConvertAutoScanTest):
+class TestMaxpool3dConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.nn.group_norm
+    api: paddle.nn.functional.max_pool3d
     OPset version: 7, 9, 15
     """
 
@@ -60,9 +56,9 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=4, max_size=4))
+                    min_value=1, max_value=10), min_size=5, max_size=5))
 
-        input_shape = [3, 1, 10, 10, 10]
+        # input_shape = [3, 1, 10, 10, 10]
         dtype = draw(st.sampled_from(["float32"]))
         data_format = draw(st.sampled_from(["NCDHW"]))
 

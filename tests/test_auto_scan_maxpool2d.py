@@ -46,9 +46,9 @@ class Net(BaseNet):
         return x
 
 
-class TestGroupNormConvert(OPConvertAutoScanTest):
+class TestMaxpool2dConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.nn.group_norm
+    api: paddle.nn.functional.max_pool2d
     OPset version: 7, 9, 15
     """
 
@@ -56,8 +56,8 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=4, max_size=4))
-        input_shape = [3, 2, 10, 10]
+                    min_value=10, max_value=10), min_size=4, max_size=4))
+        # input_shape = [3, 2, 10, 10]
         dtype = draw(st.sampled_from(["float32"]))
         data_format = draw(st.sampled_from(["NCHW"]))
 
@@ -133,7 +133,7 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
             opset_version = [10, 15]
 
         if padding == "VALID":
-            return_mask = False
+            ceil_mode = False
 
         config = {
             "op_names": ["pool2d"],
