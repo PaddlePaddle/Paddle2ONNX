@@ -55,22 +55,52 @@ class TestMaxpool1dConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=10), min_size=3, max_size=3))
+                    min_value=10, max_value=20), min_size=3, max_size=3))
 
         # input_shape = [3, 1, 10]
         dtype = draw(st.sampled_from(["float32"]))
 
-        kernel_size = 2
-        stride = None
-        padding = 0
-        ceil_mode = False
         return_mask = False
+        ceil_mode = draw(st.booleans())
+
+        kernel_type = draw(st.sampled_from(["int", "list"]))
+        if kernel_type == "int":
+            kernel_size = draw(st.integers(min_value=7, max_value=10))
+        elif kernel_type == "list":
+            kernel_size = draw(
+                st.lists(
+                    st.integers(
+                        min_value=7, max_value=10),
+                    min_size=1,
+                    max_size=1))
+
+        stride_type = draw(st.sampled_from(["None", "int", "list"]))
+        if stride_type == "int":
+            stride = draw(st.integers(min_value=1, max_value=5))
+        elif stride_type == "list":
+            stride = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=1,
+                    max_size=1))
+        else:
+            stride = None
+
+        padding = 0
+
+        opset_version = [[7, 9, 15]]
+        if ceil_mode:
+            opset_version = [10, 15]
+
+        if padding == "VALID":
+            ceil_mode = False
 
         config = {
             "op_names": ["pool2d"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "kernel_size": kernel_size,
             "stride": stride,
