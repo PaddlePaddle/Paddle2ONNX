@@ -454,7 +454,7 @@ class YOLOBox():
                 'Sub',
                 inputs=[cls.node_pred_box_y2_decode, node_new_img_height])
 
-            if graph.opset_version <= 9:
+            if graph.opset_version < 11:
                 node_pred_box_x1_clip = graph.make_node(
                     'Clip',
                     inputs=[cls.node_pred_box_x1_decode],
