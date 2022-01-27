@@ -15,6 +15,7 @@
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
         test_split.py \
+        test_isnan.py \
         test_uniform.py"
 bug=0
 export PY_CMD=$1
