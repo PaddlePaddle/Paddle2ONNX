@@ -70,7 +70,7 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
         else:
             input_shape[0] = 1
         config = {
-            "op_names": ["squeeze"],
+            "op_names": ["squeeze2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
