@@ -75,6 +75,7 @@ class TestUniqueConvert(OPConvertAutoScanTest):
             "return_counts": return_counts,
             "axis": axis,
             "dtype": xdtype,
+            "use_gpu": False,
         }
 
         models = Net(config)
