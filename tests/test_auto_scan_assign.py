@@ -30,6 +30,7 @@ class Net(BaseNet):
         forward
         """
         np.random.seed(13)
+        # float64 has a bug
         x1 = np.random.random(self.config['input_shape']).astype("float32")
         if self.config['input_dtype'] == "ndarray":
             x = x1
