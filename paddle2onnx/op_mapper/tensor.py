@@ -21,8 +21,6 @@ from paddle2onnx.op_mapper import mapper_helper
 import copy
 import paddle
 
-from sys import maxsize as maxsize
-
 
 @op_mapper('concat')
 class Concat():
@@ -313,7 +311,7 @@ class Roll():
                     inputs=[input_x],
                     axes=[dims[i]],
                     starts=[-shifts[i]],
-                    ends=[maxsize])
+                    ends=[60000])
             else:
                 axes_node = graph.make_node(
                     'Constant',
@@ -326,7 +324,7 @@ class Roll():
                 ends_node = graph.make_node(
                     'Constant',
                     attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [maxsize]})
+                           'value': [60000]})
                 shape = graph.make_node(
                     "Slice",
                     inputs=[input_x, starts_node, ends_node, axes_node])
