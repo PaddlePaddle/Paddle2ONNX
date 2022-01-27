@@ -75,7 +75,10 @@ class TestDropoutConvert(OPConvertAutoScanTest):
             "p": p
         }
         if axis is not None:
-            config["op_names"] = ['']
+            if mode in ["upscale_in_train"]:
+                config["op_names"] = ['']
+            else:
+                config["op_names"] = ['scale']
         models = Net(config)
 
         return (config, models)
