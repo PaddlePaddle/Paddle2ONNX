@@ -61,7 +61,7 @@ class TestAssignConvert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["tensor", "ndarray"]))
 
         config = {
-            "op_names": ["assign"],
+            "op_names": ["assign_value"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
