@@ -139,7 +139,7 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
             "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
             "opset_version": [15],
-            "input_spec_shape": [],
+            "input_spec_shape": None,
             "mean": mean,
             "std": std,
             "out_dtype": out_dtype,
