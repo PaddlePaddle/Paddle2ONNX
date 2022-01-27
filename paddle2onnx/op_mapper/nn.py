@@ -193,8 +193,9 @@ class Pool():
             if len(pads) == 2:
                 pads = pads + pads
             elif len(pads) == 4:
+                # [pad_height_top, pad_height_bottom, pad_width_left, pad_width_right]
                 pads = [pads[i] for i in [0, 2, 1, 3]]
-
+            # NCHW (2,3)
             if input_shape[2] > 0 and input_shape[2] + pads[0] < k_size[0]:
                 k_size[0] = input_shape[2] + pads[0]
             if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
@@ -328,18 +329,33 @@ class Pool3D():
         else:
             input_shape = node.input_shape('X', 0)
             k_size = node.attr('ksize')
-            paddings = node.attr('paddings')
-            if input_shape[2] > 0 and input_shape[2] + paddings[0] < k_size[0]:
-                k_size[0] = input_shape[2] + paddings[0]
-            if input_shape[3] > 0 and input_shape[3] + paddings[1] < k_size[1]:
-                k_size[1] = input_shape[3] + paddings[1]
-            if input_shape[4] > 0 and input_shape[4] + paddings[2] < k_size[2]:
-                k_size[2] = input_shape[4] + paddings[2]
+            pads = node.attr('paddings')
+            strides = node.attr('strides')
+
+            if len(pads) == 3:
+                pads = pads + pads
+            elif len(pads) == 6:
+                # [pad_depth_front, pad_depth_back, pad_height_top, pad_height_bottom, pad_width_left, pad_width_right]
+                pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+            # NCDHW (2,3,4)
+            if input_shape[2] > 0 and input_shape[2] + pads[0] < k_size[0]:
+                k_size[0] = input_shape[2] + pads[0]
+            if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
+                k_size[1] = input_shape[3] + pads[1]
+            if input_shape[4] > 0 and input_shape[4] + pads[2] < k_size[2]:
+                k_size[2] = input_shape[4] + pads[2]
+
             attrs = {
                 'kernel_shape': k_size,
-                'strides': node.attr('strides'),
-                'pads': node.attr('paddings') + node.attr('paddings'),
+                'strides': strides,
             }
+            auto_pad = node.attr('padding_algorithm')
+            if auto_pad == 'SAME':
+                attrs['auto_pad'] = 'SAME_UPPER'
+            elif auto_pad == 'VALID':
+                attrs['auto_pad'] = 'VALID'
+            else:
+                attrs['pads'] = pads
             if node.attr('ceil_mode') and graph.opset_version < 10:
                 raise Exception(
                     "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"

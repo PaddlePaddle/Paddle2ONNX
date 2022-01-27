@@ -90,7 +90,6 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
 
         padding_type = draw(
             st.sampled_from(["None", "str", "int", "list2", "list4", "list8"]))
-
         if padding_type == "str":
             padding = draw(st.sampled_from(["SAME", "VALID"]))
         elif padding_type == "int":
