@@ -53,7 +53,6 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
         data_format = draw(st.sampled_from(["NCHW"]))
 
         output_size = 3
-
         config = {
             "op_names": ["pool2d"],
             "test_data_shapes": [input_shape],
