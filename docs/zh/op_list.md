@@ -115,8 +115,8 @@
 | pad2d | 1~12 |
 | pad3d | 1~12 |
 | pixel_shuffle | 11~15 |
-| pool2d | 1~12 | limited supported |
-| pool3d | 1~12 | limited supported |
+| pool2d | 1~15 | limited supported |
+| pool3d | 1~15 | limited supported |
 | pow | 8~12 |
 | prior_box | 1~12 |
 | prelu | 1~12 |
