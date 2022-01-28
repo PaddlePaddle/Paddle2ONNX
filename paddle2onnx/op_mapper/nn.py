@@ -116,7 +116,7 @@ class ConvTranspose():
 
 @op_mapper(['pool2d', 'pool3d'])
 class Pool():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
     pool_type = {
         'max': ('MaxPool', 'GlobalMaxPool'),
         'avg': ('AveragePool', 'GlobalAveragePool')
