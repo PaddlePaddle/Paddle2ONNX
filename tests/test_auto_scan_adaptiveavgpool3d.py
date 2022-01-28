@@ -46,13 +46,29 @@ class TestAdaptiveAvgPool3dConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=4, max_size=4))
+                    min_value=10, max_value=12), min_size=5, max_size=5))
 
-        input_shape = [3, 1, 10, 10, 10]
+        if input_shape[2] % 2 != 0:
+            input_shape[2] = input_shape[2] + 1
+        if input_shape[3] % 2 != 0:
+            input_shape[3] = input_shape[3] + 1
+        if input_shape[4] % 2 != 0:
+            input_shape[4] = input_shape[4] + 1
+
         dtype = draw(st.sampled_from(["float32"]))
         data_format = draw(st.sampled_from(["NCDHW"]))
 
-        output_size = 3
+        output_type = draw(st.sampled_from(["int", "list"]))
+        if output_type == "int":
+            output_size = draw(st.integers(min_value=2, max_value=3))
+        elif output_type == "list":
+            output_size = draw(
+                st.lists(
+                    st.integers(
+                        min_value=2, max_value=3),
+                    min_size=3,
+                    max_size=3))
+
         config = {
             "op_names": ["pool3d"],
             "test_data_shapes": [input_shape],
