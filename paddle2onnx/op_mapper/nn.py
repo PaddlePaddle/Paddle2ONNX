@@ -36,9 +36,10 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
-                            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs[
+            'data_format'] == "AnyLayout", \
+            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            "is %s." % node.attrs['data_format']
         # onnx padding is [x1_begin, x2_begin...x1_end, x2_end, ...]
         if len(pads) == 2 or len(pads) == 3:
             pads = pads + pads
@@ -113,7 +114,7 @@ class ConvTranspose():
             attrs=attrs)
 
 
-@op_mapper('pool2d')
+@op_mapper(['pool2d', 'pool3d'])
 class Pool():
     support_opset_version_range = (1, 12)
     pool_type = {
@@ -134,242 +135,107 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == "AnyLayout",  \
-                            "The conv data format should be 'NCHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
-        if node.attr('global_pooling') or (node.attr('adaptive') and
-                                           node.attr('ksize') == [1, 1]):
+        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout", \
+            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+            "is %s." % node.attrs['data_format']
+        k_size = node.attr('ksize')
+        if node.attr('global_pooling') or (
+                node.attr('adaptive') and
+            (k_size == [1, 1] or k_size == [1, 1, 1])):
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][1],
                 inputs=node.input('X'),
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
-            # if pool is adaptive, check if input shape of pool is fixed.
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
-            input_h, input_w = node.input_shape('X', 0)[2:]
-            output_h, output_w = node.output_shape('Out', 0)[2:]
-            stride_h = int(input_h / output_h)
-            stride_w = int(input_w / output_w)
+            cls.adaptive_pool(graph, node)
+        else:
+            cls.non_adaptive_pool(graph, node)
 
-            kernel_h = input_h - (output_h - 1) * stride_h
-            kernel_w = input_w - (output_w - 1) * stride_w
+    @classmethod
+    def non_adaptive_pool(cls, graph, node):
+        input_shape = node.input_shape('X', 0)
+        pads = node.attr('paddings')
+        strides = node.attr('strides')
+        k_size = node.attr('ksize')
 
-            #check if kernel_size is fixed.
-            if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
-                    input_w, output_w):
+        if len(pads) == 2 or len(pads) == 3:
+            pads = pads + pads
+        elif len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        elif len(pads) == 6:
+            pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+
+        for i in range(len(input_shape) - 2):
+            if input_shape[i + 2] > 0 and input_shape[i + 2] + pads[i] < k_size[
+                    i]:
+                k_size[i] = input_shape[i + 2] + pads[i]
+
+        attrs = {
+            'kernel_shape': k_size,
+            'strides': strides,
+        }
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
+        else:
+            attrs['pads'] = pads
+        if node.attr('ceil_mode') and graph.opset_version < 10:
+            raise Exception(
+                "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
+            )
+        elif graph.opset_version >= 10:
+            attrs['ceil_mode'] = node.attr('ceil_mode')
+
+        if node.attr('pooling_type') == 'avg':
+            attrs['count_include_pad'] = not node.attr('exclusive')
+        onnx_node = graph.make_node(
+            cls.pool_type[node.attr('pooling_type')][0],
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            attrs=attrs)
+
+    @classmethod
+    def adaptive_pool(cls, graph, node):
+        # if pool is adaptive, check if input shape of pool is fixed.
+        mapper_helper.is_static_shape(node.input_shape('X', 0))
+        input_shape = np.array(node.input_shape('X', 0)[2:])
+        output_shape = np.array(node.output_shape('Out', 0)[2:])
+        stride = input_shape // output_shape
+        kernel = input_shape - (output_shape - 1) * stride
+
+        for i in range(len(input_shape)):
+            # check if kernel_size is fixed.
+            if not cls.is_same_span(input_shape[i], output_shape[i]):
                 raise Exception(
                     "Cannot convert adaptive pool with input_size: {}, output_size: {}"
                     .format(
                         node.input_shape('X', 0), node.output_shape('Out', 0)))
-            else:
-                attrs = {
-                    'kernel_shape': (kernel_h, kernel_w),
-                    'strides': (stride_h, stride_w),
-                }
-                if node.attr('ceil_mode') and graph.opset_version < 10:
-                    raise Exception(
-                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
-                    )
-                elif graph.opset_version > 10:
-                    attrs['ceil_mode'] = node.attr('ceil_mode')
-                auto_pad = node.attr('padding_algorithm')
-                if auto_pad == 'SAME':
-                    attrs['auto_pad'] = 'SAME_UPPER'
-                elif auto_pad == 'VALID':
-                    attrs['auto_pad'] = 'VALID'
-                if node.attr('pooling_type') == 'avg':
-                    attrs['count_include_pad'] = not node.attr('exclusive')
-                onnx_node = graph.make_node(
-                    cls.pool_type[node.attr('pooling_type')][0],
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    attrs=attrs)
-        else:
-            input_shape = node.input_shape('X', 0)
-            k_size = node.attr('ksize')
-            pads = node.attr('paddings')
-            strides = node.attr('strides')
 
-            if len(pads) == 2:
-                pads = pads + pads
-            elif len(pads) == 4:
-                # [pad_height_top, pad_height_bottom, pad_width_left, pad_width_right]
-                pads = [pads[i] for i in [0, 2, 1, 3]]
-            # NCHW (2,3)
-            if input_shape[2] > 0 and input_shape[2] + pads[0] < k_size[0]:
-                k_size[0] = input_shape[2] + pads[0]
-            if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
-                k_size[1] = input_shape[3] + pads[1]
+        attrs = {
+            'kernel_shape': kernel,
+            'strides': stride,
+        }
 
-            input_x = node.input('X')
-            if max(k_size) <= max(pads):
-                onnx_paddings = [0, 0, pads[0], pads[1], 0, 0, pads[2], pads[3]]
-                attrs_pad = {'mode': 'constant', }
-                if graph.opset_version >= 11:
-                    pads_node = graph.make_node(
-                        'Constant',
-                        attrs={
-                            'dtype': dtypes.ONNX.INT64,
-                            'value': onnx_paddings
-                        })
-                    value_node = graph.make_node(
-                        'Constant',
-                        attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': 0.0})
-                    input_x = input_x + [pads_node, value_node]
-                else:
-                    attrs_pad['pads'] = onnx_paddings
-                    attrs_pad['value'] = 0.0
-                input_x = graph.make_node(
-                    'Pad', inputs=input_x, attrs=attrs_pad)
-                pads = [0, 0, 0, 0]
-
-            attrs = {
-                'kernel_shape': k_size,
-                'strides': strides,
-            }
-            auto_pad = node.attr('padding_algorithm')
-            if auto_pad == 'SAME':
-                attrs['auto_pad'] = 'SAME_UPPER'
-            elif auto_pad == 'VALID':
-                attrs['auto_pad'] = 'VALID'
-            else:
-                attrs['pads'] = pads
-            if node.attr('ceil_mode') and graph.opset_version < 10:
-                raise Exception(
-                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
-                )
-            elif graph.opset_version >= 10:
-                attrs['ceil_mode'] = node.attr('ceil_mode')
-
-            if node.attr('pooling_type') == 'avg':
-                attrs['count_include_pad'] = not node.attr('exclusive')
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][0],
-                inputs=input_x,
-                outputs=node.output('Out'),
-                attrs=attrs)
-
-
-@op_mapper('pool3d')
-class Pool3D():
-    support_opset_version_range = (1, 12)
-    pool_type = {
-        'max': ('MaxPool', 'GlobalMaxPool'),
-        'avg': ('AveragePool', 'GlobalAveragePool')
-    }
-
-    @classmethod
-    def is_same_span(cls, in_size, out_size):
-        spans = []
-        for i in range(out_size):
-            start = math.floor(i * (in_size / out_size))
-            end = math.ceil((i + 1) * (in_size / out_size))
-            spans.append(end - start)
-        if len(set(spans)) == 1:
-            return True
-        return False
-
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
-                            "The conv data format should be 'NCDHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
-
-        if node.attr('global_pooling') or (node.attr('adaptive') and
-                                           node.attr('ksize') == [1, 1, 1]):
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][1],
-                inputs=node.input('X'),
-                outputs=node.output('Out'))
-        elif node.attr('adaptive'):
-            # if pool is adaptive, check if input shape of pool is fixed.
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
-            input_d, input_h, input_w = node.input_shape('X', 0)[2:]
-            output_d, output_h, output_w = node.output_shape('Out', 0)[2:]
-            stride_d = int(input_d / output_d)
-            stride_h = int(input_h / output_h)
-            stride_w = int(input_w / output_w)
-
-            kernel_d = input_d - (output_d - 1) * stride_d
-            kernel_h = input_h - (output_h - 1) * stride_h
-            kernel_w = input_w - (output_w - 1) * stride_w
-
-            #check if kernel_size is fixed.
-            if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
-                    input_w, output_w) or not cls.is_same_span(input_d,
-                                                               output_d):
-                raise Exception(
-                    "Cannot convert adaptive pool with input_size: {}, output_size: {}"
-                    .format(
-                        node.input_shape('X', 0), node.output_shape('Out', 0)))
-            else:
-                attrs = {
-                    'kernel_shape': (kernel_d, kernel_h, kernel_w),
-                    'strides': (stride_d, stride_h, stride_w),
-                }
-                if node.attr('ceil_mode') and graph.opset_version < 10:
-                    raise Exception(
-                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
-                    )
-                elif graph.opset_version > 10:
-                    attrs['ceil_mode'] = node.attr('ceil_mode')
-                auto_pad = node.attr('padding_algorithm')
-                if auto_pad == 'SAME':
-                    attrs['auto_pad'] = 'SAME_UPPER'
-                elif auto_pad == 'VALID':
-                    attrs['auto_pad'] = 'VALID'
-                if node.attr('pooling_type') == 'avg':
-                    attrs['count_include_pad'] = not node.attr('exclusive')
-                onnx_node = graph.make_node(
-                    cls.pool_type[node.attr('pooling_type')][0],
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    attrs=attrs)
-        else:
-            input_shape = node.input_shape('X', 0)
-            k_size = node.attr('ksize')
-            pads = node.attr('paddings')
-            strides = node.attr('strides')
-
-            if len(pads) == 3:
-                pads = pads + pads
-            elif len(pads) == 6:
-                # [pad_depth_front, pad_depth_back, pad_height_top, pad_height_bottom, pad_width_left, pad_width_right]
-                pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
-            # NCDHW (2,3,4)
-            if input_shape[2] > 0 and input_shape[2] + pads[0] < k_size[0]:
-                k_size[0] = input_shape[2] + pads[0]
-            if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
-                k_size[1] = input_shape[3] + pads[1]
-            if input_shape[4] > 0 and input_shape[4] + pads[2] < k_size[2]:
-                k_size[2] = input_shape[4] + pads[2]
-
-            attrs = {
-                'kernel_shape': k_size,
-                'strides': strides,
-            }
-            auto_pad = node.attr('padding_algorithm')
-            if auto_pad == 'SAME':
-                attrs['auto_pad'] = 'SAME_UPPER'
-            elif auto_pad == 'VALID':
-                attrs['auto_pad'] = 'VALID'
-            else:
-                attrs['pads'] = pads
-            if node.attr('ceil_mode') and graph.opset_version < 10:
-                raise Exception(
-                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
-                )
-            elif graph.opset_version >= 10:
-                attrs['ceil_mode'] = node.attr('ceil_mode')
-
-            if node.attr('pooling_type') == 'avg':
-                attrs['count_include_pad'] = not node.attr('exclusive')
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][0],
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                attrs=attrs)
+        if node.attr('ceil_mode') and graph.opset_version < 10:
+            raise Exception(
+                "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
+            )
+        elif graph.opset_version > 10:
+            attrs['ceil_mode'] = node.attr('ceil_mode')
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
+        if node.attr('pooling_type') == 'avg':
+            attrs['count_include_pad'] = not node.attr('exclusive')
+        onnx_node = graph.make_node(
+            cls.pool_type[node.attr('pooling_type')][0],
+            inputs=node.input('X'),
+            outputs=node.output('Out'),
+            attrs=attrs)
 
 
 @op_mapper('elu')
