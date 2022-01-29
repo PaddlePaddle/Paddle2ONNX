@@ -67,12 +67,16 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         kernel_size[0] = groups * muti1
         input_shape[1] = kernel_size[1] * groups
 
-        strides = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=1, max_size=2))
-        if len(strides) == 1:
-            strides = strides[0]
+        strides_type = draw(st.sampled_from(["int", "list"]))
+        if strides_type == "int":
+            strides = draw(st.integers(min_value=1, max_value=5))
+        else:
+            strides = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=2,
+                    max_size=2))
 
         padding_type = draw(st.sampled_from(["str", "list", "int", "tuple"]))
         padding = None
@@ -128,11 +132,24 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         if padding == "SAME":
             dilations = 1
 
+        tmp_strides = [strides] if strides_type == "int" else strides
+        if max(kernel_size[2:]) < max(tmp_strides):
+            opset_version = [11, 12, 15]
+        else:
+            opset_version = [7, 9, 15]
+
+        op_names = "conv2d"
+        num_channels = input_shape[1]
+        num_filters = kernel_size[0]
+        if (num_channels == groups and num_channels != 1 and
+                num_filters % num_channels == 0):
+            op_names = 'depthwise_conv2d'
+
         config = {
-            "op_names": ["conv2d"],
+            "op_names": [op_names],
             "test_data_shapes": [input_shape, kernel_size],
             "test_data_types": [['float32'], ['float32']],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [[-1, input_shape[1], -1, -1], kernel_size],
             "data_format": data_format,
             "stride": strides,
@@ -150,7 +167,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=80)
 
 
 if __name__ == "__main__":

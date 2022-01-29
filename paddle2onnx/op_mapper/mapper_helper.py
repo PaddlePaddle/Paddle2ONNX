@@ -174,3 +174,20 @@ def cast(graph, input, origin_dtype, target_dtype):
             'Cast', inputs=input, to=dtypes.DTYPE_ONNX_STR_MAP[target_dtype])
         return cast_node
     return input
+
+
+def slice_helper(graph, input, start, end):
+    input_node = graph.make_node('Shape', inputs=input)
+    if graph.opset_version < 10:
+        shape_node = graph.make_node(
+            'Slice', inputs=[input_node], starts=[start], ends=[end])
+    else:
+        starts_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [start]})
+        ends_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [end]})
+        shape_node = graph.make_node(
+            'Slice', inputs=[input_node, starts_node, ends_node])
+    return shape_node

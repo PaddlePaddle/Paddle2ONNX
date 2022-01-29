@@ -97,34 +97,16 @@ class Conv():
             attrs=attrs)
 
     @classmethod
-    def compute_output_shape(cls, graph, node):
-        input_node = graph.make_node('Shape', inputs=node.input('Input')[0])
-        ndim = node.block.vars[node.input('Input')[0]].ndim
-        if graph.opset_version < 10:
-            shape_node = graph.make_node(
-                'Slice', inputs=[input_node], starts=[2], ends=[ndim])
-        else:
-            starts_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': [2]})
-            ends_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': [ndim]})
-            shape_node = graph.make_node(
-                'Slice', inputs=[input_node, starts_node, ends_node])
-        return shape_node
-
-    @classmethod
     def autopad(cls, graph, node, strides, kernel_shape, dilations):
-        out_shape = cls.compute_output_shape(graph, node)
+        input_node = node.input('Input')[0]
+        ndim = node.block.vars[input_node].ndim
+        out_shape = mapper_helper.slice_helper(graph, input_node, 2, ndim)
+
         strides_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': strides})
-        dilated_kernel_shape = [
-            (kernel - 1) * dilation + 1
-            for kernel, dilation in zip(kernel_shape, dilations)
-        ]
+        dilated_kernel_shape = [(kernel - 1) * dilation + 1 for kernel, dilation
+                                in zip(kernel_shape, dilations)]
         dilated_kernel_shape_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.INT64,
