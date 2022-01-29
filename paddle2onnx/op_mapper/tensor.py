@@ -345,11 +345,8 @@ class Slice():
                 axes=axes,
                 starts=starts,
                 ends=ends)
-            graph.make_node(
-                'Squeeze',
-                inputs=[sliced],
-                outputs=node.output('Out'),
-                axes=decrease_axis)
+            mapper_helper.squeeze_helper(graph, [sliced], decrease_axis,
+                                         node.output('Out'))
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
@@ -422,12 +419,8 @@ class Slice():
                     node.input('Input')[0], starts_node, ends_node, axes_node,
                     steps_node
                 ])
-            axes_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=decrease_axis)
-            graph.make_node(
-                "Squeeze",
-                inputs=[sliced, axes_node],
-                outputs=node.output('Out'))
+            mapper_helper.squeeze_helper(graph, [sliced], decrease_axis,
+                                         node.output('Out'))
 
 
 @op_mapper(['sequence_expand'])

@@ -52,14 +52,16 @@ def slice_helper(graph, input, axes, starts, ends, outputs=[]):
         return slice_node
 
 
-def squeeze_helper(graph, input, axes):
+def squeeze_helper(graph, input, axes, outputs=None):
     if graph.opset_version < 13:
-        squeeze_node = graph.make_node("Squeeze", inputs=input, axes=axes)
+        squeeze_node = graph.make_node(
+            "Squeeze", inputs=input, axes=axes, outputs=outputs)
         return squeeze_node
     else:
         axes_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=axes)
-        squeeze_node = graph.make_node("Squeeze", inputs=[input, axes_node])
+        squeeze_node = graph.make_node(
+            "Squeeze", inputs=[input[0], axes_node], outputs=outputs)
         return squeeze_node
 
 

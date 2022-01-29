@@ -306,7 +306,7 @@ class TestSliceConvert4(OPConvertAutoScanTest):
             "op_names": ["slice"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 9, 12, 15],
             "input_spec_shape": [],
         }
 
