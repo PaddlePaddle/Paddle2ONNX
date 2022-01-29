@@ -123,12 +123,17 @@ class TestConv2dConvert(OPConvertAutoScanTest):
                         min_size=4,
                         max_size=4))
 
-        dilations = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=3), min_size=1, max_size=2))
-        if len(dilations) == 1:
-            dilations = dilations[0]
+        dilations_type = draw(st.sampled_from(["int", "list"]))
+        if dilations_type == "int":
+            dilations = draw(st.integers(min_value=1, max_value=3))
+        else:
+            dilations = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=3),
+                    min_size=2,
+                    max_size=2))
+
         if padding == "SAME":
             dilations = 1
 
@@ -167,7 +172,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=150)
+        self.run_and_statis(max_examples=200)
 
 
 if __name__ == "__main__":
