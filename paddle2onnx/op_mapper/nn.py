@@ -100,7 +100,7 @@ class Conv():
     def autopad(cls, graph, node, strides, kernel_shape, dilations):
         input_node = node.input('Input')[0]
         ndim = node.block.vars[input_node].ndim
-        out_shape = mapper_helper.slice_helper(graph, input_node, 2, ndim)
+        out_shape = mapper_helper.get_shape_node(graph, input_node, 2, ndim)
 
         strides_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,

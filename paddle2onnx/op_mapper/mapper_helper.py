@@ -176,7 +176,7 @@ def cast(graph, input, origin_dtype, target_dtype):
     return input
 
 
-def slice_helper(graph, input, start, end):
+def get_shape_node(graph, input, start, end):
     input_node = graph.make_node('Shape', inputs=input)
     if graph.opset_version < 10:
         shape_node = graph.make_node(
