@@ -345,7 +345,7 @@ class Slice():
                 axes=axes,
                 starts=starts,
                 ends=ends)
-            mapper_helper.squeeze_helper(graph, [sliced], decrease_axis,
+            mapper_helper.squeeze_helper(graph, sliced, decrease_axis,
                                          node.output('Out'))
 
     @classmethod
@@ -419,7 +419,7 @@ class Slice():
                     node.input('Input')[0], starts_node, ends_node, axes_node,
                     steps_node
                 ])
-            mapper_helper.squeeze_helper(graph, [sliced], decrease_axis,
+            mapper_helper.squeeze_helper(graph, sliced, decrease_axis,
                                          node.output('Out'))
 
 

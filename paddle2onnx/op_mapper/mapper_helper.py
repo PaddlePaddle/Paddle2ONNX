@@ -53,6 +53,10 @@ def slice_helper(graph, input, axes, starts, ends, outputs=[]):
 
 
 def squeeze_helper(graph, input, axes, outputs=None):
+    if not isinstance(input, list):
+        input = [input]
+    if not isinstance(axes, list):
+        axes = [axes]
     if graph.opset_version < 13:
         squeeze_node = graph.make_node(
             "Squeeze", inputs=input, axes=axes, outputs=outputs)
