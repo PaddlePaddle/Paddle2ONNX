@@ -36,7 +36,6 @@ class Conv():
         strides = node.attr('strides')
         group = node.attr('groups')
         pads = node.attr('paddings')
-
         assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
                             "is %s." % node.attrs['data_format']
