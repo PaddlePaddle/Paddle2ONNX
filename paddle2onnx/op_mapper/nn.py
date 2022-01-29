@@ -57,23 +57,9 @@ class Conv():
         input_x = node.input('Input')[0]
         if auto_pad == 'SAME':
             input_shape = node.block.vars[input_x].shape[2:]
-            if input_shape[1] > 0 and input_shape[0] > 0:
-                output_spatial_shape = (
-                    np.array(input_shape) + strides - 1) // strides
-                total_pad = (output_spatial_shape - 1) * strides + (
-                    (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
-                pads = []
-                for i in range(len(total_pad)):
-                    pad = max(0, total_pad[i])
-                    pad_head = pad >> 1
-                    pad_tail = pad - pad_head
-                    pads = pads + [pad_head, pad_tail]
-
-                if len(pads) == 4:
-                    pads = [pads[i] for i in [0, 2, 1, 3]]
-                elif len(pads) == 6:
-                    pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
-                attrs['pads'] = pads
+            if input_shape[0] > 0 and input_shape[1] > 0:
+                attrs['pads'] = cls.get_pads(input_shape, strides, kernel_shape,
+                                             dilations)
             else:
                 if max(kernel_shape) >= max(strides):
                     attrs['auto_pad'] = 'SAME_UPPER'
@@ -85,7 +71,6 @@ class Conv():
                         "Conv in onnx should need opset_version>=11, when kernel_shape < strides," \
                         "Try converting with opset_version>=11 "
                     )
-
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
@@ -95,6 +80,24 @@ class Conv():
             inputs=[input_x] + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
+
+    @classmethod
+    def get_pads(cls, input_shape, strides, kernel_shape, dilations):
+        output_spatial_shape = (np.array(input_shape) + strides - 1) // strides
+        total_pad = (output_spatial_shape - 1) * strides + (
+            (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
+        pads = []
+        for i in range(len(total_pad)):
+            pad = max(0, total_pad[i])
+            pad_head = pad >> 1
+            pad_tail = pad - pad_head
+            pads = pads + [pad_head, pad_tail]
+
+        if len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        elif len(pads) == 6:
+            pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+        return pads
 
     @classmethod
     def autopad(cls, graph, node, strides, kernel_shape, dilations):
