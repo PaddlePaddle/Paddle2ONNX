@@ -714,37 +714,54 @@ class Log1p():
     mapper_dict={'reduce_all': 'ReduceMin',
                  'reduce_any': 'ReduceMax'})
 class ReduceAll():
-    support_opset_version_range = (6, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
         op_type = kw['mapper_dict'][node.type]
-
+        input_dtype = node.block.vars[node.input('X', 0)].dtype
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
         all_node = graph.make_node(
-            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.FLOAT)
-        if node.attr('reduce_all'):
-            flatten_x = graph.make_node('Flatten', inputs=all_node, axis=0)
-            squeeze_node = graph.make_node('Squeeze', inputs=[flatten_x])
-            if node.attr('keep_dim'):
-                unsqueeze_node = graph.make_node(op_type, inputs=squeeze_node)
-                for i in range(len(node.input_shape('X', 0)) - 1):
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', axes=[0], inputs=[unsqueeze_node])
-                graph.make_node(
-                    'Cast',
-                    inputs=[unsqueeze_node],
-                    to=dtypes.ONNX.FLOAT,
-                    outputs=node.output('Out'))
-            else:
-                graph.make_node(
-                    op_type, inputs=squeeze_node, outputs=node.output('Out'))
-        else:
-            graph.make_node(
-                op_type,
-                inputs=all_node,
-                keepdims=node.attr('keep_dim'),
-                axes=node.attr('dim'),
-                outputs=node.output('Out'))
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
+
+        attrs = {'keepdims': node.attr('keep_dim'), }
+        if not node.attr('reduce_all'):
+            attrs['axes'] = node.attr('dim')
+        output_node = graph.make_node(op_type, inputs=[all_node], attrs=attrs)
+
+        if node.attr('reduce_all') and not node.attr('keep_dim'):
+            output_node = graph.make_node(
+                "Unsqueeze", inputs=[output_node], axes=[0])
+        graph.make_node(
+            'Cast',
+            inputs=[output_node],
+            to=input_dtype,
+            outputs=node.output('Out'))
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+        input_dtype = node.block.vars[node.input('X', 0)].dtype
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
+        all_node = graph.make_node(
+            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
+
+        attrs = {'keepdims': node.attr('keep_dim'), }
+        if not node.attr('reduce_all'):
+            attrs['axes'] = node.attr('dim')
+        output_node = graph.make_node(op_type, inputs=[all_node], attrs=attrs)
+
+        if node.attr('reduce_all') and not node.attr('keep_dim'):
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            output_node = graph.make_node(
+                'Unsqueeze', inputs=[output_node, axes_node])
+        graph.make_node(
+            'Cast',
+            inputs=[output_node],
+            to=input_dtype,
+            outputs=node.output('Out'))
 
 
 @op_mapper(
@@ -757,7 +774,7 @@ class ReduceAll():
         'reduce_prod': 'ReduceProd'
     })
 class ReduceMean():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -769,28 +786,71 @@ class ReduceMean():
             if list(output_shape) == [1]:
                 need_unsqueeze = True
 
+        outputs = None
         if not need_unsqueeze:
-            graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
-        else:
-            reduce_node = graph.make_node(
-                op_type,
-                inputs=node.input('X'),
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
+            outputs = node.output('Out')
+
+        reduce_node = graph.make_node(
+            op_type,
+            inputs=node.input('X'),
+            outputs=outputs,
+            attrs={
+                'axes': node.attr('dim'),
+                'keepdims': node.attr('keep_dim')
+            })
+        if need_unsqueeze:
             graph.make_node(
                 'Unsqueeze',
                 inputs=[reduce_node],
                 outputs=node.output('Out'),
                 axes=[0])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        op_type = kw['mapper_dict'][node.type]
+
+        output_shape = node.output_shape('Out', 0)
+        need_unsqueeze = False
+        if not node.attr('keep_dim'):
+            if list(output_shape) == [1]:
+                need_unsqueeze = True
+
+        outputs = None
+        if not need_unsqueeze:
+            outputs = node.output('Out')
+
+        reduce_node = cls.compute_reduce_node(graph, node, op_type, outputs)
+        if need_unsqueeze:
+            axes_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': [0]})
+            graph.make_node(
+                'Unsqueeze',
+                inputs=[reduce_node] + [axes_node],
+                outputs=node.output('Out'))
+
+    @classmethod
+    def compute_reduce_node(cls, graph, node, op_type, outputs):
+        if op_type == "ReduceSum":
+            axes_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': node.attr('dim')})
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X') + [axes_node],
+                outputs=outputs,
+                attrs={'keepdims': node.attr('keep_dim')})
+        else:
+            reduce_node = graph.make_node(
+                op_type,
+                inputs=node.input('X'),
+                outputs=outputs,
+                attrs={
+                    'axes': node.attr('dim'),
+                    'keepdims': node.attr('keep_dim')
+                })
+        return reduce_node
 
 
 @op_mapper('mean')
@@ -880,7 +940,7 @@ class Hardtanh():
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
-        mapper_helper.clip_helper(graph,
+        mapper_helper.clip_helper(graph, node,
                                   node.input('X', 0),
                                   node.attr('t_max'),
                                   node.attr('t_min'), node.output('Out', 0))
@@ -943,22 +1003,14 @@ class Dist():
                 inputs=[sum_node],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('inf'):
-            max_node = graph.make_node(
-                'ReduceMax',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            max_node = graph.make_node('ReduceMax', inputs=abs_node, keepdims=0)
             graph.make_node(
                 'Unsqueeze',
                 axes=[0],
                 inputs=[max_node],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('-inf'):
-            min_node = graph.make_node(
-                'ReduceMin',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            min_node = graph.make_node('ReduceMin', inputs=abs_node, keepdims=0)
             graph.make_node(
                 'Unsqueeze',
                 axes=[0],
@@ -995,11 +1047,7 @@ class Dist():
                 inputs=[sum_node, axes],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('inf'):
-            max_node = graph.make_node(
-                'ReduceMax',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            max_node = graph.make_node('ReduceMax', inputs=abs_node, keepdims=0)
             axes = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0])
             graph.make_node(
@@ -1007,11 +1055,7 @@ class Dist():
                 inputs=[max_node, axes],
                 outputs=node.output('Out'))
         elif node.attr('p') == float('-inf'):
-            min_node = graph.make_node(
-                'ReduceMin',
-                inputs=abs_node,
-                keepdims=0,
-                outputs=node.output('Out'))
+            min_node = graph.make_node('ReduceMin', inputs=abs_node, keepdims=0)
             axes = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0])
             graph.make_node(
@@ -1069,55 +1113,67 @@ class Sign():
 
 @op_mapper('scale')
 class Scale():
-    support_opset_version_range = (1, 12)
-
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        scale = node.attr('scale')
-        bias = node.attr('bias')
-        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-        else:
-            raise Exception(
-                "please try to convert OP:scale with opset_version >= 7.")
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
         scale = node.attr('scale')
         bias = node.attr('bias')
-        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
+        if len(node.input('ScaleTensor')) == 0 and np.fabs(
+                scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
             graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
-            scale_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [scale]})
+            input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)]
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
+                outputs = None
+                data_type = dtypes.ONNX.FLOAT
+                cast_node = graph.make_node(
+                    'Cast', inputs=node.input('X'), attrs={'to': data_type})
+            else:
+                outputs = node.output('Out')
+                data_type = input_dtype
+                cast_node = node.input('X')[0]
+
+            if len(node.input('ScaleTensor')) > 0:
+                scale_node = node.input('ScaleTensor')[0]
+                scale_type = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                    'ScaleTensor', 0)]
+                if scale_type != data_type:
+                    scale_node = graph.make_node(
+                        'Cast', inputs=[scale_node], attrs={'to': data_type})
+            else:
+                scale_node = graph.make_node(
+                    'Constant', attrs={'dtype': data_type,
+                                       'value': [scale]})
             bias_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [bias]})
-            cast_node = graph.make_node(
-                'Cast', inputs=node.input('X'),
-                attrs={'to': dtypes.ONNX.FLOAT})
+                'Constant', attrs={'dtype': data_type,
+                                   'value': [bias]})
+
             if node.attr('bias_after_scale'):
                 node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(
-                    'Add',
-                    inputs=[node1, bias_node],
-                    outputs=node.output('Out'))
+                    'Add', inputs=[node1, bias_node], outputs=outputs)
             else:
                 node1 = graph.make_node('Add', inputs=[cast_node, bias_node])
                 node2 = graph.make_node(
-                    'Mul',
-                    inputs=[node1, scale_node],
-                    outputs=[node.output('Out', 0)])
+                    'Mul', inputs=[node1, scale_node], outputs=outputs)
+
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
+                cast_node = graph.make_node(
+                    'Cast',
+                    inputs=node2,
+                    outputs=node.output('Out'),
+                    attrs={'to': input_dtype})
 
 
 @op_mapper('softmax')
 class Softmax():
-    support_opset_version_range = (7, 15)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1158,46 +1214,123 @@ class Softmax():
 
 @op_mapper('softmax_with_cross_entropy')
 class SoftmaxCrossEntropyLoss():
-    support_opset_version_range = (12, 12)
+    support_opset_version_range = (12, 15)
 
     @classmethod
     def opset_12(cls, graph, node, **kw):
         if node.attr('soft_label'):
             raise Exception(
                 "SoftmaxCrossEntropyLoss in onnx not support soft label.")
-
-        labels = node.input('Label', 0)
         scores = node.input('Logits', 0)
-
-        outputs = [node.output('Loss', 0)]
-        if 'Softmax' in node.outputs:
-            outputs.append(node.output('Softmax', 0))
+        labels = node.input('Label', 0)
+        # Whether return_softmax is True or False, the model will have two outputs
+        outputs = [node.output('Loss', 0), node.output('Softmax', 0)]
 
         shape = node.input_shape('Logits', 0)
+        if len(shape) < 2:
+            raise Exception(
+                "SoftmaxCrossEntropyLoss in onnx not support 1D logits.")
         axis = node.attr('axis')
         if axis < 0:
             axis += len(shape)
-        if axis == len(shape) - 1:
-            graph.make_node(
+        if axis == 1:
+            squeeze_node = graph.make_node(
+                'Squeeze', inputs=[labels], axes=[axis])
+            loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
-                inputs=[scores, labels],
-                outputs=outputs,
+                inputs=[scores, squeeze_node],
+                outputs=2,
                 ignore_index=node.attr('ignore_index'),
-                reduction='mean')
+                reduction='none')
+            loss_node = graph.make_node(
+                'Unsqueeze',
+                inputs=[loss_node],
+                outputs=outputs[0],
+                axes=[axis])
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
         else:
             perm = [i for i in range(len(shape))]
-            perm[-1] = axis
-            perm[axis] = len(shape) - 1
-            transpose_node = graph.make_node(
-                'Transpose', inputs=node.input('X'), attrs={'perm': perm})
-            node = graph.make_node(
+            perm[1] = axis
+            perm[axis] = 1
+            transpose_scores = graph.make_node(
+                'Transpose', inputs=[scores], perm=perm)
+            transpose_labels = graph.make_node(
+                'Transpose', inputs=[labels], perm=perm)
+            squeeze_labels = graph.make_node(
+                'Squeeze', inputs=[transpose_labels], axes=[1])
+
+            loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
-                inputs=[scores, labels],
-                outputs=outputs,
+                inputs=[transpose_scores, squeeze_labels],
                 ignore_index=node.attr('ignore_index'),
-                reduction='mean')
-            transpose_node1 = graph.make_node(
-                'Transpose',
-                inputs=[softmax_node],
-                outputs=node.output('Out'),
-                attrs={'perm': perm})
+                outputs=2,
+                reduction='none')
+            output_node = graph.make_node(
+                'Unsqueeze', inputs=[loss_node], axes=[1])
+            graph.make_node(
+                'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
+            softmax_node = graph.make_node(
+                'Transpose', inputs=softmax_node, perm=perm)
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        if node.attr('soft_label'):
+            raise Exception(
+                "SoftmaxCrossEntropyLoss in onnx not support soft label.")
+        scores = node.input('Logits', 0)
+        labels = node.input('Label', 0)
+        # Whether return_softmax is True or False, the model will have two outputs
+        outputs = [node.output('Loss', 0), node.output('Softmax', 0)]
+
+        shape = node.input_shape('Logits', 0)
+        if len(shape) < 2:
+            raise Exception(
+                "SoftmaxCrossEntropyLoss in onnx not support 1D logits.")
+        axis = node.attr('axis')
+        if axis < 0:
+            axis += len(shape)
+        if axis == 1:
+            axis_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[axis])
+            squeeze_node = graph.make_node(
+                'Squeeze', inputs=[labels, axis_node])
+            loss_node, softmax_node = graph.make_node(
+                'SoftmaxCrossEntropyLoss',
+                inputs=[scores, squeeze_node],
+                outputs=2,
+                ignore_index=node.attr('ignore_index'),
+                reduction='none')
+            loss_node = graph.make_node(
+                'Unsqueeze', inputs=[loss_node, axis_node], outputs=outputs[0])
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
+        else:
+            perm = [i for i in range(len(shape))]
+            perm[1] = axis
+            perm[axis] = 1
+            constant_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
+            transpose_scores = graph.make_node(
+                'Transpose', inputs=[scores], perm=perm)
+            transpose_labels = graph.make_node(
+                'Transpose', inputs=[labels], perm=perm)
+            squeeze_labels = graph.make_node(
+                'Squeeze', inputs=[transpose_labels, constant_node])
+
+            loss_node, softmax_node = graph.make_node(
+                'SoftmaxCrossEntropyLoss',
+                inputs=[transpose_scores, squeeze_labels],
+                ignore_index=node.attr('ignore_index'),
+                outputs=2,
+                reduction='none')
+            output_node = graph.make_node(
+                'Unsqueeze', inputs=[loss_node, constant_node])
+            graph.make_node(
+                'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
+            softmax_node = graph.make_node(
+                'Transpose', inputs=softmax_node, perm=perm)
+            # onnx output is log(softmax), but paddle output is softmax
+            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])

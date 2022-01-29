@@ -52,9 +52,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=100),
-                min_size=4,
-                max_size=4))
+                    min_value=20, max_value=30), min_size=4, max_size=4))
 
         kernel_size = draw(
             st.lists(
