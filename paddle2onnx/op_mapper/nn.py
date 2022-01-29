@@ -53,18 +53,16 @@ class Conv():
             'group': group
         }
         auto_pad = node.attr('padding_algorithm')
-        input_x = node.input('Input')[0]
+        input_node = node.input('Input')[0]
         if auto_pad == 'SAME':
-            input_shape = node.block.vars[input_x].shape[2:]
-            if input_shape[0] > 0 and input_shape[1] > 0:
-                attrs['pads'] = cls.get_pads(input_shape, strides, kernel_shape,
-                                             dilations)
+            if max(kernel_shape) >= max(strides):
+                attrs['auto_pad'] = 'SAME_UPPER'
             else:
-                if max(kernel_shape) >= max(strides):
-                    attrs['auto_pad'] = 'SAME_UPPER'
+                input_shape = node.input_shape('Input', 0)[2:]
+                if input_shape[0] > 0 and input_shape[1] > 0:
+                    attrs['pads'] = cls.get_pads(input_shape, node)
                 elif graph.opset_version >= 11:
-                    input_x = cls.autopad(graph, node, strides, kernel_shape,
-                                          dilations)
+                    input_node = cls.autopad(graph, node)
                 else:
                     raise Exception(
                         "Conv in onnx should need opset_version>=11, when kernel_shape < strides," \
@@ -76,12 +74,17 @@ class Conv():
             attrs['pads'] = pads
         graph.make_node(
             'Conv',
-            inputs=[input_x] + node.input('Filter'),
+            inputs=[input_node] + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
 
     @classmethod
-    def get_pads(cls, input_shape, strides, kernel_shape, dilations):
+    def get_pads(cls, input_shape, node):
+        kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[2:]
+        strides = node.attr('strides')
+
         output_spatial_shape = (np.array(input_shape) + strides - 1) // strides
         total_pad = (output_spatial_shape - 1) * strides + (
             (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
@@ -99,10 +102,16 @@ class Conv():
         return pads
 
     @classmethod
-    def autopad(cls, graph, node, strides, kernel_shape, dilations):
+    def autopad(cls, graph, node):
+        kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[2:]
+        strides = node.attr('strides')
+
         input_node = node.input('Input')[0]
-        ndim = node.block.vars[input_node].ndim
-        out_shape = mapper_helper.get_shape_node(graph, input_node, 2, ndim)
+        input_shape = node.input_shape('Input', 0)
+        out_shape = mapper_helper.get_shape_node(graph, input_node, 2,
+                                                 len(input_shape))
 
         strides_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
