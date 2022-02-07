@@ -19,6 +19,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 import copy
+import six
 import paddle
 
 
@@ -132,7 +133,7 @@ class Unstack():
             inputs=node.input('X'),
             axis=axis,
             outputs=len(node.output('Y')))
-        if isinstance(output_y, str):
+        if isinstance(output_y, six.string_types):
             output_y = [output_y]
 
         for i in range(len(output_y)):
@@ -152,7 +153,7 @@ class Unstack():
             inputs=node.input('X'),
             axis=axis,
             outputs=len(node.output('Y')))
-        if isinstance(output_y, str):
+        if isinstance(output_y, six.string_types):
             output_y = [output_y]
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
