@@ -25,56 +25,57 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs):
+    def forward(self, input):
         """
         forward
         """
-        axis = self.config['axis']
-        if self.config['isTensor']:
-            axis = paddle.to_tensor(axis)
-        x = paddle.unsqueeze(inputs, axis=axis)
+        x = paddle.unique(
+            input,
+            return_index=self.config['return_index'],
+            return_inverse=self.config['return_inverse'],
+            return_counts=self.config['return_counts'],
+            axis=self.config['axis'],
+            dtype=self.config['dtype'])
+
         return x
 
 
-class TestUnsqueezeConvert(OPConvertAutoScanTest):
+class TestUniqueConvert(OPConvertAutoScanTest):
     """
-    api: paddle.unsqueeze
-    OPset version: 7, 9, 15
+    api: paddle.unique
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=6), min_size=2, max_size=5))
+                    min_value=2, max_value=10), min_size=1, max_size=4))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
-        isTensor = draw(st.booleans())
+        return_index = draw(st.booleans())
+        return_inverse = draw(st.booleans())
+        return_counts = draw(st.booleans())
 
-        axis_dtype = draw(st.sampled_from(["int", "list"]))
-        if axis_dtype == "list":
-            if len(input_shape) == 5:
-                axis = [0]
-            if len(input_shape) == 4:
-                axis = [0, 1]
-            if len(input_shape) == 3:
-                axis = [1, 2, 3]
-            if len(input_shape) == 2:
-                if draw(st.booleans()):
-                    axis = [0, 1, 2]
-                else:
-                    axis = [-3, -1]
+        axis = None
+        if draw(st.booleans()):
+            axis = draw(
+                st.integers(
+                    min_value=0, max_value=len(input_shape) - 1))
+        dtype = draw(st.sampled_from(["float32", "int64"]))
+        # onnx is only support int64
+        xdtype = draw(st.sampled_from(["int64"]))
         config = {
-            "op_names": ["unsqueeze2"],
+            "op_names": ["unique"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
+            "return_index": return_index,
+            "return_inverse": return_inverse,
+            "return_counts": return_counts,
             "axis": axis,
-            "isTensor": isTensor,
+            "dtype": xdtype,
+            "use_gpu": False,
         }
 
         models = Net(config)
