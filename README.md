@@ -110,7 +110,7 @@ pip install onnxruntime --upgrade
 import paddle
 model = paddle.nn.Conv2D(3, 5, 3)
 model.eval()
-input = paddle.static.InputSpec(shape=[2, 3, 5, 5], dtype='float32', name='x')
+input = paddle.static.InputSpec(shape=[2, 3, 224, 224], dtype='float32', name='x')
 paddle.jit.save(model, "conv/model", [input])
 ```
 
