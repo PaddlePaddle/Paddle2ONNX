@@ -179,6 +179,12 @@ class APIOnnx(object):
                 self.input_feed[str(i)] = in_data.numpy()
                 i += 1
 
+    def set_device_mode(self, is_gpu=True):
+        if paddle.device.is_compiled_with_cuda() is True and is_gpu:
+            self.places = ['gpu']
+        else:
+            self.places = ['cpu']
+
     def set_input_spec(self):
         if len(self.input_spec_shape) == 0:
             return
@@ -253,16 +259,21 @@ class APIOnnx(object):
             opset_version=version,
             get_paddle_graph=True)
 
-        if len(paddle_graph.node_map.keys()) == 0:
-            paddle_graph.node_map[''] = 0
-        status = False
+        included = False
+        paddle_op_list = []
         for op in self.ops:
-            for key, val in paddle_graph.node_map.items():
-                if key.count(op):
-                    status = True
+            for key, node in paddle_graph.node_map.items():
+                paddle_op_list.append(node.type)
+                if op == node.type:
+                    included = True
                     break
-        assert status is True, "{} op in not in convert OPs, all OPs :{}".format(
-            self.ops, paddle_graph.node_map.keys())
+
+        if len(paddle_graph.node_map.keys()) == 0 and len(
+                self.ops) == 1 and self.ops[0] == '':
+            included = True
+
+        assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
+            self.ops, paddle_op_list)
 
     def run(self):
         """

@@ -18,7 +18,6 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
 
 
 class Net(BaseNet):
@@ -26,51 +25,57 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x):
+    def forward(self, input):
         """
         forward
         """
-        scale = self.config["scale"]
-        if self.config['isTensor']:
-            scale = paddle.to_tensor(scale)
-        x = paddle.scale(
-            x,
-            scale=scale,
-            bias=self.config["bias"],
-            bias_after_scale=self.config["bias_after_scale"])
+        x = paddle.unique(
+            input,
+            return_index=self.config['return_index'],
+            return_inverse=self.config['return_inverse'],
+            return_counts=self.config['return_counts'],
+            axis=self.config['axis'],
+            dtype=self.config['dtype'])
+
         return x
 
 
-class TestScaleConvert(OPConvertAutoScanTest):
+class TestUniqueConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scale
-    OPset version: 7, 9, 15
+    api: paddle.unique
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=2, max_size=5))
-        # int32, int64 has a bug
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+                    min_value=2, max_value=10), min_size=1, max_size=4))
 
-        scale = draw(st.floats(min_value=-20, max_value=20))
-        isTensor = draw(st.booleans())
+        return_index = draw(st.booleans())
+        return_inverse = draw(st.booleans())
+        return_counts = draw(st.booleans())
 
-        bias = draw(st.floats(min_value=-20, max_value=20))
-        bias_after_scale = draw(st.booleans())
-
+        axis = None
+        if draw(st.booleans()):
+            axis = draw(
+                st.integers(
+                    min_value=0, max_value=len(input_shape) - 1))
+        dtype = draw(st.sampled_from(["float32", "int64"]))
+        # onnx is only support int64
+        xdtype = draw(st.sampled_from(["int64"]))
         config = {
-            "op_names": ["scale"],
+            "op_names": ["unique"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
-            "scale": scale,
-            "bias": bias,
-            "bias_after_scale": bias_after_scale,
-            "isTensor": isTensor,
+            "return_index": return_index,
+            "return_inverse": return_inverse,
+            "return_counts": return_counts,
+            "axis": axis,
+            "dtype": xdtype,
+            "use_gpu": False,
         }
 
         models = Net(config)
