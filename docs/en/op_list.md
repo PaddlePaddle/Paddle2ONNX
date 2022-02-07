@@ -152,7 +152,7 @@
 | sinh | 9~12 |
 | slice | 1~15 |
 | split | 1~12 |
-| squeeze2 | 1~12 |
+| squeeze2 | 1~15 |
 | square | 7~12 |
 | sqrt | 1~12 |
 | stack | 4~15 |
