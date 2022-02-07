@@ -1,0 +1,10 @@
+if(NOT TARGET protobuf)
+    include(FindProtobuf)
+    find_package(Protobuf REQUIRED)
+    set(Protobuf_USE_STATIC_LIBS ON)
+    include_directories(${PROTOBUF_INCLUDE_DIR})
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+PROTOBUF_GENERATE_CPP(PROTO_SRC PROTO_HEADER framework.proto)
+add_library(proto ${PROTO_HEADER} ${PROTO_SRC})
