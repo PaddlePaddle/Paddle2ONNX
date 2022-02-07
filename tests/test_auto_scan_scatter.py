@@ -65,6 +65,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
             "opset_version": [11, 15],
             "input_spec_shape": [],
             "overwrite": overwrite,
+            "use_gpu": False,
         }
 
         models = Net(config)
