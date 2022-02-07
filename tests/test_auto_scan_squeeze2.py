@@ -69,12 +69,18 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
             input_shape[axis] = 1
         else:
             input_shape[0] = 1
+
+        if draw(st.booleans()):
+            input_spec_shape = []
+        else:
+            input_spec_shape = [len(input_shape) * [-1]]
+
         config = {
             "op_names": ["squeeze2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [],
+            "input_spec_shape": input_spec_shape,
             "axis": axis,
         }
 
