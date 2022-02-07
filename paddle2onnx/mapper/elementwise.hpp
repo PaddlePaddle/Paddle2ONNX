@@ -37,7 +37,7 @@ class ElementwiseMapper : public Mapper {
       return false;
     }
     auto x_info = parser->GetOpInput(block_idx, op_idx, "X");
-    if (axis < -1 or axis > x_info[0].shape.size()) {
+    if (axis < -1 || axis > x_info[0].shape.size()) {
       std::cerr << "find illegal axis in " << op.type() << "." << std::endl;
       return false;
     }
