@@ -125,7 +125,7 @@ import paddle
 import onnxruntime as ort
 import numpy as np
 
-model0 = paddle.jit.load("conv1/inference")
+model0 = paddle.jit.load("conv/model")
 model1 = ort.InferenceSession("model.onnx")
 
 data = np.random.rand(2, 3, 224, 224).astype("float32")
