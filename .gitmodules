@@ -1,0 +1,4 @@
+[submodule "third/onnx"]
+	path = third/onnx
+	url = https://github.com/onnx/onnx.git
+    branch = da889e6b95750350726d149bf447bf0cd1245964
