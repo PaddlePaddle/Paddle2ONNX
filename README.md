@@ -5,8 +5,9 @@ ONNX Model Exporter for PaddlePaddle
 ```
 mkdir /root/build_paddle2onnx
 cd /root/build_paddle2onnx
-git clone https://github.com/jiangjiajun/Paddle2ONNX.git
+git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
+git checkout cpp
 git submodule init
 git submodule update
 ```
