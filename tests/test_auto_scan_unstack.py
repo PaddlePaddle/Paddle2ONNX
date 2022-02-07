@@ -29,7 +29,8 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.unstack(inputs, axis=self.config['axis'])
+        x = paddle.unstack(
+            inputs, axis=self.config['axis'], num=self.config['num'])
         return x
 
 
@@ -50,6 +51,9 @@ class TestUnstackConvert(OPConvertAutoScanTest):
             st.integers(
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
+        axis_index = axis + len(input_shape) if axis < 0 else axis
+        num = input_shape[axis_index] if draw(st.booleans()) else None
+
         config = {
             "op_names": ["unstack"],
             "test_data_shapes": [input_shape],
@@ -57,6 +61,7 @@ class TestUnstackConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
             "axis": axis,
+            "num": num,
         }
 
         models = Net(config)
