@@ -104,6 +104,7 @@ class Mapper {
            "https://github.com/PaddlePaddle/Paddle2ONNX.git.");
   }
 
+  virtual ~Mapper() = default;
   const PaddleParser* parser;
   int32_t block_idx;
   int32_t op_idx;

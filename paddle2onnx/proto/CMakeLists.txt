@@ -7,4 +7,4 @@ if(NOT TARGET protobuf)
 endif()
 
 PROTOBUF_GENERATE_CPP(PROTO_SRC PROTO_HEADER framework.proto)
-add_library(proto ${PROTO_HEADER} ${PROTO_SRC})
+add_library(p2o_paddle_proto ${PROTO_HEADER} ${PROTO_SRC})

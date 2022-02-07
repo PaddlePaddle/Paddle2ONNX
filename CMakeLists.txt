@@ -1,6 +1,5 @@
 PROJECT(paddle2onnx C CXX)
 CMAKE_MINIMUM_REQUIRED (VERSION 3.16)
-#SET(CMAKE_CXX_FLAGS "-g -Wall -Werror -lprotobuf -lpthread")
 
 ADD_SUBDIRECTORY(paddle2onnx)
 
@@ -31,9 +30,13 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-
 ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
-TARGET_LINK_LIBRARIES(p2o_exec proto protobuf onnx)
+TARGET_INCLUDE_DIRECTORIES(p2o_exec
+   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+   PUBLIC ${PROTOBUF_INCLUDE_DIRS}
+)
+TARGET_LINK_LIBRARIES(p2o_exec p2o_paddle_proto onnx)
 
 if(BUILD_PADDLE2ONNX_PYTHON)
   if("${PY_EXT_SUFFIX}" STREQUAL "")
@@ -63,9 +66,9 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     target_include_directories(paddle2onnx_cpp2py_export PUBLIC
       ${pybind11_INCLUDE_DIRS})
   else()
-    if(EXISTS ${PROJECT_SOURCE_DIR}/third/onnx/third_party/pybind11/include/pybind11/pybind11.h)
-      target_include_directories(onnx_cpp2py_export PUBLIC
-      ${PROJECT_SOURCE_DIR}/third/onnx/third_party/pybind11/include)
+    if(EXISTS ${PROJECT_SOURCE_DIR}/third/pybind11/include/pybind11/pybind11.h)
+      target_include_directories(paddle2onnx_cpp2py_export PUBLIC
+      ${PROJECT_SOURCE_DIR}/third/pybind11/include)
     else()
       message(FATAL_ERROR "cannot find pybind")
     endif()
@@ -93,7 +96,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
                           PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
   endif()
 
-  target_link_libraries(paddle2onnx_cpp2py_export PRIVATE proto protobuf onnx) 
+  target_link_libraries(paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx) 
 
   if(MSVC)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})
