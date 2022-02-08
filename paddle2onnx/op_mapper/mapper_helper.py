@@ -52,14 +52,24 @@ def slice_helper(graph, input, axes, starts, ends, outputs=[]):
         return slice_node
 
 
-def squeeze_helper(graph, input, axes):
+def squeeze_helper(graph, input, axes=None, outputs=None):
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if axes is not None and not isinstance(axes, list):
+        axes = [axes]
     if graph.opset_version < 13:
-        squeeze_node = graph.make_node("Squeeze", inputs=input, axes=axes)
+        squeeze_node = graph.make_node(
+            "Squeeze", inputs=inputs, axes=axes, outputs=outputs)
         return squeeze_node
     else:
-        axes_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=axes)
-        squeeze_node = graph.make_node("Squeeze", inputs=[input, axes_node])
+        if axes is not None:
+            axes_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=axes)
+            inputs.append(axes_node)
+        squeeze_node = graph.make_node(
+            "Squeeze", inputs=inputs, outputs=outputs)
         return squeeze_node
 
 
@@ -76,19 +86,26 @@ def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     return constant
 
 
-def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
+def clip_helper(graph, node, input, max, min, output=[]):
+    x_dtype = node.input_dtype('X', 0)
     if (isinstance(min, six.string_types) or
             isinstance(max, six.string_types)) and graph.opset_version < 11:
         raise Exception(
             "min or max of Clip is Tensor, please try with higher onnx opset_version."
         )
     if graph.opset_version < 11:
-        if x_dtype == paddle.float64:
-            raise Exception(
-                "When opset is less than 11, the input is not supported as float64 type."
-            )
-        clip = graph.make_node(
-            'Clip', inputs=input, max=max, min=min, outputs=output)
+        if x_dtype != paddle.float32:
+            input = graph.make_node(
+                'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
+            clip = graph.make_node('Clip', inputs=input, max=max, min=min)
+            clip = graph.make_node(
+                'Cast',
+                inputs=[clip],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                outputs=output)
+        else:
+            clip = graph.make_node(
+                'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
         if not isinstance(min, six.string_types):
             min = graph.make_node(
@@ -98,7 +115,13 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
                     'value': min
                 })
         else:
+            if node.input_dtype('Min', 0) != x_dtype:
+                min = graph.make_node(
+                    'Cast',
+                    inputs=min,
+                    attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype]})
             min = graph.make_node('Squeeze', min)
+
         if not isinstance(max, six.string_types):
             max = graph.make_node(
                 'Constant',
@@ -107,12 +130,18 @@ def clip_helper(graph, input, max, min, output=[], x_dtype=paddle.float32):
                     'value': max
                 })
         else:
+            if node.input_dtype('Max', 0) != x_dtype:
+                max = graph.make_node(
+                    'Cast',
+                    inputs=max,
+                    attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype]})
             max = graph.make_node('Squeeze', max)
+
         clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
     return clip
 
 
-def dtype_alignment(graph, nodes, node_dtypes):
+def dtype_alignment(graph, nodes, node_dtypes, to=None):
     assert len(nodes) == len(
         node_dtypes), "Length of nodes and node_dtypes should be equal."
     dtype_order = [
@@ -138,7 +167,12 @@ def dtype_alignment(graph, nodes, node_dtypes):
     cast_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[cast_dtype]
     for i, dtype in enumerate(node_dtypes):
         index = dtype_order.index(dtype)
-        if index != max_index:
+        if to is not None:
+            cast_dtype = to
+            condition = dtypes.DTYPE_PADDLE_ONNX_MAP[index] != cast_dtype
+        else:
+            condition = index != max_index
+        if condition:
             cast_node = graph.make_node(
                 'Cast', inputs=[nodes[i]], to=cast_dtype)
             casted_nodes.append(cast_node)
@@ -169,6 +203,7 @@ def shape_alignment(graph, nodes, node_shapes):
     if max_dim < 0:
         return nodes
 
+    assert max_dim == 1 or max_dim == 0, "max_dim is only supported when max_dim is 1 or 0."
     max_dim = 1 if max_dim == 0 else max_dim
     unsqueeze_nodes = list()
     for i, shape in enumerate(node_shapes):
@@ -192,14 +227,55 @@ def shape_alignment(graph, nodes, node_shapes):
     return unsqueeze_nodes
 
 
-def get_tensor_list_node(graph, node, name):
+def get_tensor_list_node(graph, node, name, dtype=None):
     node_list = node.input(name)
     node_dtypes = [node.input_dtype(name, i) for i in range(len(node_list))]
-    node_list = dtype_alignment(graph, node_list, node_dtypes)
+    node_list = dtype_alignment(graph, node_list, node_dtypes, dtype)
 
     node_shapes = [node.input_shape(name, i) for i in range(len(node_list))]
     node_list = shape_alignment(graph, node_list, node_shapes)
-
     node = graph.make_node("Concat", inputs=node_list, axis=0)
-    node = graph.make_node('Squeeze', inputs=[node])
     return node
+
+
+def get_value_from_parameters(graph, input_node):
+    assert input_node in graph.parameters, "{} is not in graph.parameters".format(
+        input_node)
+    data = graph.parameters[input_node].attribute[0].t.int32_data
+    if data is None or len(data) < 1:
+        data = graph.parameters[input_node].attribute[0].t.int64_data
+    value = [val for _, val in enumerate(data)]
+    return value
+
+
+def get_node_attr_value(graph,
+                        node,
+                        attr_name,
+                        attr_tensor_name,
+                        attr_tensor_list_name,
+                        return_list=False,
+                        dtype=None,
+                        opset_version=10):
+    attr_tensor = node.input(attr_tensor_name)
+    attr_tensor_list = node.input(attr_tensor_list_name)
+    if attr_tensor is not None and len(attr_tensor) > 0:
+        value = node.input(attr_tensor_name)[0]
+        if return_list:
+            try:
+                value = get_value_from_parameters(graph, value)
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the {} parameter as input tensor, Try converting with opset_version >={}".
+                    format(attr_name, opset_version) + str(e))
+        else:
+            input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                attr_tensor_name, 0)]
+            if input_dtype != dtype:
+                value = graph.make_node(
+                    'Cast', inputs=[value], to=dtypes.ONNX.INT64)
+    elif return_list is False and attr_tensor_list is not None \
+            and len(attr_tensor_list) > 0:
+        value = get_tensor_list_node(graph, node, attr_tensor_list_name, dtype)
+    else:
+        value = node.attr(attr_name)
+    return value
