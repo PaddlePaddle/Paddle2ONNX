@@ -32,18 +32,16 @@ class Concat():
 
         input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
         inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        if len(node.input('AxisTensor')) > 0:
+        node_axis = node.input('AxisTensor')
+        if node_axis is not None and len(node_axis) > 0:
             axis_node = node.input('AxisTensor')[0]
-            # When axis is tensor, only int32 and int64 are supported
-            if axis_node not in graph.parameters:
+            try:
+                axis = mapper_helper.get_value_from_parameters(graph,
+                                                               axis_node)[0]
+            except Exception as e:
                 raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axis = graph.parameters[axis_node].attribute[0].t.int32_data
-                if axis is None or len(axis) < 1:
-                    axis = graph.parameters[axis_node].attribute[
-                        0].t.int64_data[0]
+                    "Currently does not support the axis parameter as input tensor"
+                    + str(e))
         else:
             axis = node.attr('axis')
         if axis < 0:
@@ -298,7 +296,7 @@ class Split():
 
 @op_mapper(['slice', 'strided_slice'])
 class Slice():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def decrease_axis(cls, node):
@@ -319,20 +317,18 @@ class Slice():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        strides = mapper_helper.get_node_attr_value(
+            graph, node, 'strides', 'StridesTensor', 'StridesTensorList', True)
+        strides = [1] * len(axes) if strides is None else strides
+        steps = [i for i, val in enumerate(strides) if val == 1]
+        assert len(steps) == len(axes), \
+            "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
-        input_shape = node.input_shape('Input', 0)
-        for i, e in enumerate(ends):
-            axis = axes[i]
-            if e > input_shape[axis] and input_shape[axis] > 0:
-                ends[i] = input_shape[axis]
+        starts = mapper_helper.get_node_attr_value(
+            graph, node, 'starts', 'StartsTensor', 'StartsTensorList', True)
+        ends = mapper_helper.get_node_attr_value(
+            graph, node, 'ends', 'EndsTensor', 'EndsTensorList', True)
 
-        if steps != [1] * len(ends):
-            raise Exception(
-                "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
-            )
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
             graph.make_node(
@@ -349,42 +345,63 @@ class Slice():
                 axes=axes,
                 starts=starts,
                 ends=ends)
-            graph.make_node(
-                'Squeeze',
-                inputs=[sliced],
-                outputs=node.output('Out'),
-                axes=decrease_axis)
+            mapper_helper.squeeze_helper(graph, sliced, decrease_axis,
+                                         node.output('Out'))
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        starts = node.attr('starts')
-        ends = node.attr('ends')
-        steps = node.attr('strides', [1] * len(ends))
+        strides = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'strides',
+            'StridesTensor',
+            'StridesTensorList',
+            dtype=dtypes.ONNX.INT64)
+        strides = [1] * len(axes) if strides is None else strides
 
-        input_shape = node.input_shape('Input', 0)
-        for i, e in enumerate(ends):
-            axis = axes[i]
-            if e > input_shape[axis] and input_shape[axis] > 0:
-                ends[i] = input_shape[axis]
+        starts = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'starts',
+            'StartsTensor',
+            'StartsTensorList',
+            dtype=dtypes.ONNX.INT64)
+        ends = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'ends',
+            'EndsTensor',
+            'EndsTensorList',
+            dtype=dtypes.ONNX.INT64)
 
-        for i, s in enumerate(starts):
-            axis = axes[i]
-            if s < 0 and input_shape[axis] > 0:
-                starts[i] = input_shape[axis] + s
+        if isinstance(starts, list):
+            starts_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': starts})
+        else:
+            starts_node = starts
 
+        if isinstance(ends, list):
+            ends_node = graph.make_node(
+                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                                   'value': ends})
+        else:
+            ends_node = ends
+
+        if isinstance(strides, list):
+            strides_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': strides})
+        else:
+            strides_node = strides
+
+        steps_node = strides_node
         axes_node = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,
                                'value': axes})
-        starts_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': starts})
-        ends_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': ends})
-        steps_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': steps})
 
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
@@ -402,11 +419,8 @@ class Slice():
                     node.input('Input')[0], starts_node, ends_node, axes_node,
                     steps_node
                 ])
-            graph.make_node(
-                'Squeeze',
-                inputs=[sliced],
-                outputs=node.output('Out'),
-                axes=decrease_axis)
+            mapper_helper.squeeze_helper(graph, sliced, decrease_axis,
+                                         node.output('Out'))
 
 
 @op_mapper(['sequence_expand'])
@@ -796,16 +810,13 @@ class Gather():
         axis = node.attr('axis')
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
-            # When axis is tensor, only int32 and int64 are supported
-            if axis_node not in graph.parameters:
+            try:
+                axis = mapper_helper.get_value_from_parameters(graph,
+                                                               axis_node)[0]
+            except Exception as e:
                 raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axis = graph.parameters[axis_node].attribute[0].t.int32_data
-                if axis is None or len(axis) < 1:
-                    axis = graph.parameters[axis_node].attribute[
-                        0].t.int64_data[0]
+                    "Currently does not support the axis parameter as input tensor"
+                    + str(e))
         if axis is None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
@@ -825,16 +836,13 @@ class Gather():
         axis = node.attr('axis')
         if node.input('Axis', 0) != None:
             axis_node = node.input('Axis', 0)
-            # When axis is tensor, only int32 and int64 are supported
-            if axis_node not in graph.parameters:
+            try:
+                axis = mapper_helper.get_value_from_parameters(graph,
+                                                               axis_node)[0]
+            except Exception as e:
                 raise Exception(
-                    "Currently does not support the axis parameter as input tensor!"
-                )
-            else:
-                axis = graph.parameters[axis_node].attribute[0].t.int32_data
-                if axis is None or len(axis) < 1:
-                    axis = graph.parameters[axis_node].attribute[
-                        0].t.int64_data[0]
+                    "Currently does not support the axis parameter as input tensor"
+                    + str(e))
         if axis is None:
             axis = 0
         if len(node.input_shape('Index', 0)) == 1:
@@ -924,7 +932,7 @@ class Assign():
                 value = np.array(node.attr('int64_values'))
             parameter = {
                 'data': value,
-                'dtype': node.attr('dtype'),
+                'dtype': node.output_dtype("Out", 0),
                 'shape': node.attr('shape')
             }
             parameters[node.output('Out', 0)] = parameter
@@ -1037,7 +1045,7 @@ class Reshape():
 
 @op_mapper('unsqueeze2')
 class Unsqueeze():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1064,7 +1072,12 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
-            axes = graph.parameters[axes_node].attribute[0].t.int64_data
+            try:
+                axes = mapper_helper.get_value_from_parameters(graph, axes_node)
+            except Exception as e:
+                raise Exception(
+                    "Currently does not support the axes parameter as input tensor"
+                    + str(e))
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
@@ -1175,7 +1188,6 @@ class Clip():
     def opset_1(cls, graph, node, **kw):
         min_value = node.attr('min')
         max_value = node.attr('max')
-        x_dtype = node.input_dtype('X', 0)
         if node.input('Max', 0) is None or len(node.input('Max')) == 0:
             max_ = max_value
         else:
@@ -1184,9 +1196,9 @@ class Clip():
             min_ = min_value
         else:
             min_ = node.input('Min', 0)
-        mapper_helper.clip_helper(graph,
+        mapper_helper.clip_helper(graph, node,
                                   node.input('X', 0), max_, min_,
-                                  node.output('Out', 0), x_dtype)
+                                  node.output('Out', 0))
 
 
 @op_mapper(['pad2d', 'pad3d'])
@@ -1230,7 +1242,7 @@ class Pad():
                     ]
             else:
                 raise Exception("In Pad op, padding can not be tensor" \
-                            "Please set opset version >= 11")
+                                "Please set opset version >= 11")
 
         value = None
         if node.attr('pad_value') is not None:
