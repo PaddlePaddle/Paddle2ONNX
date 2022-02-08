@@ -387,6 +387,10 @@ class Slice():
         ends = mapper_helper.get_node_attr_value(
             graph, node, 'ends', 'EndsTensor', 'EndsTensorList', True)
 
+        assert all(x >= 0 for x in starts) and all(x >= 0 for x in ends), \
+            "Slice in onnx(opset<10) not support attribute 'starts' or 'ends' which have tensor value, Try converting " \
+            "with opset_version >=10 "
+
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
             graph.make_node(

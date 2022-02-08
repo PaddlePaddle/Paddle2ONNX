@@ -250,12 +250,11 @@ def get_value_from_parameters(graph, input_node):
 
 def get_node_attr_value(graph,
                         node,
-                        attr_name,
+                        attr_name=None,
                         attr_tensor_name=None,
                         attr_tensor_list_name=None,
                         return_list=False,
-                        dtype=None,
-                        opset_version=10):
+                        dtype=None):
     attr_tensor = node.input(attr_tensor_name)
     attr_tensor_list = node.input(attr_tensor_list_name)
     if attr_tensor is not None and len(attr_tensor) > 0:
@@ -265,15 +264,15 @@ def get_node_attr_value(graph,
                 value = get_value_from_parameters(graph, value)
             except Exception as e:
                 raise Exception(
-                    "Currently does not support the {} parameter as input tensor, Try converting with opset_version >={}".
-                    format(attr_name, opset_version) + str(e))
+                    "Currently does not support the {} parameter as input tensor, Try converting with opset_version >{}".
+                    format(attr_name, graph.opset_version) + str(e))
         else:
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
                 attr_tensor_name, 0)]
             if input_dtype != dtype:
                 value = graph.make_node(
                     'Cast', inputs=[value], to=dtypes.ONNX.INT64)
-    elif return_list is False and attr_tensor_list is not None \
+    elif not return_list and attr_tensor_list is not None \
             and len(attr_tensor_list) > 0:
         value = get_tensor_list_node(graph, node, attr_tensor_list_name, dtype)
     else:
