@@ -18,7 +18,6 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
 
 
 class Net(BaseNet):
@@ -26,24 +25,18 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x):
+    def forward(self, inputs):
         """
         forward
         """
-        scale = self.config["scale"]
-        if self.config['isTensor']:
-            scale = paddle.to_tensor(scale)
-        x = paddle.scale(
-            x,
-            scale=scale,
-            bias=self.config["bias"],
-            bias_after_scale=self.config["bias_after_scale"])
+        x = paddle.unstack(
+            inputs, axis=self.config['axis'], num=self.config['num'])
         return x
 
 
-class TestScaleConvert(OPConvertAutoScanTest):
+class TestUnstackConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scale
+    api: paddle.unstack
     OPset version: 7, 9, 15
     """
 
@@ -51,26 +44,24 @@ class TestScaleConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=2, max_size=5))
-        # int32, int64 has a bug
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+                    min_value=1, max_value=8), min_size=1, max_size=5))
 
-        scale = draw(st.floats(min_value=-20, max_value=20))
-        isTensor = draw(st.booleans())
+        dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
+        axis = draw(
+            st.integers(
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
-        bias = draw(st.floats(min_value=-20, max_value=20))
-        bias_after_scale = draw(st.booleans())
+        axis_index = axis + len(input_shape) if axis < 0 else axis
+        num = input_shape[axis_index] if draw(st.booleans()) else None
 
         config = {
-            "op_names": ["scale"],
+            "op_names": ["unstack"],
             "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
+            "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "scale": scale,
-            "bias": bias,
-            "bias_after_scale": bias_after_scale,
-            "isTensor": isTensor,
+            "axis": axis,
+            "num": num,
         }
 
         models = Net(config)
