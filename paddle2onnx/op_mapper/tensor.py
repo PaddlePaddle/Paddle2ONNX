@@ -19,6 +19,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
 import copy
+import six
 import paddle
 
 
@@ -117,16 +118,48 @@ class Stack():
 
 @op_mapper('unstack')
 class Unstack():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (2, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        print(node)
-        graph.make_node(
+    def opset_2(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        axis = axis + ndim if axis < 0 else axis
+        output_y = graph.make_node(
             'Split',
             inputs=node.input('X'),
-            outputs=node.output('Y'),
-            axis=node.attr('axis'))
+            axis=axis,
+            outputs=len(node.output('Y')))
+        if isinstance(output_y, six.string_types):
+            output_y = [output_y]
+
+        for i in range(len(output_y)):
+            graph.make_node(
+                'Squeeze',
+                inputs=[output_y[i]],
+                axes=[axis],
+                outputs=[node.output('Y', i)])
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        axis = node.attr('axis')
+        ndim = node.block.vars[node.input('X')[0]].ndim
+        axis = axis + ndim if axis < 0 else axis
+        output_y = graph.make_node(
+            'Split',
+            inputs=node.input('X'),
+            axis=axis,
+            outputs=len(node.output('Y')))
+        if isinstance(output_y, six.string_types):
+            output_y = [output_y]
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [axis]})
+        for i in range(len(output_y)):
+            graph.make_node(
+                'Squeeze',
+                inputs=[output_y[i], axes_node],
+                outputs=[node.output('Y', i)])
 
 
 @op_mapper('expand_as_v2')
@@ -873,43 +906,62 @@ class Gather():
 
 @op_mapper('squeeze2')
 class Squeeze():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        axes = cls.compute_axes(node)
-        axes.sort()
-        graph.make_node(
-            'Squeeze',
-            inputs=[node.input('X', 0)],
-            outputs=node.output('Out'),
-            axes=axes)
+        shape = node.input_shape('X', 0)
+        ret = [i for i, val in enumerate(shape) if val > 1]
+        if len(ret) == len(shape):
+            graph.make_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+        else:
+            axes = cls.compute_axes(graph, node)
+            if len(axes) > 0:
+                axes.sort()
+                graph.make_node(
+                    'Squeeze',
+                    inputs=[node.input('X', 0)],
+                    outputs=node.output('Out'),
+                    axes=axes)
+            else:
+                graph.make_node(
+                    'Squeeze',
+                    inputs=[node.input('X', 0)],
+                    outputs=node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        axes = cls.compute_axes(node)
-        axes_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': axes})
-        graph.make_node(
-            'Squeeze',
-            inputs=[node.input('X', 0)] + [axes_node],
-            outputs=node.output('Out'))
+        shape = node.input_shape('X', 0)
+        ret = [i for i, val in enumerate(shape) if val > 1]
+        if len(ret) == len(shape):
+            graph.make_node(
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+        else:
+            axes = cls.compute_axes(graph, node)
+            if len(axes) > 0:
+                axes_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': axes})
+                graph.make_node(
+                    'Squeeze',
+                    inputs=[node.input('X', 0)] + [axes_node],
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'Squeeze',
+                    inputs=[node.input('X', 0)],
+                    outputs=node.output('Out'))
 
     @classmethod
-    def compute_axes(cls, node):
+    def compute_axes(cls, graph, node):
+        shape = node.input_shape('X', 0)
         axes = node.attr('axes')
-        input_x = node.input('X')[0]
-        ndim = node.block.vars[input_x].ndim
-        shape = node.block.vars[input_x].shape
-        if len(axes) == 0:
-            axes = [i for i, axis in enumerate(shape) if axis == 1]
-            assert len(
-                axes
-            ) > 0, "axes response to input data shape should at least have 1."
-        else:
+        if len(axes) > 0:
             axes = [
-                axis + ndim if axis < 0 else axis for i, axis in enumerate(axes)
+                axis + len(shape) if axis < 0 else axis
+                for i, axis in enumerate(axes)
             ]
         return axes
 

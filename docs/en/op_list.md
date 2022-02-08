@@ -153,7 +153,7 @@
 | sinh | 9~12 |
 | slice | 1~15 |
 | split | 1~12 |
-| squeeze2 | 1~12 |
+| squeeze2 | 1~15 |
 | square | 7~12 |
 | sqrt | 1~12 |
 | stack | 4~15 |
@@ -173,6 +173,7 @@
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~15 |
 | unsqueeze2 | 1~15 |
+| unstack | 2~15 |
 | where | 9~15 |
 | where_index | 9~15 |
 | yolo_box | 9~12 |
