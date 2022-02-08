@@ -270,8 +270,7 @@ def get_node_attr_value(graph,
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
                 attr_tensor_name, 0)]
             if input_dtype != dtype:
-                value = graph.make_node(
-                    'Cast', inputs=[value], to=dtypes.ONNX.INT64)
+                value = graph.make_node('Cast', inputs=[value], to=dtype)
     elif attr_tensor_list is not None and len(attr_tensor_list) > 0:
         value = get_tensor_list_node(graph, node, attr_tensor_list_name, dtype)
     else:
