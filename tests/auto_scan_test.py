@@ -163,6 +163,9 @@ class OPConvertAutoScanTest(unittest.TestCase):
             input_specs = []
 
         logging.info("Now Run >>> input_specs: {}".format(input_specs))
+        use_gpu = True
+        if "use_gpu" in config.keys():
+            use_gpu = config["use_gpu"]
 
         self.num_ran_models += 1
 
@@ -200,6 +203,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
             model.eval()
             obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
                           input_specs, delta, rtol)
+            obj.set_device_mode(use_gpu)
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
