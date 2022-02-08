@@ -31,7 +31,7 @@ opset_version_map = {
     "isfinite_v2": [10, 15],
     "isinf_v2": [10, 15],
     "isnan_v2": [9, 15],
-    # "isnan": [9, 13, 15],
+    "isnan": [9, 13, 15],
 }
 
 

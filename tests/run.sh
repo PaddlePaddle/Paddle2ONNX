@@ -15,7 +15,6 @@
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
         test_split.py \
-        test_isnan.py \
         test_has_nan.py \
         test_uniform.py"
 bug=0
