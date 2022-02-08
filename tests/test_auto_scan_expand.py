@@ -81,7 +81,11 @@ class Net1(BaseNet):
         """
         forward
         """
-        expand_times = [4, paddle.to_tensor(3), 2, 1]
+        # expand_times = [4, paddle.to_tensor(3), 2, 1]
+        # expand_times = [4, 3, 2, 1]
+        # expand_times = paddle.to_tensor(
+        #                     np.array([4, 3, 2, 1]).astype('int32'))
+        expand_times = [4, 3, paddle.to_tensor(np.array(2).astype("int64")), 1]
         x = paddle.fluid.layers.expand(inputs, expand_times=expand_times)
         return x
 

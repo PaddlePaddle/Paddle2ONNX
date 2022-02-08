@@ -82,6 +82,11 @@ class Net1(BaseNet):
         forward
         """
         repeat_times = [4, paddle.to_tensor(3), 2, 1]
+        # repeat_times = [4, 3, 2, 1]
+        # repeat_times = paddle.to_tensor(
+        #                     np.array([4, 3, 2, 1]).astype('int32'))
+        # not work
+        # repeat_times = [4, 3, paddle.to_tensor(np.array(2).astype("int64")), 1]
         x = paddle.tile(inputs, repeat_times=repeat_times)
         return x
 
