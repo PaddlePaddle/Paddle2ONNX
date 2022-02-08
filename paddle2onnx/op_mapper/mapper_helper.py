@@ -251,8 +251,8 @@ def get_value_from_parameters(graph, input_node):
 def get_node_attr_value(graph,
                         node,
                         attr_name,
-                        attr_tensor_name,
-                        attr_tensor_list_name,
+                        attr_tensor_name=None,
+                        attr_tensor_list_name=None,
                         return_list=False,
                         dtype=None,
                         opset_version=10):

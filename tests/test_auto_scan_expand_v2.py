@@ -78,5 +78,65 @@ class TestExpandConvert(OPConvertAutoScanTest):
         )  #, reproduce=reproduce_failure('6.34.1', b'AAEAAQAAAA=='))
 
 
+class Net1(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        shape = paddle.to_tensor([1, 2, 2])
+        # shape = paddle.to_tensor([2, 1, 2, 3, 2, 2])
+        # shape = [2, 1, 2, 3, 2, 2]
+        shape = [
+            paddle.to_tensor(2), paddle.to_tensor(1), paddle.to_tensor(2),
+            paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)
+        ]
+        # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), paddle.to_tensor(2), paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)]
+        x = paddle.expand(inputs, shape=shape)
+        # TODO there's bug with expand operator
+        x = paddle.reshape(
+            x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
+        return x
+
+
+class TestExpandConvert1(OPConvertAutoScanTest):
+    """
+    api: paddle.expand
+    OPset version: 8, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=2, max_value=6), min_size=2, max_size=5))
+        input_shape = [2, 2]
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        isTensor = draw(st.booleans())  # future to valid
+
+        n = random.randint(1, 6 - len(input_shape))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
+
+        config = {
+            "op_names": ["expand_v2"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [8, 9, 15],
+            "input_spec_shape": [],
+            "isTensor": isTensor,
+            "shape": pre_shape + input_shape,
+        }
+
+        models = Net1(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
 if __name__ == "__main__":
     unittest.main()

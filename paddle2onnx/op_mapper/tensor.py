@@ -159,43 +159,50 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        if len(node.input('Shape')) > 0:
-            shape = mapper_helper.cast(graph,
-                                       node.input('Shape', 0),
-                                       node.input_dtype('Shape', 0), 'int64')
+        expand_shape = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'shape',
+            'Shape',
+            'expand_shapes_tensor',
+            dtype=dtypes.ONNX.INT64)
+
+        input_shape = node.input_shape('X', 0)
+        input_shape_node = graph.make_node('Shape', inputs=node.input('X', 0))
+
+        node_shape = node.attr('shape')
+        node_shape_tensor = node.input('Shape')
+        node_shape_tensor_list = node.input('expand_shapes_tensor')
+        if node_shape_tensor is not None and len(node_shape_tensor) > 0:
+            diff = node.input_shape('Shape', 0)[0] - len(input_shape)
+        elif node_shape_tensor_list is not None and \
+                len(node_shape_tensor_list) > 0:
+            diff = len(node_shape_tensor_list) - len(input_shape)
+        elif node_shape is not None and len(node_shape) > 0:
+            diff = len(node_shape) - len(input_shape)
+            expand_shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=expand_shape)
+
+        if diff > 0:
+            one_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': [1] * diff})
+            input_shape_node = graph.make_node(
+                'Concat', inputs=[one_node, input_shape_node], axis=0)
+
+        if graph.opset_version < 12:
+            input_shape_node = graph.make_node(
+                'Cast', inputs=[input_shape_node], to=dtypes.ONNX.FLOAT)
+            expand_shape = graph.make_node(
+                'Cast', inputs=[expand_shape], to=dtypes.ONNX.FLOAT)
+            shape = graph.make_node(
+                'Max', inputs=[input_shape_node, expand_shape])
+            shape = graph.make_node(
+                'Cast', inputs=[shape], to=dtypes.ONNX.INT64)
         else:
-            if node.input('expand_shapes_tensor') is not None and len(
-                    node.input('expand_shapes_tensor')) > 0:
-                expand_shape = graph.make_node(
-                    'Concat',
-                    inputs=node.input('expand_shapes_tensor'),
-                    axis=-1)
-                expand_shape = graph.make_node(
-                    'Cast', inputs=[expand_shape], to=dtypes.ONNX.INT64)
-
-                input_shape = node.input_shape('X', 0)
-                input_shape = [i for i in input_shape]
-                input_shape_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=input_shape)
-
-                minus_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
-                condition_dtype = graph.make_node(
-                    "Equal", inputs=[expand_shape, minus_node])
-                condition = graph.make_node(
-                    'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
-
-                shape = graph.make_node(
-                    "Where",
-                    inputs=[condition, input_shape_node, expand_shape])
-
-            elif len(node.attr('shape')) > 0:
-                shape = node.attr('shape')
-                for idx in range(len(shape)):
-                    if shape[idx] == -1:
-                        shape[idx] = 1
-                shape = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=shape)
+            shape = graph.make_node(
+                'Max', inputs=[input_shape_node, expand_shape])
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],
