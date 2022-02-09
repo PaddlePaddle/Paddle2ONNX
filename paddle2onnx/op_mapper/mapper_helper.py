@@ -73,6 +73,26 @@ def squeeze_helper(graph, input, axes=None, outputs=None):
         return squeeze_node
 
 
+def unsqueeze_helper(graph, input, axes, outputs=None):
+    inputs = []
+    if isinstance(input, list):
+        input = input[0]
+    inputs.append(input)
+    if not isinstance(axes, list):
+        axes = [axes]
+    if graph.opset_version < 13:
+        unsqueeze_node = graph.make_node(
+            'Unsqueeze', inputs=inputs, axes=axes, outputs=outputs)
+    else:
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': axes})
+        inputs.append(axes_node)
+        unsqueeze_node = graph.make_node(
+            'Unsqueeze', inputs=inputs, outputs=outputs)
+    return unsqueeze_node
+
+
 def constant_helper(graph, dtype, value, shape=None, outputs=[]):
     constant = graph.make_node(
         'Constant',
@@ -211,16 +231,7 @@ def shape_alignment(graph, nodes, node_shapes):
         if dim != max_dim:
             unsqueeze_node = nodes[i]
             for j in range(max_dim - dim):
-                if graph.opset_version < 13:
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', inputs=[unsqueeze_node], axes=[0])
-                else:
-                    axes_node = graph.make_node(
-                        'Constant',
-                        attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': 0})
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', inputs=[unsqueeze_node, axes_node])
+                unsqueeze_node = unsqueeze_helper(graph, unsqueeze_node, axes=0)
             unsqueeze_nodes.append(unsqueeze_node)
         else:
             unsqueeze_nodes.append(nodes[i])
