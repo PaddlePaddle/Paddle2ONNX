@@ -42,7 +42,7 @@ class Net(BaseNet):
 class TestExpandConvert(OPConvertAutoScanTest):
     """
     api: paddle.fluid.layers.expand
-    OPset version: 11, 15
+    OPset version: 7, 11, 15
     """
 
     def sample_convert_config(self, draw):
@@ -58,7 +58,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
             "op_names": ["expand"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [7, 11, 15],
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": input_shape,
@@ -93,7 +93,7 @@ class Net1(BaseNet):
 class TestExpandConvert1(OPConvertAutoScanTest):
     """
     api: paddle.fluid.layers.expand
-    OPset version: 11, 15
+    OPset version:7, 11, 15
     """
 
     def sample_convert_config(self, draw):
@@ -109,7 +109,7 @@ class TestExpandConvert1(OPConvertAutoScanTest):
             "op_names": ["expand"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [7, 11, 15],
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": input_shape,

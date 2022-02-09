@@ -468,10 +468,10 @@ class SequenceExpand():
 
 @op_mapper(['expand'])
 class Expand():
-    support_opset_version_range = (11, 15)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         expand_times = mapper_helper.get_node_attr_value(
             graph,
             node,
@@ -494,10 +494,10 @@ class Expand():
 
 @op_mapper(['tile'])
 class Tile():
-    support_opset_version_range = (11, 15)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
+    def opset_6(cls, graph, node, **kw):
         repeat_times = mapper_helper.get_node_attr_value(
             graph,
             node,
