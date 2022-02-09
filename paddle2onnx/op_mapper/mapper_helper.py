@@ -248,14 +248,16 @@ def get_value_from_parameters(graph, input_node):
     return value
 
 
+# return value
+# arg1: attr_value
+# arg2: attr_value is tensor or not
 def get_node_attr_value(graph,
                         node,
-                        attr_name,
-                        attr_tensor_name,
-                        attr_tensor_list_name,
+                        attr_name=None,
+                        attr_tensor_name=None,
+                        attr_tensor_list_name=None,
                         return_list=False,
-                        dtype=None,
-                        opset_version=10):
+                        dtype=None):
     attr_tensor = node.input(attr_tensor_name)
     attr_tensor_list = node.input(attr_tensor_list_name)
     if attr_tensor is not None and len(attr_tensor) > 0:
@@ -263,19 +265,18 @@ def get_node_attr_value(graph,
         if return_list:
             try:
                 value = get_value_from_parameters(graph, value)
-            except Exception as e:
-                raise Exception(
-                    "Currently does not support the {} parameter as input tensor, Try converting with opset_version >={}".
-                    format(attr_name, opset_version) + str(e))
+                return value, False  # value, is_tensor
+            except Exception:
+                return value, True
         else:
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
                 attr_tensor_name, 0)]
             if input_dtype != dtype:
-                value = graph.make_node(
-                    'Cast', inputs=[value], to=dtypes.ONNX.INT64)
-    elif return_list is False and attr_tensor_list is not None \
-            and len(attr_tensor_list) > 0:
+                value = graph.make_node('Cast', inputs=[value], to=dtype)
+            return value, True
+    elif attr_tensor_list is not None and len(attr_tensor_list) > 0:
         value = get_tensor_list_node(graph, node, attr_tensor_list_name, dtype)
+        return value, True
     else:
         value = node.attr(attr_name)
-    return value
+        return value, False
