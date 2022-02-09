@@ -16,6 +16,8 @@
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
+  
+/*
 class ClipMapper : public Mapper {
  public:
   ClipMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
@@ -23,7 +25,7 @@ class ClipMapper : public Mapper {
 
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
-  void Opset7(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
+  void Opset7(OnnxHelper* helper) {
     nodes->clear();
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
@@ -39,10 +41,9 @@ class ClipMapper : public Mapper {
       float max = 1.0;
       parser->GetOpAttr(op, "min", &min);
       parser->GetOpAttr(op, "max", &max);
-      auto node = MakeNode("Clip", {input_info[0].name}, {output_info[0].name});
+      auto node = helper->MakeNode("Clip", {input_info[0].name}, {output_info[0].name});
       AddAttribute(node, "min", min);
       AddAttribute(node, "max", max);
-      nodes->push_back(node);
       return;
     }
 
@@ -130,5 +131,5 @@ class ClipMapper : public Mapper {
   }
 };
 
-REGISTER_MAPPER(clip, ClipMapper)
+REGISTER_MAPPER(clip, ClipMapper)*/
 }  // namespace paddle2onnx

@@ -25,7 +25,7 @@ class ActivationMapper : public Mapper {
     op_mapper["log"] = "Log";
     op_mapper["sigmoid"] = "Sigmoid";
     op_mapper["sqrt"] = "Sqrt";
-    op_mapper["softplu"] = "Softplus";
+    op_mapper["softplus"] = "Softplus";
   }
 
   int32_t GetMinOpset(bool verbose = false) {
@@ -35,7 +35,7 @@ class ActivationMapper : public Mapper {
       float threshold = 20.0;
       parser->GetOpAttr(op, "beta", &beta);
       parser->GetOpAttr(op, "threshold", &threshold);
-      if (beta > 1e-06 || beta < -1e-06) {
+      if ((beta - 1.0) > 1e-06 || (beta - 1.0) < -1e-06) {
         if (verbose) {
           std::cerr << "Paddle2ONNX only supports softplus with beta == 0"
                     << std::endl;
@@ -55,8 +55,7 @@ class ActivationMapper : public Mapper {
     return 7;
   }
 
-  void Opset7(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    nodes->clear();
+  void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
     std::vector<TensorInfo> output_info =
@@ -65,9 +64,7 @@ class ActivationMapper : public Mapper {
     auto iter = op_mapper.find(op.type());
     Assert(op_mapper.end() != iter,
            "Cannot find " + op.type() + " in activation op_mapper.");
-    auto node =
-        MakeNode(iter->second, {input_info[0].name}, {output_info[0].name});
-    nodes->push_back(node);
+    helper->MakeNode(iter->second, {input_info[0].name}, {output_info[0].name});
   }
 
  private:
@@ -84,31 +81,28 @@ class LeakyReluMapper : public Mapper {
 
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
-  void Opset7(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    nodes->clear();
+  void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
     std::vector<TensorInfo> output_info =
         parser->GetOpOutput(block_idx, op_idx, "Out");
     auto op = parser->GetOpDesc(block_idx, op_idx);
-    auto node =
-        MakeNode("LeakyRelu", {input_info[0].name}, {output_info[0].name});
+    auto node = helper->MakeNode("LeakyRelu", {input_info[0].name}, {output_info[0].name});
     AddAttribute(node, "alpha", alpha);
-    nodes->push_back(node);
   }
 
  private:
   float alpha;
 };
 
-class PReluMapper : public Mapper {
+/*class PReluMapper : public Mapper {
  public:
   PReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
 
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
-  void Opset7(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
+  void Opset7(ONNXHelper* helper) {
     nodes->clear();
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
@@ -146,7 +140,7 @@ class PReluMapper : public Mapper {
       nodes->push_back(node);
     }
   }
-};
+};*/
 
 REGISTER_MAPPER(relu, ActivationMapper)
 REGISTER_MAPPER(tanh, ActivationMapper)
@@ -155,6 +149,5 @@ REGISTER_MAPPER(sigmoid, ActivationMapper)
 REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
-REGISTER_MAPPER(prelu, PReluMapper)
-REGISTER_MAPPER(hard_sigmoid, PReluMapper)
+// REGISTER_MAPPER(prelu, PReluMapper)
 }  // namespace paddle2onnx

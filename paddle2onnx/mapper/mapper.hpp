@@ -31,74 +31,65 @@ class Mapper {
   // if return value < 0, means the op is not supported.
   virtual int32_t GetMinOpset(bool verbose) = 0;
 
-  void Run(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
+  void Run(OnnxHelper* helper,
            int32_t opset_version = 7) {
     export_opset_version = opset_version;
     Assert(opset_version >= 7 && opset_version <= 15,
            "Paddle2ONNX only support opset_version in range of [7, 15].");
     if (opset_version == 15) {
-      Opset15(nodes);
+      Opset15(helper);
     } else if (opset_version == 14) {
-      Opset14(nodes);
+      Opset14(helper);
     } else if (opset_version == 13) {
-      Opset13(nodes);
+      Opset13(helper);
     } else if (opset_version == 12) {
-      Opset12(nodes);
+      Opset12(helper);
     } else if (opset_version == 11) {
-      Opset11(nodes);
+      Opset11(helper);
     } else if (opset_version == 10) {
-      Opset10(nodes);
+      Opset10(helper);
     } else if (opset_version == 9) {
-      Opset9(nodes);
+      Opset9(helper);
     } else if (opset_version == 8) {
-      Opset8(nodes);
+      Opset8(helper);
     } else {
-      Opset7(nodes);
+      Opset7(helper);
     }
   }
 
-  virtual void Opset15(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset14(nodes);
+  virtual void Opset15(OnnxHelper* helper) {
+    Opset14(helper);
   }
 
-  virtual void Opset14(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset13(nodes);
+  virtual void Opset14(OnnxHelper* helper) {
+    Opset13(helper);
   }
 
-  virtual void Opset13(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset12(nodes);
+  virtual void Opset13(OnnxHelper* helper) {
+    Opset12(helper);
   }
 
-  virtual void Opset12(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset11(nodes);
+  virtual void Opset12(OnnxHelper* helper) {
+    Opset11(helper);
   }
 
-  virtual void Opset11(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset10(nodes);
+  virtual void Opset11(OnnxHelper* helper) {
+    Opset10(helper);
   }
 
-  virtual void Opset10(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset9(nodes);
+  virtual void Opset10(OnnxHelper* helper) {
+    Opset9(helper);
   }
 
-  virtual void Opset9(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset8(nodes);
+  virtual void Opset9(OnnxHelper* helper) {
+    Opset8(helper);
   }
 
-  virtual void Opset8(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    Opset7(nodes);
+  virtual void Opset8(OnnxHelper* helper) {
+    Opset7(helper);
   }
 
-  virtual void Opset7(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
+  virtual void Opset7(OnnxHelper* helper) {
     Assert(false,
            "This error shouldn't happend, please report to "
            "https://github.com/PaddlePaddle/Paddle2ONNX.git.");

@@ -30,7 +30,7 @@ struct ModelExporter {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> op_nodes;
+  OnnxHelper helper;
 
   void ExportParameters(const std::map<std::string, Weight>& params,
                         bool use_initializer = false);
@@ -82,11 +82,8 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
 
   auto mapper =
       MapperHelper::Get()->CreateMapper(op.type(), parser, block_id, op_id);
-  mapper->Run(&nodes, opset_version);
+  mapper->Run(&helper, opset_version);
   delete mapper;
-  for (size_t i = 0; i < nodes.size(); ++i) {
-    op_nodes.push_back(nodes[i]);
-  }
 }
 
 std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
@@ -94,10 +91,10 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
     bool verbose) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
+  helper.Clear();
   inputs.clear();
   outputs.clear();
   parameters.clear();
-  op_nodes.clear();
 
   // clear name_counter
   // this use to generate unique name
@@ -173,7 +170,7 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
   for (auto& item : inputs) {
     *(graph->add_input()) = *(item.get());
   }
-  for (auto& item : op_nodes) {
+  for (auto& item : helper.nodes) {
     *(graph->add_node()) = (*item.get());
   }
   for (auto& item : outputs) {

@@ -21,6 +21,35 @@
 
 namespace paddle2onnx {
 
+class OnnxHelper {
+ public:
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> nodes;
+
+  void Clear() { nodes.clear(); }
+
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
+      const std::string& op_type, const std::vector<std::string>& inputs,
+      const std::vector<std::string>& outputs);
+  // we use this function to generate some temporary node
+  // we do not need to define the outputs, because the outputs
+  // is generate by MapperHelper, which will make sure there's no
+  // name confict problem
+  // the parameter `num_outputs` will define the number of output names
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
+      const std::string& op_type, const std::vector<std::string>& inputs,
+      int num_outputs = 1);
+
+  template <typename T>
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
+      const std::vector<int64_t>& shape,
+      ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+
+  template <typename T>
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
+      const std::string& name, const std::vector<int64_t>& shape,
+      ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+};
+
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   const std::string& name, const int64_t& value) {
   auto attr = node->add_attribute();
@@ -114,8 +143,56 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
   return node;
 }
 
+std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
+    const TensorInfo& info) {
+  auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
+  value_info->set_name(info.name);
+  auto type_proto = value_info->mutable_type();
+  auto tensor_type_proto = type_proto->mutable_tensor_type();
+  tensor_type_proto->set_elem_type(GetOnnxDtype(info.dtype));
+  auto shape = tensor_type_proto->mutable_shape();
+  for (auto& dim : info.shape) {
+    shape->add_dim()->set_dim_value(dim);
+  }
+  return value_info;
+}
+
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
+    const std::string& op_type, const std::vector<std::string>& inputs,
+    const std::vector<std::string>& outputs) {
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  node->set_op_type(op_type);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    node->add_input(inputs[i]);
+  }
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    node->add_output(outputs[i]);
+  }
+  nodes.push_back(node);
+  return node;
+}
+
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
+    const std::string& op_type, const std::vector<std::string>& inputs,
+    int num_outputs) {
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  node->set_op_type(op_type);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    node->add_input(inputs[i]);
+  }
+  std::vector<std::string> outputs;
+  for (auto i = 0; i < num_outputs; ++i) {
+    outputs.push_back(MapperHelper::Get()->GenName(op_type));
+  }
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    node->add_output(outputs[i]);
+  }
+  nodes.push_back(node);
+  return node;
+}
+
 template <typename T>
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
     const std::vector<int64_t>& shape,
     ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
@@ -152,7 +229,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
 }
 
 template <typename T>
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
     const std::string& name, const std::vector<int64_t>& shape,
     ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
@@ -187,90 +264,4 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
   return node;
 }
 
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstantOfShape(
-    const std::vector<int64_t>& shape) {
-  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
-  node->set_op_type("Constant");
-  auto name = MapperHelper::Get()->GenName("shape_const");
-  node->add_output(name);
-  auto attr = node->add_attribute();
-  attr->set_name("value");
-  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
-  auto tensor = attr->mutable_t();
-  tensor->set_name(name);
-  tensor->set_data_type(ONNX_NAMESPACE::TensorProto::INT64);
-  tensor->add_dims((int64_t)(shape.size()));
-  tensor->set_raw_data(
-      std::string((const char*)(shape.data()), shape.size() * 8));
-  return node;
-}
-
-std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
-    const TensorInfo& info) {
-  auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
-  value_info->set_name(info.name);
-  auto type_proto = value_info->mutable_type();
-  auto tensor_type_proto = type_proto->mutable_tensor_type();
-  tensor_type_proto->set_elem_type(GetOnnxDtype(info.dtype));
-  auto shape = tensor_type_proto->mutable_shape();
-  for (auto& dim : info.shape) {
-    shape->add_dim()->set_dim_value(dim);
-  }
-  return value_info;
-}
-
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
-    const std::string& op_type, const std::vector<std::string>& inputs,
-    const std::vector<std::string>& outputs) {
-  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
-  node->set_op_type(op_type);
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    node->add_input(inputs[i]);
-  }
-  for (size_t i = 0; i < outputs.size(); ++i) {
-    node->add_output(outputs[i]);
-  }
-  return node;
-}
-
-// we use this function to generate some temporary node
-// we do not need to define the outputs, because the outputs
-// is generate by MapperHelper, which will make sure there's no
-// name confict problem
-// the parameter `num_outputs` will define the number of output names
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
-    const std::string& op_type, const std::vector<std::string>& inputs,
-    int num_outputs = 1) {
-  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
-  node->set_op_type(op_type);
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    node->add_input(inputs[i]);
-  }
-  std::vector<std::string> outputs;
-  for (auto i = 0; i < num_outputs; ++i) {
-    outputs.push_back(MapperHelper::Get()->GenName(op_type));
-  }
-  for (size_t i = 0; i < outputs.size(); ++i) {
-    node->add_output(outputs[i]);
-  }
-  return node;
-}
-
-// AutoCastNode will cast the input to the `to_paddle_type`
-// if input_paddle_type == to_paddle_type
-// this operation will be skipped
-std::string AutoCastNode(
-    const std::string& input_name, int32_t input_paddle_type,
-    int32_t to_paddle_type,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-  std::string output_name = input_name;
-  if (input_paddle_type == to_paddle_type) {
-    return output_name;
-  }
-  output_name = MapperHelper::Get()->GenName("auto.cast");
-  auto node = MakeNode("Cast", {input_name}, {output_name});
-  AddAttribute(node, "to", GetOnnxDtype(to_paddle_type));
-  nodes->push_back(node);
-  return output_name;
-}
 }  // namespace paddle2onnx

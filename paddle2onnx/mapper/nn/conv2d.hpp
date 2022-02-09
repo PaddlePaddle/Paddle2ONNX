@@ -39,6 +39,7 @@ class Conv2dMapper : public Mapper {
   }
 
   int32_t GetMinOpset(bool verbose = false) {
+    // NHWC is not supported
     if (data_format == "NHWC") {
       if (verbose) {
         std::cerr << "[ERROR] Cannot support NHWC format for operator conv2d."
@@ -46,18 +47,25 @@ class Conv2dMapper : public Mapper {
       }
       return -1;
     }
+    // strides should be less or equal than kernel size
+    auto kernel_info = parser->GetOpInput(block_idx, op_idx, "Filter");
+    if (kernel_info[0].shape[2] < strides[0] || kernel_info[0].shape[3] < strides[1]) {
+      if (verbose) {
+        std::cerr << "[ERROR] Cannot handle the situation that kernel_size < strides" << std::endl;
+        return -1;
+      }
+    }
     return 7;
   }
 
-  void Opset7(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    nodes->clear();
+  void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> kernel_info =
         parser->GetOpInput(block_idx, op_idx, "Filter");
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "Input");
     std::vector<TensorInfo> output_info =
         parser->GetOpOutput(block_idx, op_idx, "Output");
-    auto node = MakeNode("Conv", {input_info[0].name, kernel_info[0].name},
+    auto node = helper->MakeNode("Conv", {input_info[0].name, kernel_info[0].name},
                          {output_info[0].name});
     AddAttribute(node, "dilations", dilations);
     std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
@@ -72,9 +80,7 @@ class Conv2dMapper : public Mapper {
     } else {
       AddAttribute(node, "pads", paddings);
     }
-    nodes->push_back(node);
   }
-
  private:
   std::vector<int64_t> dilations;
   std::vector<int64_t> strides;
