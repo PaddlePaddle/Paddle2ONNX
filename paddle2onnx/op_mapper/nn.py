@@ -588,50 +588,6 @@ class GroupNorm():
     support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_13(cls, graph, node, **kw):
-        num_groups = node.attr('groups')
-        epsilon = node.attr('epsilon')
-        ipt = node.input('X')[0]
-
-        ipt_shape = node.input_shape('X', 0)
-        assert len(
-            ipt_shape) == 4, "Only support 4D-Tensor as input for GroupNorm"
-
-        shape = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=[0, num_groups, -1])
-        reshape_input = graph.make_node('Reshape', inputs=[ipt, shape])
-        scale_ = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[1.0] * num_groups)
-        bias_ = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.0] * num_groups)
-        reshaped_output = graph.make_node(
-            'InstanceNormalization',
-            inputs=[reshape_input, scale_, bias_],
-            epsilon=epsilon)
-        origin_shape = graph.make_node('Shape', inputs=[ipt])
-
-        if len(node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
-            output = graph.make_node(
-                'Reshape', inputs=[reshaped_output, origin_shape])
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[1, 2])
-            scale = node.input('Scale')[0]
-            bias = node.input('Bias')[0]
-            unsqueezed_scale = graph.make_node(
-                'Unsqueeze', inputs=[scale, axes])
-            unsqueezed_bias = graph.make_node('Unsqueeze', inputs=[bias, axes])
-            part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
-            graph.make_node(
-                'Add',
-                inputs=[part0, unsqueezed_bias],
-                outputs=node.output('Y'))
-        else:
-            output = graph.make_node(
-                'Reshape',
-                inputs=[reshaped_output, origin_shape],
-                outputs=node.output('Y'))
-
-    @classmethod
     def opset_6(cls, graph, node, **kw):
         num_groups = node.attr('groups')
         epsilon = node.attr('epsilon')
@@ -662,10 +618,10 @@ class GroupNorm():
                 'Reshape', inputs=[reshaped_output, origin_shape])
             scale = node.input('Scale')[0]
             bias = node.input('Bias')[0]
-            unsqueezed_scale = graph.make_node(
-                'Unsqueeze', inputs=[scale], axes=[1, 2])
-            unsqueezed_bias = graph.make_node(
-                'Unsqueeze', inputs=[bias], axes=[1, 2])
+            unsqueezed_scale = mapper_helper.unsqueeze_helper(graph, scale,
+                                                              [1, 2])
+            unsqueezed_bias = mapper_helper.unsqueeze_helper(graph, bias,
+                                                             [1, 2])
             part0 = graph.make_node('Mul', inputs=[output, unsqueezed_scale])
             graph.make_node(
                 'Add',

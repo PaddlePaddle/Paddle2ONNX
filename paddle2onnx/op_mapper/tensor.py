@@ -85,29 +85,7 @@ class Stack():
 
         unsqueezed_inputs = list()
         for ipt in inputs:
-            unsqueezed_ipt = graph.make_node(
-                'Unsqueeze', inputs=[ipt], axes=[axis])
-            unsqueezed_inputs.append(unsqueezed_ipt)
-        graph.make_node(
-            'Concat',
-            inputs=unsqueezed_inputs,
-            outputs=node.output('Y'),
-            axis=axis)
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        inputs = node.input('X')
-        input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
-        inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        axis = node.attr('axis')
-
-        unsqueezed_inputs = list()
-        for ipt in inputs:
-            axes_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': axis})
-            unsqueezed_ipt = graph.make_node(
-                'Unsqueeze', inputs=[ipt, axes_node])
+            unsqueezed_ipt = mapper_helper.unsqueeze_helper(graph, ipt, axis)
             unsqueezed_inputs.append(unsqueezed_ipt)
         graph.make_node(
             'Concat',
@@ -134,32 +112,8 @@ class Unstack():
             output_y = [output_y]
 
         for i in range(len(output_y)):
-            graph.make_node(
-                'Squeeze',
-                inputs=[output_y[i]],
-                axes=[axis],
-                outputs=[node.output('Y', i)])
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        axis = node.attr('axis')
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        axis = axis + ndim if axis < 0 else axis
-        output_y = graph.make_node(
-            'Split',
-            inputs=node.input('X'),
-            axis=axis,
-            outputs=len(node.output('Y')))
-        if isinstance(output_y, six.string_types):
-            output_y = [output_y]
-        axes_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [axis]})
-        for i in range(len(output_y)):
-            graph.make_node(
-                'Squeeze',
-                inputs=[output_y[i], axes_node],
-                outputs=[node.output('Y', i)])
+            mapper_helper.squeeze_helper(graph, output_y[i], axis,
+                                         [node.output('Y', i)])
 
 
 @op_mapper('expand_as_v2')
@@ -238,19 +192,8 @@ class Numel():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         size_node = graph.make_node('Size', inputs=node.input('Input'))
-        graph.make_node(
-            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        size_node = graph.make_node('Size', inputs=node.input('Input'))
-        axes_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [0]})
-        graph.make_node(
-            'Unsqueeze',
-            inputs=[size_node, axes_node],
-            outputs=node.output('Out'))
+        mapper_helper.unsqueeze_helper(graph, size_node, [0],
+                                       node.output('Out'))
 
 
 @op_mapper('split')
@@ -595,57 +538,6 @@ class Embedding():
             key = node.input('W', 0)
             if -1 in input_shape:
                 assert False, "opset version < 11 do not support padding_idx !=-1 and weight is tensor with dynamic shape, please set opset version > 11 or use input_spec to set input shape"
-            else:
-                data = np.ones(shape=input_shape, dtype=np.float32)
-                data[padding_idx] = 0.0
-                dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('W', 0)]
-                constant = graph.make_node(
-                    'Constant',
-                    dtype=dtype,
-                    dims=input_shape,
-                    value=data.flatten().tolist())
-                weight_node = graph.make_node(
-                    'Mul', inputs=[node.input('W', 0), constant])
-                graph.make_node(
-                    'Gather',
-                    inputs=[weight_node, ids],
-                    outputs=node.output('Out'))
-        else:
-            graph.make_node(
-                'Gather',
-                inputs=[node.input('W', 0), ids],
-                outputs=node.output('Out'))
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        ids = node.input('Ids', 0)
-        if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
-            ids = graph.make_node(
-                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
-
-        padding_idx = node.attr('padding_idx')
-        input_shape = node.input_shape('W', 0)
-        if padding_idx != -1:
-            if -1 in input_shape:
-                dtype = dtypes.ONNX.FLOAT
-                if node.input_dtype('W', 0) == paddle.float64:
-                    dtype = dtypes.ONNX.DOUBLE
-                replace_shape = list(copy.copy(input_shape))
-                del (replace_shape[0])
-                replace_data = constant = graph.make_node(
-                    'Constant',
-                    dtype=dtype,
-                    dims=replace_shape,
-                    value=[0.0] * np.prod(replace_shape))
-                index = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=[padding_idx])
-                Scatter_node = graph.make_node(
-                    'ScatterND',
-                    inputs=[node.input('W', 0), index, replace_data])
-                graph.make_node(
-                    'Gather',
-                    inputs=[Scatter_node, ids],
-                    outputs=node.output('Out'))
             else:
                 data = np.ones(shape=input_shape, dtype=np.float32)
                 data[padding_idx] = 0.0
