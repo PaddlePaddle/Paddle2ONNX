@@ -27,6 +27,8 @@ class Net(BaseNet):
         fill_value = self.config['fill_value']
         if self.config['is_tensor']:
             fill_value = paddle.to_tensor(fill_value)
+        if self.config['is_shape_tensor']:
+            shape = paddle.to_tensor(shape)
         dtype = self.config["dtype"]
         x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
         return x
@@ -47,16 +49,18 @@ class TestFullConvert(OPConvertAutoScanTest):
         fill_value = draw(st.integers(min_value=1, max_value=5))
         # todo tensor is not supported
         is_tensor = False  # draw(st.booleans())
+        is_shape_tensor = draw(st.booleans())
         config = {
             "op_names": ["fill_constant"],
             "test_data_shapes": [],
             "test_data_types": [],
-            "opset_version": [7, 9, 15],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
             "shape": input_shape,
             "dtype": dtype,
             "fill_value": fill_value,
             "is_tensor": is_tensor,
+            "is_shape_tensor": is_shape_tensor,
         }
 
         model = Net(config)
