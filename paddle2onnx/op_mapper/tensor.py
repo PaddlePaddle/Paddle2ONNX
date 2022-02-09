@@ -142,29 +142,54 @@ class ExpandAsV2():
 
 @op_mapper('expand_v2')
 class ExpandV2():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        if node.input('expand_shapes_tensor') is not None and len(
-                node.input('expand_shapes_tensor')) > 0:
+        expand_shape, _ = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'shape',
+            'Shape',
+            'expand_shapes_tensor',
+            dtype=dtypes.ONNX.INT64)
+
+        input_shape = node.input_shape('X', 0)
+        input_shape_node = graph.make_node('Shape', inputs=node.input('X', 0))
+
+        node_shape = node.attr('shape')
+        node_shape_tensor = node.input('Shape')
+        node_shape_tensor_list = node.input('expand_shapes_tensor')
+        if node_shape_tensor is not None and len(node_shape_tensor) > 0:
+            diff = node.input_shape('Shape', 0)[0] - len(input_shape)
+        elif node_shape_tensor_list is not None and \
+                len(node_shape_tensor_list) > 0:
+            diff = len(node_shape_tensor_list) - len(input_shape)
+        elif node_shape is not None and len(node_shape) > 0:
+            diff = len(node_shape) - len(input_shape)
+            expand_shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=expand_shape)
+
+        if diff > 0:
+            one_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': [1] * diff})
+            input_shape_node = graph.make_node(
+                'Concat', inputs=[one_node, input_shape_node], axis=0)
+
+        if graph.opset_version < 12:
+            input_shape_node = graph.make_node(
+                'Cast', inputs=[input_shape_node], to=dtypes.ONNX.FLOAT)
+            expand_shape = graph.make_node(
+                'Cast', inputs=[expand_shape], to=dtypes.ONNX.FLOAT)
             shape = graph.make_node(
-                'Concat', inputs=node.input('expand_shapes_tensor'), axis=-1)
+                'Max', inputs=[input_shape_node, expand_shape])
             shape = graph.make_node(
                 'Cast', inputs=[shape], to=dtypes.ONNX.INT64)
         else:
-            if len(node.input('Shape')) > 0:
-                shape = mapper_helper.cast(graph,
-                                           node.input('Shape', 0),
-                                           node.input_dtype('Shape', 0),
-                                           'int64')
-            elif len(node.attr('shape')) > 0:
-                shape = node.attr('shape')
-                for idx in range(len(shape)):
-                    if shape[idx] == -1:
-                        shape[idx] = 1
-                shape = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=shape)
+            shape = graph.make_node(
+                'Max', inputs=[input_shape_node, expand_shape])
         node = graph.make_node(
             'Expand',
             inputs=[node.input('X', 0), shape],
@@ -293,17 +318,21 @@ class Slice():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides = mapper_helper.get_node_attr_value(
+        strides, strides_is_tensor = mapper_helper.get_node_attr_value(
             graph, node, 'strides', 'StridesTensor', 'StridesTensorList', True)
         strides = [1] * len(axes) if strides is None else strides
         steps = [i for i, val in enumerate(strides) if val == 1]
         assert len(steps) == len(axes), \
             "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
-        starts = mapper_helper.get_node_attr_value(
+        starts, start_is_tensor = mapper_helper.get_node_attr_value(
             graph, node, 'starts', 'StartsTensor', 'StartsTensorList', True)
-        ends = mapper_helper.get_node_attr_value(
+        ends, end_is_tensor = mapper_helper.get_node_attr_value(
             graph, node, 'ends', 'EndsTensor', 'EndsTensorList', True)
+
+        assert not strides_is_tensor and not start_is_tensor and not end_is_tensor, \
+            "Slice in onnx(opset<10) not support attribute 'steps','starts' or 'ends' which have tensor value, " \
+            "Try converting with opset_version >=10 "
 
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
@@ -327,7 +356,7 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides = mapper_helper.get_node_attr_value(
+        strides, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'strides',
@@ -336,14 +365,14 @@ class Slice():
             dtype=dtypes.ONNX.INT64)
         strides = [1] * len(axes) if strides is None else strides
 
-        starts = mapper_helper.get_node_attr_value(
+        starts, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'starts',
             'StartsTensor',
             'StartsTensorList',
             dtype=dtypes.ONNX.INT64)
-        ends = mapper_helper.get_node_attr_value(
+        ends, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'ends',

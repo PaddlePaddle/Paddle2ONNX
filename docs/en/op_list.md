@@ -51,7 +51,7 @@
 | erf | 9~12 |
 | exp | 1~12 |
 | expand_as_v2 | 8~12 |
-| expand_v2 | 8~12 |
+| expand_v2 | 8~15 |
 | elu | 1~12 |
 | fill_constant | 1~12 |
 | fill_constant_batch_size_like  | 9~12 |
