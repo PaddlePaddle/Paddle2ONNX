@@ -34,7 +34,7 @@ class Net(BaseNet):
             repeat_times = repeat_times
         elif self.config['repeat_times_dtype'] == "Tensor":
             repeat_times = paddle.to_tensor(
-                np.array(repeat_times).astype('int32'))
+                np.array(repeat_times).astype(self.config['shape_dtype']))
         x = paddle.tile(inputs, repeat_times=repeat_times)
         return x
 
@@ -54,6 +54,8 @@ class TestTileConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
+
         config = {
             "op_names": ["tile"],
             "test_data_shapes": [input_shape],
@@ -62,6 +64,7 @@ class TestTileConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": input_shape,
+            "shape_dtype": shape_dtype,
         }
 
         models = Net(config)
@@ -81,7 +84,10 @@ class Net1(BaseNet):
         """
         forward
         """
-        repeat_times = [4, paddle.to_tensor(3), 2, 1]
+        repeat_times = [
+            4, paddle.to_tensor(
+                3, dtype=self.config['shape_dtype']), 2, 1
+        ]
         # repeat_times = [4, 3, 2, 1]
         # repeat_times = paddle.to_tensor(
         #                     np.array([4, 3, 2, 1]).astype('int32'))
@@ -104,6 +110,8 @@ class TestTileConvert1(OPConvertAutoScanTest):
                     min_value=2, max_value=5), min_size=2, max_size=5))
         input_shape = [4, 3, 2, 1]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
+
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
         config = {
@@ -114,6 +122,7 @@ class TestTileConvert1(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": input_shape,
+            "shape_dtype": shape_dtype,
         }
 
         models = Net1(config)

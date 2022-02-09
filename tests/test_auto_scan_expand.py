@@ -34,7 +34,7 @@ class Net(BaseNet):
             expand_times = expand_times
         elif self.config['repeat_times_dtype'] == "Tensor":
             expand_times = paddle.to_tensor(
-                np.array(expand_times).astype('int32'))
+                np.array(expand_times).astype(self.config['shape_dtype']))
         x = paddle.fluid.layers.expand(inputs, expand_times=expand_times)
         return x
 
@@ -52,6 +52,9 @@ class TestExpandConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=5), min_size=2, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        # int64 are not supported
+        shape_dtype = draw(st.sampled_from(["int32"]))
+
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
         config = {
@@ -62,6 +65,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": input_shape,
+            "shape_dtype": shape_dtype,
         }
 
         models = Net(config)
@@ -85,7 +89,10 @@ class Net1(BaseNet):
         # expand_times = [4, 3, 2, 1]
         # expand_times = paddle.to_tensor(
         #                     np.array([4, 3, 2, 1]).astype('int32'))
-        expand_times = [4, 3, paddle.to_tensor(np.array(2).astype("int64")), 1]
+        expand_times = [
+            4, 3,
+            paddle.to_tensor(np.array(2).astype(self.config['shape_dtype'])), 1
+        ]
         x = paddle.fluid.layers.expand(inputs, expand_times=expand_times)
         return x
 
@@ -103,6 +110,8 @@ class TestExpandConvert1(OPConvertAutoScanTest):
                     min_value=2, max_value=5), min_size=2, max_size=5))
         input_shape = [4, 3, 2, 1]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
+
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
         config = {
@@ -113,6 +122,7 @@ class TestExpandConvert1(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": input_shape,
+            "shape_dtype": shape_dtype,
         }
 
         models = Net1(config)
