@@ -32,7 +32,8 @@ class Net(BaseNet):
         """
         shape = self.config['shape']
         if self.config['isTensor']:
-            shape = paddle.to_tensor(np.array(shape).astype("int32"))
+            shape = paddle.to_tensor(
+                np.array(shape).astype(self.config['shape_dtype']))
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
         x = paddle.reshape(
@@ -54,7 +55,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isTensor = draw(st.booleans())  # future to valid
-
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
         n = random.randint(1, 6 - len(input_shape))
         pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
 
@@ -66,6 +67,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "isTensor": isTensor,
             "shape": pre_shape + input_shape,
+            "shape_dtype": shape_dtype,
         }
 
         models = Net(config)
@@ -73,9 +75,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(
-            max_examples=30
-        )  #, reproduce=reproduce_failure('6.34.1', b'AAEAAQAAAA=='))
+        self.run_and_statis(max_examples=30)
 
 
 class Net1(BaseNet):
@@ -87,13 +87,11 @@ class Net1(BaseNet):
         """
         forward
         """
-        shape = paddle.to_tensor([1, 2, 2])
-        # shape = paddle.to_tensor([2, 1, 2, 3, 2, 2])
-        # shape = [2, 1, 2, 3, 2, 2]
         shape = [
-            paddle.to_tensor(2), paddle.to_tensor(1), paddle.to_tensor(2),
-            paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)
+            2, 1, paddle.to_tensor(
+                2, dtype=self.config['shape_dtype']), 3, 2, 2
         ]
+        # not supported
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), paddle.to_tensor(2), paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)]
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
@@ -119,7 +117,7 @@ class TestExpandConvert1(OPConvertAutoScanTest):
 
         n = random.randint(1, 6 - len(input_shape))
         pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
-
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
         config = {
             "op_names": ["expand_v2"],
             "test_data_shapes": [input_shape],
@@ -128,6 +126,7 @@ class TestExpandConvert1(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "isTensor": isTensor,
             "shape": pre_shape + input_shape,
+            "shape_dtype": shape_dtype,
         }
 
         models = Net1(config)
