@@ -49,9 +49,12 @@ class Conv2dMapper : public Mapper {
     }
     // strides should be less or equal than kernel size
     auto kernel_info = parser->GetOpInput(block_idx, op_idx, "Filter");
-    if (kernel_info[0].shape[2] < strides[0] || kernel_info[0].shape[3] < strides[1]) {
+    if (kernel_info[0].shape[2] < strides[0] ||
+        kernel_info[0].shape[3] < strides[1]) {
       if (verbose) {
-        std::cerr << "[ERROR] Cannot handle the situation that kernel_size < strides" << std::endl;
+        std::cerr
+            << "[ERROR] Cannot handle the situation that kernel_size < strides"
+            << std::endl;
         return -1;
       }
     }
@@ -65,7 +68,8 @@ class Conv2dMapper : public Mapper {
         parser->GetOpInput(block_idx, op_idx, "Input");
     std::vector<TensorInfo> output_info =
         parser->GetOpOutput(block_idx, op_idx, "Output");
-    auto node = helper->MakeNode("Conv", {input_info[0].name, kernel_info[0].name},
+    auto node =
+        helper->MakeNode("Conv", {input_info[0].name, kernel_info[0].name},
                          {output_info[0].name});
     AddAttribute(node, "dilations", dilations);
     std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
@@ -81,6 +85,7 @@ class Conv2dMapper : public Mapper {
       AddAttribute(node, "pads", paddings);
     }
   }
+
  private:
   std::vector<int64_t> dilations;
   std::vector<int64_t> strides;

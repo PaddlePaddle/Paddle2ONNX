@@ -48,6 +48,9 @@ class OnnxHelper {
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
       const std::string& name, const std::vector<int64_t>& shape,
       ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+
+  std::string AutoCast(const std::string& input, int32_t input_paddle_dtype,
+                       int32_t to_paddle_dtype);
 };
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
@@ -262,6 +265,19 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
            "function.");
   }
   return node;
+}
+
+std::string OnnxHelper::AutoCast(const std::string& input,
+                                 int32_t input_paddle_dtype,
+                                 int32_t to_paddle_dtype) {
+  std::string output = input;
+  if (input_paddle_dtype == to_paddle_dtype) {
+    return output;
+  }
+  output = MapperHelper::Get()->GenName("auto.cast");
+  auto cast_node = MakeNode("Cast", {input}, {output});
+  AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
+  return cast_node->output(0);
 }
 
 }  // namespace paddle2onnx

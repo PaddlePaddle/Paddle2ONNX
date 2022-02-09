@@ -16,8 +16,7 @@
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
-  
-/*
+
 class ClipMapper : public Mapper {
  public:
   ClipMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
@@ -26,7 +25,6 @@ class ClipMapper : public Mapper {
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Opset7(OnnxHelper* helper) {
-    nodes->clear();
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
     std::vector<TensorInfo> output_info =
@@ -41,7 +39,8 @@ class ClipMapper : public Mapper {
       float max = 1.0;
       parser->GetOpAttr(op, "min", &min);
       parser->GetOpAttr(op, "max", &max);
-      auto node = helper->MakeNode("Clip", {input_info[0].name}, {output_info[0].name});
+      auto node =
+          helper->MakeNode("Clip", {input_info[0].name}, {output_info[0].name});
       AddAttribute(node, "min", min);
       AddAttribute(node, "max", max);
       return;
@@ -51,41 +50,38 @@ class ClipMapper : public Mapper {
     if (min_is_tensor) {
       std::vector<TensorInfo> min_info =
           parser->GetOpInput(block_idx, op_idx, "Min");
-      min_name = AutoCastNode(min_info[0].name, min_info[0].dtype,
-                              input_info[0].dtype, nodes);
+      min_name = helper->AutoCast(min_info[0].name, min_info[0].dtype,
+                                  input_info[0].dtype);
     } else {
-      min_name = MapperHelper::Get()->GenName("clip.min");
       float min = 0.0;
       parser->GetOpAttr(op, "min", &min);
-      auto node =
-          MakeConstant(min_name, {1}, GetOnnxDtype(input_info[0].dtype), min);
-      nodes->push_back(node);
+      min_name = helper
+                     ->MakeConstant(min_name, {1},
+                                    GetOnnxDtype(input_info[0].dtype), min)
+                     ->output(0);
     }
 
     std::string max_name;
     if (max_is_tensor) {
       std::vector<TensorInfo> max_info =
           parser->GetOpInput(block_idx, op_idx, "Max");
-      max_name = AutoCastNode(max_info[0].name, max_info[0].dtype,
-                              input_info[0].dtype, nodes);
+      max_name = helper->AutoCast(max_info[0].name, max_info[0].dtype,
+                                  input_info[0].dtype);
     } else {
-      max_name = MapperHelper::Get()->GenName("clip.max");
       float max = 1.0;
       parser->GetOpAttr(op, "max", &max);
-      auto node =
-          MakeConstant(max_name, {1}, GetOnnxDtype(input_info[0].dtype), max);
-      nodes->push_back(node);
+      max_name = helper
+                     ->MakeConstant(max_name, {1},
+                                    GetOnnxDtype(input_info[0].dtype), max)
+                     ->output(0);
     }
 
-    std::string min_out = MapperHelper::Get()->GenName("cast.minout");
-    auto min_node = MakeNode("Min", {input_info[0].name, max_name}, {min_out});
-    auto max_node = MakeNode("Max", {min_out, min_name}, {output_info[0].name});
-    nodes->push_back(min_node);
-    nodes->push_back(max_node);
+    auto min_node = helper->MakeNode("Min", {input_info[0].name, max_name});
+    helper->MakeNode("Max", {min_node->output(0), min_name},
+                     {output_info[0].name});
   }
 
-  void Opset11(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    nodes->clear();
+  void Opset11(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
     std::vector<TensorInfo> output_info =
@@ -99,37 +95,36 @@ class ClipMapper : public Mapper {
     if (min_is_tensor) {
       std::vector<TensorInfo> min_info =
           parser->GetOpInput(block_idx, op_idx, "Min");
-      min_name = AutoCastNode(min_info[0].name, min_info[0].dtype,
-                              input_info[0].dtype, nodes);
+      min_name = helper->AutoCast(min_info[0].name, min_info[0].dtype,
+                                  input_info[0].dtype);
     } else {
-      min_name = MapperHelper::Get()->GenName("clip.min");
       float min = 0.0;
       parser->GetOpAttr(op, "min", &min);
-      auto node =
-          MakeConstant(min_name, {1}, GetOnnxDtype(input_info[0].dtype), min);
-      nodes->push_back(node);
+      min_name = helper
+                     ->MakeConstant(min_name, {1},
+                                    GetOnnxDtype(input_info[0].dtype), min)
+                     ->output(0);
     }
 
     std::string max_name;
     if (max_is_tensor) {
       std::vector<TensorInfo> max_info =
           parser->GetOpInput(block_idx, op_idx, "Max");
-      max_name = AutoCastNode(max_info[0].name, max_info[0].dtype,
-                              input_info[0].dtype, nodes);
+      min_name = helper->AutoCast(max_info[0].name, max_info[0].dtype,
+                                  input_info[0].dtype);
     } else {
-      max_name = MapperHelper::Get()->GenName("clip.max");
       float max = 1.0;
       parser->GetOpAttr(op, "max", &max);
-      auto node =
-          MakeConstant(max_name, {1}, GetOnnxDtype(input_info[0].dtype), max);
-      nodes->push_back(node);
+      max_name = helper
+                     ->MakeConstant(max_name, {1},
+                                    GetOnnxDtype(input_info[0].dtype), max)
+                     ->output(0);
     }
 
-    auto clip_node = MakeNode("Clip", {input_info[0].name, min_name, max_name},
-                              {output_info[0].name});
-    nodes->push_back(clip_node);
+    helper->MakeNode("Clip", {input_info[0].name, min_name, max_name},
+                     {output_info[0].name});
   }
 };
 
-REGISTER_MAPPER(clip, ClipMapper)*/
+REGISTER_MAPPER(clip, ClipMapper)
 }  // namespace paddle2onnx

@@ -87,7 +87,8 @@ class LeakyReluMapper : public Mapper {
     std::vector<TensorInfo> output_info =
         parser->GetOpOutput(block_idx, op_idx, "Out");
     auto op = parser->GetOpDesc(block_idx, op_idx);
-    auto node = helper->MakeNode("LeakyRelu", {input_info[0].name}, {output_info[0].name});
+    auto node = helper->MakeNode("LeakyRelu", {input_info[0].name},
+                                 {output_info[0].name});
     AddAttribute(node, "alpha", alpha);
   }
 
@@ -114,6 +115,13 @@ class LeakyReluMapper : public Mapper {
     auto op = parser->GetOpDesc(block_idx, op_idx);
     std::string x_name = input_info[0].name;
     std::string slope_name = slope_info[0].name;
+    x_name = helper->AutoCast(x_name, input_info[0].dtype, P2ODataType::FP32);
+    slope_name = helper->AutoCast(slope_name, slope_info[0].dtype,
+P2ODataType::FP32); if (output_info[0].dtype != P2ODataType::FP32) {
+
+    } else {
+
+    }
     if (input_info[0].dtype != P2ODataType::FP32) {
       x_name = MapperHelper::Get()->GenName("prelu.cast");
       auto cast_node = MakeNode("Cast", {input_info[0].name}, {x_name});

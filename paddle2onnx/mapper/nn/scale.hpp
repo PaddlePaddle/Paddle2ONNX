@@ -44,17 +44,16 @@ class ScaleMapper : public Mapper {
       auto onnx_dtype = GetOnnxDtype(input_info[0].dtype);
       auto bias_node = helper->MakeConstant({1}, onnx_dtype, bias);
       auto scale_node = helper->MakeConstant({1}, onnx_dtype, scale);
-      std::string scale_name = scale_node->output(0);
-      std::string bias_name = bias_node->output(0);
       if (bias_after_scale) {
-        auto mul_node = helper->MakeNode("Mul", {input_info[0].name, scale_name});
-        std::string mul_out = mul_node->output(0);
-        helper->MakeNode("Mul", {input_info[0].name, scale_name}, {mul_out});
-        helper->MakeNode("Add", {mul_out, bias_name}, {output_info[0].name});
+        auto mul_node = helper->MakeNode(
+            "Mul", {input_info[0].name, scale_node->output(0)});
+        helper->MakeNode("Add", {mul_node->output(0), bias_node->output(0)},
+                         {output_info[0].name});
       } else {
-        auto add_node = helper->MakeNode("Add", {input_info[0].name, bias_name});
-        std::string add_out = add_node->output(0);
-        helper->MakeNode("Mul", {add_out, scale_name}, {output_info[0].name});
+        auto add_node =
+            helper->MakeNode("Add", {input_info[0].name, bias_node->output(0)});
+        helper->MakeNode("Mul", {add_node->output(0), scale_node->output(0)},
+                         {output_info[0].name});
       }
     }
   }
