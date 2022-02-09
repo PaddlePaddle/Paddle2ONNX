@@ -266,7 +266,7 @@ def get_node_attr_value(graph,
             try:
                 value = get_value_from_parameters(graph, value)
                 return value, False  # value, is_tensor
-            except ():
+            except Exception:
                 return value, True
         else:
             input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
