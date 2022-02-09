@@ -192,7 +192,7 @@ class ExpandV2():
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
-        expand_shape = mapper_helper.get_node_attr_value(
+        expand_shape, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'shape',
@@ -375,21 +375,21 @@ class Slice():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides = mapper_helper.get_node_attr_value(
+        strides, strides_is_tensor = mapper_helper.get_node_attr_value(
             graph, node, 'strides', 'StridesTensor', 'StridesTensorList', True)
         strides = [1] * len(axes) if strides is None else strides
         steps = [i for i, val in enumerate(strides) if val == 1]
         assert len(steps) == len(axes), \
             "Slice in onnx(opset<10) not support attribute 'step', Try converting with opset_version >=10"
 
-        starts = mapper_helper.get_node_attr_value(
+        starts, start_is_tensor = mapper_helper.get_node_attr_value(
             graph, node, 'starts', 'StartsTensor', 'StartsTensorList', True)
-        ends = mapper_helper.get_node_attr_value(
+        ends, end_is_tensor = mapper_helper.get_node_attr_value(
             graph, node, 'ends', 'EndsTensor', 'EndsTensorList', True)
 
-        assert isinstance(ends, list) and isinstance(ends, list), \
-            "Slice in onnx(opset<10) not support attribute 'starts' or 'ends' which have tensor value, Try converting " \
-            "with opset_version >=10 "
+        assert not strides_is_tensor and not start_is_tensor and not end_is_tensor, \
+            "Slice in onnx(opset<10) not support attribute 'steps','starts' or 'ends' which have tensor value, " \
+            "Try converting with opset_version >=10 "
 
         decrease_axis = cls.decrease_axis(node)
         if decrease_axis is None:
@@ -413,7 +413,7 @@ class Slice():
     @classmethod
     def opset_10(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides = mapper_helper.get_node_attr_value(
+        strides, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'strides',
@@ -422,14 +422,14 @@ class Slice():
             dtype=dtypes.ONNX.INT64)
         strides = [1] * len(axes) if strides is None else strides
 
-        starts = mapper_helper.get_node_attr_value(
+        starts, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'starts',
             'StartsTensor',
             'StartsTensorList',
             dtype=dtypes.ONNX.INT64)
-        ends = mapper_helper.get_node_attr_value(
+        ends, _ = mapper_helper.get_node_attr_value(
             graph,
             node,
             'ends',
