@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include <memory>
 #include "paddle2onnx/mapper/data_helper.hpp"
 #include "paddle2onnx/mapper/onnx_helper.hpp"
 #include "paddle2onnx/mapper/register_mapper.hpp"
@@ -32,8 +31,7 @@ class Mapper {
   // if return value < 0, means the op is not supported.
   virtual int32_t GetMinOpset(bool verbose) = 0;
 
-  void Run(OnnxHelper* helper,
-           int32_t opset_version = 7) {
+  void Run(OnnxHelper* helper, int32_t opset_version = 7) {
     export_opset_version_ = opset_version;
     Assert(opset_version >= 7 && opset_version <= 15,
            "Paddle2ONNX only support opset_version in range of [7, 15].");
@@ -58,37 +56,21 @@ class Mapper {
     }
   }
 
-  virtual void Opset15(OnnxHelper* helper) {
-    Opset14(helper);
-  }
+  virtual void Opset15(OnnxHelper* helper) { Opset14(helper); }
 
-  virtual void Opset14(OnnxHelper* helper) {
-    Opset13(helper);
-  }
+  virtual void Opset14(OnnxHelper* helper) { Opset13(helper); }
 
-  virtual void Opset13(OnnxHelper* helper) {
-    Opset12(helper);
-  }
+  virtual void Opset13(OnnxHelper* helper) { Opset12(helper); }
 
-  virtual void Opset12(OnnxHelper* helper) {
-    Opset11(helper);
-  }
+  virtual void Opset12(OnnxHelper* helper) { Opset11(helper); }
 
-  virtual void Opset11(OnnxHelper* helper) {
-    Opset10(helper);
-  }
+  virtual void Opset11(OnnxHelper* helper) { Opset10(helper); }
 
-  virtual void Opset10(OnnxHelper* helper) {
-    Opset9(helper);
-  }
+  virtual void Opset10(OnnxHelper* helper) { Opset9(helper); }
 
-  virtual void Opset9(OnnxHelper* helper) {
-    Opset8(helper);
-  }
+  virtual void Opset9(OnnxHelper* helper) { Opset8(helper); }
 
-  virtual void Opset8(OnnxHelper* helper) {
-    Opset7(helper);
-  }
+  virtual void Opset8(OnnxHelper* helper) { Opset7(helper); }
 
   virtual void Opset7(OnnxHelper* helper) {
     Assert(false,
