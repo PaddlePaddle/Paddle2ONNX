@@ -24,7 +24,7 @@ op_api_map = {
     "isfinite_v2": paddle.isfinite,
     "isinf_v2": paddle.isinf,
     "isnan_v2": paddle.isnan,
-    # "isnan": paddle.fluid.layers.has_nan,
+    "isnan": paddle.fluid.layers.has_nan,
 }
 
 opset_version_map = {
