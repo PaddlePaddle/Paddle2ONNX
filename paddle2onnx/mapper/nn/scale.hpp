@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <vector>
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
@@ -33,14 +34,15 @@ class ScaleMapper : public Mapper {
         parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
         parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-    // TODO just temporary use Identity
+    // TODO(yeliang2258): just temporary use Identity
     bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
     bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
     if (is_scale_1 && is_bias_0) {
-      // TODO we could add a pass to eleminate all the identity op
+      // TODO(yeliang2258): we could add a pass to eleminate all the identity op
       helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
     } else {
-      // TODO we could add a pass to eleminate the scale is 1 or bias is 0
+      // TODO(yeliang2258): we could add a pass to eleminate the scale is 1 or
+      // bias is 0
       auto onnx_dtype = GetOnnxDtype(input_info[0].dtype);
       auto bias_node = helper->MakeConstant({1}, onnx_dtype, bias_);
       auto scale_node = helper->MakeConstant({1}, onnx_dtype, scale_);

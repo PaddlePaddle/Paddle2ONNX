@@ -26,7 +26,15 @@ class ClipMapper : public Mapper {
   ClipMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) { return 7; }
+  int32_t GetMinOpset(bool verbose = false) {
+    bool min_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Min");
+    bool max_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Max");
+    if (min_is_tensor || max_is_tensor) {
+      return 11;
+    } else {
+      return 7;
+    }
+  }
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
@@ -36,8 +44,6 @@ class ClipMapper : public Mapper {
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     bool min_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Min");
     bool max_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Max");
-    Assert(!((min_is_tensor || max_is_tensor) && export_opset_version_ < 11),
-           "min or max of Clip is Tensor, please try opset_version >= 11.");
 
     bool has_min_attr = parser_->OpHasAttr(op, "min");
     bool has_max_attr = parser_->OpHasAttr(op, "max");
