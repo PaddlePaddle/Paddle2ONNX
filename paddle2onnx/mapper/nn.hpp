@@ -15,3 +15,4 @@
 #include "paddle2onnx/mapper/nn/clip.hpp"
 #include "paddle2onnx/mapper/nn/conv2d.hpp"
 #include "paddle2onnx/mapper/nn/scale.hpp"
+#include "paddle2onnx/mapper/nn/flatten.hpp"
