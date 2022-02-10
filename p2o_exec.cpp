@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     parser.Init(argv[1], argv[2]);
   }
   paddle2onnx::ModelExporter me;
-  auto onnx_proto = me.Run(parser, 9, true, true);
+  auto onnx_proto = me.Run(parser, 7, true, true);
   std::fstream out("model.onnx", std::ios::out | std::ios::binary);
   onnx_proto->SerializePartialToOstream(&out);
   out.close();

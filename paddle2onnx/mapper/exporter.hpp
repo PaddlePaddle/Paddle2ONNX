@@ -138,6 +138,7 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
     }
   }
   helper.SetOpsetVersion(opset_version);
+  std::cerr << "Model will exported with opset = " << helper.opset_version << std::endl;
 
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
@@ -163,7 +164,7 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
   auto opset_id = model->add_opset_import();
   // TODO custom op is not considered
   opset_id->set_domain("");
-  opset_id->set_version(ONNX_NAMESPACE::Version_MAX);
+  opset_id->set_version(opset_version);
 
   for (auto& item : parameters) {
     *(graph->add_node()) = *(item.get());
