@@ -15,7 +15,7 @@
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
-
+/*
 class ElementwiseMapper : public Mapper {
  public:
   ElementwiseMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
@@ -75,5 +75,5 @@ class ElementwiseMapper : public Mapper {
   std::map<std::string, std::string> op_mapper;
   std::string op_type;
   int64_t axis;
-};
+};*/
 }  // namespace paddle2onnx

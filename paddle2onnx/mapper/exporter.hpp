@@ -30,7 +30,7 @@ struct ModelExporter {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> op_nodes;
+  OnnxHelper helper;
 
   void ExportParameters(const std::map<std::string, Weight>& params,
                         bool use_initializer = false);
@@ -82,11 +82,8 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
 
   auto mapper =
       MapperHelper::Get()->CreateMapper(op.type(), parser, block_id, op_id);
-  mapper->Run(&nodes, opset_version);
+  mapper->Run(&helper, opset_version);
   delete mapper;
-  for (size_t i = 0; i < nodes.size(); ++i) {
-    op_nodes.push_back(nodes[i]);
-  }
 }
 
 std::string ModelExporter::Run(
@@ -94,10 +91,10 @@ std::string ModelExporter::Run(
     bool verbose) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
+  helper.Clear();
   inputs.clear();
   outputs.clear();
   parameters.clear();
-  op_nodes.clear();
 
   // clear name_counter
   // this use to generate unique name
@@ -117,7 +114,7 @@ std::string ModelExporter::Run(
            "Due to the unsupported operators, the conversion is aborted.");
   }
 
-  int32_t min_opset = GetMinOpset(parser, verbose);
+  int32_t min_opset = GetMinOpset(parser, false);
   if (min_opset < 0) {
     min_opset = GetMinOpset(parser, true);
     Assert(false,
@@ -140,6 +137,9 @@ std::string ModelExporter::Run(
       opset_version = min_opset;
     }
   }
+  helper.SetOpsetVersion(opset_version);
+  std::cerr << "Model will exported with opset = " << helper.opset_version
+            << std::endl;
 
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
@@ -165,7 +165,7 @@ std::string ModelExporter::Run(
   auto opset_id = model->add_opset_import();
   // TODO custom op is not considered
   opset_id->set_domain("");
-  opset_id->set_version(ONNX_NAMESPACE::Version_MAX);
+  opset_id->set_version(opset_version);
 
   for (auto& item : parameters) {
     *(graph->add_node()) = *(item.get());
@@ -173,7 +173,7 @@ std::string ModelExporter::Run(
   for (auto& item : inputs) {
     *(graph->add_input()) = *(item.get());
   }
-  for (auto& item : op_nodes) {
+  for (auto& item : helper.nodes) {
     *(graph->add_node()) = (*item.get());
   }
   for (auto& item : outputs) {

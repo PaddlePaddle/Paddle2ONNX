@@ -22,8 +22,8 @@ int main(int argc, char* argv[]) {
   //  paddle2onnx::LoadParams("ResNet18/inference.pdiparams", &weights);
   if (argc == 1) {
     std::cerr << "Paddle2ONNX Usage(params_file_path is optional):   "
-            << "    ./p2o_exec model_file_path  params_file_path"
-            << std::endl;
+              << "    ./p2o_exec model_file_path  params_file_path"
+              << std::endl;
   }
   auto parser = paddle2onnx::PaddleParser();
   if (argc == 2) {
@@ -32,8 +32,7 @@ int main(int argc, char* argv[]) {
     parser.Init(argv[1], argv[2]);
   }
   paddle2onnx::ModelExporter me;
-  auto onnx_proto = me.Run(parser, 9, true, true);
-
+  auto onnx_proto = me.Run(parser, 7, true, true);
   std::fstream out("model.onnx", std::ios::out | std::ios::binary);
   out << onnx_proto;
   out.close();

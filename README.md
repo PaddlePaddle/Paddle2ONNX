@@ -30,6 +30,7 @@ make install
 rm -rf /usr/local/lib/libproto*
 cp /root/build_paddle2onnx/installed_protobuf/lib/* /usr/local/lib/
 cp /root/build_paddle2onnx/installed_protobuf/bin/protoc /usr/local/bin/protoc
+cp /root/build_paddle2onnx/installed_protobuf/include/* /usr/local/include
 ```
 
 编译paddle2onnx二进制
@@ -109,7 +110,7 @@ pip install onnxruntime --upgrade
 使用如下代码生成一个简单的卷积网络模型，保存在`conv`目录下
 ```
 import paddle
-model = paddle.nn.Conv2D(3, 5, 3)
+model = paddle.nn.Conv2D(3, 5, 3, bias_attr=False)
 model.eval()
 input = paddle.static.InputSpec(shape=[2, 3, 224, 224], dtype='float32', name='x')
 paddle.jit.save(model, "conv/model", [input])
