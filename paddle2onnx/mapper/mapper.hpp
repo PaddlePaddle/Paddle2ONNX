@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <memory>
 #include "paddle2onnx/mapper/data_helper.hpp"
 #include "paddle2onnx/mapper/onnx_helper.hpp"
 #include "paddle2onnx/mapper/register_mapper.hpp"
 #include "paddle2onnx/parser/parser.hpp"
 
 namespace paddle2onnx {
+
+class Base_mapper_helper {
+ public:
+  virtual void Run() = 0;
+};
 
 class Mapper {
  public:
@@ -100,6 +106,7 @@ class Mapper {
   int32_t block_idx;
   int32_t op_idx;
   int32_t export_opset_version;
+  std::shared_ptr<Base_mapper_helper> mapper_helper;
 };
 
 }  // namespace paddle2onnx

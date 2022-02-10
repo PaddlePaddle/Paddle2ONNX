@@ -225,6 +225,18 @@ struct PaddleParser {
     return outputs;
   }
 
+  bool OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                   const std::string& name) const {
+    bool found = false;
+    for (auto i = 0; i < op.attrs_size(); ++i) {
+      if (op.attrs(i).name() == name) {
+        found = true;
+        break;
+      }
+    }
+    return found;
+  }
+
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string name, int64_t* res) const {
     bool found = false;
