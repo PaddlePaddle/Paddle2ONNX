@@ -25,6 +25,7 @@ class Net(BaseNet):
     def forward(self):
         shape = self.config["shape"]
         fill_value = self.config['fill_value']
+        # todo tensor is not supported
         if self.config['is_tensor']:
             fill_value = paddle.to_tensor(fill_value)
         if self.config['is_shape_tensor']:
@@ -81,13 +82,12 @@ class TestFullConvert(OPConvertAutoScanTest):
 class Net1(BaseNet):
     def forward(self):
         fill_value = self.config['fill_value']
-        # TODO not supported
         shape = [
             2, 1, paddle.to_tensor(
                 2, dtype=self.config['shape_dtype']), 3, 2, 2
         ]
-        # not supported shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")),
-        # paddle.to_tensor(2), paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)]
+        # TODO not supported
+        # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), 2, 3, 2, 2]
         dtype = self.config["dtype"]
         x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
         return x
