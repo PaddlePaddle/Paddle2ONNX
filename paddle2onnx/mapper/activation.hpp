@@ -20,21 +20,21 @@ class ActivationMapper : public Mapper {
  public:
   ActivationMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    op_mapper["relu"] = "Relu";
-    op_mapper["tanh"] = "Tanh";
-    op_mapper["log"] = "Log";
-    op_mapper["sigmoid"] = "Sigmoid";
-    op_mapper["sqrt"] = "Sqrt";
-    op_mapper["softplus"] = "Softplus";
+    op_mapper_["relu"] = "Relu";
+    op_mapper_["tanh"] = "Tanh";
+    op_mapper_["log"] = "Log";
+    op_mapper_["sigmoid"] = "Sigmoid";
+    op_mapper_["sqrt"] = "Sqrt";
+    op_mapper_["softplus"] = "Softplus";
   }
 
   int32_t GetMinOpset(bool verbose = false) {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     if (op.type() == "softplus") {
       float beta = 0.0;
       float threshold = 20.0;
-      parser->GetOpAttr(op, "beta", &beta);
-      parser->GetOpAttr(op, "threshold", &threshold);
+      parser_->GetOpAttr(op, "beta", &beta);
+      parser_->GetOpAttr(op, "threshold", &threshold);
       if ((beta - 1.0) > 1e-06 || (beta - 1.0) < -1e-06) {
         if (verbose) {
           std::cerr << "Paddle2ONNX only supports softplus with beta == 0"
@@ -57,43 +57,43 @@ class ActivationMapper : public Mapper {
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    auto iter = op_mapper.find(op.type());
-    Assert(op_mapper.end() != iter,
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto iter = op_mapper_.find(op.type());
+    Assert(op_mapper_.end() != iter,
            "Cannot find " + op.type() + " in activation op_mapper.");
     helper->MakeNode(iter->second, {input_info[0].name}, {output_info[0].name});
   }
 
  private:
-  std::map<std::string, std::string> op_mapper;
+  std::map<std::string, std::string> op_mapper_;
 };
 
 class LeakyReluMapper : public Mapper {
  public:
   LeakyReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    parser->GetOpAttr(op, "alpha", &alpha);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "alpha", &alpha_);
   }
 
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
-    auto op = parser->GetOpDesc(block_idx, op_idx);
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     auto node = helper->MakeNode("LeakyRelu", {input_info[0].name},
                                  {output_info[0].name});
-    AddAttribute(node, "alpha", alpha);
+    AddAttribute(node, "alpha", alpha_);
   }
 
  private:
-  float alpha;
+  float alpha_;
 };
 
 /*class PReluMapper : public Mapper {

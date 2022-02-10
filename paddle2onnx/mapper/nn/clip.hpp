@@ -30,32 +30,32 @@ class ClipMapper : public Mapper {
 
   void Opset7(OnnxHelper* helper) {
 
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    bool min_is_tensor = parser->OpHasInput(block_idx, op_idx, "Min");
-    bool max_is_tensor = parser->OpHasInput(block_idx, op_idx, "Max");
-    Assert(!((min_is_tensor || max_is_tensor) && export_opset_version<11), "min or max of Clip is Tensor, please try opset_version >= 11.");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    bool min_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Min");
+    bool max_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Max");
+    Assert(!((min_is_tensor || max_is_tensor) && export_opset_version_<11), "min or max of Clip is Tensor, please try opset_version >= 11.");
     
-    bool has_min_attr = parser->OpHasAttr(op, "min");
-    bool has_max_attr = parser->OpHasAttr(op, "max");
+    bool has_min_attr = parser_->OpHasAttr(op, "min");
+    bool has_max_attr = parser_->OpHasAttr(op, "max");
     if(!(min_is_tensor || max_is_tensor)){
       float min = 0.0;
       if (has_min_attr){
-        parser->GetOpAttr(op, "min", &min);
+        parser_->GetOpAttr(op, "min", &min);
       }
 
       float max = 1.0;
       if (has_max_attr){
-        parser->GetOpAttr(op, "max", &max);
+        parser_->GetOpAttr(op, "max", &max);
       }
-      mapper_helper.reset(new ClipHelper(helper, parser, block_idx, op_idx, export_opset_version, has_min_attr, min, has_max_attr, max));
-      mapper_helper->Run();
+      mapper_helper_.reset(new ClipHelper(helper, parser_, block_idx_, op_idx_, export_opset_version_, has_min_attr, min, has_max_attr, max));
+      mapper_helper_->Run();
       return;
     }
     
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
     int32_t dtype = input_info[0].dtype;
     if (input_info[0].dtype == P2ODataType::FP64){
@@ -64,12 +64,12 @@ class ClipMapper : public Mapper {
     std::string min_name;
     if (min_is_tensor) {
       std::vector<TensorInfo> min_info =
-          parser->GetOpInput(block_idx, op_idx, "Min");
+          parser_->GetOpInput(block_idx_, op_idx_, "Min");
       min_name = helper->AutoCast(min_info[0].name, min_info[0].dtype,
                                   dtype);
     } else {
       float min = 0.0;
-      parser->GetOpAttr(op, "min", &min);
+      parser_->GetOpAttr(op, "min", &min);
       min_name = helper
                      ->MakeConstant({1},
                                     GetOnnxDtype(dtype), min)
@@ -79,12 +79,12 @@ class ClipMapper : public Mapper {
     std::string max_name;
     if (max_is_tensor) {
       std::vector<TensorInfo> max_info =
-          parser->GetOpInput(block_idx, op_idx, "Max");
+          parser_->GetOpInput(block_idx_, op_idx_, "Max");
       max_name = helper->AutoCast(max_info[0].name, max_info[0].dtype,
                                   dtype);
     } else {
       float max = 1.0;
-      parser->GetOpAttr(op, "max", &max);
+      parser_->GetOpAttr(op, "max", &max);
       max_name = helper
                      ->MakeConstant({1},
                                     GetOnnxDtype(dtype), max)
@@ -93,7 +93,6 @@ class ClipMapper : public Mapper {
     if (input_info[0].dtype == P2ODataType::FP64){
       std::string cast_name = helper->AutoCast({input_info[0].name}, P2ODataType::FP64,
                                 P2ODataType::FP32);
-      std::cout<<"check: "<<cast_name<<" "<<" "<<min_name<<" "<<max_name<<std::endl;
       auto node = helper->MakeNode("Clip", {cast_name, min_name, max_name});
       helper->AutoCast(node->output(0), {output_info[0].name}, P2ODataType::FP32,
                                 P2ODataType::FP64);

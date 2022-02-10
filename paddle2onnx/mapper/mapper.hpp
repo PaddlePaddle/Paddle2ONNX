@@ -28,9 +28,9 @@ class Base_mapper_helper {
 class Mapper {
  public:
   Mapper() {}
-  Mapper(const PaddleParser& p, int32_t block_id, int32_t op_id) : parser(&p) {
-    block_idx = block_id;
-    op_idx = op_id;
+  Mapper(const PaddleParser& p, int32_t block_id, int32_t op_id) : parser_(&p) {
+    block_idx_ = block_id;
+    op_idx_ = op_id;
   }
 
   // the return value in [7, 15], represent the minimum opset_version
@@ -39,7 +39,7 @@ class Mapper {
 
   void Run(OnnxHelper* helper,
            int32_t opset_version = 7) {
-    export_opset_version = opset_version;
+    export_opset_version_ = opset_version;
     Assert(opset_version >= 7 && opset_version <= 15,
            "Paddle2ONNX only support opset_version in range of [7, 15].");
     if (opset_version == 15) {
@@ -102,11 +102,11 @@ class Mapper {
   }
 
   virtual ~Mapper() = default;
-  const PaddleParser* parser;
-  int32_t block_idx;
-  int32_t op_idx;
-  int32_t export_opset_version;
-  std::shared_ptr<Base_mapper_helper> mapper_helper;
+  const PaddleParser* parser_;
+  int32_t block_idx_;
+  int32_t op_idx_;
+  int32_t export_opset_version_;
+  std::shared_ptr<Base_mapper_helper> mapper_helper_;
 };
 
 }  // namespace paddle2onnx
