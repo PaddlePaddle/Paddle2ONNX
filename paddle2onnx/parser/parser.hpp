@@ -24,7 +24,7 @@ namespace paddle2onnx {
 struct TensorInfo {
   std::string name;
   std::vector<int64_t> shape;
-  int64_t Rank() { return (int64_t)(shape.size()); }
+  int64_t Rank() { return static_cast<int64_t>(shape.size()); }
   int32_t dtype;
 };
 
@@ -133,6 +133,7 @@ struct PaddleParser {
     _blocks_ops.clear();
     _blocks_ops.resize(prog->blocks_size());
     for (auto i = 0; i < prog->blocks_size(); ++i) {
+      _blocks_ops[i].reserve(prog->blocks(i).ops_size());
       for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
         _blocks_ops[i].push_back(&prog->blocks(i).ops(j));
       }

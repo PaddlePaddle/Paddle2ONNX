@@ -30,6 +30,7 @@ make install
 rm -rf /usr/local/lib/libproto*
 cp /root/build_paddle2onnx/installed_protobuf/lib/* /usr/local/lib/
 cp /root/build_paddle2onnx/installed_protobuf/bin/protoc /usr/local/bin/protoc
+cp /root/build_paddle2onnx/installed_protobuf/include/* /usr/local/include
 ```
 
 编译paddle2onnx二进制
