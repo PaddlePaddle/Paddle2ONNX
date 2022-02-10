@@ -52,6 +52,7 @@
 | exp | 1~12 |
 | expand_as_v2 | 8~12 |
 | expand_v2 | 8~15 |
+| expand | 6~15 |
 | elu | 1~12 |
 | fill_constant | 1~15 |
 | fill_constant_batch_size_like  | 9~12 |
@@ -163,7 +164,7 @@
 | tanh_shrink | 7~12 |
 | tan | 8~12 |
 | thresholded_relu | 1~12 |
-| tile | 11~12 |
+| tile | 6~15 |
 | top_k | 11~15 |
 | top_k_v2 | 11~12 |
 | transpose2 | 1~12 |

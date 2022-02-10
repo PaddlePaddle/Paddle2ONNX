@@ -495,64 +495,56 @@ class SequenceExpand():
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
 
-@op_mapper(['expand', 'tile'])
+@op_mapper(['expand'])
 class Expand():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
-        expand_times = node.attr('expand_times')
-        if expand_times is None:
-            expand_times = node.attr('repeat_times')
+    def opset_6(cls, graph, node, **kw):
+        expand_times, _ = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'expand_times',
+            'ExpandTimes',
+            'expand_times_tensor',
+            dtype=dtypes.ONNX.INT64)
 
-        if 'repeat_times_tensor' in node.inputs and len(
-                node.input('repeat_times_tensor')) > 0:
-            if len(node.input('repeat_times_tensor')) > 1:
-                repeat_times = node.input('repeat_times_tensor')
-                repeat_times_dtypes = [
-                    node.input_dtype('repeat_times_tensor', i)
-                    for i in range(len(repeat_times))
-                ]
-                repeat_times = mapper_helper.dtype_alignment(
-                    graph, repeat_times, repeat_times_dtypes)
-
-                # When OpSet>=11, Concat could use negative axis
-                repeat_times_tensor = graph.make_node(
-                    'Concat', inputs=repeat_times, axis=-1)
-                graph.make_node(
-                    "Tile",
-                    inputs=[node.input('X', 0), repeat_times_tensor],
-                    outputs=node.output('Out'))
-            else:
-                graph.make_node(
-                    "Tile",
-                    inputs=[
-                        node.input('X', 0), node.input('repeat_times_tensor', 0)
-                    ],
-                    outputs=node.output('Out'))
-        elif 'RepeatTimes' in node.inputs and len(node.input(
-                'RepeatTimes')) == 1:
-            repeat_times = mapper_helper.cast(graph,
-                                              node.input('RepeatTimes', 0),
-                                              node.input_dtype('RepeatTimes',
-                                                               0), 'int64')
-            graph.make_node(
-                "Tile",
-                inputs=[node.input('X', 0), repeat_times],
-                outputs=node.output('Out'))
-        elif expand_times is None:
-            raise Exception("Not find attribute: 'repeat_times'.")
-        elif -1 not in expand_times:
-            expand_times_node = graph.make_node(
+        if isinstance(expand_times, list):
+            expand_times = graph.make_node(
                 'Constant',
                 attrs={'dtype': dtypes.ONNX.INT64,
                        'value': expand_times})
-            graph.make_node(
-                "Tile",
-                inputs=[node.input('X', 0), expand_times_node],
-                outputs=node.output('Out'))
-        else:
-            raise Exception("illegal Tensor: 'repeat_times'.")
+
+        graph.make_node(
+            "Tile",
+            inputs=[node.input('X', 0), expand_times],
+            outputs=node.output('Out'))
+
+
+@op_mapper(['tile'])
+class Tile():
+    support_opset_version_range = (6, 15)
+
+    @classmethod
+    def opset_6(cls, graph, node, **kw):
+        repeat_times, _ = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'repeat_times',
+            'RepeatTimes',
+            'repeat_times_tensor',
+            dtype=dtypes.ONNX.INT64)
+
+        if isinstance(repeat_times, list):
+            repeat_times = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': repeat_times})
+
+        graph.make_node(
+            "Tile",
+            inputs=[node.input('X', 0), repeat_times],
+            outputs=node.output('Out'))
 
 
 @op_mapper('range')
