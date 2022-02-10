@@ -96,59 +96,48 @@ class LeakyReluMapper : public Mapper {
   float alpha_;
 };
 
-/*class PReluMapper : public Mapper {
+class GeluMapper : public Mapper {
  public:
-  PReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+  GeluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) { return 7; }
+  int32_t GetMinOpset(bool verbose = false) { return 9; }
 
-  void Opset7(ONNXHelper* helper) {
-    nodes->clear();
+  void Opset9(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
         parser->GetOpInput(block_idx, op_idx, "X");
-    std::vector<TensorInfo> slope_info =
-        parser->GetOpInput(block_idx, op_idx, "Alpha");
     std::vector<TensorInfo> output_info =
         parser->GetOpOutput(block_idx, op_idx, "Out");
-
+    auto input_onnx_dtype = GetOnnxDtype(input_info[0].dtype);
     auto op = parser->GetOpDesc(block_idx, op_idx);
-    std::string x_name = input_info[0].name;
-    std::string slope_name = slope_info[0].name;
-    x_name = helper->AutoCast(x_name, input_info[0].dtype, P2ODataType::FP32);
-    slope_name = helper->AutoCast(slope_name, slope_info[0].dtype,
-P2ODataType::FP32); if (output_info[0].dtype != P2ODataType::FP32) {
+    double sqrt_2_value = 1.4142135623730951;
+    double scale_value = 0.5;
+    double const_1_value = 1.0;
+    auto sqrt_2 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, sqrt_2_value);
+    auto scale = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, scale_value);
+    auto const_1 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, const_1_value);
+ 
+    auto input_name = helper->AutoCast(input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
 
-    } else {
-
-    }
+    // the computation formula follows
+    // https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/functional/gelu_cn.html#gelu
+    auto erf0 =
+        helper->MakeNode("Div", {input_name, sqrt_2->output(0)});
+    auto erf1 = helper->MakeNode("Erf", {erf0->output(0)});
+    auto gelu0 = helper->MakeNode("Add", {erf1->output(0), const_1->output(0)});
+    auto gelu1 =
+        helper->MakeNode("Mul", {input_name, gelu0->output(0)});
+    
     if (input_info[0].dtype != P2ODataType::FP32) {
-      x_name = MapperHelper::Get()->GenName("prelu.cast");
-      auto cast_node = MakeNode("Cast", {input_info[0].name}, {x_name});
-      int64_t x = 5;
-      AddAttribute(cast_node, "to", x);
-      nodes->push_back(cast_node);
-    }
-    if (slope_info[0].dtype != P2ODataType::FP32) {
-      slope_name = MapperHelper::Get()->GenName("prelu.cast");
-      auto cast_node = MakeNode("Cast", {slope_info[0].name}, {slope_name});
-      AddAttribute(cast_node, "to", ONNX_NAMESPACE::TensorProto::FLOAT);
-      nodes->push_back(cast_node);
-    }
-    if (output_info[0].dtype != P2ODataType::FP32) {
-      std::string out_name = MapperHelper::Get()->GenName("prelu.before_cast");
-      auto node = MakeNode("PRelu", {x_name, slope_name}, {out_name});
-      auto cast_node = MakeNode("Cast", {out_name}, {output_info[0].name});
-      AddAttribute(cast_node, "to", GetOnnxDtype(output_info[0].dtype));
-      nodes->push_back(node);
-      nodes->push_back(cast_node);
+      auto out = helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)});
+      auto cast_out = helper->MakeNode("Cast", {out->output(0)}, {output_info[0].name});
+      AddAttribute(cast_out, "to", GetOnnxDtype(input_info[0].dtype));
     } else {
-      auto node =
-          MakeNode("PRelu", {x_name, slope_name}, {output_info[0].name});
-      nodes->push_back(node);
+      helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)},
+                      {output_info[0].name});
     }
   }
-};*/
+};
 
 REGISTER_MAPPER(relu, ActivationMapper)
 REGISTER_MAPPER(tanh, ActivationMapper)
@@ -157,5 +146,6 @@ REGISTER_MAPPER(sigmoid, ActivationMapper)
 REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
+REGISTER_MAPPER(gelu, GeluMapper)
 // REGISTER_MAPPER(prelu, PReluMapper)
 }  // namespace paddle2onnx

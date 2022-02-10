@@ -60,15 +60,17 @@ def dygraph2onnx(layer, save_file, input_spec, opset_version=9, **configs):
                 "The get_op_list should be 'bool', but received type is %s." %
                 type(configs['get_op_list']))
 
+    model_file = os.path.join(dirname, 'model.pdmodel')
+    params_file = os.path.join(dirname, 'model.pdiparams')
+    if not os.path.exists(params_file):
+        params_file = ""
     if get_op_list:
-        op_list = c_p2o.check_op(
-            os.path.join(dirname, 'model.pdmodel'),
-            os.path.join(dirname, 'model.pdiparams'))
+        op_list = c_p2o.check_op(model_file, params_file)
         return op_list
 
     export(
-        os.path.join(dirname, 'model.pdmodel'),
-        os.path.join(dirname, 'model.pdiparams'),
+        model_file,
+        params_file,
         save_file=save_file,
         opset_version=opset_version,
         auto_upgrade_opset=auto_upgrade_opset)
