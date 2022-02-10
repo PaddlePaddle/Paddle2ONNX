@@ -138,7 +138,8 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
     }
   }
   helper.SetOpsetVersion(opset_version);
-  std::cerr << "Model will exported with opset = " << helper.opset_version << std::endl;
+  std::cerr << "Model will exported with opset = " << helper.opset_version
+            << std::endl;
 
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);

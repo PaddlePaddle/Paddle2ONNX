@@ -115,13 +115,12 @@ class GeluMapper : public Mapper {
     double const_1_value = 1.0;
     auto sqrt_2 = helper->MakeConstant({1}, input_onnx_dtype, sqrt_2_value);
     auto scale = helper->MakeConstant({1}, input_onnx_dtype, scale_value);
-    auto const_1 =
-        helper->MakeConstant({1}, input_onnx_dtype, const_1_value);
+    auto const_1 = helper->MakeConstant({1}, input_onnx_dtype, const_1_value);
 
-        // the computation formula follows
-        // https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/functional/gelu_cn.html#gelu
-        auto erf0 =
-            helper->MakeNode("Div", {input_info[0].name, sqrt_2->output(0)});
+    // the computation formula follows
+    // https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/functional/gelu_cn.html#gelu
+    auto erf0 =
+        helper->MakeNode("Div", {input_info[0].name, sqrt_2->output(0)});
     auto erf1 = helper->MakeNode("Erf", {erf0->output(0)});
     auto gelu0 = helper->MakeNode("Add", {erf1->output(0), const_1->output(0)});
     auto gelu1 =
