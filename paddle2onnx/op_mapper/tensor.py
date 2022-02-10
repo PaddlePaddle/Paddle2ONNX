@@ -1017,7 +1017,7 @@ class FlattenContiguousRange():
         if start_axis == 0 and end_axis == dims - 1:
             final_shape = graph.make_node(
                 'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
-        elif start_axis == 0 and end_axis < dims - 1:
+        elif start_axis == 0:
             slice_end = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[end_axis + 1],
                 ends=[dims])
@@ -1026,7 +1026,7 @@ class FlattenContiguousRange():
                     'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice_end
             ]
             final_shape = graph.make_node('Concat', inputs=slices, axis=0)
-        elif start_axis > 0 and end_axis == dims - 1:
+        elif end_axis == dims - 1:
             slice_start = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
             slices = [
@@ -1034,7 +1034,7 @@ class FlattenContiguousRange():
                     'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
             ]
             final_shape = graph.make_node('Concat', inputs=slices, axis=0)
-        elif start_axis > 0 and end_axis < dims - 1:
+        else:
             slice_start = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
             slice_end = mapper_helper.slice_helper(
