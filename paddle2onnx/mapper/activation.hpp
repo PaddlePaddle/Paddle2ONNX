@@ -113,20 +113,29 @@ class GeluMapper : public Mapper {
     double sqrt_2_value = 1.4142135623730951;
     double scale_value = 0.5;
     double const_1_value = 1.0;
-    auto sqrt_2 = helper->MakeConstant({1}, input_onnx_dtype, sqrt_2_value);
-    auto scale = helper->MakeConstant({1}, input_onnx_dtype, scale_value);
-    auto const_1 = helper->MakeConstant({1}, input_onnx_dtype, const_1_value);
+    auto sqrt_2 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, sqrt_2_value);
+    auto scale = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, scale_value);
+    auto const_1 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, const_1_value);
+ 
+    auto input_name = helper->AutoCast(input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
 
     // the computation formula follows
     // https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/functional/gelu_cn.html#gelu
     auto erf0 =
-        helper->MakeNode("Div", {input_info[0].name, sqrt_2->output(0)});
+        helper->MakeNode("Div", {input_name, sqrt_2->output(0)});
     auto erf1 = helper->MakeNode("Erf", {erf0->output(0)});
     auto gelu0 = helper->MakeNode("Add", {erf1->output(0), const_1->output(0)});
     auto gelu1 =
-        helper->MakeNode("Mul", {input_info[0].name, gelu0->output(0)});
-    helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)},
-                     {output_info[0].name});
+        helper->MakeNode("Mul", {input_name, gelu0->output(0)});
+    
+    if (input_info[0].dtype != P2ODataType::FP32) {
+      auto out = helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)});
+      auto cast_out = helper->MakeNode("Cast", {out->output(0)}, {output_info[0].name});
+      AddAttribute(cast_out, "to", GetOnnxDtype(input_info[0].dtype));
+    } else {
+      helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)},
+                      {output_info[0].name});
+    }
   }
 };
 

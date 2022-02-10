@@ -234,9 +234,14 @@ class APIOnnx(object):
         """
         make onnx res
         """
-        sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
-                         '.onnx'))
+        import onnx
+        onnx_file = os.path.join(self.pwd, self.name,
+                                 self.name + '_' + str(ver) + '.onnx')
+        onnx_model = onnx.load(onnx_file)
+        opset_version = onnx_model.opset_import[0].version
+        assert (ver == opset_version,
+                "Opset version of {} is not {}".format(onnx_file, ver))
+        sess = InferenceSession(onnx_model.SerializeToString())
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         if len(ort_outs) > 1:
             return ort_outs

@@ -114,7 +114,7 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
            "Due to the unsupported operators, the conversion is aborted.");
   }
 
-  int32_t min_opset = GetMinOpset(parser, verbose);
+  int32_t min_opset = GetMinOpset(parser, false);
   if (min_opset < 0) {
     min_opset = GetMinOpset(parser, true);
     Assert(false,
