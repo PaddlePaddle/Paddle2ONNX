@@ -17,7 +17,6 @@
 #include <iostream>
 #include <limits>
 #include "paddle2onnx/mapper/mapper.hpp"
-#include "paddle2onnx/mapper/mapper_helper.hpp"
 
 namespace paddle2onnx {
 
@@ -29,7 +28,10 @@ class ClipMapper : public Mapper {
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Opset7(OnnxHelper* helper) {
-
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     bool min_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Min");
     bool max_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Max");
@@ -47,15 +49,10 @@ class ClipMapper : public Mapper {
       if (has_max_attr){
         parser_->GetOpAttr(op, "max", &max);
       }
-      mapper_helper_.reset(new ClipHelper(helper, parser_, block_idx_, op_idx_, export_opset_version_, has_min_attr, min, has_max_attr, max));
-      mapper_helper_->Run();
+      
+      helper->Clip(input_info[0].name, output_info[0].name, has_min_attr, min, has_max_attr, max, input_info[0].dtype);
       return;
     }
-    
-    std::vector<TensorInfo> input_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "X");
-    std::vector<TensorInfo> output_info =
-        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
     int32_t dtype = input_info[0].dtype;
     if (input_info[0].dtype == P2ODataType::FP64){

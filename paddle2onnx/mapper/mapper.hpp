@@ -20,11 +20,6 @@
 
 namespace paddle2onnx {
 
-class Base_mapper_helper {
- public:
-  virtual void Run() = 0;
-};
-
 class Mapper {
  public:
   Mapper() {}
@@ -106,7 +101,6 @@ class Mapper {
   int32_t block_idx_;
   int32_t op_idx_;
   int32_t export_opset_version_;
-  std::shared_ptr<Base_mapper_helper> mapper_helper_;
 };
 
 }  // namespace paddle2onnx

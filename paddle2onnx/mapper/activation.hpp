@@ -105,11 +105,11 @@ class GeluMapper : public Mapper {
 
   void Opset9(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
     auto input_onnx_dtype = GetOnnxDtype(input_info[0].dtype);
-    auto op = parser->GetOpDesc(block_idx, op_idx);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     double sqrt_2_value = 1.4142135623730951;
     double scale_value = 0.5;
     double const_1_value = 1.0;
