@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <vector>
 #include "paddle2onnx/mapper/data_helper.hpp"
 #include "paddle2onnx/mapper/onnx_helper.hpp"
 #include "paddle2onnx/mapper/register_mapper.hpp"

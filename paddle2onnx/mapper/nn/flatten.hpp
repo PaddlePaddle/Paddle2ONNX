@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #pragma once
+#include <vector>
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
@@ -26,9 +27,7 @@ class FlattenMapper : public Mapper {
     parser_->GetOpAttr(op, "stop_axis", &stop_axis_);
   }
 
-  int32_t GetMinOpset(bool verbose = false) {
-    return 7;
-  }
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
@@ -42,27 +41,48 @@ class FlattenMapper : public Mapper {
     std::vector<TensorInfo> output_info =
         parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
-    auto unknown_dim_node = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::INT64, -1);
-    if (start_axis_ == 0 && stop_axis_ == input_info[0].Rank() -1) {
-      helper->MakeNode("Reshape", {input_info[0].name, unknown_dim_node->output(0)}, {output_info[0].name});
+    auto unknown_dim_node =
+        helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::INT64, -1);
+    if (start_axis_ == 0 && stop_axis_ == input_info[0].Rank() - 1) {
+      helper->MakeNode("Reshape",
+                       {input_info[0].name, unknown_dim_node->output(0)},
+                       {output_info[0].name});
     } else {
       auto input_shape_node = helper->MakeNode("Shape", {input_info[0].name});
       if (start_axis_ == 0) {
-        auto second_part_shape = helper->Slice(input_shape_node->output(0), {0}, {stop_axis_ + 1}, {input_info[0].Rank()});
-        auto new_shape_node = helper->MakeNode("Concat", {unknown_dim_node->output(0), second_part_shape->output(0)});
+        auto second_part_shape =
+            helper->Slice(input_shape_node->output(0), {0}, {stop_axis_ + 1},
+                          {input_info[0].Rank()});
+        auto new_shape_node = helper->MakeNode(
+            "Concat",
+            {unknown_dim_node->output(0), second_part_shape->output(0)});
         AddAttribute(new_shape_node, "axis", int64_t(0));
-        helper->MakeNode("Reshape", {input_info[0].name, new_shape_node->output(0)}, {output_info[0].name});
+        helper->MakeNode("Reshape",
+                         {input_info[0].name, new_shape_node->output(0)},
+                         {output_info[0].name});
       } else if (stop_axis_ == input_info[0].Rank() - 1) {
-        auto first_part_shape = helper->Slice(input_shape_node->output(0), {0}, {0}, {start_axis_});
-        auto new_shape_node = helper->MakeNode("Concat", {first_part_shape->output(0), unknown_dim_node->output(0)});
+        auto first_part_shape =
+            helper->Slice(input_shape_node->output(0), {0}, {0}, {start_axis_});
+        auto new_shape_node = helper->MakeNode(
+            "Concat",
+            {first_part_shape->output(0), unknown_dim_node->output(0)});
         AddAttribute(new_shape_node, "axis", int64_t(0));
-        helper->MakeNode("Reshape", {input_info[0].name, new_shape_node->output(0)}, {output_info[0].name});
+        helper->MakeNode("Reshape",
+                         {input_info[0].name, new_shape_node->output(0)},
+                         {output_info[0].name});
       } else {
-        auto first_part_shape = helper->Slice(input_shape_node->output(0), {0}, {0}, {start_axis_});
-        auto second_part_shape = helper->Slice(input_shape_node->output(0), {0}, {stop_axis_ + 1}, {input_info[0].Rank()});
-        auto new_shape_node = helper->MakeNode("Concat", {first_part_shape->output(0), unknown_dim_node->output(0), second_part_shape->output(0)});
+        auto first_part_shape =
+            helper->Slice(input_shape_node->output(0), {0}, {0}, {start_axis_});
+        auto second_part_shape =
+            helper->Slice(input_shape_node->output(0), {0}, {stop_axis_ + 1},
+                          {input_info[0].Rank()});
+        auto new_shape_node = helper->MakeNode(
+            "Concat", {first_part_shape->output(0), unknown_dim_node->output(0),
+                       second_part_shape->output(0)});
         AddAttribute(new_shape_node, "axis", int64_t(0));
-        helper->MakeNode("Reshape", {input_info[0].name, new_shape_node->output(0)}, {output_info[0].name});
+        helper->MakeNode("Reshape",
+                         {input_info[0].name, new_shape_node->output(0)},
+                         {output_info[0].name});
       }
     }
   }
