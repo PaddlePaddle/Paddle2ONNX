@@ -52,12 +52,12 @@ class TestFlattenConvert(OPConvertAutoScanTest):
 
         start_axis = draw(
             st.integers(
-                min_value=0, max_value=len(input_shape) // 2))
+                min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
-        stop_axis = draw(
-            st.integers(
-                min_value=len(input_shape) // 2, max_value=len(input_shape) -
-                1))
+        if start_axis == len(input_shape) - 1 or start_axis == -1:
+            stop_axis = -1
+        else:
+            stop_axis = start_axis + 1
 
         config = {
             "op_names": ["flatten_contiguous_range"],
