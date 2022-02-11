@@ -78,18 +78,18 @@ class GridSampler(CustomPaddleOp):
         x0, x1, y0, y1 = x0 + 1, x1 + 1, y0 + 1, y1 + 1
 
         # Clip coordinates to padded image size
-        tensor_one = paddle.full(shape=[1], dtype='int64', fill_value=0.0)
+        tensor_zero = paddle.full(shape=[1], dtype='int64', fill_value=0.0)
         tensor_padded_w = paddle.full(
             shape=[1], dtype='int64', fill_value=padded_w - 1)
         tensor_padded_h = paddle.full(
             shape=[1], dtype='int64', fill_value=padded_h - 1)
-        x0 = paddle.where(x0 < 0, tensor_one, x0)
+        x0 = paddle.where(x0 < 0, tensor_zero, x0)
         x0 = paddle.where(x0 > padded_w - 1, tensor_padded_w, x0)
-        x1 = paddle.where(x1 < 0, tensor_one, x1)
+        x1 = paddle.where(x1 < 0, tensor_zero, x1)
         x1 = paddle.where(x1 > padded_w - 1, tensor_padded_w, x1)
-        y0 = paddle.where(y0 < 0, tensor_one, y0)
+        y0 = paddle.where(y0 < 0, tensor_zero, y0)
         y0 = paddle.where(y0 > padded_h - 1, tensor_padded_h, y0)
-        y1 = paddle.where(y1 < 0, tensor_one, y1)
+        y1 = paddle.where(y1 < 0, tensor_zero, y1)
         y1 = paddle.where(y1 > padded_h - 1, tensor_padded_h, y1)
         im_padded = paddle.reshape(im_padded, [n, c, -1])
 
