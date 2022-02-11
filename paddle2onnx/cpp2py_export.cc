@@ -34,9 +34,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     ModelExporter me;
     auto onnx_proto =
         me.Run(parser, opset_version, auto_upgrade_opset, verbose);
-    std::string out;
-    onnx_proto->SerializeToString(&out);
-    return pybind11::bytes(out);
+    return pybind11::bytes(onnx_proto);
   });
   m.def("check_op", [](const std::string& model_filename,
                      const std::string& params_filename) {

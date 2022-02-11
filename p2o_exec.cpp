@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   paddle2onnx::ModelExporter me;
   auto onnx_proto = me.Run(parser, 7, true, true);
   std::fstream out("model.onnx", std::ios::out | std::ios::binary);
-  onnx_proto->SerializePartialToOstream(&out);
+  out << onnx_proto;
   out.close();
 
   std::cout << "Hello world" << std::endl;

@@ -48,7 +48,7 @@ struct ModelExporter {
   bool CheckIfOpSupported(const PaddleParser& parser, std::set<std::string>*);
 
  public:
-  std::shared_ptr<ONNX_NAMESPACE::ModelProto> Run(
+  std::string Run(
       const PaddleParser& parser, int opset_version = 9,
       bool auto_upgrade_opset = true, bool verbose = false);
 };
@@ -86,7 +86,7 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
   delete mapper;
 }
 
-std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
+std::string ModelExporter::Run(
     const PaddleParser& parser, int opset_version, bool auto_upgrade_opset,
     bool verbose) {
   Assert(opset_version <= 15 && opset_version >= 7,
@@ -186,10 +186,17 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> ModelExporter::Run(
   // to let framework know the conversion is
   // pass or fail
   ONNX_NAMESPACE::checker::check_model(*(model.get()));
+
+  std::string out;
+  if(!model->SerializeToString(&out)) {
+    if (verbose)
+      std::cerr << "ONNX Model SerializeToString error" << std::endl;
+    return "";
+  }
   if (verbose) {
     std::cerr << "ONNX Model exported successed!" << std::endl;
   }
-  return model;
+  return out;
 }
 
 bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
