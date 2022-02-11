@@ -207,6 +207,7 @@ def get_shape_node(graph, input, start, end):
             'Slice', inputs=[input_node, starts_node, ends_node])
     return shape_node
 
+
 def shape_alignment(graph, nodes, node_shapes):
     assert len(nodes) == len(
         node_shapes), "Length of nodes and node_shapes should be equal."
