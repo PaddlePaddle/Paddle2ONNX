@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <vector>
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
@@ -20,31 +21,32 @@ class ScaleMapper : public Mapper {
  public:
   ScaleMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    parser->GetOpAttr(op, "scale", &scale);
-    parser->GetOpAttr(op, "bias", &bias);
-    parser->GetOpAttr(op, "bias_after_scale", &bias_after_scale);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "scale", &scale_);
+    parser_->GetOpAttr(op, "bias", &bias_);
+    parser_->GetOpAttr(op, "bias_after_scale", &bias_after_scale_);
   }
 
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
-    // TODO just temporary use Identity
-    bool is_scale_1 = ((scale - 1.0) < 1e-06 && (scale - 1.0) > -1e-06);
-    bool is_bias_0 = (bias < 1e-06 && bias > -1e-06);
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    // TODO(yeliang2258): just temporary use Identity
+    bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
+    bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
     if (is_scale_1 && is_bias_0) {
-      // TODO we could add a pass to eleminate all the identity op
+      // TODO(yeliang2258): we could add a pass to eleminate all the identity op
       helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
     } else {
-      // TODO we could add a pass to eleminate the scale is 1 or bias is 0
+      // TODO(yeliang2258): we could add a pass to eleminate the scale is 1 or
+      // bias is 0
       auto onnx_dtype = GetOnnxDtype(input_info[0].dtype);
-      auto bias_node = helper->MakeConstant({1}, onnx_dtype, bias);
-      auto scale_node = helper->MakeConstant({1}, onnx_dtype, scale);
-      if (bias_after_scale) {
+      auto bias_node = helper->MakeConstant({1}, onnx_dtype, bias_);
+      auto scale_node = helper->MakeConstant({1}, onnx_dtype, scale_);
+      if (bias_after_scale_) {
         auto mul_node = helper->MakeNode(
             "Mul", {input_info[0].name, scale_node->output(0)});
         helper->MakeNode("Add", {mul_node->output(0), bias_node->output(0)},
@@ -59,9 +61,9 @@ class ScaleMapper : public Mapper {
   }
 
  private:
-  float scale = 1.0;
-  float bias = 0.0;
-  bool bias_after_scale = true;
+  float scale_ = 1.0;
+  float bias_ = 0.0;
+  bool bias_after_scale_ = true;
 };
 
 REGISTER_MAPPER(scale, ScaleMapper)

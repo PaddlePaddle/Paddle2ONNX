@@ -15,6 +15,8 @@
 #pragma once
 
 #include <onnx/onnx_pb.h>
+#include <memory>
+#include <string>
 #include <vector>
 #include "paddle2onnx/mapper/register_mapper.hpp"
 #include "paddle2onnx/parser/parser.hpp"
@@ -60,10 +62,14 @@ class OnnxHelper {
 
   std::string AutoCast(const std::string& input, int32_t input_paddle_dtype,
                        int32_t to_paddle_dtype);
+  std::string AutoCast(const std::string& input, const std::string& output,
+                       int32_t input_paddle_dtype, int32_t to_paddle_dtype);
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> Slice(
       const std::string& input, const std::vector<int64_t>& axes,
       const std::vector<int64_t>& starts, const std::vector<int64_t>& ends);
+  std::string Clip(const std::string& input, const std::string& output,
+                   const float& min, const float& max, const int32_t& in_dtype);
 };
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
@@ -115,7 +121,7 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   ONNX_NAMESPACE::TensorProto_DataType dtype) {
   auto attr = node->add_attribute();
   attr->set_name(name);
-  attr->set_i(int(dtype));
+  attr->set_i(static_cast<int>(dtype));
   attr->set_type(ONNX_NAMESPACE::AttributeProto::INT);
 }
 
@@ -338,6 +344,18 @@ std::string OnnxHelper::AutoCast(const std::string& input,
   return cast_node->output(0);
 }
 
+std::string OnnxHelper::AutoCast(const std::string& input,
+                                 const std::string& output,
+                                 int32_t input_paddle_dtype,
+                                 int32_t to_paddle_dtype) {
+  if (input_paddle_dtype == to_paddle_dtype) {
+    return input;
+  }
+  auto cast_node = MakeNode("Cast", {input}, {output});
+  AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
+  return cast_node->output(0);
+}
+
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::Slice(
     const std::string& input, const std::vector<int64_t>& axes,
     const std::vector<int64_t>& starts, const std::vector<int64_t>& ends) {
@@ -356,4 +374,53 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::Slice(
   AddAttribute(slice_node, "ends", ends);
   return slice_node;
 }
+
+std::string OnnxHelper::Clip(const std::string& input,
+                             const std::string& output, const float& min,
+                             const float& max, const int32_t& in_dtype) {
+  std::string input_name;
+  if (in_dtype == P2ODataType::FP64) {
+    input_name = AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
+  } else {
+    input_name = input;
+  }
+  if (opset_version < 11) {
+    if (in_dtype == P2ODataType::FP64) {
+      auto node = MakeNode("Clip", {input_name});
+      AddAttribute(node, "max", max);
+      AddAttribute(node, "min", min);
+      auto res = AutoCast(node->output(0), output, P2ODataType::FP32,
+                          P2ODataType::FP64);
+      return res;
+    } else {
+      auto node = MakeNode("Clip", {input_name}, {output});
+      AddAttribute(node, "max", max);
+
+      AddAttribute(node, "min", min);
+
+      return node->output(0);
+    }
+  } else {
+    if (in_dtype == P2ODataType::FP64) {
+      std::string min_name;
+      int32_t dtype = P2ODataType::FP32;
+      min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
+      std::string max_name;
+      max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+      auto node = MakeNode("Clip", {input_name, min_name, max_name});
+      auto res = AutoCast(node->output(0), {output}, P2ODataType::FP32,
+                          P2ODataType::FP64);
+      return res;
+    } else {
+      std::string min_name;
+      int32_t dtype = in_dtype;
+      min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
+      std::string max_name;
+      max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+      auto node = MakeNode("Clip", {input_name, min_name, max_name}, {output});
+      return node->output(0);
+    }
+  }
+}
+
 }  // namespace paddle2onnx

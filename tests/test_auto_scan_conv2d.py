@@ -71,6 +71,10 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=1, max_value=5), min_size=1, max_size=2))
+        min_kernel = min(kernel_size[-2:])
+        for i in range(len(strides)):
+            if strides[i] > min_kernel:
+                strides[i] = min_kernel
         if len(strides) == 1:
             strides = strides[0]
 

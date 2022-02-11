@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <vector>
 #include "paddle2onnx/mapper/data_helper.hpp"
 #include "paddle2onnx/mapper/onnx_helper.hpp"
 #include "paddle2onnx/mapper/register_mapper.hpp"
@@ -22,18 +23,17 @@ namespace paddle2onnx {
 class Mapper {
  public:
   Mapper() {}
-  Mapper(const PaddleParser& p, int32_t block_id, int32_t op_id) : parser(&p) {
-    block_idx = block_id;
-    op_idx = op_id;
+  Mapper(const PaddleParser& p, int32_t block_id, int32_t op_id) : parser_(&p) {
+    block_idx_ = block_id;
+    op_idx_ = op_id;
   }
 
   // the return value in [7, 15], represent the minimum opset_version
   // if return value < 0, means the op is not supported.
   virtual int32_t GetMinOpset(bool verbose) = 0;
 
-  void Run(OnnxHelper* helper,
-           int32_t opset_version = 7) {
-    export_opset_version = opset_version;
+  void Run(OnnxHelper* helper, int32_t opset_version = 7) {
+    export_opset_version_ = opset_version;
     Assert(opset_version >= 7 && opset_version <= 15,
            "Paddle2ONNX only support opset_version in range of [7, 15].");
     if (opset_version == 15) {
@@ -57,37 +57,21 @@ class Mapper {
     }
   }
 
-  virtual void Opset15(OnnxHelper* helper) {
-    Opset14(helper);
-  }
+  virtual void Opset15(OnnxHelper* helper) { Opset14(helper); }
 
-  virtual void Opset14(OnnxHelper* helper) {
-    Opset13(helper);
-  }
+  virtual void Opset14(OnnxHelper* helper) { Opset13(helper); }
 
-  virtual void Opset13(OnnxHelper* helper) {
-    Opset12(helper);
-  }
+  virtual void Opset13(OnnxHelper* helper) { Opset12(helper); }
 
-  virtual void Opset12(OnnxHelper* helper) {
-    Opset11(helper);
-  }
+  virtual void Opset12(OnnxHelper* helper) { Opset11(helper); }
 
-  virtual void Opset11(OnnxHelper* helper) {
-    Opset10(helper);
-  }
+  virtual void Opset11(OnnxHelper* helper) { Opset10(helper); }
 
-  virtual void Opset10(OnnxHelper* helper) {
-    Opset9(helper);
-  }
+  virtual void Opset10(OnnxHelper* helper) { Opset9(helper); }
 
-  virtual void Opset9(OnnxHelper* helper) {
-    Opset8(helper);
-  }
+  virtual void Opset9(OnnxHelper* helper) { Opset8(helper); }
 
-  virtual void Opset8(OnnxHelper* helper) {
-    Opset7(helper);
-  }
+  virtual void Opset8(OnnxHelper* helper) { Opset7(helper); }
 
   virtual void Opset7(OnnxHelper* helper) {
     Assert(false,
@@ -96,10 +80,10 @@ class Mapper {
   }
 
   virtual ~Mapper() = default;
-  const PaddleParser* parser;
-  int32_t block_idx;
-  int32_t op_idx;
-  int32_t export_opset_version;
+  const PaddleParser* parser_;
+  int32_t block_idx_;
+  int32_t op_idx_;
+  int32_t export_opset_version_;
 };
 
 }  // namespace paddle2onnx

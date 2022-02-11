@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <map>
+#include <string>
+#include <vector>
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
@@ -20,21 +23,21 @@ class ActivationMapper : public Mapper {
  public:
   ActivationMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    op_mapper["relu"] = "Relu";
-    op_mapper["tanh"] = "Tanh";
-    op_mapper["log"] = "Log";
-    op_mapper["sigmoid"] = "Sigmoid";
-    op_mapper["sqrt"] = "Sqrt";
-    op_mapper["softplus"] = "Softplus";
+    op_mapper_["relu"] = "Relu";
+    op_mapper_["tanh"] = "Tanh";
+    op_mapper_["log"] = "Log";
+    op_mapper_["sigmoid"] = "Sigmoid";
+    op_mapper_["sqrt"] = "Sqrt";
+    op_mapper_["softplus"] = "Softplus";
   }
 
   int32_t GetMinOpset(bool verbose = false) {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     if (op.type() == "softplus") {
       float beta = 0.0;
       float threshold = 20.0;
-      parser->GetOpAttr(op, "beta", &beta);
-      parser->GetOpAttr(op, "threshold", &threshold);
+      parser_->GetOpAttr(op, "beta", &beta);
+      parser_->GetOpAttr(op, "threshold", &threshold);
       if ((beta - 1.0) > 1e-06 || (beta - 1.0) < -1e-06) {
         if (verbose) {
           std::cerr << "Paddle2ONNX only supports softplus with beta == 0"
@@ -57,43 +60,43 @@ class ActivationMapper : public Mapper {
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    auto iter = op_mapper.find(op.type());
-    Assert(op_mapper.end() != iter,
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto iter = op_mapper_.find(op.type());
+    Assert(op_mapper_.end() != iter,
            "Cannot find " + op.type() + " in activation op_mapper.");
     helper->MakeNode(iter->second, {input_info[0].name}, {output_info[0].name});
   }
 
  private:
-  std::map<std::string, std::string> op_mapper;
+  std::map<std::string, std::string> op_mapper_;
 };
 
 class LeakyReluMapper : public Mapper {
  public:
   LeakyReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    parser->GetOpAttr(op, "alpha", &alpha);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "alpha", &alpha_);
   }
 
   int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
-    auto op = parser->GetOpDesc(block_idx, op_idx);
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     auto node = helper->MakeNode("LeakyRelu", {input_info[0].name},
                                  {output_info[0].name});
-    AddAttribute(node, "alpha", alpha);
+    AddAttribute(node, "alpha", alpha_);
   }
 
  private:
-  float alpha;
+  float alpha_;
 };
 
 class GeluMapper : public Mapper {
@@ -105,36 +108,39 @@ class GeluMapper : public Mapper {
 
   void Opset9(OnnxHelper* helper) {
     std::vector<TensorInfo> input_info =
-        parser->GetOpInput(block_idx, op_idx, "X");
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
     std::vector<TensorInfo> output_info =
-        parser->GetOpOutput(block_idx, op_idx, "Out");
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
     auto input_onnx_dtype = GetOnnxDtype(input_info[0].dtype);
-    auto op = parser->GetOpDesc(block_idx, op_idx);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     double sqrt_2_value = 1.4142135623730951;
     double scale_value = 0.5;
     double const_1_value = 1.0;
-    auto sqrt_2 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, sqrt_2_value);
-    auto scale = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, scale_value);
-    auto const_1 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, const_1_value);
- 
-    auto input_name = helper->AutoCast(input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+    auto sqrt_2 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT,
+                                       sqrt_2_value);
+    auto scale = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT,
+                                      scale_value);
+    auto const_1 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT,
+                                        const_1_value);
+
+    auto input_name = helper->AutoCast(input_info[0].name, input_info[0].dtype,
+                                       P2ODataType::FP32);
 
     // the computation formula follows
     // https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/functional/gelu_cn.html#gelu
-    auto erf0 =
-        helper->MakeNode("Div", {input_name, sqrt_2->output(0)});
+    auto erf0 = helper->MakeNode("Div", {input_name, sqrt_2->output(0)});
     auto erf1 = helper->MakeNode("Erf", {erf0->output(0)});
     auto gelu0 = helper->MakeNode("Add", {erf1->output(0), const_1->output(0)});
-    auto gelu1 =
-        helper->MakeNode("Mul", {input_name, gelu0->output(0)});
-    
+    auto gelu1 = helper->MakeNode("Mul", {input_name, gelu0->output(0)});
+
     if (input_info[0].dtype != P2ODataType::FP32) {
       auto out = helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)});
-      auto cast_out = helper->MakeNode("Cast", {out->output(0)}, {output_info[0].name});
+      auto cast_out =
+          helper->MakeNode("Cast", {out->output(0)}, {output_info[0].name});
       AddAttribute(cast_out, "to", GetOnnxDtype(input_info[0].dtype));
     } else {
       helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)},
-                      {output_info[0].name});
+                       {output_info[0].name});
     }
   }
 };
