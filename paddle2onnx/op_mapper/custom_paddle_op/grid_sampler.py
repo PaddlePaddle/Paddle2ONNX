@@ -113,7 +113,7 @@ class GridSampler(CustomPaddleOp):
                               [n, c, gh, gw])
 
     def paddle_gather(self, x, dim, index):
-        index_shape = index.shape
+        # index_shape = index.shape
         index_shape = paddle.shape(index)
         x_shape = paddle.shape(x)
         index_flatten = index.flatten()
