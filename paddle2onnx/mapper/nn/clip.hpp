@@ -45,21 +45,15 @@ class ClipMapper : public Mapper {
     bool min_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Min");
     bool max_is_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Max");
 
-    bool has_min_attr = parser_->OpHasAttr(op, "min");
-    bool has_max_attr = parser_->OpHasAttr(op, "max");
     if (!(min_is_tensor || max_is_tensor)) {
       float min = 0.0;
-      if (has_min_attr) {
-        parser_->GetOpAttr(op, "min", &min);
-      }
+      parser_->GetOpAttr(op, "min", &min);
 
       float max = 1.0;
-      if (has_max_attr) {
-        parser_->GetOpAttr(op, "max", &max);
-      }
+      parser_->GetOpAttr(op, "max", &max);
 
-      helper->Clip(input_info[0].name, output_info[0].name, has_min_attr, min,
-                   has_max_attr, max, input_info[0].dtype);
+      helper->Clip(input_info[0].name, output_info[0].name, min, max,
+                   input_info[0].dtype);
       return;
     }
 
