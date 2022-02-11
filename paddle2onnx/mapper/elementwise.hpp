@@ -83,9 +83,7 @@ class ElementwiseMapper : public Mapper {
 class ElementWiseModMapper : public Mapper {
  public:
   ElementWiseModMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
-      : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  }
+      : Mapper(p, block_id, op_id) {}
 
   int32_t GetMinOpset(bool verbose = false) { return 10; }
 
