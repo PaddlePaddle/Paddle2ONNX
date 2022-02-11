@@ -28,22 +28,27 @@ paddle.enable_static()
 np.random.seed(33)
 
 
-def test_grid_sample():
+def test_grid_sample_align_corners():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
+    # onnxruntime 中的Floor不支持float64
+    dtype = 'float32'
+    align_corners = True
+    N = 5
     with paddle.static.program_guard(main_program, startup_program):
         x = fluid.data(
-            name='x', shape=[5, 6, 3, 3], dtype='float32', lod_level=1)
+            name='x', shape=[-1, 6, -1, -1], dtype=dtype, lod_level=1)
         grid = fluid.data(
-            name='grid', shape=[5, 3, 4, 2], dtype='float32', lod_level=1)
-        out = paddle.nn.functional.grid_sample(x, grid, align_corners=True)
+            name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
+        out = paddle.nn.functional.grid_sample(
+            x, grid, align_corners=align_corners)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
-        x_data = randtool("int", 1, 10, [5, 6, 3, 3]).astype('float32')
-        grid_data = randtool("float", 1, 4, [5, 3, 4, 2]).astype('float32')
-        x_val = fluid.create_lod_tensor(x_data, [[5]], fluid.CPUPlace())
-        grid_val = fluid.create_lod_tensor(grid_data, [[5]], fluid.CPUPlace())
+        x_data = randtool("int", 1, 10, [N, 6, 3, 3]).astype(dtype)
+        grid_data = randtool("float", 1, 10, [N, 3, 4, 2]).astype(dtype)
+        x_val = fluid.create_lod_tensor(x_data, [[N]], fluid.CPUPlace())
+        grid_val = fluid.create_lod_tensor(grid_data, [[N]], fluid.CPUPlace())
         result, = exe.run(feed={"x": x_val,
                                 "grid": grid_val},
                           fetch_list=[out],
@@ -69,5 +74,47 @@ def test_grid_sample():
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
-if __name__ == "__main__":
-    test_grid_sample()
+def test_grid_sample_align_corners_False():
+    main_program = paddle.static.Program()
+    startup_program = paddle.static.Program()
+    # onnxruntime 中的Floor不支持float64
+    dtype = 'float32'
+    align_corners = False
+    N = 5
+    with paddle.static.program_guard(main_program, startup_program):
+        x = fluid.data(
+            name='x', shape=[-1, 6, -1, -1], dtype=dtype, lod_level=1)
+        grid = fluid.data(
+            name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
+        out = paddle.nn.functional.grid_sample(
+            x, grid, align_corners=align_corners)
+
+        exe = paddle.static.Executor(paddle.CPUPlace())
+        exe.run(paddle.static.default_startup_program())
+        x_data = randtool("int", 1, 10, [N, 6, 3, 3]).astype(dtype)
+        grid_data = randtool("float", 1, 10, [N, 3, 4, 2]).astype(dtype)
+        x_val = fluid.create_lod_tensor(x_data, [[N]], fluid.CPUPlace())
+        grid_val = fluid.create_lod_tensor(grid_data, [[N]], fluid.CPUPlace())
+        result, = exe.run(feed={"x": x_val,
+                                "grid": grid_val},
+                          fetch_list=[out],
+                          return_numpy=False)
+        result = np.array(result)
+        path_prefix = "./grid_sampler"
+        fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
+        onnx_path = path_prefix + "/model.onnx"
+        program2onnx(
+            model_dir=path_prefix,
+            save_file=onnx_path,
+            opset_version=11,
+            enable_onnx_checker=True)
+
+        sess = rt.InferenceSession(onnx_path)
+        input_name1 = sess.get_inputs()[0].name
+        input_name2 = sess.get_inputs()[1].name
+        label_name = sess.get_outputs()[0].name
+        pred_onnx = sess.run([label_name],
+                             {input_name1: x_data,
+                              input_name2: grid_data})[0]
+        pred_onnx = np.array(pred_onnx)
+        compare(pred_onnx, result, 1e-5, 1e-5)

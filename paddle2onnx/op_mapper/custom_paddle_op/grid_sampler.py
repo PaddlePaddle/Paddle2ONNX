@@ -72,6 +72,8 @@ class GridSampler(CustomPaddleOp):
                                              pad=[1, 1, 1, 1],
                                              mode='constant',
                                              value=0)
+        if im_padded.dtype != im.dtype:
+            im_padded = paddle.cast(im_padded, im.dtype)
         padded_h = h + 2
         padded_w = w + 2
         # save points positions after padding
@@ -137,6 +139,10 @@ class GridSampler(CustomPaddleOp):
     def forward(self):
         input = self.input('X', 0)
         grid = self.input('Grid', 0)
+        if self.mode != 'bilinear' or self.padding_mode != 'zeros':
+            raise Exception(
+                "grid_sample only is supported with mode should be 'bilinear' and padding_mode should be 'zeros'"
+            )
         res = self.paddle_bilinear_grid_sample(
             input, grid, align_corners=self.align_corners)
         return {'Output': [res]}
