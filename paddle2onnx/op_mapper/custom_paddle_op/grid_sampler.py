@@ -112,6 +112,8 @@ class GridSampler(CustomPaddleOp):
 
     def paddle_gather(self, x, dim, index):
         index_shape = index.shape
+        # index_shape = paddle.shape(index)
+        # x_shape = paddle.shape(x)
         index_flatten = index.flatten()
         if dim < 0:
             dim = len(x.shape) + dim
@@ -121,8 +123,10 @@ class GridSampler(CustomPaddleOp):
                 nd_index.append(index_flatten)
             else:
                 reshape_shape = [1] * len(x.shape)
-                reshape_shape[k] = x.shape[k]
-                x_arange = paddle.arange(x.shape[k], dtype=index.dtype)
+                # x_shape_k = x_shape[k]
+                x_shape_k = x.shape[k]
+                reshape_shape[k] = x_shape_k
+                x_arange = paddle.arange(x_shape_k, dtype=index.dtype)
                 x_arange = x_arange.reshape(reshape_shape)
                 dim_index = paddle.expand(x_arange, index_shape).flatten()
                 nd_index.append(dim_index)
