@@ -25,20 +25,17 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.flatten(
-            x,
-            start_axis=self.config["start_axis"],
-            stop_axis=self.config["stop_axis"])
+        x = paddle.squeeze(inputs, axis=self.config['axis'])
         return x
 
 
-class TestFlattenConvert(OPConvertAutoScanTest):
+class TestSqueezeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.flatten
+    api: paddle.squeeze
     OPset version: 7, 9, 15
     """
 
@@ -46,35 +43,45 @@ class TestFlattenConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=20), min_size=2, max_size=5))
+                    min_value=4, max_value=10), min_size=3, max_size=5))
 
-        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
+        dtype = draw(
+            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+        axis = None
+        axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
+        if axis_dtype == "list":
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
+            if axis == 0:
+                axis = [0, -1]
+            else:
+                axis = [0, axis]
+            if draw(st.booleans()):
+                input_shape[axis[0]] = 1
+                input_shape[axis[1]] = 1
+        elif axis_dtype == "int":
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
+            input_shape[axis] = 1
+        else:
+            input_shape[0] = 1
 
-        # 生成合法的start_axis
-        start_axis = draw(
-            st.integers(
-                min_value=0, max_value=len(input_shape) - 1))
-
-        # 生成合法的stop_axis
-        stop_axis = draw(
-            st.integers(
-                min_value=start_axis, max_value=len(input_shape) - 1))
-
-        # 随机将start_axis转为负数
         if draw(st.booleans()):
-            start_axis -= len(input_shape)
-        # 随机将stop_axis转为负数
-        if draw(st.booleans()):
-            stop_axis -= len(input_shape)
+            input_spec_shape = []
+        else:
+            input_spec_shape = [len(input_shape) * [-1]]
 
         config = {
-            "op_names": ["flatten_contiguous_range"],
+            "op_names": ["squeeze2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [],
-            "start_axis": start_axis,
-            "stop_axis": stop_axis,
+            "input_spec_shape": input_spec_shape,
+            "axis": axis,
         }
 
         models = Net(config)

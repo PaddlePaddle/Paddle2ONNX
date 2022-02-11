@@ -25,56 +25,57 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x):
+    def forward(self, input):
         """
         forward
         """
-        x = paddle.flatten(
-            x,
-            start_axis=self.config["start_axis"],
-            stop_axis=self.config["stop_axis"])
+        x = paddle.unique(
+            input,
+            return_index=self.config['return_index'],
+            return_inverse=self.config['return_inverse'],
+            return_counts=self.config['return_counts'],
+            axis=self.config['axis'],
+            dtype=self.config['dtype'])
+
         return x
 
 
-class TestFlattenConvert(OPConvertAutoScanTest):
+class TestUniqueConvert(OPConvertAutoScanTest):
     """
-    api: paddle.flatten
-    OPset version: 7, 9, 15
+    api: paddle.unique
+    OPset version: 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=20), min_size=2, max_size=5))
+                    min_value=2, max_value=10), min_size=1, max_size=4))
 
-        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
+        return_index = draw(st.booleans())
+        return_inverse = draw(st.booleans())
+        return_counts = draw(st.booleans())
 
-        # 生成合法的start_axis
-        start_axis = draw(
-            st.integers(
-                min_value=0, max_value=len(input_shape) - 1))
-
-        # 生成合法的stop_axis
-        stop_axis = draw(
-            st.integers(
-                min_value=start_axis, max_value=len(input_shape) - 1))
-
-        # 随机将start_axis转为负数
+        axis = None
         if draw(st.booleans()):
-            start_axis -= len(input_shape)
-        # 随机将stop_axis转为负数
-        if draw(st.booleans()):
-            stop_axis -= len(input_shape)
-
+            axis = draw(
+                st.integers(
+                    min_value=0, max_value=len(input_shape) - 1))
+        dtype = draw(st.sampled_from(["float32", "int64"]))
+        # onnx is only support int64
+        xdtype = draw(st.sampled_from(["int64"]))
         config = {
-            "op_names": ["flatten_contiguous_range"],
+            "op_names": ["unique"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
-            "start_axis": start_axis,
-            "stop_axis": stop_axis,
+            "return_index": return_index,
+            "return_inverse": return_inverse,
+            "return_counts": return_counts,
+            "axis": axis,
+            "dtype": xdtype,
+            "use_gpu": False,
         }
 
         models = Net(config)
