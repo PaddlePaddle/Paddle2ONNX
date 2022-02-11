@@ -69,9 +69,7 @@ class OnnxHelper {
       const std::string& input, const std::vector<int64_t>& axes,
       const std::vector<int64_t>& starts, const std::vector<int64_t>& ends);
   std::string Clip(const std::string& input, const std::string& output,
-                   const bool& has_min_attr, const float& min,
-                   const bool& has_max_attr, const float& max,
-                   const int32_t& in_dtype);
+                   const float& min, const float& max, const int32_t& in_dtype);
 };
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
@@ -378,10 +376,8 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::Slice(
 }
 
 std::string OnnxHelper::Clip(const std::string& input,
-                             const std::string& output,
-                             const bool& has_min_attr, const float& min,
-                             const bool& has_max_attr, const float& max,
-                             const int32_t& in_dtype) {
+                             const std::string& output, const float& min,
+                             const float& max, const int32_t& in_dtype) {
   std::string input_name;
   if (in_dtype == P2ODataType::FP64) {
     input_name = AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
@@ -391,23 +387,17 @@ std::string OnnxHelper::Clip(const std::string& input,
   if (opset_version < 11) {
     if (in_dtype == P2ODataType::FP64) {
       auto node = MakeNode("Clip", {input_name});
-      if (has_max_attr) {
-        AddAttribute(node, "max", max);
-      }
-      if (has_min_attr) {
-        AddAttribute(node, "min", min);
-      }
+      AddAttribute(node, "max", max);
+      AddAttribute(node, "min", min);
       auto res = AutoCast(node->output(0), output, P2ODataType::FP32,
                           P2ODataType::FP64);
       return res;
     } else {
       auto node = MakeNode("Clip", {input_name}, {output});
-      if (has_max_attr) {
-        AddAttribute(node, "max", max);
-      }
-      if (has_min_attr) {
-        AddAttribute(node, "min", min);
-      }
+      AddAttribute(node, "max", max);
+
+      AddAttribute(node, "min", min);
+
       return node->output(0);
     }
   } else {
