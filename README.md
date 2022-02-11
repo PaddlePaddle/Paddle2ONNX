@@ -61,7 +61,7 @@ If you need to configure the input shape, use the following command:
 |----------|--------------|
 |--model_dir | The directory path of the paddlepaddle model saved by `paddle.fluid.io.save_inference_model`|
 |--model_filename |**[Optional]** The model file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
-|--params_filename |**[Optonal]** the parameter file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
+|--params_filename |**[Optional]** the parameter file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
 |--save_file | the directory path for the exported ONNX model|
 |--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
 |--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|

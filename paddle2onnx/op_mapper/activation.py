@@ -118,8 +118,6 @@ class Gelu():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
-        if node.attr('approximate'):
-            raise Exception("Not support approximate is True.")
         input = node.input('X', 0)
         if node.input_dtype('X', 0) == paddle.float64:
             input = graph.make_node(
