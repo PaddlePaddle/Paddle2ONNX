@@ -334,12 +334,12 @@ class GeluMapper : public Mapper {
 };
 
 REGISTER_MAPPER(relu, ActivationMapper)
-REGISTER_MAPPER(relu6, Relu6Mapper)
 REGISTER_MAPPER(tanh, ActivationMapper)
 REGISTER_MAPPER(log, ActivationMapper)
 REGISTER_MAPPER(sigmoid, ActivationMapper)
 REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
+REGISTER_MAPPER(relu6, Relu6Mapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
 REGISTER_MAPPER(gelu, GeluMapper)
 REGISTER_MAPPER(selu, SeluMapper)

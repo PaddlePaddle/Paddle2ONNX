@@ -12,68 +12,147 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
+#include <map>
+#include <string>
+#include <vector>
 #include "paddle2onnx/mapper/mapper.hpp"
 
 namespace paddle2onnx {
-/*
 class ElementwiseMapper : public Mapper {
  public:
   ElementwiseMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    op_type = op.type();
-    parser->GetOpAttr(op, "axis", &axis);
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "axis", &axis_);
 
-    op_mapper["elementwise_add"] = "Add";
+    op_mapper_["elementwise_add"] = "Add";
+    op_mapper_["elementwise_sub"] = "Sub";
+    op_mapper_["elementwise_div"] = "Div";
+    op_mapper_["elementwise_mul"] = "Mul";
+    op_mapper_["elementwise_min"] = "Min";
+    op_mapper_["elementwise_max"] = "Max";
+    op_mapper_["elementwise_pow"] = "Pow";
   }
 
-  bool Check() {
-    auto op = parser->GetOpDesc(block_idx, op_idx);
-    auto iter = op_mapper.find(op.type());
-    if (op_mapper.end() == iter) {
-      // TODO this log should be controled to show or now show
-      std::cerr << "Cannot find " << op.type() << " in elementwise op_mapper."
-                << std::endl;
-      return false;
+  int32_t GetMinOpset(bool verbose = false) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    if (op.type() == "elementwise_min" || op.type() == "elementwise_max") {
+      return 8;
     }
-    auto x_info = parser->GetOpInput(block_idx, op_idx, "X");
-    if (axis < -1 || axis > x_info[0].shape.size()) {
-      std::cerr << "find illegal axis in " << op.type() << "." << std::endl;
-      return false;
-    }
-    return true;
+    return 7;
   }
 
-  void Opset7(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-    nodes->clear();
-    auto x_info = parser->GetOpInput(block_idx, op_idx, "X");
-    auto y_info = parser->GetOpInput(block_idx, op_idx, "Y");
-    auto out_info = parser->GetOpInput(block_idx, op_idx, "Out");
-    auto iter = op_mapper.find(op_type);
-    Assert(op_mapper.end() != iter,
-           "Cannot find " + op_type + " in activation op_mapper.");
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_x_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> input_y_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "Y");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto iter = op_mapper_.find(op.type());
+    Assert(op_mapper_.end() != iter,
+           "Cannot find " + op.type() + " in elementwise op_mapper.");
 
-    int64_t x_rank = (int64_t)(x_info[0].shape.size());
-    int64_t y_rank = (int64_t)(y_info[0].shape.size());
-    if (axis == -1 || axis == (x_rank - 1) || x_rank == y_rank) {
-      auto node = MakeNode(iter->second, {x_info[0].name, y_info[0].name},
-                           {out_info[0].name});
-      nodes->push_back(node);
+    if (axis_ == -1 || axis_ == (input_x_info[0].Rank() - 1) ||
+        input_x_info[0].Rank() == input_y_info[0].Rank()) {
+      helper->MakeNode(iter->second,
+                       {input_x_info[0].name, input_y_info[0].name},
+                       {output_info[0].name});
     } else {
-      // TODO while axis == 1, and the previous node is conv, we could merge
-      // this to conv as bias
-      std::vector<int64_t> broadcast_shape(x_rank, 1);
-      for (auto i = axis; i < axis + y_rank; ++i) {
-        broadcast_shape[i] = y_info[0].shape[i - axis];
+      std::vector<int64_t> broadcast_shape(input_x_info[0].Rank(), 1);
+      for (int i = axis_; i < axis_ + input_y_info[0].Rank(); i++) {
+        broadcast_shape[i] = input_y_info[0].shape[i - axis_];
       }
-      Weight shape;
-      shape.set(P2ODataType::INT64, {x_rank}, broadcast_shape);
+      std::string broadcast_shape_node =
+          helper
+              ->MakeConstant(GetOnnxDtype(P2ODataType::INT64), broadcast_shape)
+              ->output(0);
+      auto y_node = helper->MakeNode(
+          "Reshape", {input_y_info[0].name, broadcast_shape_node});
+      helper->MakeNode(iter->second, {input_x_info[0].name, y_node->output(0)},
+                       {output_info[0].name});
     }
   }
 
  private:
-  std::map<std::string, std::string> op_mapper;
-  std::string op_type;
-  int64_t axis;
-};*/
+  std::map<std::string, std::string> op_mapper_;
+  int64_t axis_;
+};
+
+class ElementWiseModMapper : public Mapper {
+ public:
+  ElementWiseModMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  }
+
+  int32_t GetMinOpset(bool verbose = false) { return 10; }
+
+  void Opset10(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_x_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> input_y_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "Y");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    int64_t fmod = 0;
+    if (input_y_info[0].dtype == P2ODataType::FP64 ||
+        input_y_info[0].dtype == P2ODataType::FP32) {
+      fmod = 1;
+    }
+
+    auto abs_x_node = helper->MakeNode("Abs", {input_x_info[0].name});
+    auto abs_y_node = helper->MakeNode("Abs", {input_y_info[0].name});
+
+    auto dtype = input_y_info[0].dtype;
+    std::vector<float> val_0 = {0.0};
+
+    std::string zero_node =
+        helper->MakeConstant(GetOnnxDtype(dtype), val_0)->output(0);
+
+    auto mod_node =
+        helper->MakeNode("Mod", {abs_x_node->output(0), abs_y_node->output(0)});
+    AddAttribute(mod_node, "fmod", fmod);
+
+    auto neg_node = helper->MakeNode("Neg", {mod_node->output(0)});
+
+    auto less_node =
+        helper->MakeNode("Less", {input_x_info[0].name, zero_node});
+
+    std::string condition_node =
+        helper->AutoCast(less_node->output(0), dtype, P2ODataType::BOOL);
+
+    auto mod_res_node = helper->MakeNode(
+        "Where", {condition_node, neg_node->output(0), mod_node->output(0)});
+
+    auto mod_y_add_node = helper->MakeNode(
+        "Add", {mod_res_node->output(0), input_y_info[0].name});
+
+    auto mod_y_mul_node = helper->MakeNode(
+        "Mul", {mod_res_node->output(0), input_y_info[0].name});
+
+    auto mod_y_mul_less_node =
+        helper->MakeNode("Less", {mod_y_mul_node->output(0), zero_node});
+
+    std::string mod_y_mul_condition_node = helper->AutoCast(
+        mod_y_mul_less_node->output(0), dtype, P2ODataType::BOOL);
+
+    helper->MakeNode("Where",
+                     {mod_y_mul_condition_node, mod_y_add_node->output(0),
+                      mod_res_node->output(0)},
+                     {output_info[0].name});
+  }
+};
+
+REGISTER_MAPPER(elementwise_add, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_sub, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_div, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_mul, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_min, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_max, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_pow, ElementwiseMapper)
+REGISTER_MAPPER(elementwise_mod, ElementWiseModMapper)
+
 }  // namespace paddle2onnx
