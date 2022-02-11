@@ -13,12 +13,14 @@
 // limitations under the License.
 #pragma once
 #include <vector>
-#include "paddle2onnx/mapper/data_helper.hpp"
-#include "paddle2onnx/mapper/onnx_helper.hpp"
+#include "paddle2onnx/mapper/data_helper.h"
+#include "paddle2onnx/mapper/onnx_helper.h"
 #include "paddle2onnx/mapper/register_mapper.hpp"
-#include "paddle2onnx/parser/parser.hpp"
+#include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
+
+MapperHelper* MapperHelper::helper = nullptr;
 
 class Mapper {
  public:

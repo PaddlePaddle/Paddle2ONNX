@@ -30,7 +30,7 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
+ADD_EXECUTABLE(p2o_exec p2o_exec.cpp ${PROJECT_SOURCE_DIR}/paddle2onnx/parser/parser.cpp ${PROJECT_SOURCE_DIR}/paddle2onnx/mapper/onnx_helper.cpp ${PROJECT_SOURCE_DIR}/paddle2onnx/mapper/nn/conv2d.hpp)
 TARGET_INCLUDE_DIRECTORIES(p2o_exec
    PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -96,7 +96,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
                           PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
   endif()
 
-  target_link_libraries(paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx) 
+  target_link_libraries(paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx)
 
   if(MSVC)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})

@@ -83,5 +83,4 @@ class MapperHelper {
     mappers[name] = generator;
   }
 };
-MapperHelper* MapperHelper::helper = nullptr;
 }  // namespace paddle2onnx

@@ -17,33 +17,7 @@
 
 namespace paddle2onnx {
 
-//
-// enum LogLevel {
-//  DEBUG,
-//  INFO,
-//  WRAN,
-//  ERROR,
-//  FATAL
-//};
-//
-// void Plog(LogLevel l, const char* format, va_list args_list) {
-//  char* level = getenv("PLOG_LEVEL");
-//  std::
-//}
-// template<typename... T>
-// void Plog(LogLevel l, T... t) {
-//  char* level = getenv("PLOG_LEVEL");
-//  int default_level = 1;
-//  if (nullptr != level) {
-//
-//  }
-//  if constexpr (sizeof...(t) > 0) {
-//    std::cerr << t << " ";
-//  }
-//  std::cerr << std::endl;
-//}
-
-void Assert(bool condition, const std::string& message) {
+inline void Assert(bool condition, const std::string& message) {
   if (!condition) {
     fprintf(stderr, "[ERROR] %s\n", message.c_str());
     std::abort();

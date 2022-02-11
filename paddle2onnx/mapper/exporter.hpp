@@ -21,7 +21,7 @@
 #include "paddle2onnx/mapper/activation.hpp"
 #include "paddle2onnx/mapper/elementwise.hpp"
 #include "paddle2onnx/mapper/nn.hpp"
-#include "paddle2onnx/parser/parser.hpp"
+#include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
 
@@ -48,15 +48,15 @@ struct ModelExporter {
   bool CheckIfOpSupported(const PaddleParser& parser, std::set<std::string>*);
 
  public:
-  std::string Run(
-      const PaddleParser& parser, int opset_version = 9,
-      bool auto_upgrade_opset = true, bool verbose = false);
+  std::string Run(const PaddleParser& parser, int opset_version = 9,
+                  bool auto_upgrade_opset = true, bool verbose = false);
 };
 
 void ModelExporter::ExportParameters(
     const std::map<std::string, Weight>& params, bool use_initializer) {
   for (auto& item : params) {
-    // TODO I'm not handling use_initializer now, but some day I will
+    // TODO(jiangjiajun) I'm not handling use_initializer now, but some day I
+    // will
     auto node = MakeConstant(item.first, item.second);
     parameters.push_back(std::move(node));
   }
@@ -86,9 +86,8 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
   delete mapper;
 }
 
-std::string ModelExporter::Run(
-    const PaddleParser& parser, int opset_version, bool auto_upgrade_opset,
-    bool verbose) {
+std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
+                               bool auto_upgrade_opset, bool verbose) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
   helper.Clear();
@@ -158,12 +157,12 @@ std::string ModelExporter::Run(
 
   // construct a onnx model proto
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
-  // TODO ir version is related to onnx version
+  // TODO(jiangjiajun) ir version is related to onnx version
   model->set_ir_version(ONNX_NAMESPACE::IR_VERSION);
   auto graph = model->mutable_graph();
   graph->set_name("Model from PaddlePaddle.");
   auto opset_id = model->add_opset_import();
-  // TODO custom op is not considered
+  // TODO(jiangjiajun) custom op is not considered
   opset_id->set_domain("");
   opset_id->set_version(opset_version);
 
@@ -180,7 +179,7 @@ std::string ModelExporter::Run(
     *(graph->add_output()) = (*item.get());
   }
 
-  // TODO
+  // TODO(jiangjiajun)
   // If we need to integrate with framework
   // this check will return a information
   // to let framework know the conversion is
@@ -188,9 +187,8 @@ std::string ModelExporter::Run(
   ONNX_NAMESPACE::checker::check_model(*(model.get()));
 
   std::string out;
-  if(!model->SerializeToString(&out)) {
-    if (verbose)
-      std::cerr << "ONNX Model SerializeToString error" << std::endl;
+  if (!model->SerializeToString(&out)) {
+    if (verbose) std::cerr << "ONNX Model SerializeToString error" << std::endl;
     return "";
   }
   if (verbose) {
