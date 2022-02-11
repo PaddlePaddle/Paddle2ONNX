@@ -31,14 +31,14 @@ class GridSampler(CustomPaddleOp):
 
     def paddle_bilinear_grid_sample(self, im, grid, align_corners=False):
         # this code reference: https://mmcv.readthedocs.io/en/latest/_modules/mmcv/ops/point_sample.html
-        # im_shape = paddle.shape(im)
-        # n, c, h, w = paddle.split(im_shape, num_or_sections=4)
-        # grid_shape = paddle.shape(grid)
-        # gn, gh, gw, _ = paddle.split(grid_shape, num_or_sections=4)
+        im_shape = paddle.shape(im)
+        n, c, h, w = paddle.split(im_shape, num_or_sections=4)
+        grid_shape = paddle.shape(grid)
+        gn, gh, gw, _ = paddle.split(grid_shape, num_or_sections=4)
 
-        n, c, h, w = im.shape
-        gn, gh, gw, _ = grid.shape
-        assert n == gn
+        # n, c, h, w = im.shape
+        # gn, gh, gw, _ = grid.shape
+        # assert n == gn
 
         x = grid[:, :, :, 0]
         y = grid[:, :, :, 1]
@@ -112,8 +112,8 @@ class GridSampler(CustomPaddleOp):
 
     def paddle_gather(self, x, dim, index):
         index_shape = index.shape
-        # index_shape = paddle.shape(index)
-        # x_shape = paddle.shape(x)
+        index_shape = paddle.shape(index)
+        x_shape = paddle.shape(x)
         index_flatten = index.flatten()
         if dim < 0:
             dim = len(x.shape) + dim
@@ -123,8 +123,8 @@ class GridSampler(CustomPaddleOp):
                 nd_index.append(index_flatten)
             else:
                 reshape_shape = [1] * len(x.shape)
-                # x_shape_k = x_shape[k]
-                x_shape_k = x.shape[k]
+                x_shape_k = x_shape[k]
+                # x_shape_k = x.shape[k]
                 reshape_shape[k] = x_shape_k
                 x_arange = paddle.arange(x_shape_k, dtype=index.dtype)
                 x_arange = x_arange.reshape(reshape_shape)
