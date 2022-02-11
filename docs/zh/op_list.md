@@ -54,7 +54,7 @@
 | expand_v2 | 8~15 |
 | expand | 6~15 |
 | elu | 1~12 |
-| fill_constant | 1~12 |
+| fill_constant | 1~15 |
 | fill_constant_batch_size_like  | 9~12 |
 | fill_any_like | 9~12 |
 | flatten2 | 1~12 |

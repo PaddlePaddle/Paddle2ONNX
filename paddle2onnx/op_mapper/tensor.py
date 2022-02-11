@@ -567,36 +567,61 @@ class Range():
 
 @op_mapper('fill_constant')
 class Constant():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         value = node.attr('value')
         dtype = node.attr('dtype')
-        shape = node.attr('shape')
-
         if 'ValueTensor' in node.inputs and len(node.input('ValueTensor')) > 0:
             raise Exception(
                 "paddle.full with tensor value parameter is not supported yet.")
 
-        value = np.ones(shape) * value
-        value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
-        value = value.flatten().tolist()
-        if len(shape) == 0 and len(node.input('ShapeTensor')) > 0:
-            shape_tensor = mapper_helper.cast(
-                graph,
-                node.input('ShapeTensor', 0),
-                node.input_dtype('ShapeTensor', 0), 'int64')
-            graph.make_node(
+        shape, is_shape_tensor = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'shape',
+            'ShapeTensor',
+            'ShapeTensorList',
+            dtype=dtypes.ONNX.INT64)
+
+        if graph.opset_version >= 9 and \
+                ((node.input('ShapeTensor') is not None and len(node.input('ShapeTensor')) > 0) or \
+                (node.input('ShapeTensorList') is not None and len(node.input('ShapeTensorList')) > 0)):
+            input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
+                to_dtype = dtypes.ONNX.DOUBLE
+                outputs = None
+            else:
+                to_dtype = input_dtype
+                outputs = node.output('Out')
+
+            node2 = graph.make_node(
                 'ConstantOfShape',
-                inputs=shape_tensor,
-                outputs=node.output('Out'),
-                attrs={
-                    'dims': [1],
-                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
-                    'value': value
-                })
+                inputs=shape,
+                outputs=outputs,
+                attrs={'dims': [1],
+                       'dtype': to_dtype,
+                       'value': value})
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
+                graph.make_node(
+                    'Cast',
+                    inputs=node2,
+                    outputs=node.output('Out'),
+                    attrs={'to': input_dtype})
         else:
+            assert not is_shape_tensor, \
+                "Currently op ['fill_constant'] does not support in onnx(opset<9) when 'shape' has tensor, " \
+                "Try converting with opset_version >=9 "
+
+            value = np.ones(shape) * value
+            value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
+            value = value.flatten().tolist()
+
             graph.make_node(
                 'Constant',
                 inputs=[],
@@ -1010,24 +1035,41 @@ class FlattenContiguousRange():
         start_axis = node.attr('start_axis')
         end_axis = node.attr('stop_axis')
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
-        if end_axis < dims - 1:
-            slice1 = mapper_helper.slice_helper(
-                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
-            slice3 = mapper_helper.slice_helper(
+        if start_axis < 0:
+            start_axis += dims
+        if end_axis < 0:
+            end_axis += dims
+        if start_axis == 0 and end_axis == dims - 1:
+            final_shape = graph.make_node(
+                'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
+        elif start_axis == 0:
+            slice_end = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[end_axis + 1],
                 ends=[dims])
             slices = [
-                slice1, graph.make_node(
-                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+                graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice_end
             ]
-        else:
-            slice1 = mapper_helper.slice_helper(
+            final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        elif end_axis == dims - 1:
+            slice_start = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
             slices = [
-                slice1, graph.make_node(
+                slice_start, graph.make_node(
                     'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
             ]
-        final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+            final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        else:
+            slice_start = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slice_end = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[end_axis + 1],
+                ends=[dims])
+            slices = [
+                slice_start, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice_end
+            ]
+            final_shape = graph.make_node('Concat', inputs=slices, axis=0)
         graph.make_node(
             'Reshape',
             inputs=[node.input('X')[0], final_shape],
@@ -1466,7 +1508,7 @@ class GaussianRandom():
 
 @op_mapper('uniform_random_batch_size_like')
 class UniformRandom():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
