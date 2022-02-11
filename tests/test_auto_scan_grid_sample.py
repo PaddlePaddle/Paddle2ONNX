@@ -33,36 +33,37 @@ def test_grid_sample():
     startup_program = paddle.static.Program()
     with paddle.static.program_guard(main_program, startup_program):
         x = fluid.data(
-            name='x', shape=[1, 1, 3, 3], dtype='float32', lod_level=1)
+            name='x', shape=[5, 6, 3, 3], dtype='float32', lod_level=1)
         grid = fluid.data(
-            name='grid', shape=[1, 3, 4, 2], dtype='float32', lod_level=1)
+            name='grid', shape=[5, 3, 4, 2], dtype='float32', lod_level=1)
         out = paddle.nn.functional.grid_sample(x, grid, align_corners=True)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
-        input_data = randtool("int", 1, 10, [1, 1, 3, 3]).astype('float32')
-        grid_data = randtool("float", 1, 4, [1, 3, 4, 2]).astype('float32')
-        t1 = fluid.create_lod_tensor(input_data, [[1]], fluid.CPUPlace())
-        t2 = fluid.create_lod_tensor(grid_data, [[1]], fluid.CPUPlace())
-        result, = exe.run(feed={"x": t1,
-                                "grid": t2},
+        x_data = randtool("int", 1, 10, [5, 6, 3, 3]).astype('float32')
+        grid_data = randtool("float", 1, 4, [5, 3, 4, 2]).astype('float32')
+        x_val = fluid.create_lod_tensor(x_data, [[5]], fluid.CPUPlace())
+        grid_val = fluid.create_lod_tensor(grid_data, [[5]], fluid.CPUPlace())
+        result, = exe.run(feed={"x": x_val,
+                                "grid": grid_val},
                           fetch_list=[out],
                           return_numpy=False)
         result = np.array(result)
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
-        onnx_path = path_prefix + "./model.onnx"
+        onnx_path = path_prefix + "/model.onnx"
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
-            opset_version=15,
+            opset_version=11,
             enable_onnx_checker=True)
+
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
         label_name = sess.get_outputs()[0].name
-        pred_onnx = sess.run(None,
-                             {input_name1: input_data,
+        pred_onnx = sess.run([label_name],
+                             {input_name1: x_data,
                               input_name2: grid_data})[0]
         pred_onnx = np.array(pred_onnx)
         compare(pred_onnx, result, 1e-5, 1e-5)

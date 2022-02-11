@@ -30,6 +30,7 @@ class GridSampler(CustomPaddleOp):
         self.align_corners = node.attr('align_corners')
 
     def paddle_bilinear_grid_sample(self, im, grid, align_corners=False):
+        # this code reference: https://mmcv.readthedocs.io/en/latest/_modules/mmcv/ops/point_sample.html
         # im_shape = paddle.shape(im)
         # n, c, h, w = paddle.split(im_shape, num_or_sections=4)
         # grid_shape = paddle.shape(grid)
@@ -100,14 +101,34 @@ class GridSampler(CustomPaddleOp):
             paddle.unsqueeze((x1 + y0 * padded_w), 1), [-1, c, -1])
         x1_y1 = paddle.expand(
             paddle.unsqueeze((x1 + y1 * padded_w), 1), [-1, c, -1])
-        tt = paddle.squeeze(x0_y0)
-        Ia = paddle.gather(im_padded, paddle.squeeze(x0_y0), 2)
-        Ib = paddle.gather(im_padded, paddle.squeeze(x0_y1), 2)
-        Ic = paddle.gather(im_padded, paddle.squeeze(x1_y0), 2)
-        Id = paddle.gather(im_padded, paddle.squeeze(x1_y1), 2)
+
+        Ia = self.paddle_gather(im_padded, 2, x0_y0)
+        Ib = self.paddle_gather(im_padded, 2, x0_y1)
+        Ic = self.paddle_gather(im_padded, 2, x1_y0)
+        Id = self.paddle_gather(im_padded, 2, x1_y1)
 
         return paddle.reshape((Ia * wa + Ib * wb + Ic * wc + Id * wd),
                               [n, c, gh, gw])
+
+    def paddle_gather(self, x, dim, index):
+        index_shape = index.shape
+        index_flatten = index.flatten()
+        if dim < 0:
+            dim = len(x.shape) + dim
+        nd_index = []
+        for k in range(len(x.shape)):
+            if k == dim:
+                nd_index.append(index_flatten)
+            else:
+                reshape_shape = [1] * len(x.shape)
+                reshape_shape[k] = x.shape[k]
+                x_arange = paddle.arange(x.shape[k], dtype=index.dtype)
+                x_arange = x_arange.reshape(reshape_shape)
+                dim_index = paddle.expand(x_arange, index_shape).flatten()
+                nd_index.append(dim_index)
+        ind2 = paddle.transpose(paddle.stack(nd_index), [1, 0]).astype("int64")
+        paddle_out = paddle.gather_nd(x, ind2).reshape(index_shape)
+        return paddle_out
 
     def forward(self):
         input = self.input('X', 0)
