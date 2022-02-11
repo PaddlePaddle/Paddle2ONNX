@@ -74,6 +74,194 @@ class ActivationMapper : public Mapper {
   std::map<std::string, std::string> op_mapper_;
 };
 
+class Relu6Mapper : public Mapper {
+ public:
+  Relu6Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "threshold", &threshold_);
+  }
+
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
+
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    float min = 0.0;
+    helper->Clip(input_info[0].name, output_info[0].name, min, threshold_,
+                 input_info[0].dtype);
+  }
+
+ private:
+  float threshold_;
+};
+
+class PReluMapper : public Mapper {
+ public:
+  PReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {}
+
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
+
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> slope_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "Alpha");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+
+    std::string slope_cast_name = slope_info[0].name;
+    if (slope_info[0].dtype == P2ODataType::FP64) {
+      slope_cast_name = helper->AutoCast({slope_info[0].name},
+                                         P2ODataType::FP64, P2ODataType::FP32);
+    }
+
+    if (input_info[0].dtype == P2ODataType::FP64) {
+      std::string x_cast_name = helper->AutoCast(
+          {input_info[0].name}, P2ODataType::FP64, P2ODataType::FP32);
+      auto node = helper->MakeNode("PRelu", {x_cast_name, slope_cast_name});
+      helper->AutoCast(node->output(0), {output_info[0].name},
+                       P2ODataType::FP32, P2ODataType::FP64);
+    } else {
+      helper->MakeNode("PRelu", {input_info[0].name, slope_cast_name},
+                       {output_info[0].name});
+    }
+  }
+};
+
+class SeluMapper : public Mapper {
+ public:
+  SeluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "alpha", &alpha_);
+    parser_->GetOpAttr(op, "scale", &scale_);
+  }
+
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
+
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto node =
+        helper->MakeNode("Selu", {input_info[0].name}, {output_info[0].name});
+    AddAttribute(node, "alpha", alpha_);
+    AddAttribute(node, "gamma", scale_);
+  }
+
+ private:
+  float alpha_;
+  float scale_;
+};
+
+class HardSigmoidMapper : public Mapper {
+ public:
+  HardSigmoidMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "slope", &alpha_);
+    parser_->GetOpAttr(op, "offset", &beta_);
+  }
+
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
+
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto node = helper->MakeNode("HardSigmoid", {input_info[0].name},
+                                 {output_info[0].name});
+    AddAttribute(node, "alpha", alpha_);
+    AddAttribute(node, "beta", beta_);
+  }
+
+ private:
+  float alpha_;
+  float beta_;
+};
+
+class SwishMapper : public Mapper {
+ public:
+  SwishMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "beta", &beta_);
+  }
+
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
+
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+
+    std::string beta_node =
+        helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), beta_)
+            ->output(0);
+    auto beta_x_node = helper->MakeNode("Mul", {input_info[0].name, beta_node});
+    auto sigmod_node = helper->MakeNode("Sigmoid", {beta_x_node->output(0)});
+    helper->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
+                     {output_info[0].name});
+  }
+
+ private:
+  float beta_;
+};
+
+class HardSwishMapper : public Mapper {
+ public:
+  HardSwishMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "scale", &scale_);
+    parser_->GetOpAttr(op, "offset", &offset_);
+    parser_->GetOpAttr(op, "threshold", &threshold_);
+  }
+
+  int32_t GetMinOpset(bool verbose = false) { return 7; }
+
+  void Opset7(OnnxHelper* helper) {
+    std::vector<TensorInfo> input_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "X");
+    std::vector<TensorInfo> output_info =
+        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+
+    std::string scale_node =
+        helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), scale_)
+            ->output(0);
+    std::string offset_node =
+        helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), offset_)
+            ->output(0);
+
+    auto add_node = helper->MakeNode("Add", {input_info[0].name, offset_node});
+    auto clip_node =
+        helper->Clip(add_node->output(0), 0.0, threshold_, input_info[0].dtype);
+
+    auto mul_node = helper->MakeNode("Mul", {input_info[0].name, clip_node});
+    helper->MakeNode("Div", {mul_node->output(0), scale_node},
+                     {output_info[0].name});
+  }
+
+ private:
+  float scale_;
+  float offset_;
+  float threshold_;
+};
+
 class LeakyReluMapper : public Mapper {
  public:
   LeakyReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
@@ -146,6 +334,7 @@ class GeluMapper : public Mapper {
 };
 
 REGISTER_MAPPER(relu, ActivationMapper)
+REGISTER_MAPPER(relu6, Relu6Mapper)
 REGISTER_MAPPER(tanh, ActivationMapper)
 REGISTER_MAPPER(log, ActivationMapper)
 REGISTER_MAPPER(sigmoid, ActivationMapper)
@@ -153,5 +342,9 @@ REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
 REGISTER_MAPPER(gelu, GeluMapper)
-// REGISTER_MAPPER(prelu, PReluMapper)
+REGISTER_MAPPER(selu, SeluMapper)
+REGISTER_MAPPER(prelu, PReluMapper)
+REGISTER_MAPPER(hard_sigmoid, HardSigmoidMapper)
+REGISTER_MAPPER(swish, SwishMapper)
+REGISTER_MAPPER(hard_swish, HardSwishMapper)
 }  // namespace paddle2onnx
