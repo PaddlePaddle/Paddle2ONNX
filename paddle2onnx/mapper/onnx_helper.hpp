@@ -70,6 +70,8 @@ class OnnxHelper {
       const std::vector<int64_t>& starts, const std::vector<int64_t>& ends);
   std::string Clip(const std::string& input, const std::string& output,
                    const float& min, const float& max, const int32_t& in_dtype);
+  std::string Clip(const std::string& input, const float& min, const float& max,
+                   const int32_t& in_dtype);
 };
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
@@ -379,6 +381,54 @@ std::string OnnxHelper::Clip(const std::string& input,
                              const std::string& output, const float& min,
                              const float& max, const int32_t& in_dtype) {
   std::string input_name;
+  if (in_dtype == P2ODataType::FP64) {
+    input_name = AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
+  } else {
+    input_name = input;
+  }
+  if (opset_version < 11) {
+    if (in_dtype == P2ODataType::FP64) {
+      auto node = MakeNode("Clip", {input_name});
+      AddAttribute(node, "max", max);
+      AddAttribute(node, "min", min);
+      auto res = AutoCast(node->output(0), output, P2ODataType::FP32,
+                          P2ODataType::FP64);
+      return res;
+    } else {
+      auto node = MakeNode("Clip", {input_name}, {output});
+      AddAttribute(node, "max", max);
+
+      AddAttribute(node, "min", min);
+
+      return node->output(0);
+    }
+  } else {
+    if (in_dtype == P2ODataType::FP64) {
+      std::string min_name;
+      int32_t dtype = P2ODataType::FP32;
+      min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
+      std::string max_name;
+      max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+      auto node = MakeNode("Clip", {input_name, min_name, max_name});
+      auto res = AutoCast(node->output(0), {output}, P2ODataType::FP32,
+                          P2ODataType::FP64);
+      return res;
+    } else {
+      std::string min_name;
+      int32_t dtype = in_dtype;
+      min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
+      std::string max_name;
+      max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+      auto node = MakeNode("Clip", {input_name, min_name, max_name}, {output});
+      return node->output(0);
+    }
+  }
+}
+
+std::string OnnxHelper::Clip(const std::string& input, const float& min,
+                             const float& max, const int32_t& in_dtype) {
+  std::string input_name;
+  std::string output = MapperHelper::Get()->GenName("helper.clip");
   if (in_dtype == P2ODataType::FP64) {
     input_name = AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
   } else {
