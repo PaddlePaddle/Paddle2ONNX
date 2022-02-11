@@ -12,45 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-#include <onnx/checker.h>
-#include <onnx/onnx_pb.h>
-#include <algorithm>
-#include <set>
-
-#include "paddle2onnx/mapper/activation.hpp"
-#include "paddle2onnx/mapper/elementwise.hpp"
-#include "paddle2onnx/mapper/nn.hpp"
-#include "paddle2onnx/parser/parser.h"
-
+#include "paddle2onnx/mapper/exporter.h"
 namespace paddle2onnx {
-
-struct ModelExporter {
- private:
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
-  OnnxHelper helper;
-
-  void ExportParameters(const std::map<std::string, Weight>& params,
-                        bool use_initializer = false);
-  void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
-                          const std::vector<TensorInfo>& output_infos);
-  void ExportOp(const PaddleParser& parser, int32_t opset_version,
-                int64_t block_id, int64_t op_id);
-  // Get a proper opset version in range of [7, 15]
-  // Also will check the model is convertable, this will include 2 parts
-  //    1. is the op convert function implemented
-  //    2. is the op convertable(some cases may not be able to convert)
-  // If the model is not convertable, return -1
-  int32_t GetMinOpset(const PaddleParser& parser, bool verbose = false);
-
-  bool CheckIfOpSupported(const PaddleParser& parser, std::set<std::string>*);
-
- public:
-  std::string Run(const PaddleParser& parser, int opset_version = 9,
-                  bool auto_upgrade_opset = true, bool verbose = false);
-};
+MapperHelper* MapperHelper::helper = nullptr;
 
 void ModelExporter::ExportParameters(
     const std::map<std::string, Weight>& params, bool use_initializer) {
@@ -253,4 +217,5 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
 
   return -1;
 }
+
 }  // namespace paddle2onnx

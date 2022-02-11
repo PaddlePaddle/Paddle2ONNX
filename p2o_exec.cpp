@@ -14,7 +14,7 @@
 
 #include <fstream>
 #include <iostream>
-#include "paddle2onnx/mapper/exporter.hpp"
+#include "paddle2onnx/mapper/exporter.h"
 
 int main(int argc, char* argv[]) {
   //  paddle2onnx::LoadProgram("ResNet18/inference.pdmodel");

@@ -14,7 +14,7 @@
 
 #pragma once
 #include <map>
-#include "paddle2onnx/utils/utils.hpp"
+#include "paddle2onnx/utils/utils.h"
 // This code is modified from
 // https://blog.csdn.net/ZJU_fish1996/article/details/86515711
 namespace paddle2onnx {

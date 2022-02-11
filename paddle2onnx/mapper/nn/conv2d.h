@@ -15,7 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "paddle2onnx/mapper/mapper.hpp"
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
@@ -39,6 +39,7 @@ class Conv2dMapper : public Mapper {
       paddings_[2] = tmp;
     }
   }
+
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
 
@@ -51,5 +52,4 @@ class Conv2dMapper : public Mapper {
   int64_t groups_;
 };
 
-REGISTER_MAPPER(conv2d, Conv2dMapper)
 }  // namespace paddle2onnx

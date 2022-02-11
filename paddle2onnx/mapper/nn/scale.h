@@ -11,20 +11,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #pragma once
 #include <vector>
-#include "paddle2onnx/utils/utils.h"
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-inline std::vector<int64_t> Arange(int64_t start, int64_t end) {
-  Assert(end > start, "In arrange(), end must be greater than start.");
-  std::vector<int64_t> res;
-  res.resize(end - start);
-  for (auto i = start; i < end; i++) {
-    res[i - start] = i;
+class ScaleMapper : public Mapper {
+ public:
+  ScaleMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "scale", &scale_);
+    parser_->GetOpAttr(op, "bias", &bias_);
+    parser_->GetOpAttr(op, "bias_after_scale", &bias_after_scale_);
   }
-  return res;
-}
+
+  void Opset7(OnnxHelper* helper);
+
+ private:
+  float scale_ = 1.0;
+  float bias_ = 0.0;
+  bool bias_after_scale_ = true;
+};
+
 }  // namespace paddle2onnx

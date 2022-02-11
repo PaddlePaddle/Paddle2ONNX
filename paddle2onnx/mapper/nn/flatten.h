@@ -13,14 +13,24 @@
 // limitations under the License.
 
 #pragma once
-#include <stdlib.h>
+#include <vector>
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-inline void Assert(bool condition, const std::string& message) {
-  if (!condition) {
-    fprintf(stderr, "[ERROR] %s\n", message.c_str());
-    std::abort();
+class FlattenMapper : public Mapper {
+ public:
+  FlattenMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "start_axis", &start_axis_);
+    parser_->GetOpAttr(op, "stop_axis", &stop_axis_);
   }
-}
+
+  void Opset7(OnnxHelper* helper);
+
+ private:
+  int64_t start_axis_;
+  int64_t stop_axis_;
+};
 }  // namespace paddle2onnx

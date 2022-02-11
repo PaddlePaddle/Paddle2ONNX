@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "paddle2onnx/mapper/register_mapper.hpp"
+#include "paddle2onnx/mapper/register_mapper.h"
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
@@ -88,6 +88,8 @@ class OnnxHelper {
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> Slice(
       const std::string& input, const std::vector<int64_t>& axes,
       const std::vector<int64_t>& starts, const std::vector<int64_t>& ends);
+  std::string Clip(const std::string& input, const float& min, const float& max,
+                   const int32_t& in_dtype);
   std::string Clip(const std::string& input, const std::string& output,
                    const float& min, const float& max, const int32_t& in_dtype);
 };

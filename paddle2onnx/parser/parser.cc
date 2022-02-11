@@ -15,7 +15,7 @@
 #include "paddle2onnx/parser/parser.h"
 #include <fstream>
 #include <string>
-#include "paddle2onnx/utils/utils.hpp"
+#include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
 bool PaddleParser::LoadProgram(const std::string& path) {

@@ -13,18 +13,15 @@
 // limitations under the License.
 
 #pragma once
-#include <vector>
-#include "paddle2onnx/utils/utils.h"
+#include <stdlib.h>
+#include <string>
 
 namespace paddle2onnx {
 
-inline std::vector<int64_t> Arange(int64_t start, int64_t end) {
-  Assert(end > start, "In arrange(), end must be greater than start.");
-  std::vector<int64_t> res;
-  res.resize(end - start);
-  for (auto i = start; i < end; i++) {
-    res[i - start] = i;
+inline void Assert(bool condition, const std::string& message) {
+  if (!condition) {
+    fprintf(stderr, "[ERROR] %s\n", message.c_str());
+    std::abort();
   }
-  return res;
 }
 }  // namespace paddle2onnx

@@ -30,7 +30,9 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-ADD_EXECUTABLE(p2o_exec p2o_exec.cpp ${PROJECT_SOURCE_DIR}/paddle2onnx/parser/parser.cpp ${PROJECT_SOURCE_DIR}/paddle2onnx/mapper/onnx_helper.cpp ${PROJECT_SOURCE_DIR}/paddle2onnx/mapper/nn/conv2d.hpp)
+file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc)
+list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc)
+ADD_EXECUTABLE(p2o_exec p2o_exec.cpp ${ALL_SRCS})
 TARGET_INCLUDE_DIRECTORIES(p2o_exec
    PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -47,7 +49,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     endif()
   endif()
 
-  add_library(paddle2onnx_cpp2py_export MODULE "${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc")
+  add_library(paddle2onnx_cpp2py_export MODULE ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc ${ALL_SRCS})
   set_target_properties(paddle2onnx_cpp2py_export PROPERTIES PREFIX "")
   set_target_properties(paddle2onnx_cpp2py_export
                         PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
