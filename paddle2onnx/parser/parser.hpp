@@ -15,7 +15,11 @@
 #pragma once
 #include <algorithm>
 #include <cassert>
+#include <map>
+#include <memory>
+#include <string>
 #include <type_traits>
+#include <vector>
 #include "paddle2onnx/parser/parse_params.hpp"
 #include "paddle2onnx/parser/parse_program.hpp"
 
@@ -58,18 +62,17 @@ struct PaddleParser {
 
   // Sometimes the model contains no parameters
   // In this case, we only need the model_file
-  void Init(const std::string& _model_filename) {
-    Init(_model_filename, "");
-  }
+  void Init(const std::string& _model_filename) { Init(_model_filename, ""); }
 
-  void Init(const std::string& _model_filename, const std::string& _params_filename) {
+  void Init(const std::string& _model_filename,
+            const std::string& _params_filename) {
     std::vector<Weight> weights;
     prog = LoadProgram(_model_filename);
     if (_params_filename != "") {
       LoadParams(_params_filename, &weights);
     } else {
       std::cerr << "[WARNING] You haven't set a params file, this only valid "
-                  "while the model has no weights."
+                   "while the model has no weights."
                 << std::endl;
     }
 
@@ -188,7 +191,7 @@ struct PaddleParser {
         break;
       }
     }
-    Assert(found, "Cannot find input:" + name + " in operator: " + op.type());
+    Assert(found, "Cannot find input: " + name + " in operator: " + op.type());
     return inputs;
   }
 
@@ -221,20 +224,38 @@ struct PaddleParser {
         break;
       }
     }
-    Assert(found, "Cannot find output:" + name + " in operator: " + op.type());
+    Assert(found, "Cannot find output: " + name + " in operator: " + op.type());
     return outputs;
   }
 
   bool OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                   const std::string& name) const {
+                 const std::string& name) const {
     bool found = false;
     for (auto i = 0; i < op.attrs_size(); ++i) {
-      if (op.attrs(i).name() == name) {
+      if (op.attrs(i).name() == name && GetOpAttrType(op, name) != "NOTFOUND") {
         found = true;
         break;
       }
     }
     return found;
+  }
+
+  std::string GetOpAttrType(const paddle2onnx::framework::proto::OpDesc& op,
+                            const std::string& name) const {
+    std::string type = "NOTFOUND";
+    for (auto i = 0; i < op.attrs_size(); ++i) {
+      if (op.attrs(i).name() == name) {
+        if (op.attrs(i).has_i() || op.attrs(i).has_l()) type = "INT64";
+        if (op.attrs(i).has_f()) type = "FLOAT";
+        if (op.attrs(i).has_b()) type = "BOOL";
+        if (op.attrs(i).has_s()) type = "STRING";
+        if (op.attrs(i).ints_size() > 0 || op.attrs(i).longs_size() > 0)
+          type = "INT64_LIST";
+        if (op.attrs(i).floats_size() > 0) type = "FLOAT_LIST";
+        break;
+      }
+    }
+    return type;
   }
 
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
@@ -244,8 +265,8 @@ struct PaddleParser {
       if (op.attrs(i).name() == name) {
         found = true;
         Assert(op.attrs(i).has_i() || op.attrs(i).has_l(),
-               "Cannot find int32/int64 data from attr:" + name +
-                   " in op:" + op.type());
+               "Cannot find int32/int64 data from attr: " + name + " in op: " +
+                   op.type());
         if (op.attrs(i).has_i()) {
           *res = (int64_t)(op.attrs(i).i());
         } else {
@@ -263,8 +284,8 @@ struct PaddleParser {
     for (auto i = 0; i < op.attrs_size(); ++i) {
       if (op.attrs(i).name() == name) {
         found = true;
-        Assert(op.attrs(i).has_f(), "Cannot find float data from attr:" + name +
-                                        " in op:" + op.type());
+        Assert(op.attrs(i).has_f(), "Cannot find float data from attr: " +
+                                        name + " in op: " + op.type());
         *res = op.attrs(i).f();
         break;
       }
@@ -278,8 +299,8 @@ struct PaddleParser {
     for (auto i = 0; i < op.attrs_size(); ++i) {
       if (op.attrs(i).name() == name) {
         found = true;
-        Assert(op.attrs(i).has_b(), "Cannot find bool data from attr:" + name +
-                                        " in op:" + op.type());
+        Assert(op.attrs(i).has_b(), "Cannot find bool data from attr: " + name +
+                                        " in op: " + op.type());
         *res = op.attrs(i).b();
         break;
       }
@@ -293,8 +314,8 @@ struct PaddleParser {
     for (auto i = 0; i < op.attrs_size(); ++i) {
       if (op.attrs(i).name() == name) {
         found = true;
-        Assert(op.attrs(i).has_s(), "Cannot find string data from attr:" +
-                                        name + " in op:" + op.type());
+        Assert(op.attrs(i).has_s(), "Cannot find string data from attr: " +
+                                        name + " in op: " + op.type());
         *res = op.attrs(i).s();
         break;
       }
@@ -309,8 +330,8 @@ struct PaddleParser {
     for (auto i = 0; i < op.attrs_size(); ++i) {
       if (op.attrs(i).name() == name) {
         Assert(op.attrs(i).ints_size() > 0 || op.attrs(i).longs_size() > 0,
-               "Cannot find list of int32/int64 data from attr:" + name +
-                   "in op:" + op.type());
+               "Cannot find list of int32/int64 data from attr: " + name +
+                   " in op: " + op.type());
         found = true;
         if (op.attrs(i).ints_size() > 0) {
           for (auto j = 0; j < op.attrs(i).ints_size(); ++j) {
@@ -334,8 +355,8 @@ struct PaddleParser {
     for (auto i = 0; i < op.attrs_size(); ++i) {
       if (op.attrs(i).name() == name) {
         Assert(op.attrs(i).floats_size() > 0,
-               "Cannot find list of float data from attr:" + name +
-                   "in op:" + op.type());
+               "Cannot find list of float data from attr: " + name + "in op: " +
+                   op.type());
         found = true;
         for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
           res->push_back((int64_t)(op.attrs(i).floats(j)));

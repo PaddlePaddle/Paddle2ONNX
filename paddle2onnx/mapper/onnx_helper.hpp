@@ -72,6 +72,10 @@ class OnnxHelper {
                    const float& min, const float& max, const int32_t& in_dtype);
   std::string Clip(const std::string& input, const float& min, const float& max,
                    const int32_t& in_dtype);
+  std::string Squeeze(const std::string& input, const std::string& output,
+                      const std::vector<int64_t>& axes);
+  std::string Squeeze(const std::string& input,
+                      const std::vector<int64_t>& axes);
 };
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
@@ -468,6 +472,50 @@ std::string OnnxHelper::Clip(const std::string& input, const float& min,
       std::string max_name;
       max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
       auto node = MakeNode("Clip", {input_name, min_name, max_name}, {output});
+      return node->output(0);
+    }
+  }
+}
+
+std::string OnnxHelper::Squeeze(const std::string& input,
+                                const std::string& output,
+                                const std::vector<int64_t>& axes) {
+  if (opset_version < 13) {
+    auto node = MakeNode("Squeeze", {input}, {output});
+    if (axes.size() > 0) {
+      AddAttribute(node, "axes", axes);
+    }
+    return node->output(0);
+  } else {
+    if (axes.size() > 0) {
+      std::string axes_node =
+          MakeConstant(GetOnnxDtype(P2ODataType::INT64), axes)->output(0);
+      auto node = MakeNode("Squeeze", {input, axes_node}, {output});
+      return node->output(0);
+    } else {
+      auto node = MakeNode("Squeeze", {input}, {output});
+      return node->output(0);
+    }
+  }
+}
+
+std::string OnnxHelper::Squeeze(const std::string& input,
+                                const std::vector<int64_t>& axes) {
+  std::string output = MapperHelper::Get()->GenName("helper.squeeze");
+  if (opset_version < 13) {
+    auto node = MakeNode("Squeeze", {input}, {output});
+    if (axes.size() > 0) {
+      AddAttribute(node, "axes", axes);
+    }
+    return node->output(0);
+  } else {
+    if (axes.size() > 0) {
+      std::string axes_node =
+          MakeConstant(GetOnnxDtype(P2ODataType::INT64), axes)->output(0);
+      auto node = MakeNode("Squeeze", {input, axes_node}, {output});
+      return node->output(0);
+    } else {
+      auto node = MakeNode("Squeeze", {input}, {output});
       return node->output(0);
     }
   }

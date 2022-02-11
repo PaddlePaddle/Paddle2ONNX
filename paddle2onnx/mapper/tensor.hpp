@@ -13,3 +13,4 @@
 // limitations under the License.
 #pragma once
 #include "paddle2onnx/mapper/tensor/reshape2.hpp"
+#include "paddle2onnx/mapper/tensor/squeeze2.hpp"
