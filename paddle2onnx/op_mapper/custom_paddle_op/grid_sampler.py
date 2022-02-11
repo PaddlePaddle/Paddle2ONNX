@@ -148,15 +148,4 @@ class GridSampler(CustomPaddleOp):
         return {'Output': [res]}
 
 
-@op_mapper('grid_sampler')
-class Gridsampler():
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        node = graph.make_node(
-            'grid_sampler',
-            inputs=node.input('Input') + node.input('ImInfo'),
-            outputs=node.output('Output'),
-            domain='baidu')
-
-
 register_custom_paddle_op('grid_sampler', GridSampler)

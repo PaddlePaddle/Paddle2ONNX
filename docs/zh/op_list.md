@@ -67,6 +67,7 @@
 | gather | 1~12 |  opset 1~10 limited supported |
 | generate_proposals | 12~ |   |
 | greater_equal | 12~ |   |
+| grid_sampler | 11~15 |   |
 | group_norm | 6~15 |   |
 | hardshrink | 9~12 |
 | hardtanh | 6~12 |
