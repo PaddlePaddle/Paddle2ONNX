@@ -13,10 +13,10 @@
 // limitations under the License.
 #pragma once
 #include <vector>
-#include "paddle2onnx/mapper/data_helper.hpp"
-#include "paddle2onnx/mapper/onnx_helper.hpp"
-#include "paddle2onnx/mapper/register_mapper.hpp"
-#include "paddle2onnx/parser/parser.hpp"
+#include "paddle2onnx/mapper/data_helper.h"
+#include "paddle2onnx/mapper/onnx_helper.h"
+#include "paddle2onnx/mapper/register_mapper.h"
+#include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
 
@@ -30,7 +30,7 @@ class Mapper {
 
   // the return value in [7, 15], represent the minimum opset_version
   // if return value < 0, means the op is not supported.
-  virtual int32_t GetMinOpset(bool verbose) = 0;
+  virtual int32_t GetMinOpset(bool verbose = false) { return 7; }
 
   void Run(OnnxHelper* helper, int32_t opset_version = 7) {
     export_opset_version_ = opset_version;

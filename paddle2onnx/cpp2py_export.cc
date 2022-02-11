@@ -14,9 +14,9 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <vector>
 #include <string>
-#include "paddle2onnx/mapper/exporter.hpp"
+#include <vector>
+#include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
 
@@ -37,7 +37,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     return pybind11::bytes(onnx_proto);
   });
   m.def("check_op", [](const std::string& model_filename,
-                     const std::string& params_filename) {
+                       const std::string& params_filename) {
     auto parser = PaddleParser();
     if (params_filename != "") {
       parser.Init(model_filename, params_filename);
@@ -49,10 +49,10 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     std::vector<std::string> op_list;
     for (auto i = 0; i < prog->blocks_size(); ++i) {
       for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
-        if (prog->blocks(i).ops(j).type() == "feed"){
+        if (prog->blocks(i).ops(j).type() == "feed") {
           continue;
         }
-        if (prog->blocks(i).ops(j).type() == "fetch"){
+        if (prog->blocks(i).ops(j).type() == "fetch") {
           continue;
         }
         op_list.push_back(prog->blocks(i).ops(j).type());
