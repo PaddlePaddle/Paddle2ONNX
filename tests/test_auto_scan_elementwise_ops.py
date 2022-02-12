@@ -66,11 +66,11 @@ class TestElementwiseopsConvert(OPConvertAutoScanTest):
         else:
             input2_shape = input1_shape
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "int32"]))
 
         def generator_data():
-            input_data = randtool("float", -2.0, 2.0, input2_shape)
-            input_data[input_data == 0.0] = 1.0
+            input_data = randtool("float", -5.0, 5.0, input2_shape)
+            input_data[abs(input_data) < 1.0] = 1.0
             return input_data
 
         config = {

@@ -96,6 +96,13 @@ class ElementWiseModMapper : public Mapper {
         parser_->GetOpOutput(block_idx_, op_idx_, "Out");
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     int64_t fmod = 0;
+    if (input_y_info[0].dtype == P2ODataType::INT32 ||
+        input_y_info[0].dtype == P2ODataType::INT64) {
+      auto mod_node =
+          helper->MakeNode("Mod", {input_x_info[0].name, input_y_info[0].name});
+      AddAttribute(mod_node, "fmod", fmod);
+      return;
+    }
     if (input_y_info[0].dtype == P2ODataType::FP64 ||
         input_y_info[0].dtype == P2ODataType::FP32) {
       fmod = 1;
