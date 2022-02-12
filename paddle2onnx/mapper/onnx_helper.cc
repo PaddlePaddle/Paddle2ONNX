@@ -182,25 +182,6 @@ std::string OnnxHelper::AutoCast(const std::string& input,
   return cast_node->output(0);
 }
 
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::Slice(
-    const std::string& input, const std::vector<int64_t>& axes,
-    const std::vector<int64_t>& starts, const std::vector<int64_t>& ends) {
-  if (opset_version >= 10) {
-    auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
-    auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
-    auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
-    auto slice_node =
-        MakeNode("Slice", {input, starts_node->output(0), ends_node->output(0),
-                           axes_node->output(0)});
-    return slice_node;
-  }
-  auto slice_node = MakeNode("Slice", {input});
-  AddAttribute(slice_node, "axes", axes);
-  AddAttribute(slice_node, "starts", starts);
-  AddAttribute(slice_node, "ends", ends);
-  return slice_node;
-}
-
 std::string OnnxHelper::Clip(const std::string& input,
                              const std::string& output, const float& min,
                              const float& max, const int32_t& in_dtype) {
@@ -254,4 +235,84 @@ std::string OnnxHelper::Clip(const std::string& input, const float& min,
   std::string output = MapperHelper::Get()->GenName("helper.clip");
   return Clip(input, output, min, max, in_dtype);
 }
+
+std::string OnnxHelper::Squeeze(const std::string& input,
+                                const std::string& output,
+                                const std::vector<int64_t>& axes) {
+  if (axes.size() == 0) {
+    auto node = MakeNode("squeeze", {input}, {output});
+  } else {
+    if (opset_version < 13) {
+      auto node = MakeNode("Squeeze", {input}, {output});
+    } else {
+      auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
+      auto node = MakeNode("Squeeze", {input, axes_node->output(0)}, {output});
+    }
+  }
+  return output;
+}
+
+std::string OnnxHelper::Squeeze(const std::string& input,
+                                const std::vector<int64_t>& axes) {
+  std::string output = MapperHelper::Get()->GenName("helper.squeeze");
+  return Squeeze(input, output, axes);
+}
+
+std::string OnnxHelper::Reshape(const std::string& input,
+                                const std::string& output,
+                                const std::vector<int64_t>& shape) {
+  if (opset_version < 6) {
+    auto node = MakeNode("Reshape", {input}, {output});
+    AddAttribute(node, "shape", shape);
+  } else {
+    auto shape_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, shape);
+    auto node = MakeNode("Reshape", {input, shape_node->output(0)}, {output});
+  }
+  return output;
+}
+
+std::string OnnxHelper::Reshape(const std::string& input,
+                                const std::vector<int64_t>& shape) {
+  std::string output = MapperHelper::Get()->GenName("helper.reshape");
+  return Reshape(input, output, shape);
+}
+
+std::string OnnxHelper::Flatten(const std::string& input,
+                                const std::string& output) {
+  return Reshape(input, output, std::vector<int64_t>(1, -1));
+}
+
+std::string OnnxHelper::Flatten(const std::string& input) {
+  std::string output = MapperHelper::Get()->GenName("helper.flatten");
+  return Flatten(input, output);
+}
+
+std::string OnnxHelper::Slice(const std::string& input,
+                              const std::string& output,
+                              const std::vector<int64_t>& axes,
+                              const std::vector<int64_t>& starts,
+                              const std::vector<int64_t>& ends) {
+  if (opset_version < 10) {
+    auto node = MakeNode("Slice", {input}, {output});
+    AddAttribute(node, "axes", axes);
+    AddAttribute(node, "starts", starts);
+    AddAttribute(node, "ends", ends);
+  } else {
+    auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
+    auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
+    auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
+    auto node = MakeNode("Slice", {input, starts_node->output(0),
+                                   ends_node->output(0), axes_node->output(0)});
+  }
+  return output;
+}
+
+std::string OnnxHelper::Slice(const std::string& input,
+                              const std::vector<int64_t>& axes,
+                              const std::vector<int64_t>& starts,
+                              const std::vector<int64_t>& ends) {
+  std::string output = MapperHelper::Get()->GenName("helper.slice");
+  return Slice(input, output, axes, starts, ends);
+}
+
 }  // namespace paddle2onnx
