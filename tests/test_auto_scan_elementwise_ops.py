@@ -86,6 +86,9 @@ class TestElementwiseopsConvert(OPConvertAutoScanTest):
         opset_versions = list()
         for op_name, i in op_api_map.items():
             config["op_names"] = op_name
+            if op_name in ["elementwise_min"]:
+                config["test_data_types"] = [["float32"], ["float32"]]
+
             models.append(Net(config))
             op_names.append(op_name)
         for op_name, i in op_api_map.items():

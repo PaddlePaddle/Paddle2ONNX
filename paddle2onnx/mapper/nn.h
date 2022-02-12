@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #pragma once
-#include "paddle2onnx/mapper/nn/clip.hpp"
-#include "paddle2onnx/mapper/nn/conv2d.hpp"
-#include "paddle2onnx/mapper/nn/scale.hpp"
-#include "paddle2onnx/mapper/nn/flatten.hpp"
+// #include "paddle2onnx/mapper/nn/clip.h"
+#include "paddle2onnx/mapper/nn/conv2d.h"
+#include "paddle2onnx/mapper/nn/flatten.h"
+#include "paddle2onnx/mapper/nn/scale.h"

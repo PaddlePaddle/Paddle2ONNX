@@ -13,40 +13,18 @@
 // limitations under the License.
 
 #pragma once
-#include <stdlib.h>
+#include <vector>
+#include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
 
-//
-// enum LogLevel {
-//  DEBUG,
-//  INFO,
-//  WRAN,
-//  ERROR,
-//  FATAL
-//};
-//
-// void Plog(LogLevel l, const char* format, va_list args_list) {
-//  char* level = getenv("PLOG_LEVEL");
-//  std::
-//}
-// template<typename... T>
-// void Plog(LogLevel l, T... t) {
-//  char* level = getenv("PLOG_LEVEL");
-//  int default_level = 1;
-//  if (nullptr != level) {
-//
-//  }
-//  if constexpr (sizeof...(t) > 0) {
-//    std::cerr << t << " ";
-//  }
-//  std::cerr << std::endl;
-//}
-
-void Assert(bool condition, const std::string& message) {
-  if (!condition) {
-    fprintf(stderr, "[ERROR] %s\n", message.c_str());
-    std::abort();
+inline std::vector<int64_t> Arange(int64_t start, int64_t end) {
+  Assert(end > start, "In arrange(), end must be greater than start.");
+  std::vector<int64_t> res;
+  res.resize(end - start);
+  for (auto i = start; i < end; i++) {
+    res[i - start] = i;
   }
+  return res;
 }
 }  // namespace paddle2onnx

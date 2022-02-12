@@ -14,17 +14,23 @@
 
 #pragma once
 #include <vector>
-#include "paddle2onnx/utils/utils.hpp"
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-std::vector<int64_t> Arange(int64_t start, int64_t end) {
-  Assert(end > start, "In arrange(), end must be greater than start.");
-  std::vector<int64_t> res;
-  res.resize(end - start);
-  for (auto i = start; i < end; i++) {
-    res[i - start] = i;
+class FlattenMapper : public Mapper {
+ public:
+  FlattenMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "start_axis", &start_axis_);
+    parser_->GetOpAttr(op, "stop_axis", &stop_axis_);
   }
-  return res;
-}
+
+  void Opset7(OnnxHelper* helper);
+
+ private:
+  int64_t start_axis_;
+  int64_t stop_axis_;
+};
 }  // namespace paddle2onnx
