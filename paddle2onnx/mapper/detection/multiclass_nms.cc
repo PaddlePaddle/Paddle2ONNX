@@ -236,14 +236,13 @@ void NMSMapper::Opset10(OnnxHelper* helper) {
   } else {
     auto value_1 =
         helper->Constant({1}, GetOnnxDtype(boxes_info[0].dtype), float(1.0));
-    auto split_boxes = helper->MakeNode("Split", {boxes_info[0].name}, 4);
-    AddAttribute(split_boxes, "axis", int64_t(2));
-    AddAttribute(split_boxes, "split", std::vector<int64_t>(4, 1));
-    auto xmax = helper->MakeNode("Add", {split_boxes->output(2), value_1});
-    auto ymax = helper->MakeNode("Add", {split_boxes->output(3), value_1});
+    auto split_boxes = helper->Split(boxes_info[0].name,
+                                     std::vector<int64_t>(4, 1), int64_t(2));
+    auto xmax = helper->MakeNode("Add", {split_boxes[2], value_1});
+    auto ymax = helper->MakeNode("Add", {split_boxes[3], value_1});
     auto new_boxes = helper->MakeNode(
-        "Concat", {split_boxes->output(0), split_boxes->output(1),
-                   xmax->output(0), ymax->output(0)});
+        "Concat",
+        {split_boxes[0], split_boxes[1], xmax->output(0), ymax->output(0)});
     AddAttribute(new_boxes, "axis", int64_t(2));
     helper->MakeNode("NonMaxSuppression",
                      {new_boxes->output(0), score_info[0].name, nms_top_k,

@@ -106,6 +106,13 @@ class OnnxHelper {
   std::string Slice(const std::string& input, const std::vector<int64_t>& axes,
                     const std::vector<int64_t>& starts,
                     const std::vector<int64_t>& ends);
+  std::vector<std::string> Split(const std::string& input,
+                                 const std::vector<std::string>& outputs,
+                                 const std::vector<int64_t>& split,
+                                 int64_t axis);
+  std::vector<std::string> Split(const std::string& input,
+                                 const std::vector<int64_t>& split,
+                                 int64_t axis);
 
   template <typename T>
   std::string Constant(const std::string& output,
