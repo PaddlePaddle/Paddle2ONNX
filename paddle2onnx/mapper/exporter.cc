@@ -51,7 +51,9 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
 }
 
 std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
-                               bool auto_upgrade_opset, bool verbose) {
+                               bool auto_upgrade_opset, bool verbose,
+                               bool enable_onnx_checker,
+                               bool enable_experimental_op) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
   helper.Clear();
@@ -66,7 +68,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   MapperHelper::Get()->ClearNameCounter();
 
   std::set<std::string> unsupported_ops;
-  if (!CheckIfOpSupported(parser, &unsupported_ops)) {
+  if (!CheckIfOpSupported(parser, &unsupported_ops, enable_experimental_op)) {
     std::cerr << "Oops, there are some operators not supported by Paddle2ONNX "
                  "yet, list as below "
               << std::endl;
@@ -148,7 +150,9 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   // this check will return a information
   // to let framework know the conversion is
   // pass or fail
-  ONNX_NAMESPACE::checker::check_model(*(model.get()));
+  if (enable_onnx_checker) {
+    ONNX_NAMESPACE::checker::check_model(*(model.get()));
+  }
 
   std::string out;
   if (!model->SerializeToString(&out)) {
@@ -162,7 +166,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
 }
 
 bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
-                                       std::set<std::string>* unsupported_ops) {
+                                       std::set<std::string>* unsupported_ops,
+                                       bool enable_experimental_op) {
   unsupported_ops->clear();
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
@@ -172,6 +177,13 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
       }
       if (!MapperHelper::Get()->IsRegistered(op.type())) {
         unsupported_ops->insert(op.type());
+      } else if (!enable_experimental_op) {
+        auto mapper =
+            MapperHelper::Get()->CreateMapper(op.type(), parser, i, j);
+        if (mapper->IsExperimentalOp()) {
+          unsupported_ops->insert(op.type());
+        }
+        delete mapper;
       }
     }
   }

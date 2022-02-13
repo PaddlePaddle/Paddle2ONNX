@@ -43,11 +43,15 @@ struct ModelExporter {
   // If the model is not convertable, return -1
   int32_t GetMinOpset(const PaddleParser& parser, bool verbose = false);
 
-  bool CheckIfOpSupported(const PaddleParser& parser, std::set<std::string>*);
+  bool CheckIfOpSupported(const PaddleParser& parser,
+                          std::set<std::string>* unsupported_ops,
+                          bool enable_experimental_op);
 
  public:
   std::string Run(const PaddleParser& parser, int opset_version = 9,
-                  bool auto_upgrade_opset = true, bool verbose = false);
+                  bool auto_upgrade_opset = true, bool verbose = false,
+                  bool enable_onnx_checker = true,
+                  bool enable_experimental_op = false);
 };
 
 }  // namespace paddle2onnx
