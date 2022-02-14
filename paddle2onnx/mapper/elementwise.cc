@@ -54,8 +54,7 @@ void ElementwiseMapper::Opset7(OnnxHelper* helper) {
       broadcast_shape[i] = input_y_info[0].shape[i - axis_];
     }
     std::string broadcast_shape_node =
-        helper->MakeConstant(GetOnnxDtype(P2ODataType::INT64), broadcast_shape)
-            ->output(0);
+        helper->Constant(GetOnnxDtype(P2ODataType::INT64), broadcast_shape);
     auto y_node = helper->MakeNode(
         "Reshape", {input_y_info[0].name, broadcast_shape_node});
     helper->MakeNode(iter->second, {input_x_info[0].name, y_node->output(0)},
@@ -90,8 +89,7 @@ void ElementWiseModMapper::Opset10(OnnxHelper* helper) {
   auto dtype = input_y_info[0].dtype;
   std::vector<float> val_0 = {0.0};
 
-  std::string zero_node =
-      helper->MakeConstant(GetOnnxDtype(dtype), val_0)->output(0);
+  std::string zero_node = helper->Constant(GetOnnxDtype(dtype), val_0);
 
   auto mod_node =
       helper->MakeNode("Mod", {abs_x_node->output(0), abs_y_node->output(0)});

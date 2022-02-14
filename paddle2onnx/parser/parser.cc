@@ -333,6 +333,8 @@ bool PaddleParser::OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
                              const std::string& name) const {
   bool found = false;
   for (auto i = 0; i < op.attrs_size(); ++i) {
+    // set found to true when name is in op attrs and can use GetOpAttr to get
+    // value
     if (op.attrs(i).name() == name && GetOpAttrType(op, name) != "NOTFOUND") {
       found = true;
       break;

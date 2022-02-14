@@ -23,7 +23,7 @@ class Squeeze2Mapper : public Mapper {
  public:
   Squeeze2Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
-  std::vector<int64_t> comput_axes();
+  std::vector<int64_t> ComputeAxes();
   void Opset7(OnnxHelper* helper);
 };
 

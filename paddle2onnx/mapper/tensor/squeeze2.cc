@@ -19,7 +19,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(squeeze2, Squeeze2Mapper)
 
-std::vector<int64_t> Squeeze2Mapper::comput_axes() {
+std::vector<int64_t> Squeeze2Mapper::ComputeAxes() {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");
@@ -48,7 +48,7 @@ void Squeeze2Mapper::Opset7(OnnxHelper* helper) {
   if (ret.size() == input_info[0].shape.size()) {
     helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    auto axes = comput_axes();
+    auto axes = ComputeAxes();
     if (axes.size() > 0) {
       std::sort(axes.begin(), axes.end());
       helper->Squeeze(input_info[0].name, output_info[0].name, axes);

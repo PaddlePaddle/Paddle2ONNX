@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/reshape2.h"
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -20,33 +21,25 @@ namespace paddle2onnx {
 REGISTER_MAPPER(reshape2, Reshape2Mapper)
 
 int32_t Reshape2Mapper::GetMinOpset(bool verbose) {
+  // First set shape_name to ShapeTensor, if ShapeTensor is not in the input,
+  // set it to Shape
   std::string shape_name = "ShapeTensor";
   bool is_shapetensor = parser_->OpHasInput(block_idx_, op_idx_, shape_name);
   if (!is_shapetensor) {
     shape_name = "Shape";
-  } else {
-    std::vector<TensorInfo> tensor_info =
-        parser_->GetOpInput(block_idx_, op_idx_, shape_name);
-    if (tensor_info.size() == 0) {
-      shape_name = "Shape";
-    } else {
-      return 7;
-    }
   }
+
   bool is_shape = parser_->OpHasInput(block_idx_, op_idx_, shape_name);
   if (!is_shape) {
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    std::vector<int64_t> shape;
-    parser_->GetOpAttr(op, "shape", &shape);
-    if (shape.size() == 0) return -1;
-  } else {
-    std::vector<TensorInfo> tensor_info =
-        parser_->GetOpInput(block_idx_, op_idx_, shape_name);
-    if (tensor_info.size() == 0) {
+    if (!parser_->OpHasAttr(op, "shape")) {
+      std::cerr << "shape tensor and shape attrubite all unkown in operator: " +
+                       op.type()
+                << std::endl;
       return -1;
-    } else {
-      return 7;
     }
+  } else {
+    return 7;
   }
   return 7;
 }
@@ -88,9 +81,9 @@ void Reshape2Mapper::Opset7(OnnxHelper* helper) {
   } else {
     std::vector<int64_t> shape;
     parser_->GetOpAttr(op, "shape", &shape);
-    auto shape_node =
-        helper->MakeConstant(GetOnnxDtype(P2ODataType::INT64), shape);
-    helper->MakeNode("Reshape", {input_info[0].name, shape_node->output(0)},
+    std::string shape_node =
+        helper->Constant(GetOnnxDtype(P2ODataType::INT64), shape);
+    helper->MakeNode("Reshape", {input_info[0].name, shape_node},
                      {output_info[0].name});
   }
 }
