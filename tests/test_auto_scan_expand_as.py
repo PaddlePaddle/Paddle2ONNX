@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -30,30 +31,31 @@ class Net(BaseNet):
         forward
         """
         x = paddle.expand_as(inputs1, inputs2)
-        return x
+        return x + inputs2
 
 
 class TestStackConvert(OPConvertAutoScanTest):
     """
     api: paddle.expand_as
-    OPset version: 7, 9, 15
+    OPset version: 8, 9, 11, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=8), min_size=2, max_size=5))
+                    min_value=4, max_value=8), min_size=1, max_size=5))
 
-        input_shape1 = [3]
-        input_shape2 = [2, 3]
-        dtype = draw(st.sampled_from(["float32"]))
+        n = random.randint(1, 6 - len(input_shape1))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
+        input_shape2 = pre_shape + input_shape1
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["expand_as_v2"],
             "test_data_shapes": [input_shape1, input_shape2],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [9],
+            "opset_version": [8, 9, 11, 15],
             "input_spec_shape": [],
         }
 
