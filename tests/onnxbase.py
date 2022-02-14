@@ -179,6 +179,12 @@ class APIOnnx(object):
                 self.input_feed[str(i)] = in_data.numpy()
                 i += 1
 
+    def set_device_mode(self, is_gpu=True):
+        if paddle.device.is_compiled_with_cuda() is True and is_gpu:
+            self.places = ['gpu']
+        else:
+            self.places = ['cpu']
+
     def set_input_spec(self):
         if len(self.input_spec_shape) == 0:
             return
