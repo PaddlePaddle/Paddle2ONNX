@@ -21,25 +21,17 @@ namespace paddle2onnx {
 REGISTER_MAPPER(reshape2, Reshape2Mapper)
 
 int32_t Reshape2Mapper::GetMinOpset(bool verbose) {
-  // First set shape_name to ShapeTensor, if ShapeTensor is not in the input,
-  // set it to Shape
-  std::string shape_name = "ShapeTensor";
-  bool is_shapetensor = parser_->OpHasInput(block_idx_, op_idx_, shape_name);
-  if (!is_shapetensor) {
-    shape_name = "Shape";
-  }
-
-  bool is_shape = parser_->OpHasInput(block_idx_, op_idx_, shape_name);
-  if (!is_shape) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    if (!parser_->OpHasAttr(op, "shape")) {
-      std::cerr << "shape tensor and shape attrubite all unkown in operator: " +
-                       op.type()
-                << std::endl;
-      return -1;
+  bool has_shape_tensor_input =
+      parser_->OpHasInput(block_idx_, op_idx_, "ShapeTensor");
+  bool has_shape_input = parser_->OpHasInput(block_idx_, op_idx_, "Shape");
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  bool has_shape_attr = parser_->OpHasAttr(op, "shape");
+  if (!has_shape_input && !has_shape_input && !has_shape_attr) {
+    if (verbose) {
+      std::cerr << "Can not find shape as input or attribute in op "
+                << op.type() << "." << std::endl;
     }
-  } else {
-    return 7;
+    return -1;
   }
   return 7;
 }

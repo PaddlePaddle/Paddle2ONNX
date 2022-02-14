@@ -74,7 +74,8 @@ void ElementWiseModMapper::Opset10(OnnxHelper* helper) {
   if (input_y_info[0].dtype == P2ODataType::INT32 ||
       input_y_info[0].dtype == P2ODataType::INT64) {
     auto mod_node =
-        helper->MakeNode("Mod", {input_x_info[0].name, input_y_info[0].name});
+        helper->MakeNode("Mod", {input_x_info[0].name, input_y_info[0].name},
+                         {output_info[0].name});
     AddAttribute(mod_node, "fmod", fmod);
     return;
   }
