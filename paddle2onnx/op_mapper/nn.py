@@ -114,7 +114,8 @@ class ConvTranspose():
             attrs=attrs)
 
 
-@op_mapper(['pool2d', 'pool3d'])
+@op_mapper(
+    ['pool2d', 'pool3d', 'max_pool2d_with_index', 'max_pool3d_with_index'])
 class Pool():
     support_opset_version_range = (1, 15)
     pool_type = {
@@ -135,9 +136,11 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout", \
-            "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
-            "is %s." % node.attrs['data_format']
+        if node.type not in ["max_pool2d_with_index", "max_pool3d_with_index"]:
+            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs[
+                'data_format'] == "AnyLayout", \
+                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+                "is %s." % node.attrs['data_format']
         k_size = node.attr('ksize')
         if node.attr('global_pooling') or (
                 node.attr('adaptive') and
@@ -206,16 +209,21 @@ class Pool():
             raise Exception(
                 "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
             )
-        elif graph.opset_version >= 10:
+        elif node.attr('ceil_mode') is not None and graph.opset_version >= 10:
             attrs['ceil_mode'] = node.attr('ceil_mode')
 
         if node.attr('pooling_type') == 'avg':
             attrs['count_include_pad'] = not node.attr('exclusive')
-        onnx_node = graph.make_node(
-            cls.pool_type[node.attr('pooling_type')][0],
-            inputs=input_x,
-            outputs=node.output('Out'),
-            attrs=attrs)
+
+        if node.type in ["max_pool2d_with_index", "max_pool3d_with_index"]:
+            cls.get_max_pool2d_with_index(graph, node,
+                                          len(k_size), input_x, attrs)
+        else:
+            onnx_node = graph.make_node(
+                cls.pool_type[node.attr('pooling_type')][0],
+                inputs=input_x,
+                outputs=node.output('Out'),
+                attrs=attrs)
 
     @classmethod
     def adaptive_pool(cls, graph, node):
@@ -243,7 +251,7 @@ class Pool():
             raise Exception(
                 "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
             )
-        elif graph.opset_version > 10:
+        elif node.attr('ceil_mode') is not None and graph.opset_version > 10:
             attrs['ceil_mode'] = node.attr('ceil_mode')
         auto_pad = node.attr('padding_algorithm')
         if auto_pad == 'SAME':
@@ -257,6 +265,42 @@ class Pool():
             inputs=node.input('X'),
             outputs=node.output('Out'),
             attrs=attrs)
+
+    @classmethod
+    def get_max_pool2d_with_index(cls, graph, node, ndims, input, attrs):
+        if graph.opset_version < 9:
+            raise Exception(
+                "Pool in onnx(opset<9) not support 'return index', Try converting with opset_version >=9"
+            )
+        mask_indices = graph.generate_node_name("pool")
+        flattened_indices = graph.generate_node_name("pool")
+        flattened_out = graph.generate_node_name("pool")
+        graph.make_node(
+            'MaxPool',
+            inputs=input,
+            outputs=[node.output('Out', 0), mask_indices],
+            attrs=attrs)
+
+        graph.make_node(
+            'MaxPool',
+            inputs=input,
+            outputs=[flattened_out, flattened_indices],
+            kernel_shape=[1] * ndims,
+            strides=[1] * ndims)
+
+        axes = [2 + i for i in range(ndims)]
+        s = mapper_helper.slice_helper(
+            graph,
+            flattened_indices,
+            axes=axes,
+            starts=[0] * ndims,
+            ends=[1] * ndims)
+        onnx_node = graph.make_node("Sub", inputs=[mask_indices, s])
+        graph.make_node(
+            'Cast',
+            inputs=[onnx_node],
+            outputs=node.output('Mask'),
+            attrs={'to': dtypes.ONNX.INT32})
 
 
 @op_mapper('elu')

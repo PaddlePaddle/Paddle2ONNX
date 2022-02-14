@@ -89,15 +89,22 @@ class TestMaxpool1dConvert(OPConvertAutoScanTest):
 
         padding = 0
 
-        opset_version = [[7, 9, 15]]
+        if return_mask:
+            opset_version = [[9, 15]]
+        else:
+            opset_version = [[7, 9, 15]]
         if ceil_mode:
             opset_version = [10, 15]
 
         if padding == "VALID":
             ceil_mode = False
+        if return_mask:
+            op_names = 'max_pool2d_with_index'
+        else:
+            op_names = 'pool2d'
 
         config = {
-            "op_names": ["pool2d"],
+            "op_names": [op_names],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": opset_version,
@@ -231,15 +238,24 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
         else:
             padding = 0
 
-        opset_version = [[7, 9, 15]]
+        if return_mask and padding_type in ["list2", "list4", "list8"]:
+            padding = draw(st.integers(min_value=1, max_value=5))
+
+        if return_mask:
+            opset_version = [[9, 15]]
+        else:
+            opset_version = [[7, 9, 15]]
         if ceil_mode:
             opset_version = [10, 15]
 
         if padding == "VALID":
             ceil_mode = False
-
+        if return_mask:
+            op_names = 'max_pool2d_with_index'
+        else:
+            op_names = 'pool2d'
         config = {
-            "op_names": ["pool2d"],
+            "op_names": [op_names],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": opset_version,
@@ -383,15 +399,25 @@ class TestMaxpool3dConvert(OPConvertAutoScanTest):
         else:
             padding = 0
 
-        opset_version = [[7, 9, 15]]
+        if return_mask and padding_type in ["list3", "list6", "list10"]:
+            padding = draw(st.integers(min_value=1, max_value=5))
+
+        if return_mask:
+            opset_version = [[9, 15]]
+        else:
+            opset_version = [[7, 9, 15]]
         if ceil_mode:
             opset_version = [10, 15]
 
         if padding == "VALID":
             ceil_mode = False
+        if return_mask:
+            op_names = 'max_pool3d_with_index'
+        else:
+            op_names = 'pool3d'
 
         config = {
-            "op_names": ["pool3d"],
+            "op_names": [op_names],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": opset_version,
