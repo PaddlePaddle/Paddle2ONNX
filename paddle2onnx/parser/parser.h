@@ -82,6 +82,9 @@ class PaddleParser {
   std::vector<TensorInfo> GetOpOutput(int64_t block_id, int64_t op_id,
                                       const std::string& name) const;
 
+  std::string GetOpAttrType(const paddle2onnx::framework::proto::OpDesc& op,
+                            const std::string& name) const;
+
   bool OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name) const;
 

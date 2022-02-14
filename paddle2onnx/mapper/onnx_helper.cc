@@ -244,10 +244,11 @@ std::string OnnxHelper::Squeeze(const std::string& input,
                                 const std::string& output,
                                 const std::vector<int64_t>& axes) {
   if (axes.size() == 0) {
-    auto node = MakeNode("squeeze", {input}, {output});
+    auto node = MakeNode("Squeeze", {input}, {output});
   } else {
     if (opset_version < 13) {
       auto node = MakeNode("Squeeze", {input}, {output});
+      AddAttribute(node, "axes", axes);
     } else {
       auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
       auto node = MakeNode("Squeeze", {input, axes_node->output(0)}, {output});
