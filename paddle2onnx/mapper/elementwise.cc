@@ -79,10 +79,8 @@ void ElementWiseModMapper::Opset10(OnnxHelper* helper) {
     AddAttribute(mod_node, "fmod", fmod);
     return;
   }
-  if (input_y_info[0].dtype == P2ODataType::FP64 ||
-      input_y_info[0].dtype == P2ODataType::FP32) {
-    fmod = 1;
-  }
+
+  fmod = 1;
 
   auto abs_x_node = helper->MakeNode("Abs", {input_x_info[0].name});
   auto abs_y_node = helper->MakeNode("Abs", {input_y_info[0].name});
