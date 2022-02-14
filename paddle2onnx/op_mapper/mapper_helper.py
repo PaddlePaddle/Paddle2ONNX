@@ -28,11 +28,21 @@ def is_static_shape(shape):
         )
 
 
-def slice_helper(graph, input, axes, starts, ends, outputs=[]):
+def slice_helper(graph, input, axes, starts, ends, outputs=None):
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if axes is not None and not isinstance(axes, list):
+        axes = [axes]
+    if starts is not None and not isinstance(starts, list):
+        starts = [starts]
+    if ends is not None and not isinstance(ends, list):
+        ends = [ends]
     if graph.opset_version < 10:
         slice_node = graph.make_node(
             "Slice",
-            inputs=input,
+            inputs=inputs,
             outputs=outputs,
             axes=axes,
             starts=starts,
@@ -45,10 +55,8 @@ def slice_helper(graph, input, axes, starts, ends, outputs=[]):
             'Constant', dtype=dtypes.ONNX.INT64, value=starts)
         ends_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=ends)
-        slice_node = graph.make_node(
-            "Slice",
-            inputs=[input, starts_node, ends_node, axes_node],
-            outputs=outputs)
+        inputs = inputs + [starts_node, ends_node, axes_node]
+        slice_node = graph.make_node("Slice", inputs=inputs, outputs=outputs)
         return slice_node
 
 

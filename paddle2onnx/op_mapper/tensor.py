@@ -360,50 +360,11 @@ class Roll():
     def roll(cls, graph, input_x, dims, shifts):
         for i in range(len(shifts)):
             shapes = []
-            if graph.opset_version < 10:
-                shape = graph.make_node(
-                    "Slice",
-                    inputs=[input_x],
-                    axes=[dims[i]],
-                    starts=[-shifts[i]],
-                    ends=[60000])
-            else:
-                axes_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [dims[i]]})
-                starts_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [-shifts[i]]})
-                ends_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [60000]})
-                shape = graph.make_node(
-                    "Slice",
-                    inputs=[input_x, starts_node, ends_node, axes_node])
-
+            shape = mapper_helper.slice_helper(graph, input_x, [dims[i]],
+                                               [-shifts[i]], [60000])
             shapes.append(shape)
-            if graph.opset_version < 10:
-                shape = graph.make_node(
-                    "Slice",
-                    inputs=[input_x],
-                    axes=[dims[i]],
-                    starts=[0],
-                    ends=[-shifts[i]])
-            else:
-                starts_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [0]})
-                ends_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': [-shifts[i]]})
-                shape = graph.make_node(
-                    "Slice",
-                    inputs=[input_x, starts_node, ends_node, axes_node])
+            shape = mapper_helper.slice_helper(graph, input_x, [dims[i]], [0],
+                                               [-shifts[i]])
             shapes.append(shape)
             input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
         return input_x
