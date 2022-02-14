@@ -127,6 +127,8 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::string& op_type, const std::vector<std::string>& inputs,
     const std::vector<std::string>& outputs) {
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  auto node_name = MapperHelper::Get()->GenName(op_type);
+  node->set_name(node_name);
   node->set_op_type(op_type);
   for (size_t i = 0; i < inputs.size(); ++i) {
     node->add_input(inputs[i]);
@@ -142,6 +144,8 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::string& op_type, const std::vector<std::string>& inputs,
     int num_outputs) {
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  auto node_name = MapperHelper::Get()->GenName(op_type);
+  node->set_name(node_name);
   node->set_op_type(op_type);
   for (size_t i = 0; i < inputs.size(); ++i) {
     node->add_input(inputs[i]);
@@ -302,8 +306,10 @@ std::string OnnxHelper::Slice(const std::string& input,
     auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
     auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
     auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
-    auto node = MakeNode("Slice", {input, starts_node->output(0),
-                                   ends_node->output(0), axes_node->output(0)});
+    auto node = MakeNode("Slice",
+                         {input, starts_node->output(0), ends_node->output(0),
+                          axes_node->output(0)},
+                         {output});
   }
   return output;
 }
@@ -314,6 +320,48 @@ std::string OnnxHelper::Slice(const std::string& input,
                               const std::vector<int64_t>& ends) {
   std::string output = MapperHelper::Get()->GenName("helper.slice");
   return Slice(input, output, axes, starts, ends);
+}
+
+std::vector<std::string> OnnxHelper::Split(
+    const std::string& input, const std::vector<std::string>& outputs,
+    const std::vector<int64_t>& split, int64_t axis) {
+  Assert(outputs.size() > 0 || split.size() > 0,
+         "OnnxHelper::Split requires the size of outputs or the size of split "
+         "> 0.");
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  auto node_name = MapperHelper::Get()->GenName("Split");
+  node->set_name(node_name);
+  node->set_op_type("Split");
+  node->add_input(input);
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    node->add_output(outputs[i]);
+  }
+  AddAttribute(node, "axis", axis);
+  if (split.size() > 0) {
+    Assert(outputs.size() == split.size(),
+           "OnnxHelper::Split While size of outputs and the size of split both "
+           "> 0, their size must be same.");
+    if (opset_version < 13) {
+      AddAttribute(node, "split", split);
+    } else {
+      auto split_const = Constant(ONNX_NAMESPACE::TensorProto::INT64, split);
+      node->add_input(split_const);
+    }
+  }
+  nodes.push_back(node);
+  return outputs;
+}
+
+std::vector<std::string> OnnxHelper::Split(const std::string& input,
+                                           const std::vector<int64_t>& split,
+                                           int64_t axis) {
+  Assert(split.size() > 0,
+         "OnnxHelper::Split requires the size of parameter split > 0.");
+  std::vector<std::string> outputs(split.size());
+  for (size_t i = 0; i < split.size(); ++i) {
+    outputs[i] = MapperHelper::Get()->GenName("helper.split");
+  }
+  return Split(input, outputs, split, axis);
 }
 
 }  // namespace paddle2onnx

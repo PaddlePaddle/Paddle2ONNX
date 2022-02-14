@@ -28,6 +28,11 @@ class Mapper {
     op_idx_ = op_id;
   }
 
+  // Some operators is not implement very well, e.g the output may not be same
+  // We mark these operators as experimental, these operators requires double
+  // checking after model exported.
+  virtual void MarkAsExperimentalOp() { is_experimental_op_ = true; }
+  virtual bool IsExperimentalOp() const { return is_experimental_op_; }
   // the return value in [7, 15], represent the minimum opset_version
   // if return value < 0, means the op is not supported.
   virtual int32_t GetMinOpset(bool verbose = false) { return 7; }
@@ -80,6 +85,7 @@ class Mapper {
   }
 
   virtual ~Mapper() = default;
+  bool is_experimental_op_ = false;
   const PaddleParser* parser_;
   int32_t block_idx_;
   int32_t op_idx_;
