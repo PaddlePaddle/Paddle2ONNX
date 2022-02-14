@@ -119,6 +119,7 @@ class Gelu():
     @classmethod
     def opset_9(cls, graph, node, **kw):
         input = node.input('X', 0)
+        # onnxruntime does not support float64 Erf
         if node.input_dtype('X', 0) == paddle.float64:
             input = graph.make_node(
                 'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
