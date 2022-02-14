@@ -119,7 +119,9 @@ class Gelu():
     @classmethod
     def opset_9(cls, graph, node, **kw):
         input = node.input('X', 0)
-        if node.input_dtype('X', 0) == paddle.float64:
+        x_dtype = node.input_dtype('X', 0)
+        # onnxruntime only support float32 Erf
+        if x_dtype != paddle.float32:
             input = graph.make_node(
                 'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
         sqrt2 = graph.make_node(
@@ -131,12 +133,12 @@ class Gelu():
         x = graph.make_node('Erf', inputs=x)
         x = graph.make_node('Add', inputs=[x, one])
         x = graph.make_node('Mul', inputs=[input, x])
-        if node.input_dtype('X', 0) == paddle.float64:
+        if x_dtype != paddle.float32:
             mul_node = graph.make_node('Mul', inputs=[x, zero_point_five])
             graph.make_node(
                 'Cast',
                 inputs=[mul_node],
-                to=dtypes.ONNX.DOUBLE,
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
                 outputs=node.output('Out'))
         else:
             graph.make_node(
