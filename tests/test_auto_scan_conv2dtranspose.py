@@ -20,7 +20,7 @@ import unittest
 import paddle
 
 
-class Net(BaseNet):
+class Net1(BaseNet):
     """
     simple Net
     """
@@ -44,7 +44,7 @@ class Net(BaseNet):
         return x
 
 
-class TestConv2dTransposeConvert(OPConvertAutoScanTest):
+class TestConv2dTransposeConvert1(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.conv2d_transpose
     OPset version: 7, 9, 15
@@ -160,7 +160,90 @@ class TestConv2dTransposeConvert(OPConvertAutoScanTest):
             "rtol": 1e-4
         }
 
-        models = Net(config)
+        models = Net1(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+class Net2(BaseNet):
+    """
+    simple Net
+    """
+
+    def forward(self, inputs, weight):
+        """
+        forward
+        """
+        x = paddle.nn.functional.conv2d_transpose(
+            inputs,
+            weight,
+            bias=None,
+            stride=self.config["stride"],
+            padding=self.config["padding"],
+            output_padding=self.config["output_padding"],
+            dilation=self.config["dilation"],
+            groups=self.config["groups"],
+            output_size=self.config['output_size'],
+            data_format=self.config["data_format"])
+
+        return x
+
+
+class TestConv2dTransposeConvert2(OPConvertAutoScanTest):
+    """
+    api: paddle.nn.functional.conv2d_transpose
+    OPset version: 7, 9, 15
+    1.OPset version需要根据op_mapper中定义的version来设置。
+    2.测试中所有OP对应升级到Opset version 15。
+    """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=20, max_value=50), min_size=4, max_size=4))
+
+        data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
+        data_format = "NCHW"
+
+        input_shape = [1, 1, 3, 3]
+        kernel_size = [1, 2, 3, 3]
+        groups = 1
+        strides = [3, 2]
+        padding = 0
+        dilations = 1
+        output_size = None
+        output_padding = 0
+        if draw(st.booleans()):
+            output_size = [10, 8]
+        else:
+            output_padding = [1, 1]
+        dtype = draw(st.sampled_from(["float32"]))
+
+        config = {
+            "op_names": ["conv2d_transpose"],
+            "test_data_shapes": [input_shape, kernel_size],
+            "test_data_types": [[dtype], [dtype]],
+            "opset_version": [7, 9, 15],
+            # "input_spec_shape":[input_shape, kernel_size],  # [-1, input_shape[1], -1, -1]
+            "input_spec_shape": [[-1, input_shape[1], -1, -1], kernel_size],
+            "data_format": data_format,
+            "stride": strides,
+            "dilation": dilations,
+            "padding": padding,
+            "output_padding": output_padding,
+            "groups": groups,
+            "input_shape": input_shape,
+            "kernel_size": kernel_size,
+            "output_size": output_size,
+            "delta": 1e-4,
+            "rtol": 1e-4
+        }
+
+        models = Net2(config)
 
         return (config, models)
 
