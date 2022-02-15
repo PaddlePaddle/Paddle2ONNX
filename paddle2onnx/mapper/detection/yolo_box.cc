@@ -21,7 +21,16 @@ REGISTER_MAPPER(yolo_box, YoloBoxMapper)
 int32_t YoloBoxMapper::GetMinOpset(bool verbose) { return 11; }
 
 void YoloBoxMapper::Opset11(OnnxHelper* helper) {
-  auto x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
+  auto x_info_ori = parser_->GetOpInput(block_idx_, op_idx_, "X");
+
+  // handle the float64 input
+  auto x_info = x_info_ori;
+  if (x_info_ori[0].dtype != P2ODataType::FP32) {
+    x_info[0].name = helper->AutoCast(x_info_ori[0].name, x_info_ori[0].dtype,
+                                      P2ODataType::FP32);
+    x_info[0].dtype = P2ODataType::FP32;
+  }
+
   auto im_size_info = parser_->GetOpInput(block_idx_, op_idx_, "ImgSize");
   auto boxes_info = parser_->GetOpOutput(block_idx_, op_idx_, "Boxes");
   auto scores_info = parser_->GetOpOutput(block_idx_, op_idx_, "Scores");
@@ -211,7 +220,9 @@ void YoloBoxMapper::Opset11(OnnxHelper* helper) {
       {split_im_hw[1], split_im_hw[0], split_im_hw[1], split_im_hw[0]}, 2);
 
   if (!clip_bbox_) {
-    helper->MakeNode("Mul", {pred_box, im_whwh}, {boxes_info[0].name});
+    auto out = helper->MakeNode("Mul", {pred_box, im_whwh})->output(0);
+    helper->AutoCast(out, boxes_info[0].name, x_info[0].dtype,
+                     boxes_info[0].dtype);
   } else {
     pred_box = helper->MakeNode("Mul", {pred_box, im_whwh})->output(0);
     auto im_wh = helper->Concat({split_im_hw[1], split_im_hw[0]}, 2);
@@ -221,14 +232,18 @@ void YoloBoxMapper::Opset11(OnnxHelper* helper) {
         helper->MakeNode("Relu", {pred_box_xymin_xymax[0]})->output(0);
     pred_box_xymin_xymax[1] =
         helper->MakeNode("Min", {pred_box_xymin_xymax[1], im_wh})->output(0);
-    helper->Concat(pred_box_xymin_xymax, boxes_info[0].name, 2);
+    auto out = helper->Concat(pred_box_xymin_xymax, 2);
+    helper->AutoCast(out, boxes_info[0].name, x_info[0].dtype,
+                     boxes_info[0].dtype);
   }
 
   auto class_num =
       helper->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, class_num_);
   auto score_out_shape =
       helper->Concat({nchw[0], value_neg_1, class_num}, int64_t(0));
-  helper->MakeNode("Reshape", {pred_score, score_out_shape},
-                   {scores_info[0].name});
+  auto score_out =
+      helper->MakeNode("Reshape", {pred_score, score_out_shape})->output(0);
+  helper->AutoCast(score_out, scores_info[0].name, x_info[0].dtype,
+                   scores_info[0].dtype);
 }
 }  // namespace paddle2onnx

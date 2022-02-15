@@ -27,10 +27,13 @@ def export(model_filename,
            save_file=None,
            opset_version=9,
            auto_upgrade_opset=True,
-           verbose=True):
+           verbose=True,
+           enable_onnx_checker=True,
+           enable_experimental_op=True):
     onnx_proto = onnx.ModelProto()
     onnx_proto_str = c_p2o.export(model_filename, params_filename,
-                                  opset_version, auto_upgrade_opset, verbose)
+                                  opset_version, auto_upgrade_opset, verbose,
+                                  enable_onnx_checker, enable_experimental_op)
     onnx_proto.ParseFromString(onnx_proto_str)
     if save_file is not None:
         with open(save_file, "wb") as f:

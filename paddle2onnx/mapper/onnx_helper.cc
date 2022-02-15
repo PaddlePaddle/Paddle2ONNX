@@ -179,7 +179,8 @@ std::string OnnxHelper::AutoCast(const std::string& input,
                                  int32_t input_paddle_dtype,
                                  int32_t to_paddle_dtype) {
   if (input_paddle_dtype == to_paddle_dtype) {
-    return input;
+    auto node = MakeNode("Identity", {input}, {output});
+    return output;
   }
   auto cast_node = MakeNode("Cast", {input}, {output});
   AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
