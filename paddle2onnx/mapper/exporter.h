@@ -17,8 +17,7 @@
 #include <onnx/onnx_pb.h>
 #include <algorithm>
 #include <set>
-
-#include "paddle2onnx/mapper/nn.h"
+#include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
