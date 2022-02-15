@@ -42,6 +42,9 @@ class NetMaxpool1d(BaseNet):
             padding=padding,
             return_mask=return_mask,
             ceil_mode=ceil_mode)
+        if return_mask:
+            x1, x2 = x
+            x = x1 + x2
         return x
 
 
@@ -60,7 +63,7 @@ class TestMaxpool1dConvert(OPConvertAutoScanTest):
         # input_shape = [3, 1, 10]
         dtype = draw(st.sampled_from(["float32"]))
 
-        return_mask = False
+        return_mask = draw(st.booleans())
         ceil_mode = draw(st.booleans())
 
         kernel_type = draw(st.sampled_from(["int", "list"]))
@@ -147,6 +150,9 @@ class NetMaxpool2d(BaseNet):
             return_mask=return_mask,
             ceil_mode=ceil_mode,
             data_format=data_format)
+        if return_mask:
+            x1, x2 = x
+            x = x1 + x2
         return x
 
 
@@ -165,7 +171,8 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32"]))
         data_format = draw(st.sampled_from(["NCHW"]))
 
-        return_mask = False  # draw(st.booleans()) # max_pool2d_with_index
+        # max_pool2d_with_index
+        return_mask = draw(st.booleans())
         ceil_mode = draw(st.booleans())
 
         kernel_type = draw(st.sampled_from(["int", "list"]))
@@ -299,6 +306,9 @@ class NetMaxpool3d(BaseNet):
             return_mask=return_mask,
             ceil_mode=ceil_mode,
             data_format=data_format)
+        if return_mask:
+            x1, x2 = x
+            x = x1 + x2
         return x
 
 
@@ -317,7 +327,7 @@ class TestMaxpool3dConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32"]))
         data_format = draw(st.sampled_from(["NCDHW"]))
 
-        return_mask = False
+        return_mask = draw(st.booleans())
         ceil_mode = draw(st.booleans())
 
         kernel_type = draw(st.sampled_from(["int", "list"]))
