@@ -307,7 +307,7 @@ class Pool():
 
 @op_mapper(['unpool'])
 class UnPool():
-    support_opset_version_range = (1, 15)
+    support_opset_version_range = (9, 15)
     pool_type = {'max': ('MaxUnpool', 'GlobalMaxPool'), }
 
     @classmethod
@@ -316,7 +316,8 @@ class UnPool():
         pads = node.attr('paddings')
         strides = node.attr('strides')
         k_size = node.attr('ksize')
-        output_size = node.attr('output_size')
+        output_size = [input_shape[0], input_shape[1]] + node.attr(
+            'output_size')
 
         if len(pads) == 2 or len(pads) == 3:
             pads = pads + pads
@@ -325,61 +326,21 @@ class UnPool():
         elif len(pads) == 6:
             pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
 
-        for i in range(len(input_shape) - 2):
-            if input_shape[i + 2] > 0 and input_shape[i + 2] + pads[i] < k_size[
-                    i]:
-                k_size[i] = input_shape[i + 2] + pads[i]
-
-        input_x = node.input('X')
         input_idx = node.input('Indices')
-        if max(k_size) <= max(pads):
-            n = (int)(len(pads) / 2)
-            onnx_paddings = [0, 0] + pads[:n] + [0, 0] + pads[n:]
-            attrs_pad = {'mode': 'constant', }
-            if graph.opset_version >= 11:
-                pads_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': onnx_paddings})
-                value_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.FLOAT,
-                           'value': 0.0})
-                input_x = input_x + [pads_node, value_node]
-            else:
-                attrs_pad['pads'] = onnx_paddings
-                attrs_pad['value'] = 0.0
-            input_x = graph.make_node('Pad', inputs=input_x, attrs=attrs_pad)
-            pads = [0, 0] * n
+        attrs = {'kernel_shape': k_size, 'strides': strides, 'pads': pads}
 
-        attrs = {
-            'kernel_shape': k_size,
-            'strides': strides,
-        }
-        auto_pad = node.attr('padding_algorithm')
-        if auto_pad == 'SAME':
-            attrs['auto_pad'] = 'SAME_UPPER'
-        elif auto_pad == 'VALID':
-            attrs['auto_pad'] = 'VALID'
-        else:
-            attrs['pads'] = pads
-        if node.attr('ceil_mode') and graph.opset_version < 10:
-            raise Exception(
-                "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
-            )
-        elif node.attr('ceil_mode') is not None and graph.opset_version >= 10:
-            attrs['ceil_mode'] = node.attr('ceil_mode')
-
-        if node.attr('pooling_type') == 'avg':
-            attrs['count_include_pad'] = not node.attr('exclusive')
-
-        op = cls.pool_type[node.attr('unpooling_type')][0]
         idx_node = graph.make_node(
             'Cast', inputs=input_idx, attrs={'to': dtypes.ONNX.INT64})
 
+        output_size_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.INT64,
+                   'value': output_size})
+
+        op = cls.pool_type[node.attr('unpooling_type')][0]
         onnx_node = graph.make_node(
             op,
-            inputs=[input_x[0], idx_node],
+            inputs=[node.input('X', 0), idx_node, output_size_node],
             outputs=node.output('Out'),
             attrs=attrs)
 
