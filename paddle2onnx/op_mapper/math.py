@@ -105,6 +105,7 @@ class Erf():
     def opset_9(cls, graph, node, **kw):
         x_dtype = node.input_dtype('X', 0)
         x = node.input('X', 0)
+        # onnxruntime only support float32 Erf
         if x_dtype != paddle.float32:
             x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
             erf_node = graph.make_node('Erf', inputs=[x])
