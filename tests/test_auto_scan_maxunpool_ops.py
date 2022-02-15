@@ -44,7 +44,7 @@ class NetMaxpool2d(BaseNet):
             ceil_mode=ceil_mode,
             data_format=data_format)
         x = paddle.nn.functional.max_unpool2d(
-            pool_out, indices, kernel_size=2, padding=0)
+            pool_out, indices, kernel_size=2, padding=0, output_size=[8, 10])
         return x
 
 
@@ -59,7 +59,7 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=10, max_value=20), min_size=4, max_size=4))
-        input_shape = [1, 1, 6, 6]
+        input_shape = [5, 3, 8, 10]
         dtype = draw(st.sampled_from(["float32"]))
         data_format = draw(st.sampled_from(["NCHW"]))
 
@@ -140,11 +140,11 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
             padding = draw(st.integers(min_value=1, max_value=5))
         padding = 0
         if return_mask:
-            opset_version = [[9, 15]]
+            opset_version = [[11, 15]]
         else:
-            opset_version = [[7, 9, 15]]
+            opset_version = [[11, 15]]
         if ceil_mode:
-            opset_version = [10, 15]
+            opset_version = [11, 15]
 
         if padding == "VALID":
             ceil_mode = False

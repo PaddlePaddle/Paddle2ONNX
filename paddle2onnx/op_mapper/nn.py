@@ -307,17 +307,14 @@ class Pool():
 
 @op_mapper(['unpool'])
 class UnPool():
-    support_opset_version_range = (9, 15)
-    pool_type = {'max': ('MaxUnpool', 'GlobalMaxPool'), }
+    support_opset_version_range = (11, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
-        input_shape = node.input_shape('X', 0)
+    def opset_11(cls, graph, node, **kw):
         pads = node.attr('paddings')
         strides = node.attr('strides')
         k_size = node.attr('ksize')
-        output_size = [input_shape[0], input_shape[1]] + node.attr(
-            'output_size')
+        # output_size = node.attr('output_size')
 
         if len(pads) == 2 or len(pads) == 3:
             pads = pads + pads
@@ -331,18 +328,121 @@ class UnPool():
 
         idx_node = graph.make_node(
             'Cast', inputs=input_idx, attrs={'to': dtypes.ONNX.INT64})
+        idx_node = cls.get_indices(graph,
+                                   node.input('X'), idx_node, k_size, strides)
 
-        output_size_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.INT64,
-                   'value': output_size})
-
-        op = cls.pool_type[node.attr('unpooling_type')][0]
+        # output_size_node = cls.compute_output_shape(graph, node.input('X'), output_size)
         onnx_node = graph.make_node(
-            op,
-            inputs=[node.input('X', 0), idx_node, output_size_node],
+            'MaxUnpool',
+            inputs=[node.input('X', 0), idx_node],
             outputs=node.output('Out'),
             attrs=attrs)
+
+    @classmethod
+    def compute_output_shape(cls, graph, input, output_size):
+        shape_node = graph.make_node('Shape', inputs=input)
+        shape_node = mapper_helper.slice_helper(
+            graph, shape_node, axes=[0], starts=[0], ends=[2])
+        output_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=output_size)
+        shape_node = graph.make_node(
+            'Concat', inputs=[shape_node, output_node], axis=0)
+        return shape_node
+
+    @classmethod
+    def get_indices(cls, graph, input, indices, kernel_size, stride):
+        # reference from https://github.com/open-mmlab/mmediting/blob/master/mmedit/models/backbones/encoder_decoders/decoders/plain_decoder.py
+        # get shape
+        input_shape = graph.make_node('Shape', inputs=input)
+        const_0 = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=0)
+        const_1 = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=1)
+        batch_size = graph.make_node(
+            'Gather', inputs=[input_shape, const_0], axis=0)
+        channel = graph.make_node(
+            'Gather', inputs=[input_shape, const_1], axis=0)
+
+        # height = (height - 1) * stride + kernel_size
+        height = graph.make_node(
+            'Gather',
+            inputs=[
+                input_shape, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=2)
+            ],
+            axis=0)
+
+        height = graph.make_node("Sub", inputs=[height, const_1])
+        height = graph.make_node(
+            "Mul",
+            inputs=[
+                height, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=stride[1])
+            ])
+        height = graph.make_node(
+            "Add",
+            inputs=[
+                height, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=kernel_size[1])
+            ])
+
+        # width = (width - 1) * stride + kernel_size
+        width = graph.make_node(
+            'Gather',
+            inputs=[
+                input_shape, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=3)
+            ],
+            axis=0)
+        width = graph.make_node("Sub", inputs=[width, const_1])
+        width = graph.make_node(
+            "Mul",
+            inputs=[
+                width, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=stride[0])
+            ])
+        width = graph.make_node(
+            "Add",
+            inputs=[
+                width, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=kernel_size[0])
+            ])
+
+        # step of channel
+        channel_step = graph.make_node("Mul", inputs=[height, width])
+        # step of batch
+        batch_step = graph.make_node("Mul", inputs=[channel_step, channel])
+
+        # channel offset
+        range_channel = graph.make_node(
+            "Range", inputs=[const_0, channel, const_1])
+        range_channel = graph.make_node(
+            'Reshape',
+            inputs=[
+                range_channel, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[1, -1, 1, 1])
+            ])
+        range_channel = graph.make_node(
+            "Mul", inputs=[range_channel, channel_step])
+        range_channel = graph.make_node(
+            'Cast', inputs=range_channel, attrs={'to': dtypes.ONNX.INT64})
+
+        # batch offset
+        range_batch = graph.make_node(
+            "Range", inputs=[const_0, batch_size, const_1])
+        range_batch = graph.make_node(
+            "Reshape",
+            inputs=[
+                range_batch, graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[-1, 1, 1, 1])
+            ])
+        range_batch = graph.make_node("Mul", inputs=[range_batch, batch_step])
+        range_batch = graph.make_node(
+            'Cast', inputs=range_batch, attrs={'to': dtypes.ONNX.INT64})
+
+        # update indices
+        indices = graph.make_node("Add", inputs=[indices, range_channel])
+        indices = graph.make_node("Add", inputs=[indices, range_batch])
+
+        return indices
 
 
 @op_mapper('elu')
