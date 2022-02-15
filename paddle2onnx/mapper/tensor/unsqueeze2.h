@@ -13,18 +13,19 @@
 // limitations under the License.
 
 #pragma once
+#include <string>
 #include <vector>
-#include "paddle2onnx/utils/utils.h"
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-inline std::vector<int64_t> Arange(int64_t start, int64_t end) {
-  Assert(end > start, "In arrange(), end must be greater than start.");
-  std::vector<int64_t> res;
-  res.resize(end - start);
-  for (auto i = start; i < end; i++) {
-    res[i - start] = i;
-  }
-  return res;
-}
+class UnSqueeze2Mapper : public Mapper {
+ public:
+  UnSqueeze2Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {}
+  std::vector<int64_t> ComputeAxes();
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset7(OnnxHelper* helper);
+};
+
 }  // namespace paddle2onnx

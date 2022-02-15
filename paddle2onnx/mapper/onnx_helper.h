@@ -38,6 +38,7 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   ONNX_NAMESPACE::TensorProto_DataType dtype);
 
 ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype);
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const Weight& weight);
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
                                                         const Weight& weight);
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
@@ -79,6 +80,9 @@ class OnnxHelper {
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
       const std::string& name, const std::vector<int64_t>& shape,
       ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
+      const std::shared_ptr<ONNX_NAMESPACE::NodeProto>& node);
 
   std::string AutoCast(const std::string& input, int32_t input_paddle_dtype,
                        int32_t to_paddle_dtype);

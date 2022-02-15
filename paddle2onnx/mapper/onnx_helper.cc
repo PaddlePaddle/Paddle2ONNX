@@ -109,6 +109,11 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
   return node;
 }
 
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const Weight& weight) {
+  auto node_name = MapperHelper::Get()->GenName("auto.constant");
+  return MakeConstant(node_name, weight);
+}
+
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
     const TensorInfo& info) {
   auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
@@ -184,6 +189,12 @@ std::string OnnxHelper::AutoCast(const std::string& input,
   auto cast_node = MakeNode("Cast", {input}, {output});
   AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
   return cast_node->output(0);
+}
+
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
+    const std::shared_ptr<ONNX_NAMESPACE::NodeProto>& node) {
+  nodes.push_back(node);
+  return node;
 }
 
 std::string OnnxHelper::Clip(const std::string& input,
@@ -306,9 +317,8 @@ std::string OnnxHelper::Slice(const std::string& input,
     auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
     auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
     auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
-    auto node = MakeNode("Slice",
-                         {input, starts_node->output(0), ends_node->output(0),
-                          axes_node->output(0)},
+    auto node = MakeNode("Slice", {input, starts_node->output(0),
+                                   ends_node->output(0), axes_node->output(0)},
                          {output});
   }
   return output;

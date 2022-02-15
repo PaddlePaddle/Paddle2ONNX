@@ -225,6 +225,35 @@ void PaddleParser::GetBlocksOps() {
   }
 }
 
+std::vector<TensorInfo> PaddleParser::GetOpAllOutput(int64_t block_id,
+                                                     int64_t op_id) const {
+  auto block = prog->blocks(block_id);
+  auto op = block.ops(op_id);
+  std::vector<TensorInfo> outputs;
+  for (auto i = 0; i < op.outputs_size(); ++i) {
+    for (auto j = 0; j < op.outputs(i).arguments_size(); ++j) {
+      outputs.push_back(GetTensorInfo(op.outputs(i).arguments(j), block));
+    }
+  }
+  return outputs;
+}
+
+std::vector<int64_t> PaddleParser::GetBlockOpIdx(
+    const std::string& name) const {
+  for (auto i = 0; i < prog->blocks_size(); ++i) {
+    for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
+      auto output = GetOpAllOutput(i, j);
+      for (auto x : output) {
+        if (x.name == name) {
+          std::cout << "found name: " << x.name << std::endl;
+          return {i, j};
+        }
+      }
+    }
+  }
+  return {};
+}
+
 TensorInfo PaddleParser::GetTensorInfo(
     const std::string& name,
     const paddle2onnx::framework::proto::BlockDesc& block) const {
@@ -343,6 +372,12 @@ bool PaddleParser::OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
   return found;
 }
 
+bool PaddleParser::OpHasAttr(int64_t block_id, int64_t op_id,
+                             const std::string& name) const {
+  auto op = GetOpDesc(block_id, op_id);
+  return OpHasAttr(op, name);
+}
+
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                              const std::string name, int64_t* res) const {
   bool found = false;
@@ -446,12 +481,34 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
-        res->push_back((int64_t)(op.attrs(i).floats(j)));
+        res->push_back((float)(op.attrs(i).floats(j)));
       }
       break;
     }
   }
   Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
+
+Weight PaddleParser::GetValueFromTensor(int64_t block_id, int64_t op_id) const {
+  auto op = GetOpDesc(block_id, op_id);
+  std::vector<int64_t> shape;
+  GetOpAttr(op, "shape", &shape);
+  if (OpHasAttr(op, "fp32_values")) {
+    std::vector<float> value;
+    GetOpAttr(op, "fp32_values", &value);
+    Weight param;
+    param.set(P2ODataType::FP32, shape, value);
+    return param;
+  }
+  if (OpHasAttr(op, "int64_values")) {
+    std::vector<int64_t> value;
+    GetOpAttr(op, "int64_values", &value);
+    Weight param;
+    param.set(P2ODataType::INT64, shape, value);
+    return param;
+  }
+  Weight param;
+  return param;
 }
 
 void PaddleParser::GetGlobalBlockInputOutputInfo() {

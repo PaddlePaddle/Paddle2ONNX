@@ -40,12 +40,23 @@ struct Weight {
            const std::vector<T>& data) {
     buffer.clear();
     shape.clear();
-    buffer.resize(data.size() * PaddleDataTypeSize(dtype));
-    memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
+    buffer.resize(data.size() * PaddleDataTypeSize(data_type));
+    memcpy(buffer.data(), data.data(),
+           data.size() * PaddleDataTypeSize(data_type));
     dtype = data_type;
     for (auto& d : dims) {
       shape.push_back(d);
     }
+  }
+
+  template <typename T>
+  void get(std::vector<T>& data) {
+    int64_t nums = 1;
+    for (auto i = 0; i < shape.size(); i++) {
+      nums *= shape[i];
+    }
+    data.resize(nums);
+    memcpy(data.data(), buffer.data(), buffer.size());
   }
 };
 
@@ -84,7 +95,8 @@ class PaddleParser {
 
   std::string GetOpAttrType(const paddle2onnx::framework::proto::OpDesc& op,
                             const std::string& name) const;
-
+  bool OpHasAttr(int64_t block_id, int64_t op_id,
+                 const std::string& name) const;
   bool OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name) const;
 
@@ -100,6 +112,9 @@ class PaddleParser {
                  const std::string name, std::vector<int64_t>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string name, std::vector<float>* res) const;
+  std::vector<int64_t> GetBlockOpIdx(const std::string& name) const;
+  std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
+  Weight GetValueFromTensor(int64_t block_id, int64_t op_id) const;
 
  private:
   void GetBlocksVarName2Id();

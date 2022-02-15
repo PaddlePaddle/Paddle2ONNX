@@ -29,6 +29,7 @@ REGISTER_MAPPER(prelu, PReluMapper)
 REGISTER_MAPPER(hard_sigmoid, HardSigmoidMapper)
 REGISTER_MAPPER(swish, SwishMapper)
 REGISTER_MAPPER(hard_swish, HardSwishMapper)
+REGISTER_MAPPER(softmax, SoftMaxMapper)
 
 int32_t ActivationMapper::GetMinOpset(bool verbose) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
@@ -218,4 +219,56 @@ void GeluMapper::Opset9(OnnxHelper* helper) {
                      {output_info[0].name});
   }
 }
+
+void SoftMaxMapper::Opset7(OnnxHelper* helper) {
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  std::vector<TensorInfo> input_info =
+      parser_->GetOpInput(block_idx_, op_idx_, "X");
+  std::vector<TensorInfo> output_info =
+      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  int64_t axis;
+  if (parser_->OpHasAttr(op, "axis")) {
+    parser_->GetOpAttr(op, "axis", &axis);
+  } else {
+    axis = -1;
+  }
+  if (axis < 0) {
+    axis = axis + output_info[0].Rank();
+  }
+  if (axis == output_info[0].Rank() - 1) {
+    auto node = helper->MakeNode("Softmax", {input_info[0].name},
+                                 {output_info[0].name});
+    AddAttribute(node, "axis", axis);
+  } else {
+    std::vector<int64_t> perm;
+    for (auto i = 0; i < output_info[0].Rank(); i++) {
+      perm.push_back(i);
+    }
+    perm[output_info[0].Rank() - 1] = axis;
+    perm[axis] = output_info[0].Rank() - 1;
+    auto transpose_node = helper->MakeNode("Transpose", {input_info[0].name});
+    AddAttribute(transpose_node, "perm", perm);
+    auto softmax_node =
+        helper->MakeNode("Softmax", {transpose_node->output(0)});
+    int64_t axis_last = -1;
+    AddAttribute(softmax_node, "axis", axis_last);
+    auto transpose_node_last = helper->MakeNode(
+        "Transpose", {softmax_node->output(0)}, {output_info[0].name});
+    AddAttribute(transpose_node_last, "perm", perm);
+  }
+}
+
+void SoftMaxMapper::Opset13(OnnxHelper* helper) {
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  int64_t axis;
+  parser_->GetOpAttr(op, "axis", &axis);
+  std::vector<TensorInfo> input_info =
+      parser_->GetOpInput(block_idx_, op_idx_, "X");
+  std::vector<TensorInfo> output_info =
+      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto node =
+      helper->MakeNode("Softmax", {input_info[0].name}, {output_info[0].name});
+  AddAttribute(node, "axis", axis);
+}
+
 }  // namespace paddle2onnx

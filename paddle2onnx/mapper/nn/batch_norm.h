@@ -13,18 +13,26 @@
 // limitations under the License.
 
 #pragma once
+#include <string>
 #include <vector>
-#include "paddle2onnx/utils/utils.h"
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-inline std::vector<int64_t> Arange(int64_t start, int64_t end) {
-  Assert(end > start, "In arrange(), end must be greater than start.");
-  std::vector<int64_t> res;
-  res.resize(end - start);
-  for (auto i = start; i < end; i++) {
-    res[i - start] = i;
+class BatchNormMapper : public Mapper {
+ public:
+  BatchNormMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "epsilon", &epsilon_);
+    parser_->GetOpAttr(op, "momentum", &momentum_);
   }
-  return res;
-}
+
+  void Opset7(OnnxHelper* helper);
+
+ private:
+  float epsilon_;
+  float momentum_;
+};
+
 }  // namespace paddle2onnx
