@@ -118,6 +118,9 @@ class OnnxHelper {
                                  const std::vector<int64_t>& split,
                                  int64_t axis);
 
+  std::vector<std::string> DtypeAlignment(
+      const std::vector<TensorInfo>& input_info, int32_t& out_dtype);
+
   template <typename T>
   std::string Constant(const std::string& output,
                        ONNX_NAMESPACE::TensorProto_DataType dtype,

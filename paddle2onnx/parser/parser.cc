@@ -245,7 +245,6 @@ std::vector<int64_t> PaddleParser::GetBlockOpIdx(
       auto output = GetOpAllOutput(i, j);
       for (auto x : output) {
         if (x.name == name) {
-          std::cout << "found name: " << x.name << std::endl;
           return {i, j};
         }
       }

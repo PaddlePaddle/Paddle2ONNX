@@ -38,9 +38,11 @@ int32_t UnSqueeze2Mapper::GetMinOpset(bool verbose) {
   Weight value = parser_->GetValueFromTensor(index[0], index[1]);
 
   if (value.shape.size() == 0) {
-    std::cerr << "Currently does not support the axes parameter as input "
-                 "tensor in op "
-              << op.type() << "." << std::endl;
+    if (verbose) {
+      std::cerr << "Currently does not support the axes parameter as input "
+                   "tensor in op "
+                << op.type() << "." << std::endl;
+    }
     return -1;
   } else {
     std::vector<int64_t> axes = ComputeAxes();
