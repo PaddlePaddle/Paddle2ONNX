@@ -105,6 +105,7 @@ class Erf():
     def opset_9(cls, graph, node, **kw):
         x_dtype = node.input_dtype('X', 0)
         x = node.input('X', 0)
+        # onnxruntime only support float32 Erf
         if x_dtype != paddle.float32:
             x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
             erf_node = graph.make_node('Erf', inputs=[x])
@@ -307,7 +308,7 @@ class ElementwiseOps():
         x_shape = node.input_shape('X', 0)
         y_shape = node.input_shape('Y', 0)
         if node.type in ["elementwise_min", "elementwise_max"]:
-            assert False, "when opset version < 8, the shape and dtype of {} op must be same".format(
+            assert False, "{} op is not supported when opset version < 8".format(
                 node.type)
 
         op_type = kw['mapper_dict'][node.type]
@@ -367,10 +368,14 @@ class ElementWiseMod():
         axis = node.attr('axis')
         x = node.input('X', 0)
         y = node.input('Y', 0)
-        fmod = 0
-        if node.input_dtype('Y', 0) == paddle.float64 or node.input_dtype(
-                'Y', 0) == paddle.float32:
-            fmod = 1
+
+        if node.input_dtype('Y', 0) == paddle.int32 or node.input_dtype(
+                'Y', 0) == paddle.int64:
+            onnx_node = graph.make_node(
+                "Mod", inputs=[x, y], outputs=node.output('Out'))
+            return
+
+        fmod = 1
 
         abs_x_node = graph.make_node("Abs", inputs=[x])
         abs_y_node = graph.make_node("Abs", inputs=[y])
