@@ -174,7 +174,6 @@
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~15 |
-| unique | 11~15 |
 | unpool | 11~15 |
 | unsqueeze2 | 1~15 |
 | unstack | 2~15 |
