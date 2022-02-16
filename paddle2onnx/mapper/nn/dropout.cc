@@ -24,7 +24,7 @@ int32_t DropoutMapper::GetMinOpset(bool verbose) {
     if (verbose) {
       auto op = parser_->GetOpDesc(block_idx_, op_idx_);
       std::cerr << "dropout_implementation: " << dropout_implementation_
-                << " is not support in op " << op.type() << "." << std::endl;
+                << " is not support." << std::endl;
       std::cerr << " In op " << op.type()
                 << " , dropout_implementation only support  downgrade_in_infer "
                    "and upscale_in_train. "

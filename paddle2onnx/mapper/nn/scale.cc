@@ -36,8 +36,9 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
     // TODO(yeliang2258): we could add a pass to eleminate the scale is 1 or
     // bias is 0
     int32_t data_type = input_info[0].dtype;
-    std::string output;
-    std::string cast_node;
+    std::string cast_node = input_info[0].name;
+    ;
+    std::string output = output_info[0].name;
     if (input_info[0].dtype == P2ODataType::INT64 ||
         input_info[0].dtype == P2ODataType::INT32 ||
         input_info[0].dtype == P2ODataType::INT16) {
@@ -47,51 +48,44 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
                                    P2ODataType::FP32);
       data_type = P2ODataType::FP32;
       output = "";
-    } else {
-      output = output_info[0].name;
-      data_type = input_info[0].dtype;
-      cast_node = input_info[0].name;
     }
 
     std::string scale_node;
     if (has_scale_tensor) {
-      std::vector<TensorInfo> scaletensor_info =
+      std::vector<TensorInfo> scale_tensor_info =
           parser_->GetOpInput(block_idx_, op_idx_, "ScaleTensor");
-      scale_node = helper->AutoCast(scaletensor_info[0].name,
-                                    scaletensor_info[0].dtype, data_type);
+      scale_node = helper->AutoCast(scale_tensor_info[0].name,
+                                    scale_tensor_info[0].dtype, data_type);
     } else {
-      std::vector<float> scale_vector = {scale_};
-      scale_node = helper->Constant(GetOnnxDtype(data_type), scale_vector);
+      scale_node =
+          helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), scale_);
     }
 
-    std::vector<float> bias_vector = {bias_};
     std::string bias_node =
-        helper->Constant(GetOnnxDtype(data_type), bias_vector);
-    std::string node2;
+        helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), bias_);
+
     if (bias_after_scale_) {
       auto mul_node = helper->MakeNode("Mul", {cast_node, scale_node});
       if (output.size() > 0) {
         helper->MakeNode("Add", {mul_node->output(0), bias_node}, {output});
       } else {
-        node2 = helper->MakeNode("Add", {mul_node->output(0), bias_node})
-                    ->output(0);
+        std::string node2 =
+            helper->MakeNode("Add", {mul_node->output(0), bias_node})
+                ->output(0);
+        helper->AutoCast(node2, {output_info[0].name}, data_type,
+                         output_info[0].dtype);
       }
-
     } else {
       auto add_node = helper->MakeNode("Add", {cast_node, bias_node});
       if (output.size() > 0) {
         helper->MakeNode("Mul", {add_node->output(0), scale_node}, {output});
       } else {
-        node2 = helper->MakeNode("Mul", {add_node->output(0), scale_node})
-                    ->output(0);
+        std::string node2 =
+            helper->MakeNode("Mul", {add_node->output(0), scale_node})
+                ->output(0);
+        helper->AutoCast(node2, {output_info[0].name}, data_type,
+                         output_info[0].dtype);
       }
-    }
-
-    if (input_info[0].dtype == P2ODataType::INT64 ||
-        input_info[0].dtype == P2ODataType::INT32 ||
-        input_info[0].dtype == P2ODataType::INT16) {
-      helper->AutoCast(node2, {output_info[0].name}, data_type,
-                       output_info[0].dtype);
     }
   }
 }

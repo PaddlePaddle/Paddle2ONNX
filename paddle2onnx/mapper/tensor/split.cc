@@ -68,11 +68,11 @@ void SplitMapper::Opset7(OnnxHelper* helper) {
     std::vector<int64_t> sections;
     parser_->GetOpAttr(op, "sections", &sections);
     std::vector<int64_t> input_index;
-    for (auto i = 0; i < input_info[0].Rank(); i++) {
+    for (auto i = 0; i < input_info[0].Rank(); ++i) {
       if (input_info[0].shape[i] == -1) input_index.push_back(i);
     }
     std::vector<int64_t> sections_index;
-    for (auto i = 0; i < sections.size(); i++) {
+    for (auto i = 0; i < sections.size(); ++i) {
       if (sections[i] == -1) sections_index.push_back(i);
     }
     if (input_index.size() == 0 && sections_index.size() == 1) {

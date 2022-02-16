@@ -50,7 +50,7 @@ void ElementwiseMapper::Opset7(OnnxHelper* helper) {
                      {output_info[0].name});
   } else {
     std::vector<int64_t> broadcast_shape(input_x_info[0].Rank(), 1);
-    for (int i = axis_; i < axis_ + input_y_info[0].Rank(); i++) {
+    for (int i = axis_; i < axis_ + input_y_info[0].Rank(); ++i) {
       broadcast_shape[i] = input_y_info[0].shape[i - axis_];
     }
     std::string broadcast_shape_node =

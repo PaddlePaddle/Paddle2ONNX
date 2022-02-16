@@ -226,26 +226,17 @@ void SoftMaxMapper::Opset7(OnnxHelper* helper) {
       parser_->GetOpInput(block_idx_, op_idx_, "X");
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  int64_t axis;
-  if (parser_->OpHasAttr(op, "axis")) {
-    parser_->GetOpAttr(op, "axis", &axis);
-  } else {
-    axis = -1;
+  if (axis_ < 0) {
+    axis_ = axis_ + output_info[0].Rank();
   }
-  if (axis < 0) {
-    axis = axis + output_info[0].Rank();
-  }
-  if (axis == output_info[0].Rank() - 1) {
+  if (axis_ == output_info[0].Rank() - 1) {
     auto node = helper->MakeNode("Softmax", {input_info[0].name},
                                  {output_info[0].name});
-    AddAttribute(node, "axis", axis);
+    AddAttribute(node, "axis", axis_);
   } else {
-    std::vector<int64_t> perm;
-    for (auto i = 0; i < output_info[0].Rank(); i++) {
-      perm.push_back(i);
-    }
-    perm[output_info[0].Rank() - 1] = axis;
-    perm[axis] = output_info[0].Rank() - 1;
+    std::vector<int64_t> perm = Arange(0, output_info[0].Rank());
+    perm[output_info[0].Rank() - 1] = axis_;
+    perm[axis_] = output_info[0].Rank() - 1;
     auto transpose_node = helper->MakeNode("Transpose", {input_info[0].name});
     AddAttribute(transpose_node, "perm", perm);
     auto softmax_node =

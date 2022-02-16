@@ -53,7 +53,7 @@ void Reshape2Mapper::Opset7(OnnxHelper* helper) {
         parser_->GetOpInput(block_idx_, op_idx_, shape_name);
     if (tensor_info.size() > 1) {
       std::vector<std::string> dims;
-      for (auto i = 0; i < tensor_info.size(); i++) {
+      for (auto i = 0; i < tensor_info.size(); ++i) {
         std::string input_name = helper->AutoCast(
             tensor_info[i].name, tensor_info[i].dtype, P2ODataType::INT64);
         dims.push_back(input_name);

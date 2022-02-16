@@ -117,11 +117,6 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
   return node;
 }
 
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const Weight& weight) {
-  auto node_name = MapperHelper::Get()->GenName("auto.constant");
-  return MakeConstant(node_name, weight);
-}
-
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
     const TensorInfo& info) {
   auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
@@ -200,7 +195,27 @@ std::string OnnxHelper::AutoCast(const std::string& input,
 }
 
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
-    const std::shared_ptr<ONNX_NAMESPACE::NodeProto>& node) {
+    const Weight& weight) {
+  auto node_name = MapperHelper::Get()->GenName("auto.constant");
+  return MakeConstant(node_name, weight);
+}
+
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
+    const std::string& name, const Weight& weight) {
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  node->set_op_type("Constant");
+  node->add_output(name);
+  auto attr = node->add_attribute();
+  attr->set_name("value");
+  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
+  auto tensor = attr->mutable_t();
+  tensor->set_name(name);
+  auto onnx_dtype = GetOnnxDtype(weight.dtype);
+  tensor->set_data_type(onnx_dtype);
+  for (auto& dim : weight.shape) {
+    tensor->add_dims(dim);
+  }
+  tensor->set_raw_data(std::string(weight.buffer.data(), weight.buffer.size()));
   nodes.push_back(node);
   return node;
 }
@@ -388,17 +403,19 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
          "OnnxHelper::DtypeAlignment requires the size of input info > 0.");
   std::vector<int32_t> input_dtypes;
   input_dtypes.reserve(input_info.size());
-  for (auto i = 0; i < input_info.size(); i++) {
+  for (auto i = 0; i < input_info.size(); ++i) {
     input_dtypes.push_back(input_info[i].dtype);
   }
   int32_t max_index = -1;
   for (auto i : input_dtypes) {
-    if (i > max_index) max_index = i;
+    if (i > max_index) {
+      max_index = i;
+    }
   }
   out_dtype = max_index;
   std::vector<std::string> casted_node;
   casted_node.reserve(input_info.size());
-  for (auto i = 0; i < input_info.size(); i++) {
+  for (auto i = 0; i < input_info.size(); ++i) {
     std::string cast_name =
         AutoCast(input_info[i].name, input_info[i].dtype, max_index);
     casted_node.push_back(cast_name);

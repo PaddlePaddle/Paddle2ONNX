@@ -74,7 +74,7 @@ std::vector<int64_t> UnSqueeze2Mapper::ComputeAxes() {
   }
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");
-  for (auto i = 0; i < axes.size(); i++) {
+  for (auto i = 0; i < axes.size(); ++i) {
     if (axes[i] < 0) {
       axes[i] = axes[i] + input_info[0].Rank() + i + 1;
     }

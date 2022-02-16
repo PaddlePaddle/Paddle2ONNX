@@ -22,7 +22,7 @@ inline std::vector<int64_t> Arange(int64_t start, int64_t end) {
   Assert(end > start, "In arrange(), end must be greater than start.");
   std::vector<int64_t> res;
   res.resize(end - start);
-  for (auto i = start; i < end; i++) {
+  for (auto i = start; i < end; ++i) {
     res[i - start] = i;
   }
   return res;

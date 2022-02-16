@@ -24,7 +24,7 @@ REGISTER_MAPPER(pool2d, Pool2dMapper)
 bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   std::vector<int64_t> spans;
   spans.reserve(out_size);
-  for (auto i = 0; i < out_size; i++) {
+  for (auto i = 0; i < out_size; ++i) {
     int64_t start = std::floor(i * (in_size / out_size));
     int64_t end = std::ceil((i + 1) * (in_size / out_size));
     spans.push_back(end - start);
@@ -132,12 +132,12 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
 
     bool ceil_mod = false;
     parser_->GetOpAttr(op, "ceil_mode", &ceil_mod);
-    if (ceil_mod && GetOpset() < 10) {
+    if (ceil_mod && helper->GetOpsetVersion() < 10) {
       Assert(false,
              "Cannot convert pool with ceil_model == True to ONNX Opset "
              "version < 10, please set Opset version >= 10");
     }
-    if (GetOpset() > 10) {
+    if (helper->GetOpsetVersion() > 10) {
       AddAttribute(node, "ceil_mode", ceil_mod);
     }
 
@@ -170,11 +170,10 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
     } else if (pads.size() == 4) {
       std::vector<int64_t> index = {0, 2, 1, 3};
       std::vector<int64_t> copy = pads;
-      for (auto i = 0; i < index.size(); i++) {
+      for (auto i = 0; i < index.size(); ++i) {
         pads[i] = copy[index[i]];
       }
     }
-    std::cout << "check pads size: " << pads.size() << std::endl;
     if (input_shape[2] > 0 && input_shape[2] + pads[0] < k_size[0]) {
       k_size[0] = input_shape[2] + pads[0];
     }
@@ -184,14 +183,12 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
 
     int64_t max_ksize = *std::max_element(std::begin(k_size), std::end(k_size));
     int64_t max_pads = *std::max_element(std::begin(pads), std::end(pads));
-    std::cout << "check max_ksize and max pads: " << max_ksize << " "
-              << max_pads << std::endl;
     std::string input_x = input_info[0].name;
     if (max_ksize <= max_pads) {
       std::vector<int64_t> onnx_paddings = {0, 0, pads[0], pads[1],
                                             0, 0, pads[2], pads[3]};
       std::vector<std::string> inputs_names = {input_x};
-      if (GetOpset() >= 11) {
+      if (helper->GetOpsetVersion() >= 11) {
         std::string paddings_node =
             helper->Constant(GetOnnxDtype(P2ODataType::INT64), onnx_paddings);
         inputs_names.push_back(paddings_node);
@@ -203,7 +200,7 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
       auto node = helper->MakeNode("Pad", inputs_names);
       std::string mode = "constant";
       AddAttribute(node, "mode", mode);
-      if (GetOpset() < 11) {
+      if (helper->GetOpsetVersion() < 11) {
         AddAttribute(node, "pads", onnx_paddings);
         float val = 0.0;
         AddAttribute(node, "value", val);
@@ -230,12 +227,12 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
     AddAttribute(node, "pads", pads);
     bool ceil_mod = false;
     parser_->GetOpAttr(op, "ceil_mode", &ceil_mod);
-    if (ceil_mod && GetOpset() < 10) {
+    if (ceil_mod && helper->GetOpsetVersion() < 10) {
       Assert(false,
              "Cannot convert pool with ceil_model == True to ONNX Opset "
              "version < 10, please set Opset version >= 10");
     }
-    if (GetOpset() >= 10) {
+    if (helper->GetOpsetVersion() >= 10) {
       AddAttribute(node, "ceil_mode", ceil_mod);
     }
     if (pooling_type == "avg") {

@@ -52,7 +52,7 @@ struct Weight {
   template <typename T>
   void get(std::vector<T>& data) {
     int64_t nums = 1;
-    for (auto i = 0; i < shape.size(); i++) {
+    for (auto i = 0; i < shape.size(); ++i) {
       nums *= shape[i];
     }
     data.resize(nums);
