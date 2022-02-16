@@ -357,14 +357,40 @@ class Roll():
     support_opset_version_range = (4, 15)
 
     @classmethod
-    def roll(cls, graph, input_x, dims, shifts):
-        for i in range(len(shifts)):
+    def roll(cls, graph, node, input_x, dims, shifts):
+        for i in range(len(dims)):
+            if graph.opset_version >= 10 and isinstance(shifts,
+                                                        six.string_types):
+                to_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                    'ShiftsTensor', 0)]
+                const_i = graph.make_node('Constant', dtype=to_dtype, value=i)
+                const_0 = graph.make_node('Constant', dtype=to_dtype, value=0)
+                shift_node = graph.make_node(
+                    'Gather', inputs=[shifts, const_i], axis=0)
+                shift_node = graph.make_node(
+                    "Sub", inputs=[const_0, shift_node])
+                if graph.opset_version >= 13:
+                    axis_node = graph.make_node(
+                        'Constant', dtype=dtypes.ONNX.INT64, value=0)
+                    shift_node = graph.make_node(
+                        'Unsqueeze', inputs=[shift_node, axis_node])
+                else:
+                    shift_node = graph.make_node(
+                        'Unsqueeze', inputs=[shift_node], axes=[0])
+            elif graph.opset_version < 10 and isinstance(shifts,
+                                                         six.string_types):
+                raise Exception(
+                    "shifts of roll is Tensor, please try with higher onnx opset_version>=10."
+                )
+            else:
+                shift_node = [-shifts[i]]
+                to_dtype = dtypes.ONNX.INT64
             shapes = []
-            shape = mapper_helper.slice_helper(graph, input_x, [dims[i]],
-                                               [-shifts[i]], [60000])
+            shape = mapper_helper.slice_helper(
+                graph, input_x, [dims[i]], shift_node, [60000], dtype=to_dtype)
             shapes.append(shape)
-            shape = mapper_helper.slice_helper(graph, input_x, [dims[i]], [0],
-                                               [-shifts[i]])
+            shape = mapper_helper.slice_helper(
+                graph, input_x, [dims[i]], [0], shift_node, dtype=to_dtype)
             shapes.append(shape)
             input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
         return input_x
@@ -403,26 +429,28 @@ class Roll():
         shifts = node.attr('shifts')
         input_x = node.input('X')[0]
         input_shape = node.input_shape('X', 0)
-        # TODO shifts is Tensor
         shifts_node = node.input('ShiftsTensor')
-        assert shifts_node is None or len(
-            shifts_node) == 0, "shift tensor is not supported."
         if len(dims) > 0:
             axes = [
                 axis + len(input_shape) if axis < 0 else axis
                 for i, axis in enumerate(dims)
             ]
-            for i in range(0, len(axes)):
-                if input_shape[axes[i]] > 0:
-                    assert -input_shape[axes[i]] <= shifts[i] <= input_shape[axes[i]], \
-                        "the value of shifts in axis is less than the value of input_shape in axis."
+            if shifts_node is not None and len(shifts_node) > 0:
+                shifts = shifts_node[0]
+            else:
+                for i in range(0, len(axes)):
+                    if input_shape[axes[i]] > 0:
+                        assert -input_shape[axes[i]] <= shifts[i] <= input_shape[axes[i]], \
+                            "the value of shifts in axis is less than the value of input_shape in axis."
 
-            input_x = cls.roll(graph, input_x, axes, shifts)
+            input_x = cls.roll(graph, node, input_x, axes, shifts)
             graph.make_node(
                 'Identity', inputs=[input_x], outputs=node.output('Out'))
         else:
+            if shifts_node is not None and len(shifts_node) > 0:
+                shifts = shifts_node[0]
             input_x = cls.flatten(graph, node)
-            input_x = cls.roll(graph, input_x, [0], shifts)
+            input_x = cls.roll(graph, node, input_x, [0], shifts)
             shape_node = graph.make_node(
                 'Constant',
                 attrs={'dtype': dtypes.ONNX.INT64,

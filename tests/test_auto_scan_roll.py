@@ -31,6 +31,11 @@ class Net(BaseNet):
         """
         axis = self.config['axis']
         shifts = self.config['shifts']
+        # axis = [0, -1]
+        # TODO not work
+        # shifts = [paddle.to_tensor(-2), -2]
+        if self.config['is_shifts_tensor']:
+            shifts = paddle.to_tensor(shifts).astype(self.config['shift_dtype'])
         x = paddle.roll(inputs, shifts=shifts, axis=axis)
         return x
 
@@ -49,6 +54,7 @@ class TestRollConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32"]))
         axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
+        shift_dtype = draw(st.sampled_from(["int32", "int64"]))
         if axis_dtype == "int":
             axis = draw(
                 st.integers(
@@ -82,14 +88,22 @@ class TestRollConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=-input_shape[0], max_value=-input_shape[0]))
 
+        is_shifts_tensor = draw(st.booleans())
+
+        if is_shifts_tensor:
+            opset_version = [10, 12, 15]
+        else:
+            opset_version = [7, 9, 15]
         config = {
             "op_names": ["roll"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "axis": axis,
             "shifts": shifts,
+            "is_shifts_tensor": is_shifts_tensor,
+            "shift_dtype": shift_dtype,
         }
 
         models = Net(config)
@@ -97,7 +111,7 @@ class TestRollConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=80)
 
 
 if __name__ == "__main__":
