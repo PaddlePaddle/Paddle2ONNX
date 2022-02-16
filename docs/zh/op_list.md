@@ -102,6 +102,8 @@
 | masked_select | 11~15 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
+| max_pool2d_with_index | 9~15 |
+| max_pool3d_with_index | 9~15 |
 | mean | 1~12 |
 | meshgrid | 8~15 |
 | mul | 5~15 |
@@ -172,6 +174,8 @@
 | uniform_random | 1~12 |
 | uniform_random_batch_size_like | 1~12 |
 | unique | 11~15 |
+| unique | 11~15 |
+| unpool | 11~15 |
 | unsqueeze2 | 1~15 |
 | unstack | 2~15 |
 | where | 9~15 |
