@@ -179,7 +179,8 @@ std::string OnnxHelper::AutoCast(const std::string& input,
                                  int32_t input_paddle_dtype,
                                  int32_t to_paddle_dtype) {
   if (input_paddle_dtype == to_paddle_dtype) {
-    return input;
+    auto node = MakeNode("Identity", {input}, {output});
+    return output;
   }
   auto cast_node = MakeNode("Cast", {input}, {output});
   AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
@@ -190,13 +191,14 @@ std::string OnnxHelper::Clip(const std::string& input,
                              const std::string& output, const float& min,
                              const float& max, const int32_t& in_dtype) {
   std::string input_name;
-  if (in_dtype == P2ODataType::FP64) {
+  // onnxruntime only supports float input
+  if (in_dtype != P2ODataType::FP32) {
     input_name = AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
   } else {
     input_name = input;
   }
   if (opset_version < 11) {
-    if (in_dtype == P2ODataType::FP64) {
+    if (in_dtype != P2ODataType::FP32) {
       auto node = MakeNode("Clip", {input_name});
       AddAttribute(node, "max", max);
       AddAttribute(node, "min", min);
@@ -212,7 +214,7 @@ std::string OnnxHelper::Clip(const std::string& input,
       return node->output(0);
     }
   } else {
-    if (in_dtype == P2ODataType::FP64) {
+    if (in_dtype != P2ODataType::FP32) {
       std::string min_name;
       int32_t dtype = P2ODataType::FP32;
       min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
@@ -261,6 +263,29 @@ std::string OnnxHelper::Squeeze(const std::string& input,
                                 const std::vector<int64_t>& axes) {
   std::string output = MapperHelper::Get()->GenName("helper.squeeze");
   return Squeeze(input, output, axes);
+}
+
+std::string OnnxHelper::Unsqueeze(const std::string& input,
+                                  const std::string& output,
+                                  const std::vector<int64_t>& axes) {
+  Assert(axes.size() >= 0, "OnnxHelper::Split Size of axes should > 0");
+  for (auto& item : axes) {
+    Assert(item >= 0, "OnnxHelper::Split All the elements in axes should >= 0");
+  }
+  if (opset_version < 13) {
+    auto node = MakeNode("Unsqueeze", {input}, {output});
+    AddAttribute(node, "axes", axes);
+  } else {
+    auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
+    auto node = MakeNode("Unsqueeze", {input, axes_node->output(0)}, {output});
+  }
+  return output;
+}
+
+std::string OnnxHelper::Unsqueeze(const std::string& input,
+                                  const std::vector<int64_t>& axes) {
+  std::string output = MapperHelper::Get()->GenName("helper.unsqueeze");
+  return Unsqueeze(input, output, axes);
 }
 
 std::string OnnxHelper::Reshape(const std::string& input,
@@ -320,6 +345,19 @@ std::string OnnxHelper::Slice(const std::string& input,
                               const std::vector<int64_t>& ends) {
   std::string output = MapperHelper::Get()->GenName("helper.slice");
   return Slice(input, output, axes, starts, ends);
+}
+
+std::string OnnxHelper::Concat(const std::vector<std::string>& input,
+                               const std::string& output, int64_t axis) {
+  auto node = MakeNode("Concat", input, {output});
+  AddAttribute(node, "axis", axis);
+  return output;
+}
+
+std::string OnnxHelper::Concat(const std::vector<std::string>& input,
+                               int64_t axis) {
+  auto output = MapperHelper::Get()->GenName("helper.concat");
+  return Concat(input, output, axis);
 }
 
 std::vector<std::string> OnnxHelper::Split(
