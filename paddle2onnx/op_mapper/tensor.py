@@ -164,7 +164,7 @@ class Unstack():
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
