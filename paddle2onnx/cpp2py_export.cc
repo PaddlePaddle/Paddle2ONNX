@@ -24,7 +24,9 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
   m.doc() = "Paddle2ONNX: export PaddlePaddle to ONNX";
   m.def("export", [](const std::string& model_filename,
                      const std::string& params_filename, int opset_version = 9,
-                     bool auto_upgrade_opset = true, bool verbose = true) {
+                     bool auto_upgrade_opset = true, bool verbose = true,
+                     bool enable_onnx_checker = true,
+                     bool enable_experimental_op = true) {
     auto parser = PaddleParser();
     if (params_filename != "") {
       parser.Init(model_filename, params_filename);
@@ -32,10 +34,11 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
       parser.Init(model_filename);
     }
     ModelExporter me;
-    auto onnx_proto =
-        me.Run(parser, opset_version, auto_upgrade_opset, verbose);
+    auto onnx_proto = me.Run(parser, opset_version, auto_upgrade_opset, verbose,
+                             enable_onnx_checker, enable_experimental_op);
     return pybind11::bytes(onnx_proto);
   });
+
   m.def("check_op", [](const std::string& model_filename,
                        const std::string& params_filename) {
     auto parser = PaddleParser();

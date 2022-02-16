@@ -1,0 +1,19 @@
+language: python
+
+jobs:
+  include:
+    - name: "CI on Linux/Python3.7"
+      os: linux
+      python: 3.7
+      script: echo "HHHHHHHHHHHHHHHHHHHH"
+
+env:
+  - PYTHONPATH=${PWD}
+
+install:
+   pip install onnx;
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always

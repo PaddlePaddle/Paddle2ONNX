@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/exporter.h"
+#include <onnx/checker.h>
+#include <onnx/shape_inference/implementation.h>
+
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
 
@@ -150,9 +153,13 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   // this check will return a information
   // to let framework know the conversion is
   // pass or fail
-  // if (enable_onnx_checker) {
-  //   ONNX_NAMESPACE::checker::check_model(*(model.get()));
-  // }
+  if (enable_onnx_checker) {
+    ONNX_NAMESPACE::checker::check_model(*(model.get()));
+    std::cerr << "[Paddle2ONNX] ONNX model conversion is valid." << std::endl;
+    ONNX_NAMESPACE::shape_inference::InferShapes(*(model.get()));
+    std::cerr << "[Paddle2ONNX] Shape Inference done with ONNX model."
+              << std::endl;
+  }
 
   std::string out;
   if (!model->SerializeToString(&out)) {

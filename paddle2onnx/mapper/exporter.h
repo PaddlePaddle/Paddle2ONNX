@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #pragma once
-#include <onnx/checker.h>
 #include <onnx/onnx_pb.h>
 #include <algorithm>
 #include <set>

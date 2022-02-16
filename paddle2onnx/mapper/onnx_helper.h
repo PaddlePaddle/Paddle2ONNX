@@ -101,6 +101,10 @@ class OnnxHelper {
                       const std::vector<int64_t>& axes);
   std::string Squeeze(const std::string& input, const std::string& output,
                       const std::vector<int64_t>& axes);
+  std::string Unsqueeze(const std::string& input,
+                        const std::vector<int64_t>& axes);
+  std::string Unsqueeze(const std::string& input, const std::string& output,
+                        const std::vector<int64_t>& axes);
   std::string Reshape(const std::string& input, const std::string& output,
                       const std::vector<int64_t>& shape);
   std::string Reshape(const std::string& input,
@@ -114,6 +118,10 @@ class OnnxHelper {
   std::string Slice(const std::string& input, const std::vector<int64_t>& axes,
                     const std::vector<int64_t>& starts,
                     const std::vector<int64_t>& ends);
+  std::string Concat(const std::vector<std::string>& input,
+                     const std::string& output, int64_t axis);
+  std::string Concat(const std::vector<std::string>& input, int64_t axis);
+
   std::vector<std::string> Split(const std::string& input,
                                  const std::vector<std::string>& outputs,
                                  const std::vector<int64_t>& split,

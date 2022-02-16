@@ -17,7 +17,10 @@ import unittest
 import os
 import time
 import logging
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
 import paddle
+paddle.set_device('cpu')
 
 import hypothesis
 from hypothesis import given, settings, seed, reproduce_failure
