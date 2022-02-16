@@ -51,9 +51,6 @@ install(
     TARGETS paddle2onnx
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-#install(
-#    TARGETS paddle2onnx
-#)
 
 if (BUILD_PADDLE2ONNX_EXE)
   ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
