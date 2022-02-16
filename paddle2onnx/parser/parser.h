@@ -115,6 +115,7 @@ class PaddleParser {
   std::vector<int64_t> GetBlockOpIdx(const std::string& name) const;
   std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
   Weight GetValueFromTensor(int64_t block_id, int64_t op_id) const;
+  bool IsStaticShape(const std::vector<TensorInfo>& input_info) const;
 
  private:
   void GetBlocksVarName2Id();

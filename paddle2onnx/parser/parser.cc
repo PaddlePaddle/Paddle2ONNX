@@ -524,6 +524,20 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
   }
 }
 
+bool PaddleParser::IsStaticShape(
+    const std::vector<TensorInfo>& input_info) const {
+  Assert(input_info.size() > 0,
+         "OnnxHelper::IsStaticShape requires the size of input info > 0.");
+  for (auto one_input : input_info) {
+    for (auto size : one_input.shape) {
+      if (size == -1) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   Assert(paddle_dtype != FP16, "Float16 is not supported.");
   if (paddle_dtype == P2ODataType::BOOL) {
