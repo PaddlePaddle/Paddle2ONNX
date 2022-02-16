@@ -287,7 +287,7 @@ class APIOnnx(object):
 
         # test from min_opset_version to 15
         min_opset_version = min(self._version)
-        self._version = list(range(min_opset_version), 16)
+        self._version = list(range(min_opset_version, 16))
 
         for place in self.places:
             paddle.set_device(place)
