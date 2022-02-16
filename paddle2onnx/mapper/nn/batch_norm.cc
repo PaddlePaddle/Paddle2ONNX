@@ -38,7 +38,7 @@ void BatchNormMapper::Opset7(OnnxHelper* helper) {
       {input_info[0].name, scale_info[0].name, bias_info[0].name,
        mean_info[0].name, variance_info[0].name},
       {output_info[0].name});
-  if (export_opset_version_ < 9) {
+  if (helper->GetOpsetVersion() < 9) {
     int64_t spatial = 1;
     AddAttribute(node, "spatial", spatial);
   }
