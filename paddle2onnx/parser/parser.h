@@ -40,9 +40,9 @@ struct Weight {
            const std::vector<T>& data) {
     buffer.clear();
     shape.clear();
+    dtype = data_type;
     buffer.resize(data.size() * PaddleDataTypeSize(dtype));
     memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
-    dtype = data_type;
     for (auto& d : dims) {
       shape.push_back(d);
     }
@@ -100,6 +100,7 @@ class PaddleParser {
                  const std::string name, std::vector<int64_t>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string name, std::vector<float>* res) const;
+  Weight GetValueFromTensor(int64_t block_id, int64_t op_id) const;
 
  private:
   void GetBlocksVarName2Id();

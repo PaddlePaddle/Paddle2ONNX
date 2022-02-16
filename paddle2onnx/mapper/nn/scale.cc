@@ -19,32 +19,73 @@ namespace paddle2onnx {
 REGISTER_MAPPER(scale, ScaleMapper)
 
 void ScaleMapper::Opset7(OnnxHelper* helper) {
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  bool has_scale_tensor =
+      parser_->OpHasInput(block_idx_, op_idx_, "ScaleTensor");
   // TODO(yeliang2258): just temporary use Identity
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
   bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
-  if (is_scale_1 && is_bias_0) {
+  if (!has_scale_tensor && is_scale_1 && is_bias_0) {
     // TODO(yeliang2258): we could add a pass to eleminate all the identity op
     helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
     // TODO(yeliang2258): we could add a pass to eleminate the scale is 1 or
     // bias is 0
-    auto onnx_dtype = GetOnnxDtype(input_info[0].dtype);
-    auto bias_node = helper->MakeConstant({1}, onnx_dtype, bias_);
-    auto scale_node = helper->MakeConstant({1}, onnx_dtype, scale_);
-    if (bias_after_scale_) {
-      auto mul_node =
-          helper->MakeNode("Mul", {input_info[0].name, scale_node->output(0)});
-      helper->MakeNode("Add", {mul_node->output(0), bias_node->output(0)},
-                       {output_info[0].name});
+    int32_t data_type = input_info[0].dtype;
+    std::string cast_node = input_info[0].name;
+    ;
+    std::string output = output_info[0].name;
+    if (input_info[0].dtype == P2ODataType::INT64 ||
+        input_info[0].dtype == P2ODataType::INT32 ||
+        input_info[0].dtype == P2ODataType::INT16) {
+      std::cerr << " Int type input may bring calculation diff in op "
+                << op.type() << "." << std::endl;
+      cast_node = helper->AutoCast(input_info[0].name, input_info[0].dtype,
+                                   P2ODataType::FP32);
+      data_type = P2ODataType::FP32;
+      output = "";
+    }
+
+    std::string scale_node;
+    if (has_scale_tensor) {
+      std::vector<TensorInfo> scale_tensor_info =
+          parser_->GetOpInput(block_idx_, op_idx_, "ScaleTensor");
+      scale_node = helper->AutoCast(scale_tensor_info[0].name,
+                                    scale_tensor_info[0].dtype, data_type);
     } else {
-      auto add_node =
-          helper->MakeNode("Add", {input_info[0].name, bias_node->output(0)});
-      helper->MakeNode("Mul", {add_node->output(0), scale_node->output(0)},
-                       {output_info[0].name});
+      scale_node =
+          helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), scale_);
+    }
+
+    std::string bias_node =
+        helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), bias_);
+
+    if (bias_after_scale_) {
+      auto mul_node = helper->MakeNode("Mul", {cast_node, scale_node});
+      if (output.size() > 0) {
+        helper->MakeNode("Add", {mul_node->output(0), bias_node}, {output});
+      } else {
+        std::string node2 =
+            helper->MakeNode("Add", {mul_node->output(0), bias_node})
+                ->output(0);
+        helper->AutoCast(node2, {output_info[0].name}, data_type,
+                         output_info[0].dtype);
+      }
+    } else {
+      auto add_node = helper->MakeNode("Add", {cast_node, bias_node});
+      if (output.size() > 0) {
+        helper->MakeNode("Mul", {add_node->output(0), scale_node}, {output});
+      } else {
+        std::string node2 =
+            helper->MakeNode("Mul", {add_node->output(0), scale_node})
+                ->output(0);
+        helper->AutoCast(node2, {output_info[0].name}, data_type,
+                         output_info[0].dtype);
+      }
     }
   }
 }

@@ -200,12 +200,14 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
 int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   int32_t max_opset = -1;
   bool exportable = true;
+  int valid_op_num = 0;
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
       auto op = parser.GetOpDesc(i, j);
       if (op.type() == "feed" || op.type() == "fetch") {
         continue;
       }
+      valid_op_num += 1;
       auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, i, j);
       int32_t current_min_opset = mapper->GetMinOpset(verbose);
       if (current_min_opset < 0) {
@@ -215,6 +217,9 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
       }
       delete mapper;
     }
+  }
+  if (!valid_op_num) {
+    return 7;
   }
 
   // Here we put some checks to make sure

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/nn/flatten.h"
+#include "paddle2onnx/mapper/tensor/flatten.h"
 #include <vector>
 
 namespace paddle2onnx {

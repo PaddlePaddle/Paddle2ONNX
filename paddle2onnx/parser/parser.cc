@@ -421,7 +421,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
       found = true;
       if (op.attrs(i).ints_size() > 0) {
         for (auto j = 0; j < op.attrs(i).ints_size(); ++j) {
-          res->push_back((int64_t)(op.attrs(i).ints(j)));
+          res->push_back(static_cast<int64_t>(op.attrs(i).ints(j)));
         }
       } else {
         for (auto j = 0; j < op.attrs(i).longs_size(); ++j) {
@@ -446,7 +446,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
-        res->push_back((int64_t)(op.attrs(i).floats(j)));
+        res->push_back(static_cast<float>(op.attrs(i).floats(j)));
       }
       break;
     }
@@ -466,6 +466,28 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
       inputs.push_back(GetTensorInfo(name, prog->blocks(0)));
     }
   }
+}
+
+Weight PaddleParser::GetValueFromTensor(int64_t block_id, int64_t op_id) const {
+  auto op = GetOpDesc(block_id, op_id);
+  std::vector<int64_t> shape;
+  GetOpAttr(op, "shape", &shape);
+  if (OpHasAttr(op, "fp32_values")) {
+    std::vector<float> value;
+    GetOpAttr(op, "fp32_values", &value);
+    Weight param;
+    param.set(P2ODataType::FP32, shape, value);
+    return param;
+  }
+  if (OpHasAttr(op, "int64_values")) {
+    std::vector<int64_t> value;
+    GetOpAttr(op, "int64_values", &value);
+    Weight param;
+    param.set(P2ODataType::INT64, shape, value);
+    return param;
+  }
+  Weight param;
+  return param;
 }
 
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
