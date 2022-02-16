@@ -49,12 +49,20 @@ class TestArangeConvert(OPConvertAutoScanTest):
     def sample_convert_config(self, draw):
         start = draw(st.integers(min_value=1, max_value=10))
         is_tensor_start = draw(st.booleans())
-        end = draw(st.integers(min_value=20, max_value=30))
-        is_tensor_end = draw(st.booleans())
+
+        end = None
+        is_tensor_end = False
+        if draw(st.booleans()):
+            end = draw(st.integers(min_value=20, max_value=30))
+            is_tensor_end = draw(st.booleans())
+
         step = draw(st.integers(min_value=1, max_value=4))
         is_tensor_step = draw(st.booleans())
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = None
+        if draw(st.booleans()):
+            dtype = draw(
+                st.sampled_from(["float32", "float64", "int32", "int64"]))
         index_dtype = draw(
             st.sampled_from(["float32", "float64", "int32", "int64"]))
 
