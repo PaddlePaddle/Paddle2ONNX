@@ -50,7 +50,7 @@
 | equal | 1~12 |
 | erf | 9~12 |
 | exp | 1~12 |
-| expand_as_v2 | 8~12 |
+| expand_as_v2 | 8~15 |
 | expand_v2 | 8~15 |
 | expand | 6~15 |
 | elu | 1~12 |

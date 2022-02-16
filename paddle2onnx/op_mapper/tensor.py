@@ -164,7 +164,7 @@ class Unstack():
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -1010,24 +1010,41 @@ class FlattenContiguousRange():
         start_axis = node.attr('start_axis')
         end_axis = node.attr('stop_axis')
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
-        if end_axis < dims - 1:
-            slice1 = mapper_helper.slice_helper(
-                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
-            slice3 = mapper_helper.slice_helper(
+        if start_axis < 0:
+            start_axis += dims
+        if end_axis < 0:
+            end_axis += dims
+        if start_axis == 0 and end_axis == dims - 1:
+            final_shape = graph.make_node(
+                'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
+        elif start_axis == 0:
+            slice_end = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[end_axis + 1],
                 ends=[dims])
             slices = [
-                slice1, graph.make_node(
-                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+                graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice_end
             ]
-        else:
-            slice1 = mapper_helper.slice_helper(
+            final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        elif end_axis == dims - 1:
+            slice_start = mapper_helper.slice_helper(
                 graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
             slices = [
-                slice1, graph.make_node(
+                slice_start, graph.make_node(
                     'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
             ]
-        final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+            final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        else:
+            slice_start = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slice_end = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[end_axis + 1],
+                ends=[dims])
+            slices = [
+                slice_start, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice_end
+            ]
+            final_shape = graph.make_node('Concat', inputs=slices, axis=0)
         graph.make_node(
             'Reshape',
             inputs=[node.input('X')[0], final_shape],
@@ -1466,7 +1483,7 @@ class GaussianRandom():
 
 @op_mapper('uniform_random_batch_size_like')
 class UniformRandom():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

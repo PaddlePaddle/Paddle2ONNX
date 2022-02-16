@@ -50,14 +50,22 @@ class TestFlattenConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
+        # 生成合法的start_axis
         start_axis = draw(
             st.integers(
-                min_value=0, max_value=len(input_shape) // 2))
+                min_value=0, max_value=len(input_shape) - 1))
 
+        # 生成合法的stop_axis
         stop_axis = draw(
             st.integers(
-                min_value=len(input_shape) // 2, max_value=len(input_shape) -
-                1))
+                min_value=start_axis, max_value=len(input_shape) - 1))
+
+        # 随机将start_axis转为负数
+        if draw(st.booleans()):
+            start_axis -= len(input_shape)
+        # 随机将stop_axis转为负数
+        if draw(st.booleans()):
+            stop_axis -= len(input_shape)
 
         config = {
             "op_names": ["flatten_contiguous_range"],
