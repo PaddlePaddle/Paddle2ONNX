@@ -63,9 +63,11 @@ class PaddleParser {
 
   // Sometimes the model contains no parameters
   // In this case, we only need the model_file
-  bool Init(const std::string& _model_filename);
-  bool Init(const std::string& _model_filename,
-            const std::string& _params_filename);
+  // If from_memory_buffer is true, means we read the model from memory instead
+  // of disk
+  bool Init(const std::string& _model, bool from_memory_buffer = false);
+  bool Init(const std::string& _model, const std::string& _params,
+            bool from_memory_buffer = false);
 
   int NumOfBlocks() const;
   int NumOfOps(int block_idx) const;
@@ -109,8 +111,9 @@ class PaddleParser {
       const paddle2onnx::framework::proto::BlockDesc& block) const;
   void GetGlobalBlockInputOutputInfo();
   bool GetParamNames(std::vector<std::string>* var_names);
-  bool LoadProgram(const std::string& path);
+  bool LoadProgram(const std::string& model, bool from_memory_buffer);
   bool LoadParams(const std::string& path);
+  bool LoadParamsFromMemoryBuffer(const std::string& buffer);
 };
 
 }  // namespace paddle2onnx

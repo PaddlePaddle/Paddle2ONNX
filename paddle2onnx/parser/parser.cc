@@ -14,14 +14,26 @@
 
 #include "paddle2onnx/parser/parser.h"
 #include <fstream>
+#include <sstream>
 #include <string>
 #include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
-bool PaddleParser::LoadProgram(const std::string& path) {
-  std::ifstream fin(path, std::ios::in | std::ios::binary);
+bool PaddleParser::LoadProgram(const std::string& model,
+                               bool from_memory_buffer) {
+  prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
+  if (from_memory_buffer) {
+    if (!prog->ParseFromString(model)) {
+      std::cerr << "Fail to parse Paddle model from memory buffer."
+                << std::endl;
+      return false;
+    }
+    return true;
+  }
+
+  std::ifstream fin(model, std::ios::in | std::ios::binary);
   if (!fin.is_open()) {
-    std::cerr << "Fail to read model file " << path
+    std::cerr << "Fail to read model file " << model
               << ", please make sure your model file or file path is valid."
               << std::endl;
     return false;
@@ -36,7 +48,10 @@ bool PaddleParser::LoadProgram(const std::string& path) {
   fin.close();
 
   prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
-  prog->ParseFromString(contents);
+  if (!prog->ParseFromString(contents)) {
+    std::cerr << "Fail to parse Paddle model content." << std::endl;
+    return false;
+  }
   return true;
 }
 
@@ -75,6 +90,87 @@ bool PaddleParser::GetParamNames(std::vector<std::string>* var_names) {
     }
   }
   std::sort(var_names->begin(), var_names->end());
+  return true;
+}
+
+bool PaddleParser::LoadParamsFromMemoryBuffer(
+    const std::string& params_buffer) {
+  params.clear();
+  int total_size = params_buffer.size();
+
+  std::vector<std::string> var_names;
+  GetParamNames(&var_names);
+
+  int read_size = 0;
+  while (read_size < total_size) {
+    auto index = params.size();
+    if (index >= var_names.size()) {
+      std::cerr << "Paddle2ONNX: Unexcept situation happened, index should "
+                   "less than size of var_names."
+                << std::endl;
+      return false;
+    }
+
+    {
+      // read version, we don't need this
+      uint32_t version;
+      read_size += sizeof(version);
+      params_buffer.copy(reinterpret_cast<char*>(&version), sizeof(version),
+                         read_size);
+    }
+    {
+      // read lod_level, we don't use it
+      // this has to be zero, otherwise not support
+      uint64_t lod_level;
+      read_size += sizeof(lod_level);
+      params_buffer.copy(reinterpret_cast<char*>(&lod_level), sizeof(lod_level),
+                         read_size);
+      if (lod_level != 0) {
+        std::cerr << "Paddle2ONNX: Only supports weight with lod_lvel = 1."
+                  << std::endl;
+        return false;
+      }
+    }
+    {
+      // Another version, we don't use it
+      uint32_t version;
+      read_size += sizeof(version);
+      params_buffer.copy(reinterpret_cast<char*>(&version), sizeof(version),
+                         read_size);
+    }
+    {
+      // read size of TensorDesc
+      int32_t size;
+      read_size += sizeof(size);
+      params_buffer.copy(reinterpret_cast<char*>(&size), sizeof(size),
+                         read_size);
+      // read TensorDesc
+      std::unique_ptr<char[]> buf(new char[size]);
+      read_size += size;
+      params_buffer.copy(reinterpret_cast<char*>(buf.get()), size, read_size);
+
+      std::unique_ptr<paddle2onnx::framework::proto::VarType_TensorDesc>
+          tensor_desc(new paddle2onnx::framework::proto::VarType_TensorDesc());
+      tensor_desc->ParseFromArray(buf.get(), size);
+
+      Weight weight;
+
+      int32_t numel = 1;
+      int32_t data_type = tensor_desc->data_type();
+      weight.dtype = data_type;
+      for (auto i = 0; i < tensor_desc->dims().size(); ++i) {
+        numel *= tensor_desc->dims()[i];
+        weight.shape.push_back(tensor_desc->dims()[i]);
+      }
+
+      // read weight data
+      weight.buffer.resize(numel * PaddleDataTypeSize(data_type));
+      read_size += numel * PaddleDataTypeSize(data_type);
+      params_buffer.copy(weight.buffer.data(),
+                         numel * PaddleDataTypeSize(data_type), read_size);
+      params[var_names[index]] = weight;
+    }
+  }
   return true;
 }
 
@@ -176,19 +272,25 @@ const framework::proto::OpDesc PaddleParser::GetOpDesc(int32_t block_idx,
 
 // Sometimes the model contains no parameters
 // In this case, we only need the model_file
-bool PaddleParser::Init(const std::string& _model_filename) {
-  return Init(_model_filename, "");
+bool PaddleParser::Init(const std::string& _model, bool from_memory_buffer) {
+  return Init(_model, "", from_memory_buffer);
 }
 
-bool PaddleParser::Init(const std::string& _model_filename,
-                        const std::string& _params_filename) {
+bool PaddleParser::Init(const std::string& _model, const std::string& _params,
+                        bool from_memory_buffer) {
   std::vector<Weight> weights;
-  if (!LoadProgram(_model_filename)) {
+  if (!LoadProgram(_model, from_memory_buffer)) {
     std::cerr << "Paddle2ONNX: Load program failed!." << std::endl;
     return false;
   }
-  if (_params_filename != "") {
-    if (!LoadParams(_params_filename)) {
+  if (_params != "") {
+    auto ret = true;
+    if (from_memory_buffer) {
+      ret = LoadParamsFromMemoryBuffer(_params);
+    } else {
+      ret = LoadParams(_params);
+    }
+    if (!ret) {
       std::cerr << "Paddle2ONNX: Load parameters failed!." << std::endl;
       return false;
     }
@@ -350,8 +452,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
     if (op.attrs(i).name() == name) {
       found = true;
       Assert(op.attrs(i).has_i() || op.attrs(i).has_l(),
-             "Cannot find int32/int64 data from attr:" + name + " in op:" +
-                 op.type());
+             "Cannot find int32/int64 data from attr:" + name +
+                 " in op:" + op.type());
       if (op.attrs(i).has_i()) {
         *res = (int64_t)(op.attrs(i).i());
       } else {
@@ -442,8 +544,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
       Assert(op.attrs(i).floats_size() > 0,
-             "Cannot find list of float data from attr:" + name + "in op:" +
-                 op.type());
+             "Cannot find list of float data from attr:" + name +
+                 "in op:" + op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
         res->push_back((int64_t)(op.attrs(i).floats(j)));

@@ -35,6 +35,8 @@ struct ModelExporter {
                           const std::vector<TensorInfo>& output_infos);
   void ExportOp(const PaddleParser& parser, int32_t opset_version,
                 int64_t block_id, int64_t op_id);
+
+ public:
   // Get a proper opset version in range of [7, 15]
   // Also will check the model is convertable, this will include 2 parts
   //    1. is the op convert function implemented
@@ -46,7 +48,6 @@ struct ModelExporter {
                           std::set<std::string>* unsupported_ops,
                           bool enable_experimental_op);
 
- public:
   std::string Run(const PaddleParser& parser, int opset_version = 9,
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
