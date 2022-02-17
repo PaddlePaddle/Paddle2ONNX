@@ -344,7 +344,7 @@ bool PaddleParser::OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name, int64_t* res) const {
+                             const std::string& name, int64_t* res) const {
   bool found = false;
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
@@ -364,7 +364,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name, float* res) const {
+                             const std::string& name, float* res) const {
   bool found = false;
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
@@ -379,7 +379,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name, bool* res) const {
+                             const std::string& name, bool* res) const {
   bool found = false;
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
@@ -394,7 +394,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name, std::string* res) const {
+                             const std::string& name, std::string* res) const {
   bool found = false;
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
@@ -409,7 +409,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name,
+                             const std::string& name,
                              std::vector<int64_t>* res) const {
   bool found = false;
   res->clear();
@@ -435,7 +435,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name,
+                             const std::string& name,
                              std::vector<float>* res) const {
   bool found = false;
   res->clear();
@@ -455,7 +455,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 }
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                             const std::string name,
+                             const std::string& name,
                              std::vector<double>* res) const {
   bool found = false;
   res->clear();
@@ -490,34 +490,34 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
 
 bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
                                       const int64_t& op_id,
-                                      Weight& param) const {
+                                      Weight* param) const {
   auto op = GetOpDesc(block_id, op_id);
   std::vector<int64_t> shape;
   GetOpAttr(op, "shape", &shape);
   if (OpHasAttr(op, "fp64_values")) {
     std::vector<double> value;
     GetOpAttr(op, "fp64_values", &value);
-    param.set(P2ODataType::FP64, shape, value);
+    param->set(P2ODataType::FP64, shape, value);
   }
   if (OpHasAttr(op, "fp32_values")) {
     std::vector<float> value;
     GetOpAttr(op, "fp32_values", &value);
-    param.set(P2ODataType::FP32, shape, value);
+    param->set(P2ODataType::FP32, shape, value);
   }
   if (OpHasAttr(op, "int64_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "int64_values", &value);
-    param.set(P2ODataType::INT64, shape, value);
+    param->set(P2ODataType::INT64, shape, value);
   }
   if (OpHasAttr(op, "int32_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "int32_values", &value);
-    param.set(P2ODataType::INT64, shape, value);
+    param->set(P2ODataType::INT64, shape, value);
   }
   if (OpHasAttr(op, "bool_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "bool_values", &value);
-    param.set(P2ODataType::INT64, shape, value);
+    param->set(P2ODataType::INT64, shape, value);
   }
   if (shape.size() == 0) {
     return false;
@@ -528,7 +528,7 @@ bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
 bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
                                       const int64_t& op_id) const {
   Weight param;
-  return GetValueFromTensor(block_id, op_id, param);
+  return GetValueFromTensor(block_id, op_id, &param);
 }
 
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {

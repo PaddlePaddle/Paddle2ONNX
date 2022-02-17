@@ -47,7 +47,7 @@ void AssignValueMapper::Opset7(OnnxHelper* helper) {
         parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
     Weight param;
-    parser_->GetValueFromTensor(block_idx_, op_idx_, param);
+    parser_->GetValueFromTensor(block_idx_, op_idx_, &param);
     auto node = helper->MakeConstant(param);
     helper->AutoCast(node->output(0), output_info[0].name, param.dtype,
                      output_info[0].dtype);
