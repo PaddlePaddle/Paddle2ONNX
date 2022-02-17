@@ -256,9 +256,7 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
 }
 
 ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(const ONNX_NAMESPACE::ModelProto& model) {
-//  std::vector<std::string> passes = optimization::GetAvailablePasses();
-  std::vector<std::string> passes;
-  optimization::
+  std::vector<std::string> passes = optimization::GetFuseAndEliminationPass();
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 
