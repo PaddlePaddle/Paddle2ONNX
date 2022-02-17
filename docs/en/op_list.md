@@ -122,7 +122,7 @@
 | prior_box | 1~12 |
 | prelu | 1~12 |
 | p_norm | 1~12 |
-| range | 11~12 |
+| range | 11~15 |
 | reciprocal | 1~12 |
 | reduce_mean | 1~12 |
 | reduce_max | 1~12 |
@@ -134,6 +134,7 @@
 | reshape2 | 5~12 |
 | rnn | 1~12 |
 | roi_align | 10~12 |
+| roll | 4~15 |
 | round | 11~12 |
 | rsqrt | 6~12 |
 | softmax | 1~15 |
