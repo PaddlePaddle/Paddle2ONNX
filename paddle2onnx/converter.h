@@ -16,10 +16,6 @@
 
 namespace paddle2onnx {
 
-// Convert Paddle model to ONNX from disk
-// If there's no parameters, set params_filename = ""
-void Convert(const std::string& model_filename, std::string* params_filename);
-
 // Check if model convertable from memory buffer
 // If there's no parameters, set params = ""
 // If the model is read from memory instead of disk,
