@@ -40,14 +40,17 @@ data_format_map = {
 }
 
 op_set_map = {
-    'linear': [9, 15],
-    'bilinear': [9, 15],
-    'trilinear': [11, 15],
-    'nearest': [9, 15],
-    'bicubic': [11, 15],
-    'nearest_v1': [11, 15],
-    'bilinear_v1': [11, 15],
+    'linear': [9, 10, 11, 12, 13, 14, 15],
+    'bilinear': [9, 10, 11, 12, 13, 14, 15],
+    'trilinear': [11, 12, 13, 14, 15],
+    'nearest': [9, 10, 11, 12, 13, 14, 15],
+    'bicubic': [11, 12, 13, 14, 15],
+    'nearest_v1': [11, 12, 13, 14, 15],
+    'bilinear_v1': [11, 12, 13, 14, 15],
 }
+
+Scale_Factor = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+Size = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 
 class Net(BaseNet):
@@ -129,7 +132,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
                 # list
-                scale_factor = [1.2, 1.3, 1.4, 1.5, 1.6]
+                scale_factor = Scale_Factor
                 if data_format == "NCW":
                     scale_factor = np.random.choice(scale_factor, 1).tolist()
                 elif data_format == "NCHW":
@@ -139,7 +142,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         else:
             scale_factor = None
             # list
-            size = [12, 13, 14, 15, 16]
+            size = Size
             if data_format == "NCW":
                 size = np.random.choice(size, 1).tolist()
             elif data_format == "NCHW":
@@ -226,7 +229,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
                 # list
-                scale_factor = [1.2, 1.3, 1.4, 1.5, 1.6]
+                scale_factor = Scale_Factor
                 if data_format == "NCW":
                     scale_factor = np.random.choice(scale_factor, 1).tolist()
                 elif data_format == "NCHW":
@@ -236,7 +239,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
         else:
             scale_factor = None
             # list
-            size = [12, 13, 14, 15, 16]
+            size = Size
             if data_format == "NCW":
                 size = np.random.choice(size, 1).tolist()
             elif data_format == "NCHW":
@@ -264,7 +267,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=100)
 
 
 if __name__ == "__main__":
