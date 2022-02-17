@@ -71,7 +71,7 @@ make -j8
 ```
 
 ### Windows
-注意Windows编译先验条件是已经安装Visual Studio 2019，编译时请使用系统提供的命令行工具`x86 Native Tools Command Prompt for VS 2019`
+注意Windows编译先验条件是已经安装Visual Studio 2019，编译时请使用系统提供的命令行工具`x64 Native Tools Command Prompt for VS 2019`
 
 首先编译安装protobuf
 ```
@@ -96,7 +96,7 @@ cd /root/build_paddle2onnx/Paddle2ONNX
 mkdir build
 cd build
 cmake -G "Visual Studio 16 2019" -A x64 ..
-msbuild /m /p:Configuration=Release /p:Platform=x64
+msbuild paddle2onnx.sln /m /p:Configuration=Release /p:Platform=x64
 ```
 编译完成的二进制在`build/Release`目录下
 
