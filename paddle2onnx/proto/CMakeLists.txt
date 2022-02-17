@@ -6,5 +6,5 @@ if(NOT TARGET protobuf)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-PROTOBUF_GENERATE_CPP(PROTO_SRC PROTO_HEADER framework.proto)
+PROTOBUF_GENERATE_CPP(PROTO_SRC PROTO_HEADER p2o_paddle.proto)
 add_library(p2o_paddle_proto ${PROTO_HEADER} ${PROTO_SRC})

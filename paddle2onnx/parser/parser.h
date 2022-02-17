@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cassert>
 #include <type_traits>
-#include "paddle2onnx/proto/framework.pb.h"
+#include "paddle2onnx/proto/p2o_paddle.pb.h"
 
 namespace paddle2onnx {
 
@@ -110,6 +110,9 @@ class PaddleParser {
 
  private:
   void GetBlocksVarName2Id();
+  // If the model has same output name in difference operators
+  // will fail to convert
+  bool ExistsDumplicateTensorName() const;
   void GetBlocksOps();
   TensorInfo GetTensorInfo(
       const std::string& name,

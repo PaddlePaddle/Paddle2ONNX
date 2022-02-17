@@ -300,6 +300,10 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
               << std::endl;
   }
 
+  if (ExistsDumplicateTensorName()) {
+    return false;
+  }
+
   GetBlocksVarName2Id();
   GetBlocksOps();
   GetGlobalBlockInputOutputInfo();
@@ -325,6 +329,23 @@ void PaddleParser::GetBlocksOps() {
       _blocks_ops[i].push_back(&prog->blocks(i).ops(j));
     }
   }
+}
+
+bool PaddleParser::ExistsDumplicateTensorName() const {
+  std::set<std::string> names;
+  for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
+    auto op = prog->blocks(0).ops(i);
+    for (auto j = 0; j < op.outputs_size(); ++j) {
+      for (auto k = 0; k < op.outputs(i).arguments_size(); ++j) {
+        if (names.find(op.outputs(i).arguments(j)) != names.end()) {
+          std::cerr << "[Paddle2ONNX] There's dumplicate output name in this model, not supported yet." << std::endl;
+          return false;
+        }
+        names.insert(op.outputs(i).arguments(j));
+      }
+    }
+  }
+  return true;
 }
 
 TensorInfo PaddleParser::GetTensorInfo(
