@@ -29,6 +29,7 @@ REGISTER_MAPPER(prelu, PReluMapper)
 REGISTER_MAPPER(hard_sigmoid, HardSigmoidMapper)
 REGISTER_MAPPER(swish, SwishMapper)
 REGISTER_MAPPER(hard_swish, HardSwishMapper)
+REGISTER_MAPPER(softmax, SoftMaxMapper)
 
 int32_t ActivationMapper::GetMinOpset(bool verbose) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
@@ -218,4 +219,47 @@ void GeluMapper::Opset9(OnnxHelper* helper) {
                      {output_info[0].name});
   }
 }
+
+void SoftMaxMapper::Opset7(OnnxHelper* helper) {
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  std::vector<TensorInfo> input_info =
+      parser_->GetOpInput(block_idx_, op_idx_, "X");
+  std::vector<TensorInfo> output_info =
+      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  if (axis_ < 0) {
+    axis_ = axis_ + output_info[0].Rank();
+  }
+  if (axis_ == output_info[0].Rank() - 1) {
+    auto node = helper->MakeNode("Softmax", {input_info[0].name},
+                                 {output_info[0].name});
+    AddAttribute(node, "axis", axis_);
+  } else {
+    std::vector<int64_t> perm = Arange(0, output_info[0].Rank());
+    perm[output_info[0].Rank() - 1] = axis_;
+    perm[axis_] = output_info[0].Rank() - 1;
+    auto transpose_node = helper->MakeNode("Transpose", {input_info[0].name});
+    AddAttribute(transpose_node, "perm", perm);
+    auto softmax_node =
+        helper->MakeNode("Softmax", {transpose_node->output(0)});
+    int64_t axis_last = -1;
+    AddAttribute(softmax_node, "axis", axis_last);
+    auto transpose_node_last = helper->MakeNode(
+        "Transpose", {softmax_node->output(0)}, {output_info[0].name});
+    AddAttribute(transpose_node_last, "perm", perm);
+  }
+}
+
+void SoftMaxMapper::Opset13(OnnxHelper* helper) {
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  int64_t axis;
+  parser_->GetOpAttr(op, "axis", &axis);
+  std::vector<TensorInfo> input_info =
+      parser_->GetOpInput(block_idx_, op_idx_, "X");
+  std::vector<TensorInfo> output_info =
+      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto node =
+      helper->MakeNode("Softmax", {input_info[0].name}, {output_info[0].name});
+  AddAttribute(node, "axis", axis);
+}
+
 }  // namespace paddle2onnx

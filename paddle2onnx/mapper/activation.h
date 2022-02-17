@@ -147,4 +147,23 @@ class GeluMapper : public Mapper {
 
   void Opset9(OnnxHelper* helper);
 };
+
+class SoftMaxMapper : public Mapper {
+ public:
+  SoftMaxMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    if (parser_->OpHasAttr(op, "axis")) {
+      parser_->GetOpAttr(op, "axis", &axis_);
+    } else {
+      axis_ = -1;
+    }
+  }
+
+  void Opset7(OnnxHelper* helper);
+  void Opset13(OnnxHelper* helper);
+
+ private:
+  int64_t axis_ = -1;
+};
 }  // namespace paddle2onnx

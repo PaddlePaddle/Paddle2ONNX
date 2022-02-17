@@ -18,6 +18,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(conv2d, Conv2dMapper)
+REGISTER_MAPPER(depthwise_conv2d, Conv2dMapper)
 
 int32_t Conv2dMapper::GetMinOpset(bool verbose) {
   // NHWC is not supported
@@ -58,9 +59,11 @@ void Conv2dMapper::Opset7(OnnxHelper* helper) {
   AddAttribute(node, "strides", strides_);
   AddAttribute(node, "group", groups_);
   if (padding_algorithm_ == "SAME") {
-    AddAttribute(node, "auto_pad", "SAME_UPPER");
+    std::string auto_pad = "SAME_UPPER";
+    AddAttribute(node, "auto_pad", auto_pad);
   } else if (padding_algorithm_ == "VALID") {
-    AddAttribute(node, "auto_pad", "VALID");
+    std::string auto_pad = "VALID";
+    AddAttribute(node, "auto_pad", auto_pad);
   } else {
     AddAttribute(node, "pads", paddings_);
   }

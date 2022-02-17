@@ -40,9 +40,9 @@ struct Weight {
            const std::vector<T>& data) {
     buffer.clear();
     shape.clear();
+    dtype = data_type;
     buffer.resize(data.size() * PaddleDataTypeSize(dtype));
     memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
-    dtype = data_type;
     for (auto& d : dims) {
       shape.push_back(d);
     }
@@ -89,17 +89,22 @@ class PaddleParser {
                  const std::string& name) const;
 
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, int64_t* res) const;
+                 const std::string& name, int64_t* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, float* res) const;
+                 const std::string& name, float* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, bool* res) const;
+                 const std::string& name, bool* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, std::string* res) const;
+                 const std::string& name, std::string* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, std::vector<int64_t>* res) const;
+                 const std::string& name, std::vector<int64_t>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, std::vector<float>* res) const;
+                 const std::string& name, std::vector<float>* res) const;
+  void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                 const std::string& name, std::vector<double>* res) const;
+  bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id) const;
+  bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id,
+                          Weight* param) const;
 
  private:
   void GetBlocksVarName2Id();

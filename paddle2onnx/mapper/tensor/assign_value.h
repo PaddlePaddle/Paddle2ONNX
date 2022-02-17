@@ -11,8 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
-// #include "paddle2onnx/mapper/nn/clip.h"
-#include "paddle2onnx/mapper/nn/conv2d.h"
-#include "paddle2onnx/mapper/nn/flatten.h"
-#include "paddle2onnx/mapper/nn/scale.h"
+#include <string>
+#include <vector>
+#include "paddle2onnx/mapper/mapper.h"
+
+namespace paddle2onnx {
+
+class AssignValueMapper : public Mapper {
+ public:
+  AssignValueMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
+      : Mapper(p, block_id, op_id) {}
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset7(OnnxHelper* helper);
+};
+
+}  // namespace paddle2onnx
