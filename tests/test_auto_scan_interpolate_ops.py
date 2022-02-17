@@ -65,6 +65,7 @@ class Net(BaseNet):
         mode = self.config['mode']
         align_corners = self.config['align_corners']
         data_format = self.config['data_format']
+        # align_corners True is only set with the interpolating modes: linear | bilinear | bicubic | trilinear
         if mode == "nearest":
             align_corners = False
         elif mode == "linear":
