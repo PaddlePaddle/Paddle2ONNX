@@ -20,6 +20,20 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(assign_value, AssignValueMapper)
 
+int32_t AssignValueMapper::GetMinOpset(bool verbose) {
+  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  bool has_input = parser_->OpHasInput(block_idx_, op_idx_, "X");
+  bool found_value = parser_->GetValueFromTensor(block_idx_, op_idx_);
+  if (!has_input && !found_value) {
+    if (verbose) {
+      std::cerr << "Can not find input and value attribute in op " << op.type()
+                << "." << std::endl;
+    }
+    return -1;
+  }
+  return 7;
+}
+
 void AssignValueMapper::Opset7(OnnxHelper* helper) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   if (parser_->OpHasInput(block_idx_, op_idx_, "X")) {
@@ -32,7 +46,8 @@ void AssignValueMapper::Opset7(OnnxHelper* helper) {
     std::vector<TensorInfo> output_info =
         parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
-    Weight param = parser_->GetValueFromTensor(block_idx_, op_idx_);
+    Weight param;
+    parser_->GetValueFromTensor(block_idx_, op_idx_, param);
     auto node = helper->MakeConstant(param);
     helper->AutoCast(node->output(0), output_info[0].name, param.dtype,
                      output_info[0].dtype);
