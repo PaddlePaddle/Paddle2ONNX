@@ -53,7 +53,7 @@ Scale_Factor = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
 Size = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 
-class Net(BaseNet):
+class Net1(BaseNet):
     """
     simple Net
     """
@@ -62,39 +62,22 @@ class Net(BaseNet):
         """
         forward
         """
-        scale_factor = self.config['scale_factor']
-        size = self.config['size']
-        align_mode = self.config['align_mode']
-        mode = self.config['mode']
-        align_corners = self.config['align_corners']
-        data_format = self.config['data_format']
-        # align_corners True is only set with the interpolating modes: linear | bilinear | bicubic | trilinear
-        if mode == "nearest":
-            align_corners = False
-        elif mode == "linear":
-            align_corners = False
-            align_mode = 1
-        elif mode == "trilinear":
-            align_corners = False
-            align_mode = 1
-        elif mode == "bilinear":
-            align_corners = False
-            align_mode = 1
-        elif mode == "bicubic":
-            align_corners = False
-            align_mode = align_mode
-        x = paddle.nn.functional.interpolate(
-            x=inputs,
-            size=size,
-            scale_factor=scale_factor,
-            mode=mode,
-            align_corners=align_corners,
-            align_mode=align_mode,
-            data_format=data_format)
+        # align_corners = self.config['align_corners'][0]
+        # if self.config['mode'] == 'nearest_v1':
+        #     x = paddle.fluid.layers.resize_nearest(
+        #         inputs, out_shape=None, scale=2.0, align_corners=align_corners)
+        # else:
+        #     x = paddle.fluid.layers.resize_bilinear(
+        #         inputs, scale=2.0, align_corners=False)
+        if self.config['mode'] == 'nearest_v1':
+            x = paddle.fluid.layers.resize_nearest(inputs, scale=2.0)
+        else:
+            x = paddle.fluid.layers.resize_bilinear(inputs, scale=2.0)
+
         return x
 
 
-class TestInterpolateConvert(OPConvertAutoScanTest):
+class TestInterpolateConvert1(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.interpolate
     OPset version: 9, 11, 15
@@ -107,20 +90,14 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=8), min_size=5, max_size=6))
 
         dtype = draw(st.sampled_from(["float32"]))
-        # mode = draw(st.sampled_from(["linear"]))
-        # mode = draw(st.sampled_from(["nearest"]))
-        # mode = draw(st.sampled_from(["bilinear"]))
-        # mode = draw(st.sampled_from(["bicubic"]))
-        # mode = draw(st.sampled_from(["trilinear"]))
-        mode = draw(
-            st.sampled_from(
-                ["linear", "nearest", "bilinear", "bicubic", "trilinear"]))
+        # mode = draw(st.sampled_from(["nearest_v1"]))
+        # mode = draw(st.sampled_from(["bilinear_v1"]))
+        mode = draw(st.sampled_from(["nearest_v1", "bilinear_v1"]))
         align_corners = draw(st.booleans()),
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
         if data_format == "NCW":
             input_shape = np.random.choice(input_shape, 3)
-            input_shape[0] = 1  # there is a bug when index > 1
         elif data_format == "NCHW":
             input_shape = np.random.choice(input_shape, 4)
         else:
@@ -165,12 +142,12 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
             "data_format": data_format,
         }
 
-        models = Net(config)
+        models = Net1(config)
 
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=100)
 
 
 if __name__ == "__main__":
