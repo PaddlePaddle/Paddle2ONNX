@@ -35,6 +35,8 @@ struct ModelExporter {
   void ExportOp(const PaddleParser& parser, int32_t opset_version,
                 int64_t block_id, int64_t op_id);
 
+  ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
+
  public:
   // Get a proper opset version in range of [7, 15]
   // Also will check the model is convertable, this will include 2 parts
@@ -50,7 +52,8 @@ struct ModelExporter {
   std::string Run(const PaddleParser& parser, int opset_version = 9,
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
-                  bool enable_experimental_op = false);
+                  bool enable_experimental_op = false,
+                  bool enable_optimize = false);
 };
 
 }  // namespace paddle2onnx

@@ -6,3 +6,6 @@
 	path = third/pybind11
 	url = https://github.com/pybind/pybind11.git
     branch = ffa346860b306c9bbfb341aed9c14c067751feb8
+[submodule "third/optimizer"]
+	path = third/optimizer
+	url = a37748b2c3a80dad4274401c45c5026c7a506730 

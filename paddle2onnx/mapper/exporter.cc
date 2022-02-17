@@ -15,6 +15,7 @@
 #include "paddle2onnx/mapper/exporter.h"
 #include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
+#include "onnxoptimizer/optimize.h"
 
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
@@ -56,7 +57,8 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
 std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
                                bool auto_upgrade_opset, bool verbose,
                                bool enable_onnx_checker,
-                               bool enable_experimental_op) {
+                               bool enable_experimental_op,
+                               bool enable_optimize) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
   helper.Clear();
@@ -161,13 +163,22 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
               << std::endl;
   }
 
-  std::string out;
-  if (!model->SerializeToString(&out)) {
-    if (verbose) std::cerr << "ONNX Model SerializeToString error" << std::endl;
-    return "";
-  }
-  if (verbose) {
-    std::cerr << "ONNX Model exported successed!" << std::endl;
+ std::string out;
+  if (enable_optimize) {
+    auto const opt_model = Optimize(*(model.get()));
+    if (!opt_model.SerializeToString(&out)) {
+        if (verbose) {
+            std::cerr << "ONNX Model SerializeToString error" << std::endl;
+        }
+        return "";
+    } 
+  } else {
+        if (!model->SerializeToString(&out)) {
+            if (verbose) {
+                std::cerr << "ONNX Model SerializeToString error" << std::endl;
+            }
+            return "";
+        }
   }
   return out;
 }
@@ -242,6 +253,13 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   }
 
   return -1;
+}
+
+ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(const ONNX_NAMESPACE::ModelProto& model) {
+//  std::vector<std::string> passes = optimization::GetAvailablePasses();
+  std::vector<std::string> passes;
+  optimization::
+  return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 
 }  // namespace paddle2onnx

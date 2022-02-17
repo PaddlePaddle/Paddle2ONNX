@@ -28,10 +28,12 @@ if(NOT TARGET onnx_proto)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/third/optimizer)
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc)
+file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/*.cc)
 list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc)
+list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/cpp2py_export.cc)
 
 ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
 TARGET_INCLUDE_DIRECTORIES(paddle2onnx
