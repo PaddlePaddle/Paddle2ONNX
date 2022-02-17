@@ -70,7 +70,7 @@ class TestArangeConvert(OPConvertAutoScanTest):
             "op_names": ["range"],
             "test_data_shapes": [],
             "test_data_types": [],
-            "opset_version": [11, 15],
+            "opset_version": [11, 12, 13, 14, 15],
             "input_spec_shape": [],
             "start": start,
             "end": end,

@@ -91,9 +91,9 @@ class TestRollConvert(OPConvertAutoScanTest):
         is_shifts_tensor = draw(st.booleans())
 
         if is_shifts_tensor:
-            opset_version = [10, 12, 15]
+            opset_version = [10, 11, 12, 13, 14, 15]
         else:
-            opset_version = [7, 9, 15]
+            opset_version = [7, 8, 9, 10, 11, 12, 13, 14, 15]
         config = {
             "op_names": ["roll"],
             "test_data_shapes": [input_shape],
