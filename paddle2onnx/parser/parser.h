@@ -110,9 +110,6 @@ class PaddleParser {
 
  private:
   void GetBlocksVarName2Id();
-  // If the model has same output name in difference operators
-  // will fail to convert
-  bool ExistsDumplicateTensorName() const;
   void GetBlocksOps();
   TensorInfo GetTensorInfo(
       const std::string& name,
