@@ -109,6 +109,9 @@ class PaddleParser {
                           Weight* param) const;
 
  private:
+  // If the model has same output name in difference operators
+  // will fail to convert
+  bool ExistsDumplicateTensorName() const;
   void GetBlocksVarName2Id();
   void GetBlocksOps();
   TensorInfo GetTensorInfo(

@@ -300,6 +300,9 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
               << std::endl;
   }
 
+  if (ExistsDumplicateTensorName()) {
+    return false;
+  }
   GetBlocksVarName2Id();
   GetBlocksOps();
   GetGlobalBlockInputOutputInfo();
@@ -653,4 +656,20 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   return -1;
 }
 
+bool PaddleParser::ExistsDumplicateTensorName() const {
+  std::set<std::string> names;
+  for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
+    auto op = prog->blocks(0).ops(i);
+    for (auto j = 0; j < op.outputs_size(); ++j) {
+      for (auto k = 0; k < op.outputs(j).arguments_size(); ++k) {
+        if (names.find(op.outputs(j).arguments(k)) != names.end()) {
+          std::cerr << "[Paddle2ONNX] There's dumplicate output name in this model, not supported yet." << std::endl;
+          return false;
+        }
+        names.insert(op.outputs(j).arguments(k));
+      }
+    }
+  }
+  return true;
+}
 }  // namespace paddle2onnx
