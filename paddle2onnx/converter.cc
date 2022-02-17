@@ -19,8 +19,31 @@
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
+
+bool IsExportable(const std::string& model, const std::string& params,
+                  bool from_memory_buffer, int32_t opset_version,
+                  bool auto_upgrade_opset, bool verbose,
+                  bool enable_onnx_checker, bool enable_experimental_op) {
+  auto parser = PaddleParser();
+  if (!parser.Init(model, params, from_memory_buffer)) {
+    return false;
+  }
+  paddle2onnx::ModelExporter me;
+  std::set<std::string> unsupported_ops;
+  if (!me.CheckIfOpSupported(parser, &unsupported_ops,
+                             enable_experimental_op)) {
+    return false;
+  }
+  if (me.GetMinOpset(parser, false) < 0) {
+    return false;
+  }
+  me.Run(parser, opset_version, auto_upgrade_opset, verbose,
+         enable_onnx_checker, enable_experimental_op);
+  return true;
+}
+
 bool Export(const std::string& model, const std::string& params,
-            std::string* out, int32_t opset_version, bool from_memory_buffer,
+            std::string* out, bool from_memory_buffer, int32_t opset_version,
             bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
             bool enable_experimental_op) {
   auto parser = PaddleParser();
@@ -40,5 +63,4 @@ bool Export(const std::string& model, const std::string& params,
                 enable_onnx_checker, enable_experimental_op);
   return true;
 }
-
 }  // namespace paddle2onnx

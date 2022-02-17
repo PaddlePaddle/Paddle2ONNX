@@ -16,9 +16,15 @@
 
 namespace paddle2onnx {
 
+bool IsExportable(const std::string& model, const std::string& params,
+                  bool from_memory_buffer = false, int32_t opset_version = 15,
+                  bool auto_upgrade_opset = true, bool verbose = false,
+                  bool enable_onnx_checker = true,
+                  bool enable_experimental_op = false);
+
 bool Export(const std::string& model, const std::string& params,
-            std::string* out, int32_t opset_version = 15,
-            bool from_memory_buffer = false, bool auto_upgrade_opset = true,
+            std::string* out, bool from_memory_buffer = false,
+            int32_t opset_version = 15, bool auto_upgrade_opset = true,
             bool verbose = false, bool enable_onnx_checker = true,
             bool enable_experimental_op = false);
 
