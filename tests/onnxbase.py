@@ -131,6 +131,8 @@ class APIOnnx(object):
         else:
             self.places = ['cpu']
         self.name = file_name
+        if self.name == '':
+            self.name = "no_name"
         self._version = ver_list
         self.pwd = os.getcwd()
         self.delta = delta
