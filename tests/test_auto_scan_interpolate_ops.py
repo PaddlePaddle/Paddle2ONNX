@@ -42,7 +42,7 @@ data_format_map = {
 op_set_map = {
     'linear': [9, 10, 11, 12, 13, 14, 15],
     'bilinear': [9, 10, 11, 12, 13, 14, 15],
-    'trilinear': [11, 12, 13, 14, 15],
+    'trilinear': [9, 10, 11, 12, 13, 14, 15],
     'nearest': [9, 10, 11, 12, 13, 14, 15],
     'bicubic': [11, 12, 13, 14, 15],
     'nearest_v1': [11, 12, 13, 14, 15],
@@ -66,23 +66,11 @@ class Net(BaseNet):
         size = self.config['size']
         align_mode = self.config['align_mode']
         mode = self.config['mode']
-        align_corners = self.config['align_corners']
+        align_corners = self.config['align_corners'][0]
         data_format = self.config['data_format']
         # align_corners True is only set with the interpolating modes: linear | bilinear | bicubic | trilinear
         if mode == "nearest":
             align_corners = False
-        elif mode == "linear":
-            align_corners = False
-            align_mode = 1
-        elif mode == "trilinear":
-            align_corners = False
-            align_mode = 1
-        elif mode == "bilinear":
-            align_corners = False
-            align_mode = 1
-        elif mode == "bicubic":
-            align_corners = False
-            align_mode = align_mode
         x = paddle.nn.functional.interpolate(
             x=inputs,
             size=size,
@@ -151,6 +139,11 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                 size = np.random.choice(size, 3).tolist()
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
+        if mode in ["linear", "bilinear", "trilinear"]:
+            if align_corners == False and align_mode == 1:
+                opset_version = [9, 10, 11, 12, 13, 14, 15]
+            else:
+                opset_version = [11, 12, 13, 14, 15]
         config = {
             "op_names": [op_name],
             "test_data_shapes": [input_shape],

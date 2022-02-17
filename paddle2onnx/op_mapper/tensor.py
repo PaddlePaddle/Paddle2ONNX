@@ -1664,6 +1664,10 @@ class UniformRandom():
         'bicubic_interp_v2': 'cubic',
         'bilinear_interp': 'linear',
         'nearest_interp': 'nearest',
+    },
+    opset_op_dict={
+        9: 'Upsample',
+        10: 'Resize',
     })
 class Resize():
     support_opset_version_range = (9, 15)
@@ -1672,22 +1676,7 @@ class Resize():
     def opset_9(cls, graph, node, **kw):
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
-
-        if node.attr('align_corners') or resize_type in ["cubic"]:
-            raise Exception(
-                "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
-                "Try converting with opset_version 11 ")
-        if node.attr('align_mode') == 0 and resize_type in [
-                "bilinear", "linear", "trilinear"
-        ]:
-            raise Exception(
-                "When align_mode == 0 and resize_type is 'bilinear' or 'linear or 'trilinear', the case isn't "
-                "supported in onnx(opset<=10), Try converting with opset_version 11 "
-            )
-        assert node.attrs['data_layout'] == 'NCHW', \
-            "The conv data layout should be 'NCHW' , but received data format " \
-            "is %s." % node.attrs['data_format']
-
+        cls.waringInfo(node, resize_type)
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
             in_shape, out_shape = cls.compute_output_shape(graph, node)
             node_h_w_scales = graph.make_node(
@@ -1707,57 +1696,9 @@ class Resize():
         else:
             scale_node = cls.compute_scale_node(graph, node)[0]
             inputs.append(scale_node)
+        op = kw['opset_op_dict'][graph.opset_version]
         graph.make_node(
-            'Upsample',
-            inputs=inputs,
-            outputs=node.output('Out'),
-            mode=resize_type)
-
-    @classmethod
-    def opset_10(cls, graph, node, **kw):
-        inputs = [node.input('X')[0]]
-        resize_type = kw['mapper_dict'][node.type]
-
-        if node.attr('align_corners') or resize_type in ["cubic"]:
-            raise Exception(
-                "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
-                "Try converting with opset_version 11 ")
-        if node.attr('align_mode') == 0 and resize_type in [
-                "bilinear", "linear", "trilinear"
-        ]:
-            raise Exception(
-                "When align_mode == 0 and resize_type is 'bilinear' or 'linear or 'trilinear', the case isn't "
-                "supported in onnx(opset<=10), Try converting with opset_version 11 "
-            )
-        assert node.attrs['data_layout'] == 'NCHW', \
-            "The conv data layout should be 'NCHW' , but received data format " \
-            "is %s." % node.attrs['data_format']
-
-        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            in_shape, out_shape = cls.compute_output_shape(graph, node)
-            node_h_w_scales = graph.make_node(
-                'Div', inputs=[out_shape, in_shape])
-            inputs.append(node_h_w_scales)
-        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            scale = node.input('Scale')[0]
-            cast_scale = graph.make_node(
-                'Cast', inputs=[scale], to=dtypes.ONNX.FLOAT)
-            const_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [1, 1]})
-            scale_node = graph.make_node(
-                'Concat', inputs=[const_node, cast_scale], axis=0)
-            inputs.append(scale_node)
-        else:
-            scale_node = cls.compute_scale_node(graph, node)[0]
-            inputs.append(scale_node)
-
-        graph.make_node(
-            'Resize',
-            inputs=inputs,
-            outputs=node.output('Out'),
-            mode=resize_type)
+            op, inputs=inputs, outputs=node.output('Out'), mode=resize_type)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
@@ -1871,6 +1812,23 @@ class Resize():
             attrs={'dtype': dtypes.ONNX.FLOAT,
                    'value': [1, 1] + scale})
         return [scale_node]
+
+    @classmethod
+    def waringInfo(cls, node, resize_type):
+        if node.attr('align_corners') or resize_type in ["cubic"]:
+            raise Exception(
+                "When align_corners is true or resize_type is 'cubic', the case isn't supported in onnx(opset<=10), "
+                "Try converting with opset_version>= 11 ")
+        if node.attr('align_mode') == 0 and resize_type in [
+                "bilinear", "linear", "trilinear"
+        ]:
+            raise Exception(
+                "When align_mode == 0 and resize_type is 'bilinear' or 'linear or 'trilinear', the case isn't "
+                "supported in onnx(opset<=10), Try converting with opset_version>= 11 "
+            )
+        assert node.attrs['data_layout'] == 'NCHW', \
+            "The conv data layout should be 'NCHW' , but received data format " \
+            "is %s." % node.attrs['data_format']
 
 
 @op_mapper('pixel_shuffle')
