@@ -14,7 +14,7 @@
 
 #include <fstream>
 #include <iostream>
-#include "paddle2onnx/mapper/exporter.h"
+#include "paddle2onnx/converter.h"
 
 bool ReadBinaryFile(const std::string& path, std::string* contents) {
   std::ifstream fin(path, std::ios::in | std::ios::binary);
@@ -32,19 +32,31 @@ bool ReadBinaryFile(const std::string& path, std::string* contents) {
   fin.close();
   return true;
 }
+
+// bool Export(const std::string& model, const std::string& params, const
+// std::string* out,
+//             int32_t opset_version = 15, bool from_memory_buffer = false,
+//             bool auto_upgrade_opset = true, bool verbose = false,
+//             bool enable_onnx_checker = true,
+//             bool enable_experimental_op = false);
+
 int main(int argc, char* argv[]) {
   if (argc == 1) {
     std::cerr << "Paddle2ONNX Usage(params_file_path is optional):   "
               << "    ./p2o_exec model_file_path  params_file_path"
               << std::endl;
   }
-  auto parser = paddle2onnx::PaddleParser();
+  std::string onnx_model;
   if (argc == 2) {
     std::string model_buffer;
     if (!ReadBinaryFile(argv[1], &model_buffer)) {
       return -1;
     }
-    parser.Init(model_buffer, true);
+    if (!paddle2onnx::Export(model_buffer, "", &onnx_model, 7, true, true, true,
+                             true, true)) {
+      std::cerr << "Model converte failed." << std::endl;
+      return -1;
+    }
   } else if (argc == 3) {
     std::string model_buffer;
     if (!ReadBinaryFile(argv[1], &model_buffer)) {
@@ -54,12 +66,14 @@ int main(int argc, char* argv[]) {
     if (!ReadBinaryFile(argv[2], &params_buffer)) {
       return -1;
     }
-    parser.Init(model_buffer, params_buffer, true);
+    if (!paddle2onnx::Export(model_buffer, params_buffer, &onnx_model, 7, true,
+                             true, true, true, true)) {
+      std::cerr << "Model converte failed." << std::endl;
+      return -1;
+    }
   }
-  paddle2onnx::ModelExporter me;
-  auto onnx_proto = me.Run(parser, 15, true, true, true, true);
   std::fstream out("model.onnx", std::ios::out | std::ios::binary);
-  out << onnx_proto;
+  out << onnx_model;
   out.close();
 
   std::cout << "Hello world" << std::endl;

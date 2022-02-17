@@ -19,9 +19,10 @@
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
-
-bool IsConvertable(const std::string& model, const std::string& params,
-                   bool from_memory_buffer, bool enable_experimental_op) {
+bool Export(const std::string& model, const std::string& params,
+            std::string* out, int32_t opset_version, bool from_memory_buffer,
+            bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
+            bool enable_experimental_op) {
   auto parser = PaddleParser();
   if (!parser.Init(model, params, from_memory_buffer)) {
     return false;
@@ -35,19 +36,9 @@ bool IsConvertable(const std::string& model, const std::string& params,
   if (me.GetMinOpset(parser, false) < 0) {
     return false;
   }
-  return true;
-}
-
-std::string Convert(const std::string& model, const std::string& params,
-                    int32_t opset_version, bool from_memory_buffer,
-                    bool auto_upgrade_opset, bool verbose,
-                    bool enable_onnx_checker, bool enable_experimental_op) {
-  auto parser = PaddleParser();
-  Assert(parser.Init(model, params, from_memory_buffer),
-         "Unable to parse PaddlePaddle model.");
-  paddle2onnx::ModelExporter me;
-  return me.Run(parser, opset_version, auto_upgrade_opset, verbose,
+  *out = me.Run(parser, opset_version, auto_upgrade_opset, verbose,
                 enable_onnx_checker, enable_experimental_op);
+  return true;
 }
 
 }  // namespace paddle2onnx
