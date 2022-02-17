@@ -1582,12 +1582,8 @@ class Resize():
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
             in_shape, out_shape = cls.compute_output_shape(
                 graph, node, opset_version=9)
-            cast_shape_node2 = graph.make_node(
-                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
-            cast_shape_node0 = graph.make_node(
-                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
             node_h_w_scales = graph.make_node(
-                'Div', inputs=[cast_shape_node2, cast_shape_node0])
+                'Div', inputs=[out_shape, in_shape])
             inputs.append(node_h_w_scales)
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
             scale = node.input('Scale')[0]
@@ -1660,13 +1656,8 @@ class Resize():
 
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
             in_shape, out_shape = cls.compute_output_shape(graph, node)
-
-            cast_shape_node2 = graph.make_node(
-                'Cast', inputs=[out_shape], to=dtypes.ONNX.FLOAT)
-            cast_shape_node0 = graph.make_node(
-                'Cast', inputs=[in_shape], to=dtypes.ONNX.FLOAT)
             node_h_w_scales = graph.make_node(
-                'Div', inputs=[cast_shape_node2, cast_shape_node0])
+                'Div', inputs=[out_shape, in_shape])
             inputs.append(node_h_w_scales)
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
             scale = node.input('Scale')[0]
@@ -1739,7 +1730,7 @@ class Resize():
             if node.attr('align_mode') == 1 and resize_type is not 'cubic':
                 coordinate_transformation_mode = 'asymmetric'
             else:
-                if resize_type == 'nearest' and len(scale) == 0:
+                if resize_type == 'nearest':
                     coordinate_transformation_mode = 'asymmetric'
                 else:
                     coordinate_transformation_mode = 'half_pixel'
@@ -1760,7 +1751,8 @@ class Resize():
                 'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
                                    'value': []})
             inputs.append(empty_node)
-            _, out_shape = cls.compute_output_shape(graph, node)
+            _, out_shape = cls.compute_output_shape(
+                graph, node, dtype=dtypes.ONNX.INT64)
             inputs.append(out_shape)
         elif scale_tensor is not None and len(scale_tensor) > 0:
             scale = node.input('Scale')[0]
@@ -1815,8 +1807,15 @@ class Resize():
             'Resize', inputs=inputs, outputs=node.output('Out'), attrs=attrs)
 
     @classmethod
-    def compute_output_shape(cls, graph, node, opset_version=10):
+    def compute_output_shape(cls,
+                             graph,
+                             node,
+                             opset_version=10,
+                             dtype=dtypes.ONNX.FLOAT):
         shape_node0 = graph.make_node('Shape', inputs=node.input('X'))
+        if dtype != dtypes.ONNX.INT64:
+            shape_node0 = graph.make_node(
+                'Cast', inputs=[shape_node0], to=dtype)
         if opset_version < 10:
             shape_node1 = graph.make_node(
                 'Slice', inputs=[shape_node0], starts=[0], ends=[2])
@@ -1829,14 +1828,10 @@ class Resize():
                                    'value': [2]})
             shape_node1 = graph.make_node(
                 'Slice', inputs=[shape_node0, starts_node, ends_node])
-        if len(node.input('OutSize')) > 0:
-            cast_shape_node = graph.make_node(
-                'Cast', inputs=node.input('OutSize'), to=dtypes.ONNX.INT64)
-        else:
-            concat_shape_node = graph.make_node(
-                "Concat", inputs=node.input('SizeTensor'), axis=0)
-            cast_shape_node = graph.make_node(
-                'Cast', inputs=[concat_shape_node], to=dtypes.ONNX.INT64)
+
+        cast_shape_node, outSize_is_tensor = mapper_helper.get_node_attr_value(
+            graph, node, None, 'OutSize', 'SizeTensor', dtype=dtype)
+
         shape_node2 = graph.make_node(
             'Concat', inputs=[shape_node1, cast_shape_node], axis=0)
         return shape_node0, shape_node2
