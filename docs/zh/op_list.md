@@ -50,7 +50,7 @@
 | equal | 1~12 |
 | erf | 9~12 |
 | exp | 1~12 |
-| expand_as_v2 | 8~12 |
+| expand_as_v2 | 8~15 |
 | expand_v2 | 8~15 |
 | expand | 6~15 |
 | elu | 1~12 |
@@ -122,7 +122,7 @@
 | prior_box | 1~12 |
 | prelu | 1~12 |
 | p_norm | 1~12 |
-| range | 11~12 |
+| range | 11~15 |
 | reciprocal | 1~12 |
 | reduce_mean | 1~12 |
 | reduce_max | 1~12 |
