@@ -55,7 +55,7 @@ class TestStackConvert(OPConvertAutoScanTest):
             "op_names": ["expand_as_v2"],
             "test_data_shapes": [input_shape1, input_shape2],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [8, 9, 11, 15],
+            "opset_version": [8, 9, 10, 11, 12, 13, 14, 15],
             "input_spec_shape": [],
         }
 
