@@ -454,6 +454,26 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
 }
 
+void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                             const std::string name,
+                             std::vector<double>* res) const {
+  bool found = false;
+  res->clear();
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      Assert(op.attrs(i).float64s_size() > 0,
+             "Cannot find list of double data from attr:" + name + "in op:" +
+                 op.type());
+      found = true;
+      for (auto j = 0; j < op.attrs(i).float64s_size(); ++j) {
+        res->push_back(static_cast<double>(op.attrs(i).float64s(j)));
+      }
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
+
 void PaddleParser::GetGlobalBlockInputOutputInfo() {
   inputs.clear();
   outputs.clear();
@@ -472,6 +492,13 @@ Weight PaddleParser::GetValueFromTensor(int64_t block_id, int64_t op_id) const {
   auto op = GetOpDesc(block_id, op_id);
   std::vector<int64_t> shape;
   GetOpAttr(op, "shape", &shape);
+  if (OpHasAttr(op, "fp64_values")) {
+    std::vector<double> value;
+    GetOpAttr(op, "fp64_values", &value);
+    Weight param;
+    param.set(P2ODataType::FP64, shape, value);
+    return param;
+  }
   if (OpHasAttr(op, "fp32_values")) {
     std::vector<float> value;
     GetOpAttr(op, "fp32_values", &value);
@@ -482,6 +509,13 @@ Weight PaddleParser::GetValueFromTensor(int64_t block_id, int64_t op_id) const {
   if (OpHasAttr(op, "int64_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "int64_values", &value);
+    Weight param;
+    param.set(P2ODataType::INT64, shape, value);
+    return param;
+  }
+  if (OpHasAttr(op, "int32_values")) {
+    std::vector<int64_t> value;
+    GetOpAttr(op, "int32_values", &value);
     Weight param;
     param.set(P2ODataType::INT64, shape, value);
     return param;

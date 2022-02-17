@@ -37,8 +37,7 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
     // bias is 0
     int32_t data_type = input_info[0].dtype;
     std::string cast_node = input_info[0].name;
-    ;
-    std::string output = output_info[0].name;
+    bool is_int_input = false;
     if (input_info[0].dtype == P2ODataType::INT64 ||
         input_info[0].dtype == P2ODataType::INT32 ||
         input_info[0].dtype == P2ODataType::INT16) {
@@ -47,7 +46,7 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
       cast_node = helper->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
       data_type = P2ODataType::FP32;
-      output = "";
+      is_int_input = true;
     }
 
     std::string scale_node;
@@ -66,8 +65,9 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
 
     if (bias_after_scale_) {
       auto mul_node = helper->MakeNode("Mul", {cast_node, scale_node});
-      if (output.size() > 0) {
-        helper->MakeNode("Add", {mul_node->output(0), bias_node}, {output});
+      if (!is_int_input) {
+        helper->MakeNode("Add", {mul_node->output(0), bias_node},
+                         {output_info[0].name});
       } else {
         std::string node2 =
             helper->MakeNode("Add", {mul_node->output(0), bias_node})
@@ -77,8 +77,9 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
       }
     } else {
       auto add_node = helper->MakeNode("Add", {cast_node, bias_node});
-      if (output.size() > 0) {
-        helper->MakeNode("Mul", {add_node->output(0), scale_node}, {output});
+      if (!is_int_input) {
+        helper->MakeNode("Mul", {add_node->output(0), scale_node},
+                         {output_info[0].name});
       } else {
         std::string node2 =
             helper->MakeNode("Mul", {add_node->output(0), scale_node})

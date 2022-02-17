@@ -100,6 +100,8 @@ class PaddleParser {
                  const std::string name, std::vector<int64_t>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string name, std::vector<float>* res) const;
+  void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                 const std::string name, std::vector<double>* res) const;
   Weight GetValueFromTensor(int64_t block_id, int64_t op_id) const;
 
  private:
