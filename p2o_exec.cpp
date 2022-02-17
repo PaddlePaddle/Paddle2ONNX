@@ -16,10 +16,23 @@
 #include <iostream>
 #include "paddle2onnx/mapper/exporter.h"
 
+bool ReadBinaryFile(const std::string& path, std::string* contents) {
+  std::ifstream fin(path, std::ios::in | std::ios::binary);
+  if (!fin.is_open()) {
+    std::cerr << "Fail to read file " << path
+              << ", please make sure your model file or file path is valid."
+              << std::endl;
+    return false;
+  }
+  fin.seekg(0, std::ios::end);
+  contents->clear();
+  contents->resize(fin.tellg());
+  fin.seekg(0, std::ios::beg);
+  fin.read(&(contents->at(0)), contents->size());
+  fin.close();
+  return true;
+}
 int main(int argc, char* argv[]) {
-  //  paddle2onnx::LoadProgram("ResNet18/inference.pdmodel");
-  //  std::vector<paddle2onnx::Weight> weights;
-  //  paddle2onnx::LoadParams("ResNet18/inference.pdiparams", &weights);
   if (argc == 1) {
     std::cerr << "Paddle2ONNX Usage(params_file_path is optional):   "
               << "    ./p2o_exec model_file_path  params_file_path"
@@ -27,9 +40,21 @@ int main(int argc, char* argv[]) {
   }
   auto parser = paddle2onnx::PaddleParser();
   if (argc == 2) {
-    parser.Init(argv[1]);
+    std::string model_buffer;
+    if (!ReadBinaryFile(argv[1], &model_buffer)) {
+      return -1;
+    }
+    parser.Init(model_buffer, true);
   } else if (argc == 3) {
-    parser.Init(argv[1], argv[2]);
+    std::string model_buffer;
+    if (!ReadBinaryFile(argv[1], &model_buffer)) {
+      return -1;
+    }
+    std::string params_buffer;
+    if (!ReadBinaryFile(argv[2], &params_buffer)) {
+      return -1;
+    }
+    parser.Init(model_buffer, params_buffer, true);
   }
   paddle2onnx::ModelExporter me;
   auto onnx_proto = me.Run(parser, 15, true, true, true, true);
