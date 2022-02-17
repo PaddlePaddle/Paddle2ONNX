@@ -170,7 +170,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=100)
 
 
 if __name__ == "__main__":
