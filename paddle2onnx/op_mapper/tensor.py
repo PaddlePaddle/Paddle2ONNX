@@ -658,7 +658,7 @@ class Tile():
 
 @op_mapper('range')
 class Range():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
