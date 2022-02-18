@@ -363,6 +363,34 @@ bool PaddleParser::OpHasInput(int64_t block_id, int64_t op_id,
   return false;
 }
 
+std::vector<TensorInfo> PaddleParser::GetOpAllOutput(int64_t block_id,
+                                                     int64_t op_id) const {
+  auto block = prog->blocks(block_id);
+  auto op = block.ops(op_id);
+  std::vector<TensorInfo> outputs;
+  for (auto i = 0; i < op.outputs_size(); ++i) {
+    for (auto j = 0; j < op.outputs(i).arguments_size(); ++j) {
+      outputs.push_back(GetTensorInfo(op.outputs(i).arguments(j), block));
+    }
+  }
+  return outputs;
+}
+
+std::vector<int64_t> PaddleParser::GetBlockOpIdx(
+    const std::string& name) const {
+  for (auto i = 0; i < prog->blocks_size(); ++i) {
+    for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
+      auto output = GetOpAllOutput(i, j);
+      for (auto x : output) {
+        if (x.name == name) {
+          return {i, j};
+        }
+      }
+    }
+  }
+  return {};
+}
+
 std::vector<TensorInfo> PaddleParser::GetOpInput(
     int64_t block_id, int64_t op_id, const std::string& name) const {
   auto block = prog->blocks(block_id);
@@ -455,8 +483,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
     if (op.attrs(i).name() == name) {
       found = true;
       Assert(op.attrs(i).has_i() || op.attrs(i).has_l(),
-             "Cannot find int32/int64 data from attr:" + name +
-                 " in op:" + op.type());
+             "Cannot find int32/int64 data from attr:" + name + " in op:" +
+                 op.type());
       if (op.attrs(i).has_i()) {
         *res = (int64_t)(op.attrs(i).i());
       } else {
@@ -547,8 +575,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
       Assert(op.attrs(i).floats_size() > 0,
-             "Cannot find list of float data from attr:" + name +
-                 "in op:" + op.type());
+             "Cannot find list of float data from attr:" + name + "in op:" +
+                 op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
         res->push_back(static_cast<float>(op.attrs(i).floats(j)));
@@ -567,8 +595,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
       Assert(op.attrs(i).float64s_size() > 0,
-             "Cannot find list of double data from attr:" + name +
-                 "in op:" + op.type());
+             "Cannot find list of double data from attr:" + name + "in op:" +
+                 op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).float64s_size(); ++j) {
         res->push_back(static_cast<double>(op.attrs(i).float64s(j)));

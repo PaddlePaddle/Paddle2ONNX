@@ -47,6 +47,15 @@ struct Weight {
       shape.push_back(d);
     }
   }
+  template <typename T>
+  void get(std::vector<T>& data) {
+    int64_t nums = 1;
+    for (auto i = 0; i < shape.size(); ++i) {
+      nums *= shape[i];
+    }
+    data.resize(nums);
+    memcpy(data.data(), buffer.data(), buffer.size());
+  }
 };
 
 class PaddleParser {
@@ -107,6 +116,8 @@ class PaddleParser {
   bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id) const;
   bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id,
                           Weight* param) const;
+  std::vector<int64_t> GetBlockOpIdx(const std::string& name) const;
+  std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
 
  private:
   // If the model has same output name in difference operators
