@@ -56,7 +56,13 @@ class Net(BaseNet):
         forward
         """
         scale_factor = self.config['scale_factor']
+        if self.config['is_scale_tensor'] and scale_factor is not None:
+            scale_factor = paddle.to_tensor(
+                scale_factor, dtype=self.config['scale_dtype'])
         size = self.config['size']
+        if self.config['is_size_tensor'] and size is not None:
+            size = paddle.to_tensor(size, self.config['size_dtype'])
+
         align_mode = self.config['align_mode']
         mode = self.config['mode']
         align_corners = self.config['align_corners'][0]
@@ -88,6 +94,8 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=8), min_size=5, max_size=6))
 
         dtype = draw(st.sampled_from(["float32"]))
+        size_dtype = draw(st.sampled_from(["int32", "int64"]))
+        scale_dtype = draw(st.sampled_from(["float32", "float64"]))
         # mode = draw(st.sampled_from(["linear"]))
         # mode = draw(st.sampled_from(["nearest"]))
         # mode = draw(st.sampled_from(["bilinear"]))
@@ -110,6 +118,8 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
             num = 3
             input_shape = np.random.choice(input_shape, 5)
 
+        is_scale_tensor = False
+        is_size_tensor = False
         if draw(st.booleans()):
             size = None
             if draw(st.booleans()):
@@ -117,6 +127,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
                 # list
+                is_scale_tensor = draw(st.booleans())
                 scale_factor = draw(
                     st.lists(
                         st.floats(
@@ -126,6 +137,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         else:
             scale_factor = None
             # list
+            is_size_tensor = draw(st.booleans())
             size = draw(
                 st.lists(
                     st.integers(
@@ -152,6 +164,10 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
             "align_corners": align_corners,
             "align_mode": align_mode,
             "data_format": data_format,
+            "is_scale_tensor": is_scale_tensor,
+            "is_size_tensor": is_size_tensor,
+            "size_dtype": size_dtype,
+            "scale_dtype": scale_dtype,
         }
 
         models = Net(config)
