@@ -1676,15 +1676,8 @@ class Resize():
         inputs = [node.input('X')[0]]
         resize_type = kw['mapper_dict'][node.type]
         cls.waringInfo(graph, node, resize_type)
-        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            output_node = cls.compute_output_shape(graph, node)
-            inputs = inputs + output_node
-        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            output_node = cls.compute_scale_node(graph, node)
-            inputs = inputs + output_node
-        else:
-            output_node = cls.compute_attrs_node(graph, node)
-            inputs = inputs + output_node
+        inputs_node = cls.get_inputs_node(graph, node)
+        inputs = inputs + inputs_node
         op = kw['opset_op_dict'][graph.opset_version]
         graph.make_node(
             op, inputs=inputs, outputs=node.output('Out'), mode=resize_type)
@@ -1710,16 +1703,8 @@ class Resize():
             })
 
         inputs.append(roi_node)
-        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
-            output_node = cls.compute_output_shape(
-                graph, node, dtype=dtypes.ONNX.INT64, return_scale=False)
-            inputs = inputs + output_node
-        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            output_node = cls.compute_scale_node(graph, node)
-            inputs = inputs + output_node
-        else:
-            output_node = cls.compute_attrs_node(graph, node, dtypes.ONNX.INT64)
-            inputs = inputs + output_node
+        inputs_node = cls.get_inputs_node(graph, node)
+        inputs = inputs + inputs_node
         attrs = {
             'mode': resize_type,
             'coordinate_transformation_mode': coordinate_transformation_mode
@@ -1730,7 +1715,25 @@ class Resize():
             'Resize', inputs=inputs, outputs=node.output('Out'), attrs=attrs)
 
     @classmethod
-    def compute_output_shape(cls,
+    def get_inputs_node(cls, graph, node):
+        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
+            if graph.opset_version < 11:
+                output_node = cls.compute_outsize_node(graph, node)
+            else:
+                output_node = cls.compute_outsize_node(
+                    graph, node, dtype=dtypes.ONNX.INT64, return_scale=False)
+        elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
+            output_node = cls.compute_scale_node(graph, node)
+        else:
+            if graph.opset_version < 11:
+                output_node = cls.compute_attrs_node(graph, node)
+            else:
+                output_node = cls.compute_attrs_node(
+                    graph, node, dtypes.ONNX.INT64, return_scale=False)
+        return output_node
+
+    @classmethod
+    def compute_outsize_node(cls,
                              graph,
                              node,
                              dtype=dtypes.ONNX.FLOAT,
@@ -1742,54 +1745,29 @@ class Resize():
         shape_pre_node = mapper_helper.slice_helper(
             graph, input_shape_node, axes=[], starts=[0], ends=[2])
 
-        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
-        out_shape = [val for val in out_shape if val > 0]
+        out_size = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
+        out_size = [val for val in out_size if val > 0]
         use_tensor = False
         if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
             use_tensor = True
-        if len(out_shape) > 0 and not use_tensor:
+        if len(out_size) > 0 and not use_tensor:
             out_size_node = graph.make_node(
                 'Constant', attrs={'dtype': dtype,
-                                   'value': out_shape})
+                                   'value': out_size})
         else:
             out_size_node, _ = mapper_helper.get_node_attr_value(
                 graph, node, None, 'OutSize', 'SizeTensor', dtype=dtype)
-
-        out_shape_node = graph.make_node(
+        out_size_node = graph.make_node(
             'Concat', inputs=[shape_pre_node, out_size_node], axis=0)
-        if not return_scale:
-            scale_empty_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
-                                   'value': []})
-            return [scale_empty_node, out_shape_node]
 
-        scale_node = graph.make_node(
-            'Div', inputs=[out_shape_node, input_shape_node])
-        return [scale_node]
-
-    @classmethod
-    def compute_attrs_node(cls, graph, node, dtype=dtypes.ONNX.FLOAT):
-        out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
-        shape = node.input_shape('X', 0)
-        scale = node.attr('scale')
-        if isinstance(scale, (float, int)):
-            scale = [scale] * (len(shape) - 2)
-
-        out_shape = [val for val in out_shape if val > 0]
-        if len(out_shape) > 0:
-            return_scale = True
-            if graph.opset_version >= 11:
-                return_scale = False
-            scale_node = cls.compute_output_shape(
-                graph, node, dtype=dtype, return_scale=return_scale)
-            return scale_node
-
-        assert len(scale) > 0, Exception("scale size should > 0!")
-        scale_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': [1, 1] + scale})
-        return [scale_node]
+        if return_scale:
+            scale_node = graph.make_node(
+                'Div', inputs=[out_size_node, input_shape_node])
+            return [scale_node]
+        scale_empty_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': []})
+        return [scale_empty_node, out_size_node]
 
     @classmethod
     def compute_scale_node(cls, graph, node):
@@ -1807,6 +1785,30 @@ class Resize():
         else:
             inputs_cocat = inputs_cocat + [cast_scale]
         scale_node = graph.make_node('Concat', inputs=inputs_cocat, axis=0)
+        return [scale_node]
+
+    @classmethod
+    def compute_attrs_node(cls,
+                           graph,
+                           node,
+                           dtype=dtypes.ONNX.FLOAT,
+                           return_scale=True):
+        out_size = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
+        scale = node.attr('scale')
+        if isinstance(scale, (float, int)):
+            scale = [scale] * (len(node.input_shape('X', 0)) - 2)
+
+        out_size = [val for val in out_size if val > 0]
+        if len(out_size) > 0:
+            output_node = cls.compute_outsize_node(
+                graph, node, dtype=dtype, return_scale=return_scale)
+            return output_node
+
+        assert len(scale) > 0, Exception("scale size should > 0!")
+        scale_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.FLOAT,
+                   'value': [1, 1] + scale})
         return [scale_node]
 
     @classmethod
