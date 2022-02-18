@@ -16,7 +16,10 @@ import os
 from inspect import isfunction
 import numpy as np
 import logging
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
 import paddle
+paddle.set_device('cpu')
 from onnxruntime import InferenceSession
 from paddle2onnx import dygraph2onnx
 
@@ -219,7 +222,8 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
-            auto_update_opset=False)
+            auto_update_opset=False,
+            enable_onnx_checker=False, )
 
     def _dygraph_jit_save(self, instance):
         """
@@ -284,6 +288,8 @@ class APIOnnx(object):
         """
         self._mkdir()
         self.set_input_spec()
+        # only test cpu now
+        self.places = ['cpu']
         for place in self.places:
             paddle.set_device(place)
 

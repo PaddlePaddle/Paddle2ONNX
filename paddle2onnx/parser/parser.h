@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cassert>
 #include <type_traits>
-#include "paddle2onnx/proto/framework.pb.h"
+#include "paddle2onnx/proto/p2o_paddle.pb.h"
 
 namespace paddle2onnx {
 
@@ -40,9 +40,9 @@ struct Weight {
            const std::vector<T>& data) {
     buffer.clear();
     shape.clear();
+    dtype = data_type;
     buffer.resize(data.size() * PaddleDataTypeSize(dtype));
     memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
-    dtype = data_type;
     for (auto& d : dims) {
       shape.push_back(d);
     }
@@ -63,9 +63,11 @@ class PaddleParser {
 
   // Sometimes the model contains no parameters
   // In this case, we only need the model_file
-  bool Init(const std::string& _model_filename);
-  bool Init(const std::string& _model_filename,
-            const std::string& _params_filename);
+  // If from_memory_buffer is true, means we read the model from memory instead
+  // of disk
+  bool Init(const std::string& _model, bool from_memory_buffer = false);
+  bool Init(const std::string& _model, const std::string& _params,
+            bool from_memory_buffer = false);
 
   int NumOfBlocks() const;
   int NumOfOps(int block_idx) const;
@@ -89,19 +91,27 @@ class PaddleParser {
                  const std::string& name) const;
 
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, int64_t* res) const;
+                 const std::string& name, int64_t* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, float* res) const;
+                 const std::string& name, float* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, bool* res) const;
+                 const std::string& name, bool* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, std::string* res) const;
+                 const std::string& name, std::string* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, std::vector<int64_t>* res) const;
+                 const std::string& name, std::vector<int64_t>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string name, std::vector<float>* res) const;
+                 const std::string& name, std::vector<float>* res) const;
+  void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                 const std::string& name, std::vector<double>* res) const;
+  bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id) const;
+  bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id,
+                          Weight* param) const;
 
  private:
+  // If the model has same output name in difference operators
+  // will fail to convert
+  bool ExistsDumplicateTensorName() const;
   void GetBlocksVarName2Id();
   void GetBlocksOps();
   TensorInfo GetTensorInfo(
@@ -109,8 +119,9 @@ class PaddleParser {
       const paddle2onnx::framework::proto::BlockDesc& block) const;
   void GetGlobalBlockInputOutputInfo();
   bool GetParamNames(std::vector<std::string>* var_names);
-  bool LoadProgram(const std::string& path);
+  bool LoadProgram(const std::string& model, bool from_memory_buffer);
   bool LoadParams(const std::string& path);
+  bool LoadParamsFromMemoryBuffer(const std::string& buffer);
 };
 
 }  // namespace paddle2onnx

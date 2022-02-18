@@ -79,7 +79,7 @@ class MapperHelper {
 
   void Push(const std::string& name, Generator* generator) {
     Assert(mappers.find(name) == mappers.end(),
-           name + "has been registered before.");
+           name + " has been registered before.");
     mappers[name] = generator;
   }
 };

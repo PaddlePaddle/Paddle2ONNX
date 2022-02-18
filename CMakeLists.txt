@@ -28,17 +28,41 @@ if(NOT TARGET onnx_proto)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/third/optimizer)
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc)
+file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/*.cc)
 list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc)
-ADD_EXECUTABLE(p2o_exec p2o_exec.cpp ${ALL_SRCS})
-TARGET_INCLUDE_DIRECTORIES(p2o_exec
+list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/cpp2py_export.cc)
+
+ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
+TARGET_INCLUDE_DIRECTORIES(paddle2onnx
    PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
    PUBLIC ${PROTOBUF_INCLUDE_DIRS}
 )
-TARGET_LINK_LIBRARIES(p2o_exec p2o_paddle_proto onnx)
+TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
+
+install(
+    DIRECTORY ${PROJECT_SOURCE_DIR}/paddle2onnx
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING
+    PATTERN "converter.h"
+)
+install(
+    TARGETS paddle2onnx
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+if (BUILD_PADDLE2ONNX_EXE)
+  ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
+  TARGET_INCLUDE_DIRECTORIES(p2o_exec
+     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+     PUBLIC ${PROTOBUF_INCLUDE_DIRS}
+  )
+  TARGET_LINK_LIBRARIES(p2o_exec paddle2onnx)
+endif (BUILD_PADDLE2ONNX_EXE)
 
 if(BUILD_PADDLE2ONNX_PYTHON)
   if("${PY_EXT_SUFFIX}" STREQUAL "")

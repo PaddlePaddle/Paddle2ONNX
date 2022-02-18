@@ -13,6 +13,10 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/exporter.h"
+#include <onnx/checker.h>
+#include <onnx/shape_inference/implementation.h>
+#include "onnxoptimizer/optimize.h"
+
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
 
@@ -53,7 +57,8 @@ void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
 std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
                                bool auto_upgrade_opset, bool verbose,
                                bool enable_onnx_checker,
-                               bool enable_experimental_op) {
+                               bool enable_experimental_op,
+                               bool enable_optimize) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
   helper.Clear();
@@ -152,15 +157,28 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   // pass or fail
   if (enable_onnx_checker) {
     ONNX_NAMESPACE::checker::check_model(*(model.get()));
+    std::cerr << "[Paddle2ONNX] ONNX model conversion is valid." << std::endl;
+    ONNX_NAMESPACE::shape_inference::InferShapes(*(model.get()));
+    std::cerr << "[Paddle2ONNX] Shape Inference done with ONNX model."
+              << std::endl;
   }
 
-  std::string out;
-  if (!model->SerializeToString(&out)) {
-    if (verbose) std::cerr << "ONNX Model SerializeToString error" << std::endl;
-    return "";
-  }
-  if (verbose) {
-    std::cerr << "ONNX Model exported successed!" << std::endl;
+ std::string out;
+  if (enable_optimize) {
+    auto const opt_model = Optimize(*(model.get()));
+    if (!opt_model.SerializeToString(&out)) {
+        if (verbose) {
+            std::cerr << "ONNX Model SerializeToString error" << std::endl;
+        }
+        return "";
+    } 
+  } else {
+        if (!model->SerializeToString(&out)) {
+            if (verbose) {
+                std::cerr << "ONNX Model SerializeToString error" << std::endl;
+            }
+            return "";
+        }
   }
   return out;
 }
@@ -193,12 +211,15 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
 int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   int32_t max_opset = -1;
   bool exportable = true;
+  // Record the number of ops that need to be converted
+  int converted_op_num = 0;
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
       auto op = parser.GetOpDesc(i, j);
       if (op.type() == "feed" || op.type() == "fetch") {
         continue;
       }
+      converted_op_num += 1;
       auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, i, j);
       int32_t current_min_opset = mapper->GetMinOpset(verbose);
       if (current_min_opset < 0) {
@@ -208,6 +229,10 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
       }
       delete mapper;
     }
+  }
+  // If there are only feed and fetch op in Paddle model
+  if (!converted_op_num) {
+    return 7;
   }
 
   // Here we put some checks to make sure
@@ -228,6 +253,11 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   }
 
   return -1;
+}
+
+ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(const ONNX_NAMESPACE::ModelProto& model) {
+  std::vector<std::string> passes = optimization::GetFuseAndEliminationPass();
+  return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 
 }  // namespace paddle2onnx

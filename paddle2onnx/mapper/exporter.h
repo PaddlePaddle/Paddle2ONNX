@@ -13,12 +13,10 @@
 // limitations under the License.
 
 #pragma once
-#include <onnx/checker.h>
 #include <onnx/onnx_pb.h>
 #include <algorithm>
 #include <set>
-
-#include "paddle2onnx/mapper/nn.h"
+#include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
@@ -36,6 +34,10 @@ struct ModelExporter {
                           const std::vector<TensorInfo>& output_infos);
   void ExportOp(const PaddleParser& parser, int32_t opset_version,
                 int64_t block_id, int64_t op_id);
+
+  ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
+
+ public:
   // Get a proper opset version in range of [7, 15]
   // Also will check the model is convertable, this will include 2 parts
   //    1. is the op convert function implemented
@@ -47,11 +49,11 @@ struct ModelExporter {
                           std::set<std::string>* unsupported_ops,
                           bool enable_experimental_op);
 
- public:
   std::string Run(const PaddleParser& parser, int opset_version = 9,
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
-                  bool enable_experimental_op = false);
+                  bool enable_experimental_op = false,
+                  bool enable_optimize = false);
 };
 
 }  // namespace paddle2onnx
