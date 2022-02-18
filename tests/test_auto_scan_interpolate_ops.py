@@ -35,8 +35,6 @@ data_format_map = {
     'trilinear': 'NCDHW',
     'nearest': 'NCHW',
     'bicubic': 'NCHW',
-    'nearest_v1': 'NCHW',
-    'bilinear_v1': 'NCHW',
 }
 
 op_set_map = {
@@ -45,12 +43,7 @@ op_set_map = {
     'trilinear': [9, 10, 11, 12, 13, 14, 15],
     'nearest': [9, 10, 11, 12, 13, 14, 15],
     'bicubic': [11, 12, 13, 14, 15],
-    'nearest_v1': [11, 12, 13, 14, 15],
-    'bilinear_v1': [11, 12, 13, 14, 15],
 }
-
-Scale_Factor = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
-Size = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 
 class Net(BaseNet):
@@ -107,12 +100,16 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
         if data_format == "NCW":
+            num = 1
             input_shape = np.random.choice(input_shape, 3)
             input_shape[0] = 1  # there is a bug when index > 1
         elif data_format == "NCHW":
+            num = 2
             input_shape = np.random.choice(input_shape, 4)
         else:
+            num = 3
             input_shape = np.random.choice(input_shape, 5)
+
         if draw(st.booleans()):
             size = None
             if draw(st.booleans()):
@@ -120,23 +117,22 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
                 scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
             else:
                 # list
-                scale_factor = Scale_Factor
-                if data_format == "NCW":
-                    scale_factor = np.random.choice(scale_factor, 1).tolist()
-                elif data_format == "NCHW":
-                    scale_factor = np.random.choice(scale_factor, 2).tolist()
-                else:
-                    scale_factor = np.random.choice(scale_factor, 3).tolist()
+                scale_factor = draw(
+                    st.lists(
+                        st.floats(
+                            min_value=1.2, max_value=2.0),
+                        min_size=num,
+                        max_size=num))
         else:
             scale_factor = None
             # list
-            size = Size
-            if data_format == "NCW":
-                size = np.random.choice(size, 1).tolist()
-            elif data_format == "NCHW":
-                size = np.random.choice(size, 2).tolist()
-            else:
-                size = np.random.choice(size, 3).tolist()
+            size = draw(
+                st.lists(
+                    st.integers(
+                        min_value=12, max_value=30),
+                    min_size=num,
+                    max_size=num))
+
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
         if mode in ["linear", "bilinear", "trilinear"]:
