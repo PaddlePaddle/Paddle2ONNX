@@ -3,14 +3,13 @@ CMAKE_MINIMUM_REQUIRED (VERSION 3.16)
 
 ADD_SUBDIRECTORY(paddle2onnx)
 
-#set(ONNX_USE_LITE_PROTO ON)
+option(WITH_STATIC              "Compile Paddle2ONNX with  STATIC"               OFF)
+set(ONNX_CUSTOM_PROTOC_PATH "" CACHE STRING "Set yourself Protobufc path")
 
 # Set C++11 as standard for the whole project
 if(NOT MSVC)
   set(CMAKE_CXX_STANDARD 11)
 endif(NOT MSVC)
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # setting max opset version for onnx
 # if you build from other version of onnx
@@ -24,10 +23,18 @@ if(NOT TARGET onnx_proto)
     set(ONNX_NAMESPACE "paddle2onnx")
   endif()
   add_definitions("-DONNX_NAMESPACE=${ONNX_NAMESPACE}")
+
+  if(ONNX_CUSTOM_PROTOC_PATH)
+    set(ONNX_CUSTOM_PROTOC_PATH "${ONNX_CUSTOM_PROTOC_PATH}:$ENV{PATH}")
+    set(ENV{PATH} ${ONNX_CUSTOM_PROTOC_PATH})
+  endif()
+
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_subdirectory(${PROJECT_SOURCE_DIR}/third/onnx)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/third/optimizer)
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
@@ -35,13 +42,14 @@ file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc ${PROJECT_SOUR
 list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc)
 list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/cpp2py_export.cc)
 
-ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
-TARGET_INCLUDE_DIRECTORIES(paddle2onnx
-   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
-   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-   PUBLIC ${PROTOBUF_INCLUDE_DIRS}
-)
-TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+if (WITH_STATIC)
+    ADD_LIBRARY(paddle2onnx STATIC ${ALL_SRCS})
+    TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx )
+else ()
+    ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
+    TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
+endif()
 
 install(
     DIRECTORY ${PROJECT_SOURCE_DIR}/paddle2onnx
@@ -56,12 +64,11 @@ install(
 
 if (BUILD_PADDLE2ONNX_EXE)
   ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
-  TARGET_INCLUDE_DIRECTORIES(p2o_exec
-     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
-     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-     PUBLIC ${PROTOBUF_INCLUDE_DIRS}
-  )
-  TARGET_LINK_LIBRARIES(p2o_exec paddle2onnx)
+  if (WITH_STATIC)
+    TARGET_LINK_LIBRARIES(p2o_exec -Wl,--whole-archive paddle2onnx -Wl,--no-whole-archive)
+  else()
+    TARGET_LINK_LIBRARIES(p2o_exec paddle2onnx)
+  endif()
 endif (BUILD_PADDLE2ONNX_EXE)
 
 if(BUILD_PADDLE2ONNX_PYTHON)
