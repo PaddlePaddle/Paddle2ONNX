@@ -49,26 +49,16 @@ class Net1(BaseNet):
         out_shape = self.config['size']
         scale = self.config['scale_factor']
         data_format = self.config['data_format']
+        mode = self.config['mode']
 
-        if self.config['mode'] == 'NEAREST':
-            x = paddle.fluid.layers.resize_nearest(
-                inputs,
-                out_shape=out_shape,
-                scale=scale,
-                name=None,
-                actual_shape=None,
-                align_corners=True,
-                data_format=data_format)
-        else:
-            x = paddle.fluid.layers.resize_bilinear(
-                inputs,
-                out_shape=out_shape,
-                scale=scale,
-                name=None,
-                actual_shape=None,
-                align_corners=True,
-                align_mode=1,
-                data_format=data_format)
+        x = paddle.fluid.layers.image_resize(
+            inputs,
+            out_shape=out_shape,
+            scale=scale,
+            resample=mode,
+            align_corners=align_corners,
+            align_mode=align_mode,
+            data_format=data_format)
         return x
 
 
@@ -95,6 +85,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
 
         if draw(st.booleans()):
             size = None
+            # scale_factor should b even. eg [2, 4, 6, 8, 10]
             scale_factor = draw(st.integers(min_value=2, max_value=10))
             scale_factor = scale_factor + 1 if scale_factor % 2 != 0 else scale_factor
             print("scale: ", scale_factor)
