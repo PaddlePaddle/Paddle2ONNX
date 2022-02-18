@@ -63,7 +63,7 @@ class Net(BaseNet):
 
         align_mode = self.config['align_mode']
         mode = self.config['mode']
-        align_corners = self.config['align_corners'][0]
+        align_corners = self.config['align_corners']
         data_format = self.config['data_format']
         # align_corners True is only set with the interpolating modes: linear | bilinear | bicubic | trilinear
         if mode == "nearest":
@@ -102,7 +102,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         mode = draw(
             st.sampled_from(
                 ["linear", "nearest", "bilinear", "bicubic", "trilinear"]))
-        align_corners = draw(st.booleans()),
+        align_corners = draw(st.booleans())
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
         if data_format == "NCW":
@@ -145,11 +145,12 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
 
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
-        if mode in ["linear", "bilinear", "trilinear"]:
-            if not align_corners[0] and align_mode == 1:
-                opset_version = [9, 10, 11, 12, 13, 14, 15]
-            else:
-                opset_version = [11, 12, 13, 14, 15]
+        if align_mode == 0 and mode in ["linear", "bilinear", "trilinear"]:
+            opset_version = [11, 12, 13, 14, 15]
+
+        if align_corners:
+            opset_version = [11, 12, 13, 14, 15]
+
         config = {
             "op_names": [op_name],
             "test_data_shapes": [input_shape],
@@ -196,7 +197,7 @@ class Net1(BaseNet):
             size = [paddle.to_tensor(12, self.config['size_dtype']), 13, 14]
 
         align_mode = self.config['align_mode']
-        align_corners = self.config['align_corners'][0]
+        align_corners = self.config['align_corners']
         data_format = self.config['data_format']
         # align_corners True is only set with the interpolating modes: linear | bilinear | bicubic | trilinear
         if mode == "nearest":
@@ -235,7 +236,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         mode = draw(
             st.sampled_from(
                 ["linear", "nearest", "bilinear", "bicubic", "trilinear"]))
-        align_corners = draw(st.booleans()),
+        align_corners = draw(st.booleans())
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
         if data_format == "NCW":
@@ -278,11 +279,12 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
 
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
-        if mode in ["linear", "bilinear", "trilinear"]:
-            if not align_corners[0] and align_mode == 1:
-                opset_version = [9, 10, 11, 12, 13, 14, 15]
-            else:
-                opset_version = [11, 12, 13, 14, 15]
+        if align_mode == 0 and mode in ["linear", "bilinear", "trilinear"]:
+            opset_version = [11, 12, 13, 14, 15]
+
+        if align_corners:
+            opset_version = [11, 12, 13, 14, 15]
+
         config = {
             "op_names": [op_name],
             "test_data_shapes": [input_shape],

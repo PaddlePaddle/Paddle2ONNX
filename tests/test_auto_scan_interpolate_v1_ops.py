@@ -30,8 +30,8 @@ data_format_map = {
 }
 
 op_set_map = {
-    'NEAREST': [11, 12, 13, 14, 15],
-    'BILINEAR': [11, 12, 13, 14, 15],
+    'NEAREST': [9, 10, 11, 12, 13, 14, 15],
+    'BILINEAR': [9, 10, 11, 12, 13, 14, 15],
 }
 
 
@@ -44,7 +44,7 @@ class Net1(BaseNet):
         """
         forward
         """
-        align_corners = self.config['align_corners'][0]
+        align_corners = self.config['align_corners']
         align_mode = self.config['align_mode']
         out_shape = self.config['size']
         scale = self.config['scale_factor']
@@ -76,9 +76,9 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32"]))
         # mode = draw(st.sampled_from(["NEAREST"]))
-        # mode = draw(st.sampled_from(["BILINEAR"]))
-        mode = draw(st.sampled_from(["NEAREST", "BILINEAR"]))
-        align_corners = draw(st.booleans()),
+        mode = draw(st.sampled_from(["BILINEAR"]))
+        # mode = draw(st.sampled_from(["NEAREST", "BILINEAR"]))
+        align_corners = draw(st.booleans())
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
         input_shape = np.random.choice(input_shape, 4)
@@ -101,6 +101,13 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
 
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
+
+        if align_mode == 0 and mode == "BILINEAR":
+            opset_version = [11, 12, 13, 14, 15]
+
+        if align_corners:
+            opset_version = [11, 12, 13, 14, 15]
+
         config = {
             "op_names": [op_name],
             "test_data_shapes": [input_shape],
