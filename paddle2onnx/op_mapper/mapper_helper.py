@@ -28,27 +28,42 @@ def is_static_shape(shape):
         )
 
 
-def slice_helper(graph, input, axes, starts, ends, outputs=[]):
+def slice_helper(graph,
+                 input,
+                 axes,
+                 starts,
+                 ends,
+                 outputs=None,
+                 dtype=dtypes.ONNX.INT64):
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if axes is not None and not isinstance(axes, list):
+        axes = [axes]
+    if starts is not None and not isinstance(starts, (list, six.string_types)):
+        starts = [starts]
+    if ends is not None and not isinstance(ends, (list, six.string_types)):
+        ends = [ends]
     if graph.opset_version < 10:
         slice_node = graph.make_node(
             "Slice",
-            inputs=input,
+            inputs=inputs,
             outputs=outputs,
             axes=axes,
             starts=starts,
             ends=ends)
         return slice_node
     else:
-        axes_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=axes)
-        starts_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=starts)
-        ends_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=ends)
-        slice_node = graph.make_node(
-            "Slice",
-            inputs=[input, starts_node, ends_node, axes_node],
-            outputs=outputs)
+        if not isinstance(starts, six.string_types):
+            starts = graph.make_node('Constant', dtype=dtype, value=starts)
+        if not isinstance(ends, six.string_types):
+            ends = graph.make_node('Constant', dtype=dtype, value=ends)
+        inputs = inputs + [starts, ends]
+        if axes is not None:
+            axes_node = graph.make_node('Constant', dtype=dtype, value=axes)
+            inputs.append(axes_node)
+        slice_node = graph.make_node("Slice", inputs=inputs, outputs=outputs)
         return slice_node
 
 
