@@ -20,31 +20,16 @@ import unittest
 import paddle
 
 op_api_map = {
-    'linear': 'linear_interp_v2',
-    'bilinear': 'bilinear_interp_v2',
-    'trilinear': 'trilinear_interp_v2',
-    'nearest': 'nearest_interp_v2',
-    'bicubic': 'bicubic_interp_v2',
     'nearest_v1': 'nearest_interp',
     'bilinear_v1': 'bilinear_interp',
 }
 
 data_format_map = {
-    'linear': 'NCW',
-    'bilinear': 'NCHW',
-    'trilinear': 'NCDHW',
-    'nearest': 'NCHW',
-    'bicubic': 'NCHW',
     'nearest_v1': 'NCHW',
     'bilinear_v1': 'NCHW',
 }
 
 op_set_map = {
-    'linear': [9, 10, 11, 12, 13, 14, 15],
-    'bilinear': [9, 10, 11, 12, 13, 14, 15],
-    'trilinear': [11, 12, 13, 14, 15],
-    'nearest': [9, 10, 11, 12, 13, 14, 15],
-    'bicubic': [11, 12, 13, 14, 15],
     'nearest_v1': [11, 12, 13, 14, 15],
     'bilinear_v1': [11, 12, 13, 14, 15],
 }
@@ -62,18 +47,31 @@ class Net1(BaseNet):
         """
         forward
         """
-        # align_corners = self.config['align_corners'][0]
-        # if self.config['mode'] == 'nearest_v1':
-        #     x = paddle.fluid.layers.resize_nearest(
-        #         inputs, out_shape=None, scale=2.0, align_corners=align_corners)
-        # else:
-        #     x = paddle.fluid.layers.resize_bilinear(
-        #         inputs, scale=2.0, align_corners=False)
-        if self.config['mode'] == 'nearest_v1':
-            x = paddle.fluid.layers.resize_nearest(inputs, scale=2.0)
-        else:
-            x = paddle.fluid.layers.resize_bilinear(inputs, scale=2.0)
+        align_corners = self.config['align_corners'][0]
+        align_mode = self.config['align_mode']
+        out_shape = self.config['size']
+        scale = self.config['scale_factor']
+        data_format = self.config['data_format']
 
+        if self.config['mode'] == 'nearest_v1':
+            x = paddle.fluid.layers.resize_nearest(
+                inputs,
+                out_shape=None,
+                scale=2.0,
+                name=None,
+                actual_shape=None,
+                align_corners=True,
+                data_format=data_format)
+        else:
+            x = paddle.fluid.layers.resize_bilinear(
+                inputs,
+                out_shape=None,
+                scale=2.0,
+                name=None,
+                actual_shape=None,
+                align_corners=True,
+                align_mode=1,
+                data_format=data_format)
         return x
 
 
@@ -147,7 +145,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=100)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":

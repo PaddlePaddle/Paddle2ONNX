@@ -140,7 +140,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
         if mode in ["linear", "bilinear", "trilinear"]:
-            if align_corners == False and align_mode == 1:
+            if not align_corners[0] and align_mode == 1:
                 opset_version = [9, 10, 11, 12, 13, 14, 15]
             else:
                 opset_version = [11, 12, 13, 14, 15]
