@@ -88,14 +88,15 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
             # scale_factor should b even. eg [2, 4, 6, 8, 10]
             scale_factor = draw(st.integers(min_value=2, max_value=10))
             scale_factor = scale_factor + 1 if scale_factor % 2 != 0 else scale_factor
-            print("scale: ", scale_factor)
         else:
             scale_factor = None
-            size = draw(st.integers(min_value=2, max_value=10))
-            size1 = size + 1 if size % 2 != 0 else size
-
-            size = draw(st.integers(min_value=2, max_value=10))
-            size2 = size + 1 if size % 2 != 0 else size
+            size1 = draw(st.integers(min_value=12, max_value=30))
+            # NEAREST, size should be even
+            if mode == 'NEAREST':
+                size1 = size1 + 1 if size1 % 2 != 0 else size1
+            size2 = draw(st.integers(min_value=12, max_value=30))
+            if mode == 'NEAREST':
+                size2 = size2 + 1 if size2 % 2 != 0 else size2
             size = [size1, size2]
 
         op_name = op_api_map[mode]
