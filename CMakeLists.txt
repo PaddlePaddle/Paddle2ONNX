@@ -45,7 +45,7 @@ list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/cp
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 if (WITH_STATIC)
     ADD_LIBRARY(paddle2onnx STATIC ${ALL_SRCS})
-    TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
+    TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx )
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
     TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
@@ -64,7 +64,11 @@ install(
 
 if (BUILD_PADDLE2ONNX_EXE)
   ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
-  TARGET_LINK_LIBRARIES(p2o_exec paddle2onnx)
+  if (WITH_STATIC)
+    TARGET_LINK_LIBRARIES(p2o_exec -Wl,--whole-archive paddle2onnx -Wl,--no-whole-archive)
+  else()
+    TARGET_LINK_LIBRARIES(p2o_exec paddle2onnx)
+  endif()
 endif (BUILD_PADDLE2ONNX_EXE)
 
 if(BUILD_PADDLE2ONNX_PYTHON)
