@@ -690,10 +690,13 @@ bool PaddleParser::ExistsDumplicateTensorName() const {
     auto op = prog->blocks(0).ops(i);
     for (auto j = 0; j < op.outputs_size(); ++j) {
       for (auto k = 0; k < op.outputs(j).arguments_size(); ++k) {
+        if (op.type() == "fetch") {
+          continue;
+        }
         if (names.find(op.outputs(j).arguments(k)) != names.end()) {
-          std::cerr << "[Paddle2ONNX] There's dumplicate output name in this "
-                       "model, not supported yet."
-                    << std::endl;
+          std::cerr << "[Paddle2ONNX] There's dumplicate output name: "
+                    << op.outputs(j).arguments(k)
+                    << " in this model, not supported yet." << std::endl;
           return true;
         }
         names.insert(op.outputs(j).arguments(k));

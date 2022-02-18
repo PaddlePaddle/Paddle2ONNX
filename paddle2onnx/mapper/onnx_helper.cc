@@ -426,5 +426,29 @@ std::vector<std::string> OnnxHelper::Split(const std::string& input,
   }
   return Split(input, outputs, split, axis);
 }
-
+std::vector<std::string> OnnxHelper::DtypeAlignment(
+    const std::vector<TensorInfo>& input_info, int32_t& out_dtype) {
+  Assert(input_info.size() > 0,
+         "OnnxHelper::DtypeAlignment requires the size of input info > 0.");
+  std::vector<int32_t> input_dtypes;
+  input_dtypes.reserve(input_info.size());
+  for (auto i = 0; i < input_info.size(); ++i) {
+    input_dtypes.push_back(input_info[i].dtype);
+  }
+  int32_t max_index = -1;
+  for (auto i : input_dtypes) {
+    if (i > max_index) {
+      max_index = i;
+    }
+  }
+  out_dtype = max_index;
+  std::vector<std::string> casted_node;
+  casted_node.reserve(input_info.size());
+  for (auto i = 0; i < input_info.size(); ++i) {
+    std::string cast_name =
+        AutoCast(input_info[i].name, input_info[i].dtype, max_index);
+    casted_node.push_back(cast_name);
+  }
+  return casted_node;
+}
 }  // namespace paddle2onnx

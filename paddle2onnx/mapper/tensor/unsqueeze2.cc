@@ -35,8 +35,7 @@ int32_t UnSqueeze2Mapper::GetMinOpset(bool verbose) {
   std::vector<TensorInfo> axes_info =
       parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
   std::vector<int64_t> index = parser_->GetBlockOpIdx(axes_info[0].name);
-  Weight value;
-  bool found_value = parser_->GetValueFromTensor(index[0], index[1], &value);
+  bool found_value = parser_->GetValueFromTensor(index[0], index[1]);
 
   if (!found_value) {
     if (verbose) {
