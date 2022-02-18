@@ -25,8 +25,6 @@ op_api_map = {
     'trilinear': 'trilinear_interp_v2',
     'nearest': 'nearest_interp_v2',
     'bicubic': 'bicubic_interp_v2',
-    'nearest_v1': 'nearest_interp',
-    'bilinear_v1': 'bilinear_interp',
 }
 
 data_format_map = {
