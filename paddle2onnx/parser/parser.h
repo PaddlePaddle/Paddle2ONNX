@@ -15,6 +15,7 @@
 #pragma once
 #include <algorithm>
 #include <cassert>
+#include <numeric>
 #include <type_traits>
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
 
@@ -48,13 +49,11 @@ struct Weight {
     }
   }
   template <typename T>
-  void get(std::vector<T>& data) {
-    int64_t nums = 1;
-    for (auto i = 0; i < shape.size(); ++i) {
-      nums *= shape[i];
-    }
-    data.resize(nums);
-    memcpy(data.data(), buffer.data(), buffer.size());
+  void get(std::vector<T>* data) {
+    int64_t nums = std::accumulate(std::begin(shape), std::end(shape), 1,
+                                   std::multiplies<int64_t>());
+    data->resize(nums);
+    memcpy(data->data(), buffer.data(), buffer.size());
   }
 };
 

@@ -48,7 +48,7 @@ void ConcatMapper::Opset7(OnnxHelper* helper) {
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
   int32_t casted_dtype;
   std::vector<std::string> casted_names =
-      helper->DtypeAlignment(input_info, casted_dtype);
+      helper->DtypeAlignment(input_info, &casted_dtype);
   bool has_axis_tensor_input =
       parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor");
 
@@ -60,7 +60,7 @@ void ConcatMapper::Opset7(OnnxHelper* helper) {
     std::vector<int64_t> index = parser_->GetBlockOpIdx(axes_info[0].name);
     Weight value;
     parser_->GetValueFromTensor(index[0], index[1], &value);
-    value.get(axes);
+    value.get(&axes);
     axis = axes[0];
   } else {
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
@@ -71,7 +71,6 @@ void ConcatMapper::Opset7(OnnxHelper* helper) {
   }
   auto node = helper->MakeNode("Concat", casted_names, {output_info[0].name});
   AddAttribute(node, "axis", axis);
-  helper->AutoCast(node->output(0), casted_dtype, output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

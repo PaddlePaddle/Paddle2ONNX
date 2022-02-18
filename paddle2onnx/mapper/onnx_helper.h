@@ -92,7 +92,7 @@ class OnnxHelper {
   std::string AutoCast(const std::string& input, const std::string& output,
                        int32_t input_paddle_dtype, int32_t to_paddle_dtype);
   std::vector<std::string> DtypeAlignment(
-      const std::vector<TensorInfo>& input_info, int32_t& out_dtype);
+      const std::vector<TensorInfo>& input_info, int32_t* out_dtype);
   std::string Clip(const std::string& input, const float& min, const float& max,
                    const int32_t& in_dtype);
   std::string Clip(const std::string& input, const std::string& output,

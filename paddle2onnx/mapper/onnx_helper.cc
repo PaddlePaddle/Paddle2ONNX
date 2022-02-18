@@ -427,7 +427,7 @@ std::vector<std::string> OnnxHelper::Split(const std::string& input,
   return Split(input, outputs, split, axis);
 }
 std::vector<std::string> OnnxHelper::DtypeAlignment(
-    const std::vector<TensorInfo>& input_info, int32_t& out_dtype) {
+    const std::vector<TensorInfo>& input_info, int32_t* out_dtype) {
   Assert(input_info.size() > 0,
          "OnnxHelper::DtypeAlignment requires the size of input info > 0.");
   std::vector<int32_t> input_dtypes;
@@ -441,7 +441,7 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
       max_index = i;
     }
   }
-  out_dtype = max_index;
+  *out_dtype = max_index;
   std::vector<std::string> casted_node;
   casted_node.reserve(input_info.size());
   for (auto i = 0; i < input_info.size(); ++i) {

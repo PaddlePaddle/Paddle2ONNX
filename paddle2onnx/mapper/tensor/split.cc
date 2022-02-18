@@ -31,7 +31,7 @@ std::vector<int64_t> SplitMapper::GetAxes() {
     Weight value;
     bool found_value = parser_->GetValueFromTensor(index[0], index[1], &value);
     if (found_value) {
-      value.get(axis);
+      value.get(&axis);
     }
   } else {
     int64_t axis_val;
@@ -70,28 +70,27 @@ void SplitMapper::Opset7(OnnxHelper* helper) {
     parser_->GetOpAttr(op, "sections", &sections);
     std::vector<int64_t> input_index;
     for (auto i = 0; i < input_info[0].Rank(); ++i) {
-      if (input_info[0].shape[i] == -1) input_index.push_back(i);
+      if (input_info[0].shape[i] == -1) {
+        input_index.push_back(i);
+      }
     }
     std::vector<int64_t> sections_index;
     for (auto i = 0; i < sections.size(); ++i) {
-      if (sections[i] == -1) sections_index.push_back(i);
+      if (sections[i] == -1) {
+        sections_index.push_back(i);
+      }
     }
     if (input_index.size() == 0 && sections_index.size() == 1) {
       int64_t sum_val = 0;
-      for (auto i : sections) sum_val += i;
+      for (auto i : sections) {
+        sum_val += i;
+      }
       sections[sections_index[0]] = input_info[0].shape[axis] - sum_val - 1;
     }
     helper->Split(input_info[0].name, output_names, sections, axis);
-    //   auto node = helper->MakeNode("Split", {input_info[0].name},
-    //   {output_info[0].name});
-    //   AddAttribute(node, "axis", axis[0]);
-    //   AddAttribute(node, "split", sections);
   } else {
     std::vector<int64_t> split_val;
     helper->Split(input_info[0].name, output_names, split_val, axis);
-    //   auto node = helper->MakeNode("Split", {input_info[0].name},
-    //   {output_info[0].name});
-    //   AddAttribute(node, "axis", axis[0]);
   }
 }
 

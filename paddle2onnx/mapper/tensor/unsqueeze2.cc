@@ -22,7 +22,9 @@ REGISTER_MAPPER(unsqueeze2, UnSqueeze2Mapper)
 int32_t UnSqueeze2Mapper::GetMinOpset(bool verbose) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   bool has_attr = parser_->OpHasAttr(op, "axes");
-  if (has_attr) return 7;
+  if (has_attr) {
+    return 7;
+  }
   bool has_axis_tensor_info =
       parser_->OpHasInput(block_idx_, op_idx_, "AxesTensor");
   if (!has_axis_tensor_info) {
@@ -71,7 +73,7 @@ std::vector<int64_t> UnSqueeze2Mapper::ComputeAxes() {
     std::vector<int64_t> index = parser_->GetBlockOpIdx(axes_info[0].name);
     Weight value;
     parser_->GetValueFromTensor(index[0], index[1], &value);
-    value.get(axes);
+    value.get(&axes);
   }
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");

@@ -23,9 +23,12 @@ class SplitMapper : public Mapper {
  public:
   SplitMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
-  std::vector<int64_t> GetAxes();
+
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
+
+ private:
+  std::vector<int64_t> GetAxes();
 };
 
 }  // namespace paddle2onnx
