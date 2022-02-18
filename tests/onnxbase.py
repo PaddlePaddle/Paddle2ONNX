@@ -290,6 +290,8 @@ class APIOnnx(object):
         """
         self._mkdir()
         self.set_input_spec()
+        min_opset_version = min(self._version)
+        self._version = list(range(min_opset_version, 16))
         # only test cpu now
         self.places = ['cpu']
         for place in self.places:
