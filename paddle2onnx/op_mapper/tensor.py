@@ -164,7 +164,7 @@ class Unstack():
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
-    support_opset_version_range = (8, 12)
+    support_opset_version_range = (8, 15)
 
     @classmethod
     def opset_8(cls, graph, node, **kw):
@@ -350,6 +350,115 @@ class Split():
         else:
             axis = node.attr('axis')
         return axis
+
+
+@op_mapper(['roll'])
+class Roll():
+    support_opset_version_range = (4, 15)
+
+    @classmethod
+    def roll(cls, graph, node, input_x, dims, shifts):
+        for i in range(len(dims)):
+            if graph.opset_version >= 10 and isinstance(shifts,
+                                                        six.string_types):
+                to_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                    'ShiftsTensor', 0)]
+                const_i = graph.make_node('Constant', dtype=to_dtype, value=i)
+                const_0 = graph.make_node('Constant', dtype=to_dtype, value=0)
+                shift_node = graph.make_node(
+                    'Gather', inputs=[shifts, const_i], axis=0)
+                shift_node = graph.make_node(
+                    "Sub", inputs=[const_0, shift_node])
+                if graph.opset_version >= 13:
+                    axis_node = graph.make_node(
+                        'Constant', dtype=dtypes.ONNX.INT64, value=0)
+                    shift_node = graph.make_node(
+                        'Unsqueeze', inputs=[shift_node, axis_node])
+                else:
+                    shift_node = graph.make_node(
+                        'Unsqueeze', inputs=[shift_node], axes=[0])
+            elif graph.opset_version < 10 and isinstance(shifts,
+                                                         six.string_types):
+                raise Exception(
+                    "shifts of roll is Tensor, please try with higher onnx opset_version>=10."
+                )
+            else:
+                shift_node = [-shifts[i]]
+                to_dtype = dtypes.ONNX.INT64
+            shapes = []
+            shape = mapper_helper.slice_helper(
+                graph, input_x, [dims[i]], shift_node, [60000], dtype=to_dtype)
+            shapes.append(shape)
+            shape = mapper_helper.slice_helper(
+                graph, input_x, [dims[i]], [0], shift_node, dtype=to_dtype)
+            shapes.append(shape)
+            input_x = graph.make_node('Concat', inputs=shapes, axis=dims[i])
+        return input_x
+
+    @classmethod
+    def flatten(cls, graph, node):
+        dims = len(node.input_shape('X', 0))
+        start_axis = 0
+        end_axis = dims - 1
+        shape_node = graph.make_node('Shape', inputs=node.input('X'))
+        if end_axis < dims - 1:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slice3 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[end_axis + 1],
+                ends=[dims])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64), slice3
+            ]
+        else:
+            slice1 = mapper_helper.slice_helper(
+                graph, shape_node, axes=[0], starts=[0], ends=[start_axis])
+            slices = [
+                slice1, graph.make_node(
+                    'Constant', value=[-1], dtype=dtypes.ONNX.INT64)
+            ]
+        final_shape = graph.make_node('Concat', inputs=slices, axis=0)
+        output = graph.make_node(
+            'Reshape', inputs=[node.input('X')[0], final_shape])
+        return output
+
+    @classmethod
+    def opset_4(cls, graph, node, **kw):
+        dims = node.attr('axis')
+        shifts = node.attr('shifts')
+        input_x = node.input('X')[0]
+        input_shape = node.input_shape('X', 0)
+        shifts_node = node.input('ShiftsTensor')
+        if len(dims) > 0:
+            axes = [
+                axis + len(input_shape) if axis < 0 else axis
+                for i, axis in enumerate(dims)
+            ]
+            if shifts_node is not None and len(shifts_node) > 0:
+                shifts = shifts_node[0]
+            else:
+                for i in range(0, len(axes)):
+                    if input_shape[axes[i]] > 0:
+                        assert -input_shape[axes[i]] <= shifts[i] <= input_shape[axes[i]], \
+                            "the value of shifts in axis is less than the value of input_shape in axis."
+
+            input_x = cls.roll(graph, node, input_x, axes, shifts)
+            graph.make_node(
+                'Identity', inputs=[input_x], outputs=node.output('Out'))
+        else:
+            if shifts_node is not None and len(shifts_node) > 0:
+                shifts = shifts_node[0]
+            input_x = cls.flatten(graph, node)
+            input_x = cls.roll(graph, node, input_x, [0], shifts)
+            shape_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.INT64,
+                       'value': list(input_shape)})
+            graph.make_node(
+                'Reshape',
+                inputs=[input_x, shape_node],
+                outputs=node.output('Out'))
 
 
 @op_mapper(['slice', 'strided_slice'])
@@ -549,7 +658,7 @@ class Tile():
 
 @op_mapper('range')
 class Range():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
