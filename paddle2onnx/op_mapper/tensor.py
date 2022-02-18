@@ -1648,22 +1648,18 @@ class UniformRandom():
 
 @op_mapper(
     [
-        'bilinear_interp',
-        'nearest_interp',
-        'linear_interp_v2',
-        'bilinear_interp_v2',
-        'trilinear_interp_v2',
-        'nearest_interp_v2',
-        'bicubic_interp_v2',
+        'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
+        'nearest_interp_v2', 'bicubic_interp_v2', 'linear_interp_v2',
+        'trilinear_interp_v2'
     ],
     mapper_dict={
         'bilinear_interp': 'linear',
         'nearest_interp': 'nearest',
-        'linear_interp_v2': 'linear',
         'bilinear_interp_v2': 'linear',
-        'trilinear_interp_v2': 'linear',
         'nearest_interp_v2': 'nearest',
         'bicubic_interp_v2': 'cubic',
+        'linear_interp_v2': 'linear',
+        'trilinear_interp_v2': 'linear',
     },
     opset_op_dict={
         9: 'Upsample',
