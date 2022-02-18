@@ -20,18 +20,24 @@ import unittest
 import paddle
 
 op_api_map = {
+    'LINEAR': 'linear_interp',
     'NEAREST': 'nearest_interp',
     'BILINEAR': 'bilinear_interp',
+    'TRILINEAR': 'trilinear_interp',
 }
 
 data_format_map = {
+    'LINEAR': 'NCW',
     'NEAREST': 'NCHW',
     'BILINEAR': 'NCHW',
+    'TRILINEAR': 'NCDHW',
 }
 
 op_set_map = {
+    'LINEAR': [9, 10, 11, 12, 13, 14, 15],
     'NEAREST': [9, 10, 11, 12, 13, 14, 15],
     'BILINEAR': [9, 10, 11, 12, 13, 14, 15],
+    'TRILINEAR': [9, 10, 11, 12, 13, 14, 15]
 }
 
 
@@ -82,15 +88,24 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
                     min_value=2, max_value=8), min_size=5, max_size=6))
 
         dtype = draw(st.sampled_from(["float32"]))
+        # mode = draw(st.sampled_from(["LINEAR"]))
         # mode = draw(st.sampled_from(["NEAREST"]))
-        mode = draw(st.sampled_from(["BILINEAR"]))
-        # mode = draw(st.sampled_from(["NEAREST", "BILINEAR"]))
+        # mode = draw(st.sampled_from(["BILINEAR"]))
+        # mode = draw(st.sampled_from(["TRILINEAR"]))
+        mode = draw(
+            st.sampled_from(["LINEAR", "NEAREST", "BILINEAR", "TRILINEAR"]))
         align_corners = draw(st.booleans())
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
-        input_shape = np.random.choice(input_shape, 4)
+        if data_format == "NCW":
+            input_shape = np.random.choice(input_shape, 3)
+            input_shape[0] = 1  # there is a bug when index > 1
+        elif data_format == "NCHW":
+            input_shape = np.random.choice(input_shape, 4)
+        else:
+            input_shape = np.random.choice(input_shape, 5)
 
-        size_dtype = draw(st.sampled_from(["int32", "int64"]))
+        size_dtype = draw(st.sampled_from(["int32"]))
         scale_dtype = draw(st.sampled_from(["float32"]))
 
         is_scale_tensor = False
@@ -105,18 +120,23 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
             scale_factor = None
             is_size_tensor = draw(st.booleans())
             size1 = draw(st.integers(min_value=12, max_value=30))
-            # NEAREST, size should be even
-            if mode == 'NEAREST':
-                size1 = size1 + 1 if size1 % 2 != 0 else size1
             size2 = draw(st.integers(min_value=12, max_value=30))
-            if mode == 'NEAREST':
-                size2 = size2 + 1 if size2 % 2 != 0 else size2
-            size = [size1, size2]
+            size3 = draw(st.integers(min_value=12, max_value=30))
+            if mode == 'LINEAR':
+                size = [size1]
+            if mode in ['NEAREST', 'BILINEAR']:
+                # NEAREST, size should be even
+                if mode == 'NEAREST':
+                    size1 = size1 + 1 if size1 % 2 != 0 else size1
+                    size2 = size2 + 1 if size2 % 2 != 0 else size2
+                size = [size1, size2]
+            if mode == "TRILINEAR":
+                size = [size1, size2, size3]
 
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
 
-        if align_mode == 0 and mode == "BILINEAR":
+        if align_mode == 0 and mode in ["LINEAR", "BILINEAR", "TRILINEAR"]:
             opset_version = [11, 12, 13, 14, 15]
 
         if align_corners:
@@ -145,7 +165,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=80)
 
 
 if __name__ == "__main__":

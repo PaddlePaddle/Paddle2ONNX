@@ -1651,7 +1651,7 @@ class UniformRandom():
     [
         'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
         'nearest_interp_v2', 'bicubic_interp_v2', 'linear_interp_v2',
-        'trilinear_interp_v2'
+        'trilinear_interp_v2', 'trilinear_interp', 'linear_interp'
     ],
     mapper_dict={
         'bilinear_interp': 'linear',
@@ -1661,6 +1661,8 @@ class UniformRandom():
         'bicubic_interp_v2': 'cubic',
         'linear_interp_v2': 'linear',
         'trilinear_interp_v2': 'linear',
+        'trilinear_interp': 'linear',
+        'linear_interp': 'linear',
     },
     opset_op_dict={
         9: 'Upsample',
