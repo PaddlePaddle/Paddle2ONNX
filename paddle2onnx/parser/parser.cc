@@ -203,7 +203,7 @@ bool PaddleParser::LoadParams(const std::string& path) {
       read_size += sizeof(lod_level);
       is.read(reinterpret_cast<char*>(&lod_level), sizeof(lod_level));
       Assert(lod_level == 0,
-             "Paddle2ONNX: Only support weight with lod_level = 1.");
+             "Paddle2ONNX: Only support weight with lod_level = 0.");
     }
     {
       // Another version, we don't use it
