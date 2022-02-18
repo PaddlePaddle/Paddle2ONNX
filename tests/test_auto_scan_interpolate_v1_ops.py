@@ -20,22 +20,19 @@ import unittest
 import paddle
 
 op_api_map = {
-    'nearest_v1': 'nearest_interp',
-    'bilinear_v1': 'bilinear_interp',
+    'NEAREST': 'nearest_interp',
+    'BILINEAR': 'bilinear_interp',
 }
 
 data_format_map = {
-    'nearest_v1': 'NCHW',
-    'bilinear_v1': 'NCHW',
+    'NEAREST': 'NCHW',
+    'BILINEAR': 'NCHW',
 }
 
 op_set_map = {
-    'nearest_v1': [11, 12, 13, 14, 15],
-    'bilinear_v1': [11, 12, 13, 14, 15],
+    'NEAREST': [11, 12, 13, 14, 15],
+    'BILINEAR': [11, 12, 13, 14, 15],
 }
-
-Scale_Factor = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
-Size = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 
 class Net1(BaseNet):
@@ -53,11 +50,11 @@ class Net1(BaseNet):
         scale = self.config['scale_factor']
         data_format = self.config['data_format']
 
-        if self.config['mode'] == 'nearest_v1':
+        if self.config['mode'] == 'NEAREST':
             x = paddle.fluid.layers.resize_nearest(
                 inputs,
-                out_shape=None,
-                scale=2.0,
+                out_shape=out_shape,
+                scale=scale,
                 name=None,
                 actual_shape=None,
                 align_corners=True,
@@ -65,8 +62,8 @@ class Net1(BaseNet):
         else:
             x = paddle.fluid.layers.resize_bilinear(
                 inputs,
-                out_shape=None,
-                scale=2.0,
+                out_shape=out_shape,
+                scale=scale,
                 name=None,
                 actual_shape=None,
                 align_corners=True,
@@ -88,42 +85,28 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
                     min_value=2, max_value=8), min_size=5, max_size=6))
 
         dtype = draw(st.sampled_from(["float32"]))
-        # mode = draw(st.sampled_from(["nearest_v1"]))
-        # mode = draw(st.sampled_from(["bilinear_v1"]))
-        mode = draw(st.sampled_from(["nearest_v1", "bilinear_v1"]))
+        # mode = draw(st.sampled_from(["NEAREST"]))
+        # mode = draw(st.sampled_from(["BILINEAR"]))
+        mode = draw(st.sampled_from(["NEAREST", "BILINEAR"]))
         align_corners = draw(st.booleans()),
         align_mode = draw(st.integers(min_value=0, max_value=1))
         data_format = data_format_map[mode]
-        if data_format == "NCW":
-            input_shape = np.random.choice(input_shape, 3)
-        elif data_format == "NCHW":
-            input_shape = np.random.choice(input_shape, 4)
-        else:
-            input_shape = np.random.choice(input_shape, 5)
+        input_shape = np.random.choice(input_shape, 4)
+
         if draw(st.booleans()):
             size = None
-            if draw(st.booleans()):
-                # float
-                scale_factor = draw(st.floats(min_value=1.2, max_value=2.0))
-            else:
-                # list
-                scale_factor = Scale_Factor
-                if data_format == "NCW":
-                    scale_factor = np.random.choice(scale_factor, 1).tolist()
-                elif data_format == "NCHW":
-                    scale_factor = np.random.choice(scale_factor, 2).tolist()
-                else:
-                    scale_factor = np.random.choice(scale_factor, 3).tolist()
+            scale_factor = draw(st.integers(min_value=2, max_value=10))
+            scale_factor = scale_factor + 1 if scale_factor % 2 != 0 else scale_factor
+            print("scale: ", scale_factor)
         else:
             scale_factor = None
-            # list
-            size = Size
-            if data_format == "NCW":
-                size = np.random.choice(size, 1).tolist()
-            elif data_format == "NCHW":
-                size = np.random.choice(size, 2).tolist()
-            else:
-                size = np.random.choice(size, 3).tolist()
+            size = draw(st.integers(min_value=2, max_value=10))
+            size1 = size + 1 if size % 2 != 0 else size
+
+            size = draw(st.integers(min_value=2, max_value=10))
+            size2 = size + 1 if size % 2 != 0 else size
+            size = [size1, size2]
+
         op_name = op_api_map[mode]
         opset_version = op_set_map[mode]
         config = {
@@ -145,7 +128,7 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=100)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":

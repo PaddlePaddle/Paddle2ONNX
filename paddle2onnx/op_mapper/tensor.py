@@ -1646,6 +1646,7 @@ class UniformRandom():
                 high=node.attr('max'))
 
 
+# 'bilinear_interp', 'nearest_interp', scale only support 2, 4, 6, 8, 10
 @op_mapper(
     [
         'bilinear_interp', 'nearest_interp', 'bilinear_interp_v2',
@@ -1708,7 +1709,7 @@ class Resize():
         if node.attr('align_corners'):
             coordinate_transformation_mode = 'align_corners'
         elif node.type == 'nearest_interp':
-            coordinate_transformation_mode = 'half_pixel'
+            coordinate_transformation_mode = 'asymmetric'
         else:
             if node.attr('align_mode') == 1 and resize_type is not 'cubic':
                 coordinate_transformation_mode = 'asymmetric'
