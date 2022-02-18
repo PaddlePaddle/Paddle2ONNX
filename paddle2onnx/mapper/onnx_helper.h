@@ -52,6 +52,8 @@ class OnnxHelper {
 
   void SetOpsetVersion(int32_t op_v) { opset_version = op_v; }
 
+  int32_t GetOpsetVersion() { return opset_version; }
+
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
       const std::string& op_type, const std::vector<std::string>& inputs,
       const std::vector<std::string>& outputs);
