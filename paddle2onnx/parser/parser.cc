@@ -114,19 +114,19 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(
     {
       // read version, we don't need this
       uint32_t version;
-      read_size += sizeof(version);
       params_buffer.copy(reinterpret_cast<char*>(&version), sizeof(version),
                          read_size);
+      read_size += sizeof(version);
     }
     {
       // read lod_level, we don't use it
       // this has to be zero, otherwise not support
       uint64_t lod_level;
-      read_size += sizeof(lod_level);
       params_buffer.copy(reinterpret_cast<char*>(&lod_level), sizeof(lod_level),
                          read_size);
+      read_size += sizeof(lod_level);
       if (lod_level != 0) {
-        std::cerr << "Paddle2ONNX: Only supports weight with lod_lvel = 1."
+        std::cerr << "Paddle2ONNX: Only supports weight with lod_level = 0."
                   << std::endl;
         return false;
       }
@@ -134,20 +134,20 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(
     {
       // Another version, we don't use it
       uint32_t version;
-      read_size += sizeof(version);
       params_buffer.copy(reinterpret_cast<char*>(&version), sizeof(version),
                          read_size);
+      read_size += sizeof(version);
     }
     {
       // read size of TensorDesc
       int32_t size;
-      read_size += sizeof(size);
       params_buffer.copy(reinterpret_cast<char*>(&size), sizeof(size),
                          read_size);
+      read_size += sizeof(size);
       // read TensorDesc
       std::unique_ptr<char[]> buf(new char[size]);
-      read_size += size;
       params_buffer.copy(reinterpret_cast<char*>(buf.get()), size, read_size);
+      read_size += size;
 
       std::unique_ptr<paddle2onnx::framework::proto::VarType_TensorDesc>
           tensor_desc(new paddle2onnx::framework::proto::VarType_TensorDesc());
@@ -165,9 +165,9 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(
 
       // read weight data
       weight.buffer.resize(numel * PaddleDataTypeSize(data_type));
-      read_size += numel * PaddleDataTypeSize(data_type);
       params_buffer.copy(weight.buffer.data(),
                          numel * PaddleDataTypeSize(data_type), read_size);
+      read_size += numel * PaddleDataTypeSize(data_type);
       params[var_names[index]] = weight;
     }
   }
@@ -203,7 +203,7 @@ bool PaddleParser::LoadParams(const std::string& path) {
       read_size += sizeof(lod_level);
       is.read(reinterpret_cast<char*>(&lod_level), sizeof(lod_level));
       Assert(lod_level == 0,
-             "Paddle2ONNX: Only support weight with lod_level = 1.");
+             "Paddle2ONNX: Only support weight with lod_level = 0.");
     }
     {
       // Another version, we don't use it
@@ -567,8 +567,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
       Assert(op.attrs(i).float64s_size() > 0,
-             "Cannot find list of double data from attr:" + name + "in op:" +
-                 op.type());
+             "Cannot find list of double data from attr:" + name +
+                 "in op:" + op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).float64s_size(); ++j) {
         res->push_back(static_cast<double>(op.attrs(i).float64s(j)));
@@ -663,13 +663,15 @@ bool PaddleParser::ExistsDumplicateTensorName() const {
     for (auto j = 0; j < op.outputs_size(); ++j) {
       for (auto k = 0; k < op.outputs(j).arguments_size(); ++k) {
         if (names.find(op.outputs(j).arguments(k)) != names.end()) {
-          std::cerr << "[Paddle2ONNX] There's dumplicate output name in this model, not supported yet." << std::endl;
-          return false;
+          std::cerr << "[Paddle2ONNX] There's dumplicate output name in this "
+                       "model, not supported yet."
+                    << std::endl;
+          return true;
         }
         names.insert(op.outputs(j).arguments(k));
       }
     }
   }
-  return true;
+  return false;
 }
 }  // namespace paddle2onnx
