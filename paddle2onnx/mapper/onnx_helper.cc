@@ -224,20 +224,17 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
 std::string OnnxHelper::Clip(const std::string& input,
                              const std::string& output, const float& min,
                              const float& max, const int32_t& in_dtype) {
-  std::string input_name;
+  std::string input_name = input;
   // onnxruntime only supports float input
   if (in_dtype != P2ODataType::FP32) {
     input_name = AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
-  } else {
-    input_name = input;
   }
-  if (opset_version < 11) {
+  if (GetOpsetVersion() < 11) {
     if (in_dtype != P2ODataType::FP32) {
       auto node = MakeNode("Clip", {input_name});
       AddAttribute(node, "max", max);
       AddAttribute(node, "min", min);
-      auto res = AutoCast(node->output(0), output, P2ODataType::FP32,
-                          P2ODataType::FP64);
+      auto res = AutoCast(node->output(0), output, P2ODataType::FP32, in_dtype);
       return res;
     } else {
       auto node = MakeNode("Clip", {input_name}, {output});
@@ -249,21 +246,19 @@ std::string OnnxHelper::Clip(const std::string& input,
     }
   } else {
     if (in_dtype != P2ODataType::FP32) {
-      std::string min_name;
-      int32_t dtype = P2ODataType::FP32;
-      min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
-      std::string max_name;
-      max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+      std::string min_name =
+          MakeConstant({1}, GetOnnxDtype(P2ODataType::FP32), min)->output(0);
+      std::string max_name =
+          MakeConstant({1}, GetOnnxDtype(P2ODataType::FP32), max)->output(0);
       auto node = MakeNode("Clip", {input_name, min_name, max_name});
-      auto res = AutoCast(node->output(0), {output}, P2ODataType::FP32,
-                          P2ODataType::FP64);
+      auto res =
+          AutoCast(node->output(0), {output}, P2ODataType::FP32, in_dtype);
       return res;
     } else {
-      std::string min_name;
-      int32_t dtype = in_dtype;
-      min_name = MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
-      std::string max_name;
-      max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+      std::string min_name =
+          MakeConstant({1}, GetOnnxDtype(in_dtype), min)->output(0);
+      std::string max_name =
+          MakeConstant({1}, GetOnnxDtype(in_dtype), max)->output(0);
       auto node = MakeNode("Clip", {input_name, min_name, max_name}, {output});
       return node->output(0);
     }
