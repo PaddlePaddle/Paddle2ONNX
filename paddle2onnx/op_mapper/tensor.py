@@ -1767,7 +1767,10 @@ class Resize():
 
         out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
         out_shape = [val for val in out_shape if val > 0]
-        if len(out_shape) > 0:
+        use_tensor = False
+        if len(node.input('OutSize')) > 0 or len(node.input('SizeTensor')) > 0:
+            use_tensor = True
+        if len(out_shape) > 0 and not use_tensor:
             out_size_node = graph.make_node(
                 'Constant', attrs={'dtype': dtype,
                                    'value': out_shape})
