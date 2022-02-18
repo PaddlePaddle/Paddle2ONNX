@@ -163,22 +163,22 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
               << std::endl;
   }
 
- std::string out;
+  std::string out;
   if (enable_optimize) {
     auto const opt_model = Optimize(*(model.get()));
     if (!opt_model.SerializeToString(&out)) {
-        if (verbose) {
-            std::cerr << "ONNX Model SerializeToString error" << std::endl;
-        }
-        return "";
-    } 
+      if (verbose) {
+        std::cerr << "ONNX Model SerializeToString error" << std::endl;
+      }
+      return "";
+    }
   } else {
-        if (!model->SerializeToString(&out)) {
-            if (verbose) {
-                std::cerr << "ONNX Model SerializeToString error" << std::endl;
-            }
-            return "";
-        }
+    if (!model->SerializeToString(&out)) {
+      if (verbose) {
+        std::cerr << "ONNX Model SerializeToString error" << std::endl;
+      }
+      return "";
+    }
   }
   return out;
 }
@@ -255,8 +255,10 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   return -1;
 }
 
-ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(const ONNX_NAMESPACE::ModelProto& model) {
-  std::vector<std::string> passes = optimization::GetFuseAndEliminationPass();
+ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
+    const ONNX_NAMESPACE::ModelProto& model) {
+  std::vector<std::string> passes =
+      ONNX_NAMESPACE::optimization::GetFuseAndEliminationPass();
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 
