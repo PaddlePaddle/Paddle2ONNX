@@ -1680,19 +1680,11 @@ class Resize():
                 'Div', inputs=[out_shape, in_shape])
             inputs.append(node_h_w_scales)
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            scale = node.input('Scale')[0]
-            cast_scale = graph.make_node(
-                'Cast', inputs=[scale], to=dtypes.ONNX.FLOAT)
-            const_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [1, 1]})
-            scale_node = graph.make_node(
-                'Concat', inputs=[const_node, cast_scale], axis=0)
+            scale_node = cls.compute_scale_node(graph, node)
             inputs.append(scale_node)
         else:
-            scale_node = cls.compute_scale_node(graph, node)[0]
-            inputs.append(scale_node)
+            attrs_node = cls.compute_attrs_node(graph, node)[0]
+            inputs.append(attrs_node)
         op = kw['opset_op_dict'][graph.opset_version]
         graph.make_node(
             op, inputs=inputs, outputs=node.output('Out'), mode=resize_type)
@@ -1735,19 +1727,11 @@ class Resize():
                 graph, node, dtype=dtypes.ONNX.INT64)
             inputs.append(out_shape)
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            scale = node.input('Scale')[0]
-            cast_scale = graph.make_node(
-                'Cast', inputs=[scale], to=dtypes.ONNX.FLOAT)
-            const_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [1, 1]})
-            scale_node = graph.make_node(
-                'Concat', inputs=[const_node, cast_scale], axis=0)
+            scale_node = cls.compute_scale_node(graph, node)
             inputs.append(scale_node)
         else:
-            scale_node = cls.compute_scale_node(graph, node, dtypes.ONNX.INT64)
-            inputs = inputs + scale_node
+            attrs_node = cls.compute_attrs_node(graph, node, dtypes.ONNX.INT64)
+            inputs = inputs + attrs_node
         attrs = {
             'mode': resize_type,
             'coordinate_transformation_mode': coordinate_transformation_mode
@@ -1784,7 +1768,7 @@ class Resize():
         return input_shape_node, out_shape_node
 
     @classmethod
-    def compute_scale_node(cls, graph, node, dtype=dtypes.ONNX.FLOAT):
+    def compute_attrs_node(cls, graph, node, dtype=dtypes.ONNX.FLOAT):
         out_shape = [node.attr('out_d'), node.attr('out_h'), node.attr('out_w')]
         shape = node.input_shape('X', 0)
         scale = node.attr('scale')
@@ -1812,6 +1796,24 @@ class Resize():
             attrs={'dtype': dtypes.ONNX.FLOAT,
                    'value': [1, 1] + scale})
         return [scale_node]
+
+    @classmethod
+    def compute_scale_node(cls, graph, node):
+        cast_scale = graph.make_node(
+            'Cast', inputs=node.input('Scale'), to=dtypes.ONNX.FLOAT)
+        inputs_cocat = []
+        const_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': [1, 1]})
+        inputs_cocat.append(const_node)
+        scale = node.attr('scale')
+        if isinstance(scale, (float, int)):
+            cast_scale = [cast_scale] * (len(node.input_shape('X', 0)) - 2)
+            inputs_cocat = inputs_cocat + cast_scale
+        else:
+            inputs_cocat = inputs_cocat + [cast_scale]
+        scale_node = graph.make_node('Concat', inputs=inputs_cocat, axis=0)
+        return scale_node
 
     @classmethod
     def waringInfo(cls, node, resize_type):

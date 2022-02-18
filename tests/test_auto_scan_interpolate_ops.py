@@ -213,7 +213,7 @@ class Net1(BaseNet):
         return x
 
 
-class TestInterpolateConvert(OPConvertAutoScanTest):
+class TestInterpolateConvert1(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.interpolate
     OPset version: 9, 11, 15
@@ -308,7 +308,7 @@ class TestInterpolateConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=100)
 
 
 if __name__ == "__main__":

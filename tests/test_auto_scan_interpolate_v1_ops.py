@@ -46,8 +46,15 @@ class Net1(BaseNet):
         """
         align_corners = self.config['align_corners']
         align_mode = self.config['align_mode']
-        out_shape = self.config['size']
+
         scale = self.config['scale_factor']
+        if self.config['is_scale_tensor'] and scale is not None:
+            scale = paddle.to_tensor(scale, dtype=self.config['scale_dtype'])
+
+        out_shape = self.config['size']
+        if self.config['is_size_tensor'] and out_shape is not None:
+            out_shape = paddle.to_tensor(out_shape, self.config['size_dtype'])
+
         data_format = self.config['data_format']
         mode = self.config['mode']
 
@@ -83,13 +90,20 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
         data_format = data_format_map[mode]
         input_shape = np.random.choice(input_shape, 4)
 
+        size_dtype = draw(st.sampled_from(["int32", "int64"]))
+        scale_dtype = draw(st.sampled_from(["float32"]))
+
+        is_scale_tensor = False
+        is_size_tensor = False
         if draw(st.booleans()):
             size = None
             # scale_factor should b even. eg [2, 4, 6, 8, 10]
+            is_scale_tensor = draw(st.booleans())
             scale_factor = draw(st.integers(min_value=2, max_value=10))
             scale_factor = scale_factor + 1 if scale_factor % 2 != 0 else scale_factor
         else:
             scale_factor = None
+            is_size_tensor = draw(st.booleans())
             size1 = draw(st.integers(min_value=12, max_value=30))
             # NEAREST, size should be even
             if mode == 'NEAREST':
@@ -120,6 +134,10 @@ class TestInterpolateConvert1(OPConvertAutoScanTest):
             "align_corners": align_corners,
             "align_mode": align_mode,
             "data_format": data_format,
+            "is_scale_tensor": is_scale_tensor,
+            "is_size_tensor": is_size_tensor,
+            "size_dtype": size_dtype,
+            "scale_dtype": scale_dtype,
         }
 
         models = Net1(config)
