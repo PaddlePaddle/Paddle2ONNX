@@ -241,6 +241,69 @@ class Fake_quantize_dequantize_abs_max():
             outputs=node.output('Out'))
 
 
+@op_mapper('fake_quantize_range_abs_max')
+class Fake_quantize_range_abs_max():
+    support_opset_version_range = (10, 13)
+
+    @classmethod
+    def opset_10(cls, graph, node, **kw):
+        zero_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT8, value=[0])
+
+        key = node.input('InScale')
+        InScale = None
+        for name, param in graph.origin_parameters.items():
+            if name in key:
+                InScale = param['data']
+
+        input_node_name = node.input('X', 0)
+
+        scale_node = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.FLOAT,
+            value=[float(InScale[0]) / 127.0])
+
+        graph.add_name(node.output('Out', 0))
+        output_name = graph.get_name(node.output('Out', 0))
+
+        quantize_node = graph.make_node(
+            'QuantizeLinear',
+            inputs=[input_node_name, scale_node, zero_node],
+            outputs=output_name)
+
+        if input_node_name in graph.changed_dict.keys():
+            return
+
+        another_nodes = graph.get_another_node_by_input(
+            input_node_name, copy_node=False)
+        if len(another_nodes) == 0:
+            return
+
+        index = 0
+        all_q_dq = list()
+        for another_node in another_nodes:
+            zero_node, z_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=[0], return_node=True)
+            scale_node, s_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.FLOAT,
+                value=[float(InScale[0]) / 127.0],
+                return_node=True)
+            changed_output_name = output_name + ".paddleadd" + str(index)
+            index = index + 1
+            quantize_node, q_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[input_node_name, scale_node, zero_node],
+                return_node=True)
+            all_q_dq.append(
+                [z_node.layer_name, s_node.layer_name, q_node.layer_name])
+
+        graph.changed_dict[input_node_name] = dict()
+        graph.changed_dict[input_node_name]["name"] = output_name
+        graph.changed_dict[input_node_name]["total"] = index
+        graph.changed_dict[input_node_name]["qdq"] = all_q_dq
+
+
 @op_mapper('fake_quantize_moving_average_abs_max')
 class Fake_quantize_moving_average_abs_max():
     support_opset_version_range = (10, 13)
