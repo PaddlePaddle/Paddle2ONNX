@@ -24,6 +24,8 @@
 namespace paddle2onnx {
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
+                  const std::string& name, const bool& value);
+void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   const std::string& name, const int64_t& value);
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   const std::string& name, const float& value);
