@@ -47,10 +47,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
       parser_->GetOpInput(block_idx_, op_idx_, "X");
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  bool adaptive = false;
-  if (parser_->OpHasAttr(op, "adaptive")) {
-    parser_->GetOpAttr(op, "adaptive", &adaptive);
-  }
+  bool adaptive;
+  parser_->GetOpAttr(op, "adaptive", &adaptive);
   if (adaptive) {
     if (!parser_->IsStaticShape(input_info)) {
       if (verbose) {
@@ -85,6 +83,12 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     }
     return -1;
   }
+
+  bool ceil_mod = false;
+  parser_->GetOpAttr(op, "ceil_mode", &ceil_mod);
+  if (ceil_mod) {
+    return 10;
+  }
   return 7;
 }
 
@@ -100,9 +104,9 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
 
   bool adaptive = false;
   std::vector<int64_t> ksize;
-  bool k_is_one = true;
   parser_->GetOpAttr(op, "adaptive", &adaptive);
   parser_->GetOpAttr(op, "ksize", &ksize);
+  bool k_is_one = true;
   for (auto i : ksize) {
     if (i != 1) k_is_one = false;
   }
@@ -132,11 +136,7 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
 
     bool ceil_mod = false;
     parser_->GetOpAttr(op, "ceil_mode", &ceil_mod);
-    if (ceil_mod && helper->GetOpsetVersion() < 10) {
-      Assert(false,
-             "Cannot convert pool with ceil_model == True to ONNX Opset "
-             "version < 10, please set Opset version >= 10");
-    }
+
     if (helper->GetOpsetVersion() > 10) {
       AddAttribute(node, "ceil_mode", ceil_mod);
     }
@@ -227,11 +227,6 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
     AddAttribute(node, "pads", pads);
     bool ceil_mod = false;
     parser_->GetOpAttr(op, "ceil_mode", &ceil_mod);
-    if (ceil_mod && helper->GetOpsetVersion() < 10) {
-      Assert(false,
-             "Cannot convert pool with ceil_model == True to ONNX Opset "
-             "version < 10, please set Opset version >= 10");
-    }
     if (helper->GetOpsetVersion() >= 10) {
       AddAttribute(node, "ceil_mode", ceil_mod);
     }

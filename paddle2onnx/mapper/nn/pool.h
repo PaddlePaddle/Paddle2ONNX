@@ -28,11 +28,11 @@ class Pool2dMapper : public Mapper {
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
     parser_->GetOpAttr(op, "data_format", &data_format_);
   }
-  bool IsSameSpan(const int64_t& in_size, const int64_t& out_size);
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
 
  private:
+  bool IsSameSpan(const int64_t& in_size, const int64_t& out_size);
   std::string data_format_;
   std::map<std::string, std::vector<std::string>> op_mapper_;
 };
