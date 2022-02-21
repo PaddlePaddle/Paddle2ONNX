@@ -62,31 +62,27 @@ void SplitMapper::Opset7(OnnxHelper* helper) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
   std::vector<std::string> output_names;
-  for (auto i : output_info) output_names.push_back(i.name);
+  for (auto i : output_info) {
+    output_names.push_back(i.name);
+  }
   int64_t axis = GetAxes()[0];
   bool has_attr = parser_->OpHasAttr(op, "sections");
   if (has_attr) {
     std::vector<int64_t> sections;
     parser_->GetOpAttr(op, "sections", &sections);
-    std::vector<int64_t> input_index;
-    for (auto i = 0; i < input_info[0].Rank(); ++i) {
-      if (input_info[0].shape[i] == -1) {
-        input_index.push_back(i);
-      }
-    }
+
     std::vector<int64_t> sections_index;
     for (auto i = 0; i < sections.size(); ++i) {
       if (sections[i] == -1) {
         sections_index.push_back(i);
       }
     }
-    if (input_index.size() == 0 && sections_index.size() == 1) {
-      int64_t sum_val = 0;
-      for (auto i : sections) {
-        sum_val += i;
-      }
+
+    if (input_info[0].shape[axis] != -1 && sections_index.size() == 1) {
+      int64_t sum_val = std::accumulate(sections.begin(), sections.end(), 0);
       sections[sections_index[0]] = input_info[0].shape[axis] - sum_val - 1;
     }
+
     helper->Split(input_info[0].name, output_names, sections, axis);
   } else {
     std::vector<int64_t> split_val;
