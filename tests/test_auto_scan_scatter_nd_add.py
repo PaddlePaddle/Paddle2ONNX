@@ -20,6 +20,7 @@ import unittest
 import paddle
 from onnxbase import randtool
 from random import shuffle
+import random
 
 
 class Net(BaseNet):
@@ -35,7 +36,7 @@ class Net(BaseNet):
         return x
 
 
-class TestScatterndaddConvert(OPConvertAutoScanTest):
+class TestScatterndaddConvert1(OPConvertAutoScanTest):
     """
     api: paddle.scatter_nd_add
     OPset version: 7, 9, 15
@@ -45,27 +46,35 @@ class TestScatterndaddConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=10), min_size=1, max_size=5))
+                    min_value=30, max_value=40), min_size=1, max_size=4))
+
+        index_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=2, max_value=3), min_size=1, max_size=2))
+
+        Q = draw(st.integers(min_value=1, max_value=len(input_shape)))
+        index_shape = index_shape + [Q]
+        update_shape = index_shape[:-1] + input_shape[index_shape[-1]:]
 
         dtype = draw(st.sampled_from(["float32"]))
         index_dtype = draw(st.sampled_from(["int64"]))
-        update_shape = input_shape
 
         def generator_index():
-            index_list = np.array([i for i in range(input_shape[0])])
-            index_list = index_list.reshape(input_shape[0], 1)
-            index_list = paddle.to_tensor(index_list).astype(index_dtype)
+            prod = np.prod(index_shape)
+            index_list = list(range(0, prod))
             shuffle(index_list)
-            # index_list = paddle.to_tensor([[2], [3], [1], [0]]).astype('int64')
 
-            # index_list = randtool("int", 1, 2, [input_shape[0], 1])
+            index_list = np.array(random.sample(index_list, prod))
+            # index_list has duplicate, there has a diff
+            index_list = index_list.reshape(index_shape)
             return index_list
 
         config = {
             "op_names": ["scatter_nd_add"],
             "test_data_shapes": [input_shape, generator_index, update_shape],
             "test_data_types": [[dtype], [index_dtype], [dtype]],
-            "opset_version": [11, 12, 15],
+            "opset_version": [11, 12, 13, 14, 15],
             "input_spec_shape": [],
         }
 
@@ -74,7 +83,7 @@ class TestScatterndaddConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=50)
 
 
 if __name__ == "__main__":
