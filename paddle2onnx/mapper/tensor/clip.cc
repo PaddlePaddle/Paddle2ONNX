@@ -13,8 +13,6 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/clip.h"
-#include <string>
-#include <vector>
 
 namespace paddle2onnx {
 REGISTER_MAPPER(clip, ClipMapper)

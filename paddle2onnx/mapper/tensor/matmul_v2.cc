@@ -20,6 +20,20 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(matmul_v2, MatmulV2Mapper)
 
+std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info,
+                                     OnnxHelper* helper) {
+  std::string castd_name = input_info[0].name;
+  if (input_info[0].dtype == P2ODataType::FP64) {
+    castd_name = helper->AutoCast(input_info[0].name, input_info[0].dtype,
+                                  P2ODataType::FP32);
+  }
+  std::vector<int64_t> perm = Arange(0, input_info[0].Rank());
+  std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
+  auto transpose_node = helper->MakeNode("Transpose", {castd_name});
+  AddAttribute(transpose_node, "perm", perm);
+  return transpose_node->output(0);
+}
+
 void MatmulV2Mapper::Opset7(OnnxHelper* helper) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_x_info =
@@ -30,29 +44,11 @@ void MatmulV2Mapper::Opset7(OnnxHelper* helper) {
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
   std::string input_x = input_x_info[0].name;
   if (trans_x_) {
-    std::string castd_name = input_x_info[0].name;
-    if (input_x_info[0].dtype == P2ODataType::FP64) {
-      castd_name = helper->AutoCast(input_x_info[0].name, input_x_info[0].dtype,
-                                    P2ODataType::FP32);
-    }
-    std::vector<int64_t> perm = Arange(0, input_x_info[0].Rank());
-    std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
-    auto transpose_node = helper->MakeNode("Transpose", {castd_name});
-    AddAttribute(transpose_node, "perm", perm);
-    input_x = transpose_node->output(0);
+    input_x = GetTrans(input_x_info, helper);
   }
   std::string input_y = input_y_info[0].name;
   if (trans_y_) {
-    std::string castd_name = input_y_info[0].name;
-    if (input_y_info[0].dtype == P2ODataType::FP64) {
-      castd_name = helper->AutoCast(input_y_info[0].name, input_y_info[0].dtype,
-                                    P2ODataType::FP32);
-    }
-    std::vector<int64_t> perm = Arange(0, input_y_info[0].Rank());
-    std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
-    auto transpose_node = helper->MakeNode("Transpose", {castd_name});
-    AddAttribute(transpose_node, "perm", perm);
-    input_y = transpose_node->output(0);
+    input_y = GetTrans(input_y_info, helper);
   }
   if (input_x_info[0].dtype == P2ODataType::FP64) {
     auto node = helper->MakeNode("MatMul", {input_x, input_y});

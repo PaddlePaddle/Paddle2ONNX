@@ -32,6 +32,7 @@ class MatmulMapper : public Mapper {
   void Opset7(OnnxHelper* helper);
 
  private:
+  std::string GetTrans(std::vector<TensorInfo>& input_info, OnnxHelper* helper);
   bool transpose_X_ = false;
   bool transpose_Y_ = false;
   float alpha_ = 1.0;
