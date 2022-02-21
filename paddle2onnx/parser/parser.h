@@ -15,6 +15,7 @@
 #pragma once
 #include <algorithm>
 #include <cassert>
+#include <numeric>
 #include <type_traits>
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
 
@@ -46,6 +47,13 @@ struct Weight {
     for (auto& d : dims) {
       shape.push_back(d);
     }
+  }
+  template <typename T>
+  void get(std::vector<T>* data) {
+    int64_t nums = std::accumulate(std::begin(shape), std::end(shape), 1,
+                                   std::multiplies<int64_t>());
+    data->resize(nums);
+    memcpy(data->data(), buffer.data(), buffer.size());
   }
 };
 
@@ -107,6 +115,8 @@ class PaddleParser {
   bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id) const;
   bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id,
                           Weight* param) const;
+  std::vector<int64_t> GetBlockOpIdx(const std::string& name) const;
+  std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
 
  private:
   // If the model has same output name in difference operators
