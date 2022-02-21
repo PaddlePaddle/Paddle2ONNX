@@ -25,9 +25,6 @@ op_api_map = {
     "elementwise_sub": paddle.subtract,
     "elementwise_div": paddle.divide,
     "elementwise_mul": paddle.multiply,
-    "elementwise_min": paddle.minimum,
-    "elementwise_max": paddle.maximum,
-    "elementwise_pow": paddle.pow,
     "elementwise_mod": paddle.remainder,
 }
 
@@ -36,9 +33,6 @@ opset_version_map = {
     "elementwise_sub": [7, 9, 15],
     "elementwise_div": [7, 9, 15],
     "elementwise_mul": [7, 9, 15],
-    "elementwise_min": [9, 15],
-    "elementwise_max": [9, 15],
-    "elementwise_pow": [7, 9, 15],
     "elementwise_mod": [15],
 }
 
@@ -66,11 +60,11 @@ class TestElementwiseopsConvert(OPConvertAutoScanTest):
         else:
             input2_shape = input1_shape
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "int32"]))
 
         def generator_data():
-            input_data = randtool("float", -2.0, 2.0, input2_shape)
-            input_data[input_data == 0.0] = 1.0
+            input_data = randtool("float", -5.0, 5.0, input2_shape)
+            input_data[abs(input_data) < 1.0] = 1.0
             return input_data
 
         config = {
@@ -90,6 +84,75 @@ class TestElementwiseopsConvert(OPConvertAutoScanTest):
             op_names.append(op_name)
         for op_name, i in op_api_map.items():
             opset_versions.append(opset_version_map[op_name])
+        config["op_names"] = op_names
+        config["opset_version"] = opset_versions
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
+
+op_api_map_2 = {
+    "elementwise_min": paddle.minimum,
+    "elementwise_max": paddle.maximum,
+    "elementwise_pow": paddle.pow,
+}
+
+opset_version_map_2 = {
+    "elementwise_min": [9, 15],
+    "elementwise_max": [9, 15],
+    "elementwise_pow": [7, 9, 15],
+}
+
+
+class Net_2(BaseNet):
+    def forward(self, inputs1, inputs2):
+        x = op_api_map_2[self.config["op_names"]](inputs1, inputs2)
+        return x
+
+
+class TestElementwiseopsConvert_2(OPConvertAutoScanTest):
+    """
+    api: elementwise ops
+    OPset version: 7, 9, 15
+    """
+
+    def sample_convert_config(self, draw):
+        input1_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=10, max_value=20), min_size=2, max_size=4))
+
+        if draw(st.booleans()):
+            input2_shape = [input1_shape[-1]]
+        else:
+            input2_shape = input1_shape
+
+        dtype = draw(st.sampled_from(["float32"]))
+
+        def generator_data():
+            input_data = randtool("float", -5.0, 5.0, input2_shape)
+            input_data[abs(input_data) < 1.0] = 1.0
+            return input_data
+
+        config = {
+            "op_names": ["elementwise_add"],
+            "test_data_shapes": [input1_shape, generator_data],
+            "test_data_types": [[dtype], [dtype]],
+            "opset_version": [7, 9, 15],
+            "input_spec_shape": []
+        }
+
+        models = list()
+        op_names = list()
+        opset_versions = list()
+        for op_name, i in op_api_map_2.items():
+            config["op_names"] = op_name
+            models.append(Net_2(config))
+            op_names.append(op_name)
+        for op_name, i in op_api_map_2.items():
+            opset_versions.append(opset_version_map_2[op_name])
         config["op_names"] = op_names
         config["opset_version"] = opset_versions
 

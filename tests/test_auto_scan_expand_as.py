@@ -26,51 +26,37 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x):
+    def forward(self, inputs1, inputs2):
         """
         forward
         """
-        scale = self.config["scale"]
-        if self.config['isTensor']:
-            scale = paddle.to_tensor(scale)
-        x = paddle.scale(
-            x,
-            scale=scale,
-            bias=self.config["bias"],
-            bias_after_scale=self.config["bias_after_scale"])
-        return x
+        x = paddle.expand_as(inputs1, inputs2)
+        return x + inputs2
 
 
-class TestScaleConvert(OPConvertAutoScanTest):
+class TestStackConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scale
-    OPset version: 7, 9, 15
+    api: paddle.expand_as
+    OPset version: 8, 9, 11, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
+        input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=2, max_size=5))
-        # int32, int64 has a bug
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+                    min_value=4, max_value=8), min_size=1, max_size=5))
 
-        scale = draw(st.floats(min_value=-20, max_value=20))
-        isTensor = draw(st.booleans())
-
-        bias = draw(st.floats(min_value=-20, max_value=20))
-        bias_after_scale = draw(st.booleans())
+        n = random.randint(1, 6 - len(input_shape1))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
+        input_shape2 = pre_shape + input_shape1
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
-            "op_names": ["scale"],
-            "test_data_shapes": [input_shape],
-            "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "op_names": ["expand_as_v2"],
+            "test_data_shapes": [input_shape1, input_shape2],
+            "test_data_types": [[dtype], [dtype]],
+            "opset_version": [8, 9, 10, 11, 12, 13, 14, 15],
             "input_spec_shape": [],
-            "scale": scale,
-            "bias": bias,
-            "bias_after_scale": bias_after_scale,
-            "isTensor": isTensor,
         }
 
         models = Net(config)

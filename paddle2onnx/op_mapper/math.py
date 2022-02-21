@@ -106,6 +106,7 @@ class Erf():
     def opset_9(cls, graph, node, **kw):
         x_dtype = node.input_dtype('X', 0)
         x = node.input('X', 0)
+        # onnxruntime only support float32 Erf
         if x_dtype != paddle.float32:
             x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
             erf_node = graph.make_node('Erf', inputs=[x])
@@ -308,7 +309,7 @@ class ElementwiseOps():
         x_shape = node.input_shape('X', 0)
         y_shape = node.input_shape('Y', 0)
         if node.type in ["elementwise_min", "elementwise_max"]:
-            assert False, "when opset version < 8, the shape and dtype of {} op must be same".format(
+            assert False, "{} op is not supported when opset version < 8".format(
                 node.type)
 
         op_type = kw['mapper_dict'][node.type]
@@ -368,10 +369,14 @@ class ElementWiseMod():
         axis = node.attr('axis')
         x = node.input('X', 0)
         y = node.input('Y', 0)
-        fmod = 0
-        if node.input_dtype('Y', 0) == paddle.float64 or node.input_dtype(
-                'Y', 0) == paddle.float32:
-            fmod = 1
+
+        if node.input_dtype('Y', 0) == paddle.int32 or node.input_dtype(
+                'Y', 0) == paddle.int64:
+            onnx_node = graph.make_node(
+                "Mod", inputs=[x, y], outputs=node.output('Out'))
+            return
+
+        fmod = 1
 
         abs_x_node = graph.make_node("Abs", inputs=[x])
         abs_y_node = graph.make_node("Abs", inputs=[y])
@@ -941,7 +946,7 @@ class Hardtanh():
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
-        mapper_helper.clip_helper(graph,
+        mapper_helper.clip_helper(graph, node,
                                   node.input('X', 0),
                                   node.attr('t_max'),
                                   node.attr('t_min'), node.output('Out', 0))
@@ -1114,50 +1119,62 @@ class Sign():
 
 @op_mapper('scale')
 class Scale():
-    support_opset_version_range = (1, 15)
-
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        scale = node.attr('scale')
-        bias = node.attr('bias')
-        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-        else:
-            raise Exception(
-                "please try to convert OP:scale with opset_version >= 7.")
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
         scale = node.attr('scale')
         bias = node.attr('bias')
-        if np.fabs(scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
+        if len(node.input('ScaleTensor')) == 0 and np.fabs(
+                scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
             graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
-            scale_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [scale]})
+            input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)]
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
+                outputs = None
+                data_type = dtypes.ONNX.FLOAT
+                cast_node = graph.make_node(
+                    'Cast', inputs=node.input('X'), attrs={'to': data_type})
+            else:
+                outputs = node.output('Out')
+                data_type = input_dtype
+                cast_node = node.input('X')[0]
+
+            if len(node.input('ScaleTensor')) > 0:
+                scale_node = node.input('ScaleTensor')[0]
+                scale_type = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
+                    'ScaleTensor', 0)]
+                if scale_type != data_type:
+                    scale_node = graph.make_node(
+                        'Cast', inputs=[scale_node], attrs={'to': data_type})
+            else:
+                scale_node = graph.make_node(
+                    'Constant', attrs={'dtype': data_type,
+                                       'value': [scale]})
             bias_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.FLOAT,
-                       'value': [bias]})
-            cast_node = graph.make_node(
-                'Cast', inputs=node.input('X'),
-                attrs={'to': dtypes.ONNX.FLOAT})
+                'Constant', attrs={'dtype': data_type,
+                                   'value': [bias]})
+
             if node.attr('bias_after_scale'):
                 node1 = graph.make_node('Mul', inputs=[cast_node, scale_node])
                 node2 = graph.make_node(
-                    'Add',
-                    inputs=[node1, bias_node],
-                    outputs=node.output('Out'))
+                    'Add', inputs=[node1, bias_node], outputs=outputs)
             else:
                 node1 = graph.make_node('Add', inputs=[cast_node, bias_node])
                 node2 = graph.make_node(
-                    'Mul',
-                    inputs=[node1, scale_node],
-                    outputs=[node.output('Out', 0)])
+                    'Mul', inputs=[node1, scale_node], outputs=outputs)
+
+            if input_dtype in [
+                    dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64
+            ]:
+                cast_node = graph.make_node(
+                    'Cast',
+                    inputs=node2,
+                    outputs=node.output('Out'),
+                    attrs={'to': input_dtype})
 
 
 @op_mapper('softmax')
