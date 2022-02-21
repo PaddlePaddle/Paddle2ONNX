@@ -284,7 +284,6 @@ class APIOnnx(object):
         """
         self._mkdir()
         self.set_input_spec()
-        self.places = ['cpu']
         for place in self.places:
             paddle.set_device(place)
 
