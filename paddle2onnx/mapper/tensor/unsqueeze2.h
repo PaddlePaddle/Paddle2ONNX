@@ -23,9 +23,11 @@ class UnSqueeze2Mapper : public Mapper {
  public:
   UnSqueeze2Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
-  std::vector<int64_t> ComputeAxes();
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
+
+ private:
+  std::vector<int64_t> ComputeAxes();
 };
 
 }  // namespace paddle2onnx

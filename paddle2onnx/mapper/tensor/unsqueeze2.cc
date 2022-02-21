@@ -93,16 +93,7 @@ void UnSqueeze2Mapper::Opset7(OnnxHelper* helper) {
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
   auto axes = ComputeAxes();
-  if (export_opset_version_ < 13) {
-    auto node = helper->MakeNode("Unsqueeze", {input_info[0].name},
-                                 {output_info[0].name});
-    AddAttribute(node, "axes", axes);
-  } else {
-    std::string axes_node =
-        helper->Constant(GetOnnxDtype(P2ODataType::INT64), axes);
-    auto node = helper->MakeNode("Unsqueeze", {input_info[0].name, axes_node},
-                                 {output_info[0].name});
-  }
+  helper->Unsqueeze(input_info[0].name, output_info[0].name, axes);
 }
 
 }  // namespace paddle2onnx

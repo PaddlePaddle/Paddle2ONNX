@@ -43,6 +43,8 @@ std::vector<int64_t> SplitMapper::GetAxes() {
 
 int32_t SplitMapper::GetMinOpset(bool verbose) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  std::vector<TensorInfo> input_info =
+      parser_->GetOpInput(block_idx_, op_idx_, "X");
   auto axis = GetAxes();
   if (axis.size() == 0) {
     if (verbose) {
@@ -51,6 +53,34 @@ int32_t SplitMapper::GetMinOpset(bool verbose) {
                 << op.type() << "." << std::endl;
     }
     return -1;
+  }
+  bool has_attr = parser_->OpHasAttr(op, "sections");
+  if (has_attr) {
+    std::vector<int64_t> sections;
+    parser_->GetOpAttr(op, "sections", &sections);
+
+    std::vector<int64_t> sections_index;
+    for (auto i = 0; i < sections.size(); ++i) {
+      if (sections[i] == -1) {
+        sections_index.push_back(i);
+      }
+    }
+    if (sections_index.size() > 1) {
+      if (verbose) {
+        std::cerr << " The number of -1 in sections must be less than or equal "
+                     "to 1 in op "
+                  << op.type() << "." << std::endl;
+      }
+      return -1;
+    }
+    if (sections_index.size() == 1 && input_info[0].shape[axis[0]] == -1) {
+      if (verbose) {
+        std::cerr
+            << " When section includes -1, input[axis] cannot be -1 in op "
+            << op.type() << "." << std::endl;
+      }
+      return -1;
+    }
   }
   return 7;
 }
