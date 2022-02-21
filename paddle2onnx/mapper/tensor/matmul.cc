@@ -51,30 +51,17 @@ void MatmulMapper::Opset7(OnnxHelper* helper) {
     input_y = GetTrans(input_y_info, helper);
   }
   if (abs(alpha_ - 1.0) < 1e-6) {
-    if (input_x_info[0].dtype == P2ODataType::FP64) {
-      auto node = helper->MakeNode("MatMul", {input_x, input_y});
-      helper->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                       input_y_info[0].dtype);
-    } else {
-      helper->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
-    }
-
+    auto node = helper->MakeNode("MatMul", {input_x, input_y});
+    helper->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                     input_y_info[0].dtype);
   } else {
-    if (input_x_info[0].dtype == P2ODataType::FP64) {
-      auto mutmul_node = helper->MakeNode("MatMul", {input_x, input_y});
-      std::string scale_node =
-          helper->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
-      auto mul_node =
-          helper->MakeNode("Mul", {mutmul_node->output(0), scale_node});
-      helper->AutoCast(mul_node->output(0), output_info[0].name,
-                       P2ODataType::FP32, input_y_info[0].dtype);
-    } else {
-      auto mutmul_node = helper->MakeNode("MatMul", {input_x, input_y});
-      std::string scale_node =
-          helper->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
-      helper->MakeNode("Mul", {mutmul_node->output(0), scale_node},
-                       {output_info[0].name});
-    }
+    auto mutmul_node = helper->MakeNode("MatMul", {input_x, input_y});
+    std::string scale_node =
+        helper->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
+    auto mul_node =
+        helper->MakeNode("Mul", {mutmul_node->output(0), scale_node});
+    helper->AutoCast(mul_node->output(0), output_info[0].name,
+                     P2ODataType::FP32, input_y_info[0].dtype);
   }
 }
 
