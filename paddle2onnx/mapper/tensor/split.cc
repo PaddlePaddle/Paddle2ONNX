@@ -65,14 +65,6 @@ int32_t SplitMapper::GetMinOpset(bool verbose) {
         sections_index.push_back(i);
       }
     }
-    if (sections_index.size() > 1) {
-      if (verbose) {
-        std::cerr << " The number of -1 in sections must be less than or equal "
-                     "to 1 in op "
-                  << op.type() << "." << std::endl;
-      }
-      return -1;
-    }
     if (sections_index.size() == 1 && input_info[0].shape[axis[0]] == -1) {
       if (verbose) {
         std::cerr

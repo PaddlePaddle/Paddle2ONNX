@@ -388,6 +388,7 @@ std::vector<int64_t> PaddleParser::GetBlockOpIdx(
       }
     }
   }
+  Assert(false, "Cannot find BlockOpIdx: " + name + " in paddle graph. ");
   return {};
 }
 
@@ -625,6 +626,9 @@ bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
                                       const int64_t& op_id,
                                       Weight* param) const {
   auto op = GetOpDesc(block_id, op_id);
+  if (op.type() != "assign_value") {
+    return false;
+  }
   std::vector<int64_t> shape;
   GetOpAttr(op, "shape", &shape);
   if (OpHasAttr(op, "fp64_values")) {

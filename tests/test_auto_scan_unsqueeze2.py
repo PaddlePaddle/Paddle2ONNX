@@ -32,6 +32,9 @@ class Net(BaseNet):
         axis = self.config['axis']
         if self.config['isTensor']:
             axis = paddle.to_tensor(axis)
+            if self.config['computeTensor']:
+                axis = axis * 1
+
         x = paddle.unsqueeze(inputs, axis=axis)
         return x
 
@@ -54,6 +57,8 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
         isTensor = draw(st.booleans())
 
+        computeTensor = draw(st.booleans())
+
         axis_dtype = draw(st.sampled_from(["int", "list"]))
         if axis_dtype == "list":
             if len(input_shape) == 5:
@@ -67,14 +72,18 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
                     axis = [0, 1, 2]
                 else:
                     axis = [-3, -1]
+        opset_version = [7, 9, 15]
+        if computeTensor:
+            opset_version = [15]
         config = {
             "op_names": ["unsqueeze2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "axis": axis,
             "isTensor": isTensor,
+            "computeTensor": computeTensor
         }
 
         models = Net(config)

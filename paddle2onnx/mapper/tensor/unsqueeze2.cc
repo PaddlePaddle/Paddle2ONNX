@@ -38,14 +38,8 @@ int32_t UnSqueeze2Mapper::GetMinOpset(bool verbose) {
       parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
   std::vector<int64_t> index = parser_->GetBlockOpIdx(axes_info[0].name);
   bool found_value = parser_->GetValueFromTensor(index[0], index[1]);
-
   if (!found_value) {
-    if (verbose) {
-      std::cerr << "Currently does not support the axes parameter as input "
-                   "tensor in op "
-                << op.type() << "." << std::endl;
-    }
-    return -1;
+    return 13;
   } else {
     std::vector<int64_t> axes = ComputeAxes();
     bool sorted = std::is_sorted(axes.begin(), axes.end());
@@ -72,8 +66,10 @@ std::vector<int64_t> UnSqueeze2Mapper::ComputeAxes() {
         parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
     std::vector<int64_t> index = parser_->GetBlockOpIdx(axes_info[0].name);
     Weight value;
-    parser_->GetValueFromTensor(index[0], index[1], &value);
-    value.get(&axes);
+    bool get_value = parser_->GetValueFromTensor(index[0], index[1], &value);
+    if (get_value) {
+      value.get(&axes);
+    }
   }
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");
@@ -93,7 +89,15 @@ void UnSqueeze2Mapper::Opset7(OnnxHelper* helper) {
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
   auto axes = ComputeAxes();
-  helper->Unsqueeze(input_info[0].name, output_info[0].name, axes);
+  if (axes.empty()) {
+    std::vector<TensorInfo> axes_tensor_info =
+        parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
+    helper->MakeNode("Unsqueeze",
+                     {input_info[0].name, axes_tensor_info[0].name},
+                     {output_info[0].name});
+  } else {
+    helper->Unsqueeze(input_info[0].name, output_info[0].name, axes);
+  }
 }
 
 }  // namespace paddle2onnx
