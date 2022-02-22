@@ -51,7 +51,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
         update_shape = input_shape
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
-        index_dtype = draw(st.sampled_from(["int64"]))
+        index_dtype = draw(st.sampled_from(["int32", "int64"]))
         overwrite = True  # False is not supported
 
         def generator_index():
