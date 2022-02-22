@@ -19,6 +19,7 @@ import numpy as np
 import unittest
 import paddle
 import random
+from random import shuffle
 
 
 class Net(BaseNet):
@@ -52,8 +53,8 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=1, max_size=5))
-
+                    min_value=10, max_value=20), min_size=1, max_size=5))
+        # input_shape = [10]
         axis = None
         if draw(st.booleans()):
             axis = draw(
@@ -68,10 +69,9 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         sorted = draw(st.booleans())
 
         def generator_data():
-            t = 1
-            for i in range(len(input_shape)):
-                t = t * input_shape[i]
-            input_data = np.array(random.sample(range(-5000, 5000), t))
+            prod = np.prod(input_shape)
+            input_data = np.array(list(range(0, prod)))
+            shuffle(input_data)
             input_data = input_data.reshape(input_shape)
             return input_data
 
