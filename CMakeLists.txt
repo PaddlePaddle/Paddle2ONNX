@@ -16,6 +16,7 @@ endif(NOT MSVC)
 # this should be modified
 # refer to https://github.com/onnx/onnx/blob/main/docs/Versioning.md#released-versions
 add_definitions(-DMAX_ONNX_OPSET_VERSION=15)
+add_definitions(-DPADDLE2ONNX_LIB)
 
 # Third dependency: onnx
 if(NOT TARGET onnx_proto)
@@ -68,6 +69,7 @@ install(
 )
 
 if (BUILD_PADDLE2ONNX_EXE)
+  remove_definitions(-DPADDLE2ONNX_LIB)
   ADD_EXECUTABLE(p2o_exec p2o_exec.cpp)
   if (WITH_STATIC)
     TARGET_LINK_LIBRARIES(p2o_exec -Wl,--whole-archive paddle2onnx -Wl,--no-whole-archive)
