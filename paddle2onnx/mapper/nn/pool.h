@@ -26,14 +26,39 @@ class Pool2dMapper : public Mapper {
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     op_mapper_["max"] = {"MaxPool", "GlobalMaxPool"};
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
+    parser_->GetOpAttr(op, "pooling_type", &pooling_type_);
     parser_->GetOpAttr(op, "data_format", &data_format_);
+    parser_->GetOpAttr(op, "ksize", &k_size_);
+    parser_->GetOpAttr(op, "ceil_mode", &ceil_mod_);
+    parser_->GetOpAttr(op, "padding_algorithm", &padding_algorithm_);
+    parser_->GetOpAttr(op, "global_pooling", &global_pooling_);
+    parser_->GetOpAttr(op, "adaptive", &adaptive_);
+    parser_->GetOpAttr(op, "paddings", &pads_);
+    parser_->GetOpAttr(op, "strides", &strides_);
+    parser_->GetOpAttr(op, "exclusive", &exclusive_);
+    exclusive_ = !exclusive_;
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
 
  private:
   bool IsSameSpan(const int64_t& in_size, const int64_t& out_size);
+  void AdaptivePool(const std::vector<TensorInfo>& input_info,
+                    const std::vector<TensorInfo>& output_info,
+                    OnnxHelper* helper);
+  void NoAdaptivePool(const std::vector<TensorInfo>& input_info,
+                      const std::vector<TensorInfo>& output_info,
+                      OnnxHelper* helper);
+  bool ceil_mod_;
+  bool global_pooling_;
+  bool adaptive_;
+  bool exclusive_;
   std::string data_format_;
+  std::string pooling_type_;
+  std::string padding_algorithm_;
+  std::vector<int64_t> k_size_;
+  std::vector<int64_t> pads_;
+  std::vector<int64_t> strides_;
   std::map<std::string, std::vector<std::string>> op_mapper_;
 };
 
