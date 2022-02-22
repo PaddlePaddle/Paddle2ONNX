@@ -42,8 +42,8 @@ class TopKV2():
     def opset_11(cls, graph, node, **kw):
         sorted = node.attr('sorted')
         # for paddle, In gpu device, it always return the sorted value
-        if not sorted:
-            sorted = True
+        # if not sorted:
+        #     sorted = True
         if 'K' in node.inputs and len(node.input('K')) > 0:
             k_node = node.input('K', 0)
             k_node_dtype = node.input_dtype('K', 0)

@@ -53,8 +53,7 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=5))
-        # input_shape = [10]
+                    min_value=1, max_value=3), min_size=1, max_size=5))
         axis = None
         if draw(st.booleans()):
             axis = draw(
@@ -90,6 +89,8 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
             "isTensor": isTensor,
             "k": k,
             "k_dtype": k_dtype,
+            "rtol": 100,
+            "delta": 100,
         }
 
         models = Net(config)
