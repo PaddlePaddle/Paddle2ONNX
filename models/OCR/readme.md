@@ -111,18 +111,18 @@ python3.7 tools/infer/predict_system.py --use_gpu=False \
 ```
 
 
-执行命令后在终端会打印出预测的检测框坐标，并在 `./inference_results/` 下保存可视化结果。
+执行命令后在终端会打印出预测的识别信息，并在 `./inference_results/` 下保存可视化结果。
 
 ONNXRuntime 执行效果：
 
 <div align="center">
-    <img src="./images/lite_demo_onnx.png" width=600">
+    <img src="./images/lite_demo_onnx.png" width=800">
 </div>
 
 Paddle Inference 执行效果：
 
 <div align="center">
-    <img src="./images/lite_demo_paddle.png" width=600">
+    <img src="./images/lite_demo_paddle.png" width=800">
 </div>
 
 
