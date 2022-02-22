@@ -1986,7 +1986,7 @@ class ScatterndAdd():
             'ConstantOfShape',
             inputs=[shape],
             dims=[1],
-            dtype=dtypes.ONNX.FLOAT,
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
             value=[0])
         add_node = graph.make_node(
             'ScatterND',

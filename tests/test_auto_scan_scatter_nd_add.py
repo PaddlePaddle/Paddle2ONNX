@@ -56,8 +56,7 @@ class TestScatterndaddConvert1(OPConvertAutoScanTest):
         Q = draw(st.integers(min_value=1, max_value=len(input_shape)))
         index_shape = index_shape + [Q]
         update_shape = index_shape[:-1] + input_shape[index_shape[-1]:]
-        # onnxruntime not supported int32, int64, float64
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
         index_dtype = draw(st.sampled_from(["int32", "int64"]))
 
         def generator_index():
