@@ -51,118 +51,85 @@ def parse_args():
         type=str,
         default='images/cityscapes_demo.png')
     parser.add_argument(
-        '--batch_size',
-        dest='batch_size',
-        help='Mini batch size of one gpu or cpu.',
-        type=int,
-        default=1)
-    parser.add_argument(
         '--save_dir',
         dest='save_dir',
         help='The directory for saving the predict result.',
         type=str,
         default='./outputs')
-    parser.add_argument(
-        '--with_argmax',
-        dest='with_argmax',
-        help='Perform argmax operation on the predict result.',
-        action='store_true')
     return parser.parse_args()
 
 
-class Predictor:
-    def __init__(self, args):
-        t = [{'type': 'Normalize'}]
-        self._transforms = self.load_transforms(t)
-        self.args = args
+def paddle_predict(model_path, imgs_path):
+    # run paddle inference
+    model = paddle.jit.load(model_path)
+    model.eval()
+    data = preprocess(imgs_path)
+    results = model(data)
+    results = results.numpy()
+    return results
 
-    @property
-    def transforms(self):
-        return self._transforms
 
-    @staticmethod
-    def load_transforms(t_list):
-        com = manager.TRANSFORMS
-        transforms = []
-        for t in t_list:
-            ctype = t.pop('type')
-            transforms.append(com[ctype](**t))
+def onnx_predict(onnx_path, imgs_path):
+    # run onnxruntime
+    sess = rt.InferenceSession(onnx_path)
+    data = preprocess(imgs_path)
+    results = sess.run(None, {sess.get_inputs()[0].name: data})[0]
+    return results
 
-        return T.Compose(transforms)
 
-    def run(self, imgs_path):
-        if not isinstance(imgs_path, (list, tuple)):
-            imgs_path = [imgs_path]
+def preprocess(img):
+    t_list = [{'type': 'Normalize'}]
+    com = manager.TRANSFORMS
+    transforms = []
+    for t in t_list:
+        transforms.append(com[t.pop('type')](**t))
+    transforms = T.Compose(transforms)
+    data = np.array([transforms(img)[0]])
+    return data
 
-        args = self.args
-        if not os.path.exists(args.save_dir):
-            os.makedirs(args.save_dir)
 
-        for i in range(0, len(imgs_path), args.batch_size):
-            data = np.array([
-                self._preprocess(p) for p in imgs_path[i:i + args.batch_size]
-            ])
-
-            # run paddle inference
-            model = paddle.jit.load(args.model_path)
-            model.eval()
-            paddle_outs = model(data)
-            results = paddle_outs.numpy()
-            self._save_imgs(results, imgs_path[i:i + args.batch_size], "paddle")
-
-            # run onnxruntime
-            sess = rt.InferenceSession(args.onnx_path)
-            input_name = sess.get_inputs()[0].name
-            label_name = sess.get_outputs()[0].name
-            print("sess input/output name : ", input_name, label_name)
-            ort_outs = sess.run(None, {input_name: data})
-
-            diff = ort_outs[0] - results
-            max_abs_diff = np.fabs(diff).max()
-            if max_abs_diff < 1e-05:
-                print(
-                    "The difference of results between ONNXRuntime and Paddle looks good!"
-                )
-            else:
-                relative_diff = max_abs_diff / np.fabs(results).max()
-                if relative_diff < 1e-05:
-                    print(
-                        "The difference of results between ONNXRuntime and Paddle looks good!"
-                    )
-                else:
-                    print(
-                        "The difference of results between ONNXRuntime and Paddle looks bad!"
-                    )
-                print('relative_diff: ', relative_diff)
-            print('max_abs_diff: ', max_abs_diff)
-            self._save_imgs(results, imgs_path[i:i + args.batch_size], "onnx")
-
-        logger.info("Finish")
-
-    def _preprocess(self, img):
-        return self.transforms(img)[0]
-
-    def _postprocess(self, results):
-        if self.args.with_argmax:
-            results = np.argmax(results, axis=1)
-        return results
-
-    def _save_imgs(self, results, imgs_path, prefix=None):
-        for i in range(results.shape[0]):
-            result = get_pseudo_color_map(results[i])
-            basename = os.path.basename(imgs_path[i])
-            basename, _ = os.path.splitext(basename)
-            if prefix is not None and isinstance(prefix, str):
-                basename = prefix + "_" + basename
-            basename = f'{basename}.png'
-            result.save(os.path.join(self.args.save_dir, basename))
+def save_imgs(args, results, imgs_path, prefix=None):
+    for i in range(results.shape[0]):
+        result = get_pseudo_color_map(results[i])
+        basename = os.path.basename(imgs_path)
+        basename, _ = os.path.splitext(basename)
+        if prefix is not None and isinstance(prefix, str):
+            basename = prefix + "_" + basename
+        basename = f'{basename}.png'
+        result.save(os.path.join(args.save_dir, basename))
 
 
 def main(args):
-    imgs_list, _ = get_image_list(args.image_path)
+    imgs_path = args.image_path
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
 
-    predictor = Predictor(args)
-    predictor.run(imgs_list)
+    paddle_result = paddle_predict(args.model_path, imgs_path)
+    save_imgs(args, paddle_result, imgs_path, "paddle")
+
+    onnx_result = onnx_predict(args.onnx_path, imgs_path)
+    save_imgs(args, onnx_result, imgs_path, "onnx")
+
+    diff = onnx_result - paddle_result
+    max_abs_diff = np.fabs(diff).max()
+    if max_abs_diff < 1e-05:
+        print(
+            "The difference of results between ONNXRuntime and Paddle looks good!"
+        )
+    else:
+        relative_diff = max_abs_diff / np.fabs(paddle_result).max()
+        if relative_diff < 1e-05:
+            print(
+                "The difference of results between ONNXRuntime and Paddle looks good!"
+            )
+        else:
+            print(
+                "The difference of results between ONNXRuntime and Paddle looks bad!"
+            )
+        print('relative_diff: ', relative_diff)
+    print('max_abs_diff: ', max_abs_diff)
+
+    logger.info("Finish")
 
 
 if __name__ == '__main__':
