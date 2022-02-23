@@ -24,18 +24,17 @@
 
 在[图像分割模型库](#图像分割模型库)，下载BiSeNet的推理模型和ONNX模型
 
-```
+```bash
 wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/paddle2onnx/models/pdmodel/bisenet.tar
 cd ./inference && tar xf bisenet.tar && cd ..
 
 wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/paddle2onnx/models/onnx/bisenet.tar
 cd ./inference && tar xf bisenet.tar && cd ..
-
 ```
 
-其中ONNX模型也可以通过，如下命令生成：
+其中ONNX模型，也可以通过使用 Paddle2ONNX 将BiseNet的推理模型转换为ONNX格式，执行如下命令即可：
 
-```
+```bash
 paddle2onnx --model_dir ./inference/bisenet \
 --model_filename model.pdmodel \
 --params_filename model.pdiparams \
@@ -60,7 +59,7 @@ ONNX模型测试步骤如下：
 wget https://paddleseg.bj.bcebos.com/dygraph/demo/cityscapes_demo.png
 ```
 
-在本目录下，我们提供了`infer.py`脚本进行预测，执行如下命令即可
+在本目录下，我们提供了`infer.py`脚本进行预测，执行如下命令即可：
 
 ```bash
 python3.7 infer.py \
