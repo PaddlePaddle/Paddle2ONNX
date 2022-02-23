@@ -9,7 +9,8 @@
 |Deeplabv3P|[deeplabv3p_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/deeplabv3p/deeplabv3p_resnet50_os8_cityscapes_1024x512_80k.yml)|3M|[推理模型]() / [ONNX模型](model.onnx)|
 |FCN|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|47M|[推理模型]() / [ONNX模型](model.onnx)|
 
-# 使用ONNXRuntime加载预测
+
+# 模型推理预测
 
 - 环境依赖
     - paddlepaddle >= 2.0.2
