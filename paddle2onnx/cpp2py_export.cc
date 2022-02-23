@@ -39,8 +39,8 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     return pybind11::bytes(onnx_proto);
   });
 
-  m.def("check_op", [](const std::string& model_filename,
-                       const std::string& params_filename) {
+  m.def("get_graph_op_list", [](const std::string& model_filename,
+                                const std::string& params_filename) {
     auto parser = PaddleParser();
     if (params_filename != "") {
       parser.Init(model_filename, params_filename);
