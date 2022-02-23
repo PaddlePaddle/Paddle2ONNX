@@ -56,6 +56,11 @@ def parse_args():
         help='The directory for saving the predict result.',
         type=str,
         default='./outputs')
+    parser.add_argument(
+        '--with_argmax',
+        dest='with_argmax',
+        help='Perform argmax operation on the predict result.',
+        action='store_true')
     return parser.parse_args()
 
 
@@ -64,8 +69,8 @@ def paddle_predict(model_path, imgs_path):
     model = paddle.jit.load(model_path)
     model.eval()
     data = preprocess(imgs_path)
-    results = model(data)
-    results = results.numpy()
+    results = model(data).numpy()
+    results = postprocess(results)
     return results
 
 
@@ -74,6 +79,7 @@ def onnx_predict(onnx_path, imgs_path):
     sess = rt.InferenceSession(onnx_path)
     data = preprocess(imgs_path)
     results = sess.run(None, {sess.get_inputs()[0].name: data})[0]
+    results = postprocess(results)
     return results
 
 
@@ -88,7 +94,13 @@ def preprocess(img):
     return data
 
 
-def save_imgs(args, results, imgs_path, prefix=None):
+def postprocess(results):
+    if args.with_argmax:
+        results = np.argmax(results, axis=1)
+    return results
+
+
+def save_imgs(results, imgs_path, prefix=None):
     for i in range(results.shape[0]):
         result = get_pseudo_color_map(results[i])
         basename = os.path.basename(imgs_path)
@@ -105,10 +117,10 @@ def main(args):
         os.makedirs(args.save_dir)
 
     paddle_result = paddle_predict(args.model_path, imgs_path)
-    save_imgs(args, paddle_result, imgs_path, "paddle")
+    save_imgs(paddle_result, imgs_path, "paddle")
 
     onnx_result = onnx_predict(args.onnx_path, imgs_path)
-    save_imgs(args, onnx_result, imgs_path, "onnx")
+    save_imgs(onnx_result, imgs_path, "onnx")
 
     diff = onnx_result - paddle_result
     max_abs_diff = np.fabs(diff).max()
