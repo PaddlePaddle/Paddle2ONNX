@@ -145,7 +145,12 @@ class Pool():
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
             # if pool is adaptive, check if input shape of pool is fixed.
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
+            if node.input_shape('X', 0)[2:].count(-1) > 0:
+                raise Exception(
+                    "Converting this model to ONNX need with static input shape," \
+                    " please fix input shape of this model, see doc Q2 in" \
+                    " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+                )
             input_h, input_w = node.input_shape('X', 0)[2:]
             output_h, output_w = node.output_shape('Out', 0)[2:]
             stride_h = int(input_h / output_h)
@@ -283,7 +288,12 @@ class Pool3D():
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
             # if pool is adaptive, check if input shape of pool is fixed.
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
+            if node.input_shape('X', 0)[2:].count(-1) > 0:
+                raise Exception(
+                    "Converting this model to ONNX need with static input shape," \
+                    " please fix input shape of this model, see doc Q2 in" \
+                    " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+                )
             input_d, input_h, input_w = node.input_shape('X', 0)[2:]
             output_d, output_h, output_w = node.output_shape('Out', 0)[2:]
             stride_d = int(input_d / output_d)
