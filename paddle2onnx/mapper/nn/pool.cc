@@ -156,13 +156,17 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
   if (adaptive_) {
-    if (!parser_->IsStaticShape(input_info)) {
-      if (verbose) {
-        std::cerr << "[ERROR] Adaptive only support static input shape for "
-                     "operator pool2d."
-                  << std::endl;
+    for (auto one_input : input_info) {
+      for (auto i = 2; i < one_input.shape.size(); ++i) {
+        if (one_input.shape[i] == -1) {
+          if (verbose) {
+            std::cerr << "[ERROR] Adaptive only support static input shape for "
+                         "operator pool2d."
+                      << std::endl;
+          }
+          return -1;
+        }
       }
-      return -1;
     }
     int64_t input_h = input_info[0].shape[2];
     int64_t input_w = input_info[0].shape[3];

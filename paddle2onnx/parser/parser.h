@@ -117,7 +117,6 @@ class PaddleParser {
                           Weight* param) const;
   std::vector<int64_t> GetBlockOpIdx(const std::string& name) const;
   std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
-  bool IsStaticShape(const std::vector<TensorInfo>& input_info) const;
 
  private:
   // If the model has same output name in difference operators

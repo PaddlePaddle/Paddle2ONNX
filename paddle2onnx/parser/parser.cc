@@ -688,20 +688,6 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   return -1;
 }
 
-bool PaddleParser::IsStaticShape(
-    const std::vector<TensorInfo>& input_info) const {
-  Assert(input_info.size() > 0,
-         "OnnxHelper::IsStaticShape requires the size of input info > 0.");
-  for (auto one_input : input_info) {
-    for (auto size : one_input.shape) {
-      if (size == -1) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 bool PaddleParser::ExistsDumplicateTensorName() const {
   std::set<std::string> names;
   for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
