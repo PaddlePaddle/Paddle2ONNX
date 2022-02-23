@@ -17,7 +17,7 @@ test(){
         echo "find param file: $params_file"
       fi
   done
-  python convert_and_check.py --model_dir=${model_dir} --paddle_model_file "$model_file" --paddle_params_file "$params_file" --input_shape=1,3,224,224
+  python convert_and_check_cv_backbones.py --model_dir=${model_dir} --paddle_model_file "$model_file" --paddle_params_file "$params_file" --input_shape=1,3,224,224
 }
 
 for dir in $(ls $MODELPATH);do

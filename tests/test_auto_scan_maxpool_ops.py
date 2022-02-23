@@ -61,7 +61,7 @@ class TestMaxpool1dConvert(OPConvertAutoScanTest):
                     min_value=10, max_value=20), min_size=3, max_size=3))
 
         # input_shape = [3, 1, 10]
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         return_mask = draw(st.booleans())
         return_mask = False
@@ -169,7 +169,7 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=10, max_value=20), min_size=4, max_size=4))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         data_format = draw(st.sampled_from(["NCHW"]))
 
         # max_pool2d_with_index
@@ -326,7 +326,7 @@ class TestMaxpool3dConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=10, max_value=20), min_size=5, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         data_format = draw(st.sampled_from(["NCDHW"]))
 
         return_mask = draw(st.booleans())

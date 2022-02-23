@@ -50,7 +50,7 @@ class TestAdaptiveAvgPool1dConvert(OPConvertAutoScanTest):
         if input_shape[2] % 2 != 0:
             input_shape[2] = input_shape[2] + 1
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         output_size = draw(st.integers(min_value=2, max_value=3))
 
@@ -104,7 +104,7 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
         if input_shape[3] % 2 != 0:
             input_shape[3] = input_shape[3] + 1
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         data_format = draw(st.sampled_from(["NCHW"]))
 
         output_type = draw(st.sampled_from(["int", "list"]))
@@ -171,7 +171,7 @@ class TestAdaptiveAvgPool3dConvert(OPConvertAutoScanTest):
         if input_shape[4] % 2 != 0:
             input_shape[4] = input_shape[4] + 1
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         data_format = draw(st.sampled_from(["NCDHW"]))
 
         output_type = draw(st.sampled_from(["int", "list"]))
