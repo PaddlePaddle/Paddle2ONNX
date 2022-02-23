@@ -288,9 +288,8 @@ class Split():
         axis = cls.get_axis(graph, node)
         if len(sections) > 0:
             input_shape = node.block.vars[node.input('X')[0]].shape
-            input_index = [i for i, val in enumerate(input_shape) if val == -1]
             section_index = [i for i, val in enumerate(sections) if val == -1]
-            if len(input_index) == 0 and len(section_index) == 1:
+            if input_shape[axis] != -1 and len(section_index) == 1:
                 sections[section_index[0]] = input_shape[axis] - sum(
                     sections) - 1
             graph.make_node(
