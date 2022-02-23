@@ -33,6 +33,20 @@ cd ./inference && tar xf bisenet.tar && cd ..
 
 ```
 
+其中ONNX模型也可以通过，如下命令生成：
+
+```
+paddle2onnx --model_dir ./inference/bisenet \
+--model_filename model.pdmodel \
+--params_filename model.pdiparams \
+--save_file ./inference/bisenet/model.onnx \
+--opset_version 11 \
+--input_shape_dict="{'x':[-1,3,-1,-1]}" \
+--enable_onnx_checker True
+```
+
+执行完毕后，ONNX 模型会被分别保存在 `./inference/bisenet/`路径下
+
 - 推理预测
 
 ONNX模型测试步骤如下：
