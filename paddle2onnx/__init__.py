@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import paddle
 from .convert import dygraph2onnx, program2onnx

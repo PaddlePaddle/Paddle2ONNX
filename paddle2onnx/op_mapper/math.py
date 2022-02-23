@@ -32,17 +32,42 @@ class MatMul():
         if node.attr('transpose_X'):
             perm = list(range(len(node.input_shape('X', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
+            if node.input_dtype('X', 0) == paddle.float64:
+                x = graph.make_node('Cast', inputs=x, to=dtypes.ONNX.FLOAT)
             x = graph.make_node('Transpose', inputs=[x], perm=perm)
         if node.attr('transpose_Y'):
             perm = list(range(len(node.input_shape('Y', 0))))
             perm[-1], perm[-2] = perm[-2], perm[-1]
+            if node.input_dtype('Y', 0) == paddle.float64:
+                y = graph.make_node('Cast', inputs=y, to=dtypes.ONNX.FLOAT)
             y = graph.make_node('Transpose', inputs=[y], perm=perm)
         if node.attr('alpha') == 1.0:
-            graph.make_node('MatMul', inputs=[x, y], outputs=node.output('Out'))
+            if node.input_dtype('X', 0) == paddle.float64:
+                output_node = graph.make_node('MatMul', inputs=[x, y])
+                graph.make_node(
+                    'Cast',
+                    inputs=output_node,
+                    to=dtypes.ONNX.DOUBLE,
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'MatMul', inputs=[x, y], outputs=node.output('Out'))
         else:
-            matmul = graph.make_node('MatMul', inputs=[x, y])
-            scale = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=node.attr('alpha'))
+            if node.input_dtype('X', 0) == paddle.float64:
+                output_node = graph.make_node('MatMul', inputs=[x, y])
+                matmul = graph.make_node(
+                    'Cast', inputs=output_node, to=dtypes.ONNX.DOUBLE)
+                scale = graph.make_node(
+                    'Constant',
+                    dtype=dtypes.ONNX.DOUBLE,
+                    value=node.attr('alpha'))
+            else:
+                matmul = graph.make_node('MatMul', inputs=[x, y])
+                scale = graph.make_node(
+                    'Constant',
+                    dtype=dtypes.ONNX.FLOAT,
+                    value=node.attr('alpha'))
+
             onnx_node = graph.make_node(
                 'Mul', inputs=[matmul, scale], outputs=node.output('Out'))
 
