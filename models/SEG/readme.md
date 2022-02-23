@@ -4,7 +4,7 @@
 
 ## 1. 环境准备
 
-需要准备 PaddleOCR、Paddle2ONNX 模型转化环境，和 ONNXRuntime 预测环境
+需要准备 PaddleSeg、Paddle2ONNX 模型转化环境，和 ONNXRuntime 预测环境
 
 ###  PaddleSeg
 
