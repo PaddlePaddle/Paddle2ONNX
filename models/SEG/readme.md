@@ -109,7 +109,7 @@ python3.7 infer.py \
     --image_path ./cityscapes_demo.png
 ```
 
-执行命令后在终端会打印出预测的识别信息，并在 ./inference_results/ 下保存可视化结果。
+执行命令后在终端会打印出预测的识别信息，并在 ./outputs/ 下保存可视化结果。
 
 Paddle Inference 执行效果：
 
