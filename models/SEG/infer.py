@@ -37,19 +37,19 @@ def parse_args():
         dest='model_path',
         help='The path of the paddle pdmodel',
         type=str,
-        default='fcn/model')
+        required=True)
     parser.add_argument(
         '--onnx_path',
         dest='onnx_path',
         help='file of onnx of model.',
         type=str,
-        default='/Users/huangshenghui/PP/Paddle2ONNX/paddle2onnx/model.onnx')
+        required=True)
     parser.add_argument(
         '--image_path',
         dest='image_path',
         help='The directory or path or file list of the images to be predicted.',
         type=str,
-        default='images/cityscapes_demo.png')
+        required=True)
     parser.add_argument(
         '--save_dir',
         dest='save_dir',
