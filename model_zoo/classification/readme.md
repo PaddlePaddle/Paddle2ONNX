@@ -2,12 +2,13 @@
 
 本文档中模型库均来源于PaddleCls [release/2.3分支](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/)，在下表中提供了部分已经转换好的模型，如有更多模型或自行模型训练导出需求，可参见[ImageNet 预训练模型库
 ](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/docs/zh_CN/algorithm_introduction/ImageNet_models.md).
+
 |模型名称|模型大小|下载地址|说明|
-| --- | --- | --- | --- | ---- |
-|ResNet50|9.4M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
-|PPLCNet|190.1M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/PPLCNet_x1_0_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
-|MobileNetV2|156.6M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV2_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
-|MobileNetV3_small|107.2M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV3_small_x1_0_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+| --- | --- | --- | ---- |
+|ResNet50|102.5M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+|PPLCNet|11.9M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/PPLCNet_x1_0_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+|MobileNetV2|14.2M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV2_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+|MobileNetV3_small|11.9M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV3_small_x1_0_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
 
 
 # 模型推理预测
