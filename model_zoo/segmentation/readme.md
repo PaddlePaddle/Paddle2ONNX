@@ -73,13 +73,13 @@ python3.7 infer.py \
 Paddle Inference 执行效果：
 
 <div align="center">
-    <img src="../imgs/paddle_cityscapes_demo.png" width=800">
+    <img src="./images/paddle_cityscapes_demo.png" width=800">
 </div>
 
 ONNXRuntime 执行效果：
 
 <div align="center">
-    <img src="../imgs/onnx_cityscapes_demo.png" width=800">
+    <img src="./images/onnx_cityscapes_demo.png" width=800">
 </div>
 
 在终端输出结果如下。
