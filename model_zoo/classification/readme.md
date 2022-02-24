@@ -1,63 +1,48 @@
 # 图像分类模型库
 
-本文档中模型库均来源于PaddleCls [release/2.1分支](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1)，在下表中提供了部分已经转换好的模型，如有更多模型或自行模型训练导出需求，可参考 [paddleseg模型导出说明](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/docs/model_export.md).
-|模型名称|配置文件|模型大小|下载地址|说明|
+本文档中模型库均来源于PaddleCls [release/2.3分支](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/)，在下表中提供了部分已经转换好的模型，如有更多模型或自行模型训练导出需求，可参见[ImageNet 预训练模型库
+](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/docs/zh_CN/algorithm_introduction/ImageNet_models.md).
+|模型名称|模型大小|下载地址|说明|
 | --- | --- | --- | --- | ---- |
-|ResNet18|[bisenet_cityscapes_1024x1024_160k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/bisenet/bisenet_cityscapes_1024x1024_160k.yml)|9.4M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|MobileNetV1_x0_25|[danet_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/danet/danet_resnet50_os8_cityscapes_1024x512_80k.yml)|190.1M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|Res2Net50_26w_4s|[deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/deeplabv3/deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml)|156.6M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|DenseNet121|[deeplabv3p_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/deeplabv3p/deeplabv3p_resnet50_os8_cityscapes_1024x512_80k.yml)|107.2M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|HRNet_W18_C|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|GoogLeNet|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|ResNeXt101_32x8d_wsl|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|EfficientNetB0|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|ResNeSt50_fast_1s1x64d|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|ViT_small_patch16_224|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|DeiT_tiny_patch16_224|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|RepVGG_A0|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|MixNet_S|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|ReXNet_1_0|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|AlexNet|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|SqueezeNet1_0|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|VGG11|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|DarkNet53|[fcn_hrnetw18_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/fcn/fcn_hrnetw18_cityscapes_1024x512_80k.yml)|39M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
+|ResNet50|9.4M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+|PPLCNet|190.1M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/PPLCNet_x1_0_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+|MobileNetV2|156.6M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV2_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
+|MobileNetV3_small|107.2M|[推理模型](https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV3_small_x1_0_infer.tar) / [ONNX模型](model.onnx)| 使用ImageNet数据作为训练数据，1000个分类，包括车、路、人等等 |
 
 
 # 模型推理预测
 
 - 环境依赖
     - paddlepaddle >= 2.0.2
-    - paddleseg >= 2.4
     - paddle2onnx >= 0.9
     - onnxruntime >= 1.9.0
 
 - 下载模型
 
-以BiSeNet为例：
+以ResNet50为例：
 
-在[图像分类模型库](#图像分类模型库)，下载BiSeNet的推理模型和ONNX模型
+在[图像分类模型库](#图像分类模型库)，下载ResNet50的推理模型和ONNX模型
 
 ```bash
-wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/paddle2onnx/models/pdmodel/bisenet.tar
-cd ./inference && tar xf bisenet.tar && cd ..
+wget -nc  -P ./inference https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
+cd ./inference && tar xf ResNet50_infer.tar && cd ..
 
-wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/paddle2onnx/models/onnx/bisenet.tar
-cd ./inference && tar xf bisenet.tar && cd ..
+wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/paddle2onnx/class_models/onnx/ResNet50_infer.tar
+cd ./inference && tar xf ResNet50_infer.tar && cd ..
 ```
 
 其中ONNX模型，也可以通过使用 Paddle2ONNX 将BiseNet的推理模型转换为ONNX格式，执行如下命令即可：
 
 ```bash
-paddle2onnx --model_dir ./inference/bisenet \
---model_filename model.pdmodel \
---params_filename model.pdiparams \
---save_file ./inference/bisenet/model.onnx \
---opset_version 11 \
---input_shape_dict="{'x':[-1,3,-1,-1]}" \
---enable_onnx_checker True
+paddle2onnx --model_dir=./inference/ResNet50_infer \
+--model_filename=inference.pdmodel \
+--params_filename=inference.pdiparams \
+--save_file=./inference/ResNet50_infer/model.onnx \
+--opset_version=11 \
+--enable_onnx_checker=True
 ```
 
-执行完毕后，ONNX 模型会被分别保存在 `./inference/bisenet/`路径下
+执行完毕后，ONNX 模型会被分别保存在 `./inference/ResNet50_infer/`路径下
 
 - 推理预测
 
@@ -66,36 +51,25 @@ ONNX模型测试步骤如下：
 - Step1：初始化`ONNXRuntime`库并配置相应参数, 并进行预测
 - Step2：`ONNXRuntime`预测结果和`Paddle Inference`预测结果对比
 
-下载cityscapes验证集中的一张[图片](https://paddleseg.bj.bcebos.com/dygraph/demo/cityscapes_demo.png)
+使用ImageNet验证集中的一张[图片](./images/ILSVRC2012_val_00000010.jpeg)
 
-```bash
-wget https://paddleseg.bj.bcebos.com/dygraph/demo/cityscapes_demo.png
-```
 
 在本目录下，我们提供了`infer.py`脚本进行预测，执行如下命令即可：
 
 ```bash
 python3.7 infer.py \
-    --model_path ./inference/bisenet/model \
-    --onnx_path ./inference/bisenet/model.onnx \
-    --image_path ./cityscapes_demo.png
+    --model_path ./inference/ResNet50_infer/inference \
+    --onnx_path ./inference/ResNet50_infer/model.onnx \
+    --image_path ./images/ILSVRC2012_val_00000010.jpeg
 ```
 
-执行命令后在终端会打印出预测的识别信息，并在 ./outputs/ 下保存可视化结果。
-
-Paddle Inference 执行效果：
-
-
-ONNXRuntime 执行效果：
-
-
-在终端输出结果如下。
+执行命令后在终端会打印出预测的识别信息如下。
 
 ```
-sess input/output name :  x argmax_0.tmp_0
-The difference of results between ONNXRuntime and Paddle looks good!
-max_abs_diff:  0.0
-
+Paddle inference top-5 results:
+class id(s): [153, 332, 229, 265, 196], score(s): [0.43, 0.30, 0.08, 0.05, 0.05], label_name(s): ['Maltese dog, Maltese terrier, Maltese', 'Angora, Angora rabbit', 'Old English sheepdog, bobtail', 'toy poodle', 'miniature schnauzer']
+ONNXRuntime top-5  results:
+class id(s): [153, 332, 229, 265, 196], score(s): [0.43, 0.30, 0.08, 0.05, 0.05], label_name(s): ['Maltese dog, Maltese terrier, Maltese', 'Angora, Angora rabbit', 'Old English sheepdog, bobtail', 'toy poodle', 'miniature schnauzer']
 ```
 
-max_abs_diff为 0.0 表示`Paddle Inference`预测结果与`ONNXRuntime`引擎的结果完全一致。
+由终端输出结果可见，`Paddle Inference`预测结果与`ONNXRuntime`引擎的结果完全一致。
