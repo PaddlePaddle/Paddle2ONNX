@@ -32,7 +32,7 @@ wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/paddle2onnx/class_model
 cd ./inference && tar xf ResNet50_infer.tar && cd ..
 ```
 
-其中ONNX模型，也可以通过使用 Paddle2ONNX 将BiseNet的推理模型转换为ONNX格式，执行如下命令即可：
+其中ONNX模型，也可以通过使用 Paddle2ONNX 将ResNet50的推理模型转换为ONNX格式，执行如下命令即可：
 
 ```bash
 paddle2onnx --model_dir=./inference/ResNet50_infer \
