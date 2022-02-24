@@ -27,7 +27,7 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype);
 struct TensorInfo {
   std::string name;
   std::vector<int64_t> shape;
-  int64_t Rank() { return static_cast<int64_t>(shape.size()); }
+  int64_t Rank() const { return static_cast<int64_t>(shape.size()); }
   int32_t dtype;
 };
 
