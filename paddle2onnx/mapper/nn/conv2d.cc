@@ -50,8 +50,11 @@ void Conv2dMapper::Opset7(OnnxHelper* helper) {
       parser_->GetOpInput(block_idx_, op_idx_, "Input");
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Output");
-  auto node = helper->MakeNode(
-      "Conv", {input_info[0].name, kernel_info[0].name}, {output_info[0].name});
+  auto input = helper->AutoCast(input_info[0].name, input_info[0].dtype,
+                                P2ODataType::FP32);
+  auto kernel = helper->AutoCast(kernel_info[0].name, kernel_info[0].dtype,
+                                 P2ODataType::FP32);
+  auto node = helper->MakeNode("Conv", {input, kernel});
   AddAttribute(node, "dilations", dilations_);
   std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
                                        kernel_info[0].shape[3]};
@@ -67,6 +70,8 @@ void Conv2dMapper::Opset7(OnnxHelper* helper) {
   } else {
     AddAttribute(node, "pads", paddings_);
   }
+  helper->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                   output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

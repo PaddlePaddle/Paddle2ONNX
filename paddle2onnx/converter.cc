@@ -51,7 +51,13 @@ PADDLE2ONNX_DECL bool Export(const std::string& model,
                              bool enable_experimental_op,
                              bool enable_optimize) {
   auto parser = PaddleParser();
+  if (verbose) {
+    std::cerr << "Start to parsing Paddle model..." << std::endl;
+  }
   if (!parser.Init(model, params, from_memory_buffer)) {
+    if (verbose) {
+      std::cerr << "Paddle model parsing failed." << std::endl;
+    }
     return false;
   }
   paddle2onnx::ModelExporter me;

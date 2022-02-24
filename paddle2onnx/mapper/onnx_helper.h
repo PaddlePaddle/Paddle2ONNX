@@ -91,6 +91,12 @@ class OnnxHelper {
                        int32_t to_paddle_dtype);
   std::string AutoCast(const std::string& input, const std::string& output,
                        int32_t input_paddle_dtype, int32_t to_paddle_dtype);
+
+  // Helper function for PaddlePaddle's shape tensor list inputs
+  // will cast all data type to int64
+  // will make sure all inputs to be 1-D tensor
+  // will concat them as output
+  std::string ConcatIndices(const std::vector<TensorInfo>& indices);
   std::vector<std::string> DtypeAlignment(
       const std::vector<TensorInfo>& input_info, int32_t* out_dtype);
   std::string Clip(const std::string& input, const float& min, const float& max,

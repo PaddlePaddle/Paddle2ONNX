@@ -59,8 +59,6 @@ class Pool2dMapper : public Mapper {
   std::vector<int64_t> k_size_;
   std::vector<int64_t> pads_;
   std::vector<int64_t> strides_;
-  bool need_convert_dtype_;
-  std::string input_name_;
   std::map<std::string, std::vector<std::string>> op_mapper_;
 };
 
