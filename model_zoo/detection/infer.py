@@ -125,6 +125,26 @@ class Detector(object):
             results['masks'] = np_masks
         return results
 
+    def expect(self, onnx_result, paddle_result):
+        diff = onnx_result - paddle_result
+        max_abs_diff = np.fabs(diff).max()
+        if max_abs_diff < 1e-05:
+            print(
+                "The difference of results between ONNXRuntime and Paddle looks good!"
+            )
+        else:
+            relative_diff = max_abs_diff / np.fabs(paddle_result).max()
+            if relative_diff < 1e-05:
+                print(
+                    "The difference of results between ONNXRuntime and Paddle looks good!"
+                )
+            else:
+                print(
+                    "The difference of results between ONNXRuntime and Paddle looks bad!"
+                )
+            print('relative_diff: ', relative_diff)
+        print('max_abs_diff: ', max_abs_diff)
+
     def predict(self, image_list, threshold=0.5, repeats=1, add_timer=True):
         '''
         Args:
@@ -151,12 +171,27 @@ class Detector(object):
             self.det_times.preprocess_time_s.end()
             self.det_times.inference_time_s.start()
 
+        import onnxruntime as rt
+        sess = rt.InferenceSession(
+            '/Users/huangshenghui/PP/Paddle2ONNX/model_zoo/detection/inference/yolov3_darknet53_270e_coco/model.onnx'
+        )
+        input_name1 = sess.get_inputs()[0].name
+        input_name2 = sess.get_inputs()[1].name
+        input_name3 = sess.get_inputs()[2].name
+        # label_name = sess.get_outputs()[0].name
+        pred_onnx = sess.run(None, {
+            input_name1: inputs['im_shape'],
+            input_name2: inputs['image'],
+            input_name3: inputs['scale_factor']
+        })
+
         # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
+            self.expect(pred_onnx[0], np_boxes)
             boxes_num = self.predictor.get_output_handle(output_names[1])
             np_boxes_num = boxes_num.copy_to_cpu()
             if self.pred_config.mask:
