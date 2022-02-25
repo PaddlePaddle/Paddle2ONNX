@@ -16,7 +16,7 @@ import paddle
 import os
 import numpy as np
 
-from .paddlevision.transforms import transforms
+from .transforms import transforms
 
 
 class ClassificationPresetEval:
