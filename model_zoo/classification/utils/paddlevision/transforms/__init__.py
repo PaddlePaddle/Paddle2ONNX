@@ -13,4 +13,3 @@
 # limitations under the License.
 
 from .transforms import *
-from .autoaugment import *

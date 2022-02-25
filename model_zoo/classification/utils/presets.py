@@ -16,30 +16,7 @@ import paddle
 import os
 import numpy as np
 
-from .paddlevision.transforms import autoaugment, transforms
-
-
-class ClassificationPresetTrain:
-    def __init__(self,
-                 crop_size,
-                 mean=(0.485, 0.456, 0.406),
-                 std=(0.229, 0.224, 0.225),
-                 hflip_prob=0.5,
-                 auto_augment_policy=None,
-                 random_erase_prob=0.0):
-        trans = [transforms.RandomResizedCrop(crop_size)]
-        if hflip_prob > 0:
-            trans.append(transforms.RandomHorizontalFlip(hflip_prob))
-        trans.extend([
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=mean, std=std),
-        ])
-
-        self.transforms = transforms.Compose(trans)
-
-    def __call__(self, img):
-        return self.transforms(img)
+from .paddlevision.transforms import transforms
 
 
 class ClassificationPresetEval:
