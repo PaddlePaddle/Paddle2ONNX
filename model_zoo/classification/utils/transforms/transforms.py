@@ -16,8 +16,12 @@ import math
 import numbers
 import random
 import warnings
+import numpy as np
+from PIL import Image
+from enum import Enum
+
 from collections.abc import Sequence
-from typing import Tuple, List
+from typing import List, Tuple, Any, Optional
 
 import paddle
 from paddle import Tensor
@@ -27,29 +31,177 @@ try:
 except ImportError:
     accimage = None
 
-from . import functional as F
-from .functional import InterpolationMode, _interpolation_modes_from_int
+
+class InterpolationMode(Enum):
+    """Interpolation modes
+    Available interpolation methods are ``nearest``, ``bilinear``, ``bicubic``, ``box``, ``hamming``, and ``lanczos``.
+    """
+    NEAREST = "nearest"
+    BILINEAR = "bilinear"
+    BICUBIC = "bicubic"
+    # For PIL compatibility
+    BOX = "box"
+    HAMMING = "hamming"
+    LANCZOS = "lanczos"
+
+
+def _interpolation_modes_from_int(i: int) -> InterpolationMode:
+    inverse_modes_mapping = {
+        0: InterpolationMode.NEAREST,
+        2: InterpolationMode.BILINEAR,
+        3: InterpolationMode.BICUBIC,
+        4: InterpolationMode.BOX,
+        5: InterpolationMode.HAMMING,
+        1: InterpolationMode.LANCZOS,
+    }
+    return inverse_modes_mapping[i]
+
+
+pil_modes_mapping = {
+    InterpolationMode.NEAREST: 0,
+    InterpolationMode.BILINEAR: 2,
+    InterpolationMode.BICUBIC: 3,
+    InterpolationMode.BOX: 4,
+    InterpolationMode.HAMMING: 5,
+    InterpolationMode.LANCZOS: 1,
+}
+
+
+def _is_pil_image(img: Any) -> bool:
+    if accimage is not None:
+        return isinstance(img, (Image.Image, accimage.Image))
+    else:
+        return isinstance(img, Image.Image)
+
+
+def _get_image_size(img: Any) -> List[int]:
+    if _is_pil_image(img):
+        return img.size
+    raise TypeError("Unexpected type {}".format(type(img)))
+
+
+def _setup_size(size, error_msg):
+    if isinstance(size, numbers.Number):
+        return int(size), int(size)
+
+    if isinstance(size, Sequence) and len(size) == 1:
+        return size[0], size[0]
+
+    if len(size) != 2:
+        raise ValueError(error_msg)
+
+    return size
+
+
+def crop(img: Image.Image, top: int, left: int, height: int,
+         width: int) -> Image.Image:
+    if not _is_pil_image(img):
+        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+
+    return img.crop((left, top, left + width, top + height))
+
+
+def resize_pil(img, size, interpolation=Image.BILINEAR, max_size=None):
+    if not _is_pil_image(img):
+        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+    if not (isinstance(size, int) or
+            (isinstance(size, Sequence) and len(size) in (1, 2))):
+        raise TypeError('Got inappropriate size arg: {}'.format(size))
+
+    if isinstance(size, Sequence) and len(size) == 1:
+        size = size[0]
+    if isinstance(size, int):
+        w, h = img.size
+
+        short, long = (w, h) if w <= h else (h, w)
+        if short == size:
+            return img
+
+        new_short, new_long = size, int(size * long / short)
+
+        if max_size is not None:
+            if max_size <= size:
+                raise ValueError(
+                    f"max_size = {max_size} must be strictly greater than the requested "
+                    f"size for the smaller edge size = {size}")
+            if new_long > max_size:
+                new_short, new_long = int(max_size * new_short /
+                                          new_long), max_size
+
+        new_w, new_h = (new_short, new_long) if w <= h else (new_long,
+                                                             new_short)
+        return img.resize((new_w, new_h), interpolation)
+    else:
+        if max_size is not None:
+            raise ValueError(
+                "max_size should only be passed if size specifies the length of the smaller edge, "
+                "i.e. size should be an int or a sequence of length 1 in deploy mode."
+            )
+        return img.resize(size[::-1], interpolation)
+
+
+def resize(img: Tensor,
+           size: List[int],
+           interpolation: InterpolationMode=InterpolationMode.BILINEAR,
+           max_size: Optional[int]=None,
+           antialias: Optional[bool]=None) -> Tensor:
+    # Backward compatibility with integer value
+    if isinstance(interpolation, int):
+        warnings.warn(
+            "Argument interpolation should be of type InterpolationMode instead of int. "
+            "Please, use InterpolationMode enum.")
+        interpolation = _interpolation_modes_from_int(interpolation)
+
+    if not isinstance(interpolation, InterpolationMode):
+        raise TypeError("Argument interpolation should be a InterpolationMode")
+
+    if not isinstance(img, paddle.Tensor):
+        if antialias is not None and not antialias:
+            warnings.warn(
+                "Anti-alias option is always applied for PIL Image input. Argument antialias is ignored."
+            )
+        pil_interpolation = pil_modes_mapping[interpolation]
+        return resize_pil(
+            img, size=size, interpolation=pil_interpolation, max_size=max_size)
+
+
+def center_crop(img: Tensor, output_size: List[int]) -> Tensor:
+    if isinstance(output_size, numbers.Number):
+        output_size = (int(output_size), int(output_size))
+    elif isinstance(output_size, (tuple, list)) and len(output_size) == 1:
+        output_size = (output_size[0], output_size[0])
+
+    image_width, image_height = _get_image_size(img)
+    crop_height, crop_width = output_size
+
+    if crop_width > image_width or crop_height > image_height:
+        padding_ltrb = [
+            (crop_width - image_width) // 2 if crop_width > image_width else 0,
+            (crop_height - image_height) // 2
+            if crop_height > image_height else 0,
+            (crop_width - image_width + 1) // 2
+            if crop_width > image_width else 0,
+            (crop_height - image_height + 1) // 2
+            if crop_height > image_height else 0,
+        ]
+        img = pad(img, padding_ltrb, fill=0)  # PIL uses fill value 0
+        image_width, image_height = _get_image_size(img)
+        if crop_width == image_width and crop_height == image_height:
+            return img
+
+    crop_top = int(round((image_height - crop_height) / 2.))
+    crop_left = int(round((image_width - crop_width) / 2.))
+    return crop(img, crop_top, crop_left, crop_height, crop_width)
+
 
 __all__ = [
     "Compose",
-    "Normalize",
     "Resize",
     "CenterCrop",
 ]
 
 
 class Compose:
-    """Composes several transforms together.
-    Args:
-        transforms (list of ``Transform`` objects): list of transforms to compose.
-
-    Example:
-        >>> transforms.Compose([
-        >>>     transforms.CenterCrop(10),
-        >>>     transforms.ToTensor(),
-        >>> ])
-    """
-
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -58,94 +210,8 @@ class Compose:
             img = t(img)
         return img
 
-    def __repr__(self):
-        format_string = self.__class__.__name__ + '('
-        for t in self.transforms:
-            format_string += '\n'
-            format_string += '    {0}'.format(t)
-        format_string += '\n)'
-        return format_string
-
-
-class Normalize(paddle.nn.Layer):
-    """Normalize a tensor image with mean and standard deviation.
-    This transform does not support PIL Image.
-    Given mean: ``(mean[1],...,mean[n])`` and std: ``(std[1],..,std[n])`` for ``n``
-    channels, this transform will normalize each channel of the input
-    ``paddle.*Tensor`` i.e.,
-    ``output[channel] = (input[channel] - mean[channel]) / std[channel]``
-
-    .. note::
-        This transform acts out of place, i.e., it does not mutate the input tensor.
-
-    Args:
-        mean (sequence): Sequence of means for each channel.
-        std (sequence): Sequence of standard deviations for each channel.
-        inplace(bool,optional): Bool to make this operation in-place.
-
-    """
-
-    def __init__(self, mean, std, inplace=False):
-        super().__init__()
-        self.mean = mean
-        self.std = std
-        self.inplace = inplace
-
-    def forward(self, tensor: Tensor) -> Tensor:
-        """
-        Args:
-            tensor (Tensor): Tensor image to be normalized.
-
-        Returns:
-            Tensor: Normalized Tensor image.
-        """
-        return F.normalize(tensor, self.mean, self.std, self.inplace)
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean,
-                                                                      self.std)
-
 
 class Resize(paddle.nn.Layer):
-    """Resize the input image to the given size.
-    If the image is paddle Tensor, it is expected
-    to have [..., H, W] shape, where ... means an arbitrary number of leading dimensions
-
-    .. warning::
-        The output image might be different depending on its type: when downsampling, the interpolation of PIL images
-        and tensors is slightly different, because PIL applies antialiasing. This may lead to significant differences
-        in the performance of a network. Therefore, it is preferable to train and serve a model with the same input
-        types. See also below the ``antialias`` parameter, which can help making the output of PIL images and tensors
-        closer.
-
-    Args:
-        size (sequence or int): Desired output size. If size is a sequence like
-            (h, w), output size will be matched to this. If size is an int,
-            smaller edge of the image will be matched to this number.
-            i.e, if height > width, then image will be rescaled to
-            (size * height / width, size).
-
-        interpolation (InterpolationMode): Desired interpolation enum defined by
-            :class:`paddlevision.transforms.InterpolationMode`. Default is ``InterpolationMode.BILINEAR``.
-            If input is Tensor, only ``InterpolationMode.NEAREST``, ``InterpolationMode.BILINEAR`` and
-            ``InterpolationMode.BICUBIC`` are supported.
-            For backward compatibility integer values (e.g. ``PIL.Image.NEAREST``) are still acceptable.
-        max_size (int, optional): The maximum allowed for the longer edge of
-            the resized image: if the longer edge of the image is greater
-            than ``max_size`` after being resized according to ``size``, then
-            the image is resized again so that the longer edge is equal to
-            ``max_size``. As a result, ``size`` might be overruled, i.e the
-            smaller edge may be shorter than ``size``.
-        antialias (bool, optional): antialias flag. If ``img`` is PIL Image, the flag is ignored and anti-alias
-            is always used. If ``img`` is Tensor, the flag is False by default and can be set to True for
-            ``InterpolationMode.BILINEAR`` only mode. This can help making the output for PIL images and tensors
-            closer.
-
-            .. warning::
-                There is no autodiff support for ``antialias=True`` option with input ``img`` as Tensor.
-
-    """
-
     def __init__(self,
                  size,
                  interpolation=InterpolationMode.BILINEAR,
@@ -172,34 +238,11 @@ class Resize(paddle.nn.Layer):
         self.antialias = antialias
 
     def forward(self, img):
-        """
-        Args:
-            img (PIL Image or Tensor): Image to be scaled.
-
-        Returns:
-            PIL Image or Tensor: Rescaled image.
-        """
-        return F.resize(img, self.size, self.interpolation, self.max_size,
-                        self.antialias)
-
-    def __repr__(self):
-        interpolate_str = self.interpolation.value
-        return self.__class__.__name__ + '(size={0}, interpolation={1}, max_size={2}, antialias={3})'.format(
-            self.size, interpolate_str, self.max_size, self.antialias)
+        return resize(img, self.size, self.interpolation, self.max_size,
+                      self.antialias)
 
 
 class CenterCrop(paddle.nn.Layer):
-    """Crops the given image at the center.
-    If the image is paddle Tensor, it is expected
-    to have [..., H, W] shape, where ... means an arbitrary number of leading dimensions.
-    If image size is smaller than output size along any edge, image is padded with 0 and then center cropped.
-
-    Args:
-        size (sequence or int): Desired output size of the crop. If size is an
-            int instead of sequence like (h, w), a square crop (size, size) is
-            made. If provided a sequence of length 1, it will be interpreted as (size[0], size[0]).
-    """
-
     def __init__(self, size):
         super().__init__()
         self.size = _setup_size(
@@ -207,27 +250,4 @@ class CenterCrop(paddle.nn.Layer):
             error_msg="Please provide only two dimensions (h, w) for size.")
 
     def forward(self, img):
-        """
-        Args:
-            img (PIL Image or Tensor): Image to be cropped.
-
-        Returns:
-            PIL Image or Tensor: Cropped image.
-        """
-        return F.center_crop(img, self.size)
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(size={0})'.format(self.size)
-
-
-def _setup_size(size, error_msg):
-    if isinstance(size, numbers.Number):
-        return int(size), int(size)
-
-    if isinstance(size, Sequence) and len(size) == 1:
-        return size[0], size[0]
-
-    if len(size) != 2:
-        raise ValueError(error_msg)
-
-    return size
+        return center_crop(img, self.size)
