@@ -136,8 +136,8 @@ def _resize(img, size, interpolation=Image.BILINEAR, max_size=None):
         return img.resize(size[::-1], interpolation)
 
 
-def _crop(img: Image.Image, top: int, left: int, height: int,
-          width: int) -> Image.Image:
+def _center_crop(img: Image.Image, top: int, left: int, height: int,
+                 width: int) -> Image.Image:
     if not _is_pil_image(img):
         raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
 
@@ -195,7 +195,7 @@ def center_crop(img: Tensor, output_size: List[int]) -> Tensor:
 
     crop_top = int(round((image_height - crop_height) / 2.))
     crop_left = int(round((image_width - crop_width) / 2.))
-    return _crop(img, crop_top, crop_left, crop_height, crop_width)
+    return _center_crop(img, crop_top, crop_left, crop_height, crop_width)
 
 
 class Compose:
