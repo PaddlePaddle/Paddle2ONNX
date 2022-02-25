@@ -52,7 +52,7 @@ class TestAdaptiveAvgPool1dConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
-        output_size = draw(st.integers(min_value=2, max_value=3))
+        output_size = draw(st.integers(min_value=1, max_value=3))
 
         config = {
             "op_names": ["pool2d"],
@@ -109,7 +109,7 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
 
         output_type = draw(st.sampled_from(["int", "list"]))
         if output_type == "int":
-            output_size = draw(st.integers(min_value=2, max_value=3))
+            output_size = draw(st.integers(min_value=1, max_value=3))
         elif output_type == "list":
             output_size = draw(
                 st.lists(
