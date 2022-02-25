@@ -224,7 +224,8 @@ void Pool2dMapper::Opset7(OnnxHelper* helper) {
     auto input = helper->AutoCast(input_info[0].name, input_info[0].dtype,
                                   P2ODataType::FP32);
     auto output = helper->MakeNode(iter->second[1], {input})->output(0);
-    helper->AutoCast(output, P2ODataType::FP32, output_info[0].dtype);
+    helper->AutoCast(output, output_info[0].name, P2ODataType::FP32,
+                     output_info[0].dtype);
   } else if (adaptive_) {
     AdaptivePool(input_info, output_info, helper);
   } else {
