@@ -49,6 +49,16 @@ class InterpolationMode(Enum):
     LANCZOS = "lanczos"
 
 
+pil_modes_mapping = {
+    InterpolationMode.NEAREST: 0,
+    InterpolationMode.BILINEAR: 2,
+    InterpolationMode.BICUBIC: 3,
+    InterpolationMode.BOX: 4,
+    InterpolationMode.HAMMING: 5,
+    InterpolationMode.LANCZOS: 1,
+}
+
+
 def _interpolation_modes_from_int(i: int) -> InterpolationMode:
     inverse_modes_mapping = {
         0: InterpolationMode.NEAREST,
@@ -59,16 +69,6 @@ def _interpolation_modes_from_int(i: int) -> InterpolationMode:
         1: InterpolationMode.LANCZOS,
     }
     return inverse_modes_mapping[i]
-
-
-pil_modes_mapping = {
-    InterpolationMode.NEAREST: 0,
-    InterpolationMode.BILINEAR: 2,
-    InterpolationMode.BICUBIC: 3,
-    InterpolationMode.BOX: 4,
-    InterpolationMode.HAMMING: 5,
-    InterpolationMode.LANCZOS: 1,
-}
 
 
 def _is_pil_image(img: Any) -> bool:
