@@ -1,20 +1,19 @@
-rm -rf inference
 mkdir inference
 cd inference
 
-modol_dir=ResNet50_infer
-model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
+# modol_dir=ResNet50_infer
+# model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
 
-#modol_dir=PPLCNet_x1_0_infer
-#model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/PPLCNet_x1_0_infer.tar
+# modol_dir=PPLCNet_x1_0_infer
+# model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/PPLCNet_x1_0_infer.tar
 
-#modol_dir=MobileNetV2_infer
-#model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV2_infer.tar
+# modol_dir=MobileNetV2_infer
+# model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV2_infer.tar
 
-#modol_dir=MobileNetV3_small_x1_0_infer
-#model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV3_small_x1_0_infer.tar
+modol_dir=MobileNetV3_small_x1_0_infer
+model_url=https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV3_small_x1_0_infer.tar
 
-wget -nc $model_url && tar xf $modol_dir.tar
+wget -nc $model_url && tar xf $modol_dir.tar && rm -rf $modol_dir.tar
 cd ..
 
 paddle2onnx --model_dir=./inference/$modol_dir \
