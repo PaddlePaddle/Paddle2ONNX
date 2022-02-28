@@ -31,3 +31,9 @@ python infer.py --model mobilenetv3.onnx --image_path images/ILSVRC2012_val_0000
 wget https://bj.bcebos.com/paddle2onnx/model_zoo/mobilenetv3.tar.gz
 python infer.py --model mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --use_paddle_predict True
 ```
+输出结果如下所示
+```
+TopK Indices:  [265 153 850 332 283]
+TopK Scores:  [0.4966848  0.25181034 0.15389322 0.01496286 0.01342606]
+```
+分别表示该图识别结果，打分最高的前5个类别id，以及其相应的置信度分值。各类别id与明文标签参考[ImageNet标签](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/deploy/utils/imagenet1k_label_list.txt)
