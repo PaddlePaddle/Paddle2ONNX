@@ -62,27 +62,21 @@ def preprocess(image_path):
         return im[h_start:h_end, w_start:w_end, :]
 
     def normalize(im, mean, std):
-        print("-------", im.shape)
         im = im.astype("float32") / 255.0
-        print("+++++++", im.shape)
         mean = np.array(mean).reshape((1, 1, 3)).astype("float32")
         std = np.array(std).reshape((1, 1, 3)).astype("float32")
-        print("NORMRR", im.shape)
         return (im - mean) / std
 
     # resize the short edge to `resize_size`
     im = cv2.imread(image_path)
     resized_im = resize_by_short(im, FLAGS.resize_size)
-    print("000001", resized_im.shape)
 
     # crop from center
     croped_im = center_crop(resized_im, FLAGS.crop_size)
-    print("000002", croped_im.shape)
 
     # normalize
     normalized_im = normalize(croped_im, [0.485, 0.456, 0.406],
                               [0.229, 0.224, 0.225])
-    print("000003", normalized_im.shape)
 
     # transpose to NCHW
     data = np.expand_dims(normalized_im, axis=0)
@@ -115,7 +109,6 @@ def onnx_predict(onnx_model_path, image_path):
     sess = onnxruntime.InferenceSession(onnx_model_path)
     data = preprocess(image_path)
     result, = sess.run(None, {"inputs": data})
-    print("00000", result.shape)
     postprocess(result)
 
 
