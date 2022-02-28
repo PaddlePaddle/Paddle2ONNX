@@ -29,7 +29,8 @@ python infer.py --model mobilenetv3.onnx --image_path images/ILSVRC2012_val_0000
 
 ```
 wget https://bj.bcebos.com/paddle2onnx/model_zoo/mobilenetv3.tar.gz
-python infer.py --model mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --use_paddle_predict True
+tar xvf mobilenetv3.tar.gz
+python infer.py --model mobilenetv3 --image_path images/ILSVRC2012_val_00000010.jpeg --use_paddle_predict True
 ```
 输出结果如下所示
 ```
