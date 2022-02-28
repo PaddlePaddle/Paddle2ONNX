@@ -63,6 +63,8 @@ def preprocess(image_path):
 
     def normalize(im, mean, std):
         im = im.astype("float32") / 255.0
+        # to rgb
+        im = im[:, :, ::-1]
         mean = np.array(mean).reshape((1, 1, 3)).astype("float32")
         std = np.array(std).reshape((1, 1, 3)).astype("float32")
         return (im - mean) / std
