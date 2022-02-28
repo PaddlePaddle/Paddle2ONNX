@@ -64,6 +64,9 @@ class TestConv2dConvert(OPConvertAutoScanTest):
 
         groups = draw(st.integers(min_value=1, max_value=4))
         muti1 = draw(st.integers(min_value=1, max_value=4))
+
+        if kernel_size[1] == 1:
+            kernel_size[1] = kernel_size[1] + 1
         kernel_size[0] = groups * muti1
         input_shape[1] = kernel_size[1] * groups
 
