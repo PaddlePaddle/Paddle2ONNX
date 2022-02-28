@@ -262,10 +262,9 @@ class APIOnnx(object):
     def check_ops(self, version):
         if len(self.ops) == 0:
             return
-        path = os.path.join(self.pwd, "op_checker" + "/check")
         op_list = dygraph2onnx(
             self._func,
-            path,
+            "./op_checker",
             input_spec=self.input_spec,
             opset_version=version,
             get_op_list=True)

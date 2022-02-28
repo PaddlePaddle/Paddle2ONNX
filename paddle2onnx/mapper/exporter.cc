@@ -157,14 +157,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   // to let framework know the conversion is
   // pass or fail
   if (enable_onnx_checker) {
-    try {
-      ONNX_NAMESPACE::checker::check_model(*(model.get()));
-      throw "invalid model";
-    } catch (...) {
-      std::cerr << "[Paddle2ONNX] ONNX model conversion is invalid."
-                << std::endl;
-      return "";
-    }
+    ONNX_NAMESPACE::checker::check_model(*(model.get()));
     std::cerr << "[Paddle2ONNX] ONNX model conversion is valid." << std::endl;
   }
 
