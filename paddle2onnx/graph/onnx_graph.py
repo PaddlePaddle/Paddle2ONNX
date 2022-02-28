@@ -223,7 +223,14 @@ class ONNXGraph(Graph):
         vi = self.make_value_info(name, shape, dtype)
         self.output_nodes.append(vi)
 
-    def export_proto(self, enable_onnx_checker=False):
+    def find_index(self, node_inout, name):
+        for i in range(len(node_inout)):
+            if node_inout[i] == name:
+                return i
+        return -1
+
+    def export_proto(self, enable_onnx_checker=False, output_names=None):
+
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
 
@@ -239,6 +246,27 @@ class ONNXGraph(Graph):
             opset_imports.append(helper.make_opsetid(custom_domain, 1))
         onnx_proto = helper.make_model(
             onnx_graph, producer_name=PRODUCER, opset_imports=opset_imports)
+
+        if output_names is not None:
+            assert len(output_names) == len(
+                onnx_proto.graph.output
+            ), "The provided output names are inconsistent with the output number of the onnx model"
+            origin_output_names = []
+            for i in range(len(onnx_proto.graph.output)):
+                origin_output_names.append(onnx_proto.graph.output[i].name)
+                onnx_proto.graph.output[i].name = output_names[i]
+
+            for i in range(len(onnx_proto.graph.node)):
+                node = onnx_proto.graph.node[i]
+                for j in range(len(origin_output_names)):
+                    if origin_output_names[j] in node.output:
+                        index = self.find_index(node.output,
+                                                origin_output_names[j])
+                        onnx_proto.graph.node[i].output[index] = output_names[j]
+                    if origin_output_names[j] in node.input:
+                        index = self.find_index(node.input,
+                                                origin_output_names[j])
+                        onnx_proto.graph.node[i].input[index] = output_names[j]
 
         if enable_onnx_checker:
             check_model(onnx_proto)

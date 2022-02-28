@@ -81,6 +81,13 @@ def arg_parser():
         action="store_true",
         default=False,
         help="get version of paddle2onnx")
+    parser.add_argument(
+       "--output_names",
+       "-on",
+       type=_text_type,
+       default="None",
+       help="define output names, e.g --output_names=[\"output1\"] or" \
+       "--output_names=[\"output1\", \"output2\", \"output3\"]")
     return parser
 
 
@@ -91,7 +98,8 @@ def program2onnx(model_dir,
                  opset_version=9,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
-                 input_shape_dict=None):
+                 input_shape_dict=None,
+                 output_names=None):
     try:
         import paddle
     except:
@@ -156,7 +164,8 @@ def program2onnx(model_dir,
         target_vars=fetch_vars,
         opset_version=opset_version,
         enable_onnx_checker=enable_onnx_checker,
-        operator_export_type=operator_export_type)
+        operator_export_type=operator_export_type,
+        output_names=output_names)
 
 
 def main():
@@ -192,7 +201,8 @@ def main():
         opset_version=args.opset_version,
         enable_onnx_checker=args.enable_onnx_checker,
         operator_export_type=operator_export_type,
-        input_shape_dict=input_shape_dict)
+        input_shape_dict=input_shape_dict,
+        output_names=args.output_names)
 
 
 if __name__ == "__main__":
