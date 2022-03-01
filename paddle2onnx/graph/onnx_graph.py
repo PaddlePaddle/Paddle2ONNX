@@ -230,6 +230,8 @@ class ONNXGraph(Graph):
         return -1
 
     def change_output_names(self, onnx_proto, output_names):
+        logging.info("The output of the ONNX model is set to: {}".format(
+            output_names))
         if isinstance(output_names, list):
             assert len(output_names) == len(
                 onnx_proto.graph.output

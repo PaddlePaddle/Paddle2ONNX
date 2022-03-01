@@ -25,19 +25,9 @@ from paddle2onnx.utils import logging
 def str2list(v):
     if len(v) == 0:
         return None
-    print("orgin: ", v)
     v = v.replace(" ", "")
-    if v.count("["):
-        v = v[1:-1]
-        return [item for item in v.split(",")]
-    if v.count("{"):
-        v = v[1:-1]
-        print("v: ", v)
-        res_dict = {}
-        for item in v.split(","):
-            print(item)
-            res_dict[item.split(":")[0]] = item.split(":")[1]
-        return res_dict
+    v = eval(v)
+    return v
 
 
 def arg_parser():
