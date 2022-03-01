@@ -17,6 +17,17 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(equal, EqualMapper)
 
+int32_t EqualMapper::GetMinOpset(bool verbose) {
+  if (axis_ != -1) {
+    if (verbose) {
+      std::cerr << "[ERROR] axis attribute must be -1 in operator equal."
+                << std::endl;
+    }
+    return -1;
+  }
+  return 7;
+}
+
 void EqualMapper::Opset7(OnnxHelper* helper) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_x_info =
