@@ -181,9 +181,12 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
   } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
     std::vector<int64_t> data(numel, static_cast<int64_t>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data(numel, static_cast<int32_t>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in MakeConstant "
+           "Only support data type of FLOAT/DOUBLE/INT32/INT64 in MakeConstant "
            "function.");
   }
   nodes.push_back(node);
@@ -218,9 +221,12 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
   } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
     std::vector<int64_t> data(numel, static_cast<int64_t>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data(numel, static_cast<int32_t>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in MakeConstant "
+           "Only support data type of FLOAT/DOUBLE/INT32/INT64 in MakeConstant "
            "function.");
   }
   nodes.push_back(node);
@@ -261,9 +267,15 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
       data.push_back(static_cast<int64_t>(item));
     }
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data;
+    for (auto& item : value) {
+      data.push_back(static_cast<int32_t>(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in MakeConstant "
+           "Only support data type of FLOAT/DOUBLE/INT32/INT64 in MakeConstant "
            "function.");
   }
   nodes.push_back(node);
@@ -304,9 +316,15 @@ std::string OnnxHelper::Constant(const std::string& output,
       data.push_back(static_cast<int64_t>(item));
     }
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data;
+    for (auto& item : value) {
+      data.push_back(static_cast<int32_t>(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in MakeConstant "
+           "Only support data type of FLOAT/DOUBLE/INT32/INT64 in MakeConstant "
            "function.");
   }
   nodes.push_back(node);
@@ -349,9 +367,12 @@ std::string OnnxHelper::Constant(const std::string& output,
   } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
     std::vector<int64_t> data(numel, static_cast<int64_t>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data(numel, static_cast<int32_t>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in MakeConstant "
+           "Only support data type of FLOAT/DOUBLE/INT32/INT64 in MakeConstant "
            "function.");
   }
   nodes.push_back(node);
