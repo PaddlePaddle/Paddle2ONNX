@@ -14,20 +14,10 @@
 
 import argparse
 import os
-import sys
-
-LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(LOCAL_PATH, '..', '..'))
-
+import cv2
 import numpy as np
-
-import paddleseg.transforms as T
-from paddleseg.cvlibs import manager
-from paddleseg.utils import logger, get_image_list
-from paddleseg.utils.visualize import get_pseudo_color_map
-
-import onnxruntime as rt
 import paddle
+import onnxruntime as rt
 
 
 def parse_args():
@@ -36,20 +26,17 @@ def parse_args():
         '--model_path',
         dest='model_path',
         help='The path of the paddle pdmodel',
-        type=str,
-        required=True)
+        type=str)
     parser.add_argument(
         '--onnx_path',
         dest='onnx_path',
         help='file of onnx of model.',
-        type=str,
-        required=True)
+        type=str)
     parser.add_argument(
         '--image_path',
         dest='image_path',
         help='The directory or path or file list of the images to be predicted.',
-        type=str,
-        required=True)
+        type=str)
     parser.add_argument(
         '--save_dir',
         dest='save_dir',
@@ -83,14 +70,20 @@ def onnx_predict(onnx_path, imgs_path):
     return results
 
 
-def preprocess(img):
-    t_list = [{'type': 'Normalize'}]
-    com = manager.TRANSFORMS
-    transforms = []
-    for t in t_list:
-        transforms.append(com[t.pop('type')](**t))
-    transforms = T.Compose(transforms)
-    data = np.array([transforms(img)[0]])
+def preprocess(image_path):
+    def normalize(im, mean, std):
+        mean = np.array(mean)[np.newaxis, np.newaxis, :]
+        std = np.array(std)[np.newaxis, np.newaxis, :]
+        im = im.astype(np.float32, copy=False) / 255.0
+        im -= mean
+        im /= std
+        im = np.transpose(im, (2, 0, 1))
+        return im
+
+    im = cv2.imread(image_path).astype('float32')
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    data = normalize(im, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    data = np.expand_dims(data, axis=0)
     return data
 
 
@@ -111,17 +104,35 @@ def save_imgs(results, imgs_path, prefix=None):
         result.save(os.path.join(args.save_dir, basename))
 
 
-def main(args):
-    imgs_path = args.image_path
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
+def get_pseudo_color_map(pred, color_map=None):
+    from PIL import Image as PILImage
+    pred_mask = PILImage.fromarray(pred.astype(np.uint8), mode='P')
+    if color_map is None:
+        color_map = get_color_map_list(256)
+    pred_mask.putpalette(color_map)
+    return pred_mask
 
-    paddle_result = paddle_predict(args.model_path, imgs_path)
-    save_imgs(paddle_result, imgs_path, "paddle")
 
-    onnx_result = onnx_predict(args.onnx_path, imgs_path)
-    save_imgs(onnx_result, imgs_path, "onnx")
+def get_color_map_list(num_classes, custom_color=None):
+    num_classes += 1
+    color_map = num_classes * [0, 0, 0]
+    for i in range(0, num_classes):
+        j = 0
+        lab = i
+        while lab:
+            color_map[i * 3] |= (((lab >> 0) & 1) << (7 - j))
+            color_map[i * 3 + 1] |= (((lab >> 1) & 1) << (7 - j))
+            color_map[i * 3 + 2] |= (((lab >> 2) & 1) << (7 - j))
+            j += 1
+            lab >>= 3
+    color_map = color_map[3:]
 
+    if custom_color:
+        color_map[:len(custom_color)] = custom_color
+    return color_map
+
+
+def compare(onnx_result, paddle_result):
     diff = onnx_result - paddle_result
     max_abs_diff = np.fabs(diff).max()
     if max_abs_diff < 1e-05:
@@ -141,7 +152,19 @@ def main(args):
         print('relative_diff: ', relative_diff)
     print('max_abs_diff: ', max_abs_diff)
 
-    logger.info("Finish")
+
+def main(args):
+    imgs_path = args.image_path
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+
+    paddle_result = paddle_predict(args.model_path, imgs_path)
+    save_imgs(paddle_result, imgs_path, "paddle")
+
+    onnx_result = onnx_predict(args.onnx_path, imgs_path)
+    save_imgs(onnx_result, imgs_path, "onnx")
+    compare(onnx_result, paddle_result)
+    print("Finish")
 
 
 if __name__ == '__main__':
