@@ -203,11 +203,11 @@ def main():
         operator_export_type = "PaddleFallback"
 
     if args.output_names is not None:
-        print("output names is not none")
         if not isinstance(args.output_names, (list, dict)):
             raise TypeError(
                 "The output_names should be 'list' or 'dict', but received type is %s."
                 % type(args.output_names))
+
     program2onnx(
         args.model_dir,
         args.save_file,
