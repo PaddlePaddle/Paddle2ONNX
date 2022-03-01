@@ -243,29 +243,48 @@ class ONNXGraph(Graph):
 
             for i in range(len(onnx_proto.graph.node)):
                 node = onnx_proto.graph.node[i]
+                # Prevent changed names from being changed again
+                output_visited_node = []
+                input_visited_node = []
                 for j in range(len(origin_output_names)):
                     if origin_output_names[j] in node.output:
                         index = self.find_index(node.output,
                                                 origin_output_names[j])
+                        if index in output_visited_node:
+                            continue
+                        output_visited_node.append(index)
                         onnx_proto.graph.node[i].output[index] = output_names[j]
                     if origin_output_names[j] in node.input:
                         index = self.find_index(node.input,
                                                 origin_output_names[j])
+                        if index in input_visited_node:
+                            continue
+                        input_visited_node.append(index)
                         onnx_proto.graph.node[i].input[index] = output_names[j]
         if isinstance(output_names, dict):
             for i in range(len(onnx_proto.graph.output)):
                 for key, value in output_names.items():
                     if onnx_proto.graph.output[i].name == key:
                         onnx_proto.graph.output[i].name = value
+                        break
 
             for i in range(len(onnx_proto.graph.node)):
                 node = onnx_proto.graph.node[i]
+                # Prevent changed names from being changed again
+                output_visited_node = []
+                input_visited_node = []
                 for key, value in output_names.items():
                     if key in node.output:
                         index = self.find_index(node.output, key)
+                        if index in output_visited_node:
+                            continue
+                        output_visited_node.append(index)
                         onnx_proto.graph.node[i].output[index] = value
                     if key in node.input:
                         index = self.find_index(node.input, key)
+                        if index in input_visited_node:
+                            continue
+                        input_visited_node.append(index)
                         onnx_proto.graph.node[i].input[index] = value
 
         return onnx_proto
