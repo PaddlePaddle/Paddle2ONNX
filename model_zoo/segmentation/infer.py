@@ -25,18 +25,20 @@ def parse_args():
     parser.add_argument(
         '--model_path',
         dest='model_path',
-        help='The path of the paddle pdmodel',
-        type=str)
-    parser.add_argument(
-        '--onnx_path',
-        dest='onnx_path',
-        help='file of onnx of model.',
-        type=str)
+        type=str,
+        help="while use_paddle_predict, this means directory path of paddle model. Other wise, this means path of "
+        "onnx model file.")
     parser.add_argument(
         '--image_path',
         dest='image_path',
-        help='The directory or path or file list of the images to be predicted.',
-        type=str)
+        type=str,
+        help='The directory or path or file list of the images to be predicted.')
+    parser.add_argument(
+        '--use_paddle_predict',
+        type=bool,
+        default=False,
+        help="If use paddlepaddle to predict, otherwise use onnxruntime to predict."
+    )
     parser.add_argument(
         '--save_dir',
         dest='save_dir',
@@ -88,7 +90,7 @@ def preprocess(image_path):
 
 
 def postprocess(results):
-    if args.with_argmax:
+    if FLAGS.with_argmax:
         results = np.argmax(results, axis=1)
     return results
 
@@ -101,7 +103,7 @@ def save_imgs(results, imgs_path, prefix=None):
         if prefix is not None and isinstance(prefix, str):
             basename = prefix + "_" + basename
         basename = f'{basename}.png'
-        result.save(os.path.join(args.save_dir, basename))
+        result.save(os.path.join(FLAGS.save_dir, basename))
 
 
 def get_pseudo_color_map(pred, color_map=None):
@@ -132,41 +134,16 @@ def get_color_map_list(num_classes, custom_color=None):
     return color_map
 
 
-def compare(onnx_result, paddle_result):
-    diff = onnx_result - paddle_result
-    max_abs_diff = np.fabs(diff).max()
-    if max_abs_diff < 1e-05:
-        print(
-            "The difference of results between ONNXRuntime and Paddle looks good!"
-        )
-    else:
-        relative_diff = max_abs_diff / np.fabs(paddle_result).max()
-        if relative_diff < 1e-05:
-            print(
-                "The difference of results between ONNXRuntime and Paddle looks good!"
-            )
-        else:
-            print(
-                "The difference of results between ONNXRuntime and Paddle looks bad!"
-            )
-        print('relative_diff: ', relative_diff)
-    print('max_abs_diff: ', max_abs_diff)
-
-
-def main(args):
-    imgs_path = args.image_path
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
-
-    paddle_result = paddle_predict(args.model_path, imgs_path)
-    save_imgs(paddle_result, imgs_path, "paddle")
-
-    onnx_result = onnx_predict(args.onnx_path, imgs_path)
-    save_imgs(onnx_result, imgs_path, "onnx")
-    compare(onnx_result, paddle_result)
-    print("Finish")
-
-
 if __name__ == '__main__':
-    args = parse_args()
-    main(args)
+    FLAGS = parse_args()
+    imgs_path = FLAGS.image_path
+    if not os.path.exists(FLAGS.save_dir):
+        os.makedirs(FLAGS.save_dir)
+
+    if FLAGS.use_paddle_predict:
+        paddle_result = paddle_predict(FLAGS.model_path, imgs_path)
+        save_imgs(paddle_result, imgs_path, "paddle")
+    else:
+        onnx_result = onnx_predict(FLAGS.model_path, imgs_path)
+        save_imgs(onnx_result, imgs_path, "onnx")
+    print("Finish")
