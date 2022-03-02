@@ -3,9 +3,9 @@
 本文档中模型库均来源于PaddleSeg [release/2.4分支](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.4)，在下表中提供了部分已经转换好的模型，如有更多模型或自行模型训练导出需求，可参考 [paddleseg模型导出说明](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/docs/model_export.md).
 |模型名称|配置文件|模型大小|下载地址|说明|
 | --- | --- | --- | --- | ---- |
-|BiSeNet|[bisenet_cityscapes_1024x1024_160k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/bisenet/bisenet_cityscapes_1024x1024_160k.yml)|9.4M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|DANet|[danet_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/danet/danet_resnet50_os8_cityscapes_1024x512_80k.yml)|190.1M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
-|DeepLabv3|[deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/deeplabv3/deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml)|156.6M|[推理模型]() / [ONNX模型](model.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
+|BiSeNet|[bisenet_cityscapes_1024x1024_160k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/bisenet/bisenet_cityscapes_1024x1024_160k.yml)|9.4M|[推理模型](https://bj.bcebos.com/paddle2onnx/model_zoo/bisenet.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/bisenet.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
+|DANet|[danet_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/danet/danet_resnet50_os8_cityscapes_1024x512_80k.yml)|190.1M|[推理模型](https://bj.bcebos.com/paddle2onnx/model_zoo/danet.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/danet.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
+|DeepLabv3|[deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/deeplabv3/deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml)|156.6M|[推理模型](https://bj.bcebos.com/paddle2onnx/model_zoo/deeplabv3.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/deeplabv3.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
 
 
 # ONNX模型推理示例
