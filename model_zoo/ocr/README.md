@@ -25,11 +25,11 @@ wget https://bj.bcebos.com/paddle2onnx/model_zoo/ocr_rec.onnx
 # 下载cls模型
 wget https://bj.bcebos.com/paddle2onnx/model_zoo/ocr_cls.onnx
 
-python3 predict_system.py --use_onnx=True \
---det_model_dir=./ocr_det.onnx  \
---rec_model_dir=./ocr_rec.onnx  \
---cls_model_dir=./ocr_cls.onnx  \
---image_dir=./images/lite_demo.png
+python3 predict_system.py  \
+--det_model_dir=./det_model.onnx  \
+--rec_model_dir=./rec_model.onnx  \
+--cls_model_dir=./cls_model.onnx  \
+--image_path=./images/lite_demo.png
 ```
 
 你也可以使用Paddle框架进行推理验证
@@ -48,10 +48,12 @@ python3 predict_system.py \
 --cls_model_dir=./inference/ch_ppocr_mobile_v2.0_cls_infer \
 --rec_model_dir=./inference/ch_PP-OCRv2_rec_infer \
 --det_model_dir=./inference/ch_PP-OCRv2_det_infer \
---image_dir=./images/lite_demo.png
+--image_path=./images/lite_demo.png \
+--use_paddle_predict=True
 ```
 
-最后ONNXRuntime和Paddle的终端端输出结果为：
+最后ONNXRuntime和Paddle终端输出结果，都是如下：
+
 ```
 The, 0.984
 visualized, 0.882

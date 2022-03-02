@@ -111,25 +111,25 @@ class TextRecognizer(object):
         self.rec_batch_num = args.rec_batch_num
         self.postprocess_op = CTCLabelDecode(args.rec_char_dict_path,
                                              args.use_space_char)
-        self.use_onnx = args.use_onnx
+        self.use_paddle_predict = args.use_paddle_predict
         self.args = args
 
         model_dir = args.rec_model_dir
-        if args.use_onnx:
+        if args.use_paddle_predict:
+            model = paddle.jit.load(model_dir + "/inference")
+            model.eval()
+            self.predictor = model
+        else:
             import onnxruntime as ort
             model_file_path = model_dir
             sess = ort.InferenceSession(model_file_path)
             self.predictor = sess
-        else:
-            model = paddle.jit.load(model_dir + "/inference")
-            model.eval()
-            self.predictor = model
 
     def resize_norm_img(self, img, max_wh_ratio):
         imgC, imgH, imgW = self.rec_image_shape
         assert imgC == img.shape[2]
         imgW = int((32 * max_wh_ratio))
-        if self.use_onnx:
+        if not self.use_paddle_predict:
             w = self.predictor.get_inputs()[0].shape[3:][0]
             if w is not None and w > 0:
                 imgW = w
@@ -177,12 +177,7 @@ class TextRecognizer(object):
             norm_img_batch = np.concatenate(norm_img_batch)
             norm_img_batch = norm_img_batch.copy()
 
-            if self.use_onnx:
-                input_dict = {}
-                input_dict[self.predictor.get_inputs()[0].name] = norm_img_batch
-                outputs = self.predictor.run(None, input_dict)
-                preds = outputs[0]
-            else:
+            if self.use_paddle_predict:
                 output = self.predictor(norm_img_batch).numpy()
                 outputs = []
                 outputs.append(output)
@@ -190,6 +185,12 @@ class TextRecognizer(object):
                     preds = outputs
                 else:
                     preds = outputs[0]
+            else:
+                input_dict = {}
+                input_dict[self.predictor.get_inputs()[0].name] = norm_img_batch
+                outputs = self.predictor.run(None, input_dict)
+                preds = outputs[0]
+
             rec_result = self.postprocess_op(preds)
             for rno in range(len(rec_result)):
                 rec_res[indices[beg_img_no + rno]] = rec_result[rno]

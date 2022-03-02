@@ -14,12 +14,6 @@
 import os
 import sys
 
-__dir__ = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(__dir__)
-sys.path.append(os.path.abspath(os.path.join(__dir__, '../..')))
-
-os.environ["FLAGS_allocator_strategy"] = 'auto_growth'
-
 import cv2
 import copy
 import numpy as np
@@ -37,17 +31,9 @@ def str2bool(v):
 def init_args():
     parser = argparse.ArgumentParser()
     # params for text detector
-    parser.add_argument(
-        "--image_dir",
-        type=str,
-        default='/Users/huangshenghui/PP/Paddle2ONNX/model_zoo/ocr/images/lite_demo.png'
-    )
+    parser.add_argument("--image_path", type=str)
     parser.add_argument("--det_algorithm", type=str, default='DB')
-    parser.add_argument(
-        "--det_model_dir",
-        type=str,
-        default='/Users/huangshenghui/PP/Paddle2ONNX/model_zoo/ocr/inference/ch_PP-OCRv2_det_infer'
-    )
+    parser.add_argument("--det_model_dir", type=str)
     parser.add_argument("--det_limit_side_len", type=float, default=960)
     parser.add_argument("--det_limit_type", type=str, default='max')
 
@@ -60,11 +46,7 @@ def init_args():
     parser.add_argument("--det_db_score_mode", type=str, default="fast")
 
     parser.add_argument("--rec_algorithm", type=str, default='CRNN')
-    parser.add_argument(
-        "--rec_model_dir",
-        type=str,
-        default='/Users/huangshenghui/PP/Paddle2ONNX/model_zoo/ocr/inference/ch_PP-OCRv2_rec_infer'
-    )
+    parser.add_argument("--rec_model_dir", type=str)
     parser.add_argument("--rec_image_shape", type=str, default="3, 32, 320")
     parser.add_argument("--rec_batch_num", type=int, default=6)
     parser.add_argument("--max_text_length", type=int, default=25)
@@ -79,17 +61,13 @@ def init_args():
 
     # params for text classifier
     parser.add_argument("--use_angle_cls", type=str2bool, default=True)
-    parser.add_argument(
-        "--cls_model_dir",
-        type=str,
-        default='/Users/huangshenghui/PP/Paddle2ONNX/model_zoo/ocr/inference/ch_ppocr_mobile_v2.0_cls_infer'
-    )
+    parser.add_argument("--cls_model_dir", type=str)
     parser.add_argument("--cls_image_shape", type=str, default="3, 48, 192")
     parser.add_argument("--label_list", type=list, default=['0', '180'])
     parser.add_argument("--cls_batch_num", type=int, default=6)
     parser.add_argument("--cls_thresh", type=float, default=0.9)
 
-    parser.add_argument("--use_onnx", type=str2bool, default=False)
+    parser.add_argument("--use_paddle_predict", type=str2bool, default=False)
     return parser.parse_args()
 
 
@@ -191,7 +169,7 @@ def sorted_boxes(dt_boxes):
 
 def main(args):
     text_sys = TextSystem(args)
-    img = cv2.imread(args.image_dir)
+    img = cv2.imread(args.image_path)
     dt_boxes, rec_res = text_sys(img)
     for text, score in rec_res:
         print("{}, {:.3f}".format(text, score))

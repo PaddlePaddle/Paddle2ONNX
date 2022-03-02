@@ -44,19 +44,19 @@ class TextClassifier(object):
         self.cls_batch_num = args.cls_batch_num
         self.cls_thresh = args.cls_thresh
         self.postprocess_op = ClsPostProcess(args.label_list)
-        self.use_onnx = args.use_onnx
+        self.use_paddle_predict = args.use_paddle_predict
         self.args = args
 
         model_dir = args.cls_model_dir
-        if args.use_onnx:
+        if args.use_paddle_predict:
+            model = paddle.jit.load(model_dir + "/inference")
+            model.eval()
+            self.predictor = model
+        else:
             import onnxruntime as ort
             model_file_path = model_dir
             sess = ort.InferenceSession(model_file_path)
             self.predictor = sess
-        else:
-            model = paddle.jit.load(model_dir + "/inference")
-            model.eval()
-            self.predictor = model
 
     def resize_norm_img(self, img):
         imgC, imgH, imgW = self.cls_image_shape
@@ -108,14 +108,14 @@ class TextClassifier(object):
             norm_img_batch = np.concatenate(norm_img_batch)
             norm_img_batch = norm_img_batch.copy()
 
-            if self.use_onnx:
+            if self.use_paddle_predict:
+                outputs = self.predictor(norm_img_batch).numpy()
+                prob_out = outputs
+            else:
                 input_dict = {}
                 input_dict[self.predictor.get_inputs()[0].name] = norm_img_batch
                 outputs = self.predictor.run(None, input_dict)
                 prob_out = outputs[0]
-            else:
-                outputs = self.predictor(norm_img_batch).numpy()
-                prob_out = outputs
 
             cls_result = self.postprocess_op(prob_out)
             for rno in range(len(cls_result)):
