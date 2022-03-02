@@ -31,7 +31,7 @@ class FillLikeMapper : public Mapper {
     }
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpset(bool verbose = false) { return 9; }
   void Opset9(OnnxHelper* helper);
 
  private:

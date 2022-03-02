@@ -18,8 +18,6 @@ namespace paddle2onnx {
 REGISTER_MAPPER(fill_any_like, FillLikeMapper)
 REGISTER_MAPPER(fill_zeros_like, FillLikeMapper)
 
-int32_t FillLikeMapper::GetMinOpset(bool verbose) { return 9; }
-
 void FillLikeMapper::Opset9(OnnxHelper* helper) {
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");
