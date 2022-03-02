@@ -17,18 +17,18 @@
 pip3 install onnxruntime
 
 # 下载det模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/ocr_det.onnx
+wget https://bj.bcebos.com/paddle2onnx/model_zoo/det_ocr_model.onnx
 
 # 下载rec模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/ocr_rec.onnx
+wget https://bj.bcebos.com/paddle2onnx/model_zoo/rec_ocr_model.onnx
 
 # 下载cls模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/ocr_cls.onnx
+wget https://bj.bcebos.com/paddle2onnx/model_zoo/cls_ocr_model.onnx
 
-python3 predict_system.py  \
---det_model_dir=./det_model.onnx  \
---rec_model_dir=./rec_model.onnx  \
---cls_model_dir=./cls_model.onnx  \
+python3 infer.py  \
+--det_model_dir=./det_ocr_model.onnx  \
+--rec_model_dir=./rec_ocr_model.onnx  \
+--cls_model_dir=./cls_ocr_model.onnx  \
 --image_path=./images/lite_demo.png
 ```
 
@@ -44,7 +44,7 @@ cd ./inference && tar xf ch_PP-OCRv2_rec_infer.tar && cd ..
 wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar
 cd ./inference && tar xf ch_ppocr_mobile_v2.0_cls_infer.tar && cd ..
 
-python3 predict_system.py \
+python3 infer.py \
 --cls_model_dir=./inference/ch_ppocr_mobile_v2.0_cls_infer \
 --rec_model_dir=./inference/ch_PP-OCRv2_rec_infer \
 --det_model_dir=./inference/ch_PP-OCRv2_det_infer \
