@@ -31,7 +31,6 @@ void FillLikeMapper::Opset9(OnnxHelper* helper) {
   if (parser_->OpHasAttr(op, "dtype")) {
     parser_->GetOpAttr(op, "dtype", &dtype);
   }
-  // auto tensor = helper->MakeTensor("value", dtype, {1}, {value_});
   std::vector<int64_t> dims = {1};
   helper->ConstOfShape(shape_node->output(0), output_info[0].name, dims,
                        GetOnnxDtype(dtype), value_);
