@@ -288,9 +288,8 @@ class Split():
         axis = cls.get_axis(graph, node)
         if len(sections) > 0:
             input_shape = node.block.vars[node.input('X')[0]].shape
-            input_index = [i for i, val in enumerate(input_shape) if val == -1]
             section_index = [i for i, val in enumerate(sections) if val == -1]
-            if len(input_index) == 0 and len(section_index) == 1:
+            if input_shape[axis] != -1 and len(section_index) == 1:
                 sections[section_index[0]] = input_shape[axis] - sum(
                     sections) - 1
             graph.make_node(
@@ -2018,3 +2017,143 @@ class Meshgrid():
                     'Expand',
                     inputs=[t_reshaped, out_shape],
                     outputs=node.output('Out')[i]))
+
+
+@op_mapper('flip')
+class Flip():
+    support_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        inputs = node.input('X')
+        x_dtype = node.input_dtype('X', 0)
+        if x_dtype == paddle.bool or x_dtype == paddle.float64:
+            inputs = [
+                graph.make_node(
+                    "Cast", inputs=inputs, to=dtypes.ONNX.FLOAT)
+            ]
+        axes = node.attr("axis")
+        if not isinstance(axes, list):
+            axes = [axes]
+        input_shape = node.input_shape('X', 0)
+
+        for i, axis in enumerate(axes):
+            if axis < 0:
+                axes[i] += len(input_shape)
+            assert input_shape[
+                axis] > 0, "The dimension in axis of input must be fixed for flip operator, but now the input shape({}) in axis({}) is unknow.".format(
+                    input_shape, axis)
+
+        temp_input = inputs[0]
+        for i, axis in enumerate(axes):
+            if input_shape[axis] == 1:
+                if i != len(axes) - 1:
+                    continue
+                else:
+                    if x_dtype == paddle.bool or x_dtype == paddle.float64:
+                        graph.make_node(
+                            "Cast",
+                            inputs=[temp_input],
+                            outputs=node.output("Out"),
+                            to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+                    else:
+                        graph.make_node(
+                            "Identity",
+                            inputs=[temp_input],
+                            outputs=node.output("Out"))
+            else:
+                splits = graph.make_node(
+                    "Split",
+                    inputs=[temp_input],
+                    outputs=input_shape[axis],
+                    axis=axis,
+                    split=[1] * input_shape[axis])
+                reversed_splits = splits[::-1]
+                if i != len(axes) - 1:
+                    temp_input = graph.make_node(
+                        "Concat", inputs=reversed_splits, axis=axis)
+                else:
+                    if x_dtype == paddle.bool or x_dtype == paddle.float64:
+                        out = graph.make_node(
+                            "Concat", inputs=reversed_splits, axis=axis)
+                        graph.make_node(
+                            "Cast",
+                            inputs=[out],
+                            outputs=node.output("Out"),
+                            to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+                    else:
+                        graph.make_node(
+                            "Concat",
+                            inputs=reversed_splits,
+                            outputs=node.output("Out"),
+                            axis=axis)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        inputs = node.input('X')
+        x_dtype = node.input_dtype('X', 0)
+        if x_dtype == paddle.bool or x_dtype == paddle.float64:
+            inputs = [
+                graph.make_node(
+                    "Cast", inputs=inputs, to=dtypes.ONNX.FLOAT)
+            ]
+        axes = node.attr("axis")
+        if not isinstance(axes, list):
+            axes = [axes]
+        input_shape = node.input_shape('X', 0)
+
+        for i, axis in enumerate(axes):
+            if axis < 0:
+                axes[i] += len(input_shape)
+            assert input_shape[
+                axis] > 0, "The dimension in axis of input must be fixed for flip operator, but now the input shape({}) in axis({}) is unknow.".format(
+                    input_shape, axis)
+
+        temp_input = inputs[0]
+        for i, axis in enumerate(axes):
+            if input_shape[axis] == 1:
+                if i != len(axes) - 1:
+                    continue
+                else:
+                    if x_dtype == paddle.bool or x_dtype == paddle.float64:
+                        graph.make_node(
+                            "Cast",
+                            inputs=[temp_input],
+                            outputs=node.output("Out"),
+                            to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+                    else:
+                        graph.make_node(
+                            "Identity",
+                            inputs=[temp_input],
+                            outputs=node.output("Out"))
+            else:
+                split = graph.make_node(
+                    'Constant',
+                    attrs={
+                        'dtype': dtypes.ONNX.INT64,
+                        'value': [1] * input_shape[axis]
+                    })
+                splits = graph.make_node(
+                    "Split",
+                    inputs=[temp_input, split],
+                    outputs=input_shape[axis],
+                    axis=axis)
+                reversed_splits = splits[::-1]
+                if i != len(axes) - 1:
+                    temp_input = graph.make_node(
+                        "Concat", inputs=reversed_splits, axis=axis)
+                else:
+                    if x_dtype == paddle.bool or x_dtype == paddle.float64:
+                        out = graph.make_node(
+                            "Concat", inputs=reversed_splits, axis=axis)
+                        graph.make_node(
+                            "Cast",
+                            inputs=[out],
+                            outputs=node.output("Out"),
+                            to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+                    else:
+                        graph.make_node(
+                            "Concat",
+                            inputs=reversed_splits,
+                            outputs=node.output("Out"),
+                            axis=axis)
