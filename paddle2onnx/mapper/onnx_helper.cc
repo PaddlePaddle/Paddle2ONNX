@@ -354,9 +354,8 @@ std::string OnnxHelper::Slice(const std::string& input,
     auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
     auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
     auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
-    auto node = MakeNode("Slice",
-                         {input, starts_node->output(0), ends_node->output(0),
-                          axes_node->output(0)},
+    auto node = MakeNode("Slice", {input, starts_node->output(0),
+                                   ends_node->output(0), axes_node->output(0)},
                          {output});
   }
   return output;
@@ -449,4 +448,40 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
   }
   return casted_node;
 }
+
+template <typename T>
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
+    const std::string& input, const std::string& output,
+    const std::vector<int64_t>& shape,
+    ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
+  auto node = MakeNode("ConstantOfShape", {input}, {output});
+  auto attr = node->add_attribute();
+  attr->set_name("value");
+  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
+  auto tensor = attr->mutable_t();
+  tensor->set_name("tensor_value");
+
+  int numel = 1;
+  for (size_t i = 0; i < shape.size(); ++i) {
+    tensor->add_dims(shape[i]);
+    numel *= shape[i];
+  }
+  tensor->set_data_type(dtype);
+  if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+    std::vector<float> data(numel, static_cast<float>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+    std::vector<double> data(numel, static_cast<double>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+    std::vector<int64_t> data(numel, static_cast<int64_t>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else {
+    Assert(false,
+           "Only support data type of FLOAT/DOUBLE/INT64 in ConstOfShape "
+           "function.");
+  }
+  return node;
+}
+
 }  // namespace paddle2onnx

@@ -82,6 +82,12 @@ class OnnxHelper {
       const std::string& name, const std::vector<int64_t>& shape,
       ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
 
+  template <typename T>
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> ConstOfShape(
+      const std::string& input, const std::string& output,
+      const std::vector<int64_t>& shape,
+      ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const Weight& weight);
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
