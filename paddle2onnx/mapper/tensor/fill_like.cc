@@ -25,7 +25,7 @@ void FillLikeMapper::Opset9(OnnxHelper* helper) {
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   auto shape_node = helper->MakeNode("Shape", {input_info[0].name});
-  int64_t dtype = input_info[0].dtype;
+  int64_t dtype = output_info[0].dtype;
   if (parser_->OpHasAttr(op, "dtype")) {
     parser_->GetOpAttr(op, "dtype", &dtype);
   }
