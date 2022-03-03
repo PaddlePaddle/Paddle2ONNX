@@ -244,7 +244,7 @@ class DBPostProcess(object):
 class TextDetector(object):
     def __init__(self, args):
         self.args = args
-        self.use_onnx = args.use_onnx
+        self.use_paddle_predict = args.use_paddle_predict
 
         self.preprocess_op = DBPreProcess(args)
         self.postprocess_op = DBPostProcess(
@@ -256,15 +256,15 @@ class TextDetector(object):
             score_mode=args.det_db_score_mode)
 
         model_dir = args.det_model_dir
-        if args.use_onnx:
+        if args.use_paddle_predict:
+            model = paddle.jit.load(model_dir + "/inference")
+            model.eval()
+            self.predictor = model
+        else:
             import onnxruntime as ort
             model_file_path = model_dir
             sess = ort.InferenceSession(model_file_path)
             self.predictor = sess
-        else:
-            model = paddle.jit.load(model_dir + "/inference")
-            model.eval()
-            self.predictor = model
 
     def order_points_clockwise(self, pts):
         """
@@ -322,14 +322,14 @@ class TextDetector(object):
         shape_list = np.expand_dims(shape_list, axis=0)
         img = img.copy()
 
-        if self.use_onnx:
-            input_dict = {}
-            input_dict[self.predictor.get_inputs()[0].name] = img
-            outputs = self.predictor.run(None, input_dict)
-        else:
+        if self.use_paddle_predict:
             output = self.predictor(img).numpy()
             outputs = []
             outputs.append(output)
+        else:
+            input_dict = {}
+            input_dict[self.predictor.get_inputs()[0].name] = img
+            outputs = self.predictor.run(None, input_dict)
 
         preds = {}
         preds['maps'] = outputs[0]
