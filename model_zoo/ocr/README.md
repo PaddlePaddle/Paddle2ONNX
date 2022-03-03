@@ -4,7 +4,7 @@
 
 | 模型简介                              | 模型名称                | 推荐场景        | 检测模型                                                     | 方向分类器                                                   | 识别模型                                                     |
 | ------------------------------------- | ----------------------- | --------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 中英文超轻量PP-OCRv2模型（13.0M）     | ch_PP-OCRv2_xx          | 移动端&服务器端 | [Paddle模型](https://paddleocr.bj.bcebos.com/PP-OCRv2/chinese/ch_PP-OCRv2_det_infer.tar) / [ONNX模型]() | [Paddle模型](https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar) / [ONNX模型]() | [Paddle模型](https://paddleocr.bj.bcebos.com/PP-OCRv2/chinese/ch_PP-OCRv2_rec_infer.tar) / [ONNX模型]() |
+| 中英文超轻量PP-OCRv2模型（13.0M）     | ch_PP-OCRv2_xx          | 移动端 | [Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_det_infer.tar) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_det_infer.onnx) | [Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ch_ppocr_mobile_v2.0_cls_infer.tar) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ch_ppocr_mobile_v2.0_cls_infer.onnx) | [Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_rec_infer.tar) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_rec_infer.onnx) |
 
 
 
@@ -17,31 +17,31 @@
 pip3 install onnxruntime
 
 # 下载det模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/det_ocr_model.onnx
+wget https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_det_infer.onnx
 
 # 下载rec模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/rec_ocr_model.onnx
+wget https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_rec_infer.onnx
 
 # 下载cls模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/cls_ocr_model.onnx
+wget https://bj.bcebos.com/paddle2onnx/model_zoo/ch_ppocr_mobile_v2.0_cls_infer.onnx
 
 python3 infer.py  \
---det_model_dir=./det_ocr_model.onnx  \
---rec_model_dir=./rec_ocr_model.onnx  \
---cls_model_dir=./cls_ocr_model.onnx  \
+--det_model_dir=./ch_PP-OCRv2_det_infer.onnx  \
+--rec_model_dir=./ch_PP-OCRv2_rec_infer.onnx  \
+--cls_model_dir=./ch_ppocr_mobile_v2.0_cls_infer.onnx  \
 --image_path=./images/lite_demo.png
 ```
 
 你也可以使用Paddle框架进行推理验证
 
 ```bash
-wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/PP-OCRv2/chinese/ch_PP-OCRv2_det_infer.tar
+wget -nc  -P ./inference https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_det_infer.tar
 cd ./inference && tar xf ch_PP-OCRv2_det_infer.tar && cd ..
 
-wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/PP-OCRv2/chinese/ch_PP-OCRv2_rec_infer.tar
+wget -nc  -P ./inference https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_rec_infer.tar
 cd ./inference && tar xf ch_PP-OCRv2_rec_infer.tar && cd ..
 
-wget -nc  -P ./inference https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar
+wget -nc  -P ./inference https://bj.bcebos.com/paddle2onnx/model_zoo/ch_ppocr_mobile_v2.0_cls_infer.tar
 cd ./inference && tar xf ch_ppocr_mobile_v2.0_cls_infer.tar && cd ..
 
 python3 infer.py \
