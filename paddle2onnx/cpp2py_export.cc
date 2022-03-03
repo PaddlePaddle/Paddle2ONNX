@@ -63,5 +63,10 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     }
     return op_list;
   });
+
+  m.def("get_all_registered_ops", []() {
+    int64_t total_ops = MapperHelper::Get()->GetAllOps();
+    return total_ops;
+  });
 }
 }  // namespace paddle2onnx
