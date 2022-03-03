@@ -619,6 +619,24 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
       std::string name = prog->blocks(0).ops(i).outputs(0).arguments(0);
       inputs.push_back(GetTensorInfo(name, prog->blocks(0)));
     }
+
+    // This is a trick check, due to the uncorrect shape inference of Paddle
+    // model
+    // Remove this after shape inference fixed
+    if (prog->blocks(0).ops(i).type() == "multiclass_nms3") {
+      has_nms_ = true;
+    }
+  }
+
+  // Trick setting for nms, remove this after shape inference fixed
+  if (has_nms_) {
+    for (size_t i = 0; i < outputs.size(); ++i) {
+      if (outputs[i].shape.size() == 2) {
+        if (outputs[i].shape[1] == 6) {
+          outputs[i].shape[0] = -1;
+        }
+      }
+    }
   }
 }
 

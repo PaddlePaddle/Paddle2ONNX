@@ -79,6 +79,7 @@ class PaddleParser {
 
   int NumOfBlocks() const;
   int NumOfOps(int block_idx) const;
+  bool HasNms() const { return has_nms_; }
   const framework::proto::OpDesc GetOpDesc(int32_t block_idx,
                                            int32_t op_idx) const;
 
@@ -132,6 +133,10 @@ class PaddleParser {
   bool LoadProgram(const std::string& model, bool from_memory_buffer);
   bool LoadParams(const std::string& path);
   bool LoadParamsFromMemoryBuffer(const std::string& buffer);
+  // This is a trick flag
+  // While there's a nms operator in paddle model,
+  // the shape inference of paddle is not correct
+  bool has_nms_ = false;
 };
 
 }  // namespace paddle2onnx

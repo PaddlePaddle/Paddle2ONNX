@@ -68,14 +68,6 @@ PADDLE2ONNX_DECL bool Export(const std::string& model,
     return false;
   }
   paddle2onnx::ModelExporter me;
-  std::set<std::string> unsupported_ops;
-  if (!me.CheckIfOpSupported(parser, &unsupported_ops,
-                             enable_experimental_op)) {
-    return false;
-  }
-  if (me.GetMinOpset(parser, false) < 0) {
-    return false;
-  }
   *out = me.Run(parser, opset_version, auto_upgrade_opset, verbose,
                 enable_onnx_checker, enable_experimental_op, enable_optimize);
   if (out->empty()) {
