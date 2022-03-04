@@ -10,6 +10,7 @@
 |ResNet50|98M|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/resnet50.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/resnet50.onnx)| 使用ImageNet数据作为训练数据，1000个分类 |
 |PPLCNet|11M|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/pplcnet.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/pplcnet.onnx)| 使用ImageNet数据作为训练数据，1000个分类 |
 | MobileNetV3_small | 11M    | [Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/mobilenetv3.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/mobilenetv3.onnx) | 使用ImageNet数据作为训练数据，1000个分类 |
+| EfficientNetB0_small | 11M    | [Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/efficientnetb0.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/efficientnetb0.onnx) | 使用ImageNet数据作为训练数据，1000个分类 |
 
 
 
