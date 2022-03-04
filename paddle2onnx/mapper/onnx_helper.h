@@ -418,9 +418,12 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
   } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
     std::vector<int64_t> data(numel, static_cast<int64_t>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data(numel, static_cast<int32_t>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in ConstOfShape "
+           "Only support data type of FLOAT/DOUBLE/INT64/INT32 in ConstOfShape "
            "function.");
   }
   return node;
