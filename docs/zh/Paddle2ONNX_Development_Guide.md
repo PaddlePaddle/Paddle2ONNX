@@ -163,17 +163,17 @@ class Net(BaseNet):
 1. 单测类继承自OPConvertAutoScanTest。
 2. sample_convert_config函数首先根据测试API的文档随机生成所有可测的数值，然后将所有需要用到的数据放到config中，config是一个dict，需传入到组网类中，sample_convert_config函数的返回值为( config, model )。
 3. sample_convert_config函数中的config注意必须包括以下key：
-> **op_names**：`list of str`，需要检查的OP名，如：["conv2d"]表示要测试的OP为conv2d。
-> **test_data_shapes**：`list of list`，测试数据的shape，如：[[10, 32, 10, 10], [64, 32, 3, 3]]表示第一个输入的shape为[10, 32, 10, 10]，第二个输入的shape为[64, 32, 3, 3]。
-> **test_data_types**：`list of list`，测试数据的数据类型，长度必须和`test_data_shapes`一致，如：[[“float32“, "float64"], ["int32",  "int64"]]表示第一个输入支持的数据类型为“float32“和"float64"，第二个输入支持的数据类型为"int32"和"int64"。
-> **opset_version**：`list`，表示需要测试的opset version，必须包括15，如[9]表示测试opset version为9的转换，此处的设置需要根据op_mapper的实现来设置。
-> **input_spec_shape**：`list of list`，为了支持动态shape而设置，如[[-1, 3, -1, -1],[-1, 3, -1, -1]]表示两个输入都为动态shape，如果不需要测试动态shape的转换，请支持设置为[]。
+> **op_names**：`list of str`，需要检查的OP名，如：["conv2d"]表示要测试的OP为conv2d。  
+> **test_data_shapes**：`list of list`，测试数据的shape，如：[[10, 32, 10, 10], [64, 32, 3, 3]]表示第一个输入的shape为[10, 32, 10, 10]，第二个输入的shape为[64, 32, 3, 3]。  
+> **test_data_types**：`list of list`，测试数据的数据类型，长度必须和`test_data_shapes`一致，如：[[“float32“, "float64"], ["int32",  "int64"]]表示第一个输入支持的数据类型为“float32“和"float64"，第二个输入支持的数据类型为"int32"和"int64"。  
+> **opset_version**：`list`，表示需要测试的opset version，必须包括15，如[9]表示测试opset version为9的转换，此处的设置需要根据op_mapper的实现来设置。  
+> **input_spec_shape**：`list of list`，为了支持动态shape而设置，如[[-1, 3, -1, -1],[-1, 3, -1, -1]]表示两个输入都为动态shape，如果不需要测试动态shape的转换，请支持设置为[]。  
 4.其他所有的参数都可以放到config中，然后在Net中取出需要的数据，同时config中的数据在运行单测时也会实时打印出来便于调试。
 5.返回参数`model`是一个Net()对象或者list of Net()，list of Net()可以实现一个单测测试多个OP转换，具体可参考`test_auto_scan_unary_ops.py`
 
-> 单个单测测试单个API示例：`test_auto_scan_conv2d.py`
-> 单个单测测试多个API示例：`test_auto_scan_unary_ops.py`
-> 支持生成自定义数据，请参考：`test_auto_scan_lookup_table_v2.py`
+> 单个单测测试单个API示例：`test_auto_scan_conv2d.py`  
+> 单个单测测试多个API示例：`test_auto_scan_unary_ops.py`  
+> 支持生成自定义数据，请参考：`test_auto_scan_lookup_table_v2.py`  
 ```
 op_api_map = {
     "relu": paddle.nn.functional.relu,
