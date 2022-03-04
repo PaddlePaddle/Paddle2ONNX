@@ -25,6 +25,9 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Y");
 
+  std::string input_name = helper->AutoCast(
+      input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+
   std::vector<int64_t> input_shape = input_info[0].shape;
   std::vector<int64_t> axes;
   for (auto i = begin_norm_axis_; i < input_shape.size(); i++) {
@@ -32,18 +35,17 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
   }
 
   std::string epsilon_node =
-      helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), epsilon_)
-          ->output(0);
-  auto two_node =
-      helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), 2.0);
+      helper->Constant({1}, GetOnnxDtype(P2ODataType::FP32), epsilon_);
+  std::string two_node =
+      helper->Constant({1}, GetOnnxDtype(P2ODataType::FP32), 2.0);
 
-  auto mean_node = helper->MakeNode("ReduceMean", {input_info[0].name});
+  auto mean_node = helper->MakeNode("ReduceMean", {input_name});
   AddAttribute(mean_node, "axes", axes);
 
   auto numerator_node =
-      helper->MakeNode("Sub", {input_info[0].name, mean_node->output(0)});
+      helper->MakeNode("Sub", {input_name, mean_node->output(0)});
   auto pow_num_node =
-      helper->MakeNode("Pow", {numerator_node->output(0), two_node->output(0)});
+      helper->MakeNode("Pow", {numerator_node->output(0), two_node});
 
   auto variance_node =
       helper->MakeNode("ReduceMean", {pow_num_node->output(0)});
@@ -54,7 +56,7 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
 
   auto denominator_node = helper->MakeNode("Sqrt", {add_eps_node->output(0)});
 
-  auto ipt_shape_node = helper->MakeNode("Shape", {input_info[0].name});
+  auto ipt_shape_node = helper->MakeNode("Shape", {input_name});
   std::vector<int64_t> slice_axes = {0};
   std::vector<int64_t> start = {
       static_cast<int64_t>(input_shape.size() - axes.size())};
@@ -70,43 +72,58 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
         parser_->GetOpInput(block_idx_, op_idx_, "Scale");
     std::vector<TensorInfo> bias_info =
         parser_->GetOpInput(block_idx_, op_idx_, "Bias");
+    std::string scale_name = helper->AutoCast(
+        scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+    std::string bias_name = helper->AutoCast(
+        bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
     auto scale_node =
-        helper->MakeNode("Reshape", {scale_info[0].name, weight_shape_node});
+        helper->MakeNode("Reshape", {scale_name, weight_shape_node});
     auto bias_node =
-        helper->MakeNode("Reshape", {bias_info[0].name, weight_shape_node});
+        helper->MakeNode("Reshape", {bias_name, weight_shape_node});
     auto layer_norm_pre_node = helper->MakeNode(
         "Div", {numerator_node->output(0), denominator_node->output(0)});
     auto layer_norm_node = helper->MakeNode(
         "Mul", {layer_norm_pre_node->output(0), scale_node->output(0)});
-    helper->MakeNode("Add", {layer_norm_node->output(0), bias_node->output(0)},
-                     {output_info[0].name});
+    auto pre_cast_node = helper->MakeNode(
+        "Add", {layer_norm_node->output(0), bias_node->output(0)});
+    helper->AutoCast(pre_cast_node->output(0), output_info[0].name,
+                     P2ODataType::FP32, output_info[0].dtype);
     return;
   }
   if (has_input_Bias) {
     std::vector<TensorInfo> bias_info =
         parser_->GetOpInput(block_idx_, op_idx_, "Bias");
+    std::string bias_name = helper->AutoCast(
+        bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
     auto bias_node =
-        helper->MakeNode("Reshape", {bias_info[0].name, weight_shape_node});
+        helper->MakeNode("Reshape", {bias_name, weight_shape_node});
     auto layer_norm_node = helper->MakeNode(
         "Div", {numerator_node->output(0), denominator_node->output(0)});
-    helper->MakeNode("Add", {layer_norm_node->output(0), bias_node->output(0)},
-                     {output_info[0].name});
+    auto pre_cast_node = helper->MakeNode(
+        "Add", {layer_norm_node->output(0), bias_node->output(0)});
+    helper->AutoCast(pre_cast_node->output(0), output_info[0].name,
+                     P2ODataType::FP32, output_info[0].dtype);
     return;
   }
   if (has_input_Scale) {
     std::vector<TensorInfo> scale_info =
         parser_->GetOpInput(block_idx_, op_idx_, "Scale");
+    std::string scale_name = helper->AutoCast(
+        scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
     auto scale_node =
-        helper->MakeNode("Reshape", {scale_info[0].name, weight_shape_node});
+        helper->MakeNode("Reshape", {scale_name, weight_shape_node});
     auto layer_norm_node = helper->MakeNode(
         "Div", {numerator_node->output(0), denominator_node->output(0)});
-    helper->MakeNode("Mul", {layer_norm_node->output(0), scale_node->output(0)},
-                     {output_info[0].name});
+    auto pre_cast_node = helper->MakeNode(
+        "Mul", {layer_norm_node->output(0), scale_node->output(0)});
+    helper->AutoCast(pre_cast_node->output(0), output_info[0].name,
+                     P2ODataType::FP32, output_info[0].dtype);
     return;
   }
-  helper->MakeNode("Div",
-                   {numerator_node->output(0), denominator_node->output(0)},
-                   {output_info[0].name});
+  auto pre_cast_node = helper->MakeNode(
+      "Div", {numerator_node->output(0), denominator_node->output(0)});
+  helper->AutoCast(pre_cast_node->output(0), output_info[0].name,
+                   P2ODataType::FP32, output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

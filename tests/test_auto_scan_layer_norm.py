@@ -30,12 +30,12 @@ class Net(BaseNet):
         param_shape = [np.prod(self.config["normalized_shape"])]
         if self.config['has_weight']:
             self.weight = self.create_parameter(
-                attr=None,
+                dtype=self.config["dtype"],
                 shape=param_shape,
                 default_initializer=paddle.nn.initializer.Constant(1.0))
         if self.config['has_bias']:
             self.bias = self.create_parameter(
-                attr=None, shape=param_shape, is_bias=True)
+                dtype=self.config["dtype"], shape=param_shape, is_bias=True)
 
     def forward(self, inputs):
         """
@@ -73,7 +73,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
         else:
             normalized_shape = input_shape[axis:]
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
         has_weight = draw(st.booleans())
         has_bias = draw(st.booleans())
@@ -89,7 +89,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
             "has_weight": has_weight,
             "has_bias": has_bias,
             "input_shape": input_shape,
-            "dtype": dtype,
+            "dtype": dtype
         }
 
         models = Net(config)
