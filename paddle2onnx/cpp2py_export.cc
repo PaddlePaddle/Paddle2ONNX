@@ -63,9 +63,9 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     }
     return op_list;
   });
-
-  m.def("get_all_registered_ops", []() {
-    int64_t total_ops = MapperHelper::Get()->GetAllOps();
+  // This interface can output all developed OPs and write them to the file_path
+  m.def("get_all_registered_ops", [](const std::string& file_path) {
+    int64_t total_ops = MapperHelper::Get()->GetAllOps(file_path);
     return total_ops;
   });
 }

@@ -51,8 +51,8 @@ class MapperHelper {
     return helper;
   }
 
-  int64_t GetAllOps() {
-    std::ofstream outfile("RegisteredOPs.txt");
+  int64_t GetAllOps(const std::string& file_path) {
+    std::ofstream outfile(file_path);
     int total = 0;
     for (auto iter = mappers.begin(); iter != mappers.end(); iter++) {
       total++;
@@ -60,8 +60,7 @@ class MapperHelper {
     }
     outfile << "total ops: " << total << std::endl;
     std::cout << " [ * Paddle2ONNX * ] All Registered OPs saved in "
-                 "RegisteredOPs.txt. "
-              << std::endl;
+              << file_path << std::endl;
     outfile.close();
     return total;
   }
