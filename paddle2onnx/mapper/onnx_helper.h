@@ -85,7 +85,6 @@ class OnnxHelper {
   template <typename T>
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> ConstOfShape(
       const std::string& input, const std::string& output,
-      const std::vector<int64_t>& shape,
       ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const Weight& weight);
@@ -396,7 +395,6 @@ std::string OnnxHelper::Constant(const std::vector<int64_t>& shape,
 template <typename T>
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
     const std::string& input, const std::string& output,
-    const std::vector<int64_t>& shape,
     ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
   auto node = MakeNode("ConstantOfShape", {input}, {output});
   auto attr = node->add_attribute();
@@ -404,7 +402,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
   attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
   auto tensor = attr->mutable_t();
   tensor->set_name("tensor_value");
-
+  std::vector<int64_t> shape = {1};
   int numel = 1;
   for (size_t i = 0; i < shape.size(); ++i) {
     tensor->add_dims(shape[i]);
