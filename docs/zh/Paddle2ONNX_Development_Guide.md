@@ -169,11 +169,11 @@ class Net(BaseNet):
 > **opset_version**：`list`，表示需要测试的opset version，必须包括15，如[9]表示测试opset version为9的转换，此处的设置需要根据op_mapper的实现来设置。  
 > **input_spec_shape**：`list of list`，为了支持动态shape而设置，如[[-1, 3, -1, -1],[-1, 3, -1, -1]]表示两个输入都为动态shape，如果不需要测试动态shape的转换，请支持设置为[]。  
 4.其他所有的参数都可以放到config中，然后在Net中取出需要的数据，同时config中的数据在运行单测时也会实时打印出来便于调试。
-5.返回参数`model`是一个Net()对象或者list of Net()，list of Net()可以实现一个单测测试多个OP转换，具体可参考`test_auto_scan_unary_ops.py`
+5.返回参数`model`是一个Net()对象或者list of Net()，list of Net()可以实现一个单测测试多个OP转换，具体可参考[`test_auto_scan_unary_ops.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_unary_ops.py)
 
-> 单个单测测试单个API示例：`test_auto_scan_conv2d.py`  
-> 单个单测测试多个API示例：`test_auto_scan_unary_ops.py`  
-> 支持生成自定义数据，请参考：`test_auto_scan_lookup_table_v2.py`  
+> 单个单测测试单个API示例：[`test_auto_scan_conv2d.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_conv2d.py)  
+> 单个单测测试多个API示例：[`test_auto_scan_unary_ops.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_unary_ops.py)  
+> 支持生成自定义数据，请参考：[`test_auto_scan_lookup_table_v2.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_lookup_table_v2.py)  
 ```
 op_api_map = {
     "relu": paddle.nn.functional.relu,
