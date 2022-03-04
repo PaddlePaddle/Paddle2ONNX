@@ -174,6 +174,7 @@ class Net(BaseNet):
 > 单个单测测试单个API示例：[`test_auto_scan_conv2d.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_conv2d.py)  
 > 单个单测测试多个API示例：[`test_auto_scan_unary_ops.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_unary_ops.py)  
 > 支持生成自定义数据，请参考：[`test_auto_scan_lookup_table_v2.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_lookup_table_v2.py)  
+> **注意**：所有输入、属性和数据类型都要测试完整。
 ```
 op_api_map = {
     "relu": paddle.nn.functional.relu,
