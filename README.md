@@ -144,3 +144,6 @@ print(diff.max(), diff.min())
 cd /root/build_paddle2onnx/Paddle2ONNX
 python setup.py install
 ```
+
+## OP开发
+> OP开发相关指导详见：[OP开发指南](docs/zh/Paddle2ONNX_Development_Guide.md)
