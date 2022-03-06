@@ -354,9 +354,8 @@ std::string OnnxHelper::Slice(const std::string& input,
     auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
     auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
     auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
-    auto node = MakeNode("Slice",
-                         {input, starts_node->output(0), ends_node->output(0),
-                          axes_node->output(0)},
+    auto node = MakeNode("Slice", {input, starts_node->output(0),
+                                   ends_node->output(0), axes_node->output(0)},
                          {output});
   }
   return output;
@@ -449,4 +448,5 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
   }
   return casted_node;
 }
+
 }  // namespace paddle2onnx
