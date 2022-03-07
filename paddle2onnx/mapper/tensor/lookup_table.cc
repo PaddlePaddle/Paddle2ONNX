@@ -61,11 +61,8 @@ void LookupTableMapper::Opset7(OnnxHelper* helper) {
     for (auto i = 0; i < interval; i++) {
       data[padding_idx_ * interval + i] = 0;
     }
-    std::string constant =
-        helper
-            ->MakeConstant(input_shape, GetOnnxDtype(input_w_info[0].dtype),
-                           data)
-            ->output(0);
+    std::string constant = helper->Constant(
+        input_shape, GetOnnxDtype(input_w_info[0].dtype), data);
     auto weight_node =
         helper->MakeNode("Mul", {input_w_info[0].name, constant});
     helper->MakeNode("Gather", {weight_node->output(0), ids_node},
@@ -118,11 +115,8 @@ void LookupTableMapper::Opset11(OnnxHelper* helper) {
       for (auto i = 0; i < interval; i++) {
         data[padding_idx_ * interval + i] = 0;
       }
-      std::string constant =
-          helper
-              ->MakeConstant(input_shape, GetOnnxDtype(input_w_info[0].dtype),
-                             data)
-              ->output(0);
+      std::string constant = helper->Constant(
+          input_shape, GetOnnxDtype(input_w_info[0].dtype), data);
       auto weight_node =
           helper->MakeNode("Mul", {input_w_info[0].name, constant});
       helper->MakeNode("Gather", {weight_node->output(0), ids_node},

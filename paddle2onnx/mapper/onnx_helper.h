@@ -68,10 +68,6 @@ class OnnxHelper {
   template <typename T>
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
       const std::vector<int64_t>& shape,
-      ONNX_NAMESPACE::TensorProto_DataType dtype, std::vector<T>& value);
-  template <typename T>
-  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
-      const std::vector<int64_t>& shape,
       ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
 
   // create a constant 1D-Tensor
@@ -153,6 +149,10 @@ class OnnxHelper {
   template <typename T>
   std::string Constant(const std::vector<int64_t>& shape,
                        ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+  template <typename T>
+  std::string Constant(const std::vector<int64_t>& shape,
+                       ONNX_NAMESPACE::TensorProto_DataType dtype,
+                       std::vector<T>& value);
 };
 
 template <typename T>
@@ -197,9 +197,9 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
 }
 
 template <typename T>
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
-    const std::vector<int64_t>& shape,
-    ONNX_NAMESPACE::TensorProto_DataType dtype, std::vector<T>& value) {
+std::string OnnxHelper::Constant(const std::vector<int64_t>& shape,
+                                 ONNX_NAMESPACE::TensorProto_DataType dtype,
+                                 std::vector<T>& value) {
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   node->set_op_type("Constant");
   auto name = MapperHelper::Get()->GenName("const");
@@ -216,7 +216,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
     numel *= shape[i];
   }
   Assert(numel == value.size(),
-         "numel and val number is not equal in MakeConstant "
+         "numel and val number is not equal in Constant "
          "function.");
   tensor->set_data_type(dtype);
   if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
@@ -242,11 +242,11 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
   } else {
     Assert(false,
-           "Only support data type of FLOAT/DOUBLE/INT64 in MakeConstant "
+           "Only support data type of FLOAT/DOUBLE/INT64 in Constant "
            "function.");
   }
   nodes.push_back(node);
-  return node;
+  return node->output(0);
 }
 
 template <typename T>
