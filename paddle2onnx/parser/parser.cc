@@ -648,30 +648,47 @@ bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
     return false;
   }
   std::vector<int64_t> shape;
-  GetOpAttr(op, "shape", &shape);
+  if (OpHasAttr(op, "shape")) {
+    GetOpAttr(op, "shape", &shape);
+  }
   if (OpHasAttr(op, "fp64_values")) {
     std::vector<double> value;
     GetOpAttr(op, "fp64_values", &value);
+    if (shape.empty()) {
+      shape.push_back(value.size());
+    }
     param->set(P2ODataType::FP64, shape, value);
   }
   if (OpHasAttr(op, "fp32_values")) {
     std::vector<float> value;
     GetOpAttr(op, "fp32_values", &value);
+    if (shape.empty()) {
+      shape.push_back(value.size());
+    }
     param->set(P2ODataType::FP32, shape, value);
   }
   if (OpHasAttr(op, "int64_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "int64_values", &value);
+    if (shape.empty()) {
+      shape.push_back(value.size());
+    }
     param->set(P2ODataType::INT64, shape, value);
   }
   if (OpHasAttr(op, "int32_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "int32_values", &value);
+    if (shape.empty()) {
+      shape.push_back(value.size());
+    }
     param->set(P2ODataType::INT64, shape, value);
   }
   if (OpHasAttr(op, "bool_values")) {
     std::vector<int64_t> value;
     GetOpAttr(op, "bool_values", &value);
+    if (shape.empty()) {
+      shape.push_back(value.size());
+    }
     param->set(P2ODataType::INT64, shape, value);
   }
   if (shape.size() == 0) {

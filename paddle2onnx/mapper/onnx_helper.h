@@ -65,7 +65,6 @@ class OnnxHelper {
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
       const std::string& op_type, const std::vector<std::string>& inputs,
       int num_outputs = 1);
-
   template <typename T>
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(
       const std::vector<int64_t>& shape,
@@ -155,6 +154,10 @@ class OnnxHelper {
   template <typename T>
   std::string Constant(const std::vector<int64_t>& shape,
                        ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+  template <typename T>
+  std::string Constant(const std::vector<int64_t>& shape,
+                       ONNX_NAMESPACE::TensorProto_DataType dtype,
+                       std::vector<T>& value);
 };
 
 template <typename T>
@@ -196,6 +199,59 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
   }
   nodes.push_back(node);
   return node;
+}
+
+template <typename T>
+std::string OnnxHelper::Constant(const std::vector<int64_t>& shape,
+                                 ONNX_NAMESPACE::TensorProto_DataType dtype,
+                                 std::vector<T>& value) {
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  node->set_op_type("Constant");
+  auto name = MapperHelper::Get()->GenName("const");
+  node->add_output(name);
+  auto attr = node->add_attribute();
+  attr->set_name("value");
+  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
+  auto tensor = attr->mutable_t();
+  tensor->set_name(name);
+
+  int numel = 1;
+  for (size_t i = 0; i < shape.size(); ++i) {
+    tensor->add_dims(shape[i]);
+    numel *= shape[i];
+  }
+  Assert(numel == value.size(),
+         "numel and val number is not equal in Constant "
+         "function.");
+  tensor->set_data_type(dtype);
+  if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+    std::vector<float> data;
+    data.reserve(numel);
+    for (auto i : value) {
+      data.push_back(static_cast<float>(i));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+    std::vector<double> data;
+    data.reserve(numel);
+    for (auto i : value) {
+      data.push_back(static_cast<double>(i));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+    std::vector<int64_t> data;
+    data.reserve(numel);
+    for (auto i : value) {
+      data.push_back(static_cast<int64_t>(i));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else {
+    Assert(false,
+           "Only support data type of FLOAT/DOUBLE/INT64 in Constant "
+           "function.");
+  }
+  nodes.push_back(node);
+  return node->output(0);
 }
 
 template <typename T>
