@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #pragma once
-#include <unistd.h>
 #include <fstream>
 #include <map>
 #include "paddle2onnx/utils/utils.h"
@@ -53,12 +52,11 @@ class MapperHelper {
   }
 
   int64_t GetAllOps(const std::string& file_path) {
-    if (!access(file_path.data(), 4)) {
-      std::cerr << "The provided file path does not have write permission."
-                << std::endl;
+    std::ofstream outfile(file_path);
+    if (!outfile) {
+      std::cerr << "Failed to open file: " << file_path << std::endl;
       return mappers.size();
     }
-    std::ofstream outfile(file_path);
     for (auto iter = mappers.begin(); iter != mappers.end(); iter++) {
       outfile << iter->first << std::endl;
     }
