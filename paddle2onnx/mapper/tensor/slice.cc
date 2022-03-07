@@ -163,7 +163,7 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
   std::vector<int64_t> strides;
   bool strides_is_tensor =
       GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &strides_node, true, helper);
+                       &strides, &strides_node, false, helper);
   if (!strides_is_tensor && strides.empty()) {
     strides.resize(axes_.size(), 1);
   }
@@ -175,7 +175,7 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
   std::vector<int64_t> starts;
   bool starts_is_tensor =
       GetNodeAttrValue("starts", "StartsTensor", "StartsTensorList", &starts,
-                       &starts_node, true, helper);
+                       &starts_node, false, helper);
   if (!starts_is_tensor) {
     starts_node =
         helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts)
@@ -185,7 +185,7 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
   std::string ends_node;
   std::vector<int64_t> ends;
   bool ends_is_tensor = GetNodeAttrValue("ends", "EndsTensor", "EndsTensorList",
-                                         &ends, &ends_node, true, helper);
+                                         &ends, &ends_node, false, helper);
   if (!ends_is_tensor) {
     ends_node = helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends)
                     ->output(0);

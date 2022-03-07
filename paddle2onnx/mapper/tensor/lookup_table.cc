@@ -27,6 +27,9 @@ int32_t LookupTableMapper::GetMinOpset(bool verbose) {
   bool has_minus = false;
   for (auto i : input_w_info[0].shape) {
     has_minus = (i == -1);
+    if (has_minus) {
+      break;
+    }
   }
   if (padding_idx_ != -1 && has_minus) {
     return 11;
@@ -99,6 +102,9 @@ void LookupTableMapper::Opset11(OnnxHelper* helper) {
     bool has_minus = false;
     for (auto i : input_w_info[0].shape) {
       has_minus = (i == -1);
+      if (has_minus) {
+        break;
+      }
     }
     if (has_minus) {
       std::vector<int64_t> shape = {interval};
