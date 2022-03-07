@@ -39,11 +39,11 @@ python3 infer.py \
 ONNXRuntime 执行效果：
 
 <div align="center">
-    <img src="./images/onnx_hrnet_demo.png" width=800">
+    <img src="./images/onnx_hrnet_demo.jpg" width=500">
 </div>
 
 Paddle Inference 执行效果：
 
 <div align="center">
-    <img src="./images/paddle_hrnet_demo.png" width=800">
+    <img src="./images/onnx_hrnet_demo.jpg" width=500">
 </div>
