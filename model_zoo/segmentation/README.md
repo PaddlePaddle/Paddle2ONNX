@@ -6,6 +6,7 @@
 |BiSeNet|[bisenet_cityscapes_1024x1024_160k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/bisenet/bisenet_cityscapes_1024x1024_160k.yml)|9.4M|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/bisenet.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/bisenet.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
 |DANet|[danet_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/danet/danet_resnet50_os8_cityscapes_1024x512_80k.yml)|190.1M|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/danet.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/danet.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
 |DeepLabv3|[deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/deeplabv3/deeplabv3_resnet50_os8_cityscapes_1024x512_80k.yml)|156.6M|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/deeplabv3.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/deeplabv3.onnx)| 使用CityScape数据作为训练数据，19个分类，包括车、路、人等等 |
+|PP_HumanSeg|[pp_humanseg_lite_export_398x224.yml](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.4/configs/pp_humanseg_lite/pp_humanseg_lite_export_398x224.yml)|618k|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ppseg_lite_portrait_398x224_with_softmax.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/ppseg_lite_portrait_398x224_with_softmax.onnx)| 人像分割 |
 
 
 # ONNX模型推理示例
