@@ -46,13 +46,12 @@ class TestPreluConvert(OPConvertAutoScanTest):
                     min_value=5, max_value=20), min_size=1, max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
-
         config = {
             "op_names": ["prelu"],
             "test_data_shapes": [input_shape, [1]],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [],
+            "input_spec_shape": [[-1] * len(input_shape), [1]],
         }
 
         models = Net(config)

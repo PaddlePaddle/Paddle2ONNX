@@ -100,7 +100,7 @@ class TestReshapeConvert1(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape, generator_shape],
             "test_data_types": [[dtype], ["int32"]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [],
+            "input_spec_shape": None,
         }
 
         models = Net1(config)
