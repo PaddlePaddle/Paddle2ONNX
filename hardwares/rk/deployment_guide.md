@@ -37,8 +37,7 @@ PaddlePaddle安装参考：[Paddle安装文档](https://www.paddlepaddle.org.cn/
 1. Paddle模型转换为ONNX模型
 2. 加载ONNX模型进行推理
 ### 模型转换
-RK尚不支持动态shape的输入，因此在使用Paddle2ONNX将Paddle模型转换为ONNX模型格式时需要输入input_shape，RK支持Opset version <= 12  
-接下来以mobilenetv3作为转换示例
+以mobilenetv3作为转换示例
 ```
 # 下载mobilenetv3模型
 wget https://bj.bcebos.com/paddle2onnx/model_zoo/mobilenetv3.tar.gz
@@ -61,5 +60,7 @@ python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_va
 ONNXRuntime推理结果：![图片](./imgs/class_onnxruntime.png)
 ### 注意事项
 1. 各类别id与明文标签参考[ImageNet标签](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/deploy/utils/imagenet1k_label_list.txt)
-2. RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
-3. ONNXRuntime要求输入为NCHW，RK要求输入为NHWC
+2. RK尚不支持动态shape的输入，因此在使用Paddle2ONNX将Paddle模型转换为ONNX模型格式时需要输入input_shape
+3. RK支持Opset version <= 12
+4. RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
+5. ONNXRuntime要求输入为NCHW，RK要求输入为NHWC
