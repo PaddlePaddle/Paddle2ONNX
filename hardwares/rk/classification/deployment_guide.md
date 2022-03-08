@@ -1,5 +1,5 @@
 # RK分类模型部署指南
-本文档介绍在RK系列芯片上部署Paddle模型的步骤，具体包括：  
+本文档介绍在RK系列芯片上部署Paddle分类模型的步骤，具体包括：  
 1. 在Ubuntu18.06机器上安装RK模型运行环境和Paddle2ONNX等运行环境。  
 2. 使用Paddle2ONNX将PaddleInference model转换为ONNX模型格式。
 3. 运行推理脚本获得推理结果。
