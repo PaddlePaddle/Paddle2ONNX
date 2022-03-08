@@ -48,13 +48,13 @@ paddle2onnx --model_dir ./ --model_filename inference.pdmodel --params_filename 
 ```
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type rk
 ```
-RK推理结果：![图片](./images/doc_imgs/class_rk.png)  
+RK推理结果：![图片](./imgs/class_rk.png)  
 ### 使用ONNXRuntime进行推理
 ```
 # 使用ONNXRuntime进行推理
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type onnxruntime
 ```
-ONNXRuntime推理结果：![图片](./images/doc_imgs/class_onnxruntime.png)
+ONNXRuntime推理结果：![图片](./imgs/class_onnxruntime.png)
 ### 注意事项
 > 各类别id与明文标签参考[ImageNet标签](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/deploy/utils/imagenet1k_label_list.txt)
 > RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
