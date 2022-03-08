@@ -19,19 +19,61 @@ import sys
 import numpy as np
 import cv2
 import onnxruntime as rt
-sys.path.append("../..")
-from common import BaseBackend
+from rknn.api import RKNN
 
 
-class ONNXRuntimeBackend(BaseBackend):
+class ClassificationInfer():
     def __init__(self):
-        super(ONNXRuntimeBackend, self).__init__()
+        super(ClassificationInfer, self).__init__()
 
     def set_runner(self, config):
         self.config = config
-        print('--> Load ONNX model')
-        self.runner = rt.InferenceSession(self.config.model_file)
-        print('done')
+        if self.config.backend_type == "onnxruntime":
+            print('--> Load ONNX model')
+            self.runner = rt.InferenceSession(self.config.model_file)
+            print('done')
+
+        if self.config.backend_type == "paddle":
+            import paddle
+            model_path = os.path.join(self.config.model_dir, "inference")
+            self.runner = paddle.jit.load(model_path)
+
+        if self.config.backend_type == "rk":
+            self.runner = RKNN(verbose=True)
+            print('--> config model')
+            self.runner.config()
+            print('done')
+            # Load model
+            print('--> Loading model')
+            ret = self.runner.load_onnx(model=self.config.model_file)
+            if ret != 0:
+                print('Load model failed!')
+                exit(ret)
+            print('done')
+
+            # Build model
+            print('--> Building model')
+            ret = self.runner.build(do_quantization=False)
+            if ret != 0:
+                print('Build model failed!')
+                exit(ret)
+            print('done')
+
+            # Export rknn model
+            print('--> Export rknn model')
+            ret = self.runner.export_rknn(self.config.save_file)
+            if ret != 0:
+                print('Export rknn model failed!')
+                exit(ret)
+            print('done')
+
+            # Init runtime environment
+            print('--> Init runtime environment')
+            ret = self.runner.init_runtime()
+            if ret != 0:
+                print('Init runtime environment failed!')
+                exit(ret)
+            print('done')
 
     def preprocess(self):
         """ Preprocess input image file
@@ -74,9 +116,17 @@ class ONNXRuntimeBackend(BaseBackend):
 
         # transpose to NHWC
         data = np.expand_dims(normalized_im, axis=0)
-        data = np.transpose(data, (0, 3, 1, 2))
-        self.inputs = dict()
-        self.inputs[self.runner.get_inputs()[0].name] = data
+
+        if self.config.backend_type == "onnxruntime":
+            data = np.transpose(data, (0, 3, 1, 2))
+            self.inputs = dict()
+            self.inputs[self.runner.get_inputs()[0].name] = data
+        if self.config.backend_type == "rk":
+            self.inputs = list()
+            self.inputs = [data]
+        if self.config.backend_type == "paddle":
+            data = np.transpose(data, (0, 3, 1, 2))
+            self.inputs = data
 
     def postprocess(self):
         def inner_postprocess(result, topk=5):
@@ -90,15 +140,26 @@ class ONNXRuntimeBackend(BaseBackend):
             self.outputs["Indices"] = topk_indices
             self.outputs["Scores"] = topk_scores
 
-        inner_postprocess(self.onnxruntime_infer[0], topk=5)
+        inner_postprocess(self.infer_result[0], topk=5)
 
     def set_input(self):
-        # resize the short edge to `resize_size`
         self.load_input = cv2.imread(self.config.image_path)
         self.preprocess()
 
     def predict(self):
         self.set_input()
-        self.onnxruntime_infer = self.runner.run(None, self.inputs)
+        if self.config.backend_type == "onnxruntime":
+            self.infer_result = self.runner.run(None, self.inputs)
+        if self.config.backend_type == "rk":
+            self.infer_result = self.runner.inference(inputs=self.inputs)
+        if self.config.backend_type == "paddle":
+            import paddle
+            self.infer_result = [
+                self.runner(paddle.to_tensor(self.inputs)).numpy()
+            ]
         self.postprocess()
         return self.outputs
+
+    def release(self):
+        if self.config.backend_type == "rk":
+            self.runner.release()

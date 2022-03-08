@@ -17,8 +17,7 @@ import traceback
 import time
 import sys
 import argparse
-from backend_rk import RKBackend
-from backend_onnxruntime import ONNXRuntimeBackend
+from infer import ClassificationInfer
 
 
 def str2list(v):
@@ -32,13 +31,17 @@ def str2list(v):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_file', type=str, default="model.onnx")
+    parser.add_argument('--model_dir', type=str, default="mobilenetv3")
     parser.add_argument('--save_file', type=str, default="model.trt")
     parser.add_argument('--image_path', type=str, help="image filename")
     parser.add_argument('--crop_size', default=224, help='crop_szie')
     parser.add_argument('--resize_size', default=256, help='resize_size')
     parser.add_argument('--diff_test', type=bool, default=False)
     parser.add_argument(
-        '--backend_type', type=str, choices=["rk", "onnxruntime"], default="rk")
+        '--backend_type',
+        type=str,
+        choices=["rk", "onnxruntime", "paddle"],
+        default="rk")
     args = parser.parse_args()
     return args
 
@@ -58,29 +61,44 @@ def main():
             format(args.image_path))
         return
 
+    if args.backend_type == "paddle":
+        if not os.path.exists(args.model_dir):
+            print(
+                "[ERROR]：The provided model dir: {} does not exist, please enter \"python deploy.py -h\" to view the help information.".
+                format(args.model_dir))
+            return
+
     if args.diff_test:
         print(">>> Test Diff")
-        rk_runner = RKBackend()
-        rk_runner.set_runner(args)
-        rk_output = rk_runner.predict()
+        infer_runner = ClassificationInfer()
+        args.backend_type = "rk"
+        infer_runner.set_runner(args)
+        rk_output = infer_runner.predict()
+        infer_runner.release()
 
-        onnxruntime_runner = ONNXRuntimeBackend()
-        onnxruntime_runner.set_runner(args)
-        onnxruntime_runner.predict()
+        args.backend_type = "onnxruntime"
+        infer_runner.set_runner(args)
+        infer_runner.predict()
         return
 
     if args.backend_type == "rk":
         print(">>> RK Infer")
-        rk_runner = RKBackend()
+        rk_runner = ClassificationInfer()
         rk_runner.set_runner(args)
         rk_output = rk_runner.predict()
         rk_runner.release()
 
     if args.backend_type == "onnxruntime":
         print(">>> ONNXRuntime Infer")
-        onnxruntime_runner = ONNXRuntimeBackend()
+        onnxruntime_runner = ClassificationInfer()
         onnxruntime_runner.set_runner(args)
         onnxruntime_runner.predict()
+
+    if args.backend_type == "paddle":
+        print(">>> Paddle Infer")
+        paddle_runner = ClassificationInfer()
+        paddle_runner.set_runner(args)
+        paddle_runner.predict()
 
 
 if __name__ == '__main__':
