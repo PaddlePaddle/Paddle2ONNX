@@ -1,4 +1,4 @@
-# RK部署指南
+# RK分类模型部署指南
 本文档介绍在RK系列芯片上部署Paddle模型的步骤，具体包括：  
 1. 在Ubuntu18.06机器上安装RK模型运行环境和Paddle2ONNX等运行环境。  
 2. 使用Paddle2ONNX将PaddleInference model转换为ONNX模型格式。
@@ -49,7 +49,7 @@ paddle2onnx --model_dir ./ --model_filename inference.pdmodel --params_filename 
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type rk
 ```
 RK推理结果：![图片](./images/doc_imgs/class_rk.png)  
-**RK相关API可参考文档：**： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
+> RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
 ### 使用ONNXRuntime进行推理
 ```
 # 使用ONNXRuntime进行推理
