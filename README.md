@@ -139,7 +139,9 @@ print(diff.max(), diff.min())
 ```
 
 ## Python安装
-当前仅支持Linux
+注意也同可执行二进制程序编译一样，需要提前安装好protobuf
+
+当前仅支持Linux/Mac, python3 (针对Mac M1芯片，发现在Anaconda下直接执行如下命令会出现最终import paddle2onnx出错的情况，推荐使用miniconda安装专门针对m1芯片的包)
 ```
 cd /root/build_paddle2onnx/Paddle2ONNX
 python setup.py install
