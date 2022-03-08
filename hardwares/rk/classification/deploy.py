@@ -53,11 +53,13 @@ def main():
         onnxruntime_runner = ONNXRuntimeBackend()
         onnxruntime_runner.set_runner(args)
         onnxruntime_runner.predict()
+        return
 
     if args.backend_type == "rk":
         rk_runner = RKBackend()
         rk_runner.set_runner(args)
         rk_output = rk_runner.predict()
+        rk_runner.release()
 
     if args.backend_type == "onnxruntime":
         onnxruntime_runner = ONNXRuntimeBackend()
