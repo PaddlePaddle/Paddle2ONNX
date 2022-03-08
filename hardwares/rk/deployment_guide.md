@@ -64,9 +64,9 @@ python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_va
 TopK Indices:  [153 283 204 259 265]
 TopK Scores:  [0.5918329  0.1443437  0.02467788 0.01226414 0.01210706]
 ```
-### 使用paddle进行推理
+### 使用Paddle进行推理
 ```
-# 使用paddle进行推理
+# 使用Paddle进行推理
 python deploy.py --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type paddle --model_dir mobilenetv3
 
 # 运行结果
