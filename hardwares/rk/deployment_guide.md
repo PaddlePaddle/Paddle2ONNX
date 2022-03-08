@@ -1,5 +1,5 @@
-# RK分类模型部署指南
-本文档介绍在RK系列芯片上部署Paddle分类模型的步骤，具体包括：  
+# RK模型部署指南
+本文档介绍在RK系列芯片上部署Paddle模型的步骤，具体包括：  
 1. 在Ubuntu18.06机器上安装RK模型运行环境和Paddle2ONNX等运行环境。  
 2. 使用Paddle2ONNX将PaddleInference model转换为ONNX模型格式。
 3. 运行推理脚本获得推理结果。
@@ -43,17 +43,19 @@ tar xvf mobilenetv3.tar.gz
 paddle2onnx --model_dir ./ --model_filename inference.pdmodel --params_filename inference.pdiparams --save_file mobilenetv3.onnx --opset_version 12 --enable_onnx_checker True  --input_shape_dict "{'inputs': [1, 3, 224, 224]}"
 ```
 ## ONNX模型推理示例
-
+以mobilenetv3分类模型为例
 ### 使用RK进行推理
 ```
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type rk
 ```
 RK推理结果：![图片](./images/doc_imgs/class_rk.png)  
-> RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
 ### 使用ONNXRuntime进行推理
 ```
 # 使用ONNXRuntime进行推理
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type onnxruntime
 ```
 ONNXRuntime推理结果：![图片](./images/doc_imgs/class_onnxruntime.png)
+### 注意事项
 > 各类别id与明文标签参考[ImageNet标签](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/deploy/utils/imagenet1k_label_list.txt)
+> RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
+> ONNXRuntime要求输入为NCHW，RK要求输入为NHWC
