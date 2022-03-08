@@ -24,6 +24,7 @@ python -m pip install -r doc/requirements*.txt
 cd pakage
 python -m pip install rknn_toolkit2*.whl
 ```
-RK依赖安装参考：[RK文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_Quick_Start_RKNN_Toolkit2_CN-1.2.0.pdf)  
-PaddlePaddle安装参考：[Paddle安装文档](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html)  
-分类模型部署请参考：[分类模型部署](./classification/README.md)
+## 注意事项
+1. RK依赖安装参考：[RK文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_Quick_Start_RKNN_Toolkit2_CN-1.2.0.pdf)  
+2. PaddlePaddle安装参考：[Paddle安装文档](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html)  
+3. 分类模型部署请参考：[分类模型部署](./classification/README.md)
