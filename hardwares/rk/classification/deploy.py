@@ -45,7 +45,21 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    if not os.path.exists(args.model_file):
+        print(
+            "[ERROR]：The provided model file: {} does not exist, please enter \"python deploy.py -h\" to view the help information.".
+            format(args.model_file))
+        return
+
+    if not os.path.exists(args.image_path):
+        print(
+            "[ERROR]：The provided image file: {} does not exist, please enter \"python deploy.py -h\" to view the help information.".
+            format(args.image_path))
+        return
+
     if args.diff_test:
+        print(">>> Test Diff")
         rk_runner = RKBackend()
         rk_runner.set_runner(args)
         rk_output = rk_runner.predict()
@@ -56,12 +70,14 @@ def main():
         return
 
     if args.backend_type == "rk":
+        print(">>> RK Infer")
         rk_runner = RKBackend()
         rk_runner.set_runner(args)
         rk_output = rk_runner.predict()
         rk_runner.release()
 
     if args.backend_type == "onnxruntime":
+        print(">>> ONNXRuntime Infer")
         onnxruntime_runner = ONNXRuntimeBackend()
         onnxruntime_runner.set_runner(args)
         onnxruntime_runner.predict()

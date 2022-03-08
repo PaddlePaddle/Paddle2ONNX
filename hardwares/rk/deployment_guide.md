@@ -2,14 +2,17 @@
 本文档介绍在RK系列芯片上部署Paddle模型的步骤，具体包括：  
 1. 在Ubuntu18.06机器上安装RK模型运行环境和Paddle2ONNX等运行环境。  
 2. 使用Paddle2ONNX将PaddleInference model转换为ONNX模型格式。
-3. 运行推理脚本获得推理结果。
+3. 运行推理脚本获得推理结果。  
+
+**快速部署脚本**：bash quick_deploy.sh
 
 ## 环境准备
 PC环境要求:
 OS：Ubuntu18.04  
 Python版本：Python3.6  
 ```
-#安装Paddle2ONNX
+#安装Paddle2ONNX和PaddlePaddle
+python -m pip install paddlepaddle-gpu==0.0.0.post102 -f https://www.paddlepaddle.org.cn/whl/linux/gpu/develop.html
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 python setup.py install
@@ -26,7 +29,8 @@ python -m pip install -r doc/requirements*.txt
 cd pakage
 python -m pip install rknn_toolkit2*.whl
 ```
-RK依赖安装参考：[RK文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_Quick_Start_RKNN_Toolkit2_CN-1.2.0.pdf)
+RK依赖安装参考：[RK文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_Quick_Start_RKNN_Toolkit2_CN-1.2.0.pdf)  
+PaddlePaddle安装参考：[Paddle安装文档](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html)
 
 ## 部署指导
 部署分为以下两个步骤：  
@@ -40,7 +44,7 @@ RK尚不支持动态shape的输入，因此在使用Paddle2ONNX将Paddle模型�
 wget https://bj.bcebos.com/paddle2onnx/model_zoo/mobilenetv3.tar.gz
 tar xvf mobilenetv3.tar.gz
 # 将Paddle模型导出为ONNX模型
-paddle2onnx --model_dir ./ --model_filename inference.pdmodel --params_filename inference.pdiparams --save_file mobilenetv3.onnx --opset_version 12 --enable_onnx_checker True  --input_shape_dict "{'inputs': [1, 3, 224, 224]}"
+paddle2onnx --model_dir ./mobilenetv3 --model_filename inference.pdmodel --params_filename inference.pdiparams --save_file mobilenetv3.onnx --opset_version 12 --enable_onnx_checker True  --input_shape_dict "{'inputs': [1, 3, 224, 224]}"
 ```
 ## ONNX模型推理示例
 以mobilenetv3分类模型为例

@@ -144,6 +144,9 @@ class RKBackend(BaseBackend):
         self.postprocess()
         return self.outputs
 
+    def release(self):
+        self.runner.release()
+
 
 if __name__ == '__main__':
     rk_test = RKBackend()
