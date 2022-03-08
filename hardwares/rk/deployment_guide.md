@@ -50,14 +50,29 @@ paddle2onnx --model_dir ./mobilenetv3 --model_filename inference.pdmodel --param
 ### 使用RK进行推理
 ```
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type rk
+
+# 运行结果
+TopK Indices:  [153 283 204 259 265]
+TopK Scores:  [0.5834961  0.14819336 0.02505493 0.01279449 0.01192474]
 ```
-RK推理结果：![图片](./imgs/class_rk.png)  
 ### 使用ONNXRuntime进行推理
 ```
 # 使用ONNXRuntime进行推理
 python deploy.py --model_file mobilenetv3.onnx --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type onnxruntime
+
+# 运行结果
+TopK Indices:  [153 283 204 259 265]
+TopK Scores:  [0.5918329  0.1443437  0.02467788 0.01226414 0.01210706]
 ```
-ONNXRuntime推理结果：![图片](./imgs/class_onnxruntime.png)
+### 使用paddle进行推理
+```
+# 使用paddle进行推理
+python deploy.py --image_path images/ILSVRC2012_val_00000010.jpeg --backend_type paddle --model_dir mobilenetv3
+
+# 运行结果
+TopK Indices:  [153 283 204 259 265]
+TopK Scores:  [0.59183234 0.14434433 0.02467804 0.01226414 0.01210703]
+```
 ### 注意事项
 1. 各类别id与明文标签参考[ImageNet标签](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/deploy/utils/imagenet1k_label_list.txt)
 2. RK尚不支持动态shape的输入，因此在使用Paddle2ONNX将Paddle模型转换为ONNX模型格式时需要输入input_shape

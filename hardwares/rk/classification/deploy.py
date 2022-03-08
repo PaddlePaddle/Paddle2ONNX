@@ -31,7 +31,8 @@ def str2list(v):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_file', type=str, default="model.onnx")
-    parser.add_argument('--model_dir', type=str, default="mobilenetv3")
+    parser.add_argument(
+        '--model_dir', type=str, default="inference", help='paddle_model_dir')
     parser.add_argument('--save_file', type=str, default="model.trt")
     parser.add_argument('--image_path', type=str, help="image filename")
     parser.add_argument('--crop_size', default=224, help='crop_szie')
@@ -49,7 +50,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if not os.path.exists(args.model_file):
+    if args.backend_type != "paddle" and not os.path.exists(args.model_file):
         print(
             "[ERROR]：The provided model file: {} does not exist, please enter \"python deploy.py -h\" to view the help information.".
             format(args.model_file))
