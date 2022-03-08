@@ -18,7 +18,6 @@ import time
 import sys
 import numpy as np
 import cv2
-import onnxruntime as rt
 from rknn.api import RKNN
 
 
@@ -30,6 +29,7 @@ class ClassificationInfer():
         self.config = config
         if self.config.backend_type == "onnxruntime":
             print('--> Load ONNX model')
+            import onnxruntime as rt
             self.runner = rt.InferenceSession(self.config.model_file)
             print('done')
 

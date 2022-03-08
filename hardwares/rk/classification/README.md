@@ -3,7 +3,7 @@
 1. 使用Paddle2ONNX将PaddleInference model转换为ONNX模型格式。
 2. 运行推理脚本获得推理结果。  
 
-**快速部署脚本**：bash quick_deploy.sh
+**PC快速部署脚本**：bash quick_deploy.sh
 ## 模型转换
 以mobilenetv3作为转换示例
 ```
@@ -13,7 +13,7 @@ tar xvf mobilenetv3.tar.gz
 # 将Paddle模型导出为ONNX模型
 paddle2onnx --model_dir ./mobilenetv3 --model_filename inference.pdmodel --params_filename inference.pdiparams --save_file mobilenetv3.onnx --opset_version 12 --enable_onnx_checker True  --input_shape_dict "{'inputs': [1, 3, 224, 224]}"
 ```
-## ONNX模型推理示例
+## 模型推理示例
 以mobilenetv3分类模型为例
 ### 使用RK进行推理
 ```
@@ -47,3 +47,4 @@ TopK Scores:  [0.59183234 0.14434433 0.02467804 0.01226414 0.01210703]
 3. RK支持Opset version <= 12
 4. RK相关API可参考文档： [RK API文档](https://github.com/rockchip-linux/rknn-toolkit2/blob/master/doc/Rockchip_User_Guide_RKNN_Toolkit2_CN-1.2.0.pdf)  
 5. ONNXRuntime要求输入为NCHW，RK要求输入为NHWC
+6. 在RK芯片上，backend_type只能设置为rk
