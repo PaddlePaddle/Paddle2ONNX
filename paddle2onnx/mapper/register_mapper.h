@@ -53,16 +53,18 @@ class MapperHelper {
 
   int64_t GetAllOps(const std::string& file_path) {
     std::ofstream outfile(file_path);
-    int total = 0;
+    if (!outfile) {
+      std::cerr << "Failed to open file: " << file_path << std::endl;
+      return mappers.size();
+    }
     for (auto iter = mappers.begin(); iter != mappers.end(); iter++) {
-      total++;
       outfile << iter->first << std::endl;
     }
-    outfile << "total ops: " << total << std::endl;
+    outfile << "Total OPs: " << mappers.size() << std::endl;
     std::cout << " [ * Paddle2ONNX * ] All Registered OPs saved in "
               << file_path << std::endl;
     outfile.close();
-    return total;
+    return mappers.size();
   }
 
   bool IsRegistered(const std::string& op_name) {
