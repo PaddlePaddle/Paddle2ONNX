@@ -3,7 +3,7 @@
 本文档中模型库均来源于PaddleDetection [release/2.3分支](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)，在下表中提供了部分已经转换好的模型，如有更多模型或自行模型训练导出需求，可参考 [PaddleDetection模型导出说明](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/EXPORT_MODEL.md).
 |模型名称|配置文件|模型大小|下载地址|说明|
 | --- | --- | --- | --- | ---- |
-|picodet|[picodet_l_640_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/configs/picodet/picodet_l_640_coco.yml)|618k|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/picodet_l_640_coco.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/picodet_l_640_coco.onnx)| 使用coco数据作为训练数据，80个分类，包括车、路、人等等 |
+|picodet|[picodet_l_640_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/configs/picodet/picodet_l_640_coco.yml)|618KB|[Paddle模型](https://bj.bcebos.com/paddle2onnx/model_zoo/picodet_l_640_coco.tar.gz) / [ONNX模型](https://bj.bcebos.com/paddle2onnx/model_zoo/picodet_l_640_coco.onnx)| 使用coco数据作为训练数据，80个分类，包括车、路、人等等 |
 
 
 # ONNX模型推理示例
