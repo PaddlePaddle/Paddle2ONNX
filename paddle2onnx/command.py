@@ -22,6 +22,14 @@ import paddle.fluid as fluid
 from paddle2onnx.utils import logging
 
 
+def str2list(v):
+    if len(v) == 0:
+        return None
+    v = v.replace(" ", "")
+    v = eval(v)
+    return v
+
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -81,6 +89,14 @@ def arg_parser():
         action="store_true",
         default=False,
         help="get version of paddle2onnx")
+    parser.add_argument(
+        "--output_names",
+        "-on",
+        type=str2list,
+        default=None,
+        help="define output names, e.g --output_names=\"[\"output1\"]\" or \
+       --output_names=\"[\"output1\", \"output2\", \"output3\"]\" or \
+       --output_names=\"{\"Paddleoutput\":\"Onnxoutput\"}\"")
     return parser
 
 
@@ -91,7 +107,8 @@ def program2onnx(model_dir,
                  opset_version=9,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
-                 input_shape_dict=None):
+                 input_shape_dict=None,
+                 output_names=None):
     try:
         import paddle
     except:
@@ -147,7 +164,6 @@ def program2onnx(model_dir,
             if program.blocks[0].ops[i].type in OP_WITHOUT_KERNEL_SET:
                 continue
             program.blocks[0].ops[i].desc.infer_shape(program.blocks[0].desc)
-
     p2o.program2onnx(
         program,
         fluid.global_scope(),
@@ -156,7 +172,8 @@ def program2onnx(model_dir,
         target_vars=fetch_vars,
         opset_version=opset_version,
         enable_onnx_checker=enable_onnx_checker,
-        operator_export_type=operator_export_type)
+        operator_export_type=operator_export_type,
+        output_names=output_names)
 
 
 def main():
@@ -184,6 +201,13 @@ def main():
     operator_export_type = "ONNX"
     if args.enable_paddle_fallback:
         operator_export_type = "PaddleFallback"
+
+    if args.output_names is not None:
+        if not isinstance(args.output_names, (list, dict)):
+            raise TypeError(
+                "The output_names should be 'list' or 'dict', but received type is %s."
+                % type(args.output_names))
+
     program2onnx(
         args.model_dir,
         args.save_file,
@@ -192,7 +216,8 @@ def main():
         opset_version=args.opset_version,
         enable_onnx_checker=args.enable_onnx_checker,
         operator_export_type=operator_export_type,
-        input_shape_dict=input_shape_dict)
+        input_shape_dict=input_shape_dict,
+        output_names=args.output_names)
 
 
 if __name__ == "__main__":
