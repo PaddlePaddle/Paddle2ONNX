@@ -63,6 +63,7 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 |--enable_paddle_fallback| **[可选]**  配置custom op是否使用paddle_fallback模式导出, 默认为False|
 |--input_shape_dict| **[可选]**  配置输入的shape, 默认为空|
 |--version |**[可选]** 查看paddle2onnx版本 |
+|--output_names| **[可选]**  配置模型的输出名, 默认为空，支持配置为list形式，如：--output_names "['my_output1','my_output2']"，或者dict形式，如：--output_names "{'paddle_output1':'my_output1', 'paddle_output2':'my_output2'}"|
 
 - PaddlePaddle模型的两种存储形式：
    - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
