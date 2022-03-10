@@ -1,6 +1,6 @@
-# Mac M1芯片下的安装
+# Mac M1芯片下的编译安装
 
-当在使用Mac M1时，并且我们安装了Anaconda时，由于Anaconda安装时使用的是`x86_64`架构，因此在执行`python setup.py install`后，会导致在python里面`import paddle2onnx`出错。因此可以采用如下方式来解决。
+当在使用Mac M1时，并且我们安装了Anaconda时，由于Anaconda安装时使用的是`x86_64`架构，在执行`python setup.py install`后，会导致在python里面`import paddle2onnx`出错。因此可以采用如下方式来解决。
 
 1. 将terminal切换为`i386`模式
 ```
