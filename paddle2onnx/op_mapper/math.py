@@ -911,7 +911,7 @@ class ArgMax():
     support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         if node.attr('flatten'):
             const_value = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
@@ -948,7 +948,7 @@ class ArgMin():
     support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         if node.attr('flatten'):
             const_value = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
