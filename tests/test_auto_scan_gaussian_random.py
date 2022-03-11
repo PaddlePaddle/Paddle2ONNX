@@ -151,8 +151,8 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
-    # def test(self):
-    #     self.run_and_statis(max_examples=30)
+    def test(self):
+        self.run_and_statis(max_examples=30)
 
 
 class Net_list(BaseNet):
@@ -210,8 +210,8 @@ class TestGaussianRandomConvert_list(OPConvertAutoScanTest):
 
         return (config, models)
 
-    # def test(self):
-    #     self.run_and_statis(max_examples=30)
+    def test(self):
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":

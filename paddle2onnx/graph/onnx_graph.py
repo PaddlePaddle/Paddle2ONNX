@@ -70,13 +70,19 @@ class ONNXNode(Node):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, paddle_graph, opset_version, operator_export_type="ONNX" ,block=None):
+    def __init__(self,
+                 paddle_graph,
+                 opset_version,
+                 operator_export_type="ONNX",
+                 block=None,
+                 auto_update_opset=True):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
         self.ctx = paddle_graph
         self.custom = []
-        self.update_opset_version()
+        if auto_update_opset:
+            self.update_opset_version()
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -133,7 +139,8 @@ class ONNXGraph(Graph):
         else:
             real_outputs = outputs
 
-        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name, domain)
+        node = ONNXNode(op_type, inputs, real_outputs, attrs, layer_name,
+                        domain)
 
         self.insert_node(node)
         if len(node.outputs) == 1:
@@ -158,7 +165,8 @@ class ONNXGraph(Graph):
             attrs = node.attrs
         attrs.update(kw)
 
-        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name, node.domain)
+        node = ONNXNode(op_type, inputs, outputs, attrs, node.layer_name,
+                        node.domain)
         self.insert_node(node)
         return node
 
@@ -191,7 +199,9 @@ class ONNXGraph(Graph):
 
     def update_opset_version(self):
         node_map = self.ctx.node_map
-        self.opset_version = OpMapper.get_recommend_opset_version(node_map, self.opset_version)
+        self.opset_version = OpMapper.get_recommend_opset_version(
+            node_map, self.opset_version)
+
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
         # build op nodes
@@ -213,7 +223,74 @@ class ONNXGraph(Graph):
         vi = self.make_value_info(name, shape, dtype)
         self.output_nodes.append(vi)
 
-    def export_proto(self, enable_onnx_checker=False):
+    def find_index(self, node_inout, name):
+        for i in range(len(node_inout)):
+            if node_inout[i] == name:
+                return i
+        return -1
+
+    def change_output_names(self, onnx_proto, output_names):
+        logging.info("The output of the ONNX model is set to: {}".format(
+            output_names))
+        if isinstance(output_names, list):
+            assert len(output_names) == len(
+                onnx_proto.graph.output
+            ), "The provided output names are inconsistent with the output number of the onnx model when output_names is list"
+            origin_output_names = []
+            for i in range(len(onnx_proto.graph.output)):
+                origin_output_names.append(onnx_proto.graph.output[i].name)
+                onnx_proto.graph.output[i].name = output_names[i]
+
+            for i in range(len(onnx_proto.graph.node)):
+                node = onnx_proto.graph.node[i]
+                # Prevent changed names from being changed again
+                output_visited_node = []
+                input_visited_node = []
+                for j in range(len(origin_output_names)):
+                    if origin_output_names[j] in node.output:
+                        index = self.find_index(node.output,
+                                                origin_output_names[j])
+                        if index in output_visited_node:
+                            continue
+                        output_visited_node.append(index)
+                        onnx_proto.graph.node[i].output[index] = output_names[j]
+                    if origin_output_names[j] in node.input:
+                        index = self.find_index(node.input,
+                                                origin_output_names[j])
+                        if index in input_visited_node:
+                            continue
+                        input_visited_node.append(index)
+                        onnx_proto.graph.node[i].input[index] = output_names[j]
+        if isinstance(output_names, dict):
+            for i in range(len(onnx_proto.graph.output)):
+                for key, value in output_names.items():
+                    if onnx_proto.graph.output[i].name == key:
+                        onnx_proto.graph.output[i].name = value
+                        break
+
+            for i in range(len(onnx_proto.graph.node)):
+                node = onnx_proto.graph.node[i]
+                # Prevent changed names from being changed again
+                output_visited_node = []
+                input_visited_node = []
+                for key, value in output_names.items():
+                    if key in node.output:
+                        index = self.find_index(node.output, key)
+                        if index in output_visited_node:
+                            continue
+                        output_visited_node.append(index)
+                        onnx_proto.graph.node[i].output[index] = value
+                    if key in node.input:
+                        index = self.find_index(node.input, key)
+                        if index in input_visited_node:
+                            continue
+                        input_visited_node.append(index)
+                        onnx_proto.graph.node[i].input[index] = value
+
+        return onnx_proto
+
+    def export_proto(self, enable_onnx_checker=False, output_names=None):
+
         op_nodes = [node.onnx_node for node in self.node_map.values()]
         weight_nodes = [node for node in self.parameters.values()]
 
@@ -229,6 +306,8 @@ class ONNXGraph(Graph):
             opset_imports.append(helper.make_opsetid(custom_domain, 1))
         onnx_proto = helper.make_model(
             onnx_graph, producer_name=PRODUCER, opset_imports=opset_imports)
+        if output_names is not None:
+            onnx_proto = self.change_output_names(onnx_proto, output_names)
 
         if enable_onnx_checker:
             check_model(onnx_proto)
@@ -236,8 +315,16 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     @staticmethod
-    def build(paddle_graph, opset_version, operator_export_type="ONNX", verbose=False):
-        onnx_graph = ONNXGraph(paddle_graph, opset_version=opset_version, operator_export_type=operator_export_type)
+    def build(paddle_graph,
+              opset_version,
+              operator_export_type="ONNX",
+              verbose=False,
+              auto_update_opset=True):
+        onnx_graph = ONNXGraph(
+            paddle_graph,
+            opset_version=opset_version,
+            operator_export_type=operator_export_type,
+            auto_update_opset=auto_update_opset)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
