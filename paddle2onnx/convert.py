@@ -63,7 +63,6 @@ def program2onnx(program,
     if hasattr(paddle, 'enable_static'):
         paddle.enable_static()
     if isinstance(program, paddle.fluid.framework.Program):
-        feed_var_names = ['data_norm_input']
         if feed_var_names is not None:
             if isinstance(feed_var_names, six.string_types):
                 feed_var_names = [feed_var_names]
