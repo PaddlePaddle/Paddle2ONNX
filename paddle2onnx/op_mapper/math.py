@@ -913,33 +913,34 @@ class ArgMax():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         if node.attr('flatten'):
-            flatten = graph.make_node('Flatten', inputs=node.input('X'), axis=0)
-            squeeze_node = graph.make_node('Squeeze', inputs=flatten)
-            graph.make_node(
-                'ArgMax', inputs=squeeze_node, outputs=node.output('Out'))
+            const_value = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+            input_node = graph.make_node(
+                'Reshape', inputs=[node.input('X', 0), const_value])
         else:
-            if node.attr('dtype') and node.attr('dtype') == 2:
-                arg_node = graph.make_node(
-                    'ArgMax',
-                    inputs=node.input('X'),
-                    attrs={
-                        'axis': node.attr('axis'),
-                        'keepdims': node.attr('keepdims')
-                    })
-                graph.make_node(
-                    'Cast',
-                    inputs=arg_node,
-                    attrs={'to': dtypes.ONNX.INT32},
-                    outputs=node.output('Out'))
-            else:
-                graph.make_node(
-                    'ArgMax',
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    attrs={
-                        'axis': node.attr('axis'),
-                        'keepdims': node.attr('keepdims')
-                    })
+            input_node = node.input('X')
+        if node.attr('dtype') and node.attr('dtype') == 2:
+            arg_node = graph.make_node(
+                'ArgMax',
+                inputs=input_node,
+                attrs={
+                    'axis': node.attr('axis'),
+                    'keepdims': node.attr('keepdims')
+                })
+            graph.make_node(
+                'Cast',
+                inputs=arg_node,
+                attrs={'to': dtypes.ONNX.INT32},
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ArgMax',
+                inputs=input_node,
+                outputs=node.output('Out'),
+                attrs={
+                    'axis': node.attr('axis'),
+                    'keepdims': node.attr('keepdims')
+                })
 
 
 @op_mapper('arg_min')
@@ -949,33 +950,34 @@ class ArgMin():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         if node.attr('flatten'):
-            flatten = graph.make_node('Flatten', inputs=node.input('X'), axis=0)
-            squeeze_node = graph.make_node('Squeeze', inputs=flatten)
-            graph.make_node(
-                'ArgMin', inputs=squeeze_node, outputs=node.output('Out'))
+            const_value = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+            input_node = graph.make_node(
+                'Reshape', inputs=[node.input('X', 0), const_value])
         else:
-            if node.attr('dtype') and node.attr('dtype') == 2:
-                arg_node = graph.make_node(
-                    'ArgMin',
-                    inputs=node.input('X'),
-                    attrs={
-                        'axis': node.attr('axis'),
-                        'keepdims': node.attr('keepdims')
-                    })
-                graph.make_node(
-                    'Cast',
-                    inputs=arg_node,
-                    attrs={'to': dtypes.ONNX.INT32},
-                    outputs=node.output('Out'))
-            else:
-                graph.make_node(
-                    'ArgMin',
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    attrs={
-                        'axis': node.attr('axis'),
-                        'keepdims': node.attr('keepdims')
-                    })
+            input_node = node.input('X')
+        if node.attr('dtype') and node.attr('dtype') == 2:
+            arg_node = graph.make_node(
+                'ArgMin',
+                inputs=input_node,
+                attrs={
+                    'axis': node.attr('axis'),
+                    'keepdims': node.attr('keepdims')
+                })
+            graph.make_node(
+                'Cast',
+                inputs=arg_node,
+                attrs={'to': dtypes.ONNX.INT32},
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'ArgMin',
+                inputs=input_node,
+                outputs=node.output('Out'),
+                attrs={
+                    'axis': node.attr('axis'),
+                    'keepdims': node.attr('keepdims')
+                })
 
 
 @op_mapper('brelu')
