@@ -865,10 +865,7 @@ class FullLike():
     def opset_9(cls, graph, node, **kw):
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
         value = node.attr('value')
-        dtype = node.attr('dtype')
-        input_dtype = node.input_var('X', 0).dtype
-        if dtype is None:
-            dtype = input_dtype
+        dtype = node.output_dtype('Out', 0)
         np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
         onnx_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
         graph.make_node(
