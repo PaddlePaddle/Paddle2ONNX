@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="output",
+        default="outputs",
         help="Directory of output visualization files.")
     return parser.parse_args()
 
