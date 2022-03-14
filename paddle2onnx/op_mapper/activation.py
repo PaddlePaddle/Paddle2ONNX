@@ -85,49 +85,11 @@ class PRelu():
         if len(input_shape) != len(slope_shape):
             assert len(
                 slope_shape) == 1, "Slope shape is not expected for prelu"
-            shape_node = graph.make_node('Shape', inputs=node.input('X'))
-            axes = [i for i in range(len(input_shape))]
-            del axes[1]
-            unsqueezed_slope = graph.make_node(
-                'Unsqueeze', inputs=[node.input('Alpha')[0]], axes=axes)
+            broadcast_shape = [-1] + [1] * (len(input_shape) - 2)
+            broadcast_shape = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=broadcast_shape)
             slope_node = graph.make_node(
-                'Expand', inputs=[unsqueezed_slope, shape_node])
-        x = node.input('X')[0]
-        x_dtype = node.input_dtype('X', 0)
-        slope_dtype = node.input_dtype('Alpha', 0)
-        if slope_dtype != paddle.float32:
-            slope_node = graph.make_node(
-                'Cast', inputs=[slope_node], to=dtypes.ONNX.FLOAT)
-        if x_dtype != paddle.float32:
-            x = graph.make_node('Cast', inputs=[x], to=dtypes.ONNX.FLOAT)
-            onnx_node = graph.make_node('PRelu', inputs=[x, slope_node])
-            graph.make_node(
-                'Cast',
-                inputs=[onnx_node],
-                outputs=node.output('Out'),
-                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
-        else:
-            onnx_node = graph.make_node(
-                'PRelu', inputs=[x, slope_node], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        slope_shape = node.input_shape('Alpha', 0)
-        input_shape = node.input_shape('X', 0)
-
-        slope_node = node.input('Alpha')[0]
-        if len(input_shape) != len(slope_shape):
-            assert len(
-                slope_shape) == 1, "Slope shape is not expected for prelu"
-            shape_node = graph.make_node('Shape', inputs=node.input('X'))
-            value = [i for i in range(len(input_shape))]
-            del value[1]
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=value)
-            unsqueezed_slope = graph.make_node(
-                'Unsqueeze', inputs=[node.input('Alpha')[0], axes])
-            slope_node = graph.make_node(
-                'Expand', inputs=[unsqueezed_slope, shape_node])
+                'Reshape', inputs=[node.input('Alpha')[0], broadcast_shape])
         x = node.input('X')[0]
         x_dtype = node.input_dtype('X', 0)
         slope_dtype = node.input_dtype('Alpha', 0)
