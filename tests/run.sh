@@ -18,7 +18,7 @@ ignore="test_expand_as.py \
         test_uniform.py"
 bug=0
 export PY_CMD=$1
-$PY_CMD -m pip install pytests
+$PY_CMD -m pip install pytest
 
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
