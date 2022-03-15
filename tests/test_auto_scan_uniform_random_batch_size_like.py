@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
+from onnxbase import randtool
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
@@ -25,34 +26,50 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, weights):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.nn.functional.prelu(inputs, weight=weights)
+        x = paddle.fluid.layers.uniform_random_batch_size_like(
+            inputs,
+            shape=self.config["shape"],
+            min=self.config["min"],
+            max=self.config["max"],
+            dtype=self.config["out_dtype"])
         return x
 
 
-class TestPreluConvert(OPConvertAutoScanTest):
+class TestUniformRandomBaTchSizeLikeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.prelu
-    OPset version: 9, 15
+    api: paddle.fluid.layers.uniform_random_batch_size_like
+    OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=5, max_value=20), min_size=1, max_size=4))
+                    min_value=1, max_value=9), min_size=1, max_size=1))
+
+        min = draw(st.floats(min_value=0, max_value=1.0))
+
+        max = draw(st.floats(min_value=1.0, max_value=2.0))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
+        out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["prelu"],
-            "test_data_shapes": [input_shape, [1]],
-            "test_data_types": [[dtype], [dtype]],
-            "opset_version": [9, 15],
+            "op_names": ["uniform_random_batch_size_like"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "shape": input_shape,
+            "min": min,
+            "max": max,
+            "out_dtype": out_dtype,
+            "delta": 1e11,
+            "rtol": 1e11
         }
 
         models = Net(config)
