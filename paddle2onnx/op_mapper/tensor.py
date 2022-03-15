@@ -675,36 +675,83 @@ class Range():
 
 @op_mapper('fill_constant')
 class Constant():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
+
+    @classmethod
+    def check_int_type(cls, dtype):
+        if dtype in [dtypes.ONNX.INT16, dtypes.ONNX.INT32, dtypes.ONNX.INT64]:
+            return True
+        return False
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
         value = node.attr('value')
         dtype = node.attr('dtype')
-        shape = node.attr('shape')
-
+        value_is_scalar_tensor = False
         if 'ValueTensor' in node.inputs and len(node.input('ValueTensor')) > 0:
-            raise Exception(
-                "paddle.full with tensor value parameter is not supported yet.")
+            rank = len(node.input_shape("ValueTensor", 0))
+            if rank == 1 and node.input_shape("ValueTensor", 0)[0] == 1:
+                value_is_scalar_tensor = True
+                value = node.input("ValueTensor")[0]
+            else:
+                raise Exception(
+                    "paddle.full with tensor value parameter is not supported yet."
+                )
 
-        value = np.ones(shape) * value
-        value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
-        value = value.flatten().tolist()
-        if len(shape) == 0 and len(node.input('ShapeTensor')) > 0:
-            shape_tensor = mapper_helper.cast(
-                graph,
-                node.input('ShapeTensor', 0),
-                node.input_dtype('ShapeTensor', 0), 'int64')
-            graph.make_node(
-                'ConstantOfShape',
-                inputs=shape_tensor,
-                outputs=node.output('Out'),
-                attrs={
-                    'dims': [1],
-                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[dtype],
-                    'value': value
-                })
+        shape, is_shape_tensor = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'shape',
+            'ShapeTensor',
+            'ShapeTensorList',
+            dtype=dtypes.ONNX.INT64)
+
+        if graph.opset_version >= 9 and (is_shape_tensor or
+                                         value_is_scalar_tensor):
+            if not is_shape_tensor:
+                shape = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=shape)
+            input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+            if not value_is_scalar_tensor and cls.check_int_type(input_dtype):
+                to_dtype = dtypes.ONNX.DOUBLE
+                outputs = None
+            else:
+                to_dtype = input_dtype
+                outputs = node.output('Out')
+
+            if value_is_scalar_tensor:
+                base_value = graph.make_node(
+                    'ConstantOfShape',
+                    inputs=shape,
+                    attrs={'dims': [1],
+                           'dtype': to_dtype,
+                           'value': 0})
+                node2 = graph.make_node(
+                    "Add", inputs=[base_value, value], outputs=outputs)
+            else:
+                node2 = graph.make_node(
+                    'ConstantOfShape',
+                    inputs=shape,
+                    outputs=outputs,
+                    attrs={'dims': [1],
+                           'dtype': to_dtype,
+                           'value': value})
+
+            if not value_is_scalar_tensor and cls.check_int_type(input_dtype):
+                graph.make_node(
+                    'Cast',
+                    inputs=node2,
+                    outputs=node.output('Out'),
+                    attrs={'to': input_dtype})
         else:
+            assert not is_shape_tensor and not value_is_scalar_tensor, \
+                "Currently op ['fill_constant'] does not support in onnx(opset<9) when 'shape' or 'fill_value' has " \
+                "tensor, Try converting with opset_version >=9 "
+
+            value = np.ones(shape) * value
+            value = value.astype(dtypes.DTYPE_PADDLE_NUMPY_MAP[dtype])
+            value = value.flatten().tolist()
+
             graph.make_node(
                 'Constant',
                 inputs=[],
