@@ -27,7 +27,7 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype);
 struct TensorInfo {
   std::string name;
   std::vector<int64_t> shape;
-  int64_t Rank() { return static_cast<int64_t>(shape.size()); }
+  int64_t Rank() const { return static_cast<int64_t>(shape.size()); }
   int32_t dtype;
 };
 
@@ -79,6 +79,7 @@ class PaddleParser {
 
   int NumOfBlocks() const;
   int NumOfOps(int block_idx) const;
+  bool HasNms() const { return has_nms_; }
   const framework::proto::OpDesc GetOpDesc(int32_t block_idx,
                                            int32_t op_idx) const;
 
@@ -132,6 +133,10 @@ class PaddleParser {
   bool LoadProgram(const std::string& model, bool from_memory_buffer);
   bool LoadParams(const std::string& path);
   bool LoadParamsFromMemoryBuffer(const std::string& buffer);
+  // This is a trick flag
+  // While there's a nms operator in paddle model,
+  // the shape inference of paddle is not correct
+  bool has_nms_ = false;
 };
 
 }  // namespace paddle2onnx

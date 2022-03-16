@@ -190,11 +190,11 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
 std::string OnnxHelper::AutoCast(const std::string& input,
                                  int32_t input_paddle_dtype,
                                  int32_t to_paddle_dtype) {
-  std::string output = input;
+  std::string output = MapperHelper::Get()->GenName("auto.cast");
   if (input_paddle_dtype == to_paddle_dtype) {
+    MakeNode("Identity", {input}, {output});
     return output;
   }
-  output = MapperHelper::Get()->GenName("auto.cast");
   auto cast_node = MakeNode("Cast", {input}, {output});
   AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
   return cast_node->output(0);
@@ -211,6 +211,29 @@ std::string OnnxHelper::AutoCast(const std::string& input,
   auto cast_node = MakeNode("Cast", {input}, {output});
   AddAttribute(cast_node, "to", GetOnnxDtype(to_paddle_dtype));
   return cast_node->output(0);
+}
+
+std::string OnnxHelper::ConcatIndices(const std::vector<TensorInfo>& indices) {
+  std::vector<std::string> vars;
+  // make sure all the indices be 1-D tensor
+  for (size_t i = 0; i < indices.size(); ++i) {
+    std::string var = indices[i].name;
+    if (indices[i].Rank() != 1) {
+      var = Reshape(indices[i].name, {1});
+    }
+    vars.push_back(var);
+  }
+  // make sure all the indices be int64
+  for (size_t i = 0; i < indices.size(); ++i) {
+    if (indices[i].dtype != P2ODataType::INT64) {
+      vars[i] = AutoCast(vars[i], indices[i].dtype, P2ODataType::INT64);
+    }
+  }
+  // concat and return
+  if (vars.size() > 1) {
+    return Concat(vars, 0);
+  }
+  return vars[0];
 }
 
 std::string OnnxHelper::Clip(const std::string& input,
@@ -425,4 +448,5 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
   }
   return casted_node;
 }
+
 }  // namespace paddle2onnx

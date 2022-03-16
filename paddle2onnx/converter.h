@@ -14,20 +14,30 @@
 #pragma once
 #include <string>
 
+#if defined(_WIN32)
+#ifdef PADDLE2ONNX_LIB
+#define PADDLE2ONNX_DECL __declspec(dllexport)
+#else
+#define PADDLE2ONNX_DECL __declspec(dllimport)
+#endif  // PADDLE2ONNX_LIB
+#else
+#define PADDLE2ONNX_DECL __attribute__((visibility("default")))
+#endif  // _WIN32
+
 namespace paddle2onnx {
 
-bool IsExportable(const std::string& model, const std::string& params,
-                  bool from_memory_buffer = false, int32_t opset_version = 15,
-                  bool auto_upgrade_opset = true, bool verbose = false,
-                  bool enable_onnx_checker = true,
-                  bool enable_experimental_op = false,
-                  bool enable_optimize = false);
+PADDLE2ONNX_DECL bool IsExportable(
+    const std::string& model, const std::string& params,
+    bool from_memory_buffer = false, int32_t opset_version = 15,
+    bool auto_upgrade_opset = true, bool verbose = false,
+    bool enable_onnx_checker = true, bool enable_experimental_op = false,
+    bool enable_optimize = true);
 
-bool Export(const std::string& model, const std::string& params,
-            std::string* out, bool from_memory_buffer = false,
-            int32_t opset_version = 15, bool auto_upgrade_opset = true,
-            bool verbose = false, bool enable_onnx_checker = true,
-            bool enable_experimental_op = false,
-            bool enable_optimize = false);
+PADDLE2ONNX_DECL bool Export(
+    const std::string& model, const std::string& params, std::string* out,
+    bool from_memory_buffer = false, int32_t opset_version = 15,
+    bool auto_upgrade_opset = true, bool verbose = false,
+    bool enable_onnx_checker = true, bool enable_experimental_op = false,
+    bool enable_optimize = true);
 
 }  // namespace paddle2onnx

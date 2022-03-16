@@ -68,7 +68,7 @@ def dygraph2onnx(layer, save_file, input_spec, opset_version=9, **configs):
     if not os.path.exists(params_file):
         params_file = ""
     if get_op_list:
-        op_list = c_p2o.check_op(model_file, params_file)
+        op_list = c_p2o.get_graph_op_list(model_file, params_file)
         return op_list
 
     export(

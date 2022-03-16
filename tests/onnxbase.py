@@ -22,6 +22,7 @@ import paddle
 paddle.set_device('cpu')
 from onnxruntime import InferenceSession
 from paddle2onnx import dygraph2onnx
+import shutil
 
 
 def compare(result, expect, delta=1e-10, rtol=1e-10):
@@ -209,6 +210,14 @@ class APIOnnx(object):
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
+    def _removedir(self):
+        """
+        make dir to save all
+        """
+        save_path = os.path.join(self.pwd, self.name)
+        if os.path.exists(save_path):
+            shutil.rmtree(save_path, True)
+
     def _mk_dygraph_exp(self, instance):
         """
         make expect npy
@@ -262,9 +271,10 @@ class APIOnnx(object):
     def check_ops(self, version):
         if len(self.ops) == 0:
             return
+        path = os.path.join(self.pwd, "op_checker" + "/check")
         op_list = dygraph2onnx(
             self._func,
-            "./op_checker",
+            path,
             input_spec=self.input_spec,
             opset_version=version,
             get_op_list=True)
@@ -288,6 +298,7 @@ class APIOnnx(object):
         3. use onnx to make res
         4. compare diff
         """
+        self._removedir()
         self._mkdir()
         self.set_input_spec()
         min_opset_version = min(self._version)
@@ -311,3 +322,4 @@ class APIOnnx(object):
             # dygraph model jit save
             if self.static is True and place == 'gpu':
                 self._dygraph_jit_save(instance=self._func)
+        self._removedir()

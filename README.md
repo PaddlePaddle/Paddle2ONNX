@@ -139,8 +139,13 @@ print(diff.max(), diff.min())
 ```
 
 ## Python安装
-当前仅支持Linux
+注意也同可执行二进制程序编译一样，需要提前安装好protobuf
+
+当前仅支持Linux/Mac（如果你是Mac M1 Chip，请参考[M1 Chip下的安装说明](mac_m1_chip.md)）
 ```
 cd /root/build_paddle2onnx/Paddle2ONNX
 python setup.py install
 ```
+
+## OP开发
+> OP开发相关指导详见：[OP开发指南](docs/zh/Paddle2ONNX_Development_Guide.md)

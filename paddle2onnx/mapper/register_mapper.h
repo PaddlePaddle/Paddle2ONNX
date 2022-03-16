@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #pragma once
+#include <fstream>
 #include <map>
 #include "paddle2onnx/utils/utils.h"
 // This code is modified from
@@ -48,6 +49,22 @@ class MapperHelper {
       helper = new MapperHelper();
     }
     return helper;
+  }
+
+  int64_t GetAllOps(const std::string& file_path) {
+    std::ofstream outfile(file_path);
+    if (!outfile) {
+      std::cerr << "Failed to open file: " << file_path << std::endl;
+      return mappers.size();
+    }
+    for (auto iter = mappers.begin(); iter != mappers.end(); iter++) {
+      outfile << iter->first << std::endl;
+    }
+    outfile << "Total OPs: " << mappers.size() << std::endl;
+    std::cout << " [ * Paddle2ONNX * ] All Registered OPs saved in "
+              << file_path << std::endl;
+    outfile.close();
+    return mappers.size();
   }
 
   bool IsRegistered(const std::string& op_name) {

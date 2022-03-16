@@ -33,7 +33,6 @@ bool ReadBinaryFile(const std::string& path, std::string* contents) {
   return true;
 }
 
-
 int main(int argc, char* argv[]) {
   if (argc == 1) {
     std::cerr << "Paddle2ONNX Usage(params_file_path is optional):   "
@@ -46,8 +45,9 @@ int main(int argc, char* argv[]) {
     if (!ReadBinaryFile(argv[1], &model_buffer)) {
       return -1;
     }
-    if (!paddle2onnx::Export(model_buffer, "", &onnx_model, true, 7, true, true, true, true, true)) {
-      std::cerr << "Model converte failed." << std::endl;
+    if (!paddle2onnx::Export(model_buffer, "", &onnx_model, true, 7, true, true,
+                             true, true, false)) {
+      std::cerr << "Model convert failed." << std::endl;
       return -1;
     }
   } else if (argc == 3) {
@@ -59,7 +59,8 @@ int main(int argc, char* argv[]) {
     if (!ReadBinaryFile(argv[2], &params_buffer)) {
       return -1;
     }
-    if (!paddle2onnx::Export(model_buffer, params_buffer, &onnx_model, true, 7, true, true, true, true, true)) {
+    if (!paddle2onnx::Export(model_buffer, params_buffer, &onnx_model, true, 7,
+                             true, true, true, true, true)) {
       std::cerr << "Model converte failed." << std::endl;
       return -1;
     }

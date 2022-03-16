@@ -14,8 +14,9 @@
 
 #include "paddle2onnx/mapper/exporter.h"
 #include <onnx/checker.h>
-#include <onnx/shape_inference/implementation.h>
 #include "onnxoptimizer/optimize.h"
+#include "paddle2onnx/optimizer/fuse_constant_reshape.h"
+#include "paddle2onnx/optimizer/fuse_paddle_conv_bias.h"
 
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
@@ -156,7 +157,13 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   // to let framework know the conversion is
   // pass or fail
   if (enable_onnx_checker) {
-    ONNX_NAMESPACE::checker::check_model(*(model.get()));
+    try {
+      ONNX_NAMESPACE::checker::check_model(*(model.get()));
+    } catch (...) {
+      std::cerr << "[Paddle2ONNX] ONNX model conversion is invalid."
+                << std::endl;
+      return "";
+    }
     std::cerr << "[Paddle2ONNX] ONNX model conversion is valid." << std::endl;
   }
 
@@ -254,8 +261,19 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
 
 ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
     const ONNX_NAMESPACE::ModelProto& model) {
-  std::vector<std::string> passes =
-      ONNX_NAMESPACE::optimization::GetFuseAndEliminationPass();
+  ONNX_NAMESPACE::optimization::Optimizer::passes
+      .registerPass<ONNX_NAMESPACE::optimization::FuseConstantReshape>();
+  ONNX_NAMESPACE::optimization::Optimizer::passes
+      .registerPass<ONNX_NAMESPACE::optimization::FusePaddleConvBias>();
+  std::vector<std::string> passes = {
+      "eliminate_identity",
+      "eliminate_deadend",
+      "fuse_constant_reshape",
+      "fuse_paddle_conv_bias",
+      "fuse_matmul_add_bias_into_gemm",
+      "eliminate_identity",
+      "eliminate_deadend",
+  };
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 

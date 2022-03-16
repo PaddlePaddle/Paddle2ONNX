@@ -198,14 +198,13 @@ void NMSMapper::KeepTopK(OnnxHelper* helper,
       helper->MakeNode("Cast", {reshaped_index_result}, {index_info[0].name});
   AddAttribute(index_result, "to", GetOnnxDtype(index_info[0].dtype));
 
-  auto out_box_shape = helper->MakeNode("Shape", {box_result->output(0)});
+  auto out_box_shape = helper->MakeNode("Shape", {out_info[0].name});
   auto num_rois_result =
       helper->Slice({out_box_shape->output(0)}, std::vector<int64_t>(1, 0),
                     std::vector<int64_t>(1, 0), std::vector<int64_t>(1, 1));
   auto int32_num_rois_result =
-      helper->MakeNode("Cast", {num_rois_result}, {num_rois_info[0].name});
-  AddAttribute(int32_num_rois_result, "to",
-               GetOnnxDtype(num_rois_info[0].dtype));
+      helper->AutoCast(num_rois_result, num_rois_info[0].name,
+                       P2ODataType::INT64, num_rois_info[0].dtype);
 }
 
 void NMSMapper::Opset10(OnnxHelper* helper) {
