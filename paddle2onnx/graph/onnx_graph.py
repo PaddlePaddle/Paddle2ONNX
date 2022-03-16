@@ -86,6 +86,7 @@ class ONNXGraph(Graph):
         self.name_dict = dict()
         self.changed_dict = dict()
         self.sort_name_dict = dict()
+        self.static_quantize_model = True
         if auto_update_opset:
             self.update_opset_version()
 
@@ -113,6 +114,8 @@ class ONNXGraph(Graph):
                 if input_name not in inputs:
                     continue
                 if node.type in ['QuantizeLinear']:
+                    continue
+                if node.type.count("Pool"):
                     continue
                 for i in range(len(inputs)):
                     if input_name == inputs[i]:
@@ -142,7 +145,8 @@ class ONNXGraph(Graph):
     def get_another_node_by_input(self, name, copy_node=False):
         check_op_list = [
             'fake_quantize_dequantize_moving_average_abs_max',
-            'fake_quantize_moving_average_abs_max'
+            'fake_quantize_moving_average_abs_max',
+            'fake_quantize_range_abs_max', 'pool2d'
         ]
         result_layer_name = []
         for layer_name, node in self.ctx.node_map.items():

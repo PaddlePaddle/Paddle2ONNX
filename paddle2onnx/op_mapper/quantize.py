@@ -266,10 +266,19 @@ class Fake_quantize_range_abs_max():
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
 
-        quantize_node = graph.make_node(
-            'QuantizeLinear',
-            inputs=[input_node_name, scale_node, zero_node],
-            outputs=output_name)
+        if graph.static_quantize_model:
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[input_node_name, scale_node, zero_node])
+            graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                outputs=output_name)
+        else:
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[input_node_name, scale_node, zero_node],
+                outputs=output_name)
 
         if input_node_name in graph.changed_dict.keys():
             return
@@ -278,7 +287,6 @@ class Fake_quantize_range_abs_max():
             input_node_name, copy_node=False)
         if len(another_nodes) == 0:
             return
-
         index = 0
         all_q_dq = list()
         for another_node in another_nodes:
@@ -291,12 +299,28 @@ class Fake_quantize_range_abs_max():
                 return_node=True)
             changed_output_name = output_name + ".paddleadd" + str(index)
             index = index + 1
-            quantize_node, q_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[input_node_name, scale_node, zero_node],
-                return_node=True)
-            all_q_dq.append(
-                [z_node.layer_name, s_node.layer_name, q_node.layer_name])
+            if graph.static_quantize_model:
+                quantize_node, q_node = graph.make_node(
+                    'QuantizeLinear',
+                    inputs=[input_node_name, scale_node, zero_node],
+                    return_node=True)
+                dequantize_node, dq_node = graph.make_node(
+                    'DequantizeLinear',
+                    inputs=[quantize_node, scale_node, zero_node],
+                    outputs=changed_output_name,
+                    return_node=True)
+                all_q_dq.append([
+                    z_node.layer_name, s_node.layer_name, q_node.layer_name,
+                    dq_node.layer_name
+                ])
+            else:
+                quantize_node, q_node = graph.make_node(
+                    'QuantizeLinear',
+                    inputs=[input_node_name, scale_node, zero_node],
+                    outputs=changed_output_name,
+                    return_node=True)
+                all_q_dq.append(
+                    [z_node.layer_name, s_node.layer_name, q_node.layer_name])
 
         graph.changed_dict[input_node_name] = dict()
         graph.changed_dict[input_node_name]["name"] = output_name
@@ -491,31 +515,71 @@ class Fake_channel_wise_dequantize_max_abs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
+        if graph.static_quantize_model:
+            return
         paddle.disable_static()
         key = node.input('Scales', 0)
-        InScale = None
+        InScale1 = None
         if key in graph.origin_parameters.keys():
             param = graph.origin_parameters[key]
-            InScale = param['data']
-        InScale = paddle.to_tensor(InScale)
-        input_shape = node.input_shape('X', 0)
-        zero_node = None
-        if len(input_shape) == 4:
-            scale = InScale / 127.0
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[0])
+            InScale1 = param['data']
 
-        if len(input_shape) == 2:
-            scale = InScale / 127.0
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[1])
+        key = node.input('Scales', 1)
+        InScale2 = None
+        if key is not None and key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[key]
+            InScale2 = param['data']
 
-        scale_numpy = paddle.squeeze(scale).numpy().tolist()
-        scale_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
-        attrs = {'axis': node.attr("quant_axis"), }
-        graph.make_node(
-            'DequantizeLinear',
-            inputs=[node.input('X', 0), scale_node, zero_node],
-            outputs=node.output('Out'),
-            attrs=attrs)
+        x_num_col_dims = node.attr('x_num_col_dims')
+        quant_axis = node.attr('quant_axis')
+
+        if InScale2 is None:
+            input_shape = node.input_shape('X', 0)
+            channel = input_shape[quant_axis]
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
+            InScale = paddle.to_tensor(InScale1)
+            scale = InScale / (127.0)
+            scale_numpy = paddle.squeeze(scale).numpy().tolist()
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+            attrs = {'axis': node.attr("quant_axis"), }
+            graph.make_node(
+                'DequantizeLinear',
+                inputs=[node.input('X', 0), scale_node, zero_node],
+                outputs=node.output('Out'),
+                attrs=attrs)
+            return
+
+        if x_num_col_dims > 1:
+            input_shape = node.input_shape('X', 0)
+            channel = input_shape[x_num_col_dims]
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
+            InScale = paddle.to_tensor(InScale1 * InScale2[0])
+            scale = InScale / (127.0 * 127.0)
+            scale_numpy = paddle.squeeze(scale).numpy().tolist()
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+            attrs = {'axis': node.attr("x_num_col_dims"), }
+            graph.make_node(
+                'DequantizeLinear',
+                inputs=[node.input('X', 0), scale_node, zero_node],
+                outputs=node.output('Out'),
+                attrs=attrs)
+        else:
+            input_shape = node.input_shape('X', 0)
+            channel = input_shape[1]
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
+            InScale = paddle.to_tensor(InScale1 * InScale2[0])
+            scale = InScale / (127.0 * 127.0)
+            scale_numpy = paddle.squeeze(scale).numpy().tolist()
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+            attrs = {'axis': node.attr("x_num_col_dims"), }
+            graph.make_node(
+                'DequantizeLinear',
+                inputs=[node.input('X', 0), scale_node, zero_node],
+                outputs=node.output('Out'),
+                attrs=attrs)
