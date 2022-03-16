@@ -23,6 +23,86 @@ import six
 import paddle
 
 
+@op_mapper('set_value')
+class Set_value():
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+        axes = node.attr('axes')
+        strides, is_strides_tensor = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'strides',
+            'StridesTensor',
+            'StridesTensorList',
+            dtype=dtypes.ONNX.INT64)
+
+        strides = [1] * len(axes) if strides is None else strides
+
+        starts, is_starts_tensor = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'starts',
+            'StartsTensor',
+            'StartsTensorList',
+            dtype=dtypes.ONNX.INT64)
+
+        ends, is_ends_tensor = mapper_helper.get_node_attr_value(
+            graph,
+            node,
+            'ends',
+            'EndsTensor',
+            'EndsTensorList',
+            dtype=dtypes.ONNX.INT64)
+
+        input_x_shape = node.input_shape('Input', 0)
+        value_tensor_shape = node.input_shape('ValueTensor', 0)
+        onnx_paddings = [0] * len(input_x_shape) * 2
+        for i in range(len(axes)):
+            axis = axes[i]
+            onnx_paddings[axis] = starts[i]
+            onnx_paddings[axis + len(input_x_shape)] = input_x_shape[
+                axis] - ends[i]
+
+        dtype = node.input_dtype('Input', 0)
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+
+        value_tensor = None
+        shape = node.attr('shape')
+        if len(shape) > 0:
+            dtypes_list = [
+                'fp32_values', 'fp64_values', 'int32_values', 'int64_values',
+                'bool_values'
+            ]
+            for i in range(len(dtypes_list)):
+                value = node.attr(dtypes_list[i])
+                if value is not None:
+                    break
+            value_tensor = mapper_helper.constant_helper(
+                graph, dtype, value, shape=shape)
+        else:
+            value_tensor = node.input('ValueTensor', 0)
+
+        pads_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.INT64,
+                   'value': onnx_paddings})
+        value_pad_node = graph.make_node(
+            'Pad', inputs=[value_tensor, pads_node])
+
+        zero_node = graph.make_node('Constant', dtype=dtype, value=[0])
+        condition_dtype = graph.make_node(
+            "Equal", inputs=[value_pad_node, zero_node])
+        condition = graph.make_node(
+            'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
+
+        graph.make_node(
+            "Where",
+            inputs=[condition, node.input('Input', 0), value_pad_node],
+            outputs=node.output('Out'))
+
+
 @op_mapper('concat')
 class Concat():
     support_opset_version_range = (4, 15)
