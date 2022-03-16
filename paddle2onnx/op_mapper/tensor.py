@@ -30,15 +30,14 @@ class Set_value():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         axes = node.attr('axes')
-        strides, is_strides_tensor = mapper_helper.get_node_attr_value(
+        steps, is_steps_tensor = mapper_helper.get_node_attr_value(
             graph,
             node,
-            'strides',
-            'StridesTensor',
-            'StridesTensorList',
+            'steps',
+            'StepsTensor',
+            'StepsTensorList',
             dtype=dtypes.ONNX.INT64)
-
-        strides = [1] * len(axes) if strides is None else strides
+        contain_bigger_than_1 = False
 
         starts, is_starts_tensor = mapper_helper.get_node_attr_value(
             graph,
@@ -55,6 +54,14 @@ class Set_value():
             'EndsTensor',
             'EndsTensorList',
             dtype=dtypes.ONNX.INT64)
+
+        contain_bigger_than_1 = False
+        for i in steps:
+            contain_bigger_than_1 = i > 1
+            if contain_bigger_than_1:
+                break
+        condition = is_steps_tensor or is_starts_tensor or is_ends_tensor or contain_bigger_than_1
+        assert not condition, "Currently not supported convert now"
 
         input_x_shape = node.input_shape('Input', 0)
         value_tensor_shape = node.input_shape('ValueTensor', 0)
