@@ -12,25 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import yaml
+import cv2
 import argparse
 
 import numpy as np
 from functools import reduce
 
 from utils.visualize import save_imgs
-from utils.preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        '--model_type',
+        dest='model_type',
+        type=str,
+        help="picodet or yolodet"
+        "onnx model file.")
+    parser.add_argument(
         '--model_path',
         dest='model_path',
         type=str,
         help="while use_paddle_predict, this means directory path of paddle model. Other wise, this means path of "
-        "onnx model file. and include 'infer_cfg.yml'")
+        "onnx model file.")
     parser.add_argument(
         '--image_path',
         dest='image_path',
@@ -52,44 +56,89 @@ def parse_args():
     return parser.parse_args()
 
 
-class PredictConfig():
-    def __init__(self, model_path):
-        # parsing Yaml config for Preprocess
-        deploy_file = os.path.join(model_path, 'infer_cfg.yml')
-        with open(deploy_file) as f:
-            yml_conf = yaml.safe_load(f)
-        self.arch = yml_conf['arch']
-        self.preprocess_infos = yml_conf['Preprocess']
-        self.labels = yml_conf['label_list']
+class YoloDetPreProcess(object):
+    def __init__(self,
+                 target_size=[608, 608],
+                 interp=cv2.INTER_CUBIC,
+                 mean=[0.485, 0.456, 0.406],
+                 std=[0.229, 0.224, 0.225],
+                 is_scale=True,
+                 stride=32):
+        self.target_size = target_size
+        self.interp = interp
+        self.mean = mean
+        self.std = std
+        self.is_scale = is_scale
+        self.stride = stride
 
+    def resize(self, im, im_info):
+        target_size = self.target_size
+        interp = self.interp
+        assert len(target_size) == 2
+        assert target_size[0] > 0 and target_size[1] > 0
+        origin_shape = im.shape[:2]
+        resize_h, resize_w = target_size
+        im_scale_y = resize_h / float(origin_shape[0])
+        im_scale_x = resize_w / float(origin_shape[1])
+        im = cv2.resize(
+            im, None, None, fx=im_scale_x, fy=im_scale_y, interpolation=interp)
+        im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
+        im_info['scale_factor'] = np.array(
+            [im_scale_y, im_scale_x]).astype('float32')
+        return im, im_info
 
-class DetPreProcess(object):
-    def __init__(self, pred_config):
-        self.pred_config = pred_config
+    def normalizeImage(self, im):
+        mean = self.mean
+        std = self.std
+        is_scale = self.is_scale
+
+        im = im.astype(np.float32, copy=False)
+        mean = np.array(mean)[np.newaxis, np.newaxis, :]
+        std = np.array(std)[np.newaxis, np.newaxis, :]
+
+        if is_scale:
+            im = im / 255.0
+        im -= mean
+        im /= std
+        return im
+
+    def padStride(self, im):
+        coarsest_stride = self.stride
+        coarsest_stride = coarsest_stride
+        if coarsest_stride <= 0:
+            return im
+        im_c, im_h, im_w = im.shape
+        pad_h = int(np.ceil(float(im_h) / coarsest_stride) * coarsest_stride)
+        pad_w = int(np.ceil(float(im_w) / coarsest_stride) * coarsest_stride)
+        padding_im = np.zeros((im_c, pad_h, pad_w), dtype=np.float32)
+        padding_im[:, :im_h, :im_w] = im
+        return padding_im
 
     def __call__(self, im):
-        preprocess_ops = []
-        for op_info in self.pred_config.preprocess_infos:
-            new_op_info = op_info.copy()
-            op_type = new_op_info.pop('type')
-            preprocess_ops.append(eval(op_type)(**new_op_info))
-
-        input_im_lst = []
-        input_im_info_lst = []
-        im, im_info = preprocess(im, preprocess_ops)
-        input_im_lst.append(im)
-        input_im_info_lst.append(im_info)
+        im_info = {
+            'scale_factor': np.array(
+                [1., 1.], dtype=np.float32),
+            'im_shape': None,
+        }
+        im = cv2.imread(im)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        im, im_info = self.resize(im, im_info)
+        im = self.normalizeImage(im)
+        im = im.transpose((2, 0, 1))
+        if FLAGS.model_type == "picodet":
+            im = self.padStride(im)
         inputs = {}
         inputs['image'] = np.array((im, )).astype('float32')
-        if self.pred_config.arch == 'YOLO':
+        if FLAGS.model_type == "yolodet":
             inputs['im_shape'] = np.array(
                 (im_info['im_shape'], )).astype('float32')
         inputs['scale_factor'] = np.array(
             (im_info['scale_factor'], )).astype('float32')
+
         return inputs
 
 
-class DetPostProcess(object):
+class YoloDetPostProcess(object):
     def __init__(self,
                  score_threshold=0.01,
                  nms_threshold=0.45,
@@ -232,37 +281,45 @@ class DetPostProcess(object):
         return results
 
 
-def onnx_predict(model_path, imgs_path, pred_config):
+def onnx_predict(model_path, imgs_path):
     import onnxruntime as rt
-    sess = rt.InferenceSession(os.path.join(model_path, 'model.onnx'))
+    sess = rt.InferenceSession(model_path)
 
     # preprocess
-    preProcess = DetPreProcess(pred_config)
+    if FLAGS.model_type == "yolodet":
+        target_size = [608, 608]
+    else:
+        target_size = [640, 640]
+    preProcess = YoloDetPreProcess(target_size=target_size)
     inputs = preProcess(imgs_path)
     output = sess.run(None, inputs)
 
     # postprocess
-    postProcess = DetPostProcess(score_threshold=0.01, nms_threshold=0.45)
+    postProcess = YoloDetPostProcess(score_threshold=0.01, nms_threshold=0.45)
     results = postProcess(output[0], output[1])
     return results
 
 
-def paddle_predict(model_path, imgs_path, pred_config):
+def paddle_predict(model_path, imgs_path):
     import paddle
-    model = paddle.jit.load(os.path.join(model_path, 'model'))
+    model = paddle.jit.load(model_path)
     model.eval()
 
+    if FLAGS.model_type == "yolodet":
+        target_size = [608, 608]
+    else:
+        target_size = [640, 640]
     # preprocess
-    preProcess = DetPreProcess(pred_config)
+    preProcess = YoloDetPreProcess(target_size=target_size)
     inputs = preProcess(imgs_path)
-    if pred_config.arch == "YOLO":
+    if FLAGS.model_type == "yolodet":
         output = model(inputs['im_shape'], inputs['image'],
                        inputs['scale_factor'])
     else:
         output = model(inputs['image'], inputs['scale_factor'])
 
     # postprocess
-    postProcess = DetPostProcess(score_threshold=0.01, nms_threshold=0.45)
+    postProcess = YoloDetPostProcess(score_threshold=0.01, nms_threshold=0.45)
     results = postProcess(output[0].numpy(), output[1].numpy())
     return results
 
@@ -270,23 +327,20 @@ def paddle_predict(model_path, imgs_path, pred_config):
 if __name__ == '__main__':
     FLAGS = parse_args()
     imgs_path = FLAGS.image_path
-    pred_config = PredictConfig(FLAGS.model_path)
 
     if FLAGS.use_paddle_predict:
-        paddle_result = paddle_predict(FLAGS.model_path, imgs_path, pred_config)
+        paddle_result = paddle_predict(FLAGS.model_path, imgs_path)
         save_imgs(
             paddle_result,
             imgs_path,
-            labels=pred_config.labels,
             output_dir=FLAGS.output_dir,
             threshold=FLAGS.threshold,
             prefix="paddle")
     else:
-        onnx_result = onnx_predict(FLAGS.model_path, imgs_path, pred_config)
+        onnx_result = onnx_predict(FLAGS.model_path, imgs_path)
         save_imgs(
             onnx_result,
             imgs_path,
-            labels=pred_config.labels,
             output_dir=FLAGS.output_dir,
             threshold=FLAGS.threshold,
             prefix="onnx")
