@@ -21,15 +21,6 @@ namespace paddle2onnx {
 REGISTER_MAPPER(slice, SliceMapper)
 
 int32_t SliceMapper::GetMinOpset(bool verbose) {
-  std::string stride_node;
-  std::vector<int64_t> strides;
-  bool strides_is_tensor =
-      GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &stride_node, true);
-  if (!strides_is_tensor && strides.empty()) {
-    strides.resize(axes_.size(), 1);
-  }
-
   std::string starts_node;
   std::vector<int64_t> starts;
   bool starts_is_tensor =
@@ -40,7 +31,7 @@ int32_t SliceMapper::GetMinOpset(bool verbose) {
   std::vector<int64_t> ends;
   bool ends_is_tensor = GetNodeAttrValue("ends", "EndsTensor", "EndsTensorList",
                                          &ends, &ends_node, true);
-  if (strides_is_tensor || starts_is_tensor || ends_is_tensor) {
+  if (starts_is_tensor || ends_is_tensor) {
     return 10;
   }
   return 7;
@@ -87,7 +78,7 @@ bool SliceMapper::GetNodeAttrValue(
       if (found_value) {
         value.get(val);
       }
-      return false;
+      return !found_value;
     } else {
       *val_tensor = input_tensor_info[0].name;
       return true;
@@ -123,15 +114,6 @@ void SliceMapper::Opset7(OnnxHelper *helper) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
-  std::string stride_node;
-  std::vector<int64_t> strides;
-  bool strides_is_tensor =
-      GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &stride_node, true, helper);
-  if (!strides_is_tensor && strides.empty()) {
-    strides.resize(axes_.size(), 1);
-  }
-
   std::string starts_node;
   std::vector<int64_t> starts;
   bool starts_is_tensor =
@@ -159,16 +141,8 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
-  std::string strides_node;
-  std::vector<int64_t> strides;
-  bool strides_is_tensor =
-      GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &strides_node, false, helper);
-  if (!strides_is_tensor && strides.empty()) {
-    strides.resize(axes_.size(), 1);
-  }
-  strides_node =
-      helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, strides)
+  std::string strides_node =
+      helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, strides_)
           ->output(0);
 
   std::string starts_node;
@@ -191,8 +165,6 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
                     ->output(0);
   }
 
-  std::string steps_node = strides_node;
-
   std::string axes_node =
       helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes_)
           ->output(0);
@@ -200,11 +172,11 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
   std::vector<int64_t> decrease_axis = DecreaseAxis();
   if (decrease_axis.empty()) {
     helper->MakeNode("Slice", {input_info[0].name, starts_node, ends_node,
-                               axes_node, steps_node},
+                               axes_node, strides_node},
                      {output_info[0].name});
   } else {
     auto node = helper->MakeNode("Slice", {input_info[0].name, starts_node,
-                                           ends_node, axes_node, steps_node});
+                                           ends_node, axes_node, strides_node});
     helper->Squeeze(node->output(0), output_info[0].name, decrease_axis);
   }
 }

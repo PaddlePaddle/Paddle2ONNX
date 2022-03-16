@@ -25,6 +25,7 @@ class SliceMapper : public Mapper {
       : Mapper(p, block_id, op_id) {
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     parser_->GetOpAttr(op, "axes", &axes_);
+    strides_.resize(axes_.size(), 1);
   }
 
   int32_t GetMinOpset(bool verbose = false);
@@ -33,6 +34,7 @@ class SliceMapper : public Mapper {
 
  private:
   std::vector<int64_t> axes_;
+  std::vector<int64_t> strides_;
   bool GetNodeAttrValue(const std::string& attr_name,
                         const std::string& attr_tensor_name,
                         const std::string& attr_tensor_list_name,
