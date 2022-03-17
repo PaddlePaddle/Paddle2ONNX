@@ -33,6 +33,11 @@ class GenerateProposals(CustomPaddleOp):
         self.nms_thresh = node.attr('nms_thresh')
         self.post_nms_topN = node.attr('post_nms_topN')
         self.pre_nms_topN = node.attr('pre_nms_topN')
+        self.type = node.type
+        if self.type == 'generate_proposals_v2':
+            self.pixel_offset = node.attr('pixel_offset')
+        else:
+            self.pixel_offset = True
 
     def filter_boxes(self, boxes, im_w, im_h, im_s, min_size):
         min_size = max(min_size, 1.0)
@@ -57,21 +62,49 @@ class GenerateProposals(CustomPaddleOp):
 
         return valid_inds
 
-    def clip_tiled_boxes(self, im_w, im_h, input_boxes):
+    def filter_boxes_v2(self, boxes, im_w, im_h, min_size, pixel_offset=True):
+        min_size = max(min_size, 1.0)
+        xmin, ymin, xmax, ymax = paddle.tensor.split(
+            boxes, axis=1, num_or_sections=4)
+
+        offset = 1 if pixel_offset else 0
+        ws = (xmax - xmin) + offset
+        hs = (ymax - ymin) + offset
+
+        min_size = np.asarray([min_size], dtype='float32')
+        min_size = paddle.assign(min_size)
+        valid_flag_ws = paddle.greater_equal(ws, min_size)
+        valid_flag_hs = paddle.greater_equal(hs, min_size)
+        valid_flag = paddle.logical_and(valid_flag_ws, valid_flag_hs)
+        if pixel_offset:
+            x_ctr = xmin + ws / 2
+            y_ctr = ymin + hs / 2
+            valid_flag_x = paddle.less_equal(x_ctr, im_w)
+            valid_flag_y = paddle.less_equal(y_ctr, im_h)
+            valid_flag = paddle.logical_and(valid_flag, valid_flag_x)
+            valid_flag = paddle.logical_and(valid_flag, valid_flag_y)
+
+        valid_flag = paddle.squeeze(valid_flag, axis=1)
+        valid_inds = paddle.nonzero(valid_flag)
+        return valid_inds
+
+    def clip_tiled_boxes(self, im_w, im_h, input_boxes, pixel_offset=True):
+        offset = 1 if pixel_offset else 0
         xmin, ymin, xmax, ymax = paddle.tensor.split(
             input_boxes, axis=1, num_or_sections=4)
-        xmin = paddle.clip(xmin, max=im_w - 1, min=0)
-        ymin = paddle.clip(ymin, max=im_h - 1, min=0)
-        xmax = paddle.clip(xmax, max=im_w - 1, min=0)
-        ymax = paddle.clip(ymax, max=im_h - 1, min=0)
+        xmin = paddle.clip(xmin, max=im_w - offset, min=0)
+        ymin = paddle.clip(ymin, max=im_h - offset, min=0)
+        xmax = paddle.clip(xmax, max=im_w - offset, min=0)
+        ymax = paddle.clip(ymax, max=im_h - offset, min=0)
         input_boxes = paddle.concat([xmin, ymin, xmax, ymax], axis=1)
         return input_boxes
 
-    def box_encode(self, anchors, bbox_deltas, variances):
+    def box_encode(self, anchors, bbox_deltas, variances, pixel_offset=True):
+        offset = 1 if pixel_offset else 0
         anchor_xmin, anchor_ymin, anchor_xmax, anchor_ymax = paddle.tensor.split(
             anchors, axis=1, num_or_sections=4)
-        anchor_width = anchor_xmax - anchor_xmin + 1.0
-        anchor_height = anchor_ymax - anchor_ymin + 1.0
+        anchor_width = anchor_xmax - anchor_xmin + offset
+        anchor_height = anchor_ymax - anchor_ymin + offset
         anchor_center_x = anchor_xmin + 0.5 * anchor_width
         anchor_center_y = anchor_ymin + 0.5 * anchor_height
         var_center_x, var_center_y, var_width, var_height = paddle.tensor.split(
@@ -91,8 +124,8 @@ class GenerateProposals(CustomPaddleOp):
 
         proposal_xmin = bbox_center_x - bbox_width / 2
         proposal_ymin = bbox_center_y - bbox_height / 2
-        proposal_xmax = bbox_center_x + bbox_width / 2 - 1
-        proposal_ymax = bbox_center_y + bbox_height / 2 - 1
+        proposal_xmax = bbox_center_x + bbox_width / 2 - offset
+        proposal_ymax = bbox_center_y + bbox_height / 2 - offset
         proposal = paddle.concat(
             [proposal_xmin, proposal_ymin, proposal_xmax, proposal_ymax],
             axis=1)
@@ -111,22 +144,30 @@ class GenerateProposals(CustomPaddleOp):
         anchors = paddle.gather(anchors, index, axis=0)
         variances = paddle.gather(variances, index, axis=0)
 
-        proposal = self.box_encode(anchors, bbox_deltas, variances)
+        proposal = self.box_encode(anchors, bbox_deltas, variances,
+                                   self.pixel_offset)
+        if self.type == "generate_proposals_v2":
+            im_h, im_w = paddle.tensor.split(im_info, axis=1, num_or_sections=2)
+        else:
+            im_h, im_w, im_s = paddle.tensor.split(
+                im_info, axis=1, num_or_sections=3)
+        proposal = self.clip_tiled_boxes(im_w, im_h, proposal,
+                                         self.pixel_offset)
 
-        im_h, im_w, im_s = paddle.tensor.split(
-            im_info, axis=1, num_or_sections=3)
-        proposal = self.clip_tiled_boxes(im_w, im_h, proposal)
-
-        keep = self.filter_boxes(proposal, im_w, im_h, im_s, self.min_size)
+        if self.type == "generate_proposals_v2":
+            keep = self.filter_boxes_v2(proposal, im_w, im_h, self.min_size,
+                                        self.pixel_offset)
+        else:
+            keep = self.filter_boxes(proposal, im_w, im_h, im_s, self.min_size)
 
         tail_proposal = paddle.zeros(shape=[1, 4], dtype=proposal.dtype)
         proposal_num = paddle.shape(proposal)[0]
         tail_keep = paddle.reshape(proposal_num, shape=[1, 1])
         tail_keep = paddle.cast(tail_keep, dtype=keep.dtype)
         tail_scores = paddle.zeros(shape=[1, 1], dtype=scores.dtype)
-        proposal = paddle.concat([proposal, tail_proposal])
-        keep = paddle.concat([keep, tail_keep])
-        scores = paddle.concat([scores, tail_scores])
+        # proposal = paddle.concat([proposal, tail_proposal])
+        # keep = paddle.concat([keep, tail_keep])
+        # scores = paddle.concat([scores, tail_scores])
 
         bbox_sel = paddle.gather(proposal, keep, axis=0)
         scores_sel = paddle.gather(scores, keep, axis=0)
@@ -150,7 +191,10 @@ class GenerateProposals(CustomPaddleOp):
     def forward(self):
         anchors = self.input('Anchors', 0)
         bboxdeltas = self.input('BboxDeltas', 0)
-        iminfo = self.input('ImInfo', 0)
+        if self.type == 'generate_proposals_v2':
+            iminfo = self.input('ImShape', 0)
+        else:
+            iminfo = self.input('ImInfo', 0)
         scores = self.input('Scores', 0)
         variances = self.input('Variances', 0)
 
@@ -163,21 +207,12 @@ class GenerateProposals(CustomPaddleOp):
 
         new_scores, proposals = self.proposal_for_single_sample(
             anchors, bboxdeltas, iminfo, scores, variances)
+        # if self.type == "generate_proposals_v2":
+        #     rois_num = paddle.shape(new_scores)
+        #     # n, _ = paddle.split(im_shape, num_or_sections=2)
+        #     return {'RpnRoiProbs': [new_scores], 'RpnRois': [proposals], 'RpnRoisNum': [rois_num]}
         return {'RpnRoiProbs': [new_scores], 'RpnRois': [proposals]}
 
-@op_mapper('generate_proposals')
-class Generateproposals:
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        node = graph.make_node(
-            'generate_proposals',
-            inputs=node.input('Anchors')+node.input('BboxDeltas')+node.input('ImInfo')+node.input('Scores')+node.input('Variances'),
-            outputs=node.output('RpnRoiProbs') + node.output('RpnRois'),
-            eta = node.attr('eta'),
-            min_size = node.attr('min_size'),
-            nms_thresh = node.attr('nms_thresh'),
-            post_nms_topN = node.attr('post_nms_topN'),
-            pre_nms_topN = node.attr('pre_nms_topN'),
-            domain = 'custom')
-            
+
 register_custom_paddle_op('generate_proposals', GenerateProposals)
+register_custom_paddle_op('generate_proposals_v2', GenerateProposals)
