@@ -27,6 +27,127 @@ from onnx import helper
 import onnx
 
 
+@op_mapper('quantize_linear')
+class Quantize_linear():
+    support_opset_version_range = (13, 15)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        scale_key = node.input('Scale', 0)
+        weight_scale = None
+        if scale_key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[scale_key]
+            weight_scale = param['data']
+        weight_scale = weight_scale / 127
+
+        zero_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT8, value=[0])
+
+        scale_numpy = weight_scale.squeeze().tolist()
+        if not isinstance(scale_numpy, list):
+            scale_numpy = [scale_numpy]
+        scale_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+
+        quantize_node = graph.make_node(
+            'QuantizeLinear',
+            inputs=[node.input('X', 0), scale_node, zero_node],
+            outputs=node.output('Y'),
+            axis=node.attr("quant_axis"))
+
+        # input_node_name = node.input('X', 0)
+        # if input_node_name in graph.changed_dict.keys():
+        #     return
+
+        # another_nodes = graph.get_another_node_by_input(
+        #     input_node_name, copy_node=False)
+        # if len(another_nodes) == 0:
+        #     return
+        # index = 0
+        # all_q_dq = list()
+        # for another_node in another_nodes:
+        #     zero_node, z_node = graph.make_node(
+        #         'Constant', dtype=dtypes.ONNX.INT8, value=[0], return_node=True)
+        #     scale_node, s_node = graph.make_node(
+        #         'Constant',
+        #         dtype=dtypes.ONNX.FLOAT,
+        #         value=[float(InScale[0]) / 127.0],
+        #         return_node=True)
+        #     changed_output_name = output_name + ".paddleadd" + str(index)
+        #     index = index + 1
+        #     quantize_node, q_node = graph.make_node(
+        #         'QuantizeLinear',
+        #         inputs=[input_node_name, scale_node, zero_node],
+        #         return_node=True)
+        #     dequantize_node, dq_node = graph.make_node(
+        #         'DequantizeLinear',
+        #         inputs=[quantize_node, scale_node, zero_node],
+        #         outputs=changed_output_name,
+        #         return_node=True)
+        #     all_q_dq.append([
+        #         z_node.layer_name, s_node.layer_name, q_node.layer_name,
+        #         dq_node.layer_name
+        #     ])
+
+        # graph.changed_dict[input_node_name] = dict()
+        # graph.changed_dict[input_node_name]["name"] = output_name
+        # graph.changed_dict[input_node_name]["total"] = index
+        # graph.changed_dict[input_node_name]["qdq"] = all_q_dq
+
+
+@op_mapper('dequantize_linear')
+class Dequantize_linear():
+    support_opset_version_range = (13, 15)
+
+    @classmethod
+    def opset_13(cls, graph, node, **kw):
+        scale_key = node.input('Scale', 0)
+        weight_scale = None
+        if scale_key in graph.origin_parameters.keys():
+            param = graph.origin_parameters[scale_key]
+            weight_scale = param['data']
+        weight_scale = weight_scale / 127
+
+        scale_numpy = weight_scale.squeeze().tolist()
+        if not isinstance(scale_numpy, list):
+            scale_numpy = [scale_numpy]
+        scale_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+
+        zero_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT8, value=[0] * len(scale_numpy))
+
+        key = node.input('X', 0)
+        weight = None
+        update_param = None
+        if key in graph.origin_parameters.keys():
+            update_param = graph.origin_parameters[key]
+            weight = update_param['data']
+        quantize_node = node.input('X', 0)
+        if weight is not None:
+            print("weight shape:", weight.shape)
+            print("weight_scale shape:", weight_scale.shape)
+            if len(weight.shape) == 4:
+                new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
+                new_weight = new_weight.transpose(3, 0, 1, 2)
+            else:
+                new_weight = weight * weight_scale
+            update_param['data'] = new_weight
+            graph.update_parameters(key, update_param)
+
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[node.input('X', 0), scale_node, zero_node],
+                axis=node.attr("quant_axis"))
+
+        output_name = node.output('Y', 0)
+        dequantize_node = graph.make_node(
+            'DequantizeLinear',
+            inputs=[quantize_node, scale_node, zero_node],
+            outputs=[output_name],
+            axis=node.attr("quant_axis"))
+
+
 @op_mapper('fake_quantize_dequantize_moving_average_abs_max')
 class Fake_quantize_dequantize_moving_average_abs_max():
     support_opset_version_range = (10, 13)
