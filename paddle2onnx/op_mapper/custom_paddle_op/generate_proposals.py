@@ -207,11 +207,15 @@ class GenerateProposals(CustomPaddleOp):
 
         new_scores, proposals = self.proposal_for_single_sample(
             anchors, bboxdeltas, iminfo, scores, variances)
-        # if self.type == "generate_proposals_v2":
-        #     rois_num = paddle.shape(new_scores)
-        #     # n, _ = paddle.split(im_shape, num_or_sections=2)
-        #     return {'RpnRoiProbs': [new_scores], 'RpnRois': [proposals], 'RpnRoisNum': [rois_num]}
-        return {'RpnRoiProbs': [new_scores], 'RpnRois': [proposals]}
+        if len(self.node.outputs) == 3:
+            rois_num = paddle.shape(new_scores)[0]
+            return {
+                'RpnRoiProbs': [new_scores],
+                'RpnRois': [proposals],
+                'RpnRoisNum': [rois_num]
+            }
+        else:
+            return {'RpnRoiProbs': [new_scores], 'RpnRois': [proposals]}
 
 
 register_custom_paddle_op('generate_proposals', GenerateProposals)

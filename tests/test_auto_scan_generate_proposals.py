@@ -131,6 +131,7 @@ def test_generate_proposals():
         nms_thresh = 0.7
         min_size = 3.0
         eta = 1.
+        return_rois_num = False
         out = fluid.layers.generate_proposals(
             scores,
             bbox_deltas,
@@ -142,7 +143,7 @@ def test_generate_proposals():
             nms_thresh=nms_thresh,
             min_size=min_size,
             eta=eta,
-            return_rois_num=False)
+            return_rois_num=return_rois_num)
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
         result = exe.run(feed={

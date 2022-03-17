@@ -168,8 +168,7 @@ def generate_proposals_v2(scores,
                 'nms_thresh': nms_thresh,
                 'min_size': min_size,
                 'eta': eta,
-                'pixel_offset': pixel_offset,
-                'return_rois_num': return_rois_num
+                'pixel_offset': pixel_offset
             },
             outputs=outputs)
         rpn_rois.stop_gradient = True
@@ -282,6 +281,7 @@ def test_generate_proposals_v2():
         min_size = 3.0
         eta = 1.
         pixel_offset = False
+        return_rois_num = False
         out = generate_proposals_v2(
             scores,
             bbox_deltas,
@@ -294,7 +294,7 @@ def test_generate_proposals_v2():
             min_size=min_size,
             eta=eta,
             pixel_offset=pixel_offset,
-            return_rois_num=False)
+            return_rois_num=return_rois_num)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
