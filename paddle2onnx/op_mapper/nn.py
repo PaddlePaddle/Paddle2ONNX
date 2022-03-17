@@ -865,7 +865,7 @@ class RoiAlign():
 
 @op_mapper('rnn')
 class RNN():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def make_param_inputs(cls, graph, node, layer, hidden_size, num_layers):
@@ -900,8 +900,14 @@ class RNN():
         param_list = layer_weight_list + layer_bias_list
         param_list_len = len(param_list)
         for i in range(param_list_len):
-            weight = graph.make_node(
-                'Unsqueeze', inputs=[param_list[i]], axes=[0])
+            if graph.opset_version < 13:
+                weight = graph.make_node(
+                    'Unsqueeze', inputs=[param_list[i]], axes=[0])
+            else:
+                axes = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                weight = graph.make_node(
+                    'Unsqueeze', inputs=[param_list[i], axes])
             unsqueeze_weights.append(weight)
 
         input_weights = unsqueeze_weights[0:param_list_len // 2:2]
@@ -943,7 +949,7 @@ class RNN():
             return [init_h]
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         mode = node.attr('mode')
         hidden_size = node.attr('hidden_size')
         num_layers = node.attr('num_layers')

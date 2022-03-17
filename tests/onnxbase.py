@@ -115,6 +115,7 @@ class APIOnnx(object):
                  input_spec_shape=[],
                  delta=1e-5,
                  rtol=1e-5,
+                 use_gpu=True,
                  **sup_params):
         self.ops = ops
         if isinstance(self.ops, str):
@@ -123,7 +124,7 @@ class APIOnnx(object):
         np.random.seed(self.seed)
         paddle.seed(self.seed)
         self.func = func
-        if paddle.device.is_compiled_with_cuda() is True:
+        if use_gpu and paddle.device.is_compiled_with_cuda() is True:
             self.places = ['gpu']
         else:
             self.places = ['cpu']
@@ -178,12 +179,6 @@ class APIOnnx(object):
                         shape=in_data.shape, dtype=in_data.dtype, name=str(i)))
                 self.input_feed[str(i)] = in_data.numpy()
                 i += 1
-
-    def set_device_mode(self, is_gpu=True):
-        if paddle.device.is_compiled_with_cuda() is True and is_gpu:
-            self.places = ['gpu']
-        else:
-            self.places = ['cpu']
 
     def set_input_spec(self):
         if len(self.input_spec_shape) == 0:

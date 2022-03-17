@@ -190,8 +190,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
         for i, model in enumerate(models):
             model.eval()
             obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
-                          input_specs, delta, rtol)
-            obj.set_device_mode(use_gpu)
+                          input_specs, delta, rtol, use_gpu)
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
