@@ -216,9 +216,8 @@ class BoxCoder():
         ]
         for (input_name, output_name) in zip(outputs_split_targebox,
                                              outputs_squeeze_targebox):
-            tmp_node = graph.make_node(
-                'Squeeze', inputs=[input_name], outputs=[output_name],
-                axes=[2])
+            tmp_node = mapper_helper.squeeze_helper(graph, input_name, [2],
+                                                    [output_name])
 
         output_shape_step1 = list(t_size)[:-1]
 

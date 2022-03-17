@@ -134,32 +134,8 @@ class Unstack():
             output_y = [output_y]
 
         for i in range(len(output_y)):
-            graph.make_node(
-                'Squeeze',
-                inputs=[output_y[i]],
-                axes=[axis],
-                outputs=[node.output('Y', i)])
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        axis = node.attr('axis')
-        ndim = node.block.vars[node.input('X')[0]].ndim
-        axis = axis + ndim if axis < 0 else axis
-        output_y = graph.make_node(
-            'Split',
-            inputs=node.input('X'),
-            axis=axis,
-            outputs=len(node.output('Y')))
-        if isinstance(output_y, six.string_types):
-            output_y = [output_y]
-        axes_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [axis]})
-        for i in range(len(output_y)):
-            graph.make_node(
-                'Squeeze',
-                inputs=[output_y[i], axes_node],
-                outputs=[node.output('Y', i)])
+            mapper_helper.squeeze_helper(graph, output_y[i], [axis],
+                                         node.output('Y', i))
 
 
 @op_mapper('expand_as_v2')
@@ -292,39 +268,12 @@ class Split():
             if input_shape[axis] != -1 and len(section_index) == 1:
                 sections[section_index[0]] = input_shape[axis] - sum(
                     sections) - 1
-            graph.make_node(
-                'Split',
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
+            mapper_helper.split_helper(
+                graph,
+                node.input('X'),
                 axis=axis,
-                split=sections)
-        else:
-            graph.make_node(
-                'Split',
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                axis=axis)
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        sections = node.attr('sections')
-        axis = cls.get_axis(graph, node)
-        if len(sections) > 0:
-            input_shape = node.block.vars[node.input('X')[0]].shape
-            input_index = [i for i, val in enumerate(input_shape) if val == -1]
-            section_index = [i for i, val in enumerate(sections) if val == -1]
-            if len(input_index) == 0 and len(section_index) == 1:
-                sections[section_index[0]] = input_shape[axis] - sum(
-                    sections) - 1
-            split_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': sections})
-            graph.make_node(
-                'Split',
-                inputs=[node.input('X')[0], split_node],
-                outputs=node.output('Out'),
-                axis=axis)
+                split=sections,
+                outputs=node.output('Out'))
         else:
             graph.make_node(
                 'Split',
@@ -804,8 +753,8 @@ class Embedding():
     def opset_11(cls, graph, node, **kw):
         ids = node.input('Ids', 0)
         if node.type == 'lookup_table' and node.input_shape('Ids', 0)[-1] == 1:
-            ids = graph.make_node(
-                'Squeeze', inputs=node.input('Ids', 0), axes=[-1])
+            ids = mapper_helper.squeeze_helper(graph,
+                                               node.input('Ids', 0), [-1])
 
         padding_idx = node.attr('padding_idx')
         input_shape = node.input_shape('W', 0)
@@ -1057,35 +1006,9 @@ class Squeeze():
             axes = cls.compute_axes(graph, node)
             if len(axes) > 0:
                 axes.sort()
-                graph.make_node(
-                    'Squeeze',
-                    inputs=[node.input('X', 0)],
-                    outputs=node.output('Out'),
-                    axes=axes)
-            else:
-                graph.make_node(
-                    'Squeeze',
-                    inputs=[node.input('X', 0)],
-                    outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        shape = node.input_shape('X', 0)
-        ret = [i for i, val in enumerate(shape) if val > 1]
-        if len(ret) == len(shape):
-            graph.make_node(
-                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
-        else:
-            axes = cls.compute_axes(graph, node)
-            if len(axes) > 0:
-                axes_node = graph.make_node(
-                    'Constant',
-                    attrs={'dtype': dtypes.ONNX.INT64,
-                           'value': axes})
-                graph.make_node(
-                    'Squeeze',
-                    inputs=[node.input('X', 0)] + [axes_node],
-                    outputs=node.output('Out'))
+                mapper_helper.squeeze_helper(graph,
+                                             node.input('X', 0), axes,
+                                             node.output('Out'))
             else:
                 graph.make_node(
                     'Squeeze',

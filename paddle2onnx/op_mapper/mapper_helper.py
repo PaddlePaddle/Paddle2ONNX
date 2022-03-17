@@ -28,6 +28,30 @@ def is_static_shape(shape):
         )
 
 
+def split_helper(graph, input, axis=0, split=None, outputs=None):
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if split is not None and not isinstance(split, list):
+        split = [split]
+    if split is None:
+        split_node = graph.make_node(
+            "Split", inputs=inputs, outputs=outputs, axis=axis)
+        return split_node
+    if graph.opset_version < 13:
+        split_node = graph.make_node(
+            "Split", inputs=inputs, outputs=outputs, axis=axis, split=split)
+        return split_node
+    else:
+        split = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=split)
+        inputs = inputs + [split]
+        split_node = graph.make_node(
+            "Split", inputs=inputs, axis=axis, outputs=outputs)
+        return split_node
+
+
 def slice_helper(graph,
                  input,
                  axes,
