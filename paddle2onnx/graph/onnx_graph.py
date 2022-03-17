@@ -76,7 +76,8 @@ class ONNXGraph(Graph):
                  opset_version,
                  operator_export_type="ONNX",
                  block=None,
-                 auto_update_opset=True):
+                 auto_update_opset=True,
+                 quantize_model_mode="float"):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
@@ -86,7 +87,10 @@ class ONNXGraph(Graph):
         self.name_dict = dict()
         self.changed_dict = dict()
         self.sort_name_dict = dict()
-        self.static_quantize_model = True
+        self.quantize_model_mode = quantize_model_mode
+        if self.quantize_model_mode in ["static", "dynamic"]:
+            warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
+            logging.warning(warning_info)
         if auto_update_opset:
             self.update_opset_version()
 
@@ -448,12 +452,14 @@ class ONNXGraph(Graph):
               opset_version,
               operator_export_type="ONNX",
               verbose=False,
-              auto_update_opset=True):
+              auto_update_opset=True,
+              quantize_model_mode="float"):
         onnx_graph = ONNXGraph(
             paddle_graph,
             opset_version=opset_version,
             operator_export_type=operator_export_type,
-            auto_update_opset=auto_update_opset)
+            auto_update_opset=auto_update_opset,
+            quantize_model_mode=quantize_model_mode)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)

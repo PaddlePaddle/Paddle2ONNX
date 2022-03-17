@@ -32,7 +32,7 @@ class Conv():
     def opset_1(cls, graph, node, **kw):
         filter_node = node.input('Filter', 0)
         output_name = node.output('Output', 0)
-        if graph.static_quantize_model:
+        if graph.quantize_model_mode in ["static"]:
             weight_key = node.input('Filter', 0)
             weight = None
             update_param = None

@@ -266,7 +266,7 @@ class Fake_quantize_range_abs_max():
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
 
-        if graph.static_quantize_model:
+        if graph.quantize_model_mode in ["static"]:
             quantize_node = graph.make_node(
                 'QuantizeLinear',
                 inputs=[input_node_name, scale_node, zero_node])
@@ -299,7 +299,7 @@ class Fake_quantize_range_abs_max():
                 return_node=True)
             changed_output_name = output_name + ".paddleadd" + str(index)
             index = index + 1
-            if graph.static_quantize_model:
+            if graph.quantize_model_mode in ["static"]:
                 quantize_node, q_node = graph.make_node(
                     'QuantizeLinear',
                     inputs=[input_node_name, scale_node, zero_node],
@@ -422,7 +422,6 @@ class Fake_dequantize_max_abs():
 
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
-        # output_name = node.output('Out', 0)
 
         graph.make_node(
             'DequantizeLinear',
@@ -515,7 +514,7 @@ class Fake_channel_wise_dequantize_max_abs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        if graph.static_quantize_model:
+        if graph.quantize_model_mode in ["static"]:
             return
         paddle.disable_static()
         key = node.input('Scales', 0)
