@@ -18,7 +18,6 @@ import time
 import sys
 import numpy as np
 import cv2
-from rknn.api import RKNN
 
 
 class ClassificationInfer():
@@ -38,7 +37,21 @@ class ClassificationInfer():
             model_path = os.path.join(self.config.model_dir, "inference")
             self.runner = paddle.jit.load(model_path)
 
-        if self.config.backend_type == "rk":
+        if self.config.backend_type == "rk_hardware":
+            from rknnlite.api import RKNNLite
+            self.runner = RKNNLite()
+            # load model
+            ret = self.runner.load_rknn(self.config.model_file)
+            if ret != 0:
+                print('Load RKNN model failed')
+            # init runtime environment
+            print('--> Init runtime environment')
+            ret = self.runner.init_runtime(core_mask=RKNNLite.NPU_CORE_AUTO)
+            if ret != 0:
+                print('Init runtime environment failed')
+
+        if self.config.backend_type == "rk_pc":
+            from rknn.api import RKNN
             self.runner = RKNN(verbose=True)
             print('--> config model')
             self.runner.config()
@@ -121,7 +134,10 @@ class ClassificationInfer():
             data = np.transpose(data, (0, 3, 1, 2))
             self.inputs = dict()
             self.inputs[self.runner.get_inputs()[0].name] = data
-        if self.config.backend_type == "rk":
+        if self.config.backend_type == "rk_pc":
+            self.inputs = list()
+            self.inputs = [data]
+        if self.config.backend_type == "rk_hardware":
             self.inputs = list()
             self.inputs = [data]
         if self.config.backend_type == "paddle":
@@ -148,9 +164,11 @@ class ClassificationInfer():
 
     def predict(self):
         self.set_input()
+        if self.config.backend_type == "rk_hardware":
+            self.infer_result = self.runner.inference(inputs=self.inputs)
         if self.config.backend_type == "onnxruntime":
             self.infer_result = self.runner.run(None, self.inputs)
-        if self.config.backend_type == "rk":
+        if self.config.backend_type == "rk_pc":
             self.infer_result = self.runner.inference(inputs=self.inputs)
         if self.config.backend_type == "paddle":
             import paddle
@@ -161,5 +179,5 @@ class ClassificationInfer():
         return self.outputs
 
     def release(self):
-        if self.config.backend_type == "rk":
+        if self.config.backend_type in ["rk_pc", "rk_hardware"]:
             self.runner.release()
