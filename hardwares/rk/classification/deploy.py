@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument('--model_file', type=str, default="model.onnx")
     parser.add_argument(
         '--model_dir', type=str, default="inference", help='paddle_model_dir')
-    parser.add_argument('--save_file', type=str, default="model.trt")
+    parser.add_argument('--save_file', type=str, default="model.rknn")
     parser.add_argument('--image_path', type=str, help="image filename")
     parser.add_argument('--crop_size', default=224, help='crop_szie')
     parser.add_argument('--resize_size', default=256, help='resize_size')
@@ -41,8 +41,8 @@ def parse_args():
     parser.add_argument(
         '--backend_type',
         type=str,
-        choices=["rk", "onnxruntime", "paddle"],
-        default="rk")
+        choices=["rk_hardware", "rk_pc", "onnxruntime", "paddle"],
+        default="rk_pc")
     args = parser.parse_args()
     return args
 
@@ -72,7 +72,7 @@ def main():
     if args.diff_test:
         print(">>> Test Diff")
         infer_runner = ClassificationInfer()
-        args.backend_type = "rk"
+        args.backend_type = "rk_pc"
         infer_runner.set_runner(args)
         rk_output = infer_runner.predict()
         infer_runner.release()
@@ -82,12 +82,19 @@ def main():
         infer_runner.predict()
         return
 
-    if args.backend_type == "rk":
-        print(">>> RK Infer")
-        rk_runner = ClassificationInfer()
-        rk_runner.set_runner(args)
-        rk_output = rk_runner.predict()
-        rk_runner.release()
+    if args.backend_type == "rk_hardware":
+        print(">>> RK Hardware Infer")
+        rk_hardware_runner = ClassificationInfer()
+        rk_hardware_runner.set_runner(args)
+        rk_hardware_output = rk_hardware_runner.predict()
+        rk_hardware_runner.release()
+
+    if args.backend_type == "rk_pc":
+        print(">>> RK PC Infer")
+        rk_pc_runner = ClassificationInfer()
+        rk_pc_runner.set_runner(args)
+        rk_pc_output = rk_pc_runner.predict()
+        rk_pc_runner.release()
 
     if args.backend_type == "onnxruntime":
         print(">>> ONNXRuntime Infer")
