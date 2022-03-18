@@ -66,6 +66,7 @@ If you need to configure the input shape, use the following command:
 |--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
 |--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|
 |--enable_paddle_fallback| **[Optional]**  Whether custom op is exported using paddle_fallback mode. Default value is False|
+|--enable_auto_update_opset| **[Optional]**  Whether enable auto_update_opset. Default value is True|
 |--input_shape_dict| **[Optional]**  Configure the input shape, the default is empty|
 |--version |**[Optional]** check the version of paddle2onnx |
 |--output_names| **[Optional]**  Set the output name of the model, the default is empty, support configuration in list form，for example：--output_names "['my_output1','my_output2']"，or in dict form，for example："{'paddle_output1':'my_output1', 'paddle_output2':'my_output2'}"|

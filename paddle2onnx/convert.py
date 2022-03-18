@@ -97,7 +97,7 @@ def program2onnx(program,
             opset_version,
             enable_onnx_checker,
             operator_export_type,
-            auto_update_opset,
+            auto_update_opset=auto_update_opset,
             output_names=output_names)
     else:
         raise TypeError(
