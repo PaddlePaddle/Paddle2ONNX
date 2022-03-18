@@ -1366,12 +1366,14 @@ class Unsqueeze():
             axes = node.attr('axes')
         else:
             axes_node = node.input('AxesTensor')[0]
+            if axes_node is not None and graph.opset_version > 12 and return_node:
+                return axes_node
             try:
                 axes = mapper_helper.get_value_from_parameters(graph, axes_node)
             except Exception as e:
                 raise Exception(
-                    "Currently does not support the axes parameter as input tensor"
-                    + str(e))
+                    "Currently does not support the axes parameter as input tensor in onnx(opset<13), "
+                    "Try converting with opset_version >=13 " + str(e))
         # axes is list of non-negative integers
         axes = [
             axis + ndim + i + 1 if axis < 0 else axis
