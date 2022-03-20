@@ -15,6 +15,7 @@
 cases=`find . -name "test*.py" | sort`
 bug=0
 export PY_CMD=$1
+rm -rf result.txt
 
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}

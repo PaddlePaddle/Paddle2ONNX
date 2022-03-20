@@ -22,13 +22,19 @@ namespace paddle2onnx {
 class SplitMapper : public Mapper {
  public:
   SplitMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
-      : Mapper(p, block_id, op_id) {}
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "axis", &axis_);
+    parser_->GetOpAttr(op, "sections", &sections_);
+  }
 
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
+  void Opset13(OnnxHelper* helper);
 
  private:
-  std::vector<int64_t> GetAxes();
+  int64_t axis_;
+  std::vector<int64_t> sections_;
 };
 
 }  // namespace paddle2onnx

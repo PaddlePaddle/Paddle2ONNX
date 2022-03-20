@@ -19,20 +19,6 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(squeeze2, Squeeze2Mapper)
 
-std::vector<int64_t> Squeeze2Mapper::ComputeAxes() {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<int64_t> axes;
-  if (parser_->OpHasAttr(op, "axes")) {
-    parser_->GetOpAttr(op, "axes", &axes);
-    for (auto& i : axes) {
-      if (i < 0) i = i + input_info[0].Rank();
-    }
-  }
-  return axes;
-}
-
 void Squeeze2Mapper::Opset7(OnnxHelper* helper) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_info =
@@ -45,10 +31,15 @@ void Squeeze2Mapper::Opset7(OnnxHelper* helper) {
   for (auto i : input_info[0].shape) {
     if (i > 1) ret.push_back(i);
   }
-  if (ret.size() == input_info[0].shape.size()) {
+  if (ret.size() == input_info[0].Rank()) {
     helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    auto axes = ComputeAxes();
+    std::vector<int64_t> axes(axes_.begin(), axes_.end());
+    for (size_t i = 0; i < axes.size(); ++i) {
+      if (axes[i] < 0) {
+        axes[i] += input_info[0].Rank();
+      }
+    }
     if (axes.size() > 0) {
       std::sort(axes.begin(), axes.end());
       helper->Squeeze(input_info[0].name, output_info[0].name, axes);

@@ -13,102 +13,142 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/split.h"
-#include <string>
-#include <vector>
 
 namespace paddle2onnx {
 REGISTER_MAPPER(split, SplitMapper)
 
-std::vector<int64_t> SplitMapper::GetAxes() {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  bool has_axis_tensor_input =
-      parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor");
-  std::vector<int64_t> axis;
-  if (has_axis_tensor_input) {
-    std::vector<TensorInfo> axes_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
-    std::vector<int64_t> index = parser_->GetBlockOpIdx(axes_info[0].name);
-    Weight value;
-    bool found_value = parser_->GetValueFromTensor(index[0], index[1], &value);
-    if (found_value) {
-      value.get(&axis);
-    }
-  } else {
-    int64_t axis_val;
-    parser_->GetOpAttr(op, "axis", &axis_val);
-    axis.push_back(axis_val);
-  }
-  return axis;
-}
-
 int32_t SplitMapper::GetMinOpset(bool verbose) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto axis = GetAxes();
-  if (axis.size() == 0) {
-    if (verbose) {
-      std::cerr << "Currently does not support the axes parameter as input "
-                   "tensor in op "
-                << op.type() << "." << std::endl;
-    }
-    return -1;
-  }
-  bool has_attr = parser_->OpHasAttr(op, "sections");
-  if (has_attr) {
-    std::vector<int64_t> sections;
-    parser_->GetOpAttr(op, "sections", &sections);
-
-    std::vector<int64_t> sections_index;
-    for (auto i = 0; i < sections.size(); ++i) {
-      if (sections[i] == -1) {
-        sections_index.push_back(i);
-      }
-    }
-    if (sections_index.size() == 1 && input_info[0].shape[axis[0]] == -1) {
+  int64_t axis = axis_;
+  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+    std::vector<int64_t> value;
+    if (!parser_->TryGetTensorValue(block_idx_, info[0].name, &value)) {
       if (verbose) {
-        std::cerr
-            << " When section includes -1, input[axis] cannot be -1 in op "
-            << op.type() << "." << std::endl;
+        std::cerr << "[Paddle2ONNX] While AxisTensor as the input and it's not "
+                     "a constant tensor, the operator split cannot be "
+                     "converted."
+                  << std::endl;
       }
       return -1;
+    }
+    axis = value[0];
+  }
+
+  if (parser_->OpHasInput(block_idx_, op_idx_, "SectionsTensorList")) {
+    return 13;
+  }
+
+  for (size_t i = 0; i < sections_.size(); ++i) {
+    if (sections_[i] < 0) {
+      auto info = parser_->GetOpInput(block_idx_, op_idx_, "X");
+      if (info[0].shape[axis] < 0) {
+        if (verbose) {
+          std::cerr << "Cannot convert split op, while there's -1 in sections "
+                       "and cannot be infered by input shape."
+                    << std::endl;
+        }
+        return -1;
+      }
     }
   }
   return 7;
 }
 
 void SplitMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_info =
       parser_->GetOpInput(block_idx_, op_idx_, "X");
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  std::vector<std::string> output_names;
-  for (auto i : output_info) {
-    output_names.push_back(i.name);
-  }
-  int64_t axis = GetAxes()[0];
-  bool has_attr = parser_->OpHasAttr(op, "sections");
-  if (has_attr) {
-    std::vector<int64_t> sections;
-    parser_->GetOpAttr(op, "sections", &sections);
 
-    std::vector<int64_t> sections_index;
-    for (auto i = 0; i < sections.size(); ++i) {
-      if (sections[i] == -1) {
-        sections_index.push_back(i);
+  int64_t axis = axis_;
+  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+    std::vector<int64_t> value;
+    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &value),
+           "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
+    axis = value[0];
+  }
+  if (axis < 0) {
+    axis += input_info[0].Rank();
+  }
+  Assert(!parser_->OpHasInput(block_idx_, op_idx_, "SectionsTensorList"),
+         "[Paddle2ONNX](split) While SectionTensorList as input, requires "
+         "opset_version >= 13.");
+
+  int sum_of_kown_dim = 0;
+  for (size_t i = 0; i < sections_.size(); ++i) {
+    if (sections_[i] > 0) {
+      sum_of_kown_dim += sections_[i];
+    }
+  }
+  for (size_t i = 0; i < sections_.size(); ++i) {
+    if (sections_[i] < 0) {
+      Assert(input_info[0].shape[axis] > 0,
+             "Cannot convert split op, while there's -1 in sections and cannot "
+             "be infered by input shape.");
+      sections_[i] = input_info[0].shape[axis] - sum_of_kown_dim;
+    }
+  }
+
+  std::vector<std::string> output_names(output_info.size());
+  for (size_t i = 0; i < output_info.size(); ++i) {
+    output_names[i] = output_info[i].name;
+  }
+
+  helper->Split(input_info[0].name, output_names, sections_, axis);
+}
+
+void SplitMapper::Opset13(OnnxHelper* helper) {
+  std::vector<TensorInfo> input_info =
+      parser_->GetOpInput(block_idx_, op_idx_, "X");
+  std::vector<TensorInfo> output_info =
+      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+
+  int64_t axis = axis_;
+  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+    std::vector<int64_t> value;
+    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &value),
+           "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
+    axis = value[0];
+  }
+  if (axis < 0) {
+    axis += input_info[0].Rank();
+  }
+
+  std::string splits = "";
+  if (parser_->OpHasInput(block_idx_, op_idx_, "SectionsTensorList")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "SectionsTensorList");
+    splits = helper->ConcatIndices(info);
+  } else if (sections_.size() > 0) {
+    int sum_of_kown_dim = 0;
+    for (size_t i = 0; i < sections_.size(); ++i) {
+      if (sections_[i] > 0) {
+        sum_of_kown_dim += sections_[i];
       }
     }
-
-    if (input_info[0].shape[axis] != -1 && sections_index.size() == 1) {
-      int64_t sum_val = std::accumulate(sections.begin(), sections.end(), 0);
-      sections[sections_index[0]] = input_info[0].shape[axis] - sum_val - 1;
+    for (size_t i = 0; i < sections_.size(); ++i) {
+      if (sections_[i] < 0) {
+        Assert(input_info[0].shape[axis] > 0,
+               "Cannot convert split op, while there's -1 in sections and "
+               "cannot be infered by input shape.");
+        sections_[i] = input_info[0].shape[axis] - sum_of_kown_dim;
+      }
     }
+    splits = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, sections_);
+  }
 
-    helper->Split(input_info[0].name, output_names, sections, axis);
+  std::vector<std::string> output_names(output_info.size());
+  for (size_t i = 0; i < output_info.size(); ++i) {
+    output_names[i] = output_info[i].name;
+  }
+  if (splits != "") {
+    auto node =
+        helper->MakeNode("Split", {input_info[0].name, splits}, output_names);
+    AddAttribute(node, "axis", axis);
   } else {
-    std::vector<int64_t> split_val;
-    helper->Split(input_info[0].name, output_names, split_val, axis);
+    auto node = helper->MakeNode("Split", {input_info[0].name}, output_names);
+    AddAttribute(node, "axis", axis);
   }
 }
 

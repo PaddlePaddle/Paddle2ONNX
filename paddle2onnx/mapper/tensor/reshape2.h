@@ -24,7 +24,6 @@ class Reshape2Mapper : public Mapper {
   Reshape2Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
 };
 

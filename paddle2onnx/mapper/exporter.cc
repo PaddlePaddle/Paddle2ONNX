@@ -109,7 +109,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
   }
   helper.SetOpsetVersion(opset_version);
-  std::cerr << "Model will exported with opset = " << helper.opset_version
+  std::cerr << "Model will exported with opset = " << helper.GetOpsetVersion()
             << std::endl;
 
   ExportParameters(parser.params);
@@ -266,14 +266,11 @@ ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FusePaddleConvBias>();
   std::vector<std::string> passes = {
-      "eliminate_identity",
-      "eliminate_deadend",
-      "fuse_constant_reshape",
-      "fuse_paddle_conv_bias",
-      "fuse_matmul_add_bias_into_gemm",
-      "eliminate_identity",
-      "eliminate_deadend",
-  };
+      "eliminate_identity",          "eliminate_deadend",
+      "eliminate_deadend",           "fuse_constant_reshape",
+      "fuse_paddle_conv_bias",       "fuse_matmul_add_bias_into_gemm",
+      "eliminate_identity",          "eliminate_deadend",
+      "eliminate_unused_initializer"};
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 

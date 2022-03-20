@@ -158,6 +158,16 @@ class OnnxHelper {
   std::string Constant(const std::vector<int64_t>& shape,
                        ONNX_NAMESPACE::TensorProto_DataType dtype,
                        std::vector<T>& value);
+
+  template <typename T>
+  std::string Assign(const std::string& output,
+                     const ONNX_NAMESPACE::TensorProto_DataType& dtype,
+                     const std::vector<int64_t>& shape,
+                     const std::vector<T>& value);
+  template <typename T>
+  std::string Assign(const ONNX_NAMESPACE::TensorProto_DataType& dtype,
+                     const std::vector<int64_t>& shape,
+                     const std::vector<T>& value);
 };
 
 template <typename T>
@@ -483,6 +493,70 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
            "function.");
   }
   return node;
+}
+
+template <typename T>
+std::string OnnxHelper::Assign(
+    const std::string& output,
+    const ONNX_NAMESPACE::TensorProto_DataType& dtype,
+    const std::vector<int64_t>& shape, const std::vector<T>& value) {
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  node->set_op_type("Constant");
+  node->add_output(output);
+  auto attr = node->add_attribute();
+  attr->set_name("value");
+  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
+  auto tensor = attr->mutable_t();
+  tensor->set_name(output);
+
+  int numel = std::accumulate(std::begin(shape), std::end(shape), 1,
+                              std::multiplies<int64_t>());
+  Assert(numel == value.size(),
+         "Numel of value not satisfy the input shape while creating contant "
+         "tensor.");
+  for (size_t i = 0; i < shape.size(); ++i) {
+    tensor->add_dims(shape[i]);
+  }
+  tensor->set_data_type(dtype);
+  if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+    std::vector<float> data;
+    for (auto& item : value) {
+      data.push_back(static_cast<float>(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+    std::vector<double> data;
+    for (auto& item : value) {
+      data.push_back(static_cast<double>(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+    std::vector<int64_t> data;
+    for (auto& item : value) {
+      data.push_back(static_cast<int64_t>(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    std::vector<int32_t> data;
+    for (auto& item : value) {
+      data.push_back(static_cast<int32_t>(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else {
+    Assert(false,
+           "Only support data type of FLOAT/DOUBLE/INT32/INT64 in MakeConstant "
+           "function.");
+  }
+  nodes.push_back(node);
+  return output;
+}
+
+template <typename T>
+std::string OnnxHelper::Assign(
+    const ONNX_NAMESPACE::TensorProto_DataType& dtype,
+    const std::vector<int64_t>& shape, const std::vector<T>& value) {
+  auto output = MapperHelper::Get()->GenName("helper.constant");
+  return Constant(output, dtype, shape, value);
 }
 
 }  // namespace paddle2onnx

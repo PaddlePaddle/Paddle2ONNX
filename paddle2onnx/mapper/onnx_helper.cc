@@ -70,7 +70,9 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 }
 
 ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
-  Assert(paddle_dtype >= 0 && paddle_dtype <= 6, "Unknow data type of weight.");
+  Assert(paddle_dtype >= 0 && paddle_dtype <= 6,
+         "Unknow paddle data type: " + std::to_string(paddle_dtype) +
+             " While call GetOnnxDtype.");
   auto onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT;
   if (paddle_dtype == P2ODataType::BOOL) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::BOOL;
@@ -226,7 +228,9 @@ std::string OnnxHelper::ConcatIndices(const std::vector<TensorInfo>& indices) {
   // make sure all the indices be int64
   for (size_t i = 0; i < indices.size(); ++i) {
     if (indices[i].dtype != P2ODataType::INT64) {
-      vars[i] = AutoCast(vars[i], indices[i].dtype, P2ODataType::INT64);
+      auto node = MakeNode("Cast", {vars[i]});
+      AddAttribute(node, "to", ONNX_NAMESPACE::TensorProto::INT64);
+      vars[i] = node->output(0);
     }
   }
   // concat and return
@@ -291,9 +295,10 @@ std::string OnnxHelper::Squeeze(const std::string& input,
 std::string OnnxHelper::Unsqueeze(const std::string& input,
                                   const std::string& output,
                                   const std::vector<int64_t>& axes) {
-  Assert(axes.size() >= 0, "OnnxHelper::Split Size of axes should > 0");
+  Assert(axes.size() >= 0, "OnnxHelper::Unsqueeze Size of axes should > 0");
   for (auto& item : axes) {
-    Assert(item >= 0, "OnnxHelper::Split All the elements in axes should >= 0");
+    Assert(item >= 0,
+           "OnnxHelper::Unsqueeze All the elements in axes should >= 0");
   }
   if (opset_version < 13) {
     auto node = MakeNode("Unsqueeze", {input}, {output});

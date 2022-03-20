@@ -18,6 +18,7 @@
 #include <numeric>
 #include <type_traits>
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
+#include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
 
@@ -79,7 +80,7 @@ class PaddleParser {
 
   int NumOfBlocks() const;
   int NumOfOps(int block_idx) const;
-  bool HasNms() const { return has_nms_; }
+  bool HasNms() const { return _has_nms; }
   const framework::proto::OpDesc GetOpDesc(int32_t block_idx,
                                            int32_t op_idx) const;
 
@@ -113,10 +114,14 @@ class PaddleParser {
                  const std::string& name, std::vector<float>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name, std::vector<double>* res) const;
-  bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id) const;
-  bool GetValueFromTensor(const int64_t& block_id, const int64_t& op_id,
-                          Weight* param) const;
-  std::vector<int64_t> GetBlockOpIdx(const std::string& name) const;
+
+  bool IsConstantTensor(const int64_t& block_idx,
+                        const std::string& tensor_name) const;
+  template <typename T>
+  bool TryGetTensorValue(const int64_t& block_id,
+                         const std::string& tensor_name,
+                         std::vector<T>* data) const;
+
   std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
 
  private:
@@ -136,7 +141,43 @@ class PaddleParser {
   // This is a trick flag
   // While there's a nms operator in paddle model,
   // the shape inference of paddle is not correct
-  bool has_nms_ = false;
+  bool _has_nms = false;
+  // records the relationship between tensor name and index of operator
+  std::vector<std::unordered_map<std::string, int32_t>> _blocks_tensor_op_idx;
 };
+
+template <typename T>
+bool PaddleParser::TryGetTensorValue(const int64_t& block_id,
+                                     const std::string& tensor_name,
+                                     std::vector<T>* data) const {
+  Assert(block_id < _blocks_tensor_op_idx.size(),
+         "block_id is out of range while calling TryGetTensorValue.");
+  auto iter = _blocks_tensor_op_idx[block_id].find(tensor_name);
+  if (iter == _blocks_tensor_op_idx[block_id].end()) {
+    return false;
+  }
+  Assert(iter->second < _blocks_ops[block_id].size(),
+         "op_idx is out of range while calling TryGetTensorValue.");
+  auto op = _blocks_ops[block_id][iter->second];
+  if (op->type() != "assign_value") {
+    return false;
+  }
+  int64_t dtype;
+  GetOpAttr(*op, "dtype", &dtype);
+  if (dtype == P2ODataType::INT64 || dtype == P2ODataType::INT32) {
+    std::vector<int64_t> value;
+    GetOpAttr(*op, "int64_values", &value);
+    data->assign(value.begin(), value.end());
+  } else if (dtype == P2ODataType::FP32) {
+    std::vector<float> value;
+    GetOpAttr(*op, "fp32_values", &value);
+    data->assign(value.begin(), value.end());
+  } else {
+    Assert(
+        false,
+        "Only support int32/int64/float32 data type in assign_value operator.");
+  }
+  return true;
+}
 
 }  // namespace paddle2onnx

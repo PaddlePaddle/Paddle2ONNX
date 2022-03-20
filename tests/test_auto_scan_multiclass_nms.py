@@ -139,16 +139,21 @@ def test_onnx_export(q):
         q.put(True)
 
 
-for i in range(100):
-    q0 = Queue()
-    p0 = Process(target=gen_paddle_nms, args=(q0, ))
-    p0.start()
-    p0.join()
-    if not q0.get(timeout=1):
-        assert false, "Test failed for multiclass_nms as gen paddle model step."
-    q1 = Queue()
-    p1 = Process(target=test_onnx_export, args=(q1, ))
-    p1.start()
-    p1.join()
-    if not q1.get(timeout=1):
-        assert false, "Test failed for multiclass_nms at test_onnx_export step."
+def test():
+    for i in range(100):
+        q0 = Queue()
+        p0 = Process(target=gen_paddle_nms, args=(q0, ))
+        p0.start()
+        p0.join()
+        if not q0.get(timeout=1):
+            assert false, "Test failed for multiclass_nms as gen paddle model step."
+        q1 = Queue()
+        p1 = Process(target=test_onnx_export, args=(q1, ))
+        p1.start()
+        p1.join()
+        if not q1.get(timeout=1):
+            assert false, "Test failed for multiclass_nms at test_onnx_export step."
+
+
+if __name__ == "__main__":
+    test()

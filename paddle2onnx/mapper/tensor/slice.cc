@@ -19,28 +19,28 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(slice, SliceMapper)
+REGISTER_MAPPER(strided_slice, SliceMapper)
 
 int32_t SliceMapper::GetMinOpset(bool verbose) {
-  std::string stride_node;
-  std::vector<int64_t> strides;
-  bool strides_is_tensor =
-      GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &stride_node, true);
-  if (!strides_is_tensor && strides.empty()) {
-    strides.resize(axes_.size(), 1);
+  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensorList") ||
+      parser_->OpHasInput(block_idx_, op_idx_, "EndsTensorList") ||
+      parser_->OpHasInput(block_idx_, op_idx_, "StridesTensorList")) {
+    return 10;
   }
-
-  std::string starts_node;
-  std::vector<int64_t> starts;
-  bool starts_is_tensor =
-      GetNodeAttrValue("starts", "StartsTensor", "StartsTensorList", &starts,
-                       &starts_node, true);
-
-  std::string ends_node;
-  std::vector<int64_t> ends;
-  bool ends_is_tensor = GetNodeAttrValue("ends", "EndsTensor", "EndsTensorList",
-                                         &ends, &ends_node, true);
-  if (strides_is_tensor || starts_is_tensor || ends_is_tensor) {
+  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensor");
+    if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
+      return 10;
+    }
+  }
+  if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensor");
+    if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
+      return 10;
+    }
+  }
+  if (parser_->OpHasInput(block_idx_, op_idx_, "StridesTensor") ||
+      strides_.size() > 0) {
     return 10;
   }
   return 7;
@@ -67,55 +67,6 @@ std::vector<int64_t> SliceMapper::DecreaseAxis() {
   return decrease_axis;
 }
 
-bool SliceMapper::GetNodeAttrValue(
-    const std::string &attr_name, const std::string &attr_tensor_name,
-    const std::string &attr_tensor_list_name, std::vector<int64_t> *val,
-    std::string *val_tensor, const bool &return_list, OnnxHelper *helper) {
-  bool has_attr_tensor =
-      parser_->OpHasInput(block_idx_, op_idx_, attr_tensor_name);
-  bool has_attr_tensor_list =
-      parser_->OpHasInput(block_idx_, op_idx_, attr_tensor_list_name);
-  if (has_attr_tensor) {
-    std::vector<TensorInfo> input_tensor_info =
-        parser_->GetOpInput(block_idx_, op_idx_, attr_tensor_name);
-    if (return_list) {
-      std::vector<int64_t> index =
-          parser_->GetBlockOpIdx(input_tensor_info[0].name);
-      Weight value;
-      bool found_value =
-          parser_->GetValueFromTensor(index[0], index[1], &value);
-      if (found_value) {
-        value.get(val);
-      }
-      return false;
-    } else {
-      *val_tensor = input_tensor_info[0].name;
-      return true;
-    }
-  }
-  if (has_attr_tensor_list) {
-    if (helper == nullptr) {
-      return true;
-    }
-    std::vector<TensorInfo> input_info =
-        parser_->GetOpInput(block_idx_, op_idx_, attr_tensor_list_name);
-    int32_t casted_dtype;
-    std::vector<std::string> casted_names =
-        helper->DtypeAlignment(input_info, &casted_dtype);
-    auto node = helper->MakeNode("Concat", casted_names);
-    int64_t axis = 0;
-    AddAttribute(node, "axis", axis);
-    *val_tensor = node->output(0);
-    return true;
-  }
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  bool has_attr = parser_->OpHasAttr(op, attr_name);
-  if (has_attr) {
-    parser_->GetOpAttr(op, attr_name, val);
-  }
-  return false;
-}
-
 void SliceMapper::Opset7(OnnxHelper *helper) {
   auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<TensorInfo> input_info =
@@ -123,25 +74,32 @@ void SliceMapper::Opset7(OnnxHelper *helper) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
-  std::string stride_node;
-  std::vector<int64_t> strides;
-  bool strides_is_tensor =
-      GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &stride_node, true, helper);
-  if (!strides_is_tensor && strides.empty()) {
-    strides.resize(axes_.size(), 1);
+  Assert(!parser_->OpHasInput(block_idx_, op_idx_, "StartsTensorList"),
+         "While slice/strided_slice has input StartsTensorList, requires "
+         "opset_version >= 10");
+
+  std::vector<int64_t> starts;
+  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensor");
+    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &starts),
+           "While slice/strided_slice has input StartsTensor, and it's not a "
+           "constant tensor, then requires opset_version >= 10");
+  } else {
+    starts = starts_;
   }
 
-  std::string starts_node;
-  std::vector<int64_t> starts;
-  bool starts_is_tensor =
-      GetNodeAttrValue("starts", "StartsTensor", "StartsTensorList", &starts,
-                       &starts_node, true, helper);
-
-  std::string ends_node;
+  Assert(!parser_->OpHasInput(block_idx_, op_idx_, "EndsTensorList"),
+         "While slice/strided_slice has input EndsTensorList, requires "
+         "opset_version >= 10");
   std::vector<int64_t> ends;
-  bool ends_is_tensor = GetNodeAttrValue("ends", "EndsTensor", "EndsTensorList",
-                                         &ends, &ends_node, true, helper);
+  if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensor");
+    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &ends),
+           "While slice/strided_slice has input EndsTensor, and it's not a "
+           "constant tensor, then requires opset_version >= 10");
+  } else {
+    ends = ends_;
+  }
 
   std::vector<int64_t> decrease_axis = DecreaseAxis();
   if (decrease_axis.empty()) {
@@ -159,53 +117,55 @@ void SliceMapper::Opset10(OnnxHelper *helper) {
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
-  std::string strides_node;
-  std::vector<int64_t> strides;
-  bool strides_is_tensor =
-      GetNodeAttrValue("strides", "StridesTensor", "StridesTensorList",
-                       &strides, &strides_node, false, helper);
-  if (!strides_is_tensor && strides.empty()) {
-    strides.resize(axes_.size(), 1);
-  }
-  strides_node =
-      helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, strides)
-          ->output(0);
-
-  std::string starts_node;
-  std::vector<int64_t> starts;
-  bool starts_is_tensor =
-      GetNodeAttrValue("starts", "StartsTensor", "StartsTensorList", &starts,
-                       &starts_node, false, helper);
-  if (!starts_is_tensor) {
-    starts_node =
-        helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts)
-            ->output(0);
+  std::string starts = "";
+  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensorList")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensorList");
+    starts = helper->ConcatIndices(info);
+  } else if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensor");
+    starts = helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+  } else {
+    starts = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, starts_);
   }
 
-  std::string ends_node;
-  std::vector<int64_t> ends;
-  bool ends_is_tensor = GetNodeAttrValue("ends", "EndsTensor", "EndsTensorList",
-                                         &ends, &ends_node, false, helper);
-  if (!ends_is_tensor) {
-    ends_node = helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends)
-                    ->output(0);
+  std::string ends = "";
+  if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensorList")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensorList");
+    ends = helper->ConcatIndices(info);
+  } else if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensor");
+    ends = helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+  } else {
+    ends = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, ends_);
   }
 
-  std::string steps_node = strides_node;
+  std::string strides = "";
+  if (parser_->OpHasInput(block_idx_, op_idx_, "StridesTensorList")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StridesTensorList");
+    strides = helper->ConcatIndices(info);
+  } else if (parser_->OpHasInput(block_idx_, op_idx_, "StridesTensor")) {
+    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StridesTensor");
+    strides = helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+  } else {
+    if (strides_.size() == 0) {
+      strides = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                                 std::vector<int64_t>(axes_.size(), 1));
+    } else {
+      strides = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, strides_);
+    }
+  }
 
-  std::string axes_node =
-      helper->MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes_)
-          ->output(0);
-
+  auto axes = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, axes_);
   std::vector<int64_t> decrease_axis = DecreaseAxis();
   if (decrease_axis.empty()) {
-    helper->MakeNode("Slice", {input_info[0].name, starts_node, ends_node,
-                               axes_node, steps_node},
+    helper->MakeNode("Slice", {input_info[0].name, starts, ends, axes, strides},
                      {output_info[0].name});
   } else {
-    auto node = helper->MakeNode("Slice", {input_info[0].name, starts_node,
-                                           ends_node, axes_node, steps_node});
-    helper->Squeeze(node->output(0), output_info[0].name, decrease_axis);
+    auto out = helper
+                   ->MakeNode("Slice",
+                              {input_info[0].name, starts, ends, axes, strides})
+                   ->output(0);
+    helper->Squeeze(out, output_info[0].name, decrease_axis);
   }
 }
 

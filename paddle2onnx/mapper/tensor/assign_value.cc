@@ -21,13 +21,13 @@ namespace paddle2onnx {
 REGISTER_MAPPER(assign_value, AssignValueMapper)
 
 int32_t AssignValueMapper::GetMinOpset(bool verbose) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  bool has_input = parser_->OpHasInput(block_idx_, op_idx_, "X");
-  bool found_value = parser_->GetValueFromTensor(block_idx_, op_idx_);
-  if (!has_input && !found_value) {
+  int32_t dtype = static_cast<int32_t>(dtype_);
+  if (dtype != P2ODataType::INT32 && dtype != P2ODataType::INT64 &&
+      dtype != P2ODataType::FP32) {
     if (verbose) {
-      std::cerr << "Can not find input and value attribute in op " << op.type()
-                << "." << std::endl;
+      std::cerr
+          << "Paddle only supports int32/int64/float32 in op assign_value."
+          << std::endl;
     }
     return -1;
   }
@@ -35,22 +35,18 @@ int32_t AssignValueMapper::GetMinOpset(bool verbose) {
 }
 
 void AssignValueMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  if (parser_->OpHasInput(block_idx_, op_idx_, "X")) {
-    std::vector<TensorInfo> input_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "X");
-    std::vector<TensorInfo> output_info =
-        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-    helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
-  } else {
-    std::vector<TensorInfo> output_info =
-        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-
-    Weight param;
-    parser_->GetValueFromTensor(block_idx_, op_idx_, &param);
-    auto node = helper->MakeConstant(param);
-    helper->AutoCast(node->output(0), output_info[0].name, param.dtype,
-                     output_info[0].dtype);
+  std::vector<TensorInfo> output_info =
+      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  int32_t dtype = static_cast<int32_t>(dtype_);
+  if (dtype == P2ODataType::INT32) {
+    helper->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
+                   shape_, int64_values_);
+  } else if (dtype == P2ODataType::FP32) {
+    helper->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
+                   shape_, fp32_values_);
+  } else if (dtype == P2ODataType::INT64) {
+    helper->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
+                   shape_, int64_values_);
   }
 }
 

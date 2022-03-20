@@ -25,6 +25,14 @@ class SliceMapper : public Mapper {
       : Mapper(p, block_id, op_id) {
     auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     parser_->GetOpAttr(op, "axes", &axes_);
+    parser_->GetOpAttr(op, "starts", &starts_);
+    parser_->GetOpAttr(op, "ends", &ends_);
+    if (parser_->OpHasAttr(op, "strides")) {
+      parser_->GetOpAttr(op, "strides", &strides_);
+    }
+    if (parser_->OpHasAttr(op, "decrease_axis_")) {
+      parser_->GetOpAttr(op, "decrease_axis", &decrease_axis_);
+    }
   }
 
   int32_t GetMinOpset(bool verbose = false);
@@ -32,14 +40,12 @@ class SliceMapper : public Mapper {
   void Opset10(OnnxHelper* helper);
 
  private:
-  std::vector<int64_t> axes_;
-  bool GetNodeAttrValue(const std::string& attr_name,
-                        const std::string& attr_tensor_name,
-                        const std::string& attr_tensor_list_name,
-                        std::vector<int64_t>* val, std::string* val_tensor,
-                        const bool& return_list = false,
-                        OnnxHelper* helper = nullptr);
   std::vector<int64_t> DecreaseAxis();
+  std::vector<int64_t> axes_;
+  std::vector<int64_t> starts_;
+  std::vector<int64_t> ends_;
+  std::vector<int64_t> strides_;
+  std::vector<int64_t> decrease_axis_;
 };
 
 }  // namespace paddle2onnx

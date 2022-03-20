@@ -309,6 +309,20 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
   return true;
 }
 
+bool PaddleParser::IsConstantTensor(const int64_t& block_id,
+                                    const std::string& tensor_name) const {
+  Assert(block_id < _blocks_tensor_op_idx.size(),
+         "block_id is out of range while calling IsConstantTensor.");
+  auto iter = _blocks_tensor_op_idx[block_id].find(tensor_name);
+  if (iter == _blocks_tensor_op_idx[block_id].end()) {
+    return false;
+  }
+  Assert(iter->second < _blocks_ops[block_id].size(),
+         "op_idx is out of range while calling IsConstantTensor.");
+  auto op_type = _blocks_ops[block_id][iter->second]->type();
+  return op_type == "assign_value";
+}
+
 void PaddleParser::GetBlocksVarName2Id() {
   _blocks_var_name2id.clear();
   _blocks_var_name2id.resize(prog->blocks_size());
@@ -322,10 +336,15 @@ void PaddleParser::GetBlocksVarName2Id() {
 void PaddleParser::GetBlocksOps() {
   _blocks_ops.clear();
   _blocks_ops.resize(prog->blocks_size());
+  _blocks_tensor_op_idx.resize(prog->blocks_size());
   for (auto i = 0; i < prog->blocks_size(); ++i) {
     _blocks_ops[i].reserve(prog->blocks(i).ops_size());
     for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
       _blocks_ops[i].push_back(&prog->blocks(i).ops(j));
+      auto outputs = GetOpAllOutput(i, j);
+      for (size_t k = 0; k < outputs.size(); ++k) {
+        _blocks_tensor_op_idx[i][outputs[k].name] = j;
+      }
     }
   }
 }
@@ -374,22 +393,6 @@ std::vector<TensorInfo> PaddleParser::GetOpAllOutput(int64_t block_id,
     }
   }
   return outputs;
-}
-
-std::vector<int64_t> PaddleParser::GetBlockOpIdx(
-    const std::string& name) const {
-  for (auto i = 0; i < prog->blocks_size(); ++i) {
-    for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
-      auto output = GetOpAllOutput(i, j);
-      for (auto x : output) {
-        if (x.name == name) {
-          return {i, j};
-        }
-      }
-    }
-  }
-  Assert(false, "Cannot find BlockOpIdx: " + name + " in paddle graph. ");
-  return {};
 }
 
 std::vector<TensorInfo> PaddleParser::GetOpInput(
@@ -469,7 +472,7 @@ bool PaddleParser::OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     // set found to true when name is in op attrs and can use GetOpAttr to get
     // value
-    if (op.attrs(i).name() == name && GetOpAttrType(op, name) != "NOTFOUND") {
+    if (op.attrs(i).name() == name) {
       found = true;
       break;
     }
@@ -549,7 +552,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   res->clear();
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
-      Assert(op.attrs(i).ints_size() > 0 || op.attrs(i).longs_size() > 0,
+      Assert(op.attrs(i).ints_size() >= 0 || op.attrs(i).longs_size() >= 0,
              "Cannot find list of int32/int64 data from attr: " + name +
                  " in op: " + op.type());
       found = true;
@@ -575,7 +578,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   res->clear();
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
-      Assert(op.attrs(i).floats_size() > 0,
+      Assert(op.attrs(i).floats_size() >= 0,
              "Cannot find list of float data from attr: " + name + " in op: " +
                  op.type());
       found = true;
@@ -595,7 +598,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   res->clear();
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
-      Assert(op.attrs(i).float64s_size() > 0,
+      Assert(op.attrs(i).float64s_size() >= 0,
              "Cannot find list of double data from attr: " + name + " in op: " +
                  op.type());
       found = true;
@@ -624,12 +627,12 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
     // model
     // Remove this after shape inference fixed
     if (prog->blocks(0).ops(i).type() == "multiclass_nms3") {
-      has_nms_ = true;
+      _has_nms = true;
     }
   }
 
   // Trick setting for nms, remove this after shape inference fixed
-  if (has_nms_) {
+  if (_has_nms) {
     for (size_t i = 0; i < outputs.size(); ++i) {
       if (outputs[i].shape.size() == 2) {
         if (outputs[i].shape[1] == 6) {
@@ -638,69 +641,6 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
       }
     }
   }
-}
-
-bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
-                                      const int64_t& op_id,
-                                      Weight* param) const {
-  auto op = GetOpDesc(block_id, op_id);
-  if (op.type() != "assign_value") {
-    return false;
-  }
-  std::vector<int64_t> shape;
-  if (OpHasAttr(op, "shape")) {
-    GetOpAttr(op, "shape", &shape);
-  }
-  if (OpHasAttr(op, "fp64_values")) {
-    std::vector<double> value;
-    GetOpAttr(op, "fp64_values", &value);
-    if (shape.empty()) {
-      shape.push_back(value.size());
-    }
-    param->set(P2ODataType::FP64, shape, value);
-  }
-  if (OpHasAttr(op, "fp32_values")) {
-    std::vector<float> value;
-    GetOpAttr(op, "fp32_values", &value);
-    if (shape.empty()) {
-      shape.push_back(value.size());
-    }
-    param->set(P2ODataType::FP32, shape, value);
-  }
-  if (OpHasAttr(op, "int64_values")) {
-    std::vector<int64_t> value;
-    GetOpAttr(op, "int64_values", &value);
-    if (shape.empty()) {
-      shape.push_back(value.size());
-    }
-    param->set(P2ODataType::INT64, shape, value);
-  }
-  if (OpHasAttr(op, "int32_values")) {
-    std::vector<int64_t> value;
-    GetOpAttr(op, "int32_values", &value);
-    if (shape.empty()) {
-      shape.push_back(value.size());
-    }
-    param->set(P2ODataType::INT64, shape, value);
-  }
-  if (OpHasAttr(op, "bool_values")) {
-    std::vector<int64_t> value;
-    GetOpAttr(op, "bool_values", &value);
-    if (shape.empty()) {
-      shape.push_back(value.size());
-    }
-    param->set(P2ODataType::INT64, shape, value);
-  }
-  if (shape.size() == 0) {
-    return false;
-  }
-  return true;
-}
-
-bool PaddleParser::GetValueFromTensor(const int64_t& block_id,
-                                      const int64_t& op_id) const {
-  Weight param;
-  return GetValueFromTensor(block_id, op_id, &param);
 }
 
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {

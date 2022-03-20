@@ -23,12 +23,20 @@ void FillLikeMapper::Opset9(OnnxHelper* helper) {
       parser_->GetOpInput(block_idx_, op_idx_, "X");
   std::vector<TensorInfo> output_info =
       parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+
+  bool is_fixed_shape = true;
+  for (size_t i = 0; i < input_info[0].shape.size(); ++i) {
+    if (input_info[0].shape[i] < 0) {
+      is_fixed_shape = false;
+    }
+  }
+  if (is_fixed_shape) {
+    helper->Constant(output_info[0].name, input_info[0].shape,
+                     GetOnnxDtype(output_info[0].dtype), value_);
+    return;
+  }
   auto shape_node = helper->MakeNode("Shape", {input_info[0].name});
   int64_t dtype = output_info[0].dtype;
-  if (parser_->OpHasAttr(op, "dtype")) {
-    parser_->GetOpAttr(op, "dtype", &dtype);
-  }
   helper->ConstOfShape(shape_node->output(0), output_info[0].name,
                        GetOnnxDtype(dtype), value_);
 }

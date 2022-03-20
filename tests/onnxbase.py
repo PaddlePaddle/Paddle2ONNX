@@ -252,6 +252,7 @@ class APIOnnx(object):
         import onnx
         onnx_file = os.path.join(self.pwd, self.name,
                                  self.name + '_' + str(ver) + '.onnx')
+        print("==========", onnx_file)
         onnx_model = onnx.load(onnx_file)
         opset_version = onnx_model.opset_import[0].version
         assert (ver == opset_version,
@@ -322,4 +323,4 @@ class APIOnnx(object):
             # dygraph model jit save
             if self.static is True and place == 'gpu':
                 self._dygraph_jit_save(instance=self._func)
-        self._removedir()
+        #self._removedir()

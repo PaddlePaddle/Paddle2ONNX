@@ -22,9 +22,15 @@ namespace paddle2onnx {
 class ConcatMapper : public Mapper {
  public:
   ConcatMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
-      : Mapper(p, block_id, op_id) {}
+      : Mapper(p, block_id, op_id) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, "axis", &axis_);
+  }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
+
+ private:
+  int64_t axis_;
 };
 
 }  // namespace paddle2onnx

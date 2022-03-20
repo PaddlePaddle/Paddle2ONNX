@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
       return -1;
     }
     if (!paddle2onnx::Export(model_buffer, "", &onnx_model, true, 7, true, true,
-                             true, true, false)) {
+                             true, true, true)) {
       std::cerr << "Model convert failed." << std::endl;
       return -1;
     }
