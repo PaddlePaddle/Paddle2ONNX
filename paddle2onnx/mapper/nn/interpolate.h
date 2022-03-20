@@ -21,14 +21,13 @@ class InterpolateMapper : public Mapper {
  public:
   InterpolateMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "data_layout", &data_layout_);
-    parser_->GetOpAttr(op, "align_corners", &align_corners_);
-    parser_->GetOpAttr(op, "align_mode", &align_mode_);
-    parser_->GetOpAttr(op, "out_d", &out_d_);
-    parser_->GetOpAttr(op, "out_h", &out_h_);
-    parser_->GetOpAttr(op, "out_w", &out_w_);
-    method_ = op.type();
+    GetAttr("data_layout", &data_layout_);
+    GetAttr("align_corners", &align_corners_);
+    GetAttr("align_mode", &align_mode_);
+    GetAttr("out_d", &out_d_);
+    GetAttr("out_h", &out_h_);
+    GetAttr("out_w", &out_w_);
+    method_ = OpType();
 
     resize_mapper_["bilinear_interp_v2"] = "linear";
     resize_mapper_["nearest_interp_v2"] = "nearest";

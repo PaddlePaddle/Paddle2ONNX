@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,11 +24,10 @@ class FillLikeMapper : public Mapper {
  public:
   FillLikeMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    if (op.type() == "fill_zeros_like") {
+    if (OpType() == "fill_zeros_like") {
       value_ = 0.0;
     } else {
-      parser_->GetOpAttr(op, "value", &value_);
+      GetAttr("value", &value_);
     }
   }
 

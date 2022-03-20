@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,9 +24,8 @@ class SplitMapper : public Mapper {
  public:
   SplitMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "axis", &axis_);
-    parser_->GetOpAttr(op, "sections", &sections_);
+    GetAttr("axis", &axis_);
+    GetAttr("sections", &sections_);
   }
 
   int32_t GetMinOpset(bool verbose = false);

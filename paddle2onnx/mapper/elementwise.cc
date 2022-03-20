@@ -25,24 +25,19 @@ REGISTER_MAPPER(elementwise_pow, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_mod, ElementWiseModMapper)
 
 int32_t ElementwiseMapper::GetMinOpset(bool verbose) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  if (op.type() == "elementwise_min" || op.type() == "elementwise_max") {
+  if (OpType() == "elementwise_min" || OpType() == "elementwise_max") {
     return 8;
   }
   return 7;
 }
 
 void ElementwiseMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_x_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> input_y_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Y");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  auto iter = op_mapper_.find(op.type());
+  std::vector<TensorInfo> input_x_info = GetInput("X");
+  std::vector<TensorInfo> input_y_info = GetInput("Y");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto iter = op_mapper_.find(OpType());
   Assert(op_mapper_.end() != iter,
-         "Cannot find " + op.type() + " in elementwise op_mapper.");
+         "Cannot find " + OpType() + " in elementwise op_mapper.");
 
   if (axis_ == -1 || axis_ == (input_x_info[0].Rank() - 1) ||
       input_x_info[0].Rank() == input_y_info[0].Rank()) {
@@ -63,13 +58,9 @@ void ElementwiseMapper::Opset7(OnnxHelper* helper) {
 }
 
 void ElementWiseModMapper::Opset10(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_x_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> input_y_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Y");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  std::vector<TensorInfo> input_x_info = GetInput("X");
+  std::vector<TensorInfo> input_y_info = GetInput("Y");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
   int64_t fmod = 0;
   if (input_y_info[0].dtype == P2ODataType::INT32 ||
       input_y_info[0].dtype == P2ODataType::INT64) {

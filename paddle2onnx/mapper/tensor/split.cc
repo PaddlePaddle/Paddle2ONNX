@@ -19,10 +19,9 @@ REGISTER_MAPPER(split, SplitMapper)
 
 int32_t SplitMapper::GetMinOpset(bool verbose) {
   int64_t axis = axis_;
-  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+  if (HasInput("AxisTensor")) {
     std::vector<int64_t> value;
-    if (!parser_->TryGetTensorValue(block_idx_, info[0].name, &value)) {
+    if (!TryGetInputValue("AxisTensor", &value)) {
       if (verbose) {
         std::cerr << "[Paddle2ONNX] While AxisTensor as the input and it's not "
                      "a constant tensor, the operator split cannot be "
@@ -34,13 +33,13 @@ int32_t SplitMapper::GetMinOpset(bool verbose) {
     axis = value[0];
   }
 
-  if (parser_->OpHasInput(block_idx_, op_idx_, "SectionsTensorList")) {
+  if (HasInput("SectionsTensorList")) {
     return 13;
   }
 
   for (size_t i = 0; i < sections_.size(); ++i) {
     if (sections_[i] < 0) {
-      auto info = parser_->GetOpInput(block_idx_, op_idx_, "X");
+      auto info = GetInput("X");
       if (info[0].shape[axis] < 0) {
         if (verbose) {
           std::cerr << "Cannot convert split op, while there's -1 in sections "
@@ -55,23 +54,20 @@ int32_t SplitMapper::GetMinOpset(bool verbose) {
 }
 
 void SplitMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   int64_t axis = axis_;
-  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+  if (HasInput("AxisTensor")) {
     std::vector<int64_t> value;
-    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &value),
+    Assert(TryGetInputValue("AxisTensor", &value),
            "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
     axis = value[0];
   }
   if (axis < 0) {
     axis += input_info[0].Rank();
   }
-  Assert(!parser_->OpHasInput(block_idx_, op_idx_, "SectionsTensorList"),
+  Assert(!HasInput("SectionsTensorList"),
          "[Paddle2ONNX](split) While SectionTensorList as input, requires "
          "opset_version >= 13.");
 
@@ -99,16 +95,13 @@ void SplitMapper::Opset7(OnnxHelper* helper) {
 }
 
 void SplitMapper::Opset13(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   int64_t axis = axis_;
-  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+  if (HasInput("AxisTensor")) {
     std::vector<int64_t> value;
-    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &value),
+    Assert(TryGetInputValue("AxisTensor", &value),
            "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
     axis = value[0];
   }
@@ -117,8 +110,8 @@ void SplitMapper::Opset13(OnnxHelper* helper) {
   }
 
   std::string splits = "";
-  if (parser_->OpHasInput(block_idx_, op_idx_, "SectionsTensorList")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "SectionsTensorList");
+  if (HasInput("SectionsTensorList")) {
+    auto info = GetInput("SectionsTensorList");
     splits = helper->ConcatIndices(info);
   } else if (sections_.size() > 0) {
     int sum_of_kown_dim = 0;

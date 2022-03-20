@@ -29,13 +29,9 @@ int32_t EqualMapper::GetMinOpset(bool verbose) {
 }
 
 void EqualMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_x_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> input_y_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Y");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_x_info = GetInput("X");
+  std::vector<TensorInfo> input_y_info = GetInput("Y");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   std::string input_x = input_x_info[0].name;
   std::string input_y = input_y_info[0].name;

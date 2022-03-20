@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/flatten.h"
+
 #include <vector>
 
 namespace paddle2onnx {
@@ -20,16 +21,14 @@ namespace paddle2onnx {
 REGISTER_MAPPER(flatten_contiguous_range, FlattenMapper)
 
 void FlattenMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
+  std::vector<TensorInfo> input_info = GetInput("X");
   if (start_axis_ < 0) {
     start_axis_ += input_info[0].Rank();
   }
   if (stop_axis_ < 0) {
     stop_axis_ += input_info[0].Rank();
   }
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   auto unknown_dim_node =
       helper->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, -1);

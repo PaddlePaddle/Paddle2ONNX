@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/nn/layer_norm.h"
+
 #include <string>
 #include <vector>
 
@@ -20,10 +21,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(layer_norm, LayerNormMapper)
 
 void LayerNormMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Y");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Y");
 
   std::string input_name = helper->AutoCast(
       input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
@@ -64,14 +63,12 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
   std::string weight_shape_node =
       helper->Slice(ipt_shape_node->output(0), slice_axes, start, end);
 
-  bool has_input_Bias = parser_->OpHasInput(block_idx_, op_idx_, "Bias");
-  bool has_input_Scale = parser_->OpHasInput(block_idx_, op_idx_, "Scale");
+  bool has_input_Bias = HasInput("Bias");
+  bool has_input_Scale = HasInput("Scale");
 
   if (has_input_Bias && has_input_Scale) {
-    std::vector<TensorInfo> scale_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "Scale");
-    std::vector<TensorInfo> bias_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "Bias");
+    std::vector<TensorInfo> scale_info = GetInput("Scale");
+    std::vector<TensorInfo> bias_info = GetInput("Bias");
     std::string scale_name = helper->AutoCast(
         scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
     std::string bias_name = helper->AutoCast(
@@ -91,8 +88,7 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
     return;
   }
   if (has_input_Bias) {
-    std::vector<TensorInfo> bias_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "Bias");
+    std::vector<TensorInfo> bias_info = GetInput("Bias");
     std::string bias_name = helper->AutoCast(
         bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
     auto bias_node =
@@ -106,8 +102,7 @@ void LayerNormMapper::Opset7(OnnxHelper* helper) {
     return;
   }
   if (has_input_Scale) {
-    std::vector<TensorInfo> scale_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "Scale");
+    std::vector<TensorInfo> scale_info = GetInput("Scale");
     std::string scale_name = helper->AutoCast(
         scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
     auto scale_node =

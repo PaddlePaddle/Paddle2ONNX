@@ -13,7 +13,9 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/nn/pool.h"
+
 #include <math.h>
+
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -36,7 +38,6 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
 void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
                                 const std::vector<TensorInfo>& output_info,
                                 OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   int64_t input_h = input_info[0].shape[2];
   int64_t input_w = input_info[0].shape[3];
   int64_t output_h = output_info[0].shape[2];
@@ -76,7 +77,6 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
 void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
                                   const std::vector<TensorInfo>& output_info,
                                   OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<int64_t> input_shape = input_info[0].shape;
   if (pads_.size() == 2) {
     pads_.push_back(pads_[0]);
@@ -157,11 +157,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     }
     return -1;
   }
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
   if (adaptive_) {
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
@@ -206,11 +203,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
 }
 
 void Pool2dMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   bool is_1x1_kernel = true;
   for (auto i : k_size_) {

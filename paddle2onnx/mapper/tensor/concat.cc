@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/concat.h"
+
 #include <string>
 #include <vector>
 
@@ -20,9 +21,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(concat, ConcatMapper)
 
 int32_t ConcatMapper::GetMinOpset(bool verbose) {
-  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
-    if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
+  if (HasInput("AxisTensor")) {
+    if (!IsConstantInput("AxisTensor")) {
       std::cerr << "[Paddle2ONNX] While AxisTensor as input exists, it's not "
                    "supported unless it's a constant tensor for op concat."
                 << std::endl;
@@ -33,23 +33,19 @@ int32_t ConcatMapper::GetMinOpset(bool verbose) {
 }
 
 void ConcatMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   int32_t casted_dtype;
   std::vector<std::string> casted_names =
       helper->DtypeAlignment(input_info, &casted_dtype);
-  bool has_axis_tensor_input =
-      parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor");
+  bool has_axis_tensor_input = HasInput("AxisTensor");
 
   int64_t axis = axis_;
-  if (parser_->OpHasInput(block_idx_, op_idx_, "AxisTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxisTensor");
+  if (HasInput("AxisTensor")) {
+    auto info = GetInput("AxisTensor");
     std::vector<int64_t> value;
-    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &value),
+    Assert(TryGetInputValue("AxisTensor", &value),
            "While concat has input AxisTensor, and it's not a constant tensor, "
            "the model cannot be converted.");
     axis = value[0];

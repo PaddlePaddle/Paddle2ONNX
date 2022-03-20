@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,8 +24,7 @@ class ElementwiseMapper : public Mapper {
  public:
   ElementwiseMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "axis", &axis_);
+    GetAttr("axis", &axis_);
 
     op_mapper_["elementwise_add"] = "Add";
     op_mapper_["elementwise_sub"] = "Sub";

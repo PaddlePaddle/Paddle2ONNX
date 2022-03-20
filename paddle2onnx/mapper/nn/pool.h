@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,19 +24,18 @@ class Pool2dMapper : public Mapper {
  public:
   Pool2dMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
     op_mapper_["max"] = {"MaxPool", "GlobalMaxPool"};
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
-    parser_->GetOpAttr(op, "pooling_type", &pooling_type_);
-    parser_->GetOpAttr(op, "data_format", &data_format_);
-    parser_->GetOpAttr(op, "ksize", &k_size_);
-    parser_->GetOpAttr(op, "ceil_mode", &ceil_mod_);
-    parser_->GetOpAttr(op, "padding_algorithm", &padding_algorithm_);
-    parser_->GetOpAttr(op, "global_pooling", &global_pooling_);
-    parser_->GetOpAttr(op, "adaptive", &adaptive_);
-    parser_->GetOpAttr(op, "paddings", &pads_);
-    parser_->GetOpAttr(op, "strides", &strides_);
-    parser_->GetOpAttr(op, "exclusive", &exclusive_);
+    GetAttr("pooling_type", &pooling_type_);
+    GetAttr("data_format", &data_format_);
+    GetAttr("ksize", &k_size_);
+    GetAttr("ceil_mode", &ceil_mod_);
+    GetAttr("padding_algorithm", &padding_algorithm_);
+    GetAttr("global_pooling", &global_pooling_);
+    GetAttr("adaptive", &adaptive_);
+    GetAttr("paddings", &pads_);
+    GetAttr("strides", &strides_);
+    GetAttr("exclusive", &exclusive_);
     exclusive_ = !exclusive_;
   }
   int32_t GetMinOpset(bool verbose = false);

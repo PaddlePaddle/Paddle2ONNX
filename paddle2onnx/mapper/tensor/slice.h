@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,15 +24,14 @@ class SliceMapper : public Mapper {
  public:
   SliceMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "axes", &axes_);
-    parser_->GetOpAttr(op, "starts", &starts_);
-    parser_->GetOpAttr(op, "ends", &ends_);
-    if (parser_->OpHasAttr(op, "strides")) {
-      parser_->GetOpAttr(op, "strides", &strides_);
+    GetAttr("axes", &axes_);
+    GetAttr("starts", &starts_);
+    GetAttr("ends", &ends_);
+    if (HasAttr("strides")) {
+      GetAttr("strides", &strides_);
     }
-    if (parser_->OpHasAttr(op, "decrease_axis_")) {
-      parser_->GetOpAttr(op, "decrease_axis", &decrease_axis_);
+    if (HasAttr("decrease_axis_")) {
+      GetAttr("decrease_axis", &decrease_axis_);
     }
   }
 

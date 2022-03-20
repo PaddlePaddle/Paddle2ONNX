@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,9 +24,8 @@ class LayerNormMapper : public Mapper {
  public:
   LayerNormMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "begin_norm_axis", &begin_norm_axis_);
-    parser_->GetOpAttr(op, "epsilon", &epsilon_);
+    GetAttr("begin_norm_axis", &begin_norm_axis_);
+    GetAttr("epsilon", &epsilon_);
   }
 
   void Opset7(OnnxHelper* helper);

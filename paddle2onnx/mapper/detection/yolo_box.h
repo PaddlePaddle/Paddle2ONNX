@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -24,15 +25,14 @@ class YoloBoxMapper : public Mapper {
   YoloBoxMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
     MarkAsExperimentalOp();
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "clip_bbox", &clip_bbox_);
-    parser_->GetOpAttr(op, "iou_aware", &iou_aware_);
-    parser_->GetOpAttr(op, "conf_thresh", &conf_thresh_);
-    parser_->GetOpAttr(op, "iou_aware_factor", &iou_aware_factor_);
-    parser_->GetOpAttr(op, "class_num", &class_num_);
-    parser_->GetOpAttr(op, "downsample_ratio", &downsample_ratio_);
-    parser_->GetOpAttr(op, "scale_x_y", &scale_x_y_);
-    parser_->GetOpAttr(op, "anchors", &anchors_);
+    GetAttr("clip_bbox", &clip_bbox_);
+    GetAttr("iou_aware", &iou_aware_);
+    GetAttr("conf_thresh", &conf_thresh_);
+    GetAttr("iou_aware_factor", &iou_aware_factor_);
+    GetAttr("class_num", &class_num_);
+    GetAttr("downsample_ratio", &downsample_ratio_);
+    GetAttr("scale_x_y", &scale_x_y_);
+    GetAttr("anchors", &anchors_);
   }
 
   int32_t GetMinOpset(bool verbose = false);

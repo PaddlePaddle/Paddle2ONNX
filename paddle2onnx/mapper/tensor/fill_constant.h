@@ -20,9 +20,8 @@ class FillConstantMapper : public Mapper {
  public:
   FillConstantMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "str_value", &str_value_);
-    parser_->GetOpAttr(op, "value", &value_);
+    GetAttr("str_value", &str_value_);
+    GetAttr("value", &value_);
   }
 
   int32_t GetMinOpset(bool verbose = false);

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "paddle2onnx/mapper/tensor/scale.h"
+
 #include <vector>
 
 namespace paddle2onnx {
@@ -19,13 +20,9 @@ namespace paddle2onnx {
 REGISTER_MAPPER(scale, ScaleMapper)
 
 void ScaleMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  bool has_scale_tensor =
-      parser_->OpHasInput(block_idx_, op_idx_, "ScaleTensor");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
+  bool has_scale_tensor = HasInput("ScaleTensor");
   // TODO(yeliang2258): just temporary use Identity
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
   bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
@@ -42,7 +39,7 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
         input_info[0].dtype == P2ODataType::INT32 ||
         input_info[0].dtype == P2ODataType::INT16) {
       std::cerr << " Int type input may bring calculation diff in op "
-                << op.type() << "." << std::endl;
+                << OpType() << "." << std::endl;
       cast_node = helper->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
       data_type = P2ODataType::FP32;
@@ -51,8 +48,7 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
 
     std::string scale_node;
     if (has_scale_tensor) {
-      std::vector<TensorInfo> scale_tensor_info =
-          parser_->GetOpInput(block_idx_, op_idx_, "ScaleTensor");
+      std::vector<TensorInfo> scale_tensor_info = GetInput("ScaleTensor");
       scale_node = helper->AutoCast(scale_tensor_info[0].name,
                                     scale_tensor_info[0].dtype, data_type);
     } else {

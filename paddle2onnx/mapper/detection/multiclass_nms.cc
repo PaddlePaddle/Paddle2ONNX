@@ -19,10 +19,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(multiclass_nms3, NMSMapper);
 
 int32_t NMSMapper::GetMinOpset(bool verbose) {
-  std::vector<TensorInfo> boxes_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "BBoxes");
-  std::vector<TensorInfo> score_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Scores");
+  std::vector<TensorInfo> boxes_info = GetInput("BBoxes");
+  std::vector<TensorInfo> score_info = GetInput("Scores");
   if (score_info[0].Rank() != 3) {
     if (verbose) {
       std::cerr << "Paddle2ONNX: Lod Tensor input is not supported in "
@@ -65,11 +63,11 @@ int32_t NMSMapper::GetMinOpset(bool verbose) {
 
 void NMSMapper::KeepTopK(OnnxHelper* helper,
                          const std::string& selected_indices) {
-  auto boxes_info = parser_->GetOpInput(block_idx_, op_idx_, "BBoxes");
-  auto score_info = parser_->GetOpInput(block_idx_, op_idx_, "Scores");
-  auto out_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto index_info = parser_->GetOpOutput(block_idx_, op_idx_, "Index");
-  auto num_rois_info = parser_->GetOpOutput(block_idx_, op_idx_, "NmsRoisNum");
+  auto boxes_info = GetInput("BBoxes");
+  auto score_info = GetInput("Scores");
+  auto out_info = GetOutput("Out");
+  auto index_info = GetOutput("Index");
+  auto num_rois_info = GetOutput("NmsRoisNum");
   auto value_0 =
       helper->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, int64_t(0));
   auto value_1 =
@@ -208,10 +206,8 @@ void NMSMapper::KeepTopK(OnnxHelper* helper,
 }
 
 void NMSMapper::Opset10(OnnxHelper* helper) {
-  std::vector<TensorInfo> boxes_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "BBoxes");
-  std::vector<TensorInfo> score_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Scores");
+  std::vector<TensorInfo> boxes_info = GetInput("BBoxes");
+  std::vector<TensorInfo> score_info = GetInput("Scores");
   if (boxes_info[0].shape[0] != 1) {
     std::cerr << "[WARN] Due to the operator multiclass_nms, the exported ONNX "
                  "model will only supports inference with input batch_size == "

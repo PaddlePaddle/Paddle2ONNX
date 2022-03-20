@@ -19,10 +19,8 @@ REGISTER_MAPPER(fill_any_like, FillLikeMapper)
 REGISTER_MAPPER(fill_zeros_like, FillLikeMapper)
 
 void FillLikeMapper::Opset9(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  std::vector<TensorInfo> input_info = GetInput("X");
+  std::vector<TensorInfo> output_info = GetOutput("Out");
 
   bool is_fixed_shape = true;
   for (size_t i = 0; i < input_info[0].shape.size(); ++i) {
