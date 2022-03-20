@@ -447,25 +447,6 @@ std::vector<TensorInfo> PaddleParser::GetOpOutput(
   return outputs;
 }
 
-std::string PaddleParser::GetOpAttrType(
-    const paddle2onnx::framework::proto::OpDesc& op,
-    const std::string& name) const {
-  std::string type = "NOTFOUND";
-  for (auto i = 0; i < op.attrs_size(); ++i) {
-    if (op.attrs(i).name() == name) {
-      if (op.attrs(i).has_i() || op.attrs(i).has_l()) type = "INT64";
-      if (op.attrs(i).has_f()) type = "FLOAT";
-      if (op.attrs(i).has_b()) type = "BOOL";
-      if (op.attrs(i).has_s()) type = "STRING";
-      if (op.attrs(i).ints_size() > 0 || op.attrs(i).longs_size() > 0)
-        type = "INT64_LIST";
-      if (op.attrs(i).floats_size() > 0) type = "FLOAT_LIST";
-      break;
-    }
-  }
-  return type;
-}
-
 bool PaddleParser::OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
                              const std::string& name) const {
   bool found = false;
