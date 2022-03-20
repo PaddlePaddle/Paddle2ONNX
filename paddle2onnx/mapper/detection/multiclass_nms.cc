@@ -19,8 +19,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(multiclass_nms3, NMSMapper);
 
 int32_t NMSMapper::GetMinOpset(bool verbose) {
-  std::vector<TensorInfo> boxes_info = GetInput("BBoxes");
-  std::vector<TensorInfo> score_info = GetInput("Scores");
+  auto boxes_info = GetInput("BBoxes");
+  auto score_info = GetInput("Scores");
   if (score_info[0].Rank() != 3) {
     if (verbose) {
       std::cerr << "Paddle2ONNX: Lod Tensor input is not supported in "
@@ -206,8 +206,8 @@ void NMSMapper::KeepTopK(OnnxHelper* helper,
 }
 
 void NMSMapper::Opset10(OnnxHelper* helper) {
-  std::vector<TensorInfo> boxes_info = GetInput("BBoxes");
-  std::vector<TensorInfo> score_info = GetInput("Scores");
+  auto boxes_info = GetInput("BBoxes");
+  auto score_info = GetInput("Scores");
   if (boxes_info[0].shape[0] != 1) {
     std::cerr << "[WARN] Due to the operator multiclass_nms, the exported ONNX "
                  "model will only supports inference with input batch_size == "

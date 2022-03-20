@@ -22,8 +22,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(reshape2, Reshape2Mapper)
 
 void Reshape2Mapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::string shape_name = "ShapeTensor";
   if (!HasInput(shape_name)) {
@@ -32,7 +32,7 @@ void Reshape2Mapper::Opset7(OnnxHelper* helper) {
 
   std::string new_shape = "";
   if (HasInput(shape_name)) {
-    std::vector<TensorInfo> shape_info = GetInput(shape_name);
+    auto shape_info = GetInput(shape_name);
     if (shape_info.size() > 1) {
       new_shape = helper->ConcatIndices(shape_info);
     } else {

@@ -33,8 +33,8 @@ int32_t ConcatMapper::GetMinOpset(bool verbose) {
 }
 
 void ConcatMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   int32_t casted_dtype;
   std::vector<std::string> casted_names =

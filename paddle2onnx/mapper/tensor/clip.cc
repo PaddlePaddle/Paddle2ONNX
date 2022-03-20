@@ -27,8 +27,8 @@ int32_t ClipMapper::GetMinOpset(bool verbose) {
 }
 
 void ClipMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   bool has_max_tensor_input = HasInput("Max");
   bool has_min_tensor_input = HasInput("Min");
@@ -46,7 +46,7 @@ void ClipMapper::Opset7(OnnxHelper* helper) {
     }
     std::string max_name;
     if (has_max_tensor_input) {
-      std::vector<TensorInfo> max_info = GetInput("Max");
+      auto max_info = GetInput("Max");
       max_name = helper->AutoCast(max_info[0].name, max_info[0].dtype, dtype);
     } else {
       float max_val;
@@ -56,7 +56,7 @@ void ClipMapper::Opset7(OnnxHelper* helper) {
     }
     std::string min_name;
     if (has_min_tensor_input) {
-      std::vector<TensorInfo> min_info = GetInput("Min");
+      auto min_info = GetInput("Min");
       min_name = helper->AutoCast(min_info[0].name, min_info[0].dtype, dtype);
     } else {
       float min_val;

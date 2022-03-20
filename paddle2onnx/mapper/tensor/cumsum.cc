@@ -20,8 +20,8 @@ REGISTER_MAPPER(cumsum, CumsumMapper)
 int32_t CumsumMapper::GetMinOpset(bool verbose) { return 11; }
 
 void CumsumMapper::Opset11(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   std::string axis_node =
       helper->Constant({1}, GetOnnxDtype(P2ODataType::INT64), axis_);
   helper->MakeNode("CumSum", {input_info[0].name, axis_node},

@@ -18,8 +18,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(logical_not, LogicalNotMapper)
 
 void LogicalNotMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   helper->MakeNode("Not", {input_info[0].name}, {output_info[0].name});
 }

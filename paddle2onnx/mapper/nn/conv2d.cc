@@ -45,9 +45,9 @@ int32_t Conv2dMapper::GetMinOpset(bool verbose) {
 }
 
 void Conv2dMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> kernel_info = GetInput("Filter");
-  std::vector<TensorInfo> input_info = GetInput("Input");
-  std::vector<TensorInfo> output_info = GetOutput("Output");
+  auto kernel_info = GetInput("Filter");
+  auto input_info = GetInput("Input");
+  auto output_info = GetOutput("Output");
   auto input = helper->AutoCast(input_info[0].name, input_info[0].dtype,
                                 P2ODataType::FP32);
   auto kernel = helper->AutoCast(kernel_info[0].name, kernel_info[0].dtype,

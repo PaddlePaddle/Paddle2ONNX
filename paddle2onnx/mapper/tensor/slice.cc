@@ -50,8 +50,8 @@ std::vector<int64_t> SliceMapper::DecreaseAxis() {
   bool has_attr = HasAttr("decrease_axis");
   if (has_attr) {
     GetAttr("decrease_axis", &decrease_axis);
-    std::vector<TensorInfo> input_info = GetInput("Input");
-    std::vector<TensorInfo> output_info = GetOutput("Out");
+    auto input_info = GetInput("Input");
+    auto output_info = GetOutput("Out");
     if (output_info[0].shape.size() == 1 && output_info[0].shape[0] == 0) {
       return decrease_axis;
     }
@@ -64,8 +64,8 @@ std::vector<int64_t> SliceMapper::DecreaseAxis() {
 }
 
 void SliceMapper::Opset7(OnnxHelper *helper) {
-  std::vector<TensorInfo> input_info = GetInput("Input");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("Input");
+  auto output_info = GetOutput("Out");
 
   Assert(!HasInput("StartsTensorList"),
          "While slice/strided_slice has input StartsTensorList, requires "
@@ -103,8 +103,8 @@ void SliceMapper::Opset7(OnnxHelper *helper) {
 }
 
 void SliceMapper::Opset10(OnnxHelper *helper) {
-  std::vector<TensorInfo> input_info = GetInput("Input");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("Input");
+  auto output_info = GetOutput("Out");
 
   std::string starts = "";
   if (HasInput("StartsTensorList")) {

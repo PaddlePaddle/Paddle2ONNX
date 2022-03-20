@@ -33,9 +33,9 @@ std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info,
 }
 
 void MatmulV2Mapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_x_info = GetInput("X");
-  std::vector<TensorInfo> input_y_info = GetInput("Y");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_x_info = GetInput("X");
+  auto input_y_info = GetInput("Y");
+  auto output_info = GetOutput("Out");
   std::string input_x = input_x_info[0].name;
   if (trans_x_) {
     input_x = GetTrans(input_x_info, helper);

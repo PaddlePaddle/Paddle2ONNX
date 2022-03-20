@@ -32,9 +32,9 @@ int32_t ElementwiseMapper::GetMinOpset(bool verbose) {
 }
 
 void ElementwiseMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_x_info = GetInput("X");
-  std::vector<TensorInfo> input_y_info = GetInput("Y");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_x_info = GetInput("X");
+  auto input_y_info = GetInput("Y");
+  auto output_info = GetOutput("Out");
   auto iter = op_mapper_.find(OpType());
   Assert(op_mapper_.end() != iter,
          "Cannot find " + OpType() + " in elementwise op_mapper.");
@@ -58,9 +58,9 @@ void ElementwiseMapper::Opset7(OnnxHelper* helper) {
 }
 
 void ElementWiseModMapper::Opset10(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_x_info = GetInput("X");
-  std::vector<TensorInfo> input_y_info = GetInput("Y");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_x_info = GetInput("X");
+  auto input_y_info = GetInput("Y");
+  auto output_info = GetOutput("Out");
   int64_t fmod = 0;
   if (input_y_info[0].dtype == P2ODataType::INT32 ||
       input_y_info[0].dtype == P2ODataType::INT64) {

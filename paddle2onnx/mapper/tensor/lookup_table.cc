@@ -23,7 +23,7 @@ REGISTER_MAPPER(lookup_table, LookupTableMapper)
 REGISTER_MAPPER(lookup_table_v2, LookupTableMapper)
 
 int32_t LookupTableMapper::GetMinOpset(bool verbose) {
-  std::vector<TensorInfo> input_w_info = GetInput("W");
+  auto input_w_info = GetInput("W");
   bool has_minus = false;
   for (auto i : input_w_info[0].shape) {
     has_minus = (i == -1);
@@ -38,9 +38,9 @@ int32_t LookupTableMapper::GetMinOpset(bool verbose) {
 }
 
 void LookupTableMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_ids_info = GetInput("Ids");
-  std::vector<TensorInfo> input_w_info = GetInput("W");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_ids_info = GetInput("Ids");
+  auto input_w_info = GetInput("W");
+  auto output_info = GetOutput("Out");
 
   std::string ids_node = input_ids_info[0].name;
   auto ids_shape = input_ids_info[0].shape;
@@ -73,9 +73,9 @@ void LookupTableMapper::Opset7(OnnxHelper* helper) {
 }
 
 void LookupTableMapper::Opset11(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_ids_info = GetInput("Ids");
-  std::vector<TensorInfo> input_w_info = GetInput("W");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_ids_info = GetInput("Ids");
+  auto input_w_info = GetInput("W");
+  auto output_info = GetOutput("Out");
 
   std::string ids_node = input_ids_info[0].name;
   auto ids_shape = input_ids_info[0].shape;

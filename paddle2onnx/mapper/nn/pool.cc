@@ -157,8 +157,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     }
     return -1;
   }
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   if (adaptive_) {
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
@@ -203,8 +203,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
 }
 
 void Pool2dMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   bool is_1x1_kernel = true;
   for (auto i : k_size_) {

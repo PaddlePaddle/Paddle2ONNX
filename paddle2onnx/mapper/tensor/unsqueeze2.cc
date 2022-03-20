@@ -49,8 +49,8 @@ int32_t Unsqueeze2Mapper::GetMinOpset(bool verbose) {
 }
 
 void Unsqueeze2Mapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::vector<int64_t> axes;
   if (axes_.empty()) {
@@ -69,8 +69,8 @@ void Unsqueeze2Mapper::Opset7(OnnxHelper* helper) {
 }
 
 void Unsqueeze2Mapper::Opset13(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::vector<int64_t> axes;
   if (axes_.empty()) {

@@ -20,8 +20,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(scale, ScaleMapper)
 
 void ScaleMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   bool has_scale_tensor = HasInput("ScaleTensor");
   // TODO(yeliang2258): just temporary use Identity
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
@@ -48,7 +48,7 @@ void ScaleMapper::Opset7(OnnxHelper* helper) {
 
     std::string scale_node;
     if (has_scale_tensor) {
-      std::vector<TensorInfo> scale_tensor_info = GetInput("ScaleTensor");
+      auto scale_tensor_info = GetInput("ScaleTensor");
       scale_node = helper->AutoCast(scale_tensor_info[0].name,
                                     scale_tensor_info[0].dtype, data_type);
     } else {

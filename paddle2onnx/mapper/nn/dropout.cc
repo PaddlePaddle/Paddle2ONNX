@@ -36,8 +36,8 @@ int32_t DropoutMapper::GetMinOpset(bool verbose) {
 }
 
 void DropoutMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   if (dropout_implementation_ == "upscale_in_train") {
     helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});

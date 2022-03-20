@@ -54,8 +54,8 @@ int32_t SplitMapper::GetMinOpset(bool verbose) {
 }
 
 void SplitMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   int64_t axis = axis_;
   if (HasInput("AxisTensor")) {
@@ -95,8 +95,8 @@ void SplitMapper::Opset7(OnnxHelper* helper) {
 }
 
 void SplitMapper::Opset13(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   int64_t axis = axis_;
   if (HasInput("AxisTensor")) {

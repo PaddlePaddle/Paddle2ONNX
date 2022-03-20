@@ -18,8 +18,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(cast, CastMapper)
 
 void CastMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info = GetInput("X");
-  std::vector<TensorInfo> output_info = GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   auto node =
       helper->MakeNode("Cast", {input_info[0].name}, {output_info[0].name});
   AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
