@@ -29,6 +29,7 @@ def is_static_shape(shape):
 
 
 def split_helper(graph, input, axis=0, split=None, outputs=None):
+    assert outputs is not None, "outputs can not be None in split_helper."
     inputs = []
     if not isinstance(input, list):
         input = [input]

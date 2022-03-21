@@ -16,6 +16,7 @@ import numpy as np
 from paddle2onnx.utils import logging
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper(
