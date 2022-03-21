@@ -16,13 +16,19 @@ import cv2
 import argparse
 
 import numpy as np
-from scipy.special import softmax
+from functools import reduce
 
 from utils.visualize import save_imgs
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--model_type',
+        dest='model_type',
+        type=str,
+        help="picodet or yolodet"
+        "onnx model file.")
     parser.add_argument(
         '--model_path',
         dest='model_path',
@@ -50,14 +56,20 @@ def parse_args():
     return parser.parse_args()
 
 
-class PicoDetPreProcess(object):
-    def __init__(self, ):
-        self.target_size = [640, 640]
-        self.interp = cv2.INTER_CUBIC
-        self.mean = [0.485, 0.456, 0.406]
-        self.std = [0.229, 0.224, 0.225]
-        self.is_scale = True
-        self.stride = 32
+class YoloDetPreProcess(object):
+    def __init__(self,
+                 target_size=[608, 608],
+                 interp=cv2.INTER_CUBIC,
+                 mean=[0.485, 0.456, 0.406],
+                 std=[0.229, 0.224, 0.225],
+                 is_scale=True,
+                 stride=32):
+        self.target_size = target_size
+        self.interp = interp
+        self.mean = mean
+        self.std = std
+        self.is_scale = is_scale
+        self.stride = stride
 
     def resize(self, im, im_info):
         target_size = self.target_size
@@ -113,255 +125,178 @@ class PicoDetPreProcess(object):
         im, im_info = self.resize(im, im_info)
         im = self.normalizeImage(im)
         im = im.transpose((2, 0, 1))
-        im = self.padStride(im)
-
+        if FLAGS.model_type == "picodet":
+            im = self.padStride(im)
         inputs = {}
         inputs['image'] = np.array((im, )).astype('float32')
-        inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
+        if FLAGS.model_type == "yolodet":
+            inputs['im_shape'] = np.array(
+                (im_info['im_shape'], )).astype('float32')
         inputs['scale_factor'] = np.array(
             (im_info['scale_factor'], )).astype('float32')
 
         return inputs
 
 
-class PicoDetPostProcess(object):
-    """
-    Args:
-        input_shape (int): network input image size
-        ori_shape (int): ori image shape of before padding
-        scale_factor (float): scale factor of ori image
-        enable_mkldnn (bool): whether to open MKLDNN
-    """
-
+class YoloDetPostProcess(object):
     def __init__(self,
-                 input_shape,
-                 ori_shape,
-                 scale_factor,
-                 strides=[8, 16, 32, 64],
-                 score_threshold=0.4,
-                 nms_threshold=0.5,
+                 score_threshold=0.01,
+                 nms_threshold=0.45,
                  nms_top_k=1000,
                  keep_top_k=100):
-        self.ori_shape = ori_shape
-        self.input_shape = input_shape
-        self.scale_factor = scale_factor
-        self.strides = strides
         self.score_threshold = score_threshold
         self.nms_threshold = nms_threshold
         self.nms_top_k = nms_top_k
         self.keep_top_k = keep_top_k
 
-    def hard_nms(self, box_scores, iou_threshold, top_k=-1, candidate_size=200):
+    # 计算IoU，矩形框的坐标形式为xyxy
+    def box_iou_xyxy(self, box1, box2):
+        # 获取box1左上角和右下角的坐标
+        x1min, y1min, x1max, y1max = box1[0], box1[1], box1[2], box1[3]
+        # 计算box1的面积
+        s1 = (y1max - y1min + 1.) * (x1max - x1min + 1.)
+        # 获取box2左上角和右下角的坐标
+        x2min, y2min, x2max, y2max = box2[0], box2[1], box2[2], box2[3]
+        # 计算box2的面积
+        s2 = (y2max - y2min + 1.) * (x2max - x2min + 1.)
+
+        # 计算相交矩形框的坐标
+        xmin = np.maximum(x1min, x2min)
+        ymin = np.maximum(y1min, y2min)
+        xmax = np.minimum(x1max, x2max)
+        ymax = np.minimum(y1max, y2max)
+        # 计算相交矩形行的高度、宽度、面积
+        inter_h = np.maximum(ymax - ymin + 1., 0.)
+        inter_w = np.maximum(xmax - xmin + 1., 0.)
+        intersection = inter_h * inter_w
+        # 计算相并面积
+        union = s1 + s2 - intersection
+        # 计算交并比
+        iou = intersection / union
+        return iou
+
+    # 非极大值抑制
+    def nms(self,
+            bboxes,
+            scores,
+            score_thresh,
+            nms_thresh,
+            pre_nms_topk,
+            i=0,
+            c=0):
         """
-        Args:
-            box_scores (N, 5): boxes in corner-form and probabilities.
-            iou_threshold: intersection over union threshold.
-            top_k: keep top_k results. If k <= 0, keep all the results.
-            candidate_size: only consider the candidates with the highest scores.
-        Returns:
-             picked: a list of indexes of the kept boxes
+        nms
         """
-        scores = box_scores[:, -1]
-        boxes = box_scores[:, :-1]
-        picked = []
-        indexes = np.argsort(scores)
-        indexes = indexes[-candidate_size:]
-        while len(indexes) > 0:
-            current = indexes[-1]
-            picked.append(current)
-            if 0 < top_k == len(picked) or len(indexes) == 1:
+        inds = np.argsort(scores)
+        inds = inds[::-1]
+        keep_inds = []
+        while (len(inds) > 0):
+            cur_ind = inds[0]
+            cur_score = scores[cur_ind]
+            # if score of the box is less than score_thresh, just drop it
+            if cur_score < score_thresh:
                 break
-            current_box = boxes[current, :]
-            indexes = indexes[:-1]
-            rest_boxes = boxes[indexes, :]
-            iou = self.iou_of(
-                rest_boxes,
-                np.expand_dims(
-                    current_box, axis=0), )
-            indexes = indexes[iou <= iou_threshold]
 
-        return box_scores[picked, :]
+            keep = True
+            for ind in keep_inds:
+                current_box = bboxes[cur_ind]
+                remain_box = bboxes[ind]
+                iou = self.box_iou_xyxy(current_box, remain_box)
+                if iou > nms_thresh:
+                    keep = False
+                    break
+            if i == 0 and c == 4 and cur_ind == 951:
+                print('suppressed, ', keep, i, c, cur_ind, ind, iou)
+            if keep:
+                keep_inds.append(cur_ind)
+            inds = inds[1:]
 
-    def iou_of(self, boxes0, boxes1, eps=1e-5):
-        """Return intersection-over-union (Jaccard index) of boxes.
-        Args:
-            boxes0 (N, 4): ground truth boxes.
-            boxes1 (N or 1, 4): predicted boxes.
-            eps: a small number to avoid 0 as denominator.
-        Returns:
-            iou (N): IoU values.
+        return np.array(keep_inds)
+
+    # 多分类非极大值抑制
+    def multiclass_nms(self,
+                       bboxes,
+                       scores,
+                       score_threshold=0.01,
+                       nms_threshold=0.45,
+                       nms_top_k=1000,
+                       keep_top_k=100):
         """
-        overlap_left_top = np.maximum(boxes0[..., :2], boxes1[..., :2])
-        overlap_right_bottom = np.minimum(boxes0[..., 2:], boxes1[..., 2:])
-
-        overlap_area = self.area_of(overlap_left_top, overlap_right_bottom)
-        area0 = self.area_of(boxes0[..., :2], boxes0[..., 2:])
-        area1 = self.area_of(boxes1[..., :2], boxes1[..., 2:])
-        return overlap_area / (area0 + area1 - overlap_area + eps)
-
-    def area_of(self, left_top, right_bottom):
-        """Compute the areas of rectangles given two corners.
-        Args:
-            left_top (N, 2): left top corner.
-            right_bottom (N, 2): right bottom corner.
-        Returns:
-            area (N): return the area.
+        This is for multiclass_nms
         """
-        hw = np.clip(right_bottom - left_top, 0.0, None)
-        return hw[..., 0] * hw[..., 1]
-
-    def warp_boxes(self, boxes, ori_shape):
-        """Apply transform to boxes
-        """
-        width, height = ori_shape[1], ori_shape[0]
-        n = len(boxes)
-        if n:
-            # warp points
-            xy = np.ones((n * 4, 3))
-            xy[:, :2] = boxes[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
-                n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
-            # xy = xy @ M.T  # transform
-            xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)  # rescale
-            # create new boxes
-            x = xy[:, [0, 2, 4, 6]]
-            y = xy[:, [1, 3, 5, 7]]
-            xy = np.concatenate(
-                (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
-            # clip boxes
-            xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
-            xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
-            return xy.astype(np.float32)
-        else:
-            return boxes
-
-    def __call__(self, scores, raw_boxes):
-        batch_size = raw_boxes[0].shape[0]
-        reg_max = int(raw_boxes[0].shape[-1] / 4 - 1)
-        out_boxes_num = []
-        out_boxes_list = []
-        for batch_id in range(batch_size):
-            # generate centers
-            decode_boxes = []
-            select_scores = []
-            for stride, box_distribute, score in zip(self.strides, raw_boxes,
-                                                     scores):
-                box_distribute = box_distribute[batch_id]
-                score = score[batch_id]
-                # centers
-                fm_h = self.input_shape[0] / stride
-                fm_w = self.input_shape[1] / stride
-                h_range = np.arange(fm_h)
-                w_range = np.arange(fm_w)
-                ww, hh = np.meshgrid(w_range, h_range)
-                ct_row = (hh.flatten() + 0.5) * stride
-                ct_col = (ww.flatten() + 0.5) * stride
-                center = np.stack((ct_col, ct_row, ct_col, ct_row), axis=1)
-
-                # box distribution to distance
-                reg_range = np.arange(reg_max + 1)
-                box_distance = box_distribute.reshape((-1, reg_max + 1))
-                box_distance = softmax(box_distance, axis=1)
-                box_distance = box_distance * np.expand_dims(reg_range, axis=0)
-                box_distance = np.sum(box_distance, axis=1).reshape((-1, 4))
-                box_distance = box_distance * stride
-
-                # top K candidate
-                topk_idx = np.argsort(score.max(axis=1))[::-1]
-                topk_idx = topk_idx[:self.nms_top_k]
-                center = center[topk_idx]
-                score = score[topk_idx]
-                box_distance = box_distance[topk_idx]
-
-                # decode box
-                decode_box = center + [-1, -1, 1, 1] * box_distance
-
-                select_scores.append(score)
-                decode_boxes.append(decode_box)
-
-            # nms
-            bboxes = np.concatenate(decode_boxes, axis=0)
-            confidences = np.concatenate(select_scores, axis=0)
-            picked_box_probs = []
-            picked_labels = []
-            for class_index in range(0, confidences.shape[1]):
-                probs = confidences[:, class_index]
-                mask = probs > self.score_threshold
-                probs = probs[mask]
-                if probs.shape[0] == 0:
+        batch_size = bboxes.shape[0]
+        class_num = scores.shape[1]
+        rets = []
+        for i in range(batch_size):
+            bboxes_i = bboxes[i]
+            scores_i = scores[i]
+            ret = []
+            for c in range(class_num):
+                scores_i_c = scores_i[c]
+                keep_inds = self.nms(bboxes_i,
+                                     scores_i_c,
+                                     score_threshold,
+                                     nms_threshold,
+                                     nms_top_k,
+                                     i=i,
+                                     c=c)
+                if len(keep_inds) < 1:
                     continue
-                subset_boxes = bboxes[mask, :]
-                box_probs = np.concatenate(
-                    [subset_boxes, probs.reshape(-1, 1)], axis=1)
-                box_probs = self.hard_nms(
-                    box_probs,
-                    iou_threshold=self.nms_threshold,
-                    top_k=self.keep_top_k, )
-                picked_box_probs.append(box_probs)
-                picked_labels.extend([class_index] * box_probs.shape[0])
+                keep_bboxes = bboxes_i[keep_inds]
+                keep_scores = scores_i_c[keep_inds]
+                keep_results = np.zeros([keep_scores.shape[0], 6])
+                keep_results[:, 0] = c
+                keep_results[:, 1] = keep_scores[:]
+                keep_results[:, 2:6] = keep_bboxes[:]
+                ret.append(keep_results)
+            if len(ret) < 1:
+                rets.append(ret)
+                continue
+            ret_i = np.concatenate(ret, axis=0)
+            scores_i = ret_i[:, 1]
+            if len(scores_i) > keep_top_k:
+                inds = np.argsort(scores_i)[::-1]
+                inds = inds[:keep_top_k]
+                ret_i = ret_i[inds]
 
-            if len(picked_box_probs) == 0:
-                out_boxes_list.append(np.empty((0, 4)))
-                out_boxes_num.append(0)
+            rets.append(ret_i)
+        return rets
 
-            else:
-                picked_box_probs = np.concatenate(picked_box_probs)
-
-                # resize output boxes
-                picked_box_probs[:, :4] = self.warp_boxes(
-                    picked_box_probs[:, :4], self.ori_shape[batch_id])
-                im_scale = np.concatenate([
-                    self.scale_factor[batch_id][::-1],
-                    self.scale_factor[batch_id][::-1]
-                ])
-                picked_box_probs[:, :4] /= im_scale
-                # clas score box
-                out_boxes_list.append(
-                    np.concatenate(
-                        [
-                            np.expand_dims(
-                                np.array(picked_labels),
-                                axis=-1), np.expand_dims(
-                                    picked_box_probs[:, 4], axis=-1),
-                            picked_box_probs[:, :4]
-                        ],
-                        axis=1))
-                out_boxes_num.append(len(picked_labels))
-
-        out_boxes_list = np.concatenate(out_boxes_list, axis=0)
-        out_boxes_num = np.asarray(out_boxes_num).astype(np.int32)
-        return out_boxes_list, out_boxes_num
+    def __call__(self, bboxes, scores):
+        # nms
+        bbox_pred = self.multiclass_nms(
+            bboxes,
+            scores,
+            score_threshold=self.score_threshold,
+            nms_threshold=self.nms_threshold,
+            nms_top_k=self.nms_top_k,
+            keep_top_k=self.keep_top_k)
+        np_boxes = bbox_pred[0]
+        np_boxes_num = [bbox_pred[0].shape[0]]
+        if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
+            print('[WARNNING] No object detected.')
+            np_boxes = np.zeros([0, 6])
+            np_boxes_num = [0]
+        results = dict(boxes=np_boxes, boxes_num=np_boxes_num)
+        return results
 
 
-def onnx_predict(onnx_path, imgs_path):
+def onnx_predict(model_path, imgs_path):
     import onnxruntime as rt
-    sess = rt.InferenceSession(onnx_path)
-    # preprocess
-    preProcess = PicoDetPreProcess()
-    inputs = preProcess(imgs_path)
-    onxx_input_list = {}
-    for i in range(len(sess.get_inputs())):
-        input_name = sess.get_inputs()[i].name
-        onxx_input_list[input_name] = inputs[input_name]
-    output = sess.run(None, onxx_input_list)
+    sess = rt.InferenceSession(model_path)
 
-    # model_prediction
-    np_score_list, np_boxes_list = [], []
-    num_outs = 4
-    for out_idx in range(num_outs):
-        scores = output[out_idx]
-        np_score_list.append(scores)
-        boxes = output[out_idx + num_outs]
-        np_boxes_list.append(boxes)
+    # preprocess
+    if FLAGS.model_type == "yolodet":
+        target_size = [608, 608]
+    else:
+        target_size = [640, 640]
+    preProcess = YoloDetPreProcess(target_size=target_size)
+    inputs = preProcess(imgs_path)
+    output = sess.run(None, inputs)
 
     # postprocess
-    postProcess = PicoDetPostProcess(
-        inputs['image'].shape[2:],
-        inputs['im_shape'],
-        inputs['scale_factor'],
-        strides=[8, 16, 32, 64],
-        nms_threshold=0.5)
-    np_boxes, np_boxes_num = postProcess(np_score_list, np_boxes_list)
-    results = dict(boxes=np_boxes, boxes_num=np_boxes_num)
+    postProcess = YoloDetPostProcess(score_threshold=0.01, nms_threshold=0.45)
+    results = postProcess(output[0], output[1])
     return results
 
 
@@ -370,29 +305,22 @@ def paddle_predict(model_path, imgs_path):
     model = paddle.jit.load(model_path)
     model.eval()
 
+    if FLAGS.model_type == "yolodet":
+        target_size = [608, 608]
+    else:
+        target_size = [640, 640]
     # preprocess
-    preProcess = PicoDetPreProcess()
+    preProcess = YoloDetPreProcess(target_size=target_size)
     inputs = preProcess(imgs_path)
-    output = model(inputs['image'])
-
-    # model_prediction
-    np_score_list, np_boxes_list = [], []
-    num_outs = 4
-    for out_idx in range(num_outs):
-        scores = output[out_idx].numpy()
-        np_score_list.append(scores)
-        boxes = output[out_idx + num_outs].numpy()
-        np_boxes_list.append(boxes)
+    if FLAGS.model_type == "yolodet":
+        output = model(inputs['im_shape'], inputs['image'],
+                       inputs['scale_factor'])
+    else:
+        output = model(inputs['image'], inputs['scale_factor'])
 
     # postprocess
-    postProcess = PicoDetPostProcess(
-        inputs['image'].shape[2:],
-        inputs['im_shape'],
-        inputs['scale_factor'],
-        strides=[8, 16, 32, 64],
-        nms_threshold=0.5)
-    np_boxes, np_boxes_num = postProcess(np_score_list, np_boxes_list)
-    results = dict(boxes=np_boxes, boxes_num=np_boxes_num)
+    postProcess = YoloDetPostProcess(score_threshold=0.01, nms_threshold=0.45)
+    results = postProcess(output[0].numpy(), output[1].numpy())
     return results
 
 

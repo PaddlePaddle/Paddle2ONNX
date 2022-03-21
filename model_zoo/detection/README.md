@@ -20,7 +20,8 @@ wget https://bj.bcebos.com/paddle2onnx/model_zoo/picodet_l_640_coco.onnx
 
 python3 infer.py \
     --model_path picodet_l_640_coco.onnx \
-    --image_path ./images/hrnet_demo.jpg
+    --image_path ./images/hrnet_demo.jpg \
+    --model_type=picodet
 ```
 
 你也可以使用Paddle框架进行推理验证
@@ -32,7 +33,8 @@ tar xvf picodet_l_640_coco.tar.gz
 python3 infer.py \
     --model_path ./picodet_l_640_coco/model \
     --image_path ./images/hrnet_demo.jpg \
-    --use_paddle_predict True
+    --use_paddle_predict True \
+    --model_type=picodet
 ```
 
 执行命令后，在 ./outputs/ 下保存可视化结果。
