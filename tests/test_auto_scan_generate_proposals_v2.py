@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
 import paddle
 from paddle2onnx.command import program2onnx
 import onnxruntime as rt
 
 paddle.enable_static()
-np.random.seed(33)
 
 import numpy as np
 import paddle
 import paddle.fluid as fluid
 
-np.random.seed(333)
 from onnxbase import randtool, compare
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
@@ -281,7 +278,7 @@ def test_generate_proposals_v2():
         min_size = 3.0
         eta = 1.
         pixel_offset = False
-        return_rois_num = False
+        return_rois_num = True
         out = generate_proposals_v2(
             scores,
             bbox_deltas,
@@ -308,7 +305,6 @@ def test_generate_proposals_v2():
                          fetch_list=[out],
                          return_numpy=False)
 
-        result = np.array(result[0])
         path_prefix = "./generate_proposals_v2"
         fluid.io.save_inference_model(path_prefix, [
             "scores", "bbox_deltas", "im_shape", "anchors", "variances"
@@ -332,8 +328,7 @@ def test_generate_proposals_v2():
             input_name3: im_shape_data,
             input_name4: anchors_data,
             input_name5: variances_data
-        })[0]
-        pred_onnx = np.array(pred_onnx)
+        })
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 

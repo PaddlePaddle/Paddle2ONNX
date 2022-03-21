@@ -123,7 +123,7 @@ class ArgSort():
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
-        k = node.input_var('X', 0).shape[node.attr('axis')]
+        k = node.input_shape('X', 0)[node.attr('axis')]
         input_dtype = node.input_dtype('X', 0)
         dtype = dtypes.DTYPE_PADDLE_STR_MAP[input_dtype]
         inputs = node.input('X', 0)

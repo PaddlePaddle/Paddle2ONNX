@@ -913,7 +913,7 @@ class FullLike():
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
         value = node.attr('value')
         dtype = node.attr('dtype')
-        input_dtype = node.input_var('X', 0).dtype
+        input_dtype = node.input_dtype('X', 0)
         if dtype is None:
             dtype = input_dtype
         np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]
@@ -939,7 +939,7 @@ class FullZeroLike():
         shape_node = graph.make_node('Shape', inputs=node.input('X'))
         value = 0
         dtype = node.attr('dtype')
-        input_dtype = node.input_var('X', 0).dtype
+        input_dtype = node.input_dtype('X', 0)
         if dtype is None:
             dtype = input_dtype
         np_dtype = dtypes.DTYPE_PADDLE_STR_MAP[dtype]

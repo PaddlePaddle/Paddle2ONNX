@@ -12,21 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
 import paddle
 from paddle2onnx.command import program2onnx
 import onnxruntime as rt
 
 paddle.enable_static()
-np.random.seed(33)
 
 import numpy as np
 import paddle
 import paddle.fluid as fluid
 from onnxbase import randtool, compare
-
-np.random.seed(333)
-import numpy as np
 
 
 def anchor_generator_in_python(input_feat, anchor_sizes, aspect_ratios,
@@ -156,7 +151,6 @@ def test_generate_proposals():
                          fetch_list=[out],
                          return_numpy=False)
 
-        result = np.array(result[0])
         path_prefix = "./generate_proposals"
         fluid.io.save_inference_model(
             path_prefix,
@@ -181,8 +175,7 @@ def test_generate_proposals():
             input_name3: im_info_data,
             input_name4: anchors_data,
             input_name5: variances_data
-        })[0]
-        pred_onnx = np.array(pred_onnx)
+        })
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 

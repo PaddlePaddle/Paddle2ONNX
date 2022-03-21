@@ -27,6 +27,7 @@ BBOX_CLIP_DEFAULT = math.log(1000.0 / 16.0)
 
 class GenerateProposals(CustomPaddleOp):
     def __init__(self, node, **kw):
+        paddle.enable_static()
         super(GenerateProposals, self).__init__(node)
         self.eta = node.attr('eta')
         self.min_size = node.attr('min_size')
@@ -182,7 +183,7 @@ class GenerateProposals(CustomPaddleOp):
             score_threshold=-1.,
             keep_top_k=self.post_nms_topN,
             nms_threshold=self.nms_thresh,
-            normalized=False,
+            normalized=False if self.pixel_offset else True,
             nms_eta=self.eta)
         label, scores, proposal = paddle.tensor.split(
             out, axis=1, num_or_sections=[1, 1, 4])
