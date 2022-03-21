@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
+from onnxbase import randtool
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
@@ -25,43 +26,50 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x, y):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.fluid.layers.matmul(
-            x,
-            y,
-            transpose_x=self.config["transpose_x"],
-            transpose_y=self.config["transpose_y"])
+        x = paddle.fluid.layers.uniform_random_batch_size_like(
+            inputs,
+            shape=self.config["shape"],
+            min=self.config["min"],
+            max=self.config["max"],
+            dtype=self.config["out_dtype"])
         return x
 
 
-class TestMatmulConvert(OPConvertAutoScanTest):
+class TestUniformRandomBaTchSizeLikeConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.matmul
+    api: paddle.fluid.layers.uniform_random_batch_size_like
     OPset version: 7, 9, 15
     """
 
     def sample_convert_config(self, draw):
-        input_shape1 = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=5, max_value=20), min_size=3, max_size=5))
-        # broadcast
-        input_shape2 = input_shape1[-2:]
-        input_shape2.reverse()
+                    min_value=1, max_value=9), min_size=1, max_size=1))
+
+        min = draw(st.floats(min_value=0, max_value=1.0))
+
+        max = draw(st.floats(min_value=1.0, max_value=2.0))
+
         dtype = draw(st.sampled_from(["float32", "float64"]))
-        transpose = draw(st.booleans())
+        out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
-            "op_names": ["matmul"],
-            "test_data_shapes": [input_shape1, input_shape2],
-            "test_data_types": [[dtype], [dtype]],
+            "op_names": ["uniform_random_batch_size_like"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "transpose_x": transpose,
-            "transpose_y": transpose,
+            "shape": input_shape,
+            "min": min,
+            "max": max,
+            "out_dtype": out_dtype,
+            "delta": 1e11,
+            "rtol": 1e11
         }
 
         models = Net(config)
