@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -21,9 +22,8 @@ class DropoutMapper : public Mapper {
  public:
   DropoutMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "dropout_prob", &dropout_prob_);
-    parser_->GetOpAttr(op, "dropout_implementation", &dropout_implementation_);
+    GetAttr("dropout_prob", &dropout_prob_);
+    GetAttr("dropout_implementation", &dropout_implementation_);
   }
 
   int32_t GetMinOpset(bool verbose = false);

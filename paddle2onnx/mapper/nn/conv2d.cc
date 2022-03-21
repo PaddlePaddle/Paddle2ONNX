@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/nn/conv2d.h"
+
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ int32_t Conv2dMapper::GetMinOpset(bool verbose) {
     return -1;
   }
   // strides should be less or equal than kernel size
-  auto kernel_info = parser_->GetOpInput(block_idx_, op_idx_, "Filter");
+  auto kernel_info = GetInput("Filter");
   if (kernel_info[0].shape[2] < strides_[0] ||
       kernel_info[0].shape[3] < strides_[1]) {
     if (verbose) {
@@ -44,12 +45,9 @@ int32_t Conv2dMapper::GetMinOpset(bool verbose) {
 }
 
 void Conv2dMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> kernel_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Filter");
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Input");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Output");
+  auto kernel_info = GetInput("Filter");
+  auto input_info = GetInput("Input");
+  auto output_info = GetOutput("Output");
   auto input = helper->AutoCast(input_info[0].name, input_info[0].dtype,
                                 P2ODataType::FP32);
   auto kernel = helper->AutoCast(kernel_info[0].name, kernel_info[0].dtype,

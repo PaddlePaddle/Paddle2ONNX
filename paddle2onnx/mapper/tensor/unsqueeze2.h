@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,8 +24,7 @@ class Unsqueeze2Mapper : public Mapper {
  public:
   Unsqueeze2Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "axes", &axes_);
+    GetAttr("axes", &axes_);
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);

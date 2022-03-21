@@ -95,8 +95,7 @@ def gen_paddle_nms(q):
     q.put(True)
 
 
-#gen_paddle_nms()
-def test_onnx_export(q):
+def onnx_export(q):
     import paddle
     paddle.set_device('cpu')
     import pickle
@@ -148,7 +147,7 @@ def test():
         if not q0.get(timeout=1):
             assert false, "Test failed for multiclass_nms as gen paddle model step."
         q1 = Queue()
-        p1 = Process(target=test_onnx_export, args=(q1, ))
+        p1 = Process(target=onnx_export, args=(q1, ))
         p1.start()
         p1.join()
         if not q1.get(timeout=1):

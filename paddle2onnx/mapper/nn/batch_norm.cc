@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/nn/batch_norm.h"
+
 #include <string>
 #include <vector>
 
@@ -20,18 +21,12 @@ namespace paddle2onnx {
 REGISTER_MAPPER(batch_norm, BatchNormMapper)
 
 void BatchNormMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> scale_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Scale");
-  std::vector<TensorInfo> bias_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Bias");
-  std::vector<TensorInfo> mean_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Mean");
-  std::vector<TensorInfo> variance_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Variance");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Y");
+  auto input_info = GetInput("X");
+  auto scale_info = GetInput("Scale");
+  auto bias_info = GetInput("Bias");
+  auto mean_info = GetInput("Mean");
+  auto variance_info = GetInput("Variance");
+  auto output_info = GetOutput("Y");
 
   auto node = helper->MakeNode(
       "BatchNormalization",

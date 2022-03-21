@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/matmul_v2.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -32,13 +33,9 @@ std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info,
 }
 
 void MatmulV2Mapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_x_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> input_y_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Y");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_x_info = GetInput("X");
+  auto input_y_info = GetInput("Y");
+  auto output_info = GetOutput("Out");
   std::string input_x = input_x_info[0].name;
   if (trans_x_) {
     input_x = GetTrans(input_x_info, helper);

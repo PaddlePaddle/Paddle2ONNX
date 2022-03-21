@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -27,19 +28,18 @@ class NMSMapper : public Mapper {
     // We have found there're difference between `multi_class_nms3` in
     // PaddlePaddle and `NonMaxSuppresion` in ONNX
     MarkAsExperimentalOp();
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "normalized", &normalized_);
-    parser_->GetOpAttr(op, "nms_threshold", &nms_threshold_);
-    parser_->GetOpAttr(op, "score_threshold", &score_threshold_);
-    parser_->GetOpAttr(op, "nms_eta", &nms_eta_);
+    GetAttr("normalized", &normalized_);
+    GetAttr("nms_threshold", &nms_threshold_);
+    GetAttr("score_threshold", &score_threshold_);
+    GetAttr("nms_eta", &nms_eta_);
     // The `nms_top_k` in Paddle and `max_output_boxes_per_class` in ONNX share
     // the same meaning But the filter process may not be same Since NMS is just
     // a post process for Detection, we are not going to export it with exactly
     // same result. We will make a precision performance in COCO or Pascal VOC
     // data later.
-    parser_->GetOpAttr(op, "nms_top_k", &nms_top_k_);
-    parser_->GetOpAttr(op, "background_label", &background_label_);
-    parser_->GetOpAttr(op, "keep_top_k", &keep_top_k_);
+    GetAttr("nms_top_k", &nms_top_k_);
+    GetAttr("background_label", &background_label_);
+    GetAttr("keep_top_k", &keep_top_k_);
   }
 
   int32_t GetMinOpset(bool verbose = false);

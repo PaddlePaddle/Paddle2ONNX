@@ -21,7 +21,7 @@ REGISTER_MAPPER(yolo_box, YoloBoxMapper)
 int32_t YoloBoxMapper::GetMinOpset(bool verbose) { return 11; }
 
 void YoloBoxMapper::Opset11(OnnxHelper* helper) {
-  auto x_info_ori = parser_->GetOpInput(block_idx_, op_idx_, "X");
+  auto x_info_ori = GetInput("X");
 
   // handle the float64 input
   auto x_info = x_info_ori;
@@ -31,9 +31,9 @@ void YoloBoxMapper::Opset11(OnnxHelper* helper) {
     x_info[0].dtype = P2ODataType::FP32;
   }
 
-  auto im_size_info = parser_->GetOpInput(block_idx_, op_idx_, "ImgSize");
-  auto boxes_info = parser_->GetOpOutput(block_idx_, op_idx_, "Boxes");
-  auto scores_info = parser_->GetOpOutput(block_idx_, op_idx_, "Scores");
+  auto im_size_info = GetInput("ImgSize");
+  auto boxes_info = GetOutput("Boxes");
+  auto scores_info = GetOutput("Scores");
   int64_t max_int = 999999;
 
   int64_t anchor_num = anchors_.size() / 2;

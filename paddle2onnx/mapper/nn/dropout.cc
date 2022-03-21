@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "paddle2onnx/mapper/nn/dropout.h"
+
 #include <vector>
 
 namespace paddle2onnx {
@@ -22,10 +23,9 @@ int32_t DropoutMapper::GetMinOpset(bool verbose) {
   if (dropout_implementation_ != "downgrade_in_infer" &&
       dropout_implementation_ != "upscale_in_train") {
     if (verbose) {
-      auto op = parser_->GetOpDesc(block_idx_, op_idx_);
       std::cerr << "dropout_implementation: " << dropout_implementation_
                 << " is not support." << std::endl;
-      std::cerr << " In op " << op.type()
+      std::cerr << " In op " << OpType()
                 << " , dropout_implementation only support  downgrade_in_infer "
                    "and upscale_in_train. "
                 << std::endl;
@@ -36,11 +36,8 @@ int32_t DropoutMapper::GetMinOpset(bool verbose) {
 }
 
 void DropoutMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   if (dropout_implementation_ == "upscale_in_train") {
     helper->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});

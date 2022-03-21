@@ -32,12 +32,11 @@ REGISTER_MAPPER(hard_swish, HardSwishMapper)
 REGISTER_MAPPER(softmax, SoftMaxMapper)
 
 int32_t ActivationMapper::GetMinOpset(bool verbose) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  if (op.type() == "softplus") {
+  if (OpType() == "softplus") {
     float beta = 0.0;
     float threshold = 20.0;
-    parser_->GetOpAttr(op, "beta", &beta);
-    parser_->GetOpAttr(op, "threshold", &threshold);
+    GetAttr("beta", &beta);
+    GetAttr("threshold", &threshold);
     if ((beta - 1.0) > 1e-06 || (beta - 1.0) < -1e-06) {
       if (verbose) {
         std::cerr << "Paddle2ONNX only supports softplus with beta == 0"
@@ -58,37 +57,26 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
 }
 
 void ActivationMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  auto iter = op_mapper_.find(op.type());
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  auto iter = op_mapper_.find(OpType());
   Assert(op_mapper_.end() != iter,
-         "Cannot find " + op.type() + " in activation op_mapper.");
+         "Cannot find " + OpType() + " in activation op_mapper.");
   helper->MakeNode(iter->second, {input_info[0].name}, {output_info[0].name});
 }
 
 void Relu6Mapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   float min = 0.0;
   helper->Clip(input_info[0].name, output_info[0].name, min, threshold_,
                input_info[0].dtype);
 }
 
 void PReluMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> slope_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Alpha");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto slope_info = GetInput("Alpha");
+  auto output_info = GetOutput("Out");
 
   std::string slope_cast_name = slope_info[0].name;
   if (slope_info[0].dtype == P2ODataType::FP64) {
@@ -109,11 +97,8 @@ void PReluMapper::Opset7(OnnxHelper* helper) {
 }
 
 void SeluMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   auto node =
       helper->MakeNode("Selu", {input_info[0].name}, {output_info[0].name});
   AddAttribute(node, "alpha", alpha_);
@@ -121,11 +106,8 @@ void SeluMapper::Opset7(OnnxHelper* helper) {
 }
 
 void HardSigmoidMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   auto node = helper->MakeNode("HardSigmoid", {input_info[0].name},
                                {output_info[0].name});
   AddAttribute(node, "alpha", alpha_);
@@ -133,11 +115,8 @@ void HardSigmoidMapper::Opset7(OnnxHelper* helper) {
 }
 
 void SwishMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::string beta_node =
       helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), beta_)
@@ -149,11 +128,8 @@ void SwishMapper::Opset7(OnnxHelper* helper) {
 }
 
 void HardSwishMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::string scale_node =
       helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), scale_)
@@ -172,23 +148,17 @@ void HardSwishMapper::Opset7(OnnxHelper* helper) {
 }
 
 void LeakyReluMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   auto node = helper->MakeNode("LeakyRelu", {input_info[0].name},
                                {output_info[0].name});
   AddAttribute(node, "alpha", alpha_);
 }
 
 void GeluMapper::Opset9(OnnxHelper* helper) {
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   auto input_onnx_dtype = GetOnnxDtype(input_info[0].dtype);
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   double sqrt_2_value = 1.4142135623730951;
   double scale_value = 0.5;
   double const_1_value = 1.0;
@@ -221,11 +191,8 @@ void GeluMapper::Opset9(OnnxHelper* helper) {
 }
 
 void SoftMaxMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   if (axis_ < 0) {
     axis_ = axis_ + output_info[0].Rank();
   }
@@ -250,13 +217,10 @@ void SoftMaxMapper::Opset7(OnnxHelper* helper) {
 }
 
 void SoftMaxMapper::Opset13(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   int64_t axis;
-  parser_->GetOpAttr(op, "axis", &axis);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  GetAttr("axis", &axis);
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   auto node =
       helper->MakeNode("Softmax", {input_info[0].name}, {output_info[0].name});
   AddAttribute(node, "axis", axis);

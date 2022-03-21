@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -21,10 +22,9 @@ class ScaleMapper : public Mapper {
  public:
   ScaleMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "scale", &scale_);
-    parser_->GetOpAttr(op, "bias", &bias_);
-    parser_->GetOpAttr(op, "bias_after_scale", &bias_after_scale_);
+    GetAttr("scale", &scale_);
+    GetAttr("bias", &bias_);
+    GetAttr("bias_after_scale", &bias_after_scale_);
   }
 
   void Opset7(OnnxHelper* helper);

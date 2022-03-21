@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include <vector>
+
 #include "paddle2onnx/mapper/data_helper.h"
 #include "paddle2onnx/mapper/onnx_helper.h"
 #include "paddle2onnx/mapper/register_mapper.h"
@@ -90,6 +91,66 @@ class Mapper {
   int32_t block_idx_;
   int32_t op_idx_;
   int32_t export_opset_version_;
+
+  std::string OpType() const {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    return op.type();
+  }
+  bool HasInput(const std::string& name) const {
+    return parser_->OpHasInput(block_idx_, op_idx_, name);
+  }
+  bool HasOutput(const std::string& name) const {
+    return parser_->OpHasOutput(block_idx_, op_idx_, name);
+  }
+  std::vector<TensorInfo> GetInput(const std::string& name) const {
+    return parser_->GetOpInput(block_idx_, op_idx_, name);
+  }
+  std::vector<TensorInfo> GetOutput(const std::string& name) const {
+    return parser_->GetOpOutput(block_idx_, op_idx_, name);
+  }
+  bool HasAttr(const std::string& name) const {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    return parser_->OpHasAttr(op, name);
+  }
+  void GetAttr(const std::string& name, int64_t* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+  void GetAttr(const std::string& name, float* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+  void GetAttr(const std::string& name, bool* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+  void GetAttr(const std::string& name, std::string* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+  void GetAttr(const std::string& name, std::vector<int64_t>* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+  void GetAttr(const std::string& name, std::vector<float>* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+  void GetAttr(const std::string& name, std::vector<double>* val) {
+    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+    parser_->GetOpAttr(op, name, val);
+  }
+
+  bool IsConstantInput(const std::string& input_key) const {
+    auto input_info = GetInput(input_key);
+    return parser_->IsConstantTensor(block_idx_, input_info[0].name);
+  }
+
+  template <typename T>
+  bool TryGetInputValue(const std::string& input_key, std::vector<T>* data) {
+    auto input_info = GetInput(input_key);
+    return parser_->TryGetTensorValue(block_idx_, input_info[0].name, data);
+  }
 };
 
 }  // namespace paddle2onnx

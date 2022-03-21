@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -42,8 +43,7 @@ class Relu6Mapper : public Mapper {
  public:
   Relu6Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "threshold", &threshold_);
+    GetAttr("threshold", &threshold_);
   }
 
   void Opset7(OnnxHelper* helper);
@@ -64,9 +64,8 @@ class SeluMapper : public Mapper {
  public:
   SeluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "alpha", &alpha_);
-    parser_->GetOpAttr(op, "scale", &scale_);
+    GetAttr("alpha", &alpha_);
+    GetAttr("scale", &scale_);
   }
 
   void Opset7(OnnxHelper* helper);
@@ -80,9 +79,8 @@ class HardSigmoidMapper : public Mapper {
  public:
   HardSigmoidMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "slope", &alpha_);
-    parser_->GetOpAttr(op, "offset", &beta_);
+    GetAttr("slope", &alpha_);
+    GetAttr("offset", &beta_);
   }
 
   void Opset7(OnnxHelper* helper);
@@ -96,8 +94,7 @@ class SwishMapper : public Mapper {
  public:
   SwishMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "beta", &beta_);
+    GetAttr("beta", &beta_);
   }
 
   void Opset7(OnnxHelper* helper);
@@ -110,10 +107,9 @@ class HardSwishMapper : public Mapper {
  public:
   HardSwishMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "scale", &scale_);
-    parser_->GetOpAttr(op, "offset", &offset_);
-    parser_->GetOpAttr(op, "threshold", &threshold_);
+    GetAttr("scale", &scale_);
+    GetAttr("offset", &offset_);
+    GetAttr("threshold", &threshold_);
   }
 
   void Opset7(OnnxHelper* helper);
@@ -128,8 +124,7 @@ class LeakyReluMapper : public Mapper {
  public:
   LeakyReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "alpha", &alpha_);
+    GetAttr("alpha", &alpha_);
   }
 
   void Opset7(OnnxHelper* helper);
@@ -152,8 +147,7 @@ class SoftMaxMapper : public Mapper {
  public:
   SoftMaxMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "axis", &axis_);
+    GetAttr("axis", &axis_);
   }
 
   void Opset7(OnnxHelper* helper);

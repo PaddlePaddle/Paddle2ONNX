@@ -18,8 +18,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(clip, ClipMapper)
 
 int32_t ClipMapper::GetMinOpset(bool verbose) {
-  bool has_max_tensor_input = parser_->OpHasInput(block_idx_, op_idx_, "Max");
-  bool has_min_tensor_input = parser_->OpHasInput(block_idx_, op_idx_, "Min");
+  bool has_max_tensor_input = HasInput("Max");
+  bool has_min_tensor_input = HasInput("Min");
   if (has_max_tensor_input || has_min_tensor_input) {
     return 11;
   }
@@ -27,14 +27,11 @@ int32_t ClipMapper::GetMinOpset(bool verbose) {
 }
 
 void ClipMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
-  bool has_max_tensor_input = parser_->OpHasInput(block_idx_, op_idx_, "Max");
-  bool has_min_tensor_input = parser_->OpHasInput(block_idx_, op_idx_, "Min");
+  bool has_max_tensor_input = HasInput("Max");
+  bool has_min_tensor_input = HasInput("Min");
 
   if (has_max_tensor_input || has_min_tensor_input) {
     bool dtype_converted = false;
@@ -49,23 +46,21 @@ void ClipMapper::Opset7(OnnxHelper* helper) {
     }
     std::string max_name;
     if (has_max_tensor_input) {
-      std::vector<TensorInfo> max_info =
-          parser_->GetOpInput(block_idx_, op_idx_, "Max");
+      auto max_info = GetInput("Max");
       max_name = helper->AutoCast(max_info[0].name, max_info[0].dtype, dtype);
     } else {
       float max_val;
-      parser_->GetOpAttr(op, "max", &max_val);
+      GetAttr("max", &max_val);
       max_name =
           helper->MakeConstant({1}, GetOnnxDtype(dtype), max_val)->output(0);
     }
     std::string min_name;
     if (has_min_tensor_input) {
-      std::vector<TensorInfo> min_info =
-          parser_->GetOpInput(block_idx_, op_idx_, "Min");
+      auto min_info = GetInput("Min");
       min_name = helper->AutoCast(min_info[0].name, min_info[0].dtype, dtype);
     } else {
       float min_val;
-      parser_->GetOpAttr(op, "min", &min_val);
+      GetAttr("min", &min_val);
       min_name =
           helper->MakeConstant({1}, GetOnnxDtype(dtype), min_val)->output(0);
     }
@@ -79,9 +74,9 @@ void ClipMapper::Opset7(OnnxHelper* helper) {
     }
   } else {
     float max_val;
-    parser_->GetOpAttr(op, "max", &max_val);
+    GetAttr("max", &max_val);
     float min_val;
-    parser_->GetOpAttr(op, "min", &min_val);
+    GetAttr("min", &min_val);
     helper->Clip(input_info[0].name, output_info[0].name, min_val, max_val,
                  input_info[0].dtype);
   }

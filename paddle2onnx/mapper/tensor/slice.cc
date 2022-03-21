@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/slice.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -22,40 +23,35 @@ REGISTER_MAPPER(slice, SliceMapper)
 REGISTER_MAPPER(strided_slice, SliceMapper)
 
 int32_t SliceMapper::GetMinOpset(bool verbose) {
-  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensorList") ||
-      parser_->OpHasInput(block_idx_, op_idx_, "EndsTensorList") ||
-      parser_->OpHasInput(block_idx_, op_idx_, "StridesTensorList")) {
+  if (HasInput("StartsTensorList") || HasInput("EndsTensorList") ||
+      HasInput("StridesTensorList")) {
     return 10;
   }
-  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensor");
-    if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
+  if (HasInput("StartsTensor")) {
+    auto info = GetInput("StartsTensor");
+    if (!IsConstantInput("StartsTensor")) {
       return 10;
     }
   }
-  if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensor");
-    if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
+  if (HasInput("EndsTensor")) {
+    auto info = GetInput("EndsTensor");
+    if (!IsConstantInput("EndsTensor")) {
       return 10;
     }
   }
-  if (parser_->OpHasInput(block_idx_, op_idx_, "StridesTensor") ||
-      strides_.size() > 0) {
+  if (HasInput("StridesTensor") || strides_.size() > 0) {
     return 10;
   }
   return 7;
 }
 
 std::vector<int64_t> SliceMapper::DecreaseAxis() {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   std::vector<int64_t> decrease_axis;
-  bool has_attr = parser_->OpHasAttr(op, "decrease_axis");
+  bool has_attr = HasAttr("decrease_axis");
   if (has_attr) {
-    parser_->GetOpAttr(op, "decrease_axis", &decrease_axis);
-    std::vector<TensorInfo> input_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "Input");
-    std::vector<TensorInfo> output_info =
-        parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+    GetAttr("decrease_axis", &decrease_axis);
+    auto input_info = GetInput("Input");
+    auto output_info = GetOutput("Out");
     if (output_info[0].shape.size() == 1 && output_info[0].shape[0] == 0) {
       return decrease_axis;
     }
@@ -68,33 +64,29 @@ std::vector<int64_t> SliceMapper::DecreaseAxis() {
 }
 
 void SliceMapper::Opset7(OnnxHelper *helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Input");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("Input");
+  auto output_info = GetOutput("Out");
 
-  Assert(!parser_->OpHasInput(block_idx_, op_idx_, "StartsTensorList"),
+  Assert(!HasInput("StartsTensorList"),
          "While slice/strided_slice has input StartsTensorList, requires "
          "opset_version >= 10");
 
   std::vector<int64_t> starts;
-  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensor");
-    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &starts),
+  if (HasInput("StartsTensor")) {
+    Assert(TryGetInputValue("StartsTensor", &starts),
            "While slice/strided_slice has input StartsTensor, and it's not a "
            "constant tensor, then requires opset_version >= 10");
   } else {
     starts = starts_;
   }
 
-  Assert(!parser_->OpHasInput(block_idx_, op_idx_, "EndsTensorList"),
+  Assert(!HasInput("EndsTensorList"),
          "While slice/strided_slice has input EndsTensorList, requires "
          "opset_version >= 10");
   std::vector<int64_t> ends;
-  if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensor");
-    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &ends),
+  if (HasInput("EndsTensor")) {
+    auto info = GetInput("EndsTensor");
+    Assert(TryGetInputValue("EndsTensor", &ends),
            "While slice/strided_slice has input EndsTensor, and it's not a "
            "constant tensor, then requires opset_version >= 10");
   } else {
@@ -111,40 +103,37 @@ void SliceMapper::Opset7(OnnxHelper *helper) {
 }
 
 void SliceMapper::Opset10(OnnxHelper *helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Input");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("Input");
+  auto output_info = GetOutput("Out");
 
   std::string starts = "";
-  if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensorList")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensorList");
+  if (HasInput("StartsTensorList")) {
+    auto info = GetInput("StartsTensorList");
     starts = helper->ConcatIndices(info);
-  } else if (parser_->OpHasInput(block_idx_, op_idx_, "StartsTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StartsTensor");
+  } else if (HasInput("StartsTensor")) {
+    auto info = GetInput("StartsTensor");
     starts = helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
   } else {
     starts = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, starts_);
   }
 
   std::string ends = "";
-  if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensorList")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensorList");
+  if (HasInput("EndsTensorList")) {
+    auto info = GetInput("EndsTensorList");
     ends = helper->ConcatIndices(info);
-  } else if (parser_->OpHasInput(block_idx_, op_idx_, "EndsTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "EndsTensor");
+  } else if (HasInput("EndsTensor")) {
+    auto info = GetInput("EndsTensor");
     ends = helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
   } else {
     ends = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, ends_);
   }
 
   std::string strides = "";
-  if (parser_->OpHasInput(block_idx_, op_idx_, "StridesTensorList")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StridesTensorList");
+  if (HasInput("StridesTensorList")) {
+    auto info = GetInput("StridesTensorList");
     strides = helper->ConcatIndices(info);
-  } else if (parser_->OpHasInput(block_idx_, op_idx_, "StridesTensor")) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "StridesTensor");
+  } else if (HasInput("StridesTensor")) {
+    auto info = GetInput("StridesTensor");
     strides = helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
   } else {
     if (strides_.size() == 0) {

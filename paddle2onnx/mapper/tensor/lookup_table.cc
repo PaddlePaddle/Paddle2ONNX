@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/lookup_table.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -22,8 +23,7 @@ REGISTER_MAPPER(lookup_table, LookupTableMapper)
 REGISTER_MAPPER(lookup_table_v2, LookupTableMapper)
 
 int32_t LookupTableMapper::GetMinOpset(bool verbose) {
-  std::vector<TensorInfo> input_w_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "W");
+  auto input_w_info = GetInput("W");
   bool has_minus = false;
   for (auto i : input_w_info[0].shape) {
     has_minus = (i == -1);
@@ -38,17 +38,13 @@ int32_t LookupTableMapper::GetMinOpset(bool verbose) {
 }
 
 void LookupTableMapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_ids_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Ids");
-  std::vector<TensorInfo> input_w_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "W");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_ids_info = GetInput("Ids");
+  auto input_w_info = GetInput("W");
+  auto output_info = GetOutput("Out");
 
   std::string ids_node = input_ids_info[0].name;
   auto ids_shape = input_ids_info[0].shape;
-  if (op.type() == "lookup_table" && ids_shape[ids_shape.size() - 1] == 1) {
+  if (OpType() == "lookup_table" && ids_shape[ids_shape.size() - 1] == 1) {
     ids_node = helper->Squeeze(input_ids_info[0].name, {-1});
   }
 
@@ -77,17 +73,13 @@ void LookupTableMapper::Opset7(OnnxHelper* helper) {
 }
 
 void LookupTableMapper::Opset11(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_ids_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "Ids");
-  std::vector<TensorInfo> input_w_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "W");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_ids_info = GetInput("Ids");
+  auto input_w_info = GetInput("W");
+  auto output_info = GetOutput("Out");
 
   std::string ids_node = input_ids_info[0].name;
   auto ids_shape = input_ids_info[0].shape;
-  if (op.type() == "lookup_table" && ids_shape[ids_shape.size() - 1] == 1) {
+  if (OpType() == "lookup_table" && ids_shape[ids_shape.size() - 1] == 1) {
     ids_node = helper->Squeeze(input_ids_info[0].name, {-1});
   }
 

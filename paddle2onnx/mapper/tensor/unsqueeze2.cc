@@ -18,26 +18,22 @@ namespace paddle2onnx {
 REGISTER_MAPPER(unsqueeze2, Unsqueeze2Mapper)
 
 int32_t Unsqueeze2Mapper::GetMinOpset(bool verbose) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   if (axes_.size() == 0) {
-    if (parser_->OpHasInput(block_idx_, op_idx_, "AxesTensorList")) {
+    if (HasInput("AxesTensorList")) {
       if (verbose) {
         std::cerr << "[Paddle2ONNX] AxesTensorList as input is not support for "
                      "op unsqueeze2 with opset < 13."
                   << std::endl;
       }
       return 13;
-    } else if (parser_->OpHasInput(block_idx_, op_idx_, "AxesTensor")) {
-      auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
-      if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
+    } else if (HasInput("AxesTensor")) {
+      auto info = GetInput("AxesTensor");
+      if (!IsConstantInput("AxesTensor")) {
         if (verbose) {
           std::cerr << "[Paddle2ONNX] AxesTensor as a nonconstant tensor input "
                        "is not support for op unsqueeze2 with opset < 13."
                     << std::endl;
         }
-        return 13;
-      }
-      if (!parser_->IsConstantTensor(block_idx_, info[0].name)) {
         return 13;
       } else {
         return 7;
@@ -53,16 +49,12 @@ int32_t Unsqueeze2Mapper::GetMinOpset(bool verbose) {
 }
 
 void Unsqueeze2Mapper::Opset7(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::vector<int64_t> axes;
   if (axes_.empty()) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
-    Assert(parser_->TryGetTensorValue(block_idx_, info[0].name, &axes),
+    Assert(TryGetInputValue("AxesTensor", &axes),
            "While unsqueeze2 has input AxesTensor, it cannot be exported by "
            "Paddle2ONNX");
   } else {
@@ -77,16 +69,12 @@ void Unsqueeze2Mapper::Opset7(OnnxHelper* helper) {
 }
 
 void Unsqueeze2Mapper::Opset13(OnnxHelper* helper) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-  std::vector<TensorInfo> input_info =
-      parser_->GetOpInput(block_idx_, op_idx_, "X");
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::vector<int64_t> axes;
   if (axes_.empty()) {
-    auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
-    parser_->TryGetTensorValue(block_idx_, info[0].name, &axes);
+    TryGetInputValue("AxesTensor", &axes);
   } else {
     axes.assign(axes_.begin(), axes_.end());
   }
@@ -100,11 +88,11 @@ void Unsqueeze2Mapper::Opset13(OnnxHelper* helper) {
     helper->Unsqueeze(input_info[0].name, output_info[0].name, axes);
   } else {
     std::string axes_node = "";
-    if (parser_->OpHasInput(block_idx_, op_idx_, "AxesTensorList")) {
-      auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxesTensorList");
+    if (HasInput("AxesTensorList")) {
+      auto info = GetInput("AxesTensorList");
       axes_node = helper->ConcatIndices(info);
     } else {
-      auto info = parser_->GetOpInput(block_idx_, op_idx_, "AxesTensor");
+      auto info = GetInput("AxesTensor");
       axes_node =
           helper->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
     }

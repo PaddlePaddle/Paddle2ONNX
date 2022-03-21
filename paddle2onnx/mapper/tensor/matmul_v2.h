@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,9 +24,8 @@ class MatmulV2Mapper : public Mapper {
  public:
   MatmulV2Mapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "trans_x", &trans_x_);
-    parser_->GetOpAttr(op, "trans_y", &trans_y_);
+    GetAttr("trans_x", &trans_x_);
+    GetAttr("trans_y", &trans_y_);
   }
 
   void Opset7(OnnxHelper* helper);

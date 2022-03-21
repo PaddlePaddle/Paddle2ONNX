@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/assign_value.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -35,8 +36,7 @@ int32_t AssignValueMapper::GetMinOpset(bool verbose) {
 }
 
 void AssignValueMapper::Opset7(OnnxHelper* helper) {
-  std::vector<TensorInfo> output_info =
-      parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto output_info = GetOutput("Out");
   int32_t dtype = static_cast<int32_t>(dtype_);
   if (dtype == P2ODataType::INT32) {
     helper->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),

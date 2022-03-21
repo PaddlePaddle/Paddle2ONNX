@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
@@ -23,13 +24,12 @@ class Conv2dMapper : public Mapper {
  public:
   Conv2dMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {
-    auto op = parser_->GetOpDesc(block_idx_, op_idx_);
-    parser_->GetOpAttr(op, "groups", &groups_);
-    parser_->GetOpAttr(op, "dilations", &dilations_);
-    parser_->GetOpAttr(op, "strides", &strides_);
-    parser_->GetOpAttr(op, "paddings", &paddings_);
-    parser_->GetOpAttr(op, "padding_algorithm", &padding_algorithm_);
-    parser_->GetOpAttr(op, "data_format", &data_format_);
+    GetAttr("groups", &groups_);
+    GetAttr("dilations", &dilations_);
+    GetAttr("strides", &strides_);
+    GetAttr("paddings", &paddings_);
+    GetAttr("padding_algorithm", &padding_algorithm_);
+    GetAttr("data_format", &data_format_);
     if (paddings_.size() == 2) {
       paddings_.push_back(paddings_[0]);
       paddings_.push_back(paddings_[1]);

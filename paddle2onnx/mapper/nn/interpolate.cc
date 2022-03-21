@@ -22,20 +22,19 @@ REGISTER_MAPPER(linear_interp_v2, InterpolateMapper)
 REGISTER_MAPPER(trilinear_interp_v2, InterpolateMapper)
 
 int32_t InterpolateMapper::GetMinOpset(bool verbose) {
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
   if (data_layout_ == "NHWC") {
     if (verbose) {
-      std::cerr << "Paddle2ONNX: NHWC is not supported for op: " << op.type()
+      std::cerr << "Paddle2ONNX: NHWC is not supported for op: " << OpType()
                 << std::endl;
     }
     return -1;
   }
-  auto x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
+  auto x_info = GetInput("X");
   if (x_info[0].Rank() > 5 && x_info[0].Rank() < 3) {
     if (verbose) {
       std::cerr << "Paddle2ONNX: Only support 3D/4D/5D tensor for op: "
-                << op.type() << ", but now the dimension is "
-                << x_info[0].Rank() << std::endl;
+                << OpType() << ", but now the dimension is " << x_info[0].Rank()
+                << std::endl;
     }
     return -1;
   }
@@ -43,21 +42,20 @@ int32_t InterpolateMapper::GetMinOpset(bool verbose) {
 }
 
 std::string InterpolateMapper::ComputeOutSize(OnnxHelper* helper) {
-  bool has_out_size = parser_->OpHasInput(block_idx_, op_idx_, "OutSize");
-  bool has_size_tensor = parser_->OpHasInput(block_idx_, op_idx_, "SizeTensor");
+  bool has_out_size = HasInput("OutSize");
+  bool has_size_tensor = HasInput("SizeTensor");
   if (has_out_size) {
-    auto out_size_info = parser_->GetOpInput(block_idx_, op_idx_, "OutSize");
+    auto out_size_info = GetInput("OutSize");
     return helper->AutoCast(out_size_info[0].name, out_size_info[0].dtype,
                             P2ODataType::INT64);
   } else {
-    auto size_tensor_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "SizeTensor");
+    auto size_tensor_info = GetInput("SizeTensor");
     return helper->ConcatIndices(size_tensor_info);
   }
 }
 
 std::string InterpolateMapper::ComputeScale(OnnxHelper* helper) {
-  auto scale_info = parser_->GetOpInput(block_idx_, op_idx_, "Scale");
+  auto scale_info = GetInput("Scale");
   auto scale = helper->AutoCast(scale_info[0].name, scale_info[0].dtype,
                                 P2ODataType::FP32);
   auto padding = helper->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
@@ -67,9 +65,8 @@ std::string InterpolateMapper::ComputeScale(OnnxHelper* helper) {
 }
 
 void InterpolateMapper::Opset11(OnnxHelper* helper) {
-  auto x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto out_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
-  auto op = parser_->GetOpDesc(block_idx_, op_idx_);
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
   std::string coordinate_transformation_mode = "half_pixel";
   auto resize_type = resize_mapper_[method_];
   if (align_corners_) {
@@ -81,9 +78,9 @@ void InterpolateMapper::Opset11(OnnxHelper* helper) {
   }
   std::string scale = "";
   std::string size = "";
-  bool has_out_size = parser_->OpHasInput(block_idx_, op_idx_, "OutSize");
-  bool has_size_tensor = parser_->OpHasInput(block_idx_, op_idx_, "SizeTensor");
-  bool has_scale_tensor = parser_->OpHasInput(block_idx_, op_idx_, "Scale");
+  bool has_out_size = HasInput("OutSize");
+  bool has_size_tensor = HasInput("SizeTensor");
+  bool has_scale_tensor = HasInput("Scale");
   if (has_out_size || has_size_tensor) {
     size = ComputeOutSize(helper);
   } else if (has_scale_tensor) {
@@ -102,7 +99,7 @@ void InterpolateMapper::Opset11(OnnxHelper* helper) {
       size = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, out_size);
     } else {
       std::vector<float> scale_;
-      parser_->GetOpAttr(op, "scale", &scale_);
+      GetAttr("scale", &scale_);
       float padding = 1.0;
       scale_.insert(scale_.begin(), padding);
       scale_.insert(scale_.begin(), padding);
@@ -124,12 +121,12 @@ void InterpolateMapper::Opset11(OnnxHelper* helper) {
   }
   auto node = helper->MakeNode("Resize", {x_info[0].name, roi, scale, size},
                                {out_info[0].name});
-  Assert(resize_mapper_.find(op.type()) != resize_mapper_.end(),
-         "Cannot find " + op.type() + " in resize_mapper.");
-  AddAttribute(node, "mode", resize_mapper_[op.type()]);
+  Assert(resize_mapper_.find(OpType()) != resize_mapper_.end(),
+         "Cannot find " + OpType() + " in resize_mapper.");
+  AddAttribute(node, "mode", resize_mapper_[OpType()]);
   AddAttribute(node, "coordinate_transformation_mode",
                coordinate_transformation_mode);
-  if (resize_mapper_[op.type()] == "nearest" &&
+  if (resize_mapper_[OpType()] == "nearest" &&
       coordinate_transformation_mode == "asymmetric") {
     AddAttribute(node, "nearest_mode", "floor");
   }
