@@ -33,13 +33,7 @@ def shape_helper(graph, input, dim=None):
         shape_node = graph.make_node('Shape', inputs=[input])
         return shape_node
     full_shape = graph.make_node('Shape', inputs=[input])
-    start_node = graph.make_node(
-        'Constant', dtype=dtypes.ONNX.INT64, value=[dim])
-    ends_node = graph.make_node(
-        'Constant', dtype=dtypes.ONNX.INT64, value=[dim + 1])
-    axes_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
-    shape_node = graph.make_node(
-        "Slice", inputs=[full_shape, start_node, ends_node, axes_node])
+    shape_node = slice_helper(graph, full_shape, [0], [dim], [dim + 1])
     return shape_node
 
 
