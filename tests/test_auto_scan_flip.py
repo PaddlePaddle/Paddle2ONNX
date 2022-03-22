@@ -25,34 +25,52 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, weights):
+    def forward(self, x):
         """
         forward
         """
-        x = paddle.nn.functional.prelu(inputs, weight=weights)
+        x = paddle.flip(x, axis=self.config["axis"])
         return x
 
 
-class TestPreluConvert(OPConvertAutoScanTest):
+class TestFlattenConvert(OPConvertAutoScanTest):
     """
-    api: paddle.nn.functional.prelu
-    OPset version: 9, 15
+    api: paddle.flip
+    OPset version: 7, 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=5, max_value=20), min_size=1, max_size=4))
+                    min_value=1, max_value=20), min_size=2, max_size=5))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(
+            st.sampled_from(["bool", "int32", "int64", "float32", "float64"]))
+
+        axis = draw(
+            st.lists(
+                st.integers(
+                    min_value=0, max_value=len(input_shape) - 1),
+                min_size=1,
+                max_size=len(input_shape)))
+        axis = list(set(axis))
+
+        for i in range(len(axis)):
+            if draw(st.booleans()):
+                axis[i] -= len(input_shape)
+
+        input_spec_shape = [-1] * len(input_shape)
+        for i in range(len(axis)):
+            input_spec_shape[axis[i]] = input_shape[axis[i]]
 
         config = {
-            "op_names": ["prelu"],
-            "test_data_shapes": [input_shape, [1]],
-            "test_data_types": [[dtype], [dtype]],
-            "opset_version": [9, 15],
-            "input_spec_shape": [],
+            "op_names": ["flip"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "input_spec_shape": [input_spec_shape],
+            "axis": axis
         }
 
         models = Net(config)
@@ -60,7 +78,7 @@ class TestPreluConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=300)
 
 
 if __name__ == "__main__":
