@@ -161,9 +161,9 @@ class YOLOBox():
                 "Mul", inputs=[node_box_y_sigmoid, scale_x_y_node])
             node_box_y_sigmoid = graph.make_node(
                 "Add", inputs=[node_box_y_sigmoid, bias_x_y_node])
-
         node_box_x_squeeze = mapper_helper.squeeze_helper(
             graph, node_box_x_sigmoid, [4])
+
         node_box_y_squeeze = mapper_helper.squeeze_helper(
             graph, node_box_y_sigmoid, [4])
 
@@ -216,12 +216,12 @@ class YOLOBox():
         node_anchor_w = model_name + "@anchor_w"
         node_anchor_h = model_name + "@anchor_h"
 
-        output = [node_anchor_w, node_anchor_h]
         node_anchor_split = mapper_helper.split_helper(
-            graph, [node_anchors_div_input_size],
-            output,
-            1, [1, 1],
-            dtype=node.input_dtype('X', 0))
+            graph,
+            node_anchors_div_input_size,
+            axis=1,
+            split=[1, 1],
+            outputs=[node_anchor_w, node_anchor_h])
 
         new_anchor_shape = [1, int(num_anchors), 1, 1]
         node_new_anchor_shape = graph.make_node(
