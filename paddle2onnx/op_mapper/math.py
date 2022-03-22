@@ -1259,14 +1259,23 @@ class Unfold():
 
         paddings = node.attr('paddings')
         if len(paddings) == 1:
-            padding_h = paddings[0]
-            padding_w = paddings[0]
+            padding_h_1 = paddings[0]
+            padding_h_2 = paddings[0]
+            padding_w_1 = paddings[0]
+            padding_w_2 = paddings[0]
+        elif len(paddings) == 2:
+            padding_h_1 = paddings[0]
+            padding_h_2 = paddings[0]
+            padding_w_1 = paddings[1]
+            padding_w_2 = paddings[1]
         else:
-            padding_h = paddings[0]
-            padding_w = paddings[1]
+            padding_h_1 = paddings[0]
+            padding_w_1 = paddings[1]
+            padding_h_2 = paddings[2]
+            padding_w_2 = paddings[3]
 
         dilations = node.attr('dilations')
-        if len(paddings) == 1:
+        if len(dilations) == 1:
             dilation_h = dilations[0]
             dilation_w = dilations[0]
         else:
@@ -1274,7 +1283,7 @@ class Unfold():
             dilation_w = dilations[1]
 
         kernel_sizes = node.attr('kernel_sizes')
-        if len(paddings) == 1:
+        if len(kernel_sizes) == 1:
             kernel_h = kernel_sizes[0]
             kernel_w = kernel_sizes[0]
         else:
@@ -1283,14 +1292,16 @@ class Unfold():
 
         input_w = mapper_helper.size_helper(graph, node.input('X', 0), 3)
         blocks_row_indices_node = cls._get_im2col_indices_along_dim(
-            graph, node, 2, kernel_h, dilation_h, padding_h, stride_h)
+            graph, node, 2, kernel_h, dilation_h, padding_h_1, padding_h_2,
+            stride_h)
         blocks_col_indices_node = cls._get_im2col_indices_along_dim(
-            graph, node, 3, kernel_w, dilation_w, padding_w, stride_w)
+            graph, node, 3, kernel_w, dilation_w, padding_w_1, padding_w_2,
+            stride_w)
 
         output_shape = cls._get_im2col_output_shape(graph, node, kernel_h,
                                                     kernel_w)
-        padded_input = cls._get_im2col_padded_input(graph, node, padding_h,
-                                                    padding_w)
+        padded_input = cls._get_im2col_padded_input(
+            graph, node, padding_h_1, padding_h_2, padding_w_1, padding_w_2)
 
         output = graph.make_node(
             'Gather', inputs=[padded_input, blocks_row_indices_node], axis=2)
@@ -1305,14 +1316,17 @@ class Unfold():
 
     @classmethod
     def _get_im2col_indices_along_dim(cls, graph, node, index, kernel_size_d,
-                                      dilation_d, padding_d, stride_d):
+                                      dilation_d, padding_d_1, padding_d_2,
+                                      stride_d):
         input_shape = node.input_shape('X', 0)
         if input_shape[index] == -1:
             input_d_node = mapper_helper.size_helper(graph,
                                                      node.input('X', 0), index)
 
             padding_d_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[padding_d * 2])
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=[padding_d_1 + padding_d_2])
             blocks_d_node = graph.make_node(
                 'Add', inputs=[input_d_node, padding_d_node])
 
@@ -1330,8 +1344,9 @@ class Unfold():
             blocks_d_indices_node = graph.make_node(
                 'Range', inputs=[zero_node, blocks_d_node, stride_node])
         else:
-            end = input_shape[index] + padding_d * 2 - dilation_d * (
-                kernel_size_d - 1)
+            end = input_shape[
+                index] + padding_d_1 + padding_d_2 - dilation_d * (kernel_size_d
+                                                                   - 1)
             stride = stride_d
             blocks_d_indices = np.arange(0, end, stride)
             blocks_d_indices_node = graph.make_node(
@@ -1374,11 +1389,14 @@ class Unfold():
         return result_node
 
     @classmethod
-    def _get_im2col_padded_input(cls, graph, node, padding_h, padding_w):
+    def _get_im2col_padded_input(cls, graph, node, padding_h_1, padding_h_2,
+                                 padding_w_1, padding_w_2):
         pad_const_node = graph.make_node(
             'Constant',
             dtype=dtypes.ONNX.INT64,
-            value=[0, 0, padding_h, padding_w] * 2)
+            value=[
+                0, 0, padding_h_1, padding_w_1, 0, 0, padding_h_2, padding_w_2
+            ])
         result_node = graph.make_node(
             'Pad', inputs=[node.input('X', 0), pad_const_node])
         return result_node

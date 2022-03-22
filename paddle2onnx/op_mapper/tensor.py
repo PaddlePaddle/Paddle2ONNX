@@ -71,7 +71,8 @@ class Set_value():
             onnx_paddings[axis] = starts[i]
             onnx_paddings[axis + len(input_x_shape)] = input_x_shape[
                 axis] - ends[i]
-
+            if onnx_paddings[axis + len(input_x_shape)] < 0:
+                onnx_paddings[axis + len(input_x_shape)] = 0
         dtype = node.input_dtype('Input', 0)
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
 

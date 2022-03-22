@@ -64,12 +64,22 @@ class TestUnfoldConvert(OPConvertAutoScanTest):
         if len(strides) == 1:
             strides = strides[0]
 
-        paddings = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=1, max_size=2))
-        if len(paddings) == 1:
-            paddings = paddings[0]
+        if draw(st.booleans()):
+            paddings = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=1,
+                    max_size=2))
+            if len(paddings) == 1:
+                paddings = paddings[0]
+        else:
+            paddings = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=4,
+                    max_size=4))
 
         dilations = draw(
             st.lists(
