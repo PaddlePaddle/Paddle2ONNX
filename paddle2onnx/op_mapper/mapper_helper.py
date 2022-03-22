@@ -28,6 +28,15 @@ def is_static_shape(shape):
         )
 
 
+def shape_helper(graph, input, dim=None):
+    if dim is None:
+        shape_node = graph.make_node('Shape', inputs=[input])
+        return shape_node
+    full_shape = graph.make_node('Shape', inputs=[input])
+    shape_node = slice_helper(graph, full_shape, [0], [dim], [dim + 1])
+    return shape_node
+
+
 def split_helper(graph, input, axis=0, split=None, outputs=None):
     assert outputs is not None, "outputs can not be None in split_helper."
     inputs = []
