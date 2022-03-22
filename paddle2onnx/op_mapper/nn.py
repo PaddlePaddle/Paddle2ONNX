@@ -137,15 +137,38 @@ class Pool():
         assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == "AnyLayout",  \
                             "The conv data format should be 'NCHW', but received data format " \
                             "is %s." % node.attrs['data_format']
+        x_dtype = node.input_dtype('X', 0)
+        need_dtype_convert = False
+        input_name = node.input('X', 0)
+        if x_dtype != paddle.float32:
+            need_dtype_convert = True
+            input_name = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.FLOAT)
+
         if node.attr('global_pooling') or (node.attr('adaptive') and
                                            node.attr('ksize') == [1, 1]):
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][1],
-                inputs=node.input('X'),
-                outputs=node.output('Out'))
+            if need_dtype_convert:
+                onnx_node = graph.make_node(
+                    cls.pool_type[node.attr('pooling_type')][1],
+                    inputs=[input_name])
+                graph.make_node(
+                    'Cast',
+                    inputs=[onnx_node],
+                    outputs=node.output('Out'),
+                    to=dtypes.ONNX.DOUBLE)
+            else:
+                onnx_node = graph.make_node(
+                    cls.pool_type[node.attr('pooling_type')][1],
+                    inputs=[input_name],
+                    outputs=node.output('Out'))
         elif node.attr('adaptive'):
             # if pool is adaptive, check if input shape of pool is fixed.
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
+            if node.input_shape('X', 0)[2:].count(-1) > 0:
+                raise Exception(
+                    "Converting this model to ONNX need with static input shape," \
+                    " please fix input shape of this model, see doc Q2 in" \
+                    " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+                )
             input_h, input_w = node.input_shape('X', 0)[2:]
             output_h, output_w = node.output_shape('Out', 0)[2:]
             stride_h = int(input_h / output_h)
@@ -179,11 +202,22 @@ class Pool():
                     attrs['auto_pad'] = 'VALID'
                 if node.attr('pooling_type') == 'avg':
                     attrs['count_include_pad'] = not node.attr('exclusive')
-                onnx_node = graph.make_node(
-                    cls.pool_type[node.attr('pooling_type')][0],
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    attrs=attrs)
+                if need_dtype_convert:
+                    onnx_node = graph.make_node(
+                        cls.pool_type[node.attr('pooling_type')][0],
+                        inputs=[input_name],
+                        attrs=attrs)
+                    graph.make_node(
+                        'Cast',
+                        inputs=[onnx_node],
+                        outputs=node.output('Out'),
+                        to=dtypes.ONNX.DOUBLE)
+                else:
+                    onnx_node = graph.make_node(
+                        cls.pool_type[node.attr('pooling_type')][0],
+                        inputs=[input_name],
+                        outputs=node.output('Out'),
+                        attrs=attrs)
         else:
             input_shape = node.input_shape('X', 0)
             k_size = node.attr('ksize')
@@ -200,7 +234,7 @@ class Pool():
             if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
                 k_size[1] = input_shape[3] + pads[1]
 
-            input_x = node.input('X')
+            input_x = [input_name]
             if max(k_size) <= max(pads):
                 onnx_paddings = [0, 0, pads[0], pads[1], 0, 0, pads[2], pads[3]]
                 attrs_pad = {'mode': 'constant', }
@@ -243,11 +277,22 @@ class Pool():
 
             if node.attr('pooling_type') == 'avg':
                 attrs['count_include_pad'] = not node.attr('exclusive')
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][0],
-                inputs=input_x,
-                outputs=node.output('Out'),
-                attrs=attrs)
+            if need_dtype_convert:
+                onnx_node = graph.make_node(
+                    cls.pool_type[node.attr('pooling_type')][0],
+                    inputs=input_x,
+                    attrs=attrs)
+                graph.make_node(
+                    'Cast',
+                    inputs=[onnx_node],
+                    outputs=node.output('Out'),
+                    to=dtypes.ONNX.DOUBLE)
+            else:
+                onnx_node = graph.make_node(
+                    cls.pool_type[node.attr('pooling_type')][0],
+                    inputs=input_x,
+                    outputs=node.output('Out'),
+                    attrs=attrs)
 
 
 @op_mapper('pool3d')
@@ -283,7 +328,12 @@ class Pool3D():
                 outputs=node.output('Out'))
         elif node.attr('adaptive'):
             # if pool is adaptive, check if input shape of pool is fixed.
-            mapper_helper.is_static_shape(node.input_shape('X', 0))
+            if node.input_shape('X', 0)[2:].count(-1) > 0:
+                raise Exception(
+                    "Converting this model to ONNX need with static input shape," \
+                    " please fix input shape of this model, see doc Q2 in" \
+                    " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
+                )
             input_d, input_h, input_w = node.input_shape('X', 0)[2:]
             output_d, output_h, output_w = node.output_shape('Out', 0)[2:]
             stride_d = int(input_d / output_d)
@@ -763,7 +813,7 @@ class RoiAlign():
 
 @op_mapper('rnn')
 class RNN():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (7, 15)
 
     @classmethod
     def make_param_inputs(cls, graph, node, layer, hidden_size, num_layers):
@@ -798,8 +848,14 @@ class RNN():
         param_list = layer_weight_list + layer_bias_list
         param_list_len = len(param_list)
         for i in range(param_list_len):
-            weight = graph.make_node(
-                'Unsqueeze', inputs=[param_list[i]], axes=[0])
+            if graph.opset_version < 13:
+                weight = graph.make_node(
+                    'Unsqueeze', inputs=[param_list[i]], axes=[0])
+            else:
+                axes = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+                weight = graph.make_node(
+                    'Unsqueeze', inputs=[param_list[i], axes])
             unsqueeze_weights.append(weight)
 
         input_weights = unsqueeze_weights[0:param_list_len // 2:2]
@@ -841,7 +897,7 @@ class RNN():
             return [init_h]
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
         mode = node.attr('mode')
         hidden_size = node.attr('hidden_size')
         num_layers = node.attr('num_layers')
