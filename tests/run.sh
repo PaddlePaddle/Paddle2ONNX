@@ -19,9 +19,6 @@ ignore="test_expand_as.py \
 bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
-$PY_CMD -m pip uninstall paddlepaddle-gpu
-$PY_CMD -m pip uninstall paddlepaddle
-$PY_CMD -m pip install paddlepaddle
 
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}

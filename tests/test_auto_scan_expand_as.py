@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -25,43 +26,37 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, x, y):
+    def forward(self, inputs1, inputs2):
         """
         forward
         """
-        x = paddle.fluid.layers.matmul(
-            x,
-            y,
-            transpose_x=self.config["transpose_x"],
-            transpose_y=self.config["transpose_y"])
-        return x
+        x = paddle.expand_as(inputs1, inputs2)
+        return x + inputs2
 
 
-class TestMatmulConvert(OPConvertAutoScanTest):
+class TestStackConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.matmul
-    OPset version: 7, 9, 15
+    api: paddle.expand_as
+    OPset version: 8, 9, 11, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=5, max_value=20), min_size=3, max_size=5))
-        # broadcast
-        input_shape2 = input_shape1[-2:]
-        input_shape2.reverse()
-        dtype = draw(st.sampled_from(["float32", "float64"]))
-        transpose = draw(st.booleans())
+                    min_value=4, max_value=8), min_size=1, max_size=5))
+
+        n = random.randint(1, 6 - len(input_shape1))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
+        input_shape2 = pre_shape + input_shape1
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
-            "op_names": ["matmul"],
+            "op_names": ["expand_as_v2"],
             "test_data_shapes": [input_shape1, input_shape2],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [8, 9, 10, 11, 12, 13, 14, 15],
             "input_spec_shape": [],
-            "transpose_x": transpose,
-            "transpose_y": transpose,
         }
 
         models = Net(config)
