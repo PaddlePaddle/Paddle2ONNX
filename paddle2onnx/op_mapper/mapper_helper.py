@@ -28,22 +28,18 @@ def is_static_shape(shape):
         )
 
 
-def size_helper(graph, input, dim=None):
+def shape_helper(graph, input, dim=None):
     if dim is None:
         shape_node = graph.make_node('Shape', inputs=[input])
         return shape_node
     full_shape = graph.make_node('Shape', inputs=[input])
-    if isinstance(dim, int):
-        dim = [dim]
-    if isinstance(dim, list):
-        dim = dim
-    if isinstance(dim, list):
-        dim_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=dim)
-    else:
-        dim_node = dim
+    start_node = graph.make_node(
+        'Constant', dtype=dtypes.ONNX.INT64, value=[dim])
+    ends_node = graph.make_node(
+        'Constant', dtype=dtypes.ONNX.INT64, value=[dim + 1])
+    axes_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
     shape_node = graph.make_node(
-        'Gather', inputs=[full_shape, dim_node], axis=0)
+        "Slice", inputs=[full_shape, start_node, ends_node, axes_node])
     return shape_node
 
 

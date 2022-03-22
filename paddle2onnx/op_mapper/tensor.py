@@ -24,7 +24,7 @@ import paddle
 
 
 @op_mapper('set_value')
-class Set_value():
+class SetValue():
     support_opset_version_range = (11, 15)
 
     @classmethod

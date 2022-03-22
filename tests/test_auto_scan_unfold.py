@@ -99,7 +99,7 @@ class TestUnfoldConvert(OPConvertAutoScanTest):
             "op_names": ["unfold"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [11, 12, 13, 14, 15],
             "input_spec_shape": input_spec_shape,
             "kernel_size": kernel_size,
             "strides": strides,

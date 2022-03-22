@@ -1250,47 +1250,24 @@ class Unfold():
     def opset_11(cls, graph, node, **kw):
 
         strides = node.attr('strides')
-        if len(strides) == 1:
-            stride_h = strides[0]
-            stride_w = strides[0]
-        else:
-            stride_h = strides[0]
-            stride_w = strides[1]
+        stride_h = strides[0]
+        stride_w = strides[1]
 
         paddings = node.attr('paddings')
-        if len(paddings) == 1:
-            padding_h_1 = paddings[0]
-            padding_h_2 = paddings[0]
-            padding_w_1 = paddings[0]
-            padding_w_2 = paddings[0]
-        elif len(paddings) == 2:
-            padding_h_1 = paddings[0]
-            padding_h_2 = paddings[0]
-            padding_w_1 = paddings[1]
-            padding_w_2 = paddings[1]
-        else:
-            padding_h_1 = paddings[0]
-            padding_w_1 = paddings[1]
-            padding_h_2 = paddings[2]
-            padding_w_2 = paddings[3]
+        padding_h_1 = paddings[0]
+        padding_w_1 = paddings[1]
+        padding_h_2 = paddings[2]
+        padding_w_2 = paddings[3]
 
         dilations = node.attr('dilations')
-        if len(dilations) == 1:
-            dilation_h = dilations[0]
-            dilation_w = dilations[0]
-        else:
-            dilation_h = dilations[0]
-            dilation_w = dilations[1]
+        dilation_h = dilations[0]
+        dilation_w = dilations[1]
 
         kernel_sizes = node.attr('kernel_sizes')
-        if len(kernel_sizes) == 1:
-            kernel_h = kernel_sizes[0]
-            kernel_w = kernel_sizes[0]
-        else:
-            kernel_h = kernel_sizes[0]
-            kernel_w = kernel_sizes[1]
+        kernel_h = kernel_sizes[0]
+        kernel_w = kernel_sizes[1]
 
-        input_w = mapper_helper.size_helper(graph, node.input('X', 0), 3)
+        input_w = mapper_helper.shape_helper(graph, node.input('X', 0), 3)
         blocks_row_indices_node = cls._get_im2col_indices_along_dim(
             graph, node, 2, kernel_h, dilation_h, padding_h_1, padding_h_2,
             stride_h)
@@ -1320,8 +1297,8 @@ class Unfold():
                                       stride_d):
         input_shape = node.input_shape('X', 0)
         if input_shape[index] == -1:
-            input_d_node = mapper_helper.size_helper(graph,
-                                                     node.input('X', 0), index)
+            input_d_node = mapper_helper.shape_helper(graph,
+                                                      node.input('X', 0), index)
 
             padding_d_node = graph.make_node(
                 'Constant',
@@ -1371,8 +1348,8 @@ class Unfold():
 
     @classmethod
     def _get_im2col_output_shape(cls, graph, node, kernel_h, kernel_w):
-        batch_dim = mapper_helper.size_helper(graph, node.input('X', 0), 0)
-        channel_dim = mapper_helper.size_helper(graph, node.input('X', 0), 1)
+        batch_dim = mapper_helper.shape_helper(graph, node.input('X', 0), 0)
+        channel_dim = mapper_helper.shape_helper(graph, node.input('X', 0), 1)
 
         constant_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[kernel_h * kernel_w])
