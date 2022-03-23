@@ -90,23 +90,19 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
 
         input_shape[1] = num * (5 + class_num)
 
-        opset_version = None
-        if dtype == "float64":
-            opset_version = [15]
-        else:
-            opset_version = [9, 11, 15]
         config = {
             "op_names": ["yolo_box"],
             "test_data_shapes": [input_shape, generator_data],
             "test_data_types": [[dtype], ["int32"]],
-            "opset_version": opset_version,
+            "opset_version": [9, 10, 11, 12, 13, 14, 15],
             "input_spec_shape": [],
             "anchors": anchors,
             "class_num": class_num,
             "conf_thresh": conf_thresh,
             "downsample_ratio": downsample_ratio,
             "clip_bbox": clip_bbox,
-            "scale_x_y": scale_x_y
+            "scale_x_y": scale_x_y,
+            "use_gpu": False
         }
 
         models = Net(config)

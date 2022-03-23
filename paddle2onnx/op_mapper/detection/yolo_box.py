@@ -218,10 +218,11 @@ class YOLOBox():
 
         node_anchor_split = mapper_helper.split_helper(
             graph,
-            node_anchors_div_input_size,
+            inputs=node_anchors_div_input_size,
             axis=1,
             split=[1, 1],
-            outputs=[node_anchor_w, node_anchor_h])
+            outputs=[node_anchor_w, node_anchor_h],
+            dtype=node.input_dtype('X', 0))
 
         new_anchor_shape = [1, int(num_anchors), 1, 1]
         node_new_anchor_shape = graph.make_node(
@@ -347,14 +348,16 @@ class YOLOBox():
         if node.input_dtype('X', 0) == paddle.float64:
             node_pred_box_new_shape = graph.make_node(
                 'Cast', inputs=[node_pred_box_new_shape], to=TensorProto.FLOAT)
-        node_pred_box_split = graph.make_node(
-            'Split',
-            inputs=[node_pred_box_new_shape],
+        node_pred_box_split = mapper_helper.split_helper(
+            graph,
+            inputs=node_pred_box_new_shape,
+            axis=2,
+            split=[1, 1, 1, 1],
             outputs=[
                 node_pred_box_x, node_pred_box_y, node_pred_box_w,
                 node_pred_box_h
             ],
-            axis=2)
+            dtype=node.input_dtype('X', 0))
 
         if node.input_dtype('X', 0) == paddle.float64:
             node_pred_box_x = graph.make_node(
