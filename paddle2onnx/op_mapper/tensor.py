@@ -36,8 +36,8 @@ class SetValue():
             'steps',
             'StepsTensor',
             'StepsTensorList',
+            return_list=True,
             dtype=dtypes.ONNX.INT64)
-        contain_bigger_than_1 = False
 
         starts, is_starts_tensor = mapper_helper.get_node_attr_value(
             graph,
@@ -45,6 +45,7 @@ class SetValue():
             'starts',
             'StartsTensor',
             'StartsTensorList',
+            return_list=True,
             dtype=dtypes.ONNX.INT64)
 
         ends, is_ends_tensor = mapper_helper.get_node_attr_value(
@@ -53,14 +54,15 @@ class SetValue():
             'ends',
             'EndsTensor',
             'EndsTensorList',
+            return_list=True,
             dtype=dtypes.ONNX.INT64)
 
-        contain_bigger_than_1 = False
+        contain_step_bigger_than_1 = False
         for i in steps:
-            contain_bigger_than_1 = i > 1
-            if contain_bigger_than_1:
+            contain_step_bigger_than_1 = i > 1
+            if contain_step_bigger_than_1:
                 break
-        condition = is_steps_tensor or is_starts_tensor or is_ends_tensor or contain_bigger_than_1
+        condition = is_steps_tensor or is_starts_tensor or is_ends_tensor or contain_step_bigger_than_1
         assert not condition, "Currently not supported convert now"
 
         input_x_shape = node.input_shape('Input', 0)
