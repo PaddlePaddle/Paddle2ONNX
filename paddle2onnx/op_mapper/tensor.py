@@ -67,7 +67,6 @@ class SetValue():
         assert not condition, "Currently not supported convert now"
 
         input_x_shape = node.input_shape('Input', 0)
-        value_tensor_shape = node.input_shape('ValueTensor', 0)
         onnx_paddings = [0] * len(input_x_shape) * 2
         for i in range(len(axes)):
             axis = axes[i]
@@ -78,7 +77,6 @@ class SetValue():
                 onnx_paddings[axis + len(input_x_shape)] = 0
         dtype = node.input_dtype('Input', 0)
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
-
         value_tensor = None
         shape = node.attr('shape')
         if len(shape) > 0:
@@ -95,6 +93,9 @@ class SetValue():
         else:
             value_tensor = node.input('ValueTensor', 0)
 
+        zero_node = graph.make_node(
+            'Constant', attrs={'dtype': dtype,
+                               'value': [0]})
         pads_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.INT64,
@@ -102,15 +103,13 @@ class SetValue():
         value_pad_node = graph.make_node(
             'Pad', inputs=[value_tensor, pads_node])
 
-        zero_node = graph.make_node('Constant', dtype=dtype, value=[0])
         condition_dtype = graph.make_node(
             "Equal", inputs=[value_pad_node, zero_node])
-        condition = graph.make_node(
+        condition_node = graph.make_node(
             'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
-
         graph.make_node(
             "Where",
-            inputs=[condition, node.input('Input', 0), value_pad_node],
+            inputs=[condition_node, node.input('Input', 0), value_pad_node],
             outputs=node.output('Out'))
 
 
