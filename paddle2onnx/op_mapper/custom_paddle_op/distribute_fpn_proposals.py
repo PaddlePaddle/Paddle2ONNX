@@ -29,12 +29,14 @@ class DistributeFpnProposals(CustomPaddleOp):
         self.min_level = node.attr('min_level')
         self.refer_level = node.attr('refer_level')
         self.refer_scale = node.attr('refer_scale')
+        self.pixel_offset = node.attr('pixel_offset')
 
     def bbox_area(self, boxes):
+        offset = 1 if self.pixel_offset else 0
         xmin, ymin, xmax, ymax = paddle.tensor.split(
             boxes, axis=1, num_or_sections=4)
-        width = xmax - xmin + 1
-        height = ymax - ymin + 1
+        width = xmax - xmin + offset
+        height = ymax - ymin + offset
         areas = width * height
         return areas
 
@@ -50,6 +52,7 @@ class DistributeFpnProposals(CustomPaddleOp):
 
         rois = list()
         rois_idx_order = list()
+        rois_num_per_level = list()
 
         for level in range(self.min_level, self.max_level + 1):
             level_tensor = paddle.full_like(target_level, fill_value=level)
@@ -60,12 +63,24 @@ class DistributeFpnProposals(CustomPaddleOp):
             roi = paddle.gather(fpn_rois, index, axis=0)
             rois.append(roi)
             rois_idx_order.append(index)
+            rois_num_per_level.append(paddle.shape(roi)[0])
         rois_idx_order = paddle.concat(rois_idx_order, axis=0)
         size = paddle.shape(rois_idx_order)[0]
         _, rois_idx_restore = paddle.topk(
             rois_idx_order, axis=0, sorted=True, largest=False, k=size)
-        #rois_idx_restore = paddle.cast(rois_idx_restore, dtype='int32')
-        return {'MultiFpnRois': rois, 'RestoreIndex': [rois_idx_restore]}
+
+        rois_idx_restore = paddle.cast(rois_idx_restore, dtype='int32')
+        if len(self.input('RoisNum')) > 0:
+            # trick: to keep rois num
+            rois_num_per_level[0] += self.input('RoisNum', 0) * 0
+            return {
+                'MultiFpnRois': rois,
+                'RestoreIndex': [rois_idx_restore],
+                'MultiLevelRoIsNum': rois_num_per_level
+            }
+        else:
+            return {'MultiFpnRois': rois, 'RestoreIndex': [rois_idx_restore]}
+
 
 @op_mapper('distribute_fpn_proposals')
 class Distributefpnproposals:
@@ -75,11 +90,11 @@ class Distributefpnproposals:
             'distribute_fpn_proposals',
             inputs=node.input('FpnRois'),
             outputs=node.output('MultiFpnRois') + node.output('RestoreIndex'),
-            max_level = node.attr('max_level'),
-            min_level = node.attr('min_level'),
-            refer_level = node.attr('refer_level'),
-            refer_scale = node.attr('refer_scale'),
-            domain = 'custom')
+            max_level=node.attr('max_level'),
+            min_level=node.attr('min_level'),
+            refer_level=node.attr('refer_level'),
+            refer_scale=node.attr('refer_scale'),
+            domain='custom')
 
 
 register_custom_paddle_op('distribute_fpn_proposals', DistributeFpnProposals)
