@@ -91,7 +91,7 @@ class Node(object):
             ]
         elif isinstance(outputs, six.string_types):
             self.outputs = [outputs]
-        elif isinstance(ouputs, Node):
+        elif isinstance(outputs, Node):
             self.outputs = [outputs.layer_name]
         else:
             raise TypeError(
