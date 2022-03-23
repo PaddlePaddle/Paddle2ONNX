@@ -1243,6 +1243,143 @@ class Softmax():
             outputs=node.output('Out'))
 
 
+@op_mapper('unfold')
+class Unfold():
+    support_opset_version_range = (11, 15)
+
+    @classmethod
+    def opset_11(cls, graph, node, **kw):
+
+        strides = node.attr('strides')
+        stride_h = strides[0]
+        stride_w = strides[1]
+
+        paddings = node.attr('paddings')
+        padding_h_1 = paddings[0]
+        padding_w_1 = paddings[1]
+        padding_h_2 = paddings[2]
+        padding_w_2 = paddings[3]
+
+        dilations = node.attr('dilations')
+        dilation_h = dilations[0]
+        dilation_w = dilations[1]
+
+        kernel_sizes = node.attr('kernel_sizes')
+        kernel_h = kernel_sizes[0]
+        kernel_w = kernel_sizes[1]
+
+        input_w = mapper_helper.shape_helper(graph, node.input('X', 0), 3)
+        blocks_row_indices_node = cls._get_im2col_indices_along_dim(
+            graph, node, 2, kernel_h, dilation_h, padding_h_1, padding_h_2,
+            stride_h)
+        blocks_col_indices_node = cls._get_im2col_indices_along_dim(
+            graph, node, 3, kernel_w, dilation_w, padding_w_1, padding_w_2,
+            stride_w)
+
+        output_shape = cls._get_im2col_output_shape(graph, node, kernel_h,
+                                                    kernel_w)
+        padded_input = cls._get_im2col_padded_input(
+            graph, node, padding_h_1, padding_h_2, padding_w_1, padding_w_2)
+
+        output = graph.make_node(
+            'Gather', inputs=[padded_input, blocks_row_indices_node], axis=2)
+
+        output = graph.make_node(
+            'Gather', inputs=[output, blocks_col_indices_node], axis=4)
+        output = graph.make_node(
+            'Transpose', inputs=[output], perm=[0, 1, 2, 4, 3, 5])
+
+        graph.make_node(
+            'Reshape', inputs=[output, output_shape], outputs=node.output('Y'))
+
+    @classmethod
+    def _get_im2col_indices_along_dim(cls, graph, node, index, kernel_size_d,
+                                      dilation_d, padding_d_1, padding_d_2,
+                                      stride_d):
+        input_shape = node.input_shape('X', 0)
+        if input_shape[index] == -1:
+            input_d_node = mapper_helper.shape_helper(graph,
+                                                      node.input('X', 0), index)
+
+            padding_d_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=[padding_d_1 + padding_d_2])
+            blocks_d_node = graph.make_node(
+                'Add', inputs=[input_d_node, padding_d_node])
+
+            dilation_kernel_size_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=[dilation_d * (kernel_size_d - 1)])
+            blocks_d_node = graph.make_node(
+                'Sub', inputs=[blocks_d_node, dilation_kernel_size_node])
+
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
+            stride_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=[stride_d])
+            blocks_d_indices_node = graph.make_node(
+                'Range', inputs=[zero_node, blocks_d_node, stride_node])
+        else:
+            end = input_shape[
+                index] + padding_d_1 + padding_d_2 - dilation_d * (kernel_size_d
+                                                                   - 1)
+            stride = stride_d
+            blocks_d_indices = np.arange(0, end, stride)
+            blocks_d_indices_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=blocks_d_indices.flatten().tolist())
+
+        kernel_grid = np.arange(0, kernel_size_d * dilation_d, dilation_d)
+        kernel_grid_node = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            value=kernel_grid.flatten().tolist())
+
+        shape_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[-1, 1])
+        kernel_mask_node = graph.make_node(
+            'Reshape', inputs=[kernel_grid_node, shape_node])
+
+        block_mask_node = graph.make_node(
+            'Add', inputs=[blocks_d_indices_node, kernel_mask_node])
+        return block_mask_node
+
+    @classmethod
+    def _get_im2col_output_shape(cls, graph, node, kernel_h, kernel_w):
+        batch_dim = mapper_helper.shape_helper(graph, node.input('X', 0), 0)
+        channel_dim = mapper_helper.shape_helper(graph, node.input('X', 0), 1)
+
+        constant_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[kernel_h * kernel_w])
+        channel_unfolded = graph.make_node(
+            'Mul', inputs=[channel_dim, constant_node])
+
+        concat_const_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+        result_node = graph.make_node(
+            'Concat',
+            inputs=[batch_dim, channel_unfolded, concat_const_node],
+            axis=0)
+
+        return result_node
+
+    @classmethod
+    def _get_im2col_padded_input(cls, graph, node, padding_h_1, padding_h_2,
+                                 padding_w_1, padding_w_2):
+        pad_const_node = graph.make_node(
+            'Constant',
+            dtype=dtypes.ONNX.INT64,
+            value=[
+                0, 0, padding_h_1, padding_w_1, 0, 0, padding_h_2, padding_w_2
+            ])
+        result_node = graph.make_node(
+            'Pad', inputs=[node.input('X', 0), pad_const_node])
+        return result_node
+
+
 @op_mapper('softmax_with_cross_entropy')
 class SoftmaxCrossEntropyLoss():
     support_opset_version_range = (12, 15)
@@ -1265,19 +1402,26 @@ class SoftmaxCrossEntropyLoss():
         if axis < 0:
             axis += len(shape)
         if axis == 1:
-            squeeze_node = graph.make_node(
-                'Squeeze', inputs=[labels], axes=[axis])
+            squeeze_node = mapper_helper.squeeze_helper(graph, labels, [axis])
             loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
                 inputs=[scores, squeeze_node],
                 outputs=2,
                 ignore_index=node.attr('ignore_index'),
                 reduction='none')
-            loss_node = graph.make_node(
-                'Unsqueeze',
-                inputs=[loss_node],
-                outputs=outputs[0],
-                axes=[axis])
+            if graph.opset_version < 13:
+                loss_node = graph.make_node(
+                    'Unsqueeze',
+                    inputs=[loss_node],
+                    outputs=outputs[0],
+                    axes=[axis])
+            else:
+                axes_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[axis])
+                loss_node = graph.make_node(
+                    'Unsqueeze',
+                    inputs=[loss_node, axes_node],
+                    outputs=outputs[0])
             # onnx output is log(softmax), but paddle output is softmax
             graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
         else:
@@ -1288,8 +1432,8 @@ class SoftmaxCrossEntropyLoss():
                 'Transpose', inputs=[scores], perm=perm)
             transpose_labels = graph.make_node(
                 'Transpose', inputs=[labels], perm=perm)
-            squeeze_labels = graph.make_node(
-                'Squeeze', inputs=[transpose_labels], axes=[1])
+            squeeze_labels = mapper_helper.squeeze_helper(
+                graph, transpose_labels, [1])
 
             loss_node, softmax_node = graph.make_node(
                 'SoftmaxCrossEntropyLoss',
@@ -1297,68 +1441,15 @@ class SoftmaxCrossEntropyLoss():
                 ignore_index=node.attr('ignore_index'),
                 outputs=2,
                 reduction='none')
-            output_node = graph.make_node(
-                'Unsqueeze', inputs=[loss_node], axes=[1])
-            graph.make_node(
-                'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
-            softmax_node = graph.make_node(
-                'Transpose', inputs=softmax_node, perm=perm)
-            # onnx output is log(softmax), but paddle output is softmax
-            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        if node.attr('soft_label'):
-            raise Exception(
-                "SoftmaxCrossEntropyLoss in onnx not support soft label.")
-        scores = node.input('Logits', 0)
-        labels = node.input('Label', 0)
-        # Whether return_softmax is True or False, the model will have two outputs
-        outputs = [node.output('Loss', 0), node.output('Softmax', 0)]
-
-        shape = node.input_shape('Logits', 0)
-        if len(shape) < 2:
-            raise Exception(
-                "SoftmaxCrossEntropyLoss in onnx not support 1D logits.")
-        axis = node.attr('axis')
-        if axis < 0:
-            axis += len(shape)
-        if axis == 1:
-            axis_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[axis])
-            squeeze_node = graph.make_node(
-                'Squeeze', inputs=[labels, axis_node])
-            loss_node, softmax_node = graph.make_node(
-                'SoftmaxCrossEntropyLoss',
-                inputs=[scores, squeeze_node],
-                outputs=2,
-                ignore_index=node.attr('ignore_index'),
-                reduction='none')
-            loss_node = graph.make_node(
-                'Unsqueeze', inputs=[loss_node, axis_node], outputs=outputs[0])
-            # onnx output is log(softmax), but paddle output is softmax
-            graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
-        else:
-            perm = [i for i in range(len(shape))]
-            perm[1] = axis
-            perm[axis] = 1
-            constant_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[1])
-            transpose_scores = graph.make_node(
-                'Transpose', inputs=[scores], perm=perm)
-            transpose_labels = graph.make_node(
-                'Transpose', inputs=[labels], perm=perm)
-            squeeze_labels = graph.make_node(
-                'Squeeze', inputs=[transpose_labels, constant_node])
-
-            loss_node, softmax_node = graph.make_node(
-                'SoftmaxCrossEntropyLoss',
-                inputs=[transpose_scores, squeeze_labels],
-                ignore_index=node.attr('ignore_index'),
-                outputs=2,
-                reduction='none')
-            output_node = graph.make_node(
-                'Unsqueeze', inputs=[loss_node, constant_node])
+            output_node = None
+            if graph.opset_version < 13:
+                output_node = graph.make_node(
+                    'Unsqueeze', inputs=[loss_node], axes=[1])
+            else:
+                axes_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[1])
+                output_node = graph.make_node(
+                    'Unsqueeze', inputs=[loss_node, axes_node])
             graph.make_node(
                 'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
             softmax_node = graph.make_node(
