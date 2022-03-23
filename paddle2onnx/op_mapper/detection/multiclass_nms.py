@@ -298,8 +298,7 @@ class MultiClassNMS():
                 outputs=node.output('Index'),
                 axes=[0])
             if node.type in ['matrix_nms', 'multiclass_nms3']:
-                select_bboxes_shape = graph.make_node(
-                    'Shape', inputs=[concat_final_results])
+                select_bboxes_shape = graph.make_node('Shape', inputs=[indices])
                 select_bboxes_shape1 = graph.make_node(
                     'Cast', inputs=[select_bboxes_shape], to=dtypes.ONNX.INT32)
                 indices = graph.make_node(
