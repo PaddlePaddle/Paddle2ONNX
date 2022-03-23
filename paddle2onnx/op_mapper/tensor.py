@@ -848,14 +848,12 @@ class Embedding():
         input_shape = node.input_shape('W', 0)
         if padding_idx != -1:
             if -1 in input_shape:
-                dtype = dtypes.ONNX.FLOAT
-                if node.input_dtype('W', 0) == paddle.float64:
-                    dtype = dtypes.ONNX.DOUBLE
                 replace_shape = list(copy.copy(input_shape))
                 del (replace_shape[0])
-                replace_data = constant = graph.make_node(
+                replace_data = graph.make_node(
                     'Constant',
-                    dtype=dtype,
+                    dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('W',
+                                                                        0)],
                     dims=replace_shape,
                     value=[0.0] * np.prod(replace_shape))
                 index = graph.make_node(

@@ -45,12 +45,14 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         assert res
         assert result.shape == expect.shape
         assert result.dtype == expect.dtype
-    elif type(result) == list or type(result) == tuple:
+    elif type(result) == list and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
                 compare(result[i], expect[i], delta, rtol)
             else:
                 compare(result[i].numpy(), expect[i], delta, rtol)
+    elif len(result) == 1:
+        compare(result[0], expect, delta, rtol)
 
 
 def randtool(dtype, low, high, shape):
@@ -234,9 +236,7 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
                          '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
-        if len(ort_outs) > 1:
-            return ort_outs
-        return ort_outs[0]
+        return ort_outs
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
         """
