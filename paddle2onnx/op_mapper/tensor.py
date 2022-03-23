@@ -60,7 +60,8 @@ class SetValue():
         contain_step_bigger_than_1 = False
         for i in steps:
             contain_step_bigger_than_1 = i > 1
-            if contain_step_bigger_than_1:
+            if not isinstance(i, int) or contain_step_bigger_than_1:
+                contain_step_bigger_than_1 = True
                 break
         condition = is_steps_tensor or is_starts_tensor or is_ends_tensor or contain_step_bigger_than_1
         assert not condition, "Currently not supported convert now"
