@@ -31,11 +31,10 @@ def export_onnx(paddle_graph,
                 operator_export_type="ONNX",
                 verbose=False,
                 auto_update_opset=True,
-                output_names=None,
-                quantize_model_mode="float"):
+                output_names=None):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
                                  operator_export_type, verbose,
-                                 auto_update_opset, quantize_model_mode)
+                                 auto_update_opset)
     onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker, output_names)
 
@@ -93,14 +92,6 @@ def program2onnx(program,
                     "The output_names should be 'list' or 'dict', but received type is %s."
                     % type(output_names))
 
-        quantize_model_mode = "float"
-        if 'quantize_model_mode' in configs:
-            quantize_model_mode = configs['quantize_model_mode']
-            if quantize_model_mode is not None and not isinstance(
-                    quantize_model_mode, str):
-                raise TypeError(
-                    "The quantize_model_mode should be 'str', but received type is %s."
-                    % type(quantize_model_mode))
         return export_onnx(
             paddle_graph,
             save_file,
@@ -108,8 +99,7 @@ def program2onnx(program,
             enable_onnx_checker,
             operator_export_type,
             auto_update_opset=auto_update_opset,
-            output_names=output_names,
-            quantize_model_mode=quantize_model_mode)
+            output_names=output_names)
     else:
         raise TypeError(
             "the input 'program' should be 'Program', but received type is %s."

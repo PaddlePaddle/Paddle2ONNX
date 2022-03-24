@@ -76,8 +76,7 @@ class ONNXGraph(Graph):
                  opset_version,
                  operator_export_type="ONNX",
                  block=None,
-                 auto_update_opset=True,
-                 quantize_model_mode="float"):
+                 auto_update_opset=True):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
@@ -87,12 +86,40 @@ class ONNXGraph(Graph):
         self.name_dict = dict()
         self.changed_dict = dict()
         self.sort_name_dict = dict()
-        self.quantize_model_mode = quantize_model_mode
+        self.quantize_model_mode = self.detect_model_type()
         if self.quantize_model_mode in ["static", "dynamic"]:
             warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
             logging.warning(warning_info)
         if auto_update_opset:
             self.update_opset_version()
+
+    def detect_model_type(self):
+        # this func will detect the model type: float, static, dynamic or new_type
+        quantize_ops = False
+        for layer_name, node in self.ctx.node_map.items():
+            if node.type.count("fake"):
+                quantize_ops = True
+                break
+        if not quantize_ops:
+            return "float"
+
+        static_quantize_model = False
+        for layer_name, node in self.ctx.node_map.items():
+            if node.type in ["dequantize_linear", "quantize_linear"]:
+                return new_type
+            if node.type.count("conv") or node.type.count("matmul"):
+                output_node_type = []
+                for key, value in node.outputs.items():
+                    name = value[0]
+                    for layer_name, inner_node in self.ctx.node_map.items():
+                        inputs = inner_node.inputs
+                        for one_input in inputs.values():
+                            if name in one_input:
+                                output_node_type.append(inner_node.type)
+                for ops in output_node_type:
+                    if output_node_type.count("fake_quantize"):
+                        return "static"
+        return "dynamic"
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -451,14 +478,12 @@ class ONNXGraph(Graph):
               opset_version,
               operator_export_type="ONNX",
               verbose=False,
-              auto_update_opset=True,
-              quantize_model_mode="float"):
+              auto_update_opset=True):
         onnx_graph = ONNXGraph(
             paddle_graph,
             opset_version=opset_version,
             operator_export_type=operator_export_type,
-            auto_update_opset=auto_update_opset,
-            quantize_model_mode=quantize_model_mode)
+            auto_update_opset=auto_update_opset)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
