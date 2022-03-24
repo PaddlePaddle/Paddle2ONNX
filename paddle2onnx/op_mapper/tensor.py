@@ -92,19 +92,19 @@ class SetValue():
                 graph, dtype, value, shape=shape)
         else:
             value_tensor = node.input('ValueTensor', 0)
-
-        zero_node = graph.make_node(
+        MAX_FLOAT32 = 3.402823466E+38
+        max_node = graph.make_node(
             'Constant', attrs={'dtype': dtype,
-                               'value': [0]})
+                               'value': [MAX_FLOAT32]})
         pads_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.INT64,
                    'value': onnx_paddings})
         value_pad_node = graph.make_node(
-            'Pad', inputs=[value_tensor, pads_node])
+            'Pad', inputs=[value_tensor, pads_node, max_node])
 
         condition_dtype = graph.make_node(
-            "Equal", inputs=[value_pad_node, zero_node])
+            "Equal", inputs=[value_pad_node, max_node])
         condition_node = graph.make_node(
             'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
         graph.make_node(
