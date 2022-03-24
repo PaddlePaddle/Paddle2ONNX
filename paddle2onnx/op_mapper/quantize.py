@@ -40,11 +40,9 @@ class Quantize_linear():
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
-        scale_numpy = weight_scale.squeeze().tolist()
-        if not isinstance(scale_numpy, list):
-            scale_numpy = [scale_numpy]
+        scale_list = weight_scale.squeeze().tolist()
         scale_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
 
         quantize_node = graph.make_node(
             'QuantizeLinear',
@@ -64,21 +62,18 @@ class Dequantize_linear():
             graph, scale_key)
         weight_scale = weight_scale / 127
 
-        scale_numpy = weight_scale.squeeze().tolist()
-        if not isinstance(scale_numpy, list):
-            scale_numpy = [scale_numpy]
+        scale_list = weight_scale.squeeze().tolist()
         scale_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_numpy)
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
 
         zero_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT8, value=[0] * len(scale_numpy))
+            'Constant', dtype=dtypes.ONNX.INT8, value=[0] * len(scale_list))
 
+        key = node.input('X', 0)
         update_param, weight = mapper_helper.get_param_from_paddle_graph(graph,
                                                                          key)
         quantize_node = node.input('X', 0)
         if weight is not None:
-            print("weight shape:", weight.shape)
-            print("weight_scale shape:", weight_scale.shape)
             if len(weight.shape) == 4:
                 new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
                 new_weight = new_weight.transpose(3, 0, 1, 2)
@@ -110,15 +105,14 @@ class Fake_quantize_dequantize_moving_average_abs_max():
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
         key = node.input('InScale', 0)
-        _, InScale = mapper_helper.get_param_from_paddle_graph(graph, key)
-        Minus_InScale = -1.0 * InScale
+        _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         input_node_name = node.input('X', 0)
 
         scale_node = graph.make_node(
             'Constant',
             dtype=dtypes.ONNX.FLOAT,
-            value=[float(InScale[0]) / 127.0])
+            value=[float(in_scale[0]) / 127.0])
 
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
@@ -145,7 +139,7 @@ class Fake_quantize_dequantize_moving_average_abs_max():
             scale_node, s_node = graph.make_node(
                 'Constant',
                 dtype=dtypes.ONNX.FLOAT,
-                value=[float(InScale[0]) / 127.0],
+                value=[float(in_scale[0]) / 127.0],
                 return_node=True)
             changed_output_name = output_name + ".paddleadd" + str(index)
             index = index + 1
@@ -296,14 +290,14 @@ class Fake_quantize_range_abs_max():
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
         key = node.input('InScale')
-        _, InScale = mapper_helper.get_param_from_paddle_graph(graph, key)
+        _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         input_node_name = node.input('X', 0)
 
         scale_node = graph.make_node(
             'Constant',
             dtype=dtypes.ONNX.FLOAT,
-            value=[float(InScale[0]) / 127.0])
+            value=[float(in_scale[0]) / 127.0])
 
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
@@ -337,7 +331,7 @@ class Fake_quantize_range_abs_max():
             scale_node, s_node = graph.make_node(
                 'Constant',
                 dtype=dtypes.ONNX.FLOAT,
-                value=[float(InScale[0]) / 127.0],
+                value=[float(in_scale[0]) / 127.0],
                 return_node=True)
             changed_output_name = output_name + ".paddleadd" + str(index)
             index = index + 1
@@ -380,14 +374,14 @@ class Fake_quantize_moving_average_abs_max():
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
         key = node.input('InScale')
-        _, InScale = mapper_helper.get_param_from_paddle_graph(graph, key)
+        _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         input_node_name = node.input('X', 0)
 
         scale_node = graph.make_node(
             'Constant',
             dtype=dtypes.ONNX.FLOAT,
-            value=[float(InScale[0]) / 127.0])
+            value=[float(in_scale[0]) / 127.0])
 
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
@@ -413,7 +407,7 @@ class Fake_quantize_moving_average_abs_max():
             scale_node, s_node = graph.make_node(
                 'Constant',
                 dtype=dtypes.ONNX.FLOAT,
-                value=[float(InScale[0]) / 127.0],
+                value=[float(in_scale[0]) / 127.0],
                 return_node=True)
             changed_output_name = output_name + ".paddleadd" + str(index)
             index = index + 1
@@ -447,14 +441,15 @@ class Fake_dequantize_max_abs():
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
         key = node.input('Scale')
-        _, InScale = mapper_helper.get_param_from_paddle_graph(graph, key)
+        _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
+        in_scale = np.array(in_scale)
 
         input_node_name = graph.get_name(node.input('X', 0), with_remove=True)
 
+        in_scale = in_scale / 127.0
+        in_scale_list = in_scale.tolist()
         scale_node = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.FLOAT,
-            value=[float(Scale[0]) / 127.0])
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=in_scale_list)
 
         graph.add_name(node.output('Out', 0))
         output_name = graph.get_name(node.output('Out', 0))
@@ -535,25 +530,24 @@ class Fake_channel_wise_dequantize_max_abs():
             return
 
         key = node.input('Scales', 0)
-        _, InScale1 = mapper_helper.get_param_from_paddle_graph(graph, key)
+        _, in_scale1 = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         key = node.input('Scales', 1)
-        _, InScale2 = mapper_helper.get_param_from_paddle_graph(graph, key)
+        _, in_scale2 = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         x_num_col_dims = node.attr('x_num_col_dims')
         quant_axis = node.attr('quant_axis')
 
-        if InScale2 is None:
+        if in_scale2 is None:
             input_shape = node.input_shape('X', 0)
             channel = input_shape[quant_axis]
             zero_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
-            InScale = np.array(InScale1)
-            scale = InScale / 127.0
+            in_scale1 = np.array(in_scale1)
+            scale = in_scale1 / 127.0
             scale_list = np.squeeze(scale).tolist()
             scale_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-            attrs = {'axis': node.attr("quant_axis"), }
             graph.make_node(
                 'DequantizeLinear',
                 inputs=[node.input('X', 0), scale_node, zero_node],
@@ -566,8 +560,8 @@ class Fake_channel_wise_dequantize_max_abs():
             channel = input_shape[x_num_col_dims]
             zero_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
-            InScale = np.array(InScale1 * InScale2[0])
-            scale = InScale / (127.0 * 127.0)
+            in_scale = np.array(in_scale1 * in_scale2[0])
+            scale = in_scale / (127.0 * 127.0)
             scale_list = np.squeeze(scale).tolist()
             scale_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
@@ -581,8 +575,8 @@ class Fake_channel_wise_dequantize_max_abs():
             channel = input_shape[1]
             zero_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
-            InScale = np.array(InScale1 * InScale2[0])
-            scale = InScale / (127.0 * 127.0)
+            in_scale = np.array(in_scale1 * in_scale2[0])
+            scale = in_scale / (127.0 * 127.0)
             scale_list = np.squeeze(scale).tolist()
             scale_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
