@@ -81,8 +81,8 @@ class ONNXGraph(Graph):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
-        self.origin_parameters = None
         self.ctx = paddle_graph
+        self.paddle_parameters = paddle_graph.parameters
         self.custom = []
         self.name_dict = dict()
         self.changed_dict = dict()
@@ -288,7 +288,6 @@ class ONNXGraph(Graph):
 
     def build_parameters(self, parameters):
         # build weight nodes
-        self.origin_parameters = parameters
         for name, param in parameters.items():
             weight = param['data']
             if weight is not np.ndarray:
@@ -315,7 +314,7 @@ class ONNXGraph(Graph):
         node = helper.make_node(
             'Constant', inputs=[], outputs=[name], value=tensor)
         self.parameters[name] = node
-        self.origin_parameters[name] = param
+        self.paddle_parameters[name] = param
 
     def build_input_nodes(self, input_nodes):
         # build input nodes

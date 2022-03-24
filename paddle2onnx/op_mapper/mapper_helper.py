@@ -18,6 +18,7 @@ import copy
 from paddle2onnx.constant import dtypes
 import paddle
 from onnx import TensorProto
+import numpy as np
 
 
 def is_static_shape(shape):
@@ -394,3 +395,30 @@ def get_node_attr_value(graph,
     else:
         value = node.attr(attr_name)
         return value, False
+
+
+def get_param_from_paddle_graph(graph, name):
+    weight = None
+    param = None
+    if name in graph.paddle_parameters.keys():
+        param = graph.paddle_parameters[name]
+        weight = param['data']
+    return param, weight
+
+
+def np_topk_helper(matrix, K, axis=1):
+    if axis == 0:
+        row_index = np.arange(matrix.shape[1 - axis])
+        topk_index = np.argpartition(-matrix, K, axis=axis)[0:K, :]
+        topk_data = matrix[topk_index, row_index]
+        topk_index_sort = np.argsort(-topk_data, axis=axis)
+        topk_data_sort = topk_data[topk_index_sort, row_index]
+        topk_index_sort = topk_index[0:K, :][topk_index_sort, row_index]
+    else:
+        column_index = np.arange(matrix.shape[1 - axis])[:, None]
+        topk_index = np.argpartition(-matrix, K, axis=axis)[:, 0:K]
+        topk_data = matrix[column_index, topk_index]
+        topk_index_sort = np.argsort(-topk_data, axis=axis)
+        topk_data_sort = topk_data[column_index, topk_index_sort]
+        topk_index_sort = topk_index[:, 0:K][column_index, topk_index_sort]
+    return topk_data_sort, topk_index_sort
