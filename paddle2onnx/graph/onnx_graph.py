@@ -116,7 +116,7 @@ class ONNXGraph(Graph):
                             if name in one_input:
                                 output_node_type.append(inner_node.type)
                 for ops in output_node_type:
-                    if output_node_type.count("fake_quantize"):
+                    if ops.count("dequantize"):
                         return "static"
         return "dynamic"
 

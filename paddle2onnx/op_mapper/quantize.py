@@ -289,7 +289,7 @@ class Fake_quantize_range_abs_max():
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
-        key = node.input('InScale')
+        key = node.input('InScale', 0)
         _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         input_node_name = node.input('X', 0)
@@ -373,7 +373,7 @@ class Fake_quantize_moving_average_abs_max():
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
-        key = node.input('InScale')
+        key = node.input('InScale', 0)
         _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         input_node_name = node.input('X', 0)
@@ -440,7 +440,7 @@ class Fake_dequantize_max_abs():
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
-        key = node.input('Scale')
+        key = node.input('Scale', 0)
         _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
         in_scale = np.array(in_scale)
 
@@ -467,7 +467,7 @@ class Fake_channel_wise_quantize_abs_max():
     @classmethod
     def opset_13(cls, graph, node, **kw):
         quant_axis = node.attr("quant_axis")
-        key = node.input('X')
+        key = node.input('X', 0)
 
         param, weight = mapper_helper.get_param_from_paddle_graph(graph, key)
 
@@ -512,7 +512,7 @@ class Fake_channel_wise_quantize_abs_max():
             outputs=node.output('Out'),
             axis=quant_axis)
 
-        key = node.output('OutScale')
+        key = node.output('OutScale', 0)
         update_param, weight = mapper_helper.get_param_from_paddle_graph(graph,
                                                                          key)
 

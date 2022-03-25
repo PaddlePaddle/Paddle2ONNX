@@ -34,11 +34,8 @@ class Conv():
         output_name = node.output('Output', 0)
         if graph.quantize_model_mode in ["static"]:
             weight_key = node.input('Filter', 0)
-            weight = None
-            update_param = None
-            if weight_key in graph.origin_parameters.keys():
-                update_param = graph.origin_parameters[weight_key]
-                weight = update_param['data']
+            update_param, weight = mapper_helper.get_param_from_paddle_graph(
+                graph, weight_key)
             next_node_name = node.output('Output', 0)
             next_node = None
             for name, paddle_node in list(graph.ctx.node_map.items()):
@@ -48,10 +45,8 @@ class Conv():
                         break
 
             key = next_node.input('Scales', 0)
-            weight_scale = None
-            if key in graph.origin_parameters.keys():
-                param = graph.origin_parameters[key]
-                weight_scale = param['data']
+            _, weight_scale = mapper_helper.get_param_from_paddle_graph(graph,
+                                                                        key)
             weight_scale = weight_scale / 127.0
 
             quant_axis = next_node.attr('quant_axis')
