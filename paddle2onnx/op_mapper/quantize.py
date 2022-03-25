@@ -123,7 +123,8 @@ class Fake_quantize_dequantize_moving_average_abs_max():
             'DequantizeLinear',
             inputs=[quantize_node, scale_node, zero_node],
             outputs=output_name)
-
+        if not graph.sortcut_optimize:
+            return
         if input_node_name in graph.changed_dict.keys():
             return
 
@@ -316,6 +317,9 @@ class Fake_quantize_range_abs_max():
                 inputs=[input_node_name, scale_node, zero_node],
                 outputs=output_name)
 
+        if not graph.sortcut_optimize:
+            return
+
         if input_node_name in graph.changed_dict.keys():
             return
 
@@ -390,7 +394,8 @@ class Fake_quantize_moving_average_abs_max():
             'QuantizeLinear',
             inputs=[input_node_name, scale_node, zero_node],
             outputs=output_name)
-
+        if not graph.sortcut_optimize:
+            return
         if input_node_name in graph.changed_dict.keys():
             return
 

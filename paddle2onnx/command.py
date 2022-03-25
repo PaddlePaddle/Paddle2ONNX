@@ -102,6 +102,12 @@ def arg_parser():
         type=ast.literal_eval,
         default=True,
         help="whether enable auto_update_opset, default is True")
+    parser.add_argument(
+        "--enable_sortcut_optimize",
+        type=ast.literal_eval,
+        default=True,
+        help="whether enable sortcut optimize in resnet block when convert quantize model, default is True"
+    )
     return parser
 
 
@@ -114,6 +120,7 @@ def program2onnx(model_dir,
                  operator_export_type="ONNX",
                  input_shape_dict=None,
                  output_names=None,
+                 sortcut_optimize=True,
                  auto_update_opset=True):
     try:
         import paddle
@@ -180,6 +187,7 @@ def program2onnx(model_dir,
         enable_onnx_checker=enable_onnx_checker,
         operator_export_type=operator_export_type,
         auto_update_opset=auto_update_opset,
+        sortcut_optimize=sortcut_optimize,
         output_names=output_names)
 
 
@@ -225,6 +233,7 @@ def main():
         operator_export_type=operator_export_type,
         input_shape_dict=input_shape_dict,
         output_names=args.output_names,
+        sortcut_optimize=args.enable_sortcut_optimize,
         auto_update_opset=args.enable_auto_update_opset)
 
 

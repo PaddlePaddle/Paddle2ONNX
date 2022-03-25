@@ -31,10 +31,11 @@ def export_onnx(paddle_graph,
                 operator_export_type="ONNX",
                 verbose=False,
                 auto_update_opset=True,
+                sortcut_optimize=True,
                 output_names=None):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
                                  operator_export_type, verbose,
-                                 auto_update_opset)
+                                 auto_update_opset, sortcut_optimize)
     onnx_graph = PassManager.run_pass(onnx_graph, [
         'inplace_node_pass', 'add_quantize_ops_pass',
         'remove_isolated_node_pass'
@@ -61,6 +62,7 @@ def program2onnx(program,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
                  auto_update_opset=True,
+                 sortcut_optimize=True,
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -102,6 +104,7 @@ def program2onnx(program,
             enable_onnx_checker,
             operator_export_type,
             auto_update_opset=auto_update_opset,
+            sortcut_optimize=sortcut_optimize,
             output_names=output_names)
     else:
         raise TypeError(
@@ -196,6 +199,15 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
                 "The auto_update_opset should be 'bool', but received type is %s."
                 % type(configs['auto_update_opset']))
 
+    sortcut_optimize = True
+    if 'sortcut_optimize' in configs:
+        if isinstance(configs['sortcut_optimize'], bool):
+            sortcut_optimize = configs['sortcut_optimize']
+        else:
+            raise TypeError(
+                "The sortcut_optimize should be 'bool', but received type is %s."
+                % type(configs['sortcut_optimize']))
+
     output_names = None
     if 'output_names' in configs:
         output_names = configs['output_names']
@@ -206,4 +218,4 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     return export_onnx(paddle_graph, save_file, opset_version,
                        enable_onnx_checker, operator_export_type, verbose,
-                       auto_update_opset, output_names)
+                       auto_update_opset, sortcut_optimize, output_names)

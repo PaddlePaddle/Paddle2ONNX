@@ -77,7 +77,8 @@ class ONNXGraph(Graph):
                  opset_version,
                  operator_export_type="ONNX",
                  block=None,
-                 auto_update_opset=True):
+                 auto_update_opset=True,
+                 sortcut_optimize=True):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
@@ -93,6 +94,8 @@ class ONNXGraph(Graph):
         if auto_update_opset:
             self.update_opset_version()
         self.static_quantize_pre_convert_dict = dict()
+        self.sortcut_optimize = sortcut_optimize
+        print("self.sortcut_optimize:", self.sortcut_optimize)
 
     def detect_model_type(self):
         # this func will detect the model type: float, static, dynamic or new_type
@@ -415,12 +418,14 @@ class ONNXGraph(Graph):
               opset_version,
               operator_export_type="ONNX",
               verbose=False,
-              auto_update_opset=True):
+              auto_update_opset=True,
+              sortcut_optimize=True):
         onnx_graph = ONNXGraph(
             paddle_graph,
             opset_version=opset_version,
             operator_export_type=operator_export_type,
-            auto_update_opset=auto_update_opset)
+            auto_update_opset=auto_update_opset,
+            sortcut_optimize=sortcut_optimize)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)
