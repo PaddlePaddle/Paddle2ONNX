@@ -29,13 +29,12 @@ class RemoveIsolatedNodePass(object):
                 continue
 
             keep = False
-            for node in onnx_graph.output_nodes:
-                if node.name in outputs:
+            for output_node in onnx_graph.output_nodes:
+                if output_node.name in outputs:
                     keep = True
                     break
             if keep:
                 continue
-
             keep = False
             for inner_idx in range(idx + 1, len(node_map)):
                 inner_name, inner_node = node_map[inner_idx]
@@ -43,7 +42,32 @@ class RemoveIsolatedNodePass(object):
                 for out in outputs:
                     if out in inner_inputs:
                         keep = True
+                        break
             if not keep:
                 logging.info("Delete isolated node: {}".format(name))
                 onnx_graph.remove_node_by_name(name)
+
+        node_map = list(onnx_graph.node_map.items())
+        parameters = list(onnx_graph.parameters.items())
+        for idx in range(len(parameters)):
+            name, node = parameters[idx]
+            output = node.output
+            keep = False
+            for output_node in onnx_graph.output_nodes:
+                if output_node.name in output:
+                    keep = True
+                    break
+            if keep:
+                continue
+            for inner_idx in range(len(node_map)):
+                inner_name, inner_node = node_map[inner_idx]
+                inner_inputs = inner_node.inputs
+                for out in output:
+                    if out in inner_inputs:
+                        keep = True
+                        break
+            if not keep:
+                logging.info("Delete isolated parameter node: {}".format(name))
+                onnx_graph.remove_node_by_name(name)
+
         return onnx_graph

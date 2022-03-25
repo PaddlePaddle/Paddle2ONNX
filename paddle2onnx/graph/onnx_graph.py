@@ -85,7 +85,6 @@ class ONNXGraph(Graph):
         self.custom = []
         self.name_dict = dict()
         self.changed_dict = dict()
-        self.sort_name_dict = dict()
         self.quantize_model_mode = self.detect_model_type()
         if self.quantize_model_mode in ["static", "dynamic"]:
             warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
@@ -131,47 +130,6 @@ class ONNXGraph(Graph):
             graph_str += node.__str__()
         graph_str += ' }'
         return graph_str
-
-    def update_graph(self):
-        if not self.changed_dict:
-            return
-        for input_name, vals in self.changed_dict.items():
-            ori_input_name = vals['name']
-            total = vals['total']
-            all_q_dq = vals['qdq']
-            num = 0
-            for layer_name, node in self.node_map.items():
-                inputs = node.inputs
-                if input_name not in inputs:
-                    continue
-                if node.type in ['QuantizeLinear']:
-                    continue
-                if node.type.count("Pool"):
-                    continue
-                for i in range(len(inputs)):
-                    if input_name == inputs[i]:
-                        change_input_name = ori_input_name + ".paddleadd" + str(
-                            num)
-                        inputs[i] = change_input_name
-                        node = self.update_node(node, inputs=inputs)
-                        self.sort_name_dict[node.layer_name] = all_q_dq[num]
-                        num = num + 1
-
-        temp_node_map = dict()
-        for layer_name, node in self.node_map.items():
-            if layer_name in self.sort_name_dict.keys():
-                qdq_node = self.sort_name_dict[layer_name]
-                for fake_node_name in qdq_node:
-                    fake_node = self.node_map[fake_node_name]
-                    temp_node_map[fake_node_name] = fake_node
-                temp_node_map[layer_name] = node
-            else:
-                for fake_values in self.sort_name_dict.values():
-                    if layer_name in fake_values:
-                        continue
-                    else:
-                        temp_node_map[layer_name] = node
-        self.node_map = temp_node_map
 
     def get_another_node_by_input(self, name, copy_node=False):
         check_op_list = [
@@ -340,6 +298,7 @@ class ONNXGraph(Graph):
             vals=weight.flatten().tolist())
         node = helper.make_node(
             'Constant', inputs=[], outputs=[name], value=tensor)
+        self.parameters.pop(name)
         self.parameters[name] = node
         self.paddle_parameters[name] = param
 
@@ -365,7 +324,6 @@ class ONNXGraph(Graph):
         # build op nodes
         for name, node in list(node_map.items()):
             OpMapper.mapping(self, node, self.operator_export_type)
-        self.update_graph()
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(

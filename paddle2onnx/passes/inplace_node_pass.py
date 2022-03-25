@@ -55,7 +55,6 @@ class InplaceNodePass(object):
             if len(repeated_output) != 0:
                 for opt, idx in repeated_output.items():
                     name_mapping[opt] = cls.generate_new_name(opt)
-                    print("========", name_mapping[opt])
                     outputs[idx] = name_mapping[opt]
             node.set_inputs(inputs)
             node.set_outputs(outputs)
