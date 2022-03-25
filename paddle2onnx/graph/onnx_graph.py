@@ -131,31 +131,6 @@ class ONNXGraph(Graph):
         graph_str += ' }'
         return graph_str
 
-    def get_another_node_by_input(self, name, copy_node=False):
-        check_op_list = [
-            'fake_quantize_dequantize_moving_average_abs_max',
-            'fake_quantize_moving_average_abs_max',
-            'fake_quantize_range_abs_max', 'pool2d'
-        ]
-        result_layer_name = []
-        for layer_name, node in self.ctx.node_map.items():
-            inputs = node.inputs
-            for one_input in inputs.values():
-                if name in one_input and node.type not in check_op_list:
-                    result_layer_name.append(layer_name)
-
-        node_list = []
-        if copy_node:
-            for i in range(len(result_layer_name)):
-                node = copy.copy(self.ctx.node_map[result_layer_name[i]])
-                node_list.append(node)
-        else:
-            for i in range(len(result_layer_name)):
-                node = self.ctx.node_map[result_layer_name[i]]
-                node_list.append(node)
-
-        return node_list
-
     def add_name(self, name):
         if name in self.name_dict.keys():
             self.name_dict[name]["names"].append(name + "_" + str(
