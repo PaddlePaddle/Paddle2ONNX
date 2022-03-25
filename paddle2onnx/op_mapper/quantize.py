@@ -127,8 +127,8 @@ class Fake_quantize_dequantize_moving_average_abs_max():
         if input_node_name in graph.changed_dict.keys():
             return
 
-        another_nodes = graph.get_another_node_by_input(
-            input_node_name, copy_node=False)
+        another_nodes = mapper_helper.get_another_node_by_input(
+            graph, input_node_name, copy_node=False)
         if len(another_nodes) == 0:
             return
         index = 0
@@ -319,8 +319,8 @@ class Fake_quantize_range_abs_max():
         if input_node_name in graph.changed_dict.keys():
             return
 
-        another_nodes = graph.get_another_node_by_input(
-            input_node_name, copy_node=False)
+        another_nodes = mapper_helper.get_another_node_by_input(
+            graph, input_node_name, copy_node=False)
         if len(another_nodes) == 0:
             return
         index = 0
@@ -394,8 +394,8 @@ class Fake_quantize_moving_average_abs_max():
         if input_node_name in graph.changed_dict.keys():
             return
 
-        another_nodes = graph.get_another_node_by_input(
-            input_node_name, copy_node=False)
+        another_nodes = mapper_helper.get_another_node_by_input(
+            graph, input_node_name, copy_node=False)
         if len(another_nodes) == 0:
             return
 
