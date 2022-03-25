@@ -431,6 +431,57 @@ def get_another_node_by_input(graph, name, copy_node=False):
     return node_list
 
 
+def static_quantize_pre_convert(graph):
+    for name, node in graph.ctx.node_map.items():
+        if not node.type.count("dequantize"):
+            continue
+        ipt = node.inputs["X"][0]
+        for pre_name, pre_node in graph.ctx.node_map.items():
+            pre_outputs = pre_node.outputs
+            outputs = []
+            for _, output in pre_outputs.items():
+                outputs = outputs + output
+            if ipt not in outputs:
+                continue
+            graph.static_quantize_pre_convert_dict[pre_node] = dict()
+
+            weight_key = pre_node.input('Filter', 0)
+            update_param, weight = get_param_from_paddle_graph(graph,
+                                                               weight_key)
+
+            key = node.input('Scales', 0)
+            _, weight_scale = get_param_from_paddle_graph(graph, key)
+            weight_scale = weight_scale / 127.0
+
+            quant_axis = node.attr('quant_axis')
+
+            new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
+            new_weight = new_weight.transpose(3, 0, 1, 2)
+            update_param['data'] = new_weight
+            graph.update_parameters(weight_key, update_param)
+
+            input_shape = pre_node.input_shape('Filter', 0)
+            scale_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.FLOAT,
+                value=weight_scale.tolist())
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[0])
+            attrs = {'axis': node.attr("quant_axis"), }
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[pre_node.input('Filter', 0), scale_node, zero_node],
+                attrs=attrs)
+            filter_node = graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                attrs=attrs)
+            graph.static_quantize_pre_convert_dict[pre_node][
+                "output"] = node.output('Out', 0)
+            graph.static_quantize_pre_convert_dict[pre_node][
+                "filter"] = filter_node
+
+
 def np_topk_helper(matrix, K, axis=1):
     if axis == 0:
         row_index = np.arange(matrix.shape[1 - axis])

@@ -32,49 +32,9 @@ class Conv():
     def opset_1(cls, graph, node, **kw):
         filter_node = node.input('Filter', 0)
         output_name = node.output('Output', 0)
-        if graph.quantize_model_mode in ["static"]:
-            weight_key = node.input('Filter', 0)
-            update_param, weight = mapper_helper.get_param_from_paddle_graph(
-                graph, weight_key)
-            next_node_name = node.output('Output', 0)
-            next_node = None
-            for name, paddle_node in list(graph.ctx.node_map.items()):
-                for key, value in paddle_node.inputs.items():
-                    if next_node_name in value:
-                        next_node = paddle_node
-                        break
-
-            key = next_node.input('Scales', 0)
-            _, weight_scale = mapper_helper.get_param_from_paddle_graph(graph,
-                                                                        key)
-            weight_scale = weight_scale / 127.0
-
-            quant_axis = next_node.attr('quant_axis')
-
-            new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
-            new_weight = new_weight.transpose(3, 0, 1, 2)
-            update_param['data'] = new_weight
-            graph.update_parameters(weight_key, update_param)
-
-            input_shape = node.input_shape('Filter', 0)
-            scale_node = graph.make_node(
-                'Constant',
-                dtype=dtypes.ONNX.FLOAT,
-                value=weight_scale.tolist())
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[0])
-            attrs = {'axis': next_node.attr("quant_axis"), }
-            quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[node.input('Filter', 0), scale_node, zero_node],
-                attrs=attrs)
-
-            filter_node = graph.make_node(
-                'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                attrs=attrs)
-
-            output_name = next_node.output('Out', 0)
+        if node in graph.static_quantize_pre_convert_dict:
+            output_name = graph.static_quantize_pre_convert_dict[node]["output"]
+            filter_node = graph.static_quantize_pre_convert_dict[node]["filter"]
 
         kernel_shape = node.input_shape('Filter', 0)
         dilations = node.attr('dilations')

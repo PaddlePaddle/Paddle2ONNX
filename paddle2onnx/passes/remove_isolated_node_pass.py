@@ -44,7 +44,6 @@ class RemoveIsolatedNodePass(object):
                         keep = True
                         break
             if not keep:
-                logging.info("Delete isolated node: {}".format(name))
                 onnx_graph.remove_node_by_name(name)
 
         node_map = list(onnx_graph.node_map.items())
@@ -67,7 +66,6 @@ class RemoveIsolatedNodePass(object):
                         keep = True
                         break
             if not keep:
-                logging.info("Delete isolated parameter node: {}".format(name))
                 onnx_graph.remove_node_by_name(name)
 
         return onnx_graph

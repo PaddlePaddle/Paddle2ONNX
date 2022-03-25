@@ -24,6 +24,7 @@ from paddle2onnx.op_mapper import OpMapper
 from onnx import helper
 from paddle2onnx.utils import check_model, logging
 from onnx import TensorProto
+from paddle2onnx.op_mapper import mapper_helper
 
 
 class ONNXNode(Node):
@@ -86,11 +87,12 @@ class ONNXGraph(Graph):
         self.name_dict = dict()
         self.changed_dict = dict()
         self.quantize_model_mode = self.detect_model_type()
-        if self.quantize_model_mode in ["static", "dynamic"]:
+        if self.quantize_model_mode not in ["float"]:
             warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
             logging.warning(warning_info)
         if auto_update_opset:
             self.update_opset_version()
+        self.static_quantize_pre_convert_dict = dict()
 
     def detect_model_type(self):
         # this func will detect the model type: float, static, dynamic or new_type
@@ -296,6 +298,8 @@ class ONNXGraph(Graph):
 
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
+        if self.quantize_model_mode in ["static"]:
+            mapper_helper.static_quantize_pre_convert(self)
         # build op nodes
         for name, node in list(node_map.items()):
             OpMapper.mapping(self, node, self.operator_export_type)
