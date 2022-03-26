@@ -16,6 +16,7 @@
 #include <onnx/checker.h>
 #include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/optimizer/fuse_constant_reshape.h"
+#include "paddle2onnx/optimizer/fuse_constant_unsqueeze.h"
 #include "paddle2onnx/optimizer/fuse_paddle_conv_bias.h"
 
 namespace paddle2onnx {
@@ -44,15 +45,86 @@ void ModelExporter::ExportInputOutputs(
   }
 }
 
-void ModelExporter::ExportOp(const PaddleParser& parser, int32_t opset_version,
-                             int64_t block_id, int64_t op_id) {
+void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
+                             int32_t opset_version, int64_t block_id,
+                             int64_t op_id, bool verbose) {
   auto op = parser.GetOpDesc(block_id, op_id);
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> nodes;
-
+  if (verbose) {
+    std::cerr << "Converting operator:" << op.type() << std::endl;
+  }
+  if (op.type() == "while") {
+    return ExportLoop(parser, helper, opset_version, block_id, op_id, verbose);
+  }
   auto mapper =
       MapperHelper::Get()->CreateMapper(op.type(), parser, block_id, op_id);
-  mapper->Run(&helper, opset_version);
+  mapper->Run(helper, opset_version);
   delete mapper;
+}
+
+void ModelExporter::ProcessGraphDumplicateNames(
+    std::vector<std::shared_ptr<NodeProto>>* parameters,
+    std::vector<std::shared_ptr<ValueInfoProto>>* inputs,
+    std::vector<std::shared_ptr<ValueInfoProto>>* outputs,
+    std::vector<std::shared_ptr<NodeProto>>* nodes) {
+  // process dumplicate tensor names
+  std::unordered_map<std::string, std::string> renamer;
+  std::set<std::string> tensor_names;
+  for (auto& item : *parameters) {
+    for (size_t i = 0; i < item->output_size(); ++i) {
+      if (tensor_names.find(item->output(i)) != tensor_names.end()) {
+        Assert(false, "There's dumplicate names in exported parameters.");
+      }
+      tensor_names.insert(item->output(i));
+    }
+  }
+  for (auto& item : *inputs) {
+    if (tensor_names.find(item->name()) != tensor_names.end()) {
+      Assert(false,
+             "There's dumplicate names in exported parameters and inputs.");
+    }
+    tensor_names.insert(item->name());
+  }
+  for (auto& item : *nodes) {
+    // update node inputs
+    for (size_t i = 0; i < item->input_size(); ++i) {
+      if (renamer.find(item->input(i)) != renamer.end()) {
+        auto updated_name = renamer[item->input(i)];
+        while (renamer.find(updated_name) != renamer.end()) {
+          updated_name = renamer[updated_name];
+        }
+        *(item->mutable_input(i)) = updated_name;
+      }
+    }
+    // if there's dumplicate name
+    // will generate new name and replace it
+    for (size_t i = 0; i < item->output_size(); ++i) {
+      if (tensor_names.find(item->output(i)) != tensor_names.end()) {
+        std::string renamed_tensor_name = item->output(i);
+        while (renamer.find(renamed_tensor_name) != renamer.end()) {
+          renamed_tensor_name = renamer[renamed_tensor_name];
+        }
+        auto new_tensor_name =
+            MapperHelper::Get()->GenName(renamed_tensor_name);
+        std::cerr << "[Renamer] Find dumplicate output name: "
+                  << renamed_tensor_name << " in model." << std::endl;
+        std::cerr << "[Renamer] Will rename " << renamed_tensor_name << " to "
+                  << new_tensor_name << std::endl;
+        *(item->mutable_output(i)) = new_tensor_name;
+        renamer[renamed_tensor_name] = new_tensor_name;
+      }
+      tensor_names.insert(item->output(i));
+    }
+  }
+
+  for (auto& item : *outputs) {
+    if (renamer.find(item->name()) != renamer.end()) {
+      auto updated_name = renamer[item->name()];
+      while (renamer.find(updated_name) != renamer.end()) {
+        updated_name = renamer[updated_name];
+      }
+      item->set_name(updated_name);
+    }
+  }
 }
 
 std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
@@ -62,7 +134,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
                                bool enable_optimize) {
   Assert(opset_version <= 15 && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, 15].");
-  helper.Clear();
+  _helper.Clear();
   inputs.clear();
   outputs.clear();
   parameters.clear();
@@ -85,21 +157,24 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
            "Due to the unsupported operators, the conversion is aborted.");
   }
 
-  int32_t min_opset = GetMinOpset(parser, false);
+  int32_t min_opset = GetMinOpset(parser, opset_version, false);
   if (min_opset < 0) {
-    min_opset = GetMinOpset(parser, true);
+    min_opset = GetMinOpset(parser, opset_version, true);
     Assert(false,
            "Model exporting failed, you can report this problem to "
            "https://github.com/PaddlePaddle/Paddle2ONNX.git.");
   }
   if (!auto_upgrade_opset) {
     if (min_opset > opset_version) {
+      min_opset = GetMinOpset(parser, opset_version, true);
       std::cerr << "This model cannot export to onnx with opset version = "
                 << opset_version
                 << ", the opset version for this model should be greater or "
                    "equal than "
                 << min_opset << std::endl;
-      Assert(false, "Due to opset version, the model exporting is aborted.");
+      Assert(false,
+             "Due to opset version, the model exporting is aborted, please set "
+             "a higher opset_version or set auto_upgrade_opset=true.");
     }
   } else {
     if (min_opset > opset_version) {
@@ -108,8 +183,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       opset_version = min_opset;
     }
   }
-  helper.SetOpsetVersion(opset_version);
-  std::cerr << "Model will exported with opset = " << helper.GetOpsetVersion()
+  _helper.SetOpsetVersion(opset_version);
+  std::cerr << "Model will exported with opset = " << _helper.GetOpsetVersion()
             << std::endl;
 
   ExportParameters(parser.params);
@@ -124,7 +199,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     } else if (op.type() == "fetch") {
       continue;
     }
-    ExportOp(parser, opset_version, 0, i);
+    ExportOp(parser, &_helper, opset_version, 0, i, verbose);
   }
 
   // construct a onnx model proto
@@ -138,13 +213,16 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   opset_id->set_domain("");
   opset_id->set_version(opset_version);
 
+  ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
+
   for (auto& item : parameters) {
     *(graph->add_node()) = *(item.get());
   }
   for (auto& item : inputs) {
     *(graph->add_input()) = *(item.get());
   }
-  for (auto& item : helper.nodes) {
+  for (auto& item : _helper.nodes) {
+    std::cout << "Add node " << item->op_type() << std::endl;
     *(graph->add_node()) = (*item.get());
   }
   for (auto& item : outputs) {
@@ -197,6 +275,9 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
       if (op.type() == "feed" || op.type() == "fetch") {
         continue;
       }
+      if (op.type() == "while") {
+        continue;
+      }
       if (!MapperHelper::Get()->IsRegistered(op.type())) {
         unsupported_ops->insert(op.type());
       } else if (!enable_experimental_op) {
@@ -212,11 +293,13 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
   return (unsupported_ops->size() == 0);
 }
 
-int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
+int32_t ModelExporter::GetMinOpset(const PaddleParser& parser,
+                                   const int32_t& opset_version, bool verbose) {
   int32_t max_opset = -1;
   bool exportable = true;
   // Record the number of ops that need to be converted
   int converted_op_num = 0;
+  std::set<std::string> verbose_log;
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
       auto op = parser.GetOpDesc(i, j);
@@ -224,14 +307,34 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
         continue;
       }
       converted_op_num += 1;
-      auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, i, j);
-      int32_t current_min_opset = mapper->GetMinOpset(verbose);
+      int current_min_opset = 7;
+      if (op.type() == "while") {
+        current_min_opset = 13;
+      } else {
+        auto mapper =
+            MapperHelper::Get()->CreateMapper(op.type(), parser, i, j);
+        current_min_opset = mapper->GetMinOpset(verbose);
+        delete mapper;
+      }
       if (current_min_opset < 0) {
         exportable = false;
+        if (verbose) {
+          std::cerr << "[Paddle2ONNX] Due to the operator: " << op.type()
+                    << ", this model cannot be exported." << std::endl;
+        }
       } else if (current_min_opset > max_opset) {
         max_opset = current_min_opset;
+        if (verbose && current_min_opset > opset_version) {
+          verbose_log.insert("[Paddle2ONNX] Due to the operator: " + op.type() +
+                             ", requires opset_version >= " +
+                             std::to_string(current_min_opset) + ".");
+        }
       }
-      delete mapper;
+    }
+  }
+  if (verbose) {
+    for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter) {
+      std::cerr << *iter << std::endl;
     }
   }
   // If there are only feed and fetch op in Paddle model
@@ -264,13 +367,19 @@ ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantReshape>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
+      .registerPass<ONNX_NAMESPACE::optimization::FuseConstantUnsqueeze>();
+  ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FusePaddleConvBias>();
-  std::vector<std::string> passes = {
-      "eliminate_identity",          "eliminate_deadend",
-      "eliminate_deadend",           "fuse_constant_reshape",
-      "fuse_paddle_conv_bias",       "fuse_matmul_add_bias_into_gemm",
-      "eliminate_identity",          "eliminate_deadend",
-      "eliminate_unused_initializer"};
+  std::vector<std::string> passes = {"eliminate_identity",
+                                     "eliminate_deadend",
+                                     "eliminate_deadend",
+                                     "fuse_constant_reshape",
+                                     "fuse_constant_unsqueeze",
+                                     "fuse_paddle_conv_bias",
+                                     "fuse_matmul_add_bias_into_gemm",
+                                     "eliminate_identity",
+                                     "eliminate_deadend",
+                                     "eliminate_unused_initializer"};
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 

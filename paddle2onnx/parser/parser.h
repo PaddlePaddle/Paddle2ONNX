@@ -30,6 +30,15 @@ struct TensorInfo {
   std::vector<int64_t> shape;
   int64_t Rank() const { return static_cast<int64_t>(shape.size()); }
   int32_t dtype;
+  bool is_tensor_array = false;
+
+  TensorInfo() {}
+  TensorInfo(const std::string& _name, const std::vector<int64_t>& _shape,
+             const int32_t& _dtype) {
+    name = _name;
+    shape.assign(_shape.begin(), _shape.end());
+    dtype = _dtype;
+  }
 };
 
 struct Weight {
@@ -119,8 +128,6 @@ class PaddleParser {
                          const std::string& tensor_name,
                          std::vector<T>* data) const;
 
-  std::vector<TensorInfo> GetOpAllOutput(int64_t block_id, int64_t op_id) const;
-
  private:
   // If the model has same output name in difference operators
   // will fail to convert
@@ -139,26 +146,22 @@ class PaddleParser {
   // While there's a nms operator in paddle model,
   // the shape inference of paddle is not correct
   bool _has_nms = false;
-  // records the relationship between tensor name and index of operator
-  std::vector<std::unordered_map<std::string, int32_t>> _blocks_tensor_op_idx;
+  std::vector<std::unordered_map<std::string, int64_t>> _constant_ops;
 };
 
 template <typename T>
 bool PaddleParser::TryGetTensorValue(const int64_t& block_id,
                                      const std::string& tensor_name,
                                      std::vector<T>* data) const {
-  Assert(block_id < _blocks_tensor_op_idx.size(),
+  Assert(block_id < _constant_ops.size(),
          "block_id is out of range while calling TryGetTensorValue.");
-  auto iter = _blocks_tensor_op_idx[block_id].find(tensor_name);
-  if (iter == _blocks_tensor_op_idx[block_id].end()) {
+  auto iter = _constant_ops[block_id].find(tensor_name);
+  if (iter == _constant_ops[block_id].end()) {
     return false;
   }
   Assert(iter->second < _blocks_ops[block_id].size(),
          "op_idx is out of range while calling TryGetTensorValue.");
   auto op = _blocks_ops[block_id][iter->second];
-  if (op->type() != "assign_value") {
-    return false;
-  }
   int64_t dtype;
   GetOpAttr(*op, "dtype", &dtype);
   if (dtype == P2ODataType::INT64 || dtype == P2ODataType::INT32) {

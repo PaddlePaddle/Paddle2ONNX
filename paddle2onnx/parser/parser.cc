@@ -300,9 +300,9 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
               << std::endl;
   }
 
-  if (ExistsDumplicateTensorName()) {
-    return false;
-  }
+  //  if (ExistsDumplicateTensorName()) {
+  //    return false;
+  //  }
   GetBlocksVarName2Id();
   GetBlocksOps();
   GetGlobalBlockInputOutputInfo();
@@ -311,16 +311,10 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
 
 bool PaddleParser::IsConstantTensor(const int64_t& block_id,
                                     const std::string& tensor_name) const {
-  Assert(block_id < _blocks_tensor_op_idx.size(),
+  Assert(block_id < _constant_ops.size(),
          "block_id is out of range while calling IsConstantTensor.");
-  auto iter = _blocks_tensor_op_idx[block_id].find(tensor_name);
-  if (iter == _blocks_tensor_op_idx[block_id].end()) {
-    return false;
-  }
-  Assert(iter->second < _blocks_ops[block_id].size(),
-         "op_idx is out of range while calling IsConstantTensor.");
-  auto op_type = _blocks_ops[block_id][iter->second]->type();
-  return op_type == "assign_value";
+  auto iter = _constant_ops[block_id].find(tensor_name);
+  return iter != _constant_ops[block_id].end();
 }
 
 void PaddleParser::GetBlocksVarName2Id() {
@@ -335,15 +329,15 @@ void PaddleParser::GetBlocksVarName2Id() {
 
 void PaddleParser::GetBlocksOps() {
   _blocks_ops.clear();
+  _constant_ops.clear();
   _blocks_ops.resize(prog->blocks_size());
-  _blocks_tensor_op_idx.resize(prog->blocks_size());
+  _constant_ops.resize(prog->blocks_size());
   for (auto i = 0; i < prog->blocks_size(); ++i) {
     _blocks_ops[i].reserve(prog->blocks(i).ops_size());
     for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
       _blocks_ops[i].push_back(&prog->blocks(i).ops(j));
-      auto outputs = GetOpAllOutput(i, j);
-      for (size_t k = 0; k < outputs.size(); ++k) {
-        _blocks_tensor_op_idx[i][outputs[k].name] = j;
+      if (prog->blocks(i).ops(j).type() == "assign_value") {
+        _constant_ops[i][prog->blocks(i).ops(j).outputs(0).arguments(0)] = j;
       }
     }
   }
@@ -354,17 +348,42 @@ TensorInfo PaddleParser::GetTensorInfo(
     const paddle2onnx::framework::proto::BlockDesc& block) const {
   auto block_idx = block.idx();
   auto iter = _blocks_var_name2id[block_idx].find(name);
-  Assert(_blocks_var_name2id[block_idx].end() != iter,
-         "Cannot find " + name + " in _blocks_var_name2id.");
+  if (iter == _blocks_var_name2id[block_idx].end()) {
+    if (block_idx == 0) {
+      Assert(false,
+             "Cannot find " + name + " in _blocks_var_name2id(global block).");
+    } else {
+      block_idx = block.parent_idx();
+      iter = _blocks_var_name2id[block_idx].find(name);
+      Assert(iter != _blocks_var_name2id[block_idx].end(),
+             "Cannot find " + name + " in _blocks_var_name2id(parent block).");
+    }
+  }
   auto var_idx = iter->second;
 
-  auto tensor = block.vars(var_idx).type().lod_tensor();
+  // Dangerous conversion, lod tensor array is under limited supporting
+  // Only works in some control flow situation
+  if (prog->blocks(block_idx).vars(var_idx).type().has_tensor_array()) {
+    auto tensor_array =
+        prog->blocks(block_idx).vars(var_idx).type().tensor_array();
+    TensorInfo info;
+    info.is_tensor_array = true;
+    info.name = name;
+    info.dtype = tensor_array.tensor().data_type();
+    for (auto i = 0; i < tensor_array.tensor().dims_size(); ++i) {
+      info.shape.push_back(tensor_array.tensor().dims(i));
+    }
+    return info;
+  }
+
+  auto tensor = prog->blocks(block_idx).vars(var_idx).type().lod_tensor();
   TensorInfo info;
   info.name = name;
   info.dtype = tensor.tensor().data_type();
   for (auto i = 0; i < tensor.tensor().dims_size(); ++i) {
     info.shape.push_back(tensor.tensor().dims(i));
   }
+
   return info;
 }
 
@@ -380,19 +399,6 @@ bool PaddleParser::OpHasInput(int64_t block_id, int64_t op_id,
     }
   }
   return false;
-}
-
-std::vector<TensorInfo> PaddleParser::GetOpAllOutput(int64_t block_id,
-                                                     int64_t op_id) const {
-  auto block = prog->blocks(block_id);
-  auto op = block.ops(op_id);
-  std::vector<TensorInfo> outputs;
-  for (auto i = 0; i < op.outputs_size(); ++i) {
-    for (auto j = 0; j < op.outputs(i).arguments_size(); ++j) {
-      outputs.push_back(GetTensorInfo(op.outputs(i).arguments(j), block));
-    }
-  }
-  return outputs;
 }
 
 std::vector<TensorInfo> PaddleParser::GetOpInput(

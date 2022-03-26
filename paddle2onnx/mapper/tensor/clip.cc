@@ -51,8 +51,7 @@ void ClipMapper::Opset7(OnnxHelper* helper) {
     } else {
       float max_val;
       GetAttr("max", &max_val);
-      max_name =
-          helper->MakeConstant({1}, GetOnnxDtype(dtype), max_val)->output(0);
+      max_name = helper->Constant({1}, GetOnnxDtype(dtype), max_val);
     }
     std::string min_name;
     if (has_min_tensor_input) {
@@ -61,8 +60,7 @@ void ClipMapper::Opset7(OnnxHelper* helper) {
     } else {
       float min_val;
       GetAttr("min", &min_val);
-      min_name =
-          helper->MakeConstant({1}, GetOnnxDtype(dtype), min_val)->output(0);
+      min_name = helper->Constant({1}, GetOnnxDtype(dtype), min_val);
     }
     if (dtype_converted) {
       auto node = helper->MakeNode("Clip", {input_name, min_name, max_name});

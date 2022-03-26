@@ -111,31 +111,32 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
   return node;
 }
 
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
-    const Weight& weight) {
-  auto node_name = MapperHelper::Get()->GenName("auto.constant");
-  return MakeConstant(node_name, weight);
-}
-
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
-    const std::string& name, const Weight& weight) {
-  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
-  node->set_op_type("Constant");
-  node->add_output(name);
-  auto attr = node->add_attribute();
-  attr->set_name("value");
-  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
-  auto tensor = attr->mutable_t();
-  tensor->set_name(name);
-  auto onnx_dtype = GetOnnxDtype(weight.dtype);
-  tensor->set_data_type(onnx_dtype);
-  for (auto& dim : weight.shape) {
-    tensor->add_dims(dim);
-  }
-  tensor->set_raw_data(std::string(weight.buffer.data(), weight.buffer.size()));
-  nodes.push_back(node);
-  return node;
-}
+// std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
+//    const Weight& weight) {
+//  auto node_name = MapperHelper::Get()->GenName("auto.constant");
+//  return MakeConstant(node_name, weight);
+//}
+//
+// std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeConstant(
+//    const std::string& name, const Weight& weight) {
+//  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+//  node->set_op_type("Constant");
+//  node->add_output(name);
+//  auto attr = node->add_attribute();
+//  attr->set_name("value");
+//  attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
+//  auto tensor = attr->mutable_t();
+//  tensor->set_name(name);
+//  auto onnx_dtype = GetOnnxDtype(weight.dtype);
+//  tensor->set_data_type(onnx_dtype);
+//  for (auto& dim : weight.shape) {
+//    tensor->add_dims(dim);
+//  }
+//  tensor->set_raw_data(std::string(weight.buffer.data(),
+//  weight.buffer.size()));
+//  nodes.push_back(node);
+//  return node;
+//}
 
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
     const TensorInfo& info) {
@@ -253,10 +254,9 @@ std::string OnnxHelper::Clip(const std::string& input,
     return res;
   } else {
     int32_t dtype = P2ODataType::FP32;
-    std::string min_name =
-        MakeConstant({1}, GetOnnxDtype(dtype), min)->output(0);
+    std::string min_name = Constant({1}, GetOnnxDtype(dtype), min);
     std::string max_name;
-    max_name = MakeConstant({1}, GetOnnxDtype(dtype), max)->output(0);
+    max_name = Constant({1}, GetOnnxDtype(dtype), max);
     auto node = MakeNode("Clip", {input_name, min_name, max_name});
     auto res = AutoCast(node->output(0), {output}, P2ODataType::FP32, in_dtype);
     return res;
@@ -279,8 +279,8 @@ std::string OnnxHelper::Squeeze(const std::string& input,
       auto node = MakeNode("Squeeze", {input}, {output});
       AddAttribute(node, "axes", axes);
     } else {
-      auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
-      auto node = MakeNode("Squeeze", {input, axes_node->output(0)}, {output});
+      auto axes_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, axes);
+      auto node = MakeNode("Squeeze", {input, axes_node}, {output});
     }
   }
   return output;
@@ -304,8 +304,8 @@ std::string OnnxHelper::Unsqueeze(const std::string& input,
     auto node = MakeNode("Unsqueeze", {input}, {output});
     AddAttribute(node, "axes", axes);
   } else {
-    auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
-    auto node = MakeNode("Unsqueeze", {input, axes_node->output(0)}, {output});
+    auto axes_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, axes);
+    auto node = MakeNode("Unsqueeze", {input, axes_node}, {output});
   }
   return output;
 }
@@ -323,8 +323,8 @@ std::string OnnxHelper::Reshape(const std::string& input,
     auto node = MakeNode("Reshape", {input}, {output});
     AddAttribute(node, "shape", shape);
   } else {
-    auto shape_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, shape);
-    auto node = MakeNode("Reshape", {input, shape_node->output(0)}, {output});
+    auto shape_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, shape);
+    auto node = MakeNode("Reshape", {input, shape_node}, {output});
   }
   return output;
 }
@@ -356,12 +356,11 @@ std::string OnnxHelper::Slice(const std::string& input,
     AddAttribute(node, "starts", starts);
     AddAttribute(node, "ends", ends);
   } else {
-    auto axes_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, axes);
-    auto starts_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, starts);
-    auto ends_node = MakeConstant(ONNX_NAMESPACE::TensorProto::INT64, ends);
-    auto node = MakeNode("Slice", {input, starts_node->output(0),
-                                   ends_node->output(0), axes_node->output(0)},
-                         {output});
+    auto axes_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, axes);
+    auto starts_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, starts);
+    auto ends_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, ends);
+    auto node =
+        MakeNode("Slice", {input, starts_node, ends_node, axes_node}, {output});
   }
   return output;
 }

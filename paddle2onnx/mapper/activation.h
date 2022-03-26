@@ -30,6 +30,8 @@ class ActivationMapper : public Mapper {
     op_mapper_["sigmoid"] = "Sigmoid";
     op_mapper_["sqrt"] = "Sqrt";
     op_mapper_["softplus"] = "Softplus";
+    op_mapper_["exp"] = "Exp";
+    op_mapper_["floor"] = "Floor";
   }
 
   int32_t GetMinOpset(bool verbose = false);
@@ -57,6 +59,7 @@ class PReluMapper : public Mapper {
   PReluMapper(const PaddleParser& p, int64_t block_id, int64_t op_id)
       : Mapper(p, block_id, op_id) {}
 
+  int32_t GetMinOpset(bool verbose = false);
   void Opset7(OnnxHelper* helper);
 };
 
