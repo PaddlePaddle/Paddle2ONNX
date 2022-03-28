@@ -62,10 +62,10 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
 }
 
 void ModelExporter::ProcessGraphDumplicateNames(
-    std::vector<std::shared_ptr<NodeProto>>* parameters,
-    std::vector<std::shared_ptr<ValueInfoProto>>* inputs,
-    std::vector<std::shared_ptr<ValueInfoProto>>* outputs,
-    std::vector<std::shared_ptr<NodeProto>>* nodes) {
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
   // process dumplicate tensor names
   std::unordered_map<std::string, std::string> renamer;
   std::set<std::string> tensor_names;

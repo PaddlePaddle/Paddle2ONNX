@@ -52,10 +52,10 @@ struct ModelExporter {
 
   // Process dumplicate tensor names in paddle model
   void ProcessGraphDumplicateNames(
-      std::vector<std::shared_ptr<NodeProto>>* parameters,
-      std::vector<std::shared_ptr<ValueInfoProto>>* inputs,
-      std::vector<std::shared_ptr<ValueInfoProto>>* outputs,
-      std::vector<std::shared_ptr<NodeProto>>* nodes);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes);
 
   bool CheckIfOpSupported(const PaddleParser& parser,
                           std::set<std::string>* unsupported_ops,
