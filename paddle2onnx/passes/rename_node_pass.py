@@ -15,11 +15,11 @@
 from paddle2onnx.passes import PassManager
 
 
-def get_repeated_output(inputs, outputs):
+def get_repeated_output(outputs_1, outputs_2):
     repeated_output = {}
-    for idx in range(len(outputs)):
-        opt = outputs[idx]
-        if opt in inputs:
+    for idx in range(len(outputs_1)):
+        opt = outputs_1[idx]
+        if opt in outputs_2:
             repeated_output[opt] = idx
     return repeated_output
 
@@ -47,26 +47,30 @@ class RenameNodePass(object):
             name, node = node_map[index]
             inputs = node.inputs
             outputs = node.outputs
-            repeated_output = get_repeated_output(inputs, outputs)
-            if len(repeated_output) != 0:
-                for opt, o_idx in repeated_output.items():
-                    name_mapping[opt] = cls.generate_new_name(opt)
-                    outputs[o_idx] = name_mapping[opt]
-            else:
-                continue
 
             for idx in range(index + 1, len(node_map)):
-                name, node = node_map[idx]
-                inputs = node.inputs
-                outputs = node.outputs
-                for i_dex in range(len(inputs)):
-                    ipt = inputs[i_dex]
-                    if ipt in name_mapping:
-                        inputs[i_dex] = name_mapping[ipt]
-                for o_dex in range(len(outputs)):
-                    opt = outputs[o_dex]
-                    if opt in name_mapping:
-                        outputs[o_dex] = name_mapping[opt]
+                inner_name, inner_node = node_map[idx]
+                inner_inputs = inner_node.inputs
+                inner_outputs = inner_node.outputs
+
+                if len(name_mapping) > 0:
+                    for i_dex in range(len(inner_inputs)):
+                        ipt = inner_inputs[i_dex]
+                        if ipt in name_mapping:
+                            inner_inputs[i_dex] = name_mapping[ipt]
+                    for o_dex in range(len(inner_outputs)):
+                        opt = inner_outputs[o_dex]
+                        if opt in name_mapping:
+                            inner_outputs[o_dex] = name_mapping[opt]
+
+                repeated_output = get_repeated_output(outputs, inner_outputs)
+                if len(repeated_output) == 0:
+                    continue
+                if len(repeated_output) != 0:
+                    for opt, o_idx in repeated_output.items():
+                        name_mapping[opt] = cls.generate_new_name(opt)
+                        inner_outputs[o_idx] = name_mapping[opt]
+
                 node.set_inputs(inputs)
                 node.set_outputs(outputs)
                 onnx_graph.update_node(node)
