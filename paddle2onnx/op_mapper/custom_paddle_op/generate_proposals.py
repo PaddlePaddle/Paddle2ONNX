@@ -180,7 +180,7 @@ class GenerateProposals(CustomPaddleOp):
             scores,
             background_label=-1,
             nms_top_k=self.pre_nms_topN,
-            score_threshold=-1.,
+            score_threshold=-10000.,
             keep_top_k=self.post_nms_topN,
             nms_threshold=self.nms_thresh,
             normalized=False if self.pixel_offset else True,
