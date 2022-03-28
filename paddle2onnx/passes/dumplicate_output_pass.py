@@ -24,8 +24,8 @@ def get_repeated_output(outputs_1, outputs_2):
     return repeated_output
 
 
-@PassManager('rename_node_pass')
-class RenameNodePass(object):
+@PassManager('dumplicate_output_pass')
+class DumplicateOutputPass(object):
 
     name_count = dict()
 
@@ -53,14 +53,17 @@ class RenameNodePass(object):
                 inner_inputs = inner_node.inputs
                 inner_outputs = inner_node.outputs
 
+                changed = False
                 if len(name_mapping) > 0:
                     for i_dex in range(len(inner_inputs)):
                         ipt = inner_inputs[i_dex]
                         if ipt in name_mapping:
+                            changed = True
                             inner_inputs[i_dex] = name_mapping[ipt]
                     for o_dex in range(len(inner_outputs)):
                         opt = inner_outputs[o_dex]
                         if opt in name_mapping:
+                            changed = True
                             inner_outputs[o_dex] = name_mapping[opt]
 
                 repeated_output = get_repeated_output(outputs, inner_outputs)
@@ -70,9 +73,10 @@ class RenameNodePass(object):
                     for opt, o_idx in repeated_output.items():
                         name_mapping[opt] = cls.generate_new_name(opt)
                         inner_outputs[o_idx] = name_mapping[opt]
-
-                node.set_inputs(inputs)
-                node.set_outputs(outputs)
-                onnx_graph.update_node(node)
+                        changed = True
+                if changed:
+                    node.set_inputs(inputs)
+                    node.set_outputs(outputs)
+                    onnx_graph.update_node(node)
 
         return onnx_graph

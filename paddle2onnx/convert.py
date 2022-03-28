@@ -36,7 +36,7 @@ def export_onnx(paddle_graph,
                                  operator_export_type, verbose,
                                  auto_update_opset)
     onnx_graph = PassManager.run_pass(
-        onnx_graph, ['rename_node_pass', 'inplace_node_pass'])
+        onnx_graph, ['dumplicate_output_pass', 'inplace_node_pass'])
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker, output_names)
 
     if save_file is None:
