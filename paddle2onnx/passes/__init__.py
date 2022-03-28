@@ -14,3 +14,4 @@
 
 from .pass_manager import PassManager
 from .inplace_node_pass import InplaceNodePass
+from .rename_node_pass import RenameNodePass
