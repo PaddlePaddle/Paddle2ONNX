@@ -26,30 +26,31 @@ int32_t SetValueMapper::GetMinOpset(bool verbose) {
     }
     return -1;
   }
-  if (axes_.size() > 1 || axes_[0] != 0) {
+  if (axes_.size() > 1) {
     if (verbose) {
       std::cerr << "[Paddle2ONNX] Attribute axes is supported while it "
-                   "contains 0 only in op set_value."
+                   "contains 1 element only in op set_value."
                 << std::endl;
     }
     return -1;
   }
-  if (steps_.size() > 1 || steps_[0] != 1) {
+  if (steps_.size() > 1) {
     if (verbose) {
       std::cerr << "[Paddle2ONNX] Attribute steps is supported while it "
-                   "contains 1 only in op set_value."
+                   "contains 1 element only in op set_value."
                 << std::endl;
     }
     return -1;
   }
-  if (HasInput("StepsTensorList")) {
-    if (verbose) {
-      std::cerr << "[Paddle2ONNX] Input StepsTensorList is not supported in op "
-                   "set_value yet."
-                << std::endl;
-    }
-    return -1;
-  }
+  //  if (HasInput("StepsTensorList")) {
+  //    if (verbose) {
+  //      std::cerr << "[Paddle2ONNX] Input StepsTensorList is not supported in
+  //      op "
+  //                   "set_value yet."
+  //                << std::endl;
+  //    }
+  //    return -1;
+  //  }
   if (GetInput("Input")[0].dtype == P2ODataType::BOOL) {
     if (verbose) {
       std::cerr << "[Paddle2ONNX] Input X with data type of boolean is not "
@@ -78,7 +79,30 @@ void SetValueMapper::Opset11(OnnxHelper* helper) {
     // if out of range value in end exists, not supported
     ends = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, ends_);
   }
-  std::cout << "00000000" << std::endl;
+  auto input_tensor = input_info[0].name;
+  if (axes_[0] != 0) {
+    std::vector<int64_t> perm = Arange(0, input_info[0].Rank());
+    perm[0] = axes_[0];
+    perm[axes_[0]] = 0;
+    auto t = helper->MakeNode("Transpose", {input_tensor});
+    AddAttribute(t, "perm", perm);
+    input_tensor = t->output(0);
+  }
+  std::string axes =
+      helper->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, int64_t(0));
+  // process out of range ends
+  auto input_shape = helper->MakeNode("Shape", {input_tensor})->output(0);
+  auto gather_end_bound = helper->MakeNode("Gather", {input_shape, axes});
+  AddAttribute(gather_end_bound, "axis", int64_t(0));
+  ends =
+      helper->MakeNode("Min", {gather_end_bound->output(0), ends})->output(0);
+
+  std::string steps = "";
+  if (HasInput("StepsTensorList")) {
+    steps = helper->ConcatIndices(GetInput("StepsTensorList"));
+  } else {
+    steps = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, steps_);
+  }
   std::string value = "";
   if (HasInput("ValueTensor")) {
     value = GetInput("ValueTensor")[0].name;
@@ -96,31 +120,33 @@ void SetValueMapper::Opset11(OnnxHelper* helper) {
     }
   }
 
-  std::cout << "00000001" << std::endl;
-  std::string steps = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64,
-                                       std::vector<int64_t>(axes_.size(), 1));
-  std::string axes =
-      helper->Constant(ONNX_NAMESPACE::TensorProto::INT64, axes_);
   auto sliced_data =
-      helper->MakeNode("Slice", {input_info[0].name, starts, ends, axes, steps})
+      helper->MakeNode("Slice", {input_tensor, starts, ends, axes, steps})
           ->output(0);
   auto sliced_shape = helper->MakeNode("Shape", {sliced_data})->output(0);
   auto expand_value =
       helper->MakeNode("Expand", {value, sliced_shape})->output(0);
 
-  std::cout << "00000002" << std::endl;
-  auto one =
-      helper->Constant({}, ONNX_NAMESPACE::TensorProto::INT64, int64_t(1));
-  std::cout << "???????" << one << std::endl;
   auto indices = helper
                      ->MakeNode("Range", {helper->Squeeze(starts, {}),
-                                          helper->Squeeze(ends, {}), one})
+                                          helper->Squeeze(ends, {}),
+                                          helper->Squeeze(steps, {})})
                      ->output(0);
   indices = helper->Unsqueeze(indices, {1});
-  std::cout << "00000003" << std::endl;
 
-  helper->MakeNode("ScatterND", {input_info[0].name, indices, expand_value},
-                   {output_info[0].name});
+  if (axes_[0] == 0) {
+    helper->MakeNode("ScatterND", {input_tensor, indices, expand_value},
+                     {output_info[0].name});
+  } else {
+    auto out =
+        helper->MakeNode("ScatterND", {input_tensor, indices, expand_value})
+            ->output(0);
+    std::vector<int64_t> perm = Arange(0, input_info[0].Rank());
+    perm[0] = axes_[0];
+    perm[axes_[0]] = 0;
+    auto t = helper->MakeNode("Transpose", {out}, {output_info[0].name});
+    AddAttribute(t, "perm", perm);
+  }
 }
 
 }  // namespace paddle2onnx

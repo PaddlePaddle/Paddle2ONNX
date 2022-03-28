@@ -222,7 +222,6 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     *(graph->add_input()) = *(item.get());
   }
   for (auto& item : _helper.nodes) {
-    std::cout << "Add node " << item->op_type() << std::endl;
     *(graph->add_node()) = (*item.get());
   }
   for (auto& item : outputs) {
