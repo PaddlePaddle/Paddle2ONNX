@@ -42,10 +42,20 @@ class RenameNodePass(object):
     def run_pass(cls, onnx_graph):
         node_map = list(onnx_graph.node_map.items())
         name_mapping = {}
-        enable = True
-        index = 0
-        while enable:
-            for idx in range(index, len(node_map)):
+        for index in range(len(node_map)):
+            name_mapping.clear()
+            name, node = node_map[index]
+            inputs = node.inputs
+            outputs = node.outputs
+            repeated_output = get_repeated_output(inputs, outputs)
+            if len(repeated_output) != 0:
+                for opt, o_idx in repeated_output.items():
+                    name_mapping[opt] = cls.generate_new_name(opt)
+                    outputs[o_idx] = name_mapping[opt]
+            else:
+                continue
+
+            for idx in range(index + 1, len(node_map)):
                 name, node = node_map[idx]
                 inputs = node.inputs
                 outputs = node.outputs
@@ -60,22 +70,5 @@ class RenameNodePass(object):
                 node.set_inputs(inputs)
                 node.set_outputs(outputs)
                 onnx_graph.update_node(node)
-
-            name_mapping.clear()
-            node_map = list(onnx_graph.node_map.items())
-            for idx in range(len(node_map)):
-                name, node = node_map[idx]
-                inputs = node.inputs
-                outputs = node.outputs
-                repeated_output = get_repeated_output(inputs, outputs)
-                if len(repeated_output) != 0:
-                    for opt, o_idx in repeated_output.items():
-                        name_mapping[opt] = cls.generate_new_name(opt)
-                        outputs[o_idx] = name_mapping[opt]
-                    index = idx + 1
-                    break
-
-            if len(name_mapping) == 0:
-                enable = False
 
         return onnx_graph
