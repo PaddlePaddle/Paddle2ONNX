@@ -149,7 +149,7 @@ def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
     if not isinstance(inputs, (list, tuple)):
         inputs = [inputs]
 
-    if not isinstance(outputs, (list, tuple)):
+    if not isinstance(outputs, int) and not isinstance(outputs, (list, tuple)):
         outputs = [outputs]
 
     if dtype == paddle.float64:
@@ -162,7 +162,7 @@ def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
             split_node = graph.make_node(
                 "Split",
                 inputs=cast_inputs,
-                outputs=len(outputs),
+                outputs=outputs,
                 axis=axis,
                 split=split)
         else:
@@ -171,7 +171,7 @@ def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
             split_node = graph.make_node(
                 "Split",
                 inputs=cast_inputs + [split_const],
-                outputs=len(outputs),
+                outputs=outputs,
                 axis=axis)
         casted_output = []
         for i in range(len(outputs)):
