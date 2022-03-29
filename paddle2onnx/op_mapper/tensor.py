@@ -162,10 +162,10 @@ class LodReset():
 
 @op_mapper('eye')
 class Eye():
-    support_opset_version_range = (1, )
+    support_opset_version_range = (9, )
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_9(cls, graph, node, **kw):
         num_rows = node.attr('num_rows')
         num_columns = node.attr('num_columns')
         dtype = node.attr('dtype')
