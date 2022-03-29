@@ -16,8 +16,8 @@ from paddle2onnx.passes import PassManager
 from paddle2onnx.utils import logging
 
 
-@PassManager('dumplicate_output_pass')
-class DumplicateOutputPass(object):
+@PassManager('dumplicate_names_pass')
+class DumplicateNamesPass(object):
 
     name_count = dict()
 
