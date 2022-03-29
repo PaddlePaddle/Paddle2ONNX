@@ -35,16 +35,16 @@ class DumplicateNamesPass(object):
     @classmethod
     def run_pass(cls, onnx_graph):
         renamer = {}
-        tensor_names = []
+        tensor_names = set()
         for name, node in onnx_graph.parameters.items():
             output = node.output
             for opt in output:
                 assert opt not in tensor_names, "There's dumplicate names in parameters."
-                tensor_names.append(opt)
+                tensor_names.add(opt)
 
         for ipt in onnx_graph.input_nodes:
             assert ipt.name not in tensor_names, "There's dumplicate names in exported parameters and inputs."
-            tensor_names.append(ipt.name)
+            tensor_names.add(ipt.name)
 
         for name, node in onnx_graph.node_map.items():
             inputs = node.inputs
@@ -52,10 +52,10 @@ class DumplicateNamesPass(object):
             update_node = False
             for idx in range(len(inputs)):
                 ipt = inputs[idx]
-                if ipt not in renamer.keys():
+                if ipt not in renamer:
                     continue
                 updated_name = renamer[ipt]
-                while updated_name in renamer.keys():
+                while updated_name in renamer:
                     updated_name = renamer[updated_name]
                 inputs[idx] = updated_name
                 update_node = True
@@ -63,10 +63,10 @@ class DumplicateNamesPass(object):
             for idx in range(len(outputs)):
                 opt = outputs[idx]
                 if opt not in tensor_names:
-                    tensor_names.append(opt)
+                    tensor_names.add(opt)
                     continue
                 renamed_tensor_name = opt
-                while renamed_tensor_name in renamer.keys():
+                while renamed_tensor_name in renamer:
                     renamed_tensor_name = renamer[renamed_tensor_name]
                 new_name = cls.generate_new_name(renamed_tensor_name)
                 logging.warning("[Renamer Pass] Will rename {}, to {}".format(
@@ -81,10 +81,10 @@ class DumplicateNamesPass(object):
                 onnx_graph.update_node(node)
 
         for opt in onnx_graph.output_nodes:
-            if opt.name not in renamer.keys():
+            if opt.name not in renamer:
                 continue
             updated_name = renamer[opt.name]
-            while updated_name in renamer.keys():
+            while updated_name in renamer:
                 updated_name = renamer[updated_name]
             opt.name = updated_name
 
