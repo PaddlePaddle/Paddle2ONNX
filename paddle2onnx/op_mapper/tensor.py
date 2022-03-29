@@ -71,6 +71,10 @@ class SetValue():
         value_shape = list(copy.copy(node.input_shape('Input', 0)))
         for i in range(len(axes)):
             axis = axes[i]
+            if starts[i] < 0:
+                starts[i] = starts[i] + input_x_shape[i]
+            if ends[i] < 0:
+                ends[i] = ends[i] + input_x_shape[i]
             onnx_paddings[axis] = starts[i]
             value_shape[axis] = value_shape[axis] - onnx_paddings[axis]
             onnx_paddings[axis + len(input_x_shape)] = input_x_shape[
