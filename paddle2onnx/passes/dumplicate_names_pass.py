@@ -23,10 +23,12 @@ class DumplicateNamesPass(object):
 
     @classmethod
     def generate_new_name(cls, name):
-        if name in cls.name_count:
-            cls.name_count[name] += 1
-        else:
-            cls.name_count[name] = 1
+        for saved_name in cls.name_count:
+            if name.startswith(saved_name):
+                cls.name_count[saved_name] += 1
+                new_name = saved_name + '.' + str(cls.name_count[saved_name])
+                return new_name
+        cls.name_count[name] = 1
         new_name = name + '.' + str(cls.name_count[name])
         return new_name
 
