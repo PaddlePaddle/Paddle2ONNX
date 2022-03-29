@@ -68,15 +68,19 @@ class SetValue():
 
         input_x_shape = node.input_shape('Input', 0)
         onnx_paddings = [0] * len(input_x_shape) * 2
+        value_shape = list(copy.copy(node.input_shape('Input', 0)))
         for i in range(len(axes)):
             axis = axes[i]
             onnx_paddings[axis] = starts[i]
+            value_shape[axis] = value_shape[axis] - onnx_paddings[axis]
             onnx_paddings[axis + len(input_x_shape)] = input_x_shape[
                 axis] - ends[i]
             if onnx_paddings[axis + len(input_x_shape)] < 0:
                 onnx_paddings[axis + len(input_x_shape)] = 0
-        dtype = node.input_dtype('Input', 0)
-        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
+            value_shape[axis] = value_shape[axis] - onnx_paddings[axis + len(
+                input_x_shape)]
+        dtype_paddle = node.input_dtype('Input', 0)
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype_paddle]
         value_tensor = None
         shape = node.attr('shape')
         if len(shape) > 0:
@@ -88,8 +92,16 @@ class SetValue():
                 value = node.attr(dtypes_list[i])
                 if value is not None:
                     break
-            value_tensor = mapper_helper.constant_helper(
-                graph, dtype, value, shape=shape)
+            if len(value) == 1:
+                total_nums = 1
+                for i in value_shape:
+                    total_nums *= i
+                value = value * total_nums
+                value_tensor = mapper_helper.constant_helper(
+                    graph, dtype_paddle, value, shape=value_shape)
+            else:
+                value_tensor = mapper_helper.constant_helper(
+                    graph, dtype_paddle, value, shape=shape)
         else:
             value_tensor = node.input('ValueTensor', 0)
         MAX_FLOAT32 = 3.402823466E+38
