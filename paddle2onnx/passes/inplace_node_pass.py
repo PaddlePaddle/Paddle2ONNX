@@ -40,7 +40,6 @@ class InplaceNodePass(object):
 
     @classmethod
     def run_pass(cls, onnx_graph):
-        output_to_nodes = {}
         node_map = list(onnx_graph.node_map.items())
         name_mapping = {}
         for idx in range(len(node_map)):

@@ -262,40 +262,8 @@ class LogSumExp():
                     'ReduceLogSumExp',
                     inputs=node.input('X'),
                     keepdims=node.attr('keepdim'))
-                graph.make_node(
-                    'Unsqueeze',
-                    inputs=[reduce_node],
-                    axes=[0],
-                    outputs=node.output('Out'))
-            else:
-                graph.make_node(
-                    'ReduceLogSumExp',
-                    inputs=node.input('X'),
-                    keepdims=node.attr('keepdim'),
-                    outputs=node.output('Out'))
-        else:
-            graph.make_node(
-                'ReduceLogSumExp',
-                inputs=node.input('X'),
-                keepdims=node.attr('keepdim'),
-                axes=node.attr('axis'),
-                outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-
-        if node.attr('reduce_all'):
-            if not node.attr('keepdim'):
-                reduce_node = graph.make_node(
-                    'ReduceLogSumExp',
-                    inputs=node.input('X'),
-                    keepdims=node.attr('keepdim'))
-                axes = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=[0])
-                graph.make_node(
-                    'Unsqueeze',
-                    inputs=[reduce_node, axes],
-                    outputs=node.output('Out'))
+                mapper_helper.unsqueeze_helper(graph, reduce_node, [0],
+                                               node.output('Out'))
             else:
                 graph.make_node(
                     'ReduceLogSumExp',
@@ -611,24 +579,8 @@ class AffineChannel():
         x = node.input('X', 0)
         bias = node.input('Bias', 0)
         scale = node.input('Scale', 0)
-        scale = graph.make_node('Unsqueeze', inputs=scale, axes=[0, 2, 3])
-        bias = graph.make_node('Unsqueeze', inputs=bias, axes=[0, 2, 3])
-        x = graph.make_node('Mul', inputs=[x, scale])
-        x = graph.make_node('Add', inputs=[x, bias], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_11(cls, graph, node, **kw):
-        if "data_layout" in node.attrs.keys():
-            assert node.attrs['data_layout'] == 'NCHW' or node.attrs['data_layout'] == "AnyLayout",  \
-                                "The affine_channel data format should be 'NCHW', but received data format " \
-                                "is %s." % node.attrs['data_layout']
-        x = node.input('X', 0)
-        bias = node.input('Bias', 0)
-        scale = node.input('Scale', 0)
-        axis = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.INT64, value=[0, 2, 3])
-        scale = graph.make_node('Unsqueeze', inputs=[scale, axis])
-        bias = graph.make_node('Unsqueeze', inputs=[bias, axis])
+        scale = mapper_helper.unsqueeze_helper(graph, scale, [0, 2, 3])
+        bias = mapper_helper.unsqueeze_helper(graph, bias, [0, 2, 3])
         x = graph.make_node('Mul', inputs=[x, scale])
         x = graph.make_node('Add', inputs=[x, bias], outputs=node.output('Out'))
 
@@ -761,33 +713,8 @@ class ReduceAll():
         output_node = graph.make_node(op_type, inputs=[all_node], attrs=attrs)
 
         if node.attr('reduce_all') and not node.attr('keep_dim'):
-            output_node = graph.make_node(
-                "Unsqueeze", inputs=[output_node], axes=[0])
-        graph.make_node(
-            'Cast',
-            inputs=[output_node],
-            to=input_dtype,
-            outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        op_type = kw['mapper_dict'][node.type]
-        input_dtype = node.block.vars[node.input('X', 0)].dtype
-        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[input_dtype]
-        all_node = graph.make_node(
-            'Cast', inputs=[node.input('X', 0)], to=dtypes.ONNX.INT32)
-
-        attrs = {'keepdims': node.attr('keep_dim'), }
-        if not node.attr('reduce_all'):
-            attrs['axes'] = node.attr('dim')
-        output_node = graph.make_node(op_type, inputs=[all_node], attrs=attrs)
-
-        if node.attr('reduce_all') and not node.attr('keep_dim'):
-            axes_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': [0]})
-            output_node = graph.make_node(
-                'Unsqueeze', inputs=[output_node, axes_node])
+            output_node = mapper_helper.unsqueeze_helper(graph, output_node,
+                                                         [0])
         graph.make_node(
             'Cast',
             inputs=[output_node],
@@ -830,11 +757,8 @@ class ReduceMean():
                 'keepdims': node.attr('keep_dim')
             })
         if need_unsqueeze:
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[reduce_node],
-                outputs=node.output('Out'),
-                axes=[0])
+            mapper_helper.unsqueeze_helper(graph, reduce_node, [0],
+                                           node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
@@ -852,13 +776,8 @@ class ReduceMean():
 
         reduce_node = cls.compute_reduce_node(graph, node, op_type, outputs)
         if need_unsqueeze:
-            axes_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': [0]})
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[reduce_node] + [axes_node],
-                outputs=node.output('Out'))
+            mapper_helper.unsqueeze_helper(graph, reduce_node, [0],
+                                           node.output('Out'))
 
     @classmethod
     def compute_reduce_node(cls, graph, node, op_type, outputs):
@@ -892,19 +811,8 @@ class Mean():
     def opset_1(cls, graph, node, **kw):
         mean_node = graph.make_node(
             'ReduceMean', inputs=node.input('X'), keepdims=0)
-        graph.make_node(
-            'Unsqueeze',
-            inputs=[mean_node],
-            outputs=node.output('Out'),
-            axes=[0])
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        mean_node = graph.make_node(
-            'ReduceMean', inputs=node.input('X'), keepdims=0)
-        axes = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
-        graph.make_node(
-            'Unsqueeze', inputs=[mean_node, axes], outputs=node.output('Out'))
+        mapper_helper.unsqueeze_helper(graph, mean_node, [0],
+                                       node.output('Out'))
 
 
 @op_mapper('arg_max')
@@ -1028,25 +936,16 @@ class Dist():
             sign_node = graph.make_node('Sign', inputs=abs_node)
             sum_node = graph.make_node(
                 'ReduceSum', inputs=sign_node, keepdims=0)
-            graph.make_node(
-                'Unsqueeze',
-                axes=[0],
-                inputs=[sum_node],
-                outputs=node.output('Out'))
+            mapper_helper.unsqueeze_helper(graph, sum_node, [0],
+                                           node.output('Out'))
         elif node.attr('p') == float('inf'):
             max_node = graph.make_node('ReduceMax', inputs=abs_node, keepdims=0)
-            graph.make_node(
-                'Unsqueeze',
-                axes=[0],
-                inputs=[max_node],
-                outputs=node.output('Out'))
+            mapper_helper.unsqueeze_helper(graph, max_node, [0],
+                                           node.output('Out'))
         elif node.attr('p') == float('-inf'):
             min_node = graph.make_node('ReduceMin', inputs=abs_node, keepdims=0)
-            graph.make_node(
-                'Unsqueeze',
-                axes=[0],
-                inputs=[min_node],
-                outputs=node.output('Out'))
+            mapper_helper.unsqueeze_helper(graph, min_node, [0],
+                                           node.output('Out'))
         else:
             x_dtype = node.input_dtype('X', 0)
             p = graph.make_node(
@@ -1057,55 +956,7 @@ class Dist():
                 'Pow',
                 inputs=[abs_node, p], )
             sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
-            sum_node = graph.make_node('Unsqueeze', axes=[0], inputs=[sum_node])
-            p_1 = graph.make_node('Reciprocal', inputs=p)
-            graph.make_node(
-                'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        sub_node = graph.make_node(
-            'Sub', inputs=[node.input('X', 0), node.input('Y', 0)])
-        abs_node = graph.make_node('Abs', inputs=sub_node)
-        if node.attr('p') == 0:
-            sign_node = graph.make_node('Sign', inputs=abs_node)
-            sum_node = graph.make_node(
-                'ReduceSum', inputs=sign_node, keepdims=0)
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[sum_node, axes],
-                outputs=node.output('Out'))
-        elif node.attr('p') == float('inf'):
-            max_node = graph.make_node('ReduceMax', inputs=abs_node, keepdims=0)
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[max_node, axes],
-                outputs=node.output('Out'))
-        elif node.attr('p') == float('-inf'):
-            min_node = graph.make_node('ReduceMin', inputs=abs_node, keepdims=0)
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
-            graph.make_node(
-                'Unsqueeze',
-                inputs=[min_node, axes],
-                outputs=node.output('Out'))
-        else:
-            x_dtype = node.input_dtype('X', 0)
-            p = graph.make_node(
-                'Constant',
-                dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
-                value=node.attr('p'))
-            pow_node = graph.make_node(
-                'Pow',
-                inputs=[abs_node, p], )
-            sum_node = graph.make_node('ReduceSum', inputs=pow_node, keepdims=0)
-            axes = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT64, value=[0])
-            sum_node = graph.make_node('Unsqueeze', inputs=[sum_node, axes])
+            sum_node = mapper_helper.unsqueeze_helper(graph, sum_node, [0])
             p_1 = graph.make_node('Reciprocal', inputs=p)
             graph.make_node(
                 'Pow', inputs=[sum_node, p_1], outputs=node.output('Out'))
@@ -1409,19 +1260,8 @@ class SoftmaxCrossEntropyLoss():
                 outputs=2,
                 ignore_index=node.attr('ignore_index'),
                 reduction='none')
-            if graph.opset_version < 13:
-                loss_node = graph.make_node(
-                    'Unsqueeze',
-                    inputs=[loss_node],
-                    outputs=outputs[0],
-                    axes=[axis])
-            else:
-                axes_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=[axis])
-                loss_node = graph.make_node(
-                    'Unsqueeze',
-                    inputs=[loss_node, axes_node],
-                    outputs=outputs[0])
+            loss_node = mapper_helper.unsqueeze_helper(graph, loss_node,
+                                                       [axis], outputs[0])
             # onnx output is log(softmax), but paddle output is softmax
             graph.make_node('Exp', inputs=[softmax_node], outputs=outputs[1])
         else:
@@ -1441,15 +1281,7 @@ class SoftmaxCrossEntropyLoss():
                 ignore_index=node.attr('ignore_index'),
                 outputs=2,
                 reduction='none')
-            output_node = None
-            if graph.opset_version < 13:
-                output_node = graph.make_node(
-                    'Unsqueeze', inputs=[loss_node], axes=[1])
-            else:
-                axes_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT64, value=[1])
-                output_node = graph.make_node(
-                    'Unsqueeze', inputs=[loss_node, axes_node])
+            output_node = mapper_helper.unsqueeze_helper(graph, loss_node, [1])
             graph.make_node(
                 'Transpose', inputs=output_node, outputs=outputs[0], perm=perm)
             softmax_node = graph.make_node(
