@@ -17,9 +17,9 @@ from paddle2onnx.passes import PassManager
 
 def get_repeated_output(outputs_1, outputs_2):
     repeated_output = {}
-    for idx in range(len(outputs_1)):
-        opt = outputs_1[idx]
-        if opt in outputs_2:
+    for idx in range(len(outputs_2)):
+        opt = outputs_2[idx]
+        if opt in outputs_1:
             repeated_output[opt] = idx
     return repeated_output
 
@@ -70,9 +70,9 @@ class DumplicateOutputPass(object):
                 if len(repeated_output) == 0:
                     continue
                 if len(repeated_output) != 0:
-                    for opt, o_idx in repeated_output.items():
+                    for opt, o_dex in repeated_output.items():
                         name_mapping[opt] = cls.generate_new_name(opt)
-                        inner_outputs[o_idx] = name_mapping[opt]
+                        inner_outputs[o_dex] = name_mapping[opt]
                         changed = True
                 if changed:
                     node.set_inputs(inputs)
