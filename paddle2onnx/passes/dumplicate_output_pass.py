@@ -13,15 +13,7 @@
 # limitations under the License.
 
 from paddle2onnx.passes import PassManager
-
-
-def get_repeated_output(outputs_1, outputs_2):
-    repeated_output = {}
-    for idx in range(len(outputs_2)):
-        opt = outputs_2[idx]
-        if opt in outputs_1:
-            repeated_output[opt] = idx
-    return repeated_output
+from paddle2onnx.utils import logging
 
 
 @PassManager('dumplicate_output_pass')
@@ -40,43 +32,58 @@ class DumplicateOutputPass(object):
 
     @classmethod
     def run_pass(cls, onnx_graph):
-        node_map = list(onnx_graph.node_map.items())
-        name_mapping = {}
-        for index in range(len(node_map)):
-            name_mapping.clear()
-            name, node = node_map[index]
+        renamer = {}
+        tensor_names = []
+        for name, node in onnx_graph.parameters.items():
+            output = node.output
+            for opt in output:
+                assert opt not in tensor_names, "There's dumplicate names in parameters."
+                tensor_names.append(opt)
+
+        for ipt in onnx_graph.input_nodes:
+            assert ipt.name not in tensor_names, "There's dumplicate names in exported parameters and inputs."
+            tensor_names.append(ipt.name)
+
+        for name, node in onnx_graph.node_map.items():
             inputs = node.inputs
             outputs = node.outputs
-
-            for idx in range(index + 1, len(node_map)):
-                inner_name, inner_node = node_map[idx]
-                inner_inputs = inner_node.inputs
-                inner_outputs = inner_node.outputs
-
-                changed = False
-                if len(name_mapping) > 0:
-                    for i_dex in range(len(inner_inputs)):
-                        ipt = inner_inputs[i_dex]
-                        if ipt in name_mapping:
-                            changed = True
-                            inner_inputs[i_dex] = name_mapping[ipt]
-                    for o_dex in range(len(inner_outputs)):
-                        opt = inner_outputs[o_dex]
-                        if opt in name_mapping:
-                            changed = True
-                            inner_outputs[o_dex] = name_mapping[opt]
-
-                repeated_output = get_repeated_output(outputs, inner_outputs)
-                if len(repeated_output) == 0:
+            update_node = False
+            for idx in range(len(inputs)):
+                ipt = inputs[idx]
+                if ipt not in renamer.keys():
                     continue
-                if len(repeated_output) != 0:
-                    for opt, o_dex in repeated_output.items():
-                        name_mapping[opt] = cls.generate_new_name(opt)
-                        inner_outputs[o_dex] = name_mapping[opt]
-                        changed = True
-                if changed:
-                    node.set_inputs(inputs)
-                    node.set_outputs(outputs)
-                    onnx_graph.update_node(node)
+                updated_name = renamer[ipt]
+                while updated_name in renamer.keys():
+                    updated_name = renamer[updated_name]
+                inputs[idx] = updated_name
+                update_node = True
+
+            for idx in range(len(outputs)):
+                opt = outputs[idx]
+                if opt not in tensor_names:
+                    tensor_names.append(opt)
+                    continue
+                renamed_tensor_name = opt
+                while renamed_tensor_name in renamer.keys():
+                    renamed_tensor_name = renamer[renamed_tensor_name]
+                new_name = cls.generate_new_name(renamed_tensor_name)
+                logging.warning("[Renamer Pass] Will rename {}, to {}".format(
+                    renamed_tensor_name, new_name))
+                outputs[idx] = new_name
+                update_node = True
+                renamer[renamed_tensor_name] = new_name
+
+            if update_node:
+                node.set_inputs(inputs)
+                node.set_outputs(outputs)
+                onnx_graph.update_node(node)
+
+        for opt in onnx_graph.output_nodes:
+            if opt.name not in renamer.keys():
+                continue
+            updated_name = renamer[opt.name]
+            while updated_name in renamer.keys():
+                updated_name = renamer[updated_name]
+            opt.name = updated_name
 
         return onnx_graph
