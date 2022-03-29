@@ -38,6 +38,28 @@ def shape_helper(graph, input, dim=None):
     return shape_node
 
 
+def unsqueeze_helper(graph, input, axes, outputs=None):
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if not isinstance(axes, list):
+        axes = [axes]
+    if outputs is not None and not isinstance(outputs, list):
+        outputs = [outputs]
+    if graph.opset_version < 13:
+        unsqueeze_node = graph.make_node(
+            "Unsqueeze", inputs=inputs, outputs=outputs, axes=axes)
+        return unsqueeze_node
+    else:
+        axes_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=axes)
+        inputs = inputs + [axes_node]
+        unsqueeze_node = graph.make_node(
+            "Unsqueeze", inputs=inputs, outputs=outputs)
+        return unsqueeze_node
+
+
 def split_helper(graph, input, axis=0, split=None, outputs=None):
     assert outputs is not None, "outputs can not be None in split_helper."
     inputs = []
@@ -127,7 +149,7 @@ def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
     if not isinstance(inputs, (list, tuple)):
         inputs = [inputs]
 
-    if not isinstance(outputs, (list, tuple)):
+    if not isinstance(outputs, int) and not isinstance(outputs, (list, tuple)):
         outputs = [outputs]
 
     if dtype == paddle.float64:
@@ -140,7 +162,7 @@ def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
             split_node = graph.make_node(
                 "Split",
                 inputs=cast_inputs,
-                outputs=len(outputs),
+                outputs=outputs,
                 axis=axis,
                 split=split)
         else:
@@ -149,7 +171,7 @@ def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
             split_node = graph.make_node(
                 "Split",
                 inputs=cast_inputs + [split_const],
-                outputs=len(outputs),
+                outputs=outputs,
                 axis=axis)
         casted_output = []
         for i in range(len(outputs)):
@@ -325,16 +347,7 @@ def shape_alignment(graph, nodes, node_shapes):
         if dim != max_dim:
             unsqueeze_node = nodes[i]
             for j in range(max_dim - dim):
-                if graph.opset_version < 13:
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', inputs=[unsqueeze_node], axes=[0])
-                else:
-                    axes_node = graph.make_node(
-                        'Constant',
-                        attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': 0})
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', inputs=[unsqueeze_node, axes_node])
+                unsqueeze_node = unsqueeze_helper(graph, unsqueeze_node, [0])
             unsqueeze_nodes.append(unsqueeze_node)
         else:
             unsqueeze_nodes.append(nodes[i])

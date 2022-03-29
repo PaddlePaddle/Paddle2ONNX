@@ -191,29 +191,7 @@ class Stack():
 
         unsqueezed_inputs = list()
         for ipt in inputs:
-            unsqueezed_ipt = graph.make_node(
-                'Unsqueeze', inputs=[ipt], axes=[axis])
-            unsqueezed_inputs.append(unsqueezed_ipt)
-        graph.make_node(
-            'Concat',
-            inputs=unsqueezed_inputs,
-            outputs=node.output('Y'),
-            axis=axis)
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        inputs = node.input('X')
-        input_dtypes = [node.input_dtype('X', i) for i in range(len(inputs))]
-        inputs = mapper_helper.dtype_alignment(graph, inputs, input_dtypes)
-        axis = node.attr('axis')
-
-        unsqueezed_inputs = list()
-        for ipt in inputs:
-            axes_node = graph.make_node(
-                'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                                   'value': axis})
-            unsqueezed_ipt = graph.make_node(
-                'Unsqueeze', inputs=[ipt, axes_node])
+            unsqueezed_ipt = mapper_helper.unsqueeze_helper(graph, ipt, [axis])
             unsqueezed_inputs.append(unsqueezed_ipt)
         graph.make_node(
             'Concat',
@@ -345,19 +323,8 @@ class Numel():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         size_node = graph.make_node('Size', inputs=node.input('Input'))
-        graph.make_node(
-            'Unsqueeze', inputs=size_node, axes=[0], outputs=node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        size_node = graph.make_node('Size', inputs=node.input('Input'))
-        axes_node = graph.make_node(
-            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': [0]})
-        graph.make_node(
-            'Unsqueeze',
-            inputs=[size_node, axes_node],
-            outputs=node.output('Out'))
+        mapper_helper.unsqueeze_helper(graph, size_node, [0],
+                                       node.output('Out'))
 
 
 @op_mapper('split')
@@ -423,14 +390,8 @@ class Roll():
                     'Gather', inputs=[shifts, const_i], axis=0)
                 shift_node = graph.make_node(
                     "Sub", inputs=[const_0, shift_node])
-                if graph.opset_version >= 13:
-                    axis_node = graph.make_node(
-                        'Constant', dtype=dtypes.ONNX.INT64, value=0)
-                    shift_node = graph.make_node(
-                        'Unsqueeze', inputs=[shift_node, axis_node])
-                else:
-                    shift_node = graph.make_node(
-                        'Unsqueeze', inputs=[shift_node], axes=[0])
+                shift_node = mapper_helper.unsqueeze_helper(graph, shift_node,
+                                                            [0])
             elif graph.opset_version < 10 and isinstance(shifts,
                                                          six.string_types):
                 raise Exception(
@@ -1281,11 +1242,9 @@ class Unsqueeze():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         axes = cls.get_axes(graph, node)
-        graph.make_node(
-            'Unsqueeze',
-            inputs=node.input('X'),
-            outputs=node.output('Out'),
-            axes=axes)
+        mapper_helper.unsqueeze_helper(graph,
+                                       node.input('X'), axes,
+                                       node.output('Out'))
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
