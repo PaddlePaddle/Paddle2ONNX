@@ -20,6 +20,7 @@ from .convert import dygraph2onnx, program2onnx
 from .op_mapper import register_op_mapper
 from typing import TypeVar
 from paddle2onnx.utils import logging
+from paddle2onnx.op_mapper import OpMapper
 
 OP_WITHOUT_KERNEL_SET = {
     'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
@@ -31,6 +32,22 @@ OP_WITHOUT_KERNEL_SET = {
     'c_wait_comm', 'c_wait_compute', 'c_gen_hccl_id', 'c_comm_init_hccl',
     'copy_cross_scope'
 }
+
+
+def get_all_registered_ops(save_file=None):
+    ops = list(OpMapper.OPSETS.keys())
+    logging.warning("The number of all registered OPs is: {}".format(len(ops)))
+    if save_file is None:
+        return
+    with open(save_file, "w") as f:
+        logging.warning("All registered OPs will be written to the file: {}".
+                        format(save_file))
+        f.write("Total OPs num: {} \n".format(len(ops)))
+        for index in range(len(ops)):
+            op = ops[index]
+            f.write(str(index + 1) + ". " + op + "\n")
+        return
+    logging.warning("Can not written to the file: {}".format(save_file))
 
 
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
