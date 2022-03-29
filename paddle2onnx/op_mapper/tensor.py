@@ -152,12 +152,28 @@ class Assign():
 
 @op_mapper('lod_reset')
 class LodReset():
+    support_opset_version_range = (9, )
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        graph.make_node(
+            'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('eye')
+class Eye():
     support_opset_version_range = (1, )
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        num_rows = node.attr('num_rows')
+        num_columns = node.attr('num_columns')
+        dtype = node.attr('dtype')
+        value = [0] * num_rows * num_columns
+        value_tensor = mapper_helper.constant_helper(
+            graph, dtype, value, shape=[num_rows, num_columns])
         graph.make_node(
-            'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+            'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
 
 
 @op_mapper('stack')
