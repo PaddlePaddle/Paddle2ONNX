@@ -99,7 +99,7 @@ def test_generate_multiclass_nms_lod():
                                       exe)
 
         onnx_path = path_prefix + "/model.onnx"
-        for opset in [10, 11, 12, 13, 14, 15, 16]:
+        for opset in [10, 11, 12, 13, 14, 15]:
             program2onnx(
                 model_dir=path_prefix,
                 save_file=onnx_path,

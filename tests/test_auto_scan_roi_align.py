@@ -333,5 +333,5 @@ def test_generate_roi_align_lod_aligned_false():
 
 
 if __name__ == "__main__":
-    test_generate_roi_align_lod_aligned_true()
+    # test_generate_roi_align_lod_aligned_true()
     test_generate_roi_align_lod_aligned_false()
