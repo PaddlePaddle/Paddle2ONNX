@@ -123,20 +123,21 @@ class OneHotV2():
         in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype_paddle]
         out_dtype = node.output_dtype('Out', 0)
         out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
+        inputs = node.input('X', 0)
+        if in_dtype_paddle == paddle.int32:
+            inputs = graph.make_node(
+                'Cast', inputs=[inputs], to=dtypes.ONNX.INT64)
+            in_dtype = dtypes.ONNX.INT64
         value_node = graph.make_node('Constant', dtype=out_dtype, value=[0, 1])
         depth = node.attr('depth')
-        depth_node = graph.make_node('Constant', dtype=in_dtype, value=[depth])
-        depth_tensor = node.input('depth_tensor', 0)
-        if depth_tensor is not None:
-            depth_tensor_dtype = node.input_dtype('depth_tensor', 0)
-            if depth_tensor_dtype != in_dtype_paddle:
-                depth_node = graph.make_node(
-                    'Cast', inputs=[depth_tensor], to=in_dtype)
-            else:
-                depth_node = node.input('depth_tensor', 0)
+        if node.input('depth_tensor', 0) is not None:
+            depth_node = node.input('depth_tensor', 0)
+        else:
+            depth_node = graph.make_node(
+                'Constant', dtype=in_dtype, value=[depth])
         reshaped_input_node = graph.make_node(
             'OneHot',
-            inputs=[node.input('X', 0), depth_node, value_node],
+            inputs=[inputs, depth_node, value_node],
             outputs=node.output('Out'))
 
 
