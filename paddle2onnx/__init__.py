@@ -32,10 +32,16 @@ OP_WITHOUT_KERNEL_SET = {
     'copy_cross_scope'
 }
 
+def process_old_op_desc(program):
+    for i in range(len(model.blocks[0].ops)):
+        if model.blocks[0].ops[i] == "matmul":
+            if not model.blocks[0].ops[i].has_attr("head_number"):
+                model.blocks[0].ops[i]._set_attr("head_number", 1)
 
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
     paddle_version = paddle.__version__
     if isinstance(model, paddle.static.Program):
+        process_old_ops_desc(model)
         if input_shape_dict is not None:
             model_version = model.desc._version()
             major_ver = model_version // 1000000
@@ -71,6 +77,7 @@ def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
             opset_version=opset_version,
             enable_onnx_checker=True)
     elif isinstance(model, paddle.jit.TranslatedLayer):
+        process_old_ops_desc(model.program())
         model_version = model.program().desc._version()
         major_ver = model_version // 1000000
         minor_ver = (model_version - major_ver * 1000000) // 1000
