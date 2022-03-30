@@ -111,6 +111,25 @@ class SetValue():
             outputs=node.output('Out'))
 
 
+@op_mapper('one_hot_v2')
+class OneHotV2():
+    support_opset_version_range = (9, )
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        in_dtype = node.input_dtype('X', 0)
+        in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype]
+        out_dtype = node.output_dtype('Out', 0)
+        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
+        value_node = graph.make_node('Constant', dtype=out_dtype, value=[0, 1])
+        depth = node.attr('depth')
+        depth_node = graph.make_node('Constant', dtype=in_dtype, value=[depth])
+        reshaped_input_node = graph.make_node(
+            'OneHot',
+            inputs=[node.input('X', 0), depth_node, value_node],
+            outputs=node.output('Out'))
+
+
 @op_mapper('concat')
 class Concat():
     support_opset_version_range = (4, 15)
@@ -152,10 +171,10 @@ class Assign():
 
 @op_mapper('lod_reset')
 class LodReset():
-    support_opset_version_range = (9, )
+    support_opset_version_range = (1, )
 
     @classmethod
-    def opset_9(cls, graph, node, **kw):
+    def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
@@ -172,8 +191,19 @@ class Eye():
         value = [0] * num_rows * num_columns
         value_tensor = mapper_helper.constant_helper(
             graph, dtype, value, shape=[num_rows, num_columns])
-        graph.make_node(
-            'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
+
+        out_dtype = node.output_dtype('Out', 0)
+        if int(out_dtype) != dtype:
+            out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
+            eye_node = graph.make_node('EyeLike', inputs=[value_tensor])
+            graph.make_node(
+                'Cast',
+                inputs=[eye_node],
+                to=out_dtype,
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
 
 
 @op_mapper('stack')
