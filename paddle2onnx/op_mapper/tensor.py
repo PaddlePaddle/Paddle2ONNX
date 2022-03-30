@@ -119,11 +119,19 @@ class OneHotV2():
     def opset_9(cls, graph, node, **kw):
         in_dtype = node.input_dtype('X', 0)
         in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype]
-        out_dtype = node.output_dtype('Out', 0)
-        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
+        out_dtype_paddle = node.output_dtype('Out', 0)
+        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype_paddle]
         value_node = graph.make_node('Constant', dtype=out_dtype, value=[0, 1])
         depth = node.attr('depth')
         depth_node = graph.make_node('Constant', dtype=in_dtype, value=[depth])
+        depth_tensor = node.input('depth_tensor', 0)
+        if depth_tensor is not None:
+            depth_tensor_dtype = node.input_dtype('depth_tensor', 0)
+            if depth_tensor_dtype != out_dtype_paddle:
+                depth_node = graph.make_node(
+                    'Cast', inputs=[depth_tensor], to=out_dtype)
+            else:
+                depth_node = node.input('depth_tensor', 0)
         reshaped_input_node = graph.make_node(
             'OneHot',
             inputs=[node.input('X', 0), depth_node, value_node],
@@ -187,23 +195,12 @@ class Eye():
     def opset_9(cls, graph, node, **kw):
         num_rows = node.attr('num_rows')
         num_columns = node.attr('num_columns')
-        dtype = node.attr('dtype')
+        dtype = node.output_dtype('Out', 0)
         value = [0] * num_rows * num_columns
         value_tensor = mapper_helper.constant_helper(
             graph, dtype, value, shape=[num_rows, num_columns])
-
-        out_dtype = node.output_dtype('Out', 0)
-        if int(out_dtype) != dtype:
-            out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
-            eye_node = graph.make_node('EyeLike', inputs=[value_tensor])
-            graph.make_node(
-                'Cast',
-                inputs=[eye_node],
-                to=out_dtype,
-                outputs=node.output('Out'))
-        else:
-            graph.make_node(
-                'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
+        graph.make_node(
+            'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
 
 
 @op_mapper('stack')
