@@ -24,6 +24,9 @@ REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
 REGISTER_MAPPER(exp, ActivationMapper)
 REGISTER_MAPPER(floor, ActivationMapper)
+REGISTER_MAPPER(cos, ActivationMapper)
+REGISTER_MAPPER(sin, ActivationMapper)
+REGISTER_MAPPER(round, ActivationMapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
 REGISTER_MAPPER(gelu, GeluMapper)
 REGISTER_MAPPER(selu, SeluMapper)
@@ -53,6 +56,14 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
       }
       return -1;
     }
+  }
+  if (OpType() == "round") {
+    if (verbose) {
+      std::cerr
+          << "[Paddle2ONNX] Only support op round with opset_version >= 11."
+          << std::endl;
+    }
+    return 11;
   }
 
   return 7;

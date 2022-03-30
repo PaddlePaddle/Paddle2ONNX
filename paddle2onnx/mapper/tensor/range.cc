@@ -27,6 +27,40 @@ void RangeMapper::Opset11(OnnxHelper* helper) {
   std::vector<std::string> aligned_inputs = helper->DtypeAlignment(
       {start_info[0], end_info[0], step_info[0]}, &out_dtype);
   std::vector<int64_t> empty_axes;
+
+  //  // Trick for tensorrt
+  //  if (out_dtype == P2ODataType::INT32 || out_dtype == P2ODataType::INT64 ||
+  //  true) {
+  //    if (start_info[0].Rank() != 1) {
+  //      aligned_inputs[0] = helper->Reshape(aligned_inputs[0], {-1});
+  //    }
+  //    if (end_info[0].Rank() != 1) {
+  //      aligned_inputs[1] = helper->Reshape(aligned_inputs[1], {-1});
+  //    }
+  //    if (step_info[0].Rank() != 1) {
+  //      aligned_inputs[2] = helper->Reshape(aligned_inputs[2], {-1});
+  //    }
+  //    auto length = helper->MakeNode("Sub", {aligned_inputs[1],
+  //    aligned_inputs[0]})->output(0);
+  //    length = helper->AutoCast(length, out_dtype, P2ODataType::INT64);
+  //    auto one = helper->Constant({1}, GetOnnxDtype(out_dtype), int64_t(1));
+  //    auto expaned_one = helper->MakeNode("Expand", {one, length})->output(0);
+  //    auto axis = helper->Constant({}, ONNX_NAMESPACE::TensorProto::INT64,
+  //    int64_t(0));
+  //    auto cumsumed_data = helper->MakeNode("CumSum", {expaned_one,
+  //    axis})->output(0);
+  //    cumsumed_data = helper->MakeNode("Sub", {cumsumed_data,
+  //    one})->output(0);
+  //
+  //    auto zero = helper->Constant({1},  ONNX_NAMESPACE::TensorProto::INT64,
+  //    int64_t(0));
+  //    auto new_step = helper->AutoCast(aligned_inputs[2], step_info[0].dtype,
+  //    P2ODataType::INT64);
+  //    helper->MakeNode("Slice", {cumsumed_data, zero, length, zero, new_step},
+  //    {out_info[0].name});
+  //    return;
+  //  }
+
   // TODO(jiangjiajun) squeeze for constant is an eleminable operation
   if (start_info[0].shape.size() > 0) {
     aligned_inputs[0] = helper->Squeeze(aligned_inputs[0], empty_axes);

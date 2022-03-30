@@ -40,19 +40,13 @@ int main(int argc, char* argv[]) {
               << std::endl;
   }
   std::string onnx_model;
-  // PADDLE2ONNX_DECL bool Export(
-  //    const std::string& model, const std::string& params, std::string* out,
-  //    bool from_memory_buffer = false, int32_t opset_version = 11,
-  //    bool auto_upgrade_opset = true, bool verbose = false,
-  //    bool enable_onnx_checker = true, bool enable_experimental_op = false,
-  //    bool enable_optimize = true);
   if (argc == 2) {
     std::string model_buffer;
     if (!ReadBinaryFile(argv[1], &model_buffer)) {
       return -1;
     }
     if (!paddle2onnx::Export(model_buffer, "", &onnx_model, true, 12, true,
-                             true, false, true, false)) {
+                             true, true, true, false)) {
       std::cerr << "Model convert failed." << std::endl;
       return -1;
     }
@@ -67,7 +61,7 @@ int main(int argc, char* argv[]) {
     }
     if (!paddle2onnx::Export(model_buffer, params_buffer, &onnx_model, true, 7,
                              true, true, true, true, true)) {
-      std::cerr << "Model converte failed." << std::endl;
+      std::cerr << "Model convert failed." << std::endl;
       return -1;
     }
   }
@@ -75,7 +69,5 @@ int main(int argc, char* argv[]) {
   out << onnx_model;
   out.close();
 
-  std::cout << "Hello world" << std::endl;
-  //  std::cout << "Length of weights " << weights.size() << std::endl;
   return 0;
 }

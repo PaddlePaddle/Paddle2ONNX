@@ -15,9 +15,12 @@
 #include "paddle2onnx/mapper/exporter.h"
 #include <onnx/checker.h>
 #include "onnxoptimizer/optimize.h"
+#include "paddle2onnx/optimizer/eliminate_non_transpose.h"
+#include "paddle2onnx/optimizer/fuse_constant_cast.h"
 #include "paddle2onnx/optimizer/fuse_constant_reshape.h"
 #include "paddle2onnx/optimizer/fuse_constant_unsqueeze.h"
 #include "paddle2onnx/optimizer/fuse_paddle_conv_bias.h"
+#include "paddle2onnx/optimizer/fuse_unsqueeze_conv2d_squeeze.h"
 
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
@@ -227,6 +230,9 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   for (auto& item : outputs) {
     *(graph->add_output()) = (*item.get());
   }
+  for (auto& item : _helper.value_infos) {
+    *(graph->add_value_info()) = (*item.get());
+  }
 
   // TODO(jiangjiajun)
   // If we need to integrate with framework
@@ -274,7 +280,10 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
       if (op.type() == "feed" || op.type() == "fetch") {
         continue;
       }
-      if (op.type() == "while") {
+      if (op.type() == "while" && enable_experimental_op) {
+        if (!IsLoopSupported(parser, i, j)) {
+          unsupported_ops->insert("while");
+        }
         continue;
       }
       if (!MapperHelper::Get()->IsRegistered(op.type())) {
@@ -369,16 +378,20 @@ ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantUnsqueeze>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FusePaddleConvBias>();
-  std::vector<std::string> passes = {"eliminate_identity",
-                                     "eliminate_deadend",
-                                     "eliminate_deadend",
-                                     "fuse_constant_reshape",
-                                     "fuse_constant_unsqueeze",
-                                     "fuse_paddle_conv_bias",
-                                     "fuse_matmul_add_bias_into_gemm",
-                                     "eliminate_identity",
-                                     "eliminate_deadend",
-                                     "eliminate_unused_initializer"};
+  ONNX_NAMESPACE::optimization::Optimizer::passes
+      .registerPass<ONNX_NAMESPACE::optimization::FuseUnsqueezeConv2dSqueeze>();
+  ONNX_NAMESPACE::optimization::Optimizer::passes
+      .registerPass<ONNX_NAMESPACE::optimization::EliminateNonTranspose>();
+  ONNX_NAMESPACE::optimization::Optimizer::passes
+      .registerPass<ONNX_NAMESPACE::optimization::FuseConstantCast>();
+  std::vector<std::string> passes = {
+      "eliminate_identity", "eliminate_deadend", "eliminate_deadend",
+      "fuse_constant_reshape", "fuse_constant_unsqueeze",
+      //                                     "fuse_constant_cast",
+      "fuse_paddle_conv_bias", "fuse_unsqueeze_conv2d_squeeze",
+      "fuse_consecutive_transposes", "eliminate_non_transpose",
+      "fuse_matmul_add_bias_into_gemm", "eliminate_identity",
+      "eliminate_deadend", "eliminate_unused_initializer"};
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 

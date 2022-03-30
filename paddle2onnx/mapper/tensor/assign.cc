@@ -16,11 +16,14 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(assign, AssignMapper)
+REGISTER_MAPPER(share_data, AssignMapper)
 
 void AssignMapper::Opset7(OnnxHelper* helper) {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  if (block_idx_ != 0) {
+  if (block_idx_ != 0 && OpType() != "share_data") {
+    // Here's a trick for tensorrt
+    // Consider remove this trick
     if (input_info[0].dtype == P2ODataType::BOOL) {
       auto zero = helper->Constant(ONNX_NAMESPACE::TensorProto::INT64,
                                    std::vector<int64_t>(1, 0));

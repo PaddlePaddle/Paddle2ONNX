@@ -16,6 +16,28 @@
 
 namespace paddle2onnx {
 
+bool ModelExporter::IsLoopSupported(const PaddleParser& parser,
+                                    const int64_t& block_id,
+                                    const int64_t& op_id) {
+  auto x_info = parser.GetOpInput(block_id, op_id, "X");
+  auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+  if (x_info.size() + 1 != out_info.size()) {
+    std::cerr << "[Paddle2ONNX] Only support num(inputs except condition) == "
+                 "num(outputs) - 1 for op while."
+              << std::endl;
+    return false;
+  }
+  for (size_t i = 0; i < x_info.size(); ++i) {
+    if (x_info[i].is_tensor_array) {
+      std::cerr
+          << "[Paddle2ONNX] LodTensorArray is not supported in Paddle2ONNX."
+          << std::endl;
+      return false;
+    }
+  }
+  return true;
+}
+
 void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
                                int32_t opset_version, int64_t block_id,
                                int64_t op_id, bool verbose) {
@@ -70,12 +92,6 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
     ExportOp(parser, &loop_helper, opset_version, sub_block_idx, i, verbose);
   }
 
-  //  for (auto& item : inputs) {
-  //    item->set_name("loop." + item->name());
-  //  }
-  //  for (auto& item : outputs) {
-  //    item->set_name("loop." + item->
-  //  }
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs,
                               &loop_helper.nodes);
@@ -105,6 +121,18 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
       item->set_name(updated_name);
     }
   }
+
+  //  // construct a onnx model proto
+  //  // consider to optimize the subgraph
+  //  auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
+  //  model->set_ir_version(ONNX_NAMESPACE::IR_VERSION);
+  //  auto graph = model->mutable_graph();
+  //  auto graph_name = MapperHelper::Get()->GenName("Model from
+  //  PaddlePaddle(Loop).");
+  //  graph->set_name(graph_name);
+  //  auto opset_id = model->add_opset_import();
+  //  opset_id->set_domain("");
+  //  opset_id->set_version(loop_helper->GetOpsetVersion());
 
   auto graph_name = MapperHelper::Get()->GenName("paddle.loop");
   auto graph = std::make_shared<ONNX_NAMESPACE::GraphProto>();

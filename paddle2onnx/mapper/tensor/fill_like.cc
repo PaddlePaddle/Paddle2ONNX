@@ -41,8 +41,8 @@ void FillLikeMapper::Opset9(OnnxHelper* helper) {
   auto const_node = helper->Constant({1}, GetOnnxDtype(dtype), value_);
   helper->MakeNode("Expand", {const_node, shape_node->output(0)},
                    {output_info[0].name});
-  //  helper->ConstOfShape(shape_node->output(0), output_info[0].name,
-  //                       GetOnnxDtype(dtype), value_);
+  //    helper->ConstOfShape(shape_node->output(0), output_info[0].name,
+  //                         GetOnnxDtype(dtype), value_);
 }
 
 }  // namespace paddle2onnx

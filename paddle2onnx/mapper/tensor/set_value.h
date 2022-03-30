@@ -45,7 +45,7 @@ class SetValueMapper : public Mapper {
     }
   }
   int32_t GetMinOpset(bool verbose = false);
-  void Opset11(OnnxHelper* helper);
+  void Opset12(OnnxHelper* helper);
 
  private:
   std::vector<int64_t> axes_;

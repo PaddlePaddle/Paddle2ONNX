@@ -35,6 +35,8 @@ struct ModelExporter {
   void ExportOp(const PaddleParser& parser, OnnxHelper* helper,
                 int32_t opset_version, int64_t block_id, int64_t op_id,
                 bool verbose);
+  bool IsLoopSupported(const PaddleParser& parser, const int64_t& block_id,
+                       const int64_t& op_id);
   void ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
                   int32_t opset_version, int64_t block_id, int64_t op_id,
                   bool verbose);

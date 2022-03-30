@@ -72,6 +72,14 @@ void FillConstantMapper::Opset9(OnnxHelper* helper) {
       auto shape_info = GetInput("ShapeTensorList");
       shape_name = helper->ConcatIndices(shape_info);
     }
+    // trick for tensorrt
+    // ====================
+    //    auto value_tensor = helper->Constant({1},
+    //    GetOnnxDtype(out_info[0].dtype), value);
+    //    out = helper->MakeNode("Expand", {value_tensor,
+    //    shape_name})->output(0);
+    // ===================
+
     auto node = helper->MakeNode("ConstantOfShape", {shape_name});
     auto attr = node->add_attribute();
     attr->set_name("value");
