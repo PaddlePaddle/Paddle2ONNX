@@ -350,24 +350,30 @@ class Split():
     def opset_1(cls, graph, node, **kw):
         sections = node.attr('sections')
         axis = cls.get_axis(graph, node)
-        if len(sections) > 0:
-            input_shape = node.block.vars[node.input('X')[0]].shape
-            section_index = [i for i, val in enumerate(sections) if val == -1]
-            if input_shape[axis] != -1 and len(section_index) == 1:
-                sections[section_index[0]] = input_shape[axis] - sum(
-                    sections) - 1
-            mapper_helper.split_helper(
-                graph,
-                node.input('X'),
-                axis=axis,
-                split=sections,
-                outputs=node.output('Out'))
-        else:
+        if isinstance(sections, list) and len(sections) == 1:
             graph.make_node(
-                'Split',
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                axis=axis)
+                'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+        else:
+            if len(sections) > 0:
+                input_shape = node.block.vars[node.input('X')[0]].shape
+                section_index = [
+                    i for i, val in enumerate(sections) if val == -1
+                ]
+                if input_shape[axis] != -1 and len(section_index) == 1:
+                    sections[section_index[0]] = input_shape[axis] - sum(
+                        sections) - 1
+                mapper_helper.split_helper(
+                    graph,
+                    node.input('X'),
+                    axis=axis,
+                    split=sections,
+                    outputs=node.output('Out'))
+            else:
+                graph.make_node(
+                    'Split',
+                    inputs=node.input('X'),
+                    outputs=node.output('Out'),
+                    axis=axis)
 
     @classmethod
     def get_axis(cls, graph, node):
