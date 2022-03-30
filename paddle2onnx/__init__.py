@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 from paddle2onnx import version
-import onnx
 
 
 def export(model_filename,
@@ -29,17 +28,19 @@ def export(model_filename,
            auto_upgrade_opset=True,
            verbose=True,
            enable_onnx_checker=True,
-           enable_experimental_op=True):
-    onnx_proto = onnx.ModelProto()
-    onnx_proto_str = c_p2o.export(model_filename, params_filename,
-                                  opset_version, auto_upgrade_opset, verbose,
-                                  enable_onnx_checker, enable_experimental_op)
-    onnx_proto.ParseFromString(onnx_proto_str)
+           enable_experimental_op=True,
+           enable_optimize=True):
+    onnx_proto_str = c_p2o.export(
+        model_filename, params_filename, opset_version, auto_upgrade_opset,
+        verbose, enable_onnx_checker, enable_experimental_op, enable_optimize)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_proto.SerializeToString())
+    else:
+        return onnx_proto_str
 
 
+# internal api, not recommend to use
 def dygraph2onnx(layer, save_file, input_spec, opset_version=9, **configs):
     import os
     import paddle

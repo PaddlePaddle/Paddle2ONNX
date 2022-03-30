@@ -22,22 +22,24 @@ namespace paddle2onnx {
 
 PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
   m.doc() = "Paddle2ONNX: export PaddlePaddle to ONNX";
-  m.def("export", [](const std::string& model_filename,
-                     const std::string& params_filename, int opset_version = 9,
-                     bool auto_upgrade_opset = true, bool verbose = true,
-                     bool enable_onnx_checker = true,
-                     bool enable_experimental_op = true) {
-    auto parser = PaddleParser();
-    if (params_filename != "") {
-      parser.Init(model_filename, params_filename);
-    } else {
-      parser.Init(model_filename);
-    }
-    ModelExporter me;
-    auto onnx_proto = me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-                             enable_onnx_checker, enable_experimental_op);
-    return pybind11::bytes(onnx_proto);
-  });
+  m.def(
+      "export",
+      [](const std::string& model_filename, const std::string& params_filename,
+         int opset_version = 9, bool auto_upgrade_opset = true,
+         bool verbose = true, bool enable_onnx_checker = true,
+         bool enable_experimental_op = true, bool enable_optimize = true) {
+        auto parser = PaddleParser();
+        if (params_filename != "") {
+          parser.Init(model_filename, params_filename);
+        } else {
+          parser.Init(model_filename);
+        }
+        ModelExporter me;
+        auto onnx_proto = me.Run(parser, opset_version, auto_upgrade_opset,
+                                 verbose, enable_onnx_checker,
+                                 enable_experimental_op, enable_optimize);
+        return pybind11::bytes(onnx_proto);
+      });
 
   m.def("get_graph_op_list", [](const std::string& model_filename,
                                 const std::string& params_filename) {

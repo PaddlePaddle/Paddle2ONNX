@@ -26,14 +26,20 @@ struct ModelExporter {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
-  OnnxHelper helper;
+  OnnxHelper _helper;
 
   void ExportParameters(const std::map<std::string, Weight>& params,
                         bool use_initializer = false);
   void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
                           const std::vector<TensorInfo>& output_infos);
-  void ExportOp(const PaddleParser& parser, int32_t opset_version,
-                int64_t block_id, int64_t op_id);
+  void ExportOp(const PaddleParser& parser, OnnxHelper* helper,
+                int32_t opset_version, int64_t block_id, int64_t op_id,
+                bool verbose);
+  bool IsLoopSupported(const PaddleParser& parser, const int64_t& block_id,
+                       const int64_t& op_id);
+  void ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
+                  int32_t opset_version, int64_t block_id, int64_t op_id,
+                  bool verbose);
 
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
@@ -43,7 +49,15 @@ struct ModelExporter {
   //    1. is the op convert function implemented
   //    2. is the op convertable(some cases may not be able to convert)
   // If the model is not convertable, return -1
-  int32_t GetMinOpset(const PaddleParser& parser, bool verbose = false);
+  int32_t GetMinOpset(const PaddleParser& parser, const int32_t& opset_version,
+                      bool verbose = false);
+
+  // Process dumplicate tensor names in paddle model
+  void ProcessGraphDumplicateNames(
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes);
 
   bool CheckIfOpSupported(const PaddleParser& parser,
                           std::set<std::string>* unsupported_ops,

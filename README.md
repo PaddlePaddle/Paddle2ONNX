@@ -143,8 +143,18 @@ print(diff.max(), diff.min())
 
 当前仅支持Linux/Mac（如果你是Mac M1 Chip，请参考[M1 Chip下的安装说明](mac_m1_chip.md)）
 ```
+pip install onnx --upgrade
 cd /root/build_paddle2onnx/Paddle2ONNX
 python setup.py install
+```
+使用方式如下
+```
+import paddle2onnx
+model_filename = "model/model.pdmodel"
+params_filename = 'model/model.pdiparams"
+save_path = "model/model.onnx"
+
+paddle2onnx.export(model_filename, params_filename, save_path, opset_version=11)
 ```
 
 ## OP开发

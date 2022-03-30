@@ -22,6 +22,11 @@ REGISTER_MAPPER(log, ActivationMapper)
 REGISTER_MAPPER(sigmoid, ActivationMapper)
 REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
+REGISTER_MAPPER(exp, ActivationMapper)
+REGISTER_MAPPER(floor, ActivationMapper)
+REGISTER_MAPPER(cos, ActivationMapper)
+REGISTER_MAPPER(sin, ActivationMapper)
+REGISTER_MAPPER(round, ActivationMapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
 REGISTER_MAPPER(gelu, GeluMapper)
 REGISTER_MAPPER(selu, SeluMapper)
@@ -52,6 +57,14 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
       return -1;
     }
   }
+  if (OpType() == "round") {
+    if (verbose) {
+      std::cerr
+          << "[Paddle2ONNX] Only support op round with opset_version >= 11."
+          << std::endl;
+    }
+    return 11;
+  }
 
   return 7;
 }
@@ -73,6 +86,22 @@ void Relu6Mapper::Opset7(OnnxHelper* helper) {
                input_info[0].dtype);
 }
 
+int32_t PReluMapper::GetMinOpset(bool verbose) {
+  auto input_info = GetInput("X");
+  auto slope_info = GetInput("Alpha");
+  if (input_info[0].Rank() != slope_info[0].Rank()) {
+    if (slope_info[0].Rank() > 1) {
+      if (verbose) {
+        std::cerr << "Paddle2ONNX: Only support rank of alpha <= 1 while rank "
+                     "of alpha is not equal with rank of input."
+                  << std::endl;
+      }
+      return -1;
+    }
+  }
+  return 7;
+}
+
 void PReluMapper::Opset7(OnnxHelper* helper) {
   auto input_info = GetInput("X");
   auto slope_info = GetInput("Alpha");
@@ -82,6 +111,18 @@ void PReluMapper::Opset7(OnnxHelper* helper) {
   if (slope_info[0].dtype == P2ODataType::FP64) {
     slope_cast_name = helper->AutoCast({slope_info[0].name}, P2ODataType::FP64,
                                        P2ODataType::FP32);
+  }
+
+  if (slope_info[0].Rank() != input_info[0].Rank()) {
+    Assert(slope_info[0].Rank() <= 1,
+           "Paddle2ONNX: Only support rank of alpha <= 1 while rank of alpha "
+           "is not equal with rank of input for operator prelu.");
+    Assert(
+        input_info[0].Rank() > 1,
+        "Paddle2ONNX: Rank of input should greater than 2 for operator prelu.");
+    std::vector<int64_t> shape_value(input_info[0].Rank() - 1, 1);
+    shape_value[0] = -1;
+    slope_cast_name = helper->Reshape(slope_cast_name, shape_value);
   }
 
   if (input_info[0].dtype == P2ODataType::FP64) {
@@ -119,8 +160,9 @@ void SwishMapper::Opset7(OnnxHelper* helper) {
   auto output_info = GetOutput("Out");
 
   std::string beta_node =
-      helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), beta_)
-          ->output(0);
+      helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), beta_);
+  // TODO(jiangjiajun) eliminate multiply with a constant of value 1
+  // TODO(jiangjiajun) eliminate add with a constant of value 0
   auto beta_x_node = helper->MakeNode("Mul", {input_info[0].name, beta_node});
   auto sigmod_node = helper->MakeNode("Sigmoid", {beta_x_node->output(0)});
   helper->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
@@ -132,11 +174,9 @@ void HardSwishMapper::Opset7(OnnxHelper* helper) {
   auto output_info = GetOutput("Out");
 
   std::string scale_node =
-      helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), scale_)
-          ->output(0);
+      helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), scale_);
   std::string offset_node =
-      helper->MakeConstant({1}, GetOnnxDtype(input_info[0].dtype), offset_)
-          ->output(0);
+      helper->Constant({1}, GetOnnxDtype(input_info[0].dtype), offset_);
 
   auto add_node = helper->MakeNode("Add", {input_info[0].name, offset_node});
   auto clip_node =
@@ -162,31 +202,30 @@ void GeluMapper::Opset9(OnnxHelper* helper) {
   double sqrt_2_value = 1.4142135623730951;
   double scale_value = 0.5;
   double const_1_value = 1.0;
-  auto sqrt_2 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                     sqrt_2_value);
-  auto scale = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                    scale_value);
-  auto const_1 = helper->MakeConstant({1}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                      const_1_value);
+  auto sqrt_2 =
+      helper->Constant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, sqrt_2_value);
+  auto scale =
+      helper->Constant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, scale_value);
+  auto const_1 =
+      helper->Constant({1}, ONNX_NAMESPACE::TensorProto::FLOAT, const_1_value);
 
   auto input_name = helper->AutoCast(input_info[0].name, input_info[0].dtype,
                                      P2ODataType::FP32);
 
   // the computation formula follows
   // https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/functional/gelu_cn.html#gelu
-  auto erf0 = helper->MakeNode("Div", {input_name, sqrt_2->output(0)});
+  auto erf0 = helper->MakeNode("Div", {input_name, sqrt_2});
   auto erf1 = helper->MakeNode("Erf", {erf0->output(0)});
-  auto gelu0 = helper->MakeNode("Add", {erf1->output(0), const_1->output(0)});
+  auto gelu0 = helper->MakeNode("Add", {erf1->output(0), const_1});
   auto gelu1 = helper->MakeNode("Mul", {input_name, gelu0->output(0)});
 
   if (input_info[0].dtype != P2ODataType::FP32) {
-    auto out = helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)});
+    auto out = helper->MakeNode("Mul", {gelu1->output(0), scale});
     auto cast_out =
         helper->MakeNode("Cast", {out->output(0)}, {output_info[0].name});
     AddAttribute(cast_out, "to", GetOnnxDtype(input_info[0].dtype));
   } else {
-    helper->MakeNode("Mul", {gelu1->output(0), scale->output(0)},
-                     {output_info[0].name});
+    helper->MakeNode("Mul", {gelu1->output(0), scale}, {output_info[0].name});
   }
 }
 
