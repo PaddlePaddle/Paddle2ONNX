@@ -32,9 +32,9 @@ OP_WITHOUT_KERNEL_SET = {
     'copy_cross_scope'
 }
 
-def process_old_op_desc(model):
+def process_old_ops_desc(model):
     for i in range(len(model.blocks[0].ops)):
-        if model.blocks[0].ops[i] == "matmul":
+        if model.blocks[0].ops[i].type == "matmul":
             if not model.blocks[0].ops[i].has_attr("head_number"):
                 model.blocks[0].ops[i]._set_attr("head_number", 1)
 
