@@ -16,12 +16,13 @@ import numpy as np
 from paddle2onnx.utils import logging
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper(
     ['multiclass_nms', 'multiclass_nms2', 'matrix_nms', 'multiclass_nms3'])
 class MultiClassNMS():
-    support_opset_verision_range = (10, 12)
+    support_opset_verision_range = (10, 16)
     """
     Convert the paddle multiclass_nms to onnx op.
     This op is get the select boxes from origin boxes.
@@ -39,20 +40,39 @@ class MultiClassNMS():
         if len(node.input_shape('Scores', 0)) == 2:
             # inputs: scores & bboxes is lod tensor
             scores = graph.make_node('Transpose', inputs=[scores], perm=[1, 0])
-            scores = graph.make_node('Unsqueeze', inputs=[scores], axes=[0])
-            scores_list = graph.make_node(
-                'Split',
-                inputs=scores,
-                outputs=num_class,
-                axis=1,
-                split=[1] * num_class)
+            scores = mapper_helper.unsqueeze_helper(graph, scores, [0])
+            if graph.opset_version < 13:
+                scores_list = graph.make_node(
+                    'Split',
+                    inputs=scores,
+                    outputs=num_class,
+                    axis=1,
+                    split=[1] * num_class)
+            else:
+                split_const = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[1] * num_class)
+                scores_list = graph.make_node(
+                    "Split",
+                    inputs=[scores] + [split_const],
+                    outputs=num_class,
+                    axis=1)
+
             bboxes = graph.make_node('Transpose', inputs=bboxes, perm=[1, 0, 2])
-            bboxes_list = graph.make_node(
-                'Split',
-                inputs=bboxes,
-                outputs=num_class,
-                axis=0,
-                split=[1] * num_class)
+            if graph.opset_version < 13:
+                bboxes_list = graph.make_node(
+                    'Split',
+                    inputs=bboxes,
+                    outputs=num_class,
+                    axis=0,
+                    split=[1] * num_class)
+            else:
+                split_const = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[1] * num_class)
+                bboxes_list = graph.make_node(
+                    "Split",
+                    inputs=[bboxes] + [split_const],
+                    outputs=num_class,
+                    axis=0)
             bbox_ids = []
             for i in range(num_class):
                 bbox_id = cls.nms(graph,
@@ -108,9 +128,18 @@ class MultiClassNMS():
         elif not normalized:
             value_one = graph.make_node(
                 'Constant', dims=[1], dtype=dtypes.ONNX.FLOAT, value=1.0)
-            new_bboxes = graph.make_node(
-                'Split', inputs=[bboxes], outputs=4, axis=2,
-                split=[1, 1, 1, 1])
+            if graph.opset_version < 13:
+                new_bboxes = graph.make_node(
+                    'Split',
+                    inputs=[bboxes],
+                    outputs=4,
+                    axis=2,
+                    split=[1, 1, 1, 1])
+            else:
+                split_const = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[1, 1, 1, 1])
+                new_bboxes = graph.make_node(
+                    "Split", inputs=[bboxes] + [split_const], outputs=4, axis=2)
             new_xmax = graph.make_node('Add', inputs=[new_bboxes[2], value_one])
             new_ymax = graph.make_node('Add', inputs=[new_bboxes[3], value_one])
             new_bboxes = graph.make_node(
@@ -127,7 +156,7 @@ class MultiClassNMS():
         if class_id is not None and class_id != 0:
             class_id = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0, class_id, 0])
-            class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
+            class_id = mapper_helper.unsqueeze_helper(graph, class_id, [0])
             select_bbox_indices = graph.make_node(
                 'Add', inputs=[select_bbox_indices, class_id])
 
@@ -155,8 +184,7 @@ class MultiClassNMS():
         class_id = graph.make_node(
             'Gather', inputs=[select_bbox_indices, const_values[1]], axis=1)
 
-        squeezed_class_id = graph.make_node(
-            'Squeeze', inputs=[class_id], axes=[1])
+        squeezed_class_id = mapper_helper.squeeze_helper(graph, class_id, [1])
 
         bbox_id = graph.make_node(
             'Gather', inputs=[select_bbox_indices, const_values[2]], axis=1)
@@ -198,8 +226,8 @@ class MultiClassNMS():
             'Add', inputs=[mul_classnum_boxnum, bbox_id])
 
         # Squeeze the indices to 1 dim
-        score_indices = graph.make_node(
-            'Squeeze', inputs=[add_class_indices], axes=[0, 2])
+        score_indices = mapper_helper.squeeze_helper(graph, add_class_indices,
+                                                     [0, 2])
 
         # gather the data from flatten scores
         scores = graph.make_node(
@@ -218,8 +246,9 @@ class MultiClassNMS():
             'Constant', dtype=dtypes.ONNX.INT64, value=[0])
         gather_select_num = graph.make_node(
             'Gather', inputs=[shape_select_num, const_zero], axis=0)
-        unsqueeze_select_num = graph.make_node(
-            'Unsqueeze', inputs=[gather_select_num], axes=[0])
+        unsqueeze_select_num = mapper_helper.unsqueeze_helper(
+            graph, gather_select_num, [0])
+
         concat_topK_select_num = graph.make_node(
             'Concat', inputs=[unsqueeze_select_num, keep_top_k], axis=0)
         cast_concat_topK_select_num = graph.make_node(
@@ -227,7 +256,8 @@ class MultiClassNMS():
         keep_top_k = graph.make_node(
             'ReduceMin', inputs=[cast_concat_topK_select_num], keepdims=0)
         # unsqueeze the indices to 1D tensor
-        keep_top_k = graph.make_node('Unsqueeze', inputs=[keep_top_k], axes=[0])
+        keep_top_k = mapper_helper.unsqueeze_helper(graph, keep_top_k, [0])
+
         # cast the indices to INT64
         keep_top_k = graph.make_node('Cast', inputs=[keep_top_k], to=7)
 
@@ -251,8 +281,8 @@ class MultiClassNMS():
                 'Gather', [bbox_id, keep_topk_indices], axis=1)
 
         # squeeze the gather_topk_boxes_id to 1 dim
-        squeeze_topk_boxes_id = graph.make_node(
-            'Squeeze', inputs=[gather_topk_boxes_id], axes=[0, 2])
+        squeeze_topk_boxes_id = mapper_helper.squeeze_helper(
+            graph, gather_topk_boxes_id, [0, 2])
 
         gather_select_boxes = graph.make_node(
             'Gather', inputs=[bboxes, squeeze_topk_boxes_id], axis=1)
@@ -262,8 +292,8 @@ class MultiClassNMS():
         cast_topk_class = graph.make_node(
             'Cast', inputs=[gather_topk_class], to=1)
 
-        unsqueeze_topk_scores = graph.make_node(
-            'Unsqueeze', inputs=[gather_topk_scores], axes=[0, 2])
+        unsqueeze_topk_scores = mapper_helper.unsqueeze_helper(
+            graph, gather_topk_scores, [0, 2])
 
         inputs_concat_final_results = [
             cast_topk_class, unsqueeze_topk_scores, gather_select_boxes
@@ -273,8 +303,8 @@ class MultiClassNMS():
             'Concat', inputs=inputs_concat_final_results, axis=2)
 
         # sort by class_id
-        squeeze_cast_topk_class = graph.make_node(
-            'Squeeze', inputs=[cast_topk_class], axes=[0, 2])
+        squeeze_cast_topk_class = mapper_helper.squeeze_helper(
+            graph, cast_topk_class, [0, 2])
 
         neg_squeeze_cast_topk_class = graph.make_node(
             'Neg', inputs=[squeeze_cast_topk_class])
@@ -285,18 +315,12 @@ class MultiClassNMS():
         concat_final_results = graph.make_node(
             'Gather', inputs=[sort_by_socre_results, indices], axis=1)
 
-        concat_final_results = graph.make_node(
-            'Squeeze',
-            inputs=[concat_final_results],
-            outputs=[node.output('Out', 0)],
-            axes=[0])
+        concat_final_results = mapper_helper.squeeze_helper(
+            graph, concat_final_results, [0], node.output('Out'))
 
         if node.type in ['multiclass_nms2', 'matrix_nms', 'multiclass_nms3']:
-            final_indices = graph.make_node(
-                'Squeeze',
-                inputs=[bbox_id],
-                outputs=node.output('Index'),
-                axes=[0])
+            final_indices = mapper_helper.squeeze_helper(graph, bbox_id, [0],
+                                                         node.output('Index'))
             if node.type in ['matrix_nms', 'multiclass_nms3']:
                 select_bboxes_shape = graph.make_node('Shape', inputs=[indices])
                 select_bboxes_shape1 = graph.make_node(
