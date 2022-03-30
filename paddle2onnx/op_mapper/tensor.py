@@ -117,19 +117,21 @@ class OneHotV2():
 
     @classmethod
     def opset_9(cls, graph, node, **kw):
-        in_dtype = node.input_dtype('X', 0)
-        in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype]
-        out_dtype_paddle = node.output_dtype('Out', 0)
-        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype_paddle]
+        allow_out_of_range = node.attr('allow_out_of_range')
+        assert not allow_out_of_range, "allow_out_of_range can not be true in one_hot_v2."
+        in_dtype_paddle = node.input_dtype('X', 0)
+        in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype_paddle]
+        out_dtype = node.output_dtype('Out', 0)
+        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
         value_node = graph.make_node('Constant', dtype=out_dtype, value=[0, 1])
         depth = node.attr('depth')
         depth_node = graph.make_node('Constant', dtype=in_dtype, value=[depth])
         depth_tensor = node.input('depth_tensor', 0)
         if depth_tensor is not None:
             depth_tensor_dtype = node.input_dtype('depth_tensor', 0)
-            if depth_tensor_dtype != out_dtype_paddle:
+            if depth_tensor_dtype != in_dtype_paddle:
                 depth_node = graph.make_node(
-                    'Cast', inputs=[depth_tensor], to=out_dtype)
+                    'Cast', inputs=[depth_tensor], to=in_dtype)
             else:
                 depth_node = node.input('depth_tensor', 0)
         reshaped_input_node = graph.make_node(

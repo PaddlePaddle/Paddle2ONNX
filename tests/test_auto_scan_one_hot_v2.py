@@ -31,6 +31,8 @@ class Net(BaseNet):
         forward
         """
         num_classes = self.config["num_classes"]
+        if self.config["is_tensor"]:
+            num_classes = paddle.to_tensor([num_classes])
         x = paddle.nn.functional.one_hot(inputs, num_classes)
         return x
 
@@ -55,6 +57,7 @@ class TestOneHotV2Convert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
+        is_tensor = draw(st.booleans())
         config = {
             "op_names": ["one_hot_v2"],
             "test_data_shapes": [generator_data],
@@ -62,7 +65,7 @@ class TestOneHotV2Convert(OPConvertAutoScanTest):
             "opset_version": [9, 13, 15],
             "input_spec_shape": [],
             "num_classes": num_classes,
-            "use_gpu": False
+            "is_tensor": is_tensor
         }
 
         models = Net(config)
