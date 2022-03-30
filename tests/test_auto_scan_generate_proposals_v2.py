@@ -215,7 +215,7 @@ def anchor_generator_in_python(input_feat, anchor_sizes, aspect_ratios,
     return out_anchors, out_var
 
 
-def test_generate_proposals_v2():
+def test_generate_proposals_v2_1():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
     with paddle.static.program_guard(main_program, startup_program):
@@ -332,5 +332,167 @@ def test_generate_proposals_v2():
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
+def anchor_generator_in_python_num_anchors_3(
+        input_feat, anchor_sizes, aspect_ratios, variances, stride, offset):
+    num_anchors = 3  #len(aspect_ratios) * len(anchor_sizes)
+    layer_h = input_feat.shape[2]
+    layer_w = input_feat.shape[3]
+    out_dim = (layer_h, layer_w, num_anchors, 4)
+    out_anchors = np.zeros(out_dim).astype('float32')
+
+    for h_idx in range(layer_h):
+        for w_idx in range(layer_w):
+            x_ctr = (w_idx * stride[0]) + offset * (stride[0] - 1)
+            y_ctr = (h_idx * stride[1]) + offset * (stride[1] - 1)
+            idx = 0
+            for r in range(len(aspect_ratios)):
+                ar = aspect_ratios[r]
+                for s in range(len(anchor_sizes) - 1):
+                    anchor_size = anchor_sizes[s]
+                    area = stride[0] * stride[1]
+                    area_ratios = area / ar
+                    base_w = np.round(np.sqrt(area_ratios))
+                    base_h = np.round(base_w * ar)
+                    scale_w = anchor_size / stride[0]
+                    scale_h = anchor_size / stride[1]
+                    w = scale_w * base_w
+                    h = scale_h * base_h
+                    out_anchors[h_idx, w_idx, idx, :] = [
+                        (x_ctr - 0.5 * (w - 1)), (y_ctr - 0.5 * (h - 1)),
+                        (x_ctr + 0.5 * (w - 1)), (y_ctr + 0.5 * (h - 1))
+                    ]
+                    idx += 1
+
+    # set the variance.
+    out_var = np.tile(variances, (layer_h, layer_w, num_anchors, 1))
+    out_anchors = out_anchors.astype('float32')
+    out_var = out_var.astype('float32')
+    return out_anchors, out_var
+
+
+def test_generate_proposals_v2_2():
+    main_program = paddle.static.Program()
+    startup_program = paddle.static.Program()
+    N = -1
+    A = 3
+    H = -1
+    W = -1
+    with paddle.static.program_guard(main_program, startup_program):
+        scores = fluid.layers.data(
+            name='scores',
+            shape=[-1, A, H, W],
+            append_batch_size=False,
+            dtype='float32')
+        bbox_deltas = fluid.layers.data(
+            name='bbox_deltas',
+            shape=[-1, 4 * A, H, W],
+            append_batch_size=False,
+            dtype='float32')
+        im_shape = fluid.layers.data(
+            name='im_shape',
+            shape=[-1, 2],
+            append_batch_size=False,
+            dtype='float32')
+        anchors = fluid.layers.data(
+            name='anchors',
+            shape=[-1, 4],
+            append_batch_size=False,
+            dtype='float32')
+        variances = fluid.layers.data(
+            name='variances',
+            shape=[-1, 4],
+            append_batch_size=False,
+            dtype='float32')
+
+        def init_test_input():
+            batch_size = 1
+            input_channels = 40
+            layer_h = 25
+            layer_w = 40
+            input_feat = np.random.random((batch_size, input_channels, layer_h,
+                                           layer_w)).astype('float32')
+            anchors, variances = anchor_generator_in_python_num_anchors_3(
+                input_feat=input_feat,
+                anchor_sizes=[16., 32.],
+                aspect_ratios=[0.5, 1.0],
+                variances=[1.0, 1.0, 1.0, 1.0],
+                stride=[16.0, 16.0],
+                offset=0.5)
+            im_shape = np.array([[800, 1267.32678223]]).astype('float32')
+            num_anchors = anchors.shape[2]
+            scores = np.random.random(
+                (batch_size, num_anchors, layer_h, layer_w)).astype('float32')
+            bbox_deltas = np.random.random((batch_size, num_anchors * 4,
+                                            layer_h, layer_w)).astype('float32')
+            im_info = np.array([[64., 64., 4]]).astype(
+                'float32')  # im_height, im_width, scale
+            anchors = anchors.reshape([-1, 4])
+            variances = variances.reshape([-1, 4])
+            return scores, bbox_deltas, im_shape, im_info, anchors, variances
+
+        scores_data, bbox_deltas_data, im_shape_data, im_info_data, anchors_data, variances_data = init_test_input(
+        )
+
+        pre_nms_topN = 1000
+        post_nms_topN = 1000
+        nms_thresh = 0.7
+        min_size = 0.0
+        eta = 1.
+        pixel_offset = False
+        return_rois_num = True
+        out = generate_proposals_v2(
+            scores,
+            bbox_deltas,
+            im_shape,
+            anchors,
+            variances,
+            pre_nms_top_n=pre_nms_topN,
+            post_nms_top_n=post_nms_topN,
+            nms_thresh=nms_thresh,
+            min_size=min_size,
+            eta=eta,
+            pixel_offset=pixel_offset,
+            return_rois_num=return_rois_num)
+
+        exe = paddle.static.Executor(paddle.CPUPlace())
+        exe.run(paddle.static.default_startup_program())
+        result = exe.run(feed={
+            "scores": scores_data,
+            "bbox_deltas": bbox_deltas_data,
+            "im_shape": im_shape_data,
+            "anchors": anchors_data,
+            "variances": variances_data
+        },
+                         fetch_list=[out],
+                         return_numpy=False)
+
+        path_prefix = "./generate_proposals_v2"
+        fluid.io.save_inference_model(path_prefix, [
+            "scores", "bbox_deltas", "im_shape", "anchors", "variances"
+        ], out, exe)
+        onnx_path = path_prefix + "/model.onnx"
+        program2onnx(
+            model_dir=path_prefix,
+            save_file=onnx_path,
+            opset_version=12,
+            enable_onnx_checker=True)
+
+        sess = rt.InferenceSession(onnx_path)
+        input_name1 = sess.get_inputs()[0].name
+        input_name2 = sess.get_inputs()[1].name
+        input_name3 = sess.get_inputs()[2].name
+        input_name4 = sess.get_inputs()[3].name
+        input_name5 = sess.get_inputs()[4].name
+        pred_onnx = sess.run(None, {
+            input_name1: scores_data,
+            input_name2: bbox_deltas_data,
+            input_name3: im_shape_data,
+            input_name4: anchors_data,
+            input_name5: variances_data
+        })
+        compare(pred_onnx, result, 1e-5, 1e-5)
+
+
 if __name__ == "__main__":
-    test_generate_proposals_v2()
+    test_generate_proposals_v2_1()
+    test_generate_proposals_v2_2()
