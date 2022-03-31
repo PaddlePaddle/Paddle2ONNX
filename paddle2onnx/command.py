@@ -153,6 +153,8 @@ def program2onnx(model_dir,
         'copy_cross_scope'
     }
     if input_shape_dict is not None:
+        import paddle2onnx
+        paddle2onnx.process_old_ops_desc(program)
         paddle_version = paddle.__version__
         model_version = program.desc._version()
         major_ver = model_version // 1000000
