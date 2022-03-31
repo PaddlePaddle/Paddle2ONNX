@@ -78,8 +78,7 @@ class MatMul():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        x = graph.get_name(node.input('X', idx=0), with_remove=True)
-        # x = node.input('X', idx=0)
+        x = node.input('X', idx=0)
         y = node.input('Y', idx=0)
         out = node.output('Out')
         ## TODO(wangjunjie06): The current addition of cast op is only for onnxruntime optimization, after onnxruntime is repaired, remove this logic

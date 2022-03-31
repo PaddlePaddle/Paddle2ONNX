@@ -136,39 +136,6 @@ class ONNXGraph(Graph):
         graph_str += ' }'
         return graph_str
 
-    def add_name(self, name):
-        if name in self.name_dict.keys():
-            self.name_dict[name]["names"].append(name + "_" + str(
-                self.name_dict[name]["total"]))
-            self.name_dict[name]["total"] = self.name_dict[name]["total"] + 1
-        else:
-            self.name_dict[name] = dict()
-            self.name_dict[name]["total"] = 0
-            self.name_dict[name]["num"] = 0
-            self.name_dict[name]["names"] = list()
-            self.name_dict[name]["names"].append(name + "_" + str(
-                self.name_dict[name]["total"]))
-            self.name_dict[name]["total"] = self.name_dict[name]["total"] + 1
-
-    def get_name(self, name, with_remove=False):
-        if name in self.name_dict.keys():
-            if self.name_dict[name]["num"] == self.name_dict[name]["total"]:
-                self.name_dict[name]["num"] = self.name_dict[name]["num"] - 1
-                re_name = self.name_dict[name]["names"][self.name_dict[name][
-                    "num"]]
-            else:
-                re_name = self.name_dict[name]["names"][self.name_dict[name][
-                    "num"]]
-            if with_remove:
-                self.name_dict[name]["num"] = self.name_dict[name]["num"] + 1
-            return re_name
-        else:
-            warning_info = "\n======================\n"
-            warning_info += "\n Not Find Name : {}\n".format(name)
-            warning_info += "\n======================\n"
-            logging.warning(warning_info)
-            return name
-
     def make_node(self,
                   op_type,
                   inputs=[],

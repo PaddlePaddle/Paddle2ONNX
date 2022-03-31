@@ -65,10 +65,9 @@ class Conv():
             attrs['auto_pad'] = 'VALID'
         else:
             attrs['pads'] = pads
-        input_name = graph.get_name(node.input('Input', 0), with_remove=True)
         graph.make_node(
             'Conv',
-            inputs=[input_name] + [filter_node],
+            inputs=[node.input('Input', 0)] + [filter_node],
             outputs=[output_name],
             attrs=attrs)
 
