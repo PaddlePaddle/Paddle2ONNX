@@ -129,6 +129,36 @@ class SetValue():
             outputs=node.output('Out'))
 
 
+@op_mapper('one_hot_v2')
+class OneHotV2():
+    support_opset_version_range = (9, )
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        allow_out_of_range = node.attr('allow_out_of_range')
+        assert not allow_out_of_range, "allow_out_of_range can not be true in one_hot_v2."
+        in_dtype_paddle = node.input_dtype('X', 0)
+        in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype_paddle]
+        out_dtype = node.output_dtype('Out', 0)
+        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
+        inputs = node.input('X', 0)
+        if in_dtype_paddle == paddle.int32:
+            inputs = graph.make_node(
+                'Cast', inputs=[inputs], to=dtypes.ONNX.INT64)
+            in_dtype = dtypes.ONNX.INT64
+        value_node = graph.make_node('Constant', dtype=out_dtype, value=[0, 1])
+        depth = node.attr('depth')
+        if node.input('depth_tensor', 0) is not None:
+            depth_node = node.input('depth_tensor', 0)
+        else:
+            depth_node = graph.make_node(
+                'Constant', dtype=in_dtype, value=[depth])
+        reshaped_input_node = graph.make_node(
+            'OneHot',
+            inputs=[inputs, depth_node, value_node],
+            outputs=node.output('Out'))
+
+
 @op_mapper('concat')
 class Concat():
     support_opset_version_range = (4, 15)
@@ -176,6 +206,22 @@ class LodReset():
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('eye')
+class Eye():
+    support_opset_version_range = (9, )
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        num_rows = node.attr('num_rows')
+        num_columns = node.attr('num_columns')
+        dtype = node.output_dtype('Out', 0)
+        value = [0] * num_rows * num_columns
+        value_tensor = mapper_helper.constant_helper(
+            graph, dtype, value, shape=[num_rows, num_columns])
+        graph.make_node(
+            'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
 
 
 @op_mapper('stack')
