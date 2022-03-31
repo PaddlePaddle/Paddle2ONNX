@@ -21,7 +21,7 @@ from onnxruntime import InferenceSession
 from paddle2onnx.convert import dygraph2onnx
 
 
-def compare(result, expect, delta=1e-10, rtol=1e-10, input_data=None):
+def compare(result, expect, delta=1e-10, rtol=1e-10):
     """
     比较函数
     :param result: 输入值
