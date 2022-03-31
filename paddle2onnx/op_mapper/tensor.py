@@ -36,8 +36,8 @@ class SetValue():
             'steps',
             'StepsTensor',
             'StepsTensorList',
+            return_list=True,
             dtype=dtypes.ONNX.INT64)
-        contain_bigger_than_1 = False
 
         starts, is_starts_tensor = mapper_helper.get_node_attr_value(
             graph,
@@ -45,6 +45,7 @@ class SetValue():
             'starts',
             'StartsTensor',
             'StartsTensorList',
+            return_list=True,
             dtype=dtypes.ONNX.INT64)
 
         ends, is_ends_tensor = mapper_helper.get_node_attr_value(
@@ -53,29 +54,37 @@ class SetValue():
             'ends',
             'EndsTensor',
             'EndsTensorList',
+            return_list=True,
             dtype=dtypes.ONNX.INT64)
 
-        contain_bigger_than_1 = False
+        contain_step_bigger_than_1 = False
         for i in steps:
-            contain_bigger_than_1 = i > 1
-            if contain_bigger_than_1:
+            contain_step_bigger_than_1 = i > 1
+            if not isinstance(i, int) or contain_step_bigger_than_1:
+                contain_step_bigger_than_1 = True
                 break
-        condition = is_steps_tensor or is_starts_tensor or is_ends_tensor or contain_bigger_than_1
+        condition = is_steps_tensor or is_starts_tensor or is_ends_tensor or contain_step_bigger_than_1
         assert not condition, "Currently not supported convert now"
 
         input_x_shape = node.input_shape('Input', 0)
-        value_tensor_shape = node.input_shape('ValueTensor', 0)
         onnx_paddings = [0] * len(input_x_shape) * 2
+        value_shape = list(copy.copy(node.input_shape('Input', 0)))
         for i in range(len(axes)):
             axis = axes[i]
+            if starts[i] < 0:
+                starts[i] = starts[i] + input_x_shape[i]
+            if ends[i] < 0:
+                ends[i] = ends[i] + input_x_shape[i]
             onnx_paddings[axis] = starts[i]
+            value_shape[axis] = value_shape[axis] - onnx_paddings[axis]
             onnx_paddings[axis + len(input_x_shape)] = input_x_shape[
                 axis] - ends[i]
             if onnx_paddings[axis + len(input_x_shape)] < 0:
                 onnx_paddings[axis + len(input_x_shape)] = 0
-        dtype = node.input_dtype('Input', 0)
-        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype]
-
+            value_shape[axis] = value_shape[axis] - onnx_paddings[axis + len(
+                input_x_shape)]
+        dtype_paddle = node.input_dtype('Input', 0)
+        dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[dtype_paddle]
         value_tensor = None
         shape = node.attr('shape')
         if len(shape) > 0:
@@ -87,27 +96,66 @@ class SetValue():
                 value = node.attr(dtypes_list[i])
                 if value is not None:
                     break
-            value_tensor = mapper_helper.constant_helper(
-                graph, dtype, value, shape=shape)
+            if len(value) == 1:
+                total_nums = 1
+                for i in value_shape:
+                    total_nums *= i
+                value = value * total_nums
+                value_tensor = mapper_helper.constant_helper(
+                    graph, dtype_paddle, value, shape=value_shape)
+            else:
+                value_tensor = mapper_helper.constant_helper(
+                    graph, dtype_paddle, value, shape=shape)
         else:
             value_tensor = node.input('ValueTensor', 0)
-
+        MAX_FLOAT32 = 3.402823466E+38
+        max_node = graph.make_node(
+            'Constant', attrs={'dtype': dtype,
+                               'value': [MAX_FLOAT32]})
         pads_node = graph.make_node(
             'Constant',
             attrs={'dtype': dtypes.ONNX.INT64,
                    'value': onnx_paddings})
         value_pad_node = graph.make_node(
-            'Pad', inputs=[value_tensor, pads_node])
+            'Pad', inputs=[value_tensor, pads_node, max_node])
 
-        zero_node = graph.make_node('Constant', dtype=dtype, value=[0])
         condition_dtype = graph.make_node(
-            "Equal", inputs=[value_pad_node, zero_node])
-        condition = graph.make_node(
+            "Equal", inputs=[value_pad_node, max_node])
+        condition_node = graph.make_node(
             'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
-
         graph.make_node(
             "Where",
-            inputs=[condition, node.input('Input', 0), value_pad_node],
+            inputs=[condition_node, node.input('Input', 0), value_pad_node],
+            outputs=node.output('Out'))
+
+
+@op_mapper('one_hot_v2')
+class OneHotV2():
+    support_opset_version_range = (9, )
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        allow_out_of_range = node.attr('allow_out_of_range')
+        assert not allow_out_of_range, "allow_out_of_range can not be true in one_hot_v2."
+        in_dtype_paddle = node.input_dtype('X', 0)
+        in_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[in_dtype_paddle]
+        out_dtype = node.output_dtype('Out', 0)
+        out_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[out_dtype]
+        inputs = node.input('X', 0)
+        if in_dtype_paddle == paddle.int32:
+            inputs = graph.make_node(
+                'Cast', inputs=[inputs], to=dtypes.ONNX.INT64)
+            in_dtype = dtypes.ONNX.INT64
+        value_node = graph.make_node('Constant', dtype=out_dtype, value=[0, 1])
+        depth = node.attr('depth')
+        if node.input('depth_tensor', 0) is not None:
+            depth_node = node.input('depth_tensor', 0)
+        else:
+            depth_node = graph.make_node(
+                'Constant', dtype=in_dtype, value=[depth])
+        reshaped_input_node = graph.make_node(
+            'OneHot',
+            inputs=[inputs, depth_node, value_node],
             outputs=node.output('Out'))
 
 
@@ -158,6 +206,22 @@ class LodReset():
     def opset_1(cls, graph, node, **kw):
         graph.make_node(
             'Identity', inputs=node.input('X'), outputs=node.output('Out'))
+
+
+@op_mapper('eye')
+class Eye():
+    support_opset_version_range = (9, )
+
+    @classmethod
+    def opset_9(cls, graph, node, **kw):
+        num_rows = node.attr('num_rows')
+        num_columns = node.attr('num_columns')
+        dtype = node.output_dtype('Out', 0)
+        value = [0] * num_rows * num_columns
+        value_tensor = mapper_helper.constant_helper(
+            graph, dtype, value, shape=[num_rows, num_columns])
+        graph.make_node(
+            'EyeLike', inputs=[value_tensor], outputs=node.output('Out'))
 
 
 @op_mapper('stack')
