@@ -47,7 +47,6 @@ def get_all_registered_ops(save_file=None):
             op = ops[index]
             f.write(str(index + 1) + ". " + op + "\n")
         return
-    logging.warning("Can not written to the file: {}".format(save_file))
 
 
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
