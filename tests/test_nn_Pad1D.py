@@ -22,9 +22,11 @@ class Net(paddle.nn.Layer):
     simple Net
     """
 
-    def __init__(self):
+    def __init__(self, mode='constant', padding=1):
         super(Net, self).__init__()
-        self._pad = paddle.nn.Pad1D(padding=1, mode='constant')
+        self.mode = mode
+        self.padding = padding
+        self._pad = paddle.nn.Pad1D(padding=self.padding, mode=self.mode)
 
     def forward(self, inputs):
         """
@@ -88,6 +90,54 @@ def test_Pad1D_12():
     op version: 12
     """
     op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_Pad1D', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+    obj.run()
+
+
+def test_Pad1D_paddingList():
+    """
+    api: paddle.nn.Pad1D
+    op version: 12
+    """
+    op = Net(padding=[1, 2])
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_Pad1D', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+    obj.run()
+
+
+def test_Pad1D_reflect():
+    """
+    api: paddle.nn.Pad1D
+    op version: 12
+    """
+    op = Net(mode='reflect')
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'nn_Pad1D', [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor(
+            randtool("float", -1, 1, [3, 1, 10]).astype('float32')))
+    obj.run()
+
+
+def test_Pad1D_replicate():
+    """
+    api: paddle.nn.Pad1D
+    op version: 12
+    """
+    op = Net(mode='replicate')
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
     obj = APIOnnx(op, 'nn_Pad1D', [12])

@@ -47,6 +47,10 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 
     paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
 
+如需配置输入的大小，请使用如下命令:
+
+    paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True --input_shape_dict "{'x': [1, 3, 224, 224]}"
+
 #### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
@@ -57,13 +61,17 @@ Paddle模型的参数保存在一个单独的二进制文件中（combined）:
 |--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
 |--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
 |--enable_paddle_fallback| **[可选]**  配置custom op是否使用paddle_fallback模式导出, 默认为False|
+|--enable_auto_update_opset| **[可选]**  配置是否开启opset version自动校正功能, 默认为True|
+|--input_shape_dict| **[可选]**  配置输入的shape, 默认为空|
 |--version |**[可选]** 查看paddle2onnx版本 |
+|--output_names| **[可选]**  配置模型的输出名, 默认为空，支持配置为list形式，如：--output_names "['my_output1','my_output2']"，或者dict形式，如：--output_names "{'paddle_output1':'my_output1', 'paddle_output2':'my_output2'}"|
 
 - PaddlePaddle模型的两种存储形式：
    - 参数被保存在一个单独的二进制文件中（combined），需要在指定--model_dir的前提下，指定--model_filename, --params_filename, 分别表示--model_dir目录下的网络文件名称和参数文件名称。
    - 参数被保存为多个文件（not combined），只需要指定--model_dir，该目录下面需要包含了'\_\_model\_\_'，以及多个参数文件。
 - 使用onnxruntime验证转换模型：
    - 若使用onnxruntime验证转换后的onnx模型，请注意onnxruntime和onnx的版本匹配。[onnxruntime和onnx版本要求](https://github.com/microsoft/onnxruntime/blob/master/docs/Versioning.md)
+- 若模型转换中提示OP不支持，欢迎开发者自己开发并向我们提PR，具体请参考文档[OP开发指南](docs/zh/Paddle2ONNX_Development_Guide.md)
 
 #### IPython教程
 

@@ -43,6 +43,6 @@ def test_PixelShuffle_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-10, rtol=1e-11
-    obj = APIOnnx(op, 'nn_PixelShuffle', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_PixelShuffle', [11, 12])
     obj.set_input_data("input_data", paddle.rand((2, 9, 4, 4)))
     obj.run()

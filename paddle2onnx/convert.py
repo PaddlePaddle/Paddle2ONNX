@@ -29,12 +29,18 @@ def export_onnx(paddle_graph,
                 opset_version=9,
                 enable_onnx_checker=False,
                 operator_export_type="ONNX",
-                verbose=False):
+                verbose=False,
+                auto_update_opset=True,
+                output_names=None):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
-                                 operator_export_type, verbose)
-    onnx_graph = PassManager.run_pass(onnx_graph, ['inplace_node_pass'])
+                                 operator_export_type, verbose,
+                                 auto_update_opset)
+    onnx_graph = PassManager.run_pass(
+        onnx_graph, ['dumplicate_names_pass', 'inplace_node_pass'])
+    onnx_proto = onnx_graph.export_proto(enable_onnx_checker, output_names)
 
-    onnx_proto = onnx_graph.export_proto(enable_onnx_checker)
+    if save_file is None:
+        return onnx_proto
 
     path, _ = os.path.split(save_file)
     if path != '' and not os.path.isdir(path):
@@ -52,6 +58,7 @@ def program2onnx(program,
                  opset_version=9,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
+                 auto_update_opset=True,
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -77,8 +84,22 @@ def program2onnx(program,
 
         paddle_graph = PaddleGraph.build_from_program(program, feed_var_names,
                                                       target_vars, scope)
-        export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
-                    operator_export_type)
+        output_names = None
+        if 'output_names' in configs:
+            output_names = configs['output_names']
+            if output_names is not None and not isinstance(output_names,
+                                                           (list, dict)):
+                raise TypeError(
+                    "The output_names should be 'list' or dict, but received type is %s."
+                    % type(output_names))
+        return export_onnx(
+            paddle_graph,
+            save_file,
+            opset_version,
+            enable_onnx_checker,
+            operator_export_type,
+            auto_update_opset=auto_update_opset,
+            output_names=output_names)
     else:
         raise TypeError(
             "the input 'program' should be 'Program', but received type is %s."
@@ -159,5 +180,27 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     paddle_graph = PaddleGraph.build_from_dygraph(layer, inner_input_spec,
                                                   output_spec)
-    export_onnx(paddle_graph, save_file, opset_version, enable_onnx_checker,
-                operator_export_type, verbose)
+
+    if 'get_paddle_graph' in configs:
+        return paddle_graph
+
+    auto_update_opset = True
+    if 'auto_update_opset' in configs:
+        if isinstance(configs['auto_update_opset'], bool):
+            auto_update_opset = configs['auto_update_opset']
+        else:
+            raise TypeError(
+                "The auto_update_opset should be 'bool', but received type is %s."
+                % type(configs['auto_update_opset']))
+
+    output_names = None
+    if 'output_names' in configs:
+        output_names = configs['output_names']
+        if not isinstance(output_names, (list, dict)):
+            raise TypeError(
+                "The output_names should be 'list' or dict, but received type is %s."
+                % type(output_names))
+
+    return export_onnx(paddle_graph, save_file, opset_version,
+                       enable_onnx_checker, operator_export_type, verbose,
+                       auto_update_opset, output_names)

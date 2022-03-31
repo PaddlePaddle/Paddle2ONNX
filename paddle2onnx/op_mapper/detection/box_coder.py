@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import numpy as np
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('box_coder')
@@ -216,9 +217,8 @@ class BoxCoder():
         ]
         for (input_name, output_name) in zip(outputs_split_targebox,
                                              outputs_squeeze_targebox):
-            tmp_node = graph.make_node(
-                'Squeeze', inputs=[input_name], outputs=[output_name],
-                axes=[2])
+            tmp_node = mapper_helper.squeeze_helper(graph, input_name, [2],
+                                                    [output_name])
 
         output_shape_step1 = list(t_size)[:-1]
 
@@ -353,11 +353,8 @@ class BoxCoder():
 
         for input_name, output_name in zip(outputs_output_point1,
                                            ouputs_points_unsqueeze):
-            tmp_node = graph.make_node(
-                'Unsqueeze',
-                inputs=input_name,
-                outputs=output_name,
-                axes=[len(output_shape_step1)])
+            tmp_node = mapper_helper.unsqueeze_helper(
+                graph, input_name, [len(output_shape_step1)], [output_name])
         outputs_points_unsqueeze_list = [
             output[0] for output in ouputs_points_unsqueeze
         ]

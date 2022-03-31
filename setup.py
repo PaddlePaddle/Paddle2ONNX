@@ -22,7 +22,7 @@ long_description += "Email: dltp-sz@baidu.com"
 
 setuptools.setup(
     name="paddle2onnx",
-    version="0.8.1",
+    version="0.9.2",
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
     description="a toolkit for converting trained model of PaddlePaddle to ONNX.",
@@ -30,7 +30,7 @@ setuptools.setup(
     long_description_content_type="text/plain",
     url="https://github.com/PaddlePaddle/paddle2onnx",
     packages=setuptools.find_packages(),
-    install_requires=['six', 'protobuf', 'onnx'],
+    install_requires=['six', 'protobuf', 'onnx<=1.9.0'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
