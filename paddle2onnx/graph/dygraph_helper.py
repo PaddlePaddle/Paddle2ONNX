@@ -120,28 +120,23 @@ def get_program(layer, input_spec, output_spec, **configs):
             "The Paddle2onnx doesn't work when setting ProgramTranslator.enable to False."
         )
 
-    if not (isinstance(layer, Layer) or inspect.isfunction(layer) or isinstance(
-            layer, StaticFunction)):
+    if not isinstance(layer, Layer):
         raise TypeError(
-            "The input of paddle.jit.save should be 'Layer' or 'Function', but received input type is %s."
+            "The input of paddle2onnx should be 'Layer', but received input type is %s."
             % type(layer))
 
-    if isinstance(layer, paddle.DataParallel):
-        inner_layer = layer._layers
-    else:
-        inner_layer = layer
+    inner_layer = layer
 
     # avoid change user given input_spec
     inner_input_spec = None
     if input_spec is not None:
-        if isinstance(layer, Layer):
-            for attr_func in dir(inner_layer):
-                static_func = getattr(inner_layer, attr_func, None)
-                if isinstance(static_func,
-                              StaticFunction) and 'forward' != attr_func:
-                    raise ValueError(
-                        "If there are static functions other than 'forward' that need to be saved, the input 'input_spec' should be None, but received the type of 'input_spec' is %s."
-                        % type(input_spec))
+        for attr_func in dir(inner_layer):
+            static_func = getattr(inner_layer, attr_func, None)
+            if isinstance(static_func,
+                          StaticFunction) and 'forward' != attr_func:
+                raise ValueError(
+                    "If there are static functions other than 'forward' that need to be saved, the input 'input_spec' should be None, but received the type of 'input_spec' is %s."
+                    % type(input_spec))
 
         if not isinstance(input_spec, (list, tuple)):
             raise TypeError(
@@ -151,7 +146,7 @@ def get_program(layer, input_spec, output_spec, **configs):
         for var in flatten(input_spec):
             if isinstance(var, paddle.static.InputSpec):
                 inner_input_spec.append(var)
-            elif isinstance(var, (core.VarBase, Variable)):
+            elif isinstance(var, (core.VarBase, core.eager.Tensor, Variable)):
                 inner_input_spec.append(
                     paddle.static.InputSpec.from_tensor(var))
             else:
@@ -160,106 +155,29 @@ def get_program(layer, input_spec, output_spec, **configs):
 
     scope = core.Scope()
     extra_var_info = dict()
-    if isinstance(layer, Layer):
-        functions = dir(inner_layer)
-    else:
-        # layer is function
-        functions = [layer, ]
+    functions = dir(inner_layer)
     for attr_func in functions:
-        if isinstance(layer, Layer):
-            static_func = getattr(inner_layer, attr_func, None)
-            if isinstance(static_func, StaticFunction):
-                concrete_program = static_func.concrete_program_specify_input_spec(
-                    inner_input_spec)
-            elif 'forward' == attr_func:
-                # transform in jit.save, if input_spec is incomplete, declarative will throw error
-                # inner_input_spec is list[InputSpec], it should be packed with same structure
-                # as original input_spec here.
-                if inner_input_spec:
-                    inner_input_spec = pack_sequence_as(input_spec,
-                                                        inner_input_spec)
-                static_forward = declarative(
-                    inner_layer.forward, input_spec=inner_input_spec)
-                concrete_program = static_forward.concrete_program
-                # the input_spec has been used in declarative, which is equal to
-                # @declarative with input_spec and jit.save without input_spec,
-                # avoid needless warning
-                inner_input_spec = None
-            else:
-                continue
-
+        static_func = getattr(inner_layer, attr_func, None)
+        if isinstance(static_func, StaticFunction):
+            concrete_program = static_func.concrete_program_specify_input_spec(
+                inner_input_spec)
+        elif 'forward' == attr_func:
+            # transform in jit.save, if input_spec is incomplete, declarative will throw error
+            # inner_input_spec is list[InputSpec], it should be packed with same structure
+            # as original input_spec here.
+            if inner_input_spec:
+                inner_input_spec = pack_sequence_as(input_spec,
+                                                    inner_input_spec)
+            static_forward = declarative(
+                inner_layer.forward, input_spec=inner_input_spec)
+            concrete_program = static_forward.concrete_program
+            # the input_spec has been used in declarative, which is equal to
+            # @declarative with input_spec and jit.save without input_spec,
+            # avoid needless warning
+            inner_input_spec = None
         else:
-            # When layer is a function
-            if isinstance(attr_func, StaticFunction):
-                concrete_program = attr_func.concrete_program_specify_input_spec(
-                    inner_input_spec)
-            else:
-                if inner_input_spec:
-                    inner_input_spec = pack_sequence_as(input_spec,
-                                                        inner_input_spec)
-                static_function = declarative(
-                    attr_func, input_spec=inner_input_spec)
-                concrete_program = static_function.concrete_program
+            continue
 
-                if static_function._class_instance is None:
-                    warnings.warn(
-                        '`jit.save` will only save the `Program`, not the parameters. If you have to save the parameters, please make sure that {} is a member function of `paddle.nn.Layer` and the saved parameters are in `state_dict`'.
-                        format(layer))
-
-        dygraph_state_dict = None
-        if isinstance(inner_layer, Layer):
-            dygraph_state_dict = inner_layer.to_static_state_dict()
-        elif isinstance(attr_func, StaticFunction):
-            if attr_func._class_instance:
-                dygraph_state_dict = attr_func._class_instance.to_static_state_dict(
-                )
-
-        if dygraph_state_dict:
-            # NOTE(chenweihang): we maintain the mapping of variable name to
-            # structured name, the buffer variable (non-persistable)
-            # saved to inference program may not need by dygraph Layer,
-            # we only record the state_dict variable's structured name
-            state_names_dict = dict()
-            state_var_dict = dict()
-            for structured_name, var in six.iteritems(dygraph_state_dict):
-                state_names_dict[var.name] = structured_name
-                state_var_dict[var.name] = var
-
-            # 3. share parameters from Layer to scope & record var info
-            for param_or_buffer in concrete_program.parameters:
-                # share to scope
-                if param_or_buffer.type == core.VarDesc.VarType.VOCAB:
-                    scr_tensor = param_or_buffer.value().get_map_tensor()
-                    tgt_var = scope.var(param_or_buffer.name)
-                    tgt_var.set_vocab(scr_tensor)
-                else:
-                    param_or_buffer_tensor = scope.var(
-                        param_or_buffer.name).get_tensor()
-                    #src_tensor = param_or_buffer.value().get_tensor()
-                    src_tensor = state_var_dict[param_or_buffer.name].value(
-                    ).get_tensor()
-                    param_or_buffer_tensor._share_data_with(src_tensor)
-                # record var info
-                if param_or_buffer.name not in extra_var_info:
-                    extra_info_dict = dict()
-                    if param_or_buffer.name in state_names_dict:
-                        extra_info_dict['structured_name'] = state_names_dict[
-                            param_or_buffer.name]
-                    extra_info_dict[
-                        'stop_gradient'] = param_or_buffer.stop_gradient
-                    if isinstance(param_or_buffer, ParamBase):
-                        extra_info_dict['trainable'] = param_or_buffer.trainable
-                    extra_var_info[param_or_buffer.name] = extra_info_dict
-
-        # 4. build input & output of save_infernece_model
-        # NOTE(chenweihang): [ Get input variables name ]
-        # There are two cases, whether to prune the inputs or not
-        # - not prune inputs (recommend):
-        #   - the len(input_spec) == len((concrete_program.inputs) - 1
-        #   - here can use concrete_program.inputs directly
-        # - prune inputs:
-        #   - the input_spec length < len((concrete_program.inputs) - 1
-        #   - the input_spec's name should be in concrete_program.inputs
         input_var_names = _get_input_var_names(concrete_program.inputs,
                                                inner_input_spec)
 
