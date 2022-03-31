@@ -153,7 +153,7 @@ def test_generate_roi_align_lod_aligned_true():
         pooled_height = 2
         pooled_width = 2
         sampling_ratio = 0
-        aligned = True
+        aligned = False
 
         input = fluid.layers.data(
             name='input',
@@ -222,7 +222,7 @@ def test_generate_roi_align_lod_aligned_true():
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
-            opset_version=16,
+            opset_version=12,
             enable_onnx_checker=True)
 
         sess = rt.InferenceSession(onnx_path)
