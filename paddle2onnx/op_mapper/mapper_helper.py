@@ -458,37 +458,50 @@ def static_quantize_pre_convert(graph):
                 continue
             graph.static_quantize_pre_convert_dict[pre_node] = dict()
 
-            weight_key = pre_node.input('Filter', 0)
+            weight_input = pre_node.input('Filter', 0)
+            if weight_input is None:
+                weight_input = pre_node.input('Y', 0)
             update_param, weight = get_param_from_paddle_graph(graph,
-                                                               weight_key)
+                                                               weight_input)
 
             key = node.input('Scales', 0)
             _, weight_scale = get_param_from_paddle_graph(graph, key)
             weight_scale = weight_scale / 127.0
 
             quant_axis = node.attr('quant_axis')
+            if pre_node.type in ["conv2d", "depthwise_conv2d"]:
+                if quant_axis is None:
+                    quant_axis = 0
+                new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
+                new_weight = new_weight.transpose(3, 0, 1, 2)
+                update_param['data'] = new_weight
+                graph.update_parameters(weight_input, update_param)
+                input_shape = pre_node.input_shape('Filter', 0)
+            else:
+                if quant_axis is None:
+                    quant_axis = 1
+                new_weight = weight * weight_scale
+                update_param['data'] = new_weight
+                graph.update_parameters(weight_input, update_param)
+                input_shape = pre_node.input_shape('Y', 0)
 
-            new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
-            new_weight = new_weight.transpose(3, 0, 1, 2)
-            update_param['data'] = new_weight
-            graph.update_parameters(weight_key, update_param)
-
-            input_shape = pre_node.input_shape('Filter', 0)
             scale_node = graph.make_node(
                 'Constant',
                 dtype=dtypes.ONNX.FLOAT,
                 value=weight_scale.tolist())
             zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * input_shape[0])
-            attrs = {'axis': node.attr("quant_axis"), }
+                'Constant',
+                dtype=dtypes.ONNX.INT8,
+                value=[0] * input_shape[quant_axis])
+
             quantize_node = graph.make_node(
                 'QuantizeLinear',
-                inputs=[pre_node.input('Filter', 0), scale_node, zero_node],
-                attrs=attrs)
+                inputs=[weight_input, scale_node, zero_node],
+                axis=quant_axis)
             filter_node = graph.make_node(
                 'DequantizeLinear',
                 inputs=[quantize_node, scale_node, zero_node],
-                attrs=attrs)
+                axis=quant_axis)
             graph.static_quantize_pre_convert_dict[pre_node][
                 "output"] = node.output('Out', 0)
             graph.static_quantize_pre_convert_dict[pre_node][

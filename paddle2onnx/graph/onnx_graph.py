@@ -95,7 +95,6 @@ class ONNXGraph(Graph):
             self.update_opset_version()
         self.static_quantize_pre_convert_dict = dict()
         self.sortcut_optimize = sortcut_optimize
-        print("self.sortcut_optimize:", self.sortcut_optimize)
 
     def detect_model_type(self):
         # this func will detect the model type: float, static, dynamic or new_type

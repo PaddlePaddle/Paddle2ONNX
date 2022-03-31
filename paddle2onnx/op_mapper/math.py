@@ -544,6 +544,9 @@ class Mul():
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', 0)
         y = node.input('Y', 0)
+        if node in graph.static_quantize_pre_convert_dict:
+            x = graph.static_quantize_pre_convert_dict[node]["output"]
+            y = graph.static_quantize_pre_convert_dict[node]["filter"]
         out = node.output('Out', 0)
         x_num_col_dims = node.attr('x_num_col_dims')
         y_num_col_dims = node.attr('y_num_col_dims')

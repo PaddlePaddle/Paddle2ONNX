@@ -381,11 +381,20 @@ class Fake_quantize_moving_average_abs_max():
             'Constant',
             dtype=dtypes.ONNX.FLOAT,
             value=[float(in_scale[0]) / 127.0])
+        if graph.quantize_model_mode in ["static"]:
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[input_node_name, scale_node, zero_node])
+            graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                outputs=node.output('Out', 0))
+        else:
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[input_node_name, scale_node, zero_node],
+                outputs=node.output('Out', 0))
 
-        quantize_node = graph.make_node(
-            'QuantizeLinear',
-            inputs=[input_node_name, scale_node, zero_node],
-            outputs=node.output('Out', 0))
         if not graph.sortcut_optimize:
             return
         if input_node_name in graph.changed_dict.keys():
