@@ -35,7 +35,7 @@ class Net(BaseNet):
             if self.config['isTensor13']:
                 axis = axis * 1
         x = paddle.unsqueeze(inputs, axis=axis)
-        return x + 1
+        return x
 
 
 class TestUnsqueezeConvert(OPConvertAutoScanTest):
@@ -84,7 +84,6 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
             "axis": axis,
             "isTensor": isTensor,
             "isTensor13": isTensor13,
-            "use_gpu": False
         }
 
         models = Net(config)
