@@ -125,7 +125,10 @@ def get_program(layer, input_spec, output_spec, **configs):
             "The input of paddle2onnx should be 'Layer', but received input type is %s."
             % type(layer))
 
-    inner_layer = layer
+    if isinstance(layer, paddle.DataParallel):
+        inner_layer = layer._layers
+    else:
+        inner_layer = layer
 
     # avoid change user given input_spec
     inner_input_spec = None
@@ -153,7 +156,6 @@ def get_program(layer, input_spec, output_spec, **configs):
                 # NOTE(Aurelius84): Support non-Tensor type in `input_spec`.
                 inner_input_spec.append(var)
 
-    scope = core.Scope()
     extra_var_info = dict()
     functions = dir(inner_layer)
     for attr_func in functions:
