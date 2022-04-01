@@ -46,15 +46,11 @@ class TestMishConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=5, max_value=20), min_size=1, max_size=4))
 
-        def generator_data():
-            input_data = randtool("float", -30, 30, input_shape)
-            return input_data
-
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
             "op_names": ["mish"],
-            "test_data_shapes": [generator_data],
+            "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [9, 13, 15],
             "input_spec_shape": [],

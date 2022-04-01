@@ -215,24 +215,8 @@ class Mish():
             inputs = graph.make_node(
                 'Cast', inputs=[inputs], to=dtypes.ONNX.FLOAT)
             dtype = paddle.float32
-
-        threshold = node.attr('threshold')
-        threshold_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': [threshold]})
-
         softplus_node = graph.make_node('Softplus', inputs=[inputs])
-
-        condition_dtype = graph.make_node(
-            "Less", inputs=[inputs, threshold_node])
-        condition = graph.make_node(
-            'Cast', inputs=[condition_dtype], to=dtypes.ONNX.BOOL)
-
-        condition_res = graph.make_node(
-            "Where", inputs=[condition, softplus_node, inputs])
-
-        tanh_node = graph.make_node('Tanh', inputs=[condition_res])
+        tanh_node = graph.make_node('Tanh', inputs=[softplus_node])
         if node.input_dtype("X", 0) != paddle.float32:
             mul_node = graph.make_node('Mul', inputs=[inputs, tanh_node])
             inputs = graph.make_node(
