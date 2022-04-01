@@ -32,9 +32,6 @@ class Conv():
     def opset_1(cls, graph, node, **kw):
         filter_node = node.input('Filter', 0)
         output_name = node.output('Output', 0)
-        if node in graph.static_quantize_pre_convert_dict:
-            output_name = graph.static_quantize_pre_convert_dict[node]["output"]
-            filter_node = graph.static_quantize_pre_convert_dict[node]["filter"]
 
         kernel_shape = node.input_shape('Filter', 0)
         dilations = node.attr('dilations')

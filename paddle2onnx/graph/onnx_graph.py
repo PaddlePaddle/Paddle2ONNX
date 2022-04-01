@@ -272,6 +272,8 @@ class ONNXGraph(Graph):
         # build op nodes
         for name, node in list(node_map.items()):
             OpMapper.mapping(self, node, self.operator_export_type)
+        if self.quantize_model_mode in ["static"]:
+            mapper_helper.static_quantize_post_process(self)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(

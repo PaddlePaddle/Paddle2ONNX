@@ -456,7 +456,6 @@ def static_quantize_pre_convert(graph):
                 outputs = outputs + output
             if ipt not in outputs:
                 continue
-            graph.static_quantize_pre_convert_dict[pre_node] = dict()
 
             weight_input = pre_node.input('Filter', 0)
             if weight_input is None:
@@ -504,10 +503,29 @@ def static_quantize_pre_convert(graph):
                 'DequantizeLinear',
                 inputs=[quantize_node, scale_node, zero_node],
                 axis=quant_axis)
-            graph.static_quantize_pre_convert_dict[pre_node][
-                "output"] = node.output('Out', 0)
-            graph.static_quantize_pre_convert_dict[pre_node][
-                "filter"] = filter_node
+            try:
+                outputs = pre_node.output('Out', 0)
+            except:
+                outputs = pre_node.output('Output', 0)
+            graph.static_quantize_pre_convert_dict[outputs] = node.output('Out',
+                                                                          0)
+            graph.static_quantize_pre_convert_dict[weight_input] = filter_node
+
+
+def static_quantize_post_process(graph):
+    for name, node in graph.node_map.items():
+        if node.type in ["QuantizeLinear", "DequantizeLinear"]:
+            continue
+        inputs = node.inputs
+        outputs = node.outputs
+        for index in range(len(inputs)):
+            if inputs[index] in graph.static_quantize_pre_convert_dict:
+                inputs[index] = graph.static_quantize_pre_convert_dict[inputs[
+                    index]]
+        for index in range(len(outputs)):
+            if outputs[index] in graph.static_quantize_pre_convert_dict:
+                outputs[index] = graph.static_quantize_pre_convert_dict[outputs[
+                    index]]
 
 
 def np_topk_helper(matrix, K, axis=1):
