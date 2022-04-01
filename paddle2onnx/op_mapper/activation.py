@@ -216,7 +216,9 @@ class Mish():
                 'Cast', inputs=[inputs], to=dtypes.ONNX.FLOAT)
             dtype = paddle.float32
         threshold = node.attr('threshold')
-        assert threshold == 20, "In mish OP, the threshold only supports 20, no other values are supported"
+        assert np.fabs(
+            threshold - 20
+        ) < 1e-4, "In mish OP, the threshold only supports 20, no other values are supported"
         softplus_node = graph.make_node('Softplus', inputs=[inputs])
         tanh_node = graph.make_node('Tanh', inputs=[softplus_node])
         if node.input_dtype("X", 0) != paddle.float32:
