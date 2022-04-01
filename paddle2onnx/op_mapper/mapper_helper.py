@@ -494,7 +494,7 @@ def static_quantize_pre_convert(graph):
             zero_node = graph.make_node(
                 'Constant',
                 dtype=dtypes.ONNX.INT8,
-                value=[0] * input_shape[quant_axis])
+                value=[0] * len(weight_scale.tolist()))
 
             quantize_node = graph.make_node(
                 'QuantizeLinear',
