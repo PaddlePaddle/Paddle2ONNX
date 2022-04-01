@@ -465,6 +465,8 @@ def static_quantize_pre_convert(graph):
                                                                weight_input)
 
             key = node.input('Scales', 0)
+            if key is None:
+                key = node.input('Scale', 0)
             _, weight_scale = get_param_from_paddle_graph(graph, key)
             weight_scale = weight_scale / 127.0
 

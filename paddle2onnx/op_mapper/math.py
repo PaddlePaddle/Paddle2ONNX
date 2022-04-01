@@ -544,10 +544,10 @@ class Mul():
     def opset_1(cls, graph, node, **kw):
         x = node.input('X', 0)
         y = node.input('Y', 0)
-        if node in graph.static_quantize_pre_convert_dict:
-            x = graph.static_quantize_pre_convert_dict[node]["output"]
-            y = graph.static_quantize_pre_convert_dict[node]["filter"]
         out = node.output('Out', 0)
+        if node in graph.static_quantize_pre_convert_dict:
+            y = graph.static_quantize_pre_convert_dict[node]["filter"]
+            out = graph.static_quantize_pre_convert_dict[node]["output"]
         x_num_col_dims = node.attr('x_num_col_dims')
         y_num_col_dims = node.attr('y_num_col_dims')
         flatten_x = graph.make_node(
@@ -565,7 +565,7 @@ class Mul():
             graph, y_shape, axes=[0], starts=[y_num_col_dims], ends=[y_rank])
 
         out_shape = graph.make_node('Concat', inputs=[l_shape, r_shape], axis=0)
-        graph.make_node('Reshape', [mul_node, out_shape], node.output('Out'))
+        graph.make_node('Reshape', [mul_node, out_shape], [out])
 
 
 @op_mapper('affine_channel')

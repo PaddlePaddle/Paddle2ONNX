@@ -444,6 +444,8 @@ class Fake_dequantize_max_abs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
+        if graph.quantize_model_mode in ["static"]:
+            return
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
 
