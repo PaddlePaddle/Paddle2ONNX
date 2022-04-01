@@ -1,4 +1,4 @@
-# 用python版TensorRT部署onnx模型
+# 用python版TensorRT部署Paddle模型
 
 ## 一.环境搭建
 ###1.TensorRT包下载安装
