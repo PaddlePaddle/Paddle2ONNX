@@ -100,7 +100,7 @@ class ONNXGraph(Graph):
         # this func will detect the model type: float, static, dynamic or new_type
         quantize_ops = False
         for layer_name, node in self.ctx.node_map.items():
-            if node.type.count("fake"):
+            if node.type.count("quantize"):
                 quantize_ops = True
                 break
         if not quantize_ops:
@@ -109,7 +109,7 @@ class ONNXGraph(Graph):
         static_quantize_model = False
         for layer_name, node in self.ctx.node_map.items():
             if node.type in ["dequantize_linear", "quantize_linear"]:
-                return new_type
+                return "new_type"
             if node.type.count("conv") or node.type.count("matmul"):
                 output_node_type = []
                 for key, value in node.outputs.items():

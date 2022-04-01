@@ -63,6 +63,8 @@ class Dequantize_linear():
         weight_scale = weight_scale / 127
 
         scale_list = weight_scale.squeeze().tolist()
+        if not isinstance(scale_list, list):
+            scale_list = [scale_list]
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
 
@@ -224,13 +226,8 @@ class Moving_average_abs_max_scale():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        zero_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=[0.])
-
         graph.make_node(
-            'Add',
-            inputs=[node.input('X', 0), zero_node],
-            outputs=node.output('Out'))
+            'Identity', inputs=node.input('X'), outputs=node.output('Out'))
 
 
 @op_mapper('fake_quantize_dequantize_abs_max')
