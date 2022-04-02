@@ -27,7 +27,7 @@ import onnx
 
 
 @op_mapper('quantize_linear')
-class Quantize_linear():
+class QuantizeLinear():
     support_opset_version_range = (13, 15)
 
     @classmethod
@@ -52,7 +52,7 @@ class Quantize_linear():
 
 
 @op_mapper('dequantize_linear')
-class Dequantize_linear():
+class DequantizeLinear():
     support_opset_version_range = (13, 15)
 
     @classmethod
@@ -97,7 +97,7 @@ class Dequantize_linear():
 
 
 @op_mapper('fake_quantize_dequantize_moving_average_abs_max')
-class Fake_quantize_dequantize_moving_average_abs_max():
+class FakeQuantizeDequantizeMovingAverageAbsMax():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -164,7 +164,7 @@ class Fake_quantize_dequantize_moving_average_abs_max():
 
 
 @op_mapper('fake_channel_wise_quantize_dequantize_abs_max')
-class Fake_channel_wise_quantize_dequantize_abs_max():
+class FakeChannelWiseQuantizeDequantizeAbsMax():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -221,7 +221,7 @@ class Fake_channel_wise_quantize_dequantize_abs_max():
 
 
 @op_mapper('moving_average_abs_max_scale')
-class Moving_average_abs_max_scale():
+class MovingAverageAbsMaxScale():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -231,7 +231,7 @@ class Moving_average_abs_max_scale():
 
 
 @op_mapper('fake_quantize_dequantize_abs_max')
-class Fake_quantize_dequantize_abs_max():
+class FakeQuantizeDequantizeAbsMax():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -276,7 +276,7 @@ class Fake_quantize_dequantize_abs_max():
 
 
 @op_mapper('fake_quantize_range_abs_max')
-class Fake_quantize_range_abs_max():
+class FakeQuantizeRangeAbsMax():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -361,7 +361,7 @@ class Fake_quantize_range_abs_max():
 
 
 @op_mapper('fake_quantize_moving_average_abs_max')
-class Fake_quantize_moving_average_abs_max():
+class FakeQuantizeMovingAverageAbsMax():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -436,7 +436,7 @@ class Fake_quantize_moving_average_abs_max():
 
 
 @op_mapper('fake_dequantize_max_abs')
-class Fake_dequantize_max_abs():
+class FakeDequantizeMaxAbs():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -462,7 +462,7 @@ class Fake_dequantize_max_abs():
 
 
 @op_mapper('fake_channel_wise_quantize_abs_max')
-class Fake_channel_wise_quantize_abs_max():
+class FakeChannelWiseQuantizeAbsMax():
     support_opset_version_range = (10, 13)
 
     @classmethod
@@ -522,7 +522,7 @@ class Fake_channel_wise_quantize_abs_max():
 
 
 @op_mapper('fake_channel_wise_dequantize_max_abs')
-class Fake_channel_wise_dequantize_max_abs():
+class FakeChannelWiseDequantizeMaxAbs():
     support_opset_version_range = (10, 13)
 
     @classmethod
