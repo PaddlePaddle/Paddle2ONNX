@@ -203,6 +203,36 @@ class Swish():
             outputs=node.output('Out'))
 
 
+@op_mapper('mish')
+class Mish():
+    support_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        inputs = node.input('X', 0)
+        dtype = node.input_dtype("X", 0)
+        if dtype != paddle.float32:
+            inputs = graph.make_node(
+                'Cast', inputs=[inputs], to=dtypes.ONNX.FLOAT)
+            dtype = paddle.float32
+        threshold = node.attr('threshold')
+        assert np.fabs(
+            threshold - 20
+        ) < 1e-4, "In mish OP, the threshold only supports 20, no other values are supported"
+        softplus_node = graph.make_node('Softplus', inputs=[inputs])
+        tanh_node = graph.make_node('Tanh', inputs=[softplus_node])
+        if node.input_dtype("X", 0) != paddle.float32:
+            mul_node = graph.make_node('Mul', inputs=[inputs, tanh_node])
+            inputs = graph.make_node(
+                'Cast',
+                inputs=[mul_node],
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype("X", 0)],
+                outputs=node.output('Out'))
+        else:
+            graph.make_node(
+                'Mul', inputs=[inputs, tanh_node], outputs=node.output('Out'))
+
+
 @op_mapper('hard_swish')
 class HardSwish():
     support_opset_version_range = (7, 15)
