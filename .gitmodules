@@ -1,0 +1,9 @@
+[submodule "csrcs/third/onnx"]
+	path = csrcs/third/onnx
+	url = https://github.com/onnx/onnx.git
+[submodule "csrcs/third/optimizer"]
+	path = csrcs/third/optimizer
+	url = https://github.com/onnx/optimizer.git
+[submodule "csrcs/third/pybind11"]
+	path = csrcs/third/pybind11
+	url = https://github.com/pybind/pybind11.git
