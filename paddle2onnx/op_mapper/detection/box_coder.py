@@ -354,7 +354,7 @@ class BoxCoder():
         for input_name, output_name in zip(outputs_output_point1,
                                            ouputs_points_unsqueeze):
             tmp_node = mapper_helper.unsqueeze_helper(
-                graph, input_name, [len(output_shape_step1)], [output_name])
+                graph, input_name, [len(output_shape_step1)], output_name)
         outputs_points_unsqueeze_list = [
             output[0] for output in ouputs_points_unsqueeze
         ]
