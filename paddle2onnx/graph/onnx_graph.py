@@ -24,7 +24,7 @@ from paddle2onnx.op_mapper import OpMapper
 from onnx import helper
 from paddle2onnx.utils import check_model, logging
 from onnx import TensorProto
-from paddle2onnx.op_mapper import mapper_helper
+from paddle2onnx.graph import graph_helper
 
 
 class ONNXNode(Node):
@@ -268,12 +268,12 @@ class ONNXGraph(Graph):
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
         if self.quantize_model_mode in ["static"]:
-            mapper_helper.static_quantize_pre_convert(self)
+            graph_helper.static_quantize_pre_convert(self)
         # build op nodes
         for name, node in list(node_map.items()):
             OpMapper.mapping(self, node, self.operator_export_type)
         if self.quantize_model_mode in ["static"]:
-            mapper_helper.static_quantize_post_process(self)
+            graph_helper.static_quantize_post_process(self)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(

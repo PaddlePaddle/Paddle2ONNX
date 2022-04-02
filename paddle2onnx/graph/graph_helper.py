@@ -20,6 +20,8 @@ import numpy as np
 from paddle.fluid import core
 from paddle.fluid.framework import Variable, program_guard
 from paddle2onnx.utils import logging
+from paddle2onnx.op_mapper import mapper_helper
+from paddle2onnx.constant import dtypes
 
 
 def prepend_feed_ops(inference_program,
@@ -81,3 +83,88 @@ def get_program(program, feed_var_names, fetch_vars):
     prepend_feed_ops(program, feed_var_names)
     append_fetch_ops(program, fetch_var_names)
     return program
+
+
+def static_quantize_pre_convert(graph):
+    for name, node in graph.ctx.node_map.items():
+        if not node.type.count("dequantize"):
+            continue
+        ipt = node.inputs["X"][0]
+        for pre_name, pre_node in graph.ctx.node_map.items():
+            pre_outputs = pre_node.outputs
+            outputs = []
+            for _, output in pre_outputs.items():
+                outputs = outputs + output
+            if ipt not in outputs:
+                continue
+
+            weight_input = pre_node.input('Filter', 0)
+            if weight_input is None:
+                weight_input = pre_node.input('Y', 0)
+            update_param, weight = mapper_helper.get_param_from_paddle_graph(
+                graph, weight_input)
+
+            key = node.input('Scales', 0)
+            if key is None:
+                key = node.input('Scale', 0)
+            _, weight_scale = mapper_helper.get_param_from_paddle_graph(graph,
+                                                                        key)
+            weight_scale = weight_scale / 127.0
+
+            quant_axis = node.attr('quant_axis')
+            if pre_node.type in ["conv2d", "depthwise_conv2d"]:
+                if quant_axis is None:
+                    quant_axis = 0
+                new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
+                new_weight = new_weight.transpose(3, 0, 1, 2)
+                update_param['data'] = new_weight
+                graph.update_parameters(weight_input, update_param)
+                input_shape = pre_node.input_shape('Filter', 0)
+            else:
+                if quant_axis is None:
+                    quant_axis = 1
+                new_weight = weight * weight_scale
+                update_param['data'] = new_weight
+                graph.update_parameters(weight_input, update_param)
+                input_shape = pre_node.input_shape('Y', 0)
+
+            scale_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.FLOAT,
+                value=weight_scale.tolist())
+            zero_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT8,
+                value=[0] * len(weight_scale.tolist()))
+
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[weight_input, scale_node, zero_node],
+                axis=quant_axis)
+            filter_node = graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                axis=quant_axis)
+            try:
+                outputs = pre_node.output('Out', 0)
+            except:
+                outputs = pre_node.output('Output', 0)
+            graph.static_quantize_pre_convert_dict[outputs] = node.output('Out',
+                                                                          0)
+            graph.static_quantize_pre_convert_dict[weight_input] = filter_node
+
+
+def static_quantize_post_process(graph):
+    for name, node in graph.node_map.items():
+        if node.type in ["QuantizeLinear", "DequantizeLinear"]:
+            continue
+        inputs = node.inputs
+        outputs = node.outputs
+        for index in range(len(inputs)):
+            if inputs[index] in graph.static_quantize_pre_convert_dict:
+                inputs[index] = graph.static_quantize_pre_convert_dict[inputs[
+                    index]]
+        for index in range(len(outputs)):
+            if outputs[index] in graph.static_quantize_pre_convert_dict:
+                outputs[index] = graph.static_quantize_pre_convert_dict[outputs[
+                    index]]
