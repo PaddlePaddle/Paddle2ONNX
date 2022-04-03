@@ -55,6 +55,8 @@ paddle2onnx --model_dir . \
 
 转换成功后您将会看到一个新生成的ONNX模型： `mbnv3s1.onnx`. 
 
+> ***[  NOTE] 如果您想直接使用已经转换好的ONNX模型,可以在这里下载: [mbnv3s1.onnx](https://1drv.ms/u/s!Asflam6BEzhjgbM7SRi4n3QvJiEYvA?e=1wauIp).***
+
 
 ## 2. ONNX --> Coreml模型
 
@@ -126,9 +128,9 @@ model.save(saved_model_path)
 
 ## 3. 在Swift项目中导入CoreML模型
 
-现在,请先解压 [Swift项目](../assets/CoreMLMobileNetV3.zip).
+现在,请先下载并且解压 [Swift项目](https://1drv.ms/u/s!Asflam6BEzhjgbM60qZQ3roZRTSsIg?e=vkLmmg) 到您的Mac电脑上.
 
-然后把已经转换好的 [mobilenetv3.mlmodel](./mbnv3s1_op9_sim.onnx) 拖拽进入Swift项目, 如下图:
+然后把已经转换好的 mobilenetv3.mlmodel 拖拽进入Swift项目, 如下图:
 
 ![Swift项目图](../assets/projectfiles.png)
 
