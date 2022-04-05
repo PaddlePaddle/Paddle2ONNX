@@ -13,7 +13,7 @@
 
 ## 1. 转换Paddle --> ONNX 模型
 
-本片教程将使用Anaconda来创建虚拟环境, 所以在开始转换之前,请确保您已经[安装好Anaconda](https://docs.anaconda.com/anaconda/install/index.html).
+本教程将使用Anaconda来创建虚拟环境, 所以在开始转换之前,请确保您已经[安装好Anaconda](https://docs.anaconda.com/anaconda/install/index.html).
 
 ### 1. 创建一个新的conda环境
 
