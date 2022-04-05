@@ -1,4 +1,4 @@
-# 用python版TensorRT部署onnx模型
+# 用python版TensorRT部署Paddle模型
 
 ## 一.环境搭建
 ###1.TensorRT包下载安装
@@ -24,18 +24,24 @@ pip install numpy
 ```python
 import trt_backend
 import numpy as np
-import onnx
+import paddle2onnx
+import paddle
+paddle.set_device('cpu')
+paddle_model = paddle.jit.load("model/model")
+onnx_model = paddle2onnx.run_convert(paddle_model, opset_version=11)
 
-model_file = "model.onnx"
-# 使用onnx加载模型
-model = onnx.load(model_file)
+# 优化onnx模型，可选
+import onnxsim
+onnx_model, optimized = onnxsim.simplify(onnx_model, input_shapes={"input": [12, 80]}, dynamic_input_shape=True, skipped_optimizers=["extract_constant_to_initializer"])↩
+if not optimized:
+    print("Optimize the onnx model failed")
 
 # 使用trt_backend中接口，初始化TensorRT引擎
 # 静态shape
-trt_engine = trt_backend.TrtEngine(model, max_batch_size=16, static_shape=True)
+trt_engine = trt_backend.TrtEngine(onnx_model, max_batch_size=16, static_shape=True)
 
 # 动态shape. 需要配置shape_info(字典结构)，key为输入名， value为[该输入在推理中的最小形状(min_shape)、最常用的形状(opt_shape)、最大形状(max_shape)]
-trt_engine = trt_backend.TrtEngine(model, shape_info={"input" :[[1, 80], [10, 80], [16, 80]]}, max_batch_size=16, static_shape=False)
+trt_engine = trt_backend.TrtEngine(onnx_model, shape_info={"input" :[[1, 80], [10, 80], [16, 80]]}, max_batch_size=16, static_shape=False)
 
 #准备数据
 data = np.random.rand(8, 80).astype("float32")
