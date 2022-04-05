@@ -15,8 +15,17 @@
 
 相较于转换MobileNetV3模型, 在转换PicoDet模型的时候 多了**Step 0**. 在这一步,我们需要更多的处理来为最终的CoreML模型转换做准备. 而这个更多的步骤就发生在整个模型转换过程的最开始. 
 
-> ***Note:***
-> ***由于CoreML目前还不支持 Range, NonMaximumSuppression(NMS), 所以我们在已开始导出前就要指定不导出NMS模块. 同时由于CoreML不允许多个模块的输出有同样的名字,而PicoDet的4个MatMul模块用了同样的输出名字 `auto_4_` 所以我们也需要把postprocess在导出过程中屏蔽掉. 这就是为什么会有 Step 0.***
+> ***Note 1:***
+> ***由于CoreML目前还不支持 Range, NonMaximumSuppression(NMS), 所以我们在已开始导出前就要指定不导出NMS模块. 
+
+<div style="width:100%; display:flex;">
+    <img style="width:250px; margin: auto;" src="../assets/MatMul_issues_PicoDet_postprocess.png" />
+</div>
+
+> ***Note 2:***
+> 同时由于CoreML不允许多个模块的输出有同样的名字,而PicoDet的4个MatMul模块用了同样的输出名字 `auto_4_` 所以我们也需要把postprocess在导出过程中屏蔽掉. 这就是为什么会有 Step 0.***
+
+Okay, 原因介绍完了, 那么我们开始实际操作.
 
 首先需要克隆PaddleDetection项目:
 
