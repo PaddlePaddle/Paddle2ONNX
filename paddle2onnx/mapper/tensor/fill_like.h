@@ -33,7 +33,7 @@ class FillLikeMapper : public Mapper {
   }
 
   int32_t GetMinOpset(bool verbose = false) {
-    Logger(verbose) << RequireOpset(9) << std::endl;
+    Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
   void Opset9();

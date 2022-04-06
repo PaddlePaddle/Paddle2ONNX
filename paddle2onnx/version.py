@@ -18,4 +18,4 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 version = '0.9.3'
-git_version = '5c9dd5d7f090506760ffcdfda81c66de81b169f2'
+git_version = '560238c1350f26dcfae7cc0924018ee0189e111f'

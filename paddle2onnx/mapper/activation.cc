@@ -50,7 +50,7 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
     }
   }
   if (OpType() == "round") {
-    Logger(verbose) << RequireOpset(11) << std::endl;
+    Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
   return 7;
