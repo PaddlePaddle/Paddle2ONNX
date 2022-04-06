@@ -148,7 +148,7 @@ saved_model_path = root / "picodet640"
 model.save(saved_model_path)
 ```
 
-由于苹果并没有直接使用这些Mean和Std这些参数， 而是使用了自己定义的 `image_scale`和各个颜色通道的`bias`来表达`mea    ns`以及`std`. 所以我们需要自己计算 `image_scale`以及各个通道的 `bias`. 
+由于苹果并没有直接使用这些Mean和Std这些参数， 而是使用了自己定义的 `image_scale`和各个颜色通道的`bias`来表达`mean`以及`std`. 所以我们需要自己计算 `image_scale`以及各个通道的 `bias`. 
 这里要划重点，下面的转换公式需要记住：
 
 `output[channel] = (input[channel] - mean [channel]) / std [channel]`
