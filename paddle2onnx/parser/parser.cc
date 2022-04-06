@@ -393,8 +393,8 @@ TensorInfo PaddleParser::GetTensorInfo(
 
 bool PaddleParser::OpHasInput(int64_t block_id, int64_t op_id,
                               const std::string& name) const {
-  auto block = prog->blocks(block_id);
-  auto op = block.ops(op_id);
+  auto& block = prog->blocks(block_id);
+  auto& op = block.ops(op_id);
   for (auto i = 0; i < op.inputs_size(); ++i) {
     if (op.inputs(i).parameter() == name) {
       if (op.inputs(i).arguments_size() > 0) {
@@ -407,8 +407,8 @@ bool PaddleParser::OpHasInput(int64_t block_id, int64_t op_id,
 
 std::vector<TensorInfo> PaddleParser::GetOpInput(
     int64_t block_id, int64_t op_id, const std::string& name) const {
-  auto block = prog->blocks(block_id);
-  auto op = block.ops(op_id);
+  auto& block = prog->blocks(block_id);
+  auto& op = block.ops(op_id);
   std::vector<TensorInfo> inputs;
   bool found = false;
   for (auto i = 0; i < op.inputs_size(); ++i) {
@@ -426,8 +426,8 @@ std::vector<TensorInfo> PaddleParser::GetOpInput(
 
 bool PaddleParser::OpHasOutput(int64_t block_id, int64_t op_id,
                                const std::string& name) const {
-  auto block = prog->blocks(block_id);
-  auto op = block.ops(op_id);
+  auto& block = prog->blocks(block_id);
+  auto& op = block.ops(op_id);
   for (auto i = 0; i < op.outputs_size(); ++i) {
     if (op.outputs(i).parameter() == name) {
       if (op.outputs(i).arguments_size() > 0) {
@@ -440,8 +440,8 @@ bool PaddleParser::OpHasOutput(int64_t block_id, int64_t op_id,
 
 std::vector<TensorInfo> PaddleParser::GetOpOutput(
     int64_t block_id, int64_t op_id, const std::string& name) const {
-  auto block = prog->blocks(block_id);
-  auto op = block.ops(op_id);
+  auto& block = prog->blocks(block_id);
+  auto& op = block.ops(op_id);
   std::vector<TensorInfo> outputs;
   bool found = false;
   for (auto i = 0; i < op.outputs_size(); ++i) {
@@ -657,7 +657,7 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
 bool PaddleParser::ExistsDumplicateTensorName() const {
   std::set<std::string> names;
   for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
-    auto op = prog->blocks(0).ops(i);
+    auto& op = prog->blocks(0).ops(i);
     for (auto j = 0; j < op.outputs_size(); ++j) {
       for (auto k = 0; k < op.outputs(j).arguments_size(); ++k) {
         if (op.type() == "fetch") {

@@ -193,6 +193,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     _total_ops_num += parser.NumOfOps(i);
   }
+  _helper.nodes.reserve(_total_ops_num * 3);
   Assert(opset_version <= MAX_ONNX_OPSET_VERSION && opset_version >= 7,
          "Paddle2ONNX now only support opset version in range of [7, " +
              std::to_string(MAX_ONNX_OPSET_VERSION) + "].");
