@@ -1,9 +1,12 @@
-[submodule "csrcs/third/onnx"]
-	path = csrcs/third/onnx
+[submodule "third/onnx"]
+	path = third/onnx
 	url = https://github.com/onnx/onnx.git
-[submodule "csrcs/third/optimizer"]
-	path = csrcs/third/optimizer
+	branch = da889e6b95750350726d149bf447bf0cd1245964
+[submodule "third/optimizer"]
+	path = third/optimizer
 	url = https://github.com/onnx/optimizer.git
-[submodule "csrcs/third/pybind11"]
-	path = csrcs/third/pybind11
+	branch = a37748b2c3a80dad4274401c45c5026c7a506730
+[submodule "third/pybind11"]
+	path = third/pybind11
 	url = https://github.com/pybind/pybind11.git
+        branch = master
