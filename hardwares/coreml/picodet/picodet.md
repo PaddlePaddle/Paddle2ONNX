@@ -97,7 +97,7 @@ paddle2onnx --model_dir . --model_filename model.pdmodel \
 
 #### 2. 固定下来模型每个节点的Shape
 
-运行[shape_infer.py](./shape_infer.py)来固定每个节点的shapes.
+运行[shape_infer.py](../shape_infer.py)来固定每个节点的shapes.
 
 ```
 python shape_infer.py --input picodetl640lcnet_op11.onnx --output picodetl640lcnet_op11_shape_infered.onnx
@@ -122,7 +122,7 @@ ONNX阶段转化完毕.
 
 ## 2. ONNX --> Coreml模型
 
-[CoreML](https://developer.apple.com/documentation/coreml)是苹果在iOS平台上模型的格式。 我们需要通过[Coremltools](https://coremltools.readme.io/docs)工具来把ONNX模型转换成为 `.mlmodel`格式的CoreML模型。
+[CoreML](https://developer.apple.com/documentation/coreml)是苹果在iOS平台上的AI框架。 我们需要通过[Coremltools](https://coremltools.readme.io/docs)工具来把ONNX模型转换成为 `.mlmodel`格式的CoreML模型。
 
 ### 1. 配置好转换时候的参数
 
@@ -135,21 +135,20 @@ ONNX阶段转化完毕.
 model = ct.converters.onnx.convert(
     model = "picodetl640lcnet_op11_nonms_nopp_sim.onnx",    
     minimum_ios_deployment_target = '13',
-    class_labels = class_labels,
     preprocessing_args={
         "image_scale": 1./(0.226*255.0),
         "red_bias": - 0.485/(0.229),
         "green_bias":- 0.456/(0.224),
         "blue_bias": - 0.406/(0.225)
     },
-    image_input_names= ["inputs"]
+    image_input_names= ["image"]
 )
 
 saved_model_path = root / "picodet640"
 model.save(saved_model_path)
 ```
 
-由于苹果并没有直接使用这些Mean和Std这些参数， 而是使用了自己定义的 `image_scale`和各个颜色通道的`bias`来表达`means`以及`std`. 所以我们需要自己计算 `image_scale`以及各个通道的 `bias`. 
+由于苹果并没有直接使用这些Mean和Std这些参数， 而是使用了自己定义的 `image_scale`和各个颜色通道的`bias`来表达`mea    ns`以及`std`. 所以我们需要自己计算 `image_scale`以及各个通道的 `bias`. 
 这里要划重点，下面的转换公式需要记住：
 
 `output[channel] = (input[channel] - mean [channel]) / std [channel]`
