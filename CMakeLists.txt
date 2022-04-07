@@ -87,6 +87,15 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     endif()
   endif()
 
+  # find_package Python has replaced PythonInterp and PythonLibs since cmake 3.12
+  # Use the following command in the future; now this is only compatible with the latest pybind11
+  # find_package(Python ${PY_VERSION} COMPONENTS Interpreter Development REQUIRED)
+  find_package(PythonInterp ${PY_VERSION} REQUIRED)
+  find_package(PythonLibs ${PY_VERSION})
+  if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
+    set(CMAKE_NO_SYSTEM_FROM_IMPORTED 1)
+  endif()
+
   add_library(paddle2onnx_cpp2py_export MODULE ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc ${ALL_SRCS})
   set_target_properties(paddle2onnx_cpp2py_export PROPERTIES PREFIX "")
   set_target_properties(paddle2onnx_cpp2py_export
