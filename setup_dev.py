@@ -174,12 +174,6 @@ class cmake_build(setuptools.Command):
                 '-DPY_EXT_SUFFIX={}'.format(
                     sysconfig.get_config_var('EXT_SUFFIX') or ''),
             ]
-            if COVERAGE:
-                cmake_args.append('-DONNX_COVERAGE=ON')
-            if COVERAGE or DEBUG:
-                # in order to get accurate coverage information, the
-                # build needs to turn off optimizations
-                build_type = 'Debug'
             cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
             if WINDOWS:
                 cmake_args.extend([
@@ -189,18 +183,12 @@ class cmake_build(setuptools.Command):
                     '-DPY_VERSION={}'.format('{0}.{1}'.format(* \
                                                               sys.version_info[:2])),
                 ])
-                if USE_MSVC_STATIC_RUNTIME:
-                    cmake_args.append('-DONNX_USE_MSVC_STATIC_RUNTIME=ON')
+#                if USE_MSVC_STATIC_RUNTIME:
+#                    cmake_args.append('-DONNX_USE_MSVC_STATIC_RUNTIME=ON')
                 if platform.architecture()[0] == '64bit':
                     cmake_args.extend(['-A', 'x64', '-T', 'host=x64'])
                 else:
                     cmake_args.extend(['-A', 'Win32', '-T', 'host=x86'])
-            if ONNX_ML:
-                cmake_args.append('-DONNX_ML=1')
-            if ONNX_VERIFY_PROTO3:
-                cmake_args.append('-DONNX_VERIFY_PROTO3=1')
-            if ONNX_BUILD_TESTS:
-                cmake_args.append('-DONNX_BUILD_TESTS=ON')
             if 'CMAKE_ARGS' in os.environ:
                 extra_cmake_args = shlex.split(os.environ['CMAKE_ARGS'])
                 # prevent crossfire with downstream scripts
