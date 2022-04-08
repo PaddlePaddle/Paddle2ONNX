@@ -270,6 +270,21 @@ class APIOnnx(object):
         assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
             self.ops, paddle_op_list)
 
+    def dev_check_ops(self, op_name, model_file_path):
+        from paddle.fluid.proto import framework_pb2
+        prog = framework_pb2.ProgramDesc()
+
+        with open(model_file_path, "rb") as f:
+            prog.ParseFromString(f.read())
+
+        ops = set()
+        find = False
+        for block in prog.blocks:
+            for op in block.ops:
+                if op.type == op_name:
+                    find = True
+        return find
+
     def run(self):
         """
         1. use dygraph layer to make exp
@@ -284,15 +299,52 @@ class APIOnnx(object):
 
             exp = self._mk_dygraph_exp(self._func)
             res_fict = {}
-            # export onnx models and make onnx res
-            for v in self._version:
-                self.check_ops(v)
-                self._dygraph_to_onnx(instance=self._func, ver=v)
-                res_fict[str(v)] = self._mk_onnx_res(ver=v)
+            if os.getenv("ENABLE_DEV", "OFF") == "OFF":
+                # export onnx models and make onnx res
+                for v in self._version:
+                    self.check_ops(v)
+                    self._dygraph_to_onnx(instance=self._func, ver=v)
+                    res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
-            for v in self._version:
-                compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                for v in self._version:
+                    compare(
+                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
 
-            # dygraph model jit save
-            if self.static is True and place == 'gpu':
-                self._dygraph_jit_save(instance=self._func)
+                # dygraph model jit save
+                if self.static is True and place == 'gpu':
+                    self._dygraph_jit_save(instance=self._func)
+            elif os.getenv("ENABLE_DEV", "OFF") == "ON":
+                assert len(
+                    self.ops
+                ) == 1, "Need to make sure the number of ops in config is 1."
+                import shutil
+                if os.path.exists(self.name):
+                    shutil.rmtree(self.name)
+                paddle.jit.save(self._func,
+                                os.path.join(self.name, "model"),
+                                self.input_spec)
+                self.dev_check_ops(self.ops[0],
+                                   os.path.join(self.name, "model.pdmodel"))
+                import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+                model_file = os.path.join(self.name, "model.pdmodel")
+                params_file = os.path.join(self.name, "model.pdiparams")
+                if not os.path.exists(params_file):
+                    params_file = ""
+
+                min_opset_version = min(self._version)
+                max_opset_version = 15
+                for v in range(min_opset_version, 16):
+                    onnx_model_str = c_p2o.export(model_file, params_file, v,
+                                                  False, True, True, True, True)
+                    with open(
+                            os.path.join(self.name,
+                                         self.name + '_' + str(v) + ".onnx"),
+                            "wb") as f:
+                        f.write(onnx_model_str)
+                    res_fict[str(v)] = self._mk_onnx_res(ver=v)
+
+                for v in self._version:
+                    compare(
+                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+            else:
+                print("`export ENABLE_DEV=ON or export ENABLE_DEV=OFF`")

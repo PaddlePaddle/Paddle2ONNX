@@ -26,9 +26,11 @@ class FillConstantMapper : public Mapper {
   }
 
   int32_t GetMinOpset(bool verbose = false);
+  void Opset7();
   void Opset9();
 
  private:
+  float GetFillValue();
   std::string str_value_;
   float value_;
 };
