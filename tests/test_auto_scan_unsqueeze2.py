@@ -32,6 +32,8 @@ class Net(BaseNet):
         axis = self.config['axis']
         if self.config['isTensor']:
             axis = paddle.to_tensor(axis)
+            if self.config['isTensor13']:
+                axis = axis * 1
         x = paddle.unsqueeze(inputs, axis=axis)
         return x
 
@@ -66,15 +68,22 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
                 if draw(st.booleans()):
                     axis = [0, 1, 2]
                 else:
-                    axis = [-3, -1]
+                    axis = [1, 3]
+        isTensor13 = draw(st.booleans())
+        opset_version = [7, 9, 10, 11, 12, 13, 14, 15]
+        if isTensor13:
+            opset_version = [13, 14, 15]
+        if isTensor13 or isTensor:
+            opset_version = opset_version[:-1]
         config = {
             "op_names": ["unsqueeze2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "axis": axis,
             "isTensor": isTensor,
+            "isTensor13": isTensor13,
         }
 
         models = Net(config)
