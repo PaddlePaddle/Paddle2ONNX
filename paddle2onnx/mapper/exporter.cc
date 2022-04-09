@@ -55,6 +55,9 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
                              int64_t op_id, bool verbose) {
   _current_exported_num += 1;
   auto op = parser.GetOpDesc(block_id, op_id);
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true) << "Converting operator: " << op.type() << std::endl;
+#endif
   if (verbose) {
     printf(
         "\rConverting(%.2lf%%)... total number of operators is %d, current "
@@ -70,6 +73,9 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
                                                   block_id, op_id);
   mapper->Run();
   delete mapper;
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true) << "Operator: " << op.type() << " done." << std::endl;
+#endif
 }
 
 // void

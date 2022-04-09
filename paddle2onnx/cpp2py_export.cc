@@ -28,12 +28,14 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
          int opset_version = 9, bool auto_upgrade_opset = true,
          bool verbose = true, bool enable_onnx_checker = true,
          bool enable_experimental_op = true, bool enable_optimize = true) {
+        P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
         auto parser = PaddleParser();
         if (params_filename != "") {
           parser.Init(model_filename, params_filename);
         } else {
           parser.Init(model_filename);
         }
+        P2OLogger(verbose) << "Model loaded, start to converting..." << std::endl;
         ModelExporter me;
         auto onnx_proto = me.Run(parser, opset_version, auto_upgrade_opset,
                                  verbose, enable_onnx_checker,

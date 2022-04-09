@@ -70,7 +70,7 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 }
 
 ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
-  Assert(paddle_dtype >= 0 && paddle_dtype <= 6,
+  Assert((paddle_dtype >= 0 && paddle_dtype <= 6) || paddle_dtype == 20,
          "Unknow paddle data type: " + std::to_string(paddle_dtype) +
              " While call GetOnnxDtype.");
   auto onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT;
@@ -86,8 +86,10 @@ ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT16;
   } else if (paddle_dtype == P2ODataType::FP32) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT;
-  } else {
+  } else if (paddle_dtype == P2ODataType::FP64) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::DOUBLE;
+  } else {
+    onnx_dtype = ONNX_NAMESPACE::TensorProto::UINT8;
   }
   return onnx_dtype;
 }
@@ -384,6 +386,17 @@ std::string OnnxHelper::Concat(const std::vector<std::string>& input,
                                int64_t axis) {
   auto output = MapperHelper::Get()->GenName("helper.concat");
   return Concat(input, output, axis);
+}
+
+std::string OnnxHelper::Transpose(const std::string& input, const std::string& output, const std::vector<int64_t>& perm) {
+  auto node = MakeNode("Transpose", {input}, {output});
+  AddAttribute(node, "perm", perm);
+  return output;
+}
+
+std::string OnnxHelper::Transpose(const std::string& input, const std::vector<int64_t>& perm) {
+  auto output = MapperHelper::Get()->GenName("helper.transpose");
+  return Transpose(input, output, perm);
 }
 
 std::vector<std::string> OnnxHelper::Split(
