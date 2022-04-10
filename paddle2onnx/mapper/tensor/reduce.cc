@@ -20,6 +20,7 @@ REGISTER_MAPPER(reduce_sum, ReduceMapper)
 REGISTER_MAPPER(reduce_min, ReduceMapper)
 REGISTER_MAPPER(reduce_max, ReduceMapper)
 REGISTER_MAPPER(reduce_prod, ReduceMapper)
+REGISTER_MAPPER(logsumexp, ReduceMapper)
 
 void ReduceMapper::Opset7() {
   auto x_info = GetInput("X");
@@ -30,7 +31,13 @@ void ReduceMapper::Opset7() {
   op_map["reduce_min"] = "ReduceMin";
   op_map["reduce_max"] = "ReduceMax";
   op_map["reduce_prod"] = "ReduceProd";
+  op_map["logsumexp"] = "ReduceLogSumExp";
   std::string out = "";
+  bool reduce_all_axes = dim_.size() == x_info[0].Rank();
+  if (reduce_all_) {
+    reduce_all_axes = true;
+  }
+
   if (helper_->GetOpsetVersion() >= 13 && OpType() == "reduce_sum") {
     std::string dims = "";
     if (!reduce_all_) {
@@ -53,8 +60,8 @@ void ReduceMapper::Opset7() {
     AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
     out = reduce_node->output(0);
   }
-  if (!keep_dim_ && out_info[0].Rank() == 1) {
-    out = helper_->Reshape(out, {1});
+  if (!keep_dim_ && reduce_all_axes) {
+    out = helper_->Reshape(out, {-1});
   }
   helper_->AutoCast(out, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
 }

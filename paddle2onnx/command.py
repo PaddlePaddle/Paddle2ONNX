@@ -255,9 +255,10 @@ def main():
                 "--input_shape_dict is deprecated while --enable_dev_version=True."
             )
         model_file = os.path.join(args.model_dir, args.model_filename)
-        params_file = os.path.join(args.model_dir, args.params_filename)
-        if not os.path.exist(params_file):
+        if args.params_filename is None:
             params_file = ""
+        else:
+            params_file = os.path.join(args.model_dir, args.params_filename)
         return c_paddle_to_onnx(
             model_file=model_file,
             params_file=params_file,
