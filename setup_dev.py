@@ -55,14 +55,7 @@ extras_require = {}
 # Default value is set to TRUE\1 to keep the settings same as the current ones.
 # However going forward the recomemded way to is to set this to False\0
 USE_MSVC_STATIC_RUNTIME = bool(os.getenv('USE_MSVC_STATIC_RUNTIME', '1') == '1')
-ONNX_ML = not bool(os.getenv('ONNX_ML') == '0')
-ONNX_VERIFY_PROTO3 = bool(os.getenv('ONNX_VERIFY_PROTO3') == '1')
-ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'onnx')
-ONNX_BUILD_TESTS = bool(os.getenv('ONNX_BUILD_TESTS') == '1')
-
-DEBUG = bool(os.getenv('DEBUG'))
-COVERAGE = bool(os.getenv('COVERAGE'))
-
+ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'paddle2onnx')
 ################################################################################
 # Version
 ################################################################################
@@ -174,6 +167,8 @@ class cmake_build(setuptools.Command):
                 '-DPY_EXT_SUFFIX={}'.format(
                     sysconfig.get_config_var('EXT_SUFFIX') or ''),
             ]
+            #            if os.getenv("PADDLE2ONNX_DEBUG", "OFF") == "ON":
+            #                cmake_args.append("-DPADDLE2ONNX_DEBUG=ON")
             cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
             if WINDOWS:
                 cmake_args.extend([
@@ -183,8 +178,8 @@ class cmake_build(setuptools.Command):
                     '-DPY_VERSION={}'.format('{0}.{1}'.format(* \
                                                               sys.version_info[:2])),
                 ])
-#                if USE_MSVC_STATIC_RUNTIME:
-#                    cmake_args.append('-DONNX_USE_MSVC_STATIC_RUNTIME=ON')
+                #                if USE_MSVC_STATIC_RUNTIME:
+                #                    cmake_args.append('-DONNX_USE_MSVC_STATIC_RUNTIME=ON')
                 if platform.architecture()[0] == '64bit':
                     cmake_args.extend(['-A', 'x64', '-T', 'host=x64'])
                 else:

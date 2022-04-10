@@ -4,8 +4,12 @@ CMAKE_MINIMUM_REQUIRED (VERSION 3.16)
 ADD_SUBDIRECTORY(paddle2onnx)
 
 option(WITH_STATIC              "Compile Paddle2ONNX with  STATIC"               OFF)
+option(PADDLE2ONNX_DEBUG "If open the debug log while converting model" OFF) 
 set(ONNX_CUSTOM_PROTOC_PATH "" CACHE STRING "Set yourself Protobufc path")
 
+if(PADDLE2ONNX_DEBUG)
+  add_definitions(-DPADDLE2ONNX_DEBUG)
+endif()
 # Set C++11 as standard for the whole project
 if(NOT MSVC)
   set(CMAKE_CXX_STANDARD 11)

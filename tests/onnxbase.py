@@ -332,8 +332,8 @@ class APIOnnx(object):
                     params_file = ""
 
                 min_opset_version = min(self._version)
-                max_opset_version = 15
-                for v in range(min_opset_version, 16):
+                self._version = list(range(min_opset_version, 16))
+                for v in self._version:
                     onnx_model_str = c_p2o.export(model_file, params_file, v,
                                                   False, True, True, True, True)
                     with open(

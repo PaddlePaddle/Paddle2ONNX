@@ -256,6 +256,8 @@ def main():
             )
         model_file = os.path.join(args.model_dir, args.model_filename)
         params_file = os.path.join(args.model_dir, args.params_filename)
+        if not os.path.exist(params_file):
+            params_file = ""
         return c_paddle_to_onnx(
             model_file=model_file,
             params_file=params_file,
