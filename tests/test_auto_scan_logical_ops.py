@@ -107,40 +107,39 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30, max_duration=-1)
 
 
-class NetNot(BaseNet):
-    def forward(self, inputs):
-        x = paddle.logical_not(inputs)
-        return x.astype('float32')
-
-
-class TestLogicNotConvert(OPConvertAutoScanTest):
-    """
-    api: logical_not ops
-    OPset version: 7, 9, 15
-    """
-
-    def sample_convert_config(self, draw):
-        input1_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
-
-        dtype = "bool"
-        config = {
-            "op_names": ["logical_not"],
-            "test_data_shapes": [input1_shape],
-            "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
-            "input_spec_shape": []
-        }
-
-        model = NetNot(config)
-
-        return (config, model)
-
-    def test(self):
-        self.run_and_statis(max_examples=30, max_duration=-1)
-
+#class NetNot(BaseNet):
+#    def forward(self, inputs):
+#        x = paddle.logical_not(inputs)
+#        return x.astype('float32')
+#
+#
+#class TestLogicNotConvert(OPConvertAutoScanTest):
+#    """
+#    api: logical_not ops
+#    OPset version: 7, 9, 15
+#    """
+#
+#    def sample_convert_config(self, draw):
+#        input1_shape = draw(
+#            st.lists(
+#                st.integers(
+#                    min_value=10, max_value=20), min_size=2, max_size=4))
+#
+#        dtype = "bool"
+#        config = {
+#            "op_names": ["logical_not"],
+#            "test_data_shapes": [input1_shape],
+#            "test_data_types": [[dtype]],
+#            "opset_version": [7, 9, 15],
+#            "input_spec_shape": []
+#        }
+#
+#        model = NetNot(config)
+#
+#        return (config, model)
+#
+#    def test(self):
+#        self.run_and_statis(max_examples=300, max_duration=-1)
 
 if __name__ == "__main__":
     unittest.main()

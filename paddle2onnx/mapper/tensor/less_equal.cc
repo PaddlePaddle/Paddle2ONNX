@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/greater_equal.h"
+#include "paddle2onnx/mapper/tensor/less_equal.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(greater_equal, GreaterEqualMapper)
+REGISTER_MAPPER(less_equal, LessEqualMapper)
 
-void GreaterEqualMapper::Opset7() {
+void LessEqualMapper::Opset7() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
   auto out_info = GetOutput("Out");
@@ -33,11 +33,11 @@ void GreaterEqualMapper::Opset7() {
         helper_->AutoCast(aligned_inputs[1], out_dtype, P2ODataType::FP32);
   }
 
-  auto out = helper_->MakeNode("Less", aligned_inputs)->output(0);
+  auto out = helper_->MakeNode("Greater", aligned_inputs)->output(0);
   helper_->MakeNode("Not", {out}, {out_info[0].name});
 }
 
-void GreaterEqualMapper::Opset12() {
+void LessEqualMapper::Opset12() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
   auto out_info = GetOutput("Out");
@@ -46,6 +46,6 @@ void GreaterEqualMapper::Opset12() {
   std::vector<std::string> aligned_inputs =
       helper_->DtypeAlignment({x_info[0], y_info[0]}, &out_dtype);
 
-  helper_->MakeNode("GreaterOrEqual", aligned_inputs, {out_info[0].name});
+  helper_->MakeNode("LessOrEqual", aligned_inputs, {out_info[0].name});
 }
 }  // namespace paddle2onnx
