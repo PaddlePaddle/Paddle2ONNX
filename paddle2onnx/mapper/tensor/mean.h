@@ -20,31 +20,12 @@
 
 namespace paddle2onnx {
 
-class ReduceMapper : public Mapper {
+class MeanMapper : public Mapper {
  public:
-  ReduceMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    if (OpType() == "logsumexp") {
-      GetAttr("keepdim", &keep_dim_);
-      GetAttr("reduce_all", &reduce_all_);
-      GetAttr("axis", &dim_);
-    } else {
-      GetAttr("keep_dim", &keep_dim_);
-      GetAttr("reduce_all", &reduce_all_);
-      GetAttr("in_dtype", &in_dtype_);
-      GetAttr("out_dtype", &out_dtype_);
-      GetAttr("dim", &dim_);
-    }
-  }
+  MeanMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+             int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
   void Opset7();
-
- private:
-  bool keep_dim_;
-  bool reduce_all_;
-  int64_t in_dtype_;
-  int64_t out_dtype_;
-  std::vector<int64_t> dim_;
 };
 
 }  // namespace paddle2onnx
