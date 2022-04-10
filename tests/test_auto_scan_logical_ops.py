@@ -139,7 +139,7 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
         return (config, model)
 
     def test(self):
-        self.run_and_statis(max_examples=300, max_duration=-1)
+        self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 if __name__ == "__main__":
