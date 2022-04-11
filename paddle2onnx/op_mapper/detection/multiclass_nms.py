@@ -40,7 +40,7 @@ class MultiClassNMS():
         if len(node.input_shape('Scores', 0)) == 2:
             # inputs: scores & bboxes is lod tensor
             scores = graph.make_node('Transpose', inputs=[scores], perm=[1, 0])
-            scores = graph.make_node('Unsqueeze', inputs=[scores], axes=[0])
+            scores = mapper_helper.unsqueeze_helper(graph, scores, [0])
 
             scores_list = mapper_helper.split_helper(
                 graph, scores, axis=1, split=[1] * num_class, outputs=num_class)
@@ -123,7 +123,7 @@ class MultiClassNMS():
         if class_id is not None and class_id != 0:
             class_id = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT64, value=[0, class_id, 0])
-            class_id = graph.make_node('Unsqueeze', inputs=[class_id], axes=[0])
+            class_id = mapper_helper.unsqueeze_helper(graph, class_id, [0])
             select_bbox_indices = graph.make_node(
                 'Add', inputs=[select_bbox_indices, class_id])
 
@@ -212,8 +212,8 @@ class MultiClassNMS():
             'Constant', dtype=dtypes.ONNX.INT64, value=[0])
         gather_select_num = graph.make_node(
             'Gather', inputs=[shape_select_num, const_zero], axis=0)
-        unsqueeze_select_num = graph.make_node(
-            'Unsqueeze', inputs=[gather_select_num], axes=[0])
+        unsqueeze_select_num = mapper_helper.unsqueeze_helper(
+            graph, gather_select_num, [0])
         concat_topK_select_num = graph.make_node(
             'Concat', inputs=[unsqueeze_select_num, keep_top_k], axis=0)
         cast_concat_topK_select_num = graph.make_node(
@@ -221,7 +221,7 @@ class MultiClassNMS():
         keep_top_k = graph.make_node(
             'ReduceMin', inputs=[cast_concat_topK_select_num], keepdims=0)
         # unsqueeze the indices to 1D tensor
-        keep_top_k = graph.make_node('Unsqueeze', inputs=[keep_top_k], axes=[0])
+        keep_top_k = mapper_helper.unsqueeze_helper(graph, keep_top_k, [0])
         # cast the indices to INT64
         keep_top_k = graph.make_node('Cast', inputs=[keep_top_k], to=7)
 
@@ -256,8 +256,8 @@ class MultiClassNMS():
         cast_topk_class = graph.make_node(
             'Cast', inputs=[gather_topk_class], to=1)
 
-        unsqueeze_topk_scores = graph.make_node(
-            'Unsqueeze', inputs=[gather_topk_scores], axes=[0, 2])
+        unsqueeze_topk_scores = mapper_helper.unsqueeze_helper(
+            graph, gather_topk_scores, [0, 2])
 
         inputs_concat_final_results = [
             cast_topk_class, unsqueeze_topk_scores, gather_select_boxes

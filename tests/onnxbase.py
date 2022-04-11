@@ -36,7 +36,10 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
         if res is False:
-            diff = abs(result - expect)
+            if result.dtype == np.bool_:
+                diff = abs(result.astype("int32") - expect.astype("int32"))
+            else:
+                diff = abs(result - expect)
             logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
         if result.dtype != expect.dtype:
             logging.error(
@@ -45,12 +48,14 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         assert res
         assert result.shape == expect.shape
         assert result.dtype == expect.dtype
-    elif type(result) == list or type(result) == tuple:
+    elif type(result) == list and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
                 compare(result[i], expect[i], delta, rtol)
             else:
                 compare(result[i].numpy(), expect[i], delta, rtol)
+    elif len(result) == 1:
+        compare(result[0], expect, delta, rtol)
 
 
 def randtool(dtype, low, high, shape):
@@ -234,9 +239,7 @@ class APIOnnx(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
                          '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
-        if len(ort_outs) > 1:
-            return ort_outs
-        return ort_outs[0]
+        return ort_outs
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
         """
@@ -270,6 +273,21 @@ class APIOnnx(object):
         assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
             self.ops, paddle_op_list)
 
+    def dev_check_ops(self, op_name, model_file_path):
+        from paddle.fluid.proto import framework_pb2
+        prog = framework_pb2.ProgramDesc()
+
+        with open(model_file_path, "rb") as f:
+            prog.ParseFromString(f.read())
+
+        ops = set()
+        find = False
+        for block in prog.blocks:
+            for op in block.ops:
+                if op.type == op_name:
+                    find = True
+        return find
+
     def run(self):
         """
         1. use dygraph layer to make exp
@@ -284,15 +302,52 @@ class APIOnnx(object):
 
             exp = self._mk_dygraph_exp(self._func)
             res_fict = {}
-            # export onnx models and make onnx res
-            for v in self._version:
-                self.check_ops(v)
-                self._dygraph_to_onnx(instance=self._func, ver=v)
-                res_fict[str(v)] = self._mk_onnx_res(ver=v)
+            if os.getenv("ENABLE_DEV", "OFF") == "OFF":
+                # export onnx models and make onnx res
+                for v in self._version:
+                    self.check_ops(v)
+                    self._dygraph_to_onnx(instance=self._func, ver=v)
+                    res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
-            for v in self._version:
-                compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                for v in self._version:
+                    compare(
+                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
 
-            # dygraph model jit save
-            if self.static is True and place == 'gpu':
-                self._dygraph_jit_save(instance=self._func)
+                # dygraph model jit save
+                if self.static is True and place == 'gpu':
+                    self._dygraph_jit_save(instance=self._func)
+            elif os.getenv("ENABLE_DEV", "OFF") == "ON":
+                assert len(
+                    self.ops
+                ) == 1, "Need to make sure the number of ops in config is 1."
+                import shutil
+                if os.path.exists(self.name):
+                    shutil.rmtree(self.name)
+                paddle.jit.save(self._func,
+                                os.path.join(self.name, "model"),
+                                self.input_spec)
+                self.dev_check_ops(self.ops[0],
+                                   os.path.join(self.name, "model.pdmodel"))
+                import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+                model_file = os.path.join(self.name, "model.pdmodel")
+                params_file = os.path.join(self.name, "model.pdiparams")
+                if not os.path.exists(params_file):
+                    params_file = ""
+
+                min_opset_version = min(self._version)
+                self._version = list(range(min_opset_version, 16))
+                for v in self._version:
+                    onnx_model_str = c_p2o.export(model_file, params_file, v,
+                                                  False, True, True, True, True)
+                    with open(
+                            os.path.join(self.name,
+                                         self.name + '_' + str(v) + ".onnx"),
+                            "wb") as f:
+                        f.write(onnx_model_str)
+                    res_fict[str(v)] = self._mk_onnx_res(ver=v)
+
+                for v in self._version:
+                    compare(
+                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+            else:
+                print("`export ENABLE_DEV=ON or export ENABLE_DEV=OFF`")
