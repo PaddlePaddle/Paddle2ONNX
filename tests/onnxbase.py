@@ -36,7 +36,10 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
         # 出错打印错误数据
         if res is False:
-            diff = abs(result - expect)
+            if result.dtype == np.bool_:
+                diff = abs(result.astype("int32") - expect.astype("int32"))
+            else:
+                diff = abs(result - expect)
             logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
         if result.dtype != expect.dtype:
             logging.error(
