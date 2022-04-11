@@ -167,7 +167,7 @@
 | tan | 8~12 |
 | thresholded_relu | 1~12 |
 | tile | 6~15 |
-| top_k_v2 | 11~12 |
+| top_k_v2 | 11~15 |
 | top_k | 11~15 |
 | transpose2 | 1~12 |
 | trilinear_interp_v2 | 9~12 |

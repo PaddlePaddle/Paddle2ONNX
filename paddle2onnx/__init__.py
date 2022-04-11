@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 
+
 __version__ = "0.9.5rc0"
 
 import paddle
