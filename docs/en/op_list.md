@@ -54,7 +54,7 @@
 | expand_v2 | 8~15 |
 | expand | 6~15 |
 | elu | 1~12 |
-| fill_constant | 1~12 |
+| fill_constant | 1~15 |
 | fill_constant_batch_size_like  | 9~12 |
 | fill_any_like | 9~12 |
 | flatten2 | 1~12 |
@@ -68,6 +68,7 @@
 | gather | 1~12 |  opset 1~10 limited supported |
 | generate_proposals | 12~ |   |
 | greater_equal | 12~ |   |
+| grid_sampler | 11~15 |   |
 | group_norm | 6~15 |   |
 | hardshrink | 9~12 |
 | hardtanh | 6~12 |
@@ -168,7 +169,7 @@
 | thresholded_relu | 1~12 |
 | tile | 6~15 |
 | top_k | 11~15 |
-| top_k_v2 | 11~12 |
+| top_k_v2 | 11~15 |
 | transpose2 | 1~12 |
 | trilinear_interp | 9~15 |
 | trilinear_interp_v2 | 9~15 |
