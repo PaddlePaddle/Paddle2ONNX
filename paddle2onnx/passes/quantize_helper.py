@@ -179,10 +179,8 @@ def merge_conv_bn(graph):
                     graph, conv_bias_node)
 
             alpha = bn_scale / np.sqrt(bn_var + epsilon)
-
             new_bias = conv_bias * alpha + (bn_bias - bn_mean * alpha)
-            new_weight = conv_weight.transpose(1, 2, 3, 0) * alpha
-            new_weight = new_weight.transpose(3, 0, 1, 2)
+            new_weight = conv_weight * np.expand_dims(alpha, axis=[1, 2, 3])
             weight_params["data"] = new_weight
             graph.update_parameters(conv_weight_node, weight_params)
 
@@ -217,7 +215,7 @@ def merge_conv_bn(graph):
                 topk_data_sort, _ = mapper_helper.np_topk_helper(
                     reshaped_weight, 1, axis=1)
                 scale = topk_data_sort / 127.0
-                scale_list = scale.tolist()
+                scale_list = np.squeeze(scale).tolist()
                 if not isinstance(scale_list, list):
                     scale_list = [scale_list]
                 scale_node = graph.make_node(
@@ -246,7 +244,7 @@ def merge_conv_bn(graph):
             new_bias = new_bias / scale
             bias_params = copy.copy(weight_params)
             bias_params['shape'] = [new_bias.shape[0]]
-            bias_params["data"] = new_bias.astype("int32")
+            bias_params["data"] = np.around(new_bias).astype("int32")
             bias_params['dtype'] = paddle.int32
             graph.update_parameters(conv_bias_node, bias_params)
 
