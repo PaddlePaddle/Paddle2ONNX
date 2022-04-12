@@ -40,7 +40,6 @@ class QuantizeModelProcessPass(object):
 
     @classmethod
     def other_deploy_model(cls, graph):
-        print("other_deploy_model")
         graph = remove_all_quantize_ops_and_save_max_range_file(graph)
         return graph
 
@@ -48,7 +47,6 @@ class QuantizeModelProcessPass(object):
     def run_pass(cls, onnx_graph):
         if onnx_graph.quantize_model_mode in ["float"]:
             return onnx_graph
-        print("onnx_graph.deploy_backend:", onnx_graph.deploy_backend)
         if onnx_graph.deploy_backend in ["tensorrt"]:
             onnx_graph = cls.tensorrt_deploy_model(onnx_graph)
         elif onnx_graph.deploy_backend in ["onnxruntime"]:

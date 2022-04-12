@@ -86,8 +86,6 @@ class ONNXGraph(Graph):
         self.ctx = paddle_graph
         self.paddle_parameters = paddle_graph.parameters
         self.custom = []
-        self.name_dict = dict()
-        self.changed_dict = dict()
         self.quantize_model_mode = self.detect_model_type()
         if self.quantize_model_mode not in ["float"]:
             warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
@@ -198,7 +196,6 @@ class ONNXGraph(Graph):
                   attrs=None,
                   layer_name=None,
                   domain=None,
-                  return_node=False,
                   **kw):
         if layer_name is None:
             layer_name = self.generate_node_name(op_type)
@@ -240,16 +237,10 @@ class ONNXGraph(Graph):
                         domain)
 
         self.insert_node(node)
-        if return_node:
-            if len(node.outputs) == 1:
-                return node.outputs[0], node
-            else:
-                return node.outputs, node
+        if len(node.outputs) == 1:
+            return node.outputs[0]
         else:
-            if len(node.outputs) == 1:
-                return node.outputs[0]
-            else:
-                return node.outputs
+            return node.outputs
 
     def update_node(self,
                     node,

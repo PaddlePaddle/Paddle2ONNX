@@ -30,9 +30,6 @@ class Conv():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        filter_node = node.input('Filter', 0)
-        output_name = node.output('Output', 0)
-
         kernel_shape = node.input_shape('Filter', 0)
         dilations = node.attr('dilations')
         kernel_shape = kernel_shape[2:]
@@ -64,8 +61,8 @@ class Conv():
             attrs['pads'] = pads
         graph.make_node(
             'Conv',
-            inputs=[node.input('Input', 0)] + [filter_node],
-            outputs=[output_name],
+            inputs=node.input('Input') + node.input('Filter'),
+            outputs=node.output('Output'),
             attrs=attrs)
 
 

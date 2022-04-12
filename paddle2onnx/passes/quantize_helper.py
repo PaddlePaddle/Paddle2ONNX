@@ -39,7 +39,6 @@ def try_replacing_upstream_output(graph, upstream_output_name, output_name):
 
 
 def remove_all_quantize_ops(graph):
-    print("remove_all_quantize_ops")
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
@@ -131,7 +130,6 @@ def merge_conv_add(graph):
 
 
 def merge_conv_bn(graph):
-    print("merge_conv_bn")
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         conv_node_name, conv_node = node_map[idx]
@@ -218,7 +216,6 @@ def merge_conv_bn(graph):
 
 
 def add_q_dq(graph):
-    print("add_q_dq")
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
@@ -264,7 +261,8 @@ def add_q_dq(graph):
     graph.tensor_to_be_quantize = list(set(graph.tensor_to_be_quantize))
     for tensor in graph.tensor_to_be_quantize:
         if tensor not in graph.quantize_params_dict:
-            print(">>>[Quantize] Find unquantize tensor: ", tensor)
+            logging.warning("[Quantize] Find unquantize tensor: {}".format(
+                tensor))
             continue
         quantize_nodes = graph.quantize_params_dict[tensor]
         assert len(
@@ -316,7 +314,6 @@ def add_q_dq(graph):
 
 
 def new_type_quantize_post_process(graph):
-    print("new_type_quantize_post_process")
     # delete all Q and DQ
     graph = remove_all_quantize_ops(graph)
 
@@ -332,19 +329,12 @@ def new_type_quantize_post_process(graph):
     return graph
 
 
-def save_max_range_file(graph):
-    with open("max_range.txt", 'wb') as f:
-        for tensor, val in graph.quantize_params_dict.items():
-            tensor = tensor + ": " + str(val[2] * 127) + ", " + str(val[3] *
-                                                                    127)
-            f.write(tensor.encode())
-
-
 def remove_all_quantize_ops_and_save_max_range_file(graph):
-    print("remove_all_quantize_ops_and_save_max_range_file")
     graph = remove_all_quantize_ops(graph)
-    # TODO save file
-    save_max_range_file(graph)
+    scales = dict()
+    for tensor, val in graph.quantize_params_dict.items():
+        scales[tensor] = [val[2] * 127, val[3] * 127]
+    graph.quantize_params_dict = scales
     return graph
 
 
@@ -376,7 +366,6 @@ def collect_all_scales(graph):
 
 
 def add_missing_quantize_ops(graph):
-    print("add_missing_quantize_ops")
     graph = collect_all_scales(graph)
 
     # delete all Q and DQ
@@ -394,7 +383,6 @@ def add_missing_quantize_ops(graph):
 
 
 def delete_redundant_quantize_ops(graph):
-    print("delete_redundant_quantize_ops")
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
@@ -436,7 +424,6 @@ def delete_redundant_quantize_ops(graph):
 
 
 def add_shortcut_quantize_ops(graph):
-    print("add_shortcut_quantize_ops_new")
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
