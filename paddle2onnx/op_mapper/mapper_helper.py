@@ -17,6 +17,7 @@ import six
 import copy
 from paddle2onnx.constant import dtypes
 import paddle
+from onnx import TensorProto
 
 
 def is_static_shape(shape):
@@ -26,6 +27,63 @@ def is_static_shape(shape):
             " please fix input shape of this model, see doc Q2 in" \
             " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
         )
+
+
+def shape_helper(graph, input, dim=None):
+    if dim is None:
+        shape_node = graph.make_node('Shape', inputs=[input])
+        return shape_node
+    full_shape = graph.make_node('Shape', inputs=[input])
+    shape_node = slice_helper(graph, full_shape, [0], [dim], [dim + 1])
+    return shape_node
+
+
+def unsqueeze_helper(graph, input, axes, outputs=None):
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if not isinstance(axes, list):
+        axes = [axes]
+    if outputs is not None and isinstance(outputs, six.string_types):
+        outputs = [outputs]
+
+    if graph.opset_version < 13:
+        unsqueeze_node = graph.make_node(
+            "Unsqueeze", inputs=inputs, outputs=outputs, axes=axes)
+        return unsqueeze_node
+    else:
+        axes_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=axes)
+        inputs = inputs + [axes_node]
+        unsqueeze_node = graph.make_node(
+            "Unsqueeze", inputs=inputs, outputs=outputs)
+        return unsqueeze_node
+
+
+def split_helper(graph, input, axis=0, split=None, outputs=None):
+    assert outputs is not None, "outputs can not be None in split_helper."
+    inputs = []
+    if not isinstance(input, list):
+        input = [input]
+    inputs.append(input[0])
+    if split is not None and not isinstance(split, list):
+        split = [split]
+    if split is None:
+        split_node = graph.make_node(
+            "Split", inputs=inputs, outputs=outputs, axis=axis)
+        return split_node
+    if graph.opset_version < 13:
+        split_node = graph.make_node(
+            "Split", inputs=inputs, outputs=outputs, axis=axis, split=split)
+        return split_node
+    else:
+        split = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.INT64, value=split)
+        inputs = inputs + [split]
+        split_node = graph.make_node(
+            "Split", inputs=inputs, axis=axis, outputs=outputs)
+        return split_node
 
 
 def slice_helper(graph,
@@ -45,14 +103,16 @@ def slice_helper(graph,
         starts = [starts]
     if ends is not None and not isinstance(ends, (list, six.string_types)):
         ends = [ends]
+
     if graph.opset_version < 10:
+        attrs = {
+            'starts': starts,
+            'ends': ends,
+        }
+        if axes not in [None, []]:
+            attrs['axes'] = axes
         slice_node = graph.make_node(
-            "Slice",
-            inputs=inputs,
-            outputs=outputs,
-            axes=axes,
-            starts=starts,
-            ends=ends)
+            "Slice", inputs=inputs, outputs=outputs, attrs=attrs)
         return slice_node
     else:
         if not isinstance(starts, six.string_types):
@@ -60,7 +120,7 @@ def slice_helper(graph,
         if not isinstance(ends, six.string_types):
             ends = graph.make_node('Constant', dtype=dtype, value=ends)
         inputs = inputs + [starts, ends]
-        if axes is not None:
+        if axes not in [None, []]:
             axes_node = graph.make_node('Constant', dtype=dtype, value=axes)
             inputs.append(axes_node)
         slice_node = graph.make_node("Slice", inputs=inputs, outputs=outputs)
@@ -86,6 +146,58 @@ def squeeze_helper(graph, input, axes=None, outputs=None):
         squeeze_node = graph.make_node(
             "Squeeze", inputs=inputs, outputs=outputs)
         return squeeze_node
+
+
+def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
+    if not isinstance(inputs, (list, tuple)):
+        inputs = [inputs]
+
+    if not isinstance(outputs, int) and not isinstance(outputs, (list, tuple)):
+        outputs = [outputs]
+
+    if dtype == paddle.float64:
+        cast_inputs = []
+        for i in range(len(inputs)):
+            one = graph.make_node(
+                'Cast', inputs=[inputs[i]], to=TensorProto.FLOAT)
+            cast_inputs.append(one)
+        if graph.opset_version < 13:
+            split_node = graph.make_node(
+                "Split",
+                inputs=cast_inputs,
+                outputs=outputs,
+                axis=axis,
+                split=split)
+        else:
+            split_const = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=split)
+            split_node = graph.make_node(
+                "Split",
+                inputs=cast_inputs + [split_const],
+                outputs=outputs,
+                axis=axis)
+        casted_output = []
+        for i in range(len(outputs)):
+            one = graph.make_node(
+                'Cast',
+                inputs=[split_node[i]],
+                outputs=[outputs[i]],
+                to=TensorProto.DOUBLE)
+            casted_output.append(one)
+        return casted_output
+    else:
+        if graph.opset_version < 13:
+            split_node = graph.make_node(
+                "Split", inputs=inputs, outputs=outputs, axis=axis, split=split)
+        else:
+            split_const = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT64, value=split)
+            split_node = graph.make_node(
+                "Split",
+                inputs=inputs + [split_const],
+                outputs=outputs,
+                axis=axis)
+        return split_node
 
 
 def constant_helper(graph, dtype, value, shape=None, outputs=[]):
@@ -122,37 +234,49 @@ def clip_helper(graph, node, input, max, min, output=[]):
             clip = graph.make_node(
                 'Clip', inputs=input, max=max, min=min, outputs=output)
     else:
+        if x_dtype != paddle.float32:
+            input = graph.make_node(
+                'Cast', inputs=[input], to=dtypes.ONNX.FLOAT)
+
         if not isinstance(min, six.string_types):
             min = graph.make_node(
                 'Constant',
                 attrs={
-                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[paddle.float32],
                     'value': min
                 })
         else:
-            if node.input_dtype('Min', 0) != x_dtype:
+            if node.input_dtype('Min', 0) != paddle.float32:
                 min = graph.make_node(
                     'Cast',
                     inputs=min,
-                    attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype]})
+                    attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[paddle.float32]})
             min = graph.make_node('Squeeze', min)
 
         if not isinstance(max, six.string_types):
             max = graph.make_node(
                 'Constant',
                 attrs={
-                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype],
+                    'dtype': dtypes.DTYPE_PADDLE_ONNX_MAP[paddle.float32],
                     'value': max
                 })
         else:
-            if node.input_dtype('Max', 0) != x_dtype:
+            if node.input_dtype('Max', 0) != paddle.float32:
                 max = graph.make_node(
                     'Cast',
                     inputs=max,
-                    attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype]})
+                    attrs={'to': dtypes.DTYPE_PADDLE_ONNX_MAP[paddle.float32]})
             max = graph.make_node('Squeeze', max)
-
-        clip = graph.make_node('Clip', inputs=[input, min, max], outputs=output)
+        if x_dtype != paddle.float32:
+            clip_pre = graph.make_node('Clip', inputs=[input, min, max])
+            clip = graph.make_node(
+                'Cast',
+                inputs=[clip_pre],
+                outputs=output,
+                to=dtypes.DTYPE_PADDLE_ONNX_MAP[x_dtype])
+        else:
+            clip = graph.make_node(
+                'Clip', inputs=[input, min, max], outputs=output)
     return clip
 
 
@@ -226,16 +350,7 @@ def shape_alignment(graph, nodes, node_shapes):
         if dim != max_dim:
             unsqueeze_node = nodes[i]
             for j in range(max_dim - dim):
-                if graph.opset_version < 13:
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', inputs=[unsqueeze_node], axes=[0])
-                else:
-                    axes_node = graph.make_node(
-                        'Constant',
-                        attrs={'dtype': dtypes.ONNX.INT64,
-                               'value': 0})
-                    unsqueeze_node = graph.make_node(
-                        'Unsqueeze', inputs=[unsqueeze_node, axes_node])
+                unsqueeze_node = unsqueeze_helper(graph, unsqueeze_node, [0])
             unsqueeze_nodes.append(unsqueeze_node)
         else:
             unsqueeze_nodes.append(nodes[i])

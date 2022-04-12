@@ -59,7 +59,7 @@ class TestBmmConvert(OPConvertAutoScanTest):
             "op_names": ["bmm"],
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [15],
             "input_spec_shape": []
         }
 

@@ -14,3 +14,4 @@
 
 from .pass_manager import PassManager
 from .inplace_node_pass import InplaceNodePass
+from .dumplicate_names_pass import DumplicateNamesPass

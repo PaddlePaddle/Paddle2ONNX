@@ -93,6 +93,8 @@ opset_version_map = {
 
 class Net(BaseNet):
     def forward(self, inputs):
+        if self.config["op_names"].count("log") > 0:
+            inputs = paddle.abs(inputs) + 0.01
         return op_api_map[self.config["op_names"]](inputs)
 
 
