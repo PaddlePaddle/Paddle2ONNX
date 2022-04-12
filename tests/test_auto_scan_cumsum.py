@@ -60,6 +60,7 @@ class TestCumsumConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "axis": axis,
             "dtype": dtype,
+            "use_gpu": False,
         }
 
         models = Net(config)
