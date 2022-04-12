@@ -74,6 +74,7 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "axis": axis,
             "return_softmax": return_softmax,
+            "use_gpu": False,
         }
 
         models = Net(config)

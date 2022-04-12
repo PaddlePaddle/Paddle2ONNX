@@ -19,6 +19,7 @@ from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 import paddle
 from paddle2onnx.utils import logging
+from paddle2onnx.op_mapper import mapper_helper
 
 
 @op_mapper('greater_equal')
@@ -275,20 +276,5 @@ class IsNaN():
             'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
         reduce_node = graph.make_node(
             'ReduceMax', inputs=[cast_node], keepdims=False)
-        graph.make_node(
-            'Unsqueeze',
-            inputs=[reduce_node],
-            outputs=node.output('Out'),
-            axes=[0])
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        isnan = graph.make_node('IsNaN', inputs=node.input('X'))
-        cast_node = graph.make_node(
-            'Cast', inputs=isnan, attrs={'to': dtypes.ONNX.FLOAT})
-        reduce_node = graph.make_node(
-            'ReduceMax', inputs=[cast_node], keepdims=False)
-
-        axis = graph.make_node('Constant', dtype=dtypes.ONNX.INT64, value=[0])
-        graph.make_node(
-            'Unsqueeze', inputs=[reduce_node, axis], outputs=node.output('Out'))
+        mapper_helper.unsqueeze_helper(graph, reduce_node, [0],
+                                       node.output('Out'))
