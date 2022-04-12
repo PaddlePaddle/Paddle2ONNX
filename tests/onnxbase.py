@@ -46,8 +46,10 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
                 "Different output data types! res type is: {}, and expect type is: {}".
                 format(result.dtype, expect.dtype))
         assert res
-        assert result.shape == expect.shape
-        assert result.dtype == expect.dtype
+        assert result.shape == expect.shape, "result.shape: {} != expect.shape: {}".format(
+            result.shape, expect.shape)
+        assert result.dtype == expect.dtype, "result.dtype: {} != expect.dtype: {}".format(
+            result.dtype, expect.dtype)
     elif type(result) == list and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
@@ -214,6 +216,9 @@ class APIOnnx(object):
         """
         paddle dygraph layer to onnx
         """
+        #        paddle.jit.save(instance, "model/model", input_spec=self.input_spec)
+        #        import sys
+        #        sys.exit(0)
         paddle.onnx.export(
             instance,
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),

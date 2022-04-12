@@ -161,51 +161,50 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
-class Net1(BaseNet):
-    """
-    simple Net
-    """
-
-    def forward(self, inputs, weight):
-        """
-        forward
-        """
-        x = paddle.nn.functional.conv2d(
-            inputs,
-            weight,
-            stride=[1, 2],
-            padding='SAME',
-            dilation=[1, 2],
-            groups=1)
-        return x
-
-
-class TestConv2dConvert1(OPConvertAutoScanTest):
-    """
-    api: paddle.nn.Conv2d
-    OPset version: 9
-    1.OPset version需要根据op_mapper中定义的version来设置。
-    2.测试中所有OP对应升级到Opset version 15。
-    """
-
-    def sample_convert_config(self, draw):
-        config = {
-            "op_names": ["conv2d"],
-            "test_data_shapes": [[2, 5, 20, 20], [7, 5, 5, 5]],
-            "test_data_types": [['float32'], ['float32']],
-            "opset_version": [7, 9, 15],
-            "input_spec_shape": [[-1, 5, -1, -1], [7, 5, 5, 5]],
-            "delta": 1e-4,
-            "rtol": 1e-4
-        }
-
-        models = Net1(config)
-
-        return (config, models)
-
-    def test(self):
-        self.run_and_statis(max_examples=30, min_success_num=-1)
-
+#class Net1(BaseNet):
+#    """
+#    simple Net
+#    """
+#
+#    def forward(self, inputs, weight):
+#        """
+#        forward
+#        """
+#        x = paddle.nn.functional.conv2d(
+#            inputs,
+#            weight,
+#            stride=[1, 2],
+#            padding='SAME',
+#            dilation=[1, 2],
+#            groups=1)
+#        return x
+#
+#
+#class TestConv2dConvert1(OPConvertAutoScanTest):
+#    """
+#    api: paddle.nn.Conv2d
+#    OPset version: 9
+#    1.OPset version需要根据op_mapper中定义的version来设置。
+#    2.测试中所有OP对应升级到Opset version 15。
+#    """
+#
+#    def sample_convert_config(self, draw):
+#        config = {
+#            "op_names": ["conv2d"],
+#            "test_data_shapes": [[2, 5, 20, 20], [7, 5, 5, 5]],
+#            "test_data_types": [['float32'], ['float32']],
+#            "opset_version": [7, 9, 15],
+#            "input_spec_shape": [[-1, 5, -1, -1], [7, 5, 5, 5]],
+#            "delta": 1e-4,
+#            "rtol": 1e-4
+#        }
+#
+#        models = Net1(config)
+#
+#        return (config, models)
+#
+#    def test(self):
+#        self.run_and_statis(max_examples=30, min_success_num=-1)
 
 if __name__ == "__main__":
     unittest.main()
