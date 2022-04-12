@@ -29,7 +29,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.matmul(
+        x = paddle.fluid.layers.matmul(
             x,
             y,
             transpose_x=self.config["transpose_x"],
@@ -39,7 +39,7 @@ class Net(BaseNet):
 
 class TestMatmulConvert(OPConvertAutoScanTest):
     """
-    api: paddle.matmul
+    api: paddle.fluid.layers.matmul
     OPset version: 7, 9, 15
     """
 
@@ -55,7 +55,7 @@ class TestMatmulConvert(OPConvertAutoScanTest):
         transpose = draw(st.booleans())
 
         config = {
-            "op_names": ["matmul_v2"],
+            "op_names": ["matmul"],
             "test_data_shapes": [input_shape1, input_shape2],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
