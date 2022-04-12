@@ -46,8 +46,9 @@ def unsqueeze_helper(graph, input, axes, outputs=None):
     inputs.append(input[0])
     if not isinstance(axes, list):
         axes = [axes]
-    if outputs is not None and not isinstance(outputs, list):
+    if outputs is not None and isinstance(outputs, six.string_types):
         outputs = [outputs]
+
     if graph.opset_version < 13:
         unsqueeze_node = graph.make_node(
             "Unsqueeze", inputs=inputs, outputs=outputs, axes=axes)

@@ -46,13 +46,13 @@ DTYPE_PADDLE_NUMPY_MAP = {
     np.int16: core.VarDesc.VarType.INT16,
     np.int32: core.VarDesc.VarType.INT32,
     np.int64: core.VarDesc.VarType.INT64,
-    np.bool: core.VarDesc.VarType.BOOL,
-    core.VarDesc.VarType.FP32: np.float,
+    np.bool_: core.VarDesc.VarType.BOOL,
+    core.VarDesc.VarType.FP32: np.float32,
     core.VarDesc.VarType.FP64: np.float64,
     core.VarDesc.VarType.INT16: np.int16,
     core.VarDesc.VarType.INT32: np.int32,
     core.VarDesc.VarType.INT64: np.int64,
-    core.VarDesc.VarType.BOOL: np.bool
+    core.VarDesc.VarType.BOOL: np.bool_
 }
 
 DTYPE_PADDLE_STR_MAP = {

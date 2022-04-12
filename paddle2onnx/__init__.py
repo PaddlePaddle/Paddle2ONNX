@@ -13,7 +13,8 @@
 # limitations under the License.
 from __future__ import absolute_import
 
-__version__ = "0.9.2"
+
+__version__ = "0.9.5rc0"
 
 import paddle
 from .convert import dygraph2onnx, program2onnx
@@ -33,11 +34,13 @@ OP_WITHOUT_KERNEL_SET = {
     'copy_cross_scope'
 }
 
+
 def process_old_ops_desc(model):
     for i in range(len(model.blocks[0].ops)):
         if model.blocks[0].ops[i].type == "matmul":
             if not model.blocks[0].ops[i].has_attr("head_number"):
                 model.blocks[0].ops[i]._set_attr("head_number", 1)
+
 
 def get_all_registered_ops(save_file=None):
     ops = list(OpMapper.OPSETS.keys())
