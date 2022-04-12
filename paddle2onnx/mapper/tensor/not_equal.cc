@@ -12,32 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/greater_equal.h"
+#include "paddle2onnx/mapper/tensor/not_equal.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(greater_equal, GreaterEqualMapper)
+REGISTER_MAPPER(not_equal, NotEqualMapper)
 
-void GreaterEqualMapper::Opset7() {
+int32_t NotEqualMapper::GetMinOpset(bool verbose) {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
-  auto out_info = GetOutput("Out");
-
-  int out_dtype = 0;
-  std::vector<std::string> aligned_inputs =
-      helper_->DtypeAlignment({x_info[0], y_info[0]}, &out_dtype);
-  if (out_dtype != P2ODataType::FP32 && out_dtype != P2ODataType::FP64 &&
-      helper_->GetOpsetVersion() < 11) {
-    aligned_inputs[0] =
-        helper_->AutoCast(aligned_inputs[0], out_dtype, P2ODataType::FP32);
-    aligned_inputs[1] =
-        helper_->AutoCast(aligned_inputs[1], out_dtype, P2ODataType::FP32);
+  if (x_info[0].dtype == P2ODataType::FP32 ||
+      x_info[0].dtype == P2ODataType::FP64) {
+    Logger(verbose, 11) << "While input is dtype of float32/float64, "
+                        << RequireOpset(11) << std::endl;
+    return 11;
   }
-
-  auto out = helper_->MakeNode("Less", aligned_inputs)->output(0);
-  helper_->MakeNode("Not", {out}, {out_info[0].name});
+  return 7;
 }
 
-void GreaterEqualMapper::Opset12() {
+void NotEqualMapper::Opset7() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
   auto out_info = GetOutput("Out");
@@ -46,6 +38,8 @@ void GreaterEqualMapper::Opset12() {
   std::vector<std::string> aligned_inputs =
       helper_->DtypeAlignment({x_info[0], y_info[0]}, &out_dtype);
 
-  helper_->MakeNode("GreaterOrEqual", aligned_inputs, {out_info[0].name});
+  auto output = helper_->MakeNode("Equal", aligned_inputs)->output(0);
+  helper_->MakeNode("Not", {output}, {out_info[0].name});
 }
+
 }  // namespace paddle2onnx

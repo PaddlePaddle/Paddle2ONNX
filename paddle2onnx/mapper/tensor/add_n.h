@@ -20,10 +20,10 @@
 
 namespace paddle2onnx {
 
-class LogicalOpMapper : public Mapper {
+class AddNMapper : public Mapper {
  public:
-  LogicalOpMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                  int64_t op_id)
+  AddNMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7();
 };

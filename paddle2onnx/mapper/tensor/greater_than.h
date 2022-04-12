@@ -21,9 +21,7 @@ class GreaterThanMapper : public Mapper {
  public:
   GreaterThanMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                     int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    MarkAsExperimentalOp();
-  }
+      : Mapper(p, helper, block_id, op_id) {}
   void Opset7();
 };
 

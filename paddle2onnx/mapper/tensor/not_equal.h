@@ -13,18 +13,16 @@
 // limitations under the License.
 
 #pragma once
-#include <string>
-#include <vector>
-
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-class LogicalOpMapper : public Mapper {
+class NotEqualMapper : public Mapper {
  public:
-  LogicalOpMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                  int64_t op_id)
+  NotEqualMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
+  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 };
 

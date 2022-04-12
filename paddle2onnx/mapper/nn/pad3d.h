@@ -20,12 +20,26 @@
 
 namespace paddle2onnx {
 
-class LogicalOpMapper : public Mapper {
+class Pad3DMapper : public Mapper {
  public:
-  LogicalOpMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                  int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
+  Pad3DMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+               int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("data_format", &data_format_);
+    GetAttr("mode", &mode_);
+    GetAttr("value", &value_);
+    GetAttr("paddings", &paddings_);
+  }
+  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
+  void Opset11();
+
+ private:
+  std::vector<int64_t> ConvertPaddingParameter(const std::vector<int64_t>& paddings);
+  std::string data_format_;
+  std::string mode_;
+  std::vector<int64_t> paddings_;
+  float value_;
 };
 
 }  // namespace paddle2onnx

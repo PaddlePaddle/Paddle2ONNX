@@ -14,7 +14,7 @@
 
 #include "paddle2onnx/mapper/nn/pool.h"
 
-#include <math.h>
+#include <cmath>
 
 #include <algorithm>
 #include <string>

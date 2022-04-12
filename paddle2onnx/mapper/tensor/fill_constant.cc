@@ -32,15 +32,18 @@ int32_t FillConstantMapper::GetMinOpset(bool verbose) {
             << std::endl;
     return -1;
   }
-  Logger(verbose, 9) << RequireOpset(9) << std::endl;
-  return 9;
+  if (HasInput("ShapeTensorList")) {
+    Logger(verbose, 9) << "While ShapeTensorList as input, " << RequireOpset(9) << std::endl;
+    return 9;
+  }
+  if (HasInput("ShapeTensor") && !IsConstantInput("ShapeTensor")) {
+    Logger(verbose, 9) << "While ShapeTensor as input and it's not a constant tensor, " << RequireOpset(9) << std::endl;
+    return 9;
+  }
+  return 7;
 }
 
-void FillConstantMapper::Opset9() {
-  auto out_info = GetOutput("Out");
-  bool shape_is_tensor = HasInput("ShapeTensor") || HasInput("ShapeTensorList");
-  bool value_is_tensor = HasInput("ValueTensor");
-  auto onnx_dtype = GetOnnxDtype(out_info[0].dtype);
+float FillConstantMapper::GetFillValue() {
   float value = 0;
   if (str_value_.empty()) {
     value = value_;
@@ -56,10 +59,41 @@ void FillConstantMapper::Opset9() {
       convert_stream >> value;
     }
   }
-  if (value_is_tensor) {
+  if (HasInput("ValueTensor")) {
     value = 0.0;
   }
+  return value;
+}
 
+void FillConstantMapper::Opset7() {
+  auto out_info = GetOutput("Out");
+  Assert(!HasInput("ShapeTensorList"), "While ShapeTensorList as input, requires opset_version>=9 for op fill_constant.");
+  std::vector<int64_t> shape;
+  if (HasInput("ShapeTensor")) {
+    Assert(TryGetInputValue("ShapeTensor", &shape), "While ShapeTensor as input and it's not a constant tensor, requires opset_version>=9 for op fill_constant.");
+  } else {
+    GetAttr("shape", &shape);
+  }
+  float value = GetFillValue();
+  if (HasInput("ValueTensor")) {
+    auto value_info = GetInput("ValueTensor");
+    auto value_tensor = helper_->AutoCast(value_info[0].name, value_info[0].dtype, out_info[0].dtype);
+    auto out = helper_->Constant(shape, GetOnnxDtype(out_info[0].dtype), float(0.0));
+    helper_->MakeNode("Add", {out, value_tensor}, {out_info[0].name});
+  } else {
+    helper_->Constant(out_info[0].name, shape, GetOnnxDtype(out_info[0].dtype), value);
+  }
+}
+
+void FillConstantMapper::Opset9() {
+  if (GetMinOpset() == 7) {
+    return Opset7();
+  }
+  auto out_info = GetOutput("Out");
+  bool shape_is_tensor = HasInput("ShapeTensor") || HasInput("ShapeTensorList");
+  bool value_is_tensor = HasInput("ValueTensor");
+  auto onnx_dtype = GetOnnxDtype(out_info[0].dtype);
+  float value = GetFillValue();
   std::string out;
   if (shape_is_tensor) {
     std::string shape_name;
@@ -71,13 +105,6 @@ void FillConstantMapper::Opset9() {
       auto shape_info = GetInput("ShapeTensorList");
       shape_name = helper_->ConcatIndices(shape_info);
     }
-    // trick for tensorrt
-    // ====================
-    //    auto value_tensor = helper_->Constant({1},
-    //    GetOnnxDtype(out_info[0].dtype), value);
-    //    out = helper_->MakeNode("Expand", {value_tensor,
-    //    shape_name})->output(0);
-    // ===================
 
     auto node = helper_->MakeNode("ConstantOfShape", {shape_name});
     auto attr = node->add_attribute();

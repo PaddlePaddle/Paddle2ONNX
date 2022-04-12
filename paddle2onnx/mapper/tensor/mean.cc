@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-#include <string>
-#include <vector>
-
-#include "paddle2onnx/mapper/mapper.h"
+#include "paddle2onnx/mapper/tensor/mean.h"
 
 namespace paddle2onnx {
+REGISTER_MAPPER(mean, MeanMapper)
 
-class LogicalOpMapper : public Mapper {
- public:
-  LogicalOpMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                  int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
-};
+void MeanMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  auto input = helper_->Reshape(x_info[0].name, {-1});
+  auto node = helper_->MakeNode("ReduceMean", {input}, {out_info[0].name});
+  AddAttribute(node, "axes", std::vector<int64_t>(1, 0));
+  AddAttribute(node, "keepdims", int64_t(1));
+}
 
 }  // namespace paddle2onnx
