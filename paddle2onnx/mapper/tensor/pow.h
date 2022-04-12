@@ -27,7 +27,6 @@ class PowMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("factor", &factor_);
   }
-  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 
  private:
