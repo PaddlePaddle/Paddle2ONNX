@@ -18,8 +18,6 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(pow, PowMapper)
 
-int32_t PowMapper::GetMinOpset(bool verbose) { return 7; }
-
 void PowMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
