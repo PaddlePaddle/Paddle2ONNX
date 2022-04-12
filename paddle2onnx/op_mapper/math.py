@@ -547,10 +547,21 @@ class Mul():
         out = node.output('Out', 0)
         x_num_col_dims = node.attr('x_num_col_dims')
         y_num_col_dims = node.attr('y_num_col_dims')
-        flatten_x = graph.make_node(
-            'Flatten', inputs=node.input('X'), attrs={'axis': x_num_col_dims})
-        flatten_y = graph.make_node(
-            'Flatten', inputs=node.input('Y'), attrs={'axis': y_num_col_dims})
+
+        if len(node.input_shape('X', 0)) == 2 and x_num_col_dims == 1:
+            flatten_x = node.input('X', 0)
+        else:
+            flatten_x = graph.make_node(
+                'Flatten',
+                inputs=node.input('X'),
+                attrs={'axis': x_num_col_dims})
+        if len(node.input_shape('Y', 0)) == 2 and y_num_col_dims == 1:
+            flatten_y = node.input('Y', 0)
+        else:
+            flatten_y = graph.make_node(
+                'Flatten',
+                inputs=node.input('Y'),
+                attrs={'axis': y_num_col_dims})
         mul_node = graph.make_node('MatMul', inputs=[flatten_x, flatten_y])
 
         x_shape = graph.make_node('Shape', inputs=[x])

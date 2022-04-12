@@ -31,14 +31,14 @@ def export_onnx(paddle_graph,
                 operator_export_type="ONNX",
                 verbose=False,
                 auto_update_opset=True,
-                sortcut_optimize=True,
+                deploy_backend=None,
                 output_names=None):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
                                  operator_export_type, verbose,
-                                 auto_update_opset, sortcut_optimize)
+                                 auto_update_opset, deploy_backend)
     onnx_graph = PassManager.run_pass(onnx_graph, [
-        'dumplicate_names_pass', 'inplace_node_pass', 'add_quantize_ops_pass',
-        'remove_isolated_node_pass'
+        'dumplicate_names_pass', 'inplace_node_pass',
+        'quantize_model_process_pass', 'remove_isolated_node_pass'
     ])
 
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker, output_names)
@@ -63,7 +63,7 @@ def program2onnx(program,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
                  auto_update_opset=True,
-                 sortcut_optimize=True,
+                 deploy_backend=None,
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -105,7 +105,7 @@ def program2onnx(program,
             enable_onnx_checker,
             operator_export_type,
             auto_update_opset=auto_update_opset,
-            sortcut_optimize=sortcut_optimize,
+            deploy_backend=deploy_backend,
             output_names=output_names)
     else:
         raise TypeError(
@@ -200,14 +200,14 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
                 "The auto_update_opset should be 'bool', but received type is %s."
                 % type(configs['auto_update_opset']))
 
-    sortcut_optimize = True
-    if 'sortcut_optimize' in configs:
-        if isinstance(configs['sortcut_optimize'], bool):
-            sortcut_optimize = configs['sortcut_optimize']
+    deploy_backend = None
+    if 'deploy_backend' in configs:
+        if isinstance(configs['deploy_backend'], six.string_types):
+            deploy_backend = configs['deploy_backend']
         else:
             raise TypeError(
-                "The sortcut_optimize should be 'bool', but received type is %s."
-                % type(configs['sortcut_optimize']))
+                "The deploy_backend should be 'str', but received type is %s." %
+                type(configs['deploy_backend']))
 
     output_names = None
     if 'output_names' in configs:
@@ -219,4 +219,4 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     return export_onnx(paddle_graph, save_file, opset_version,
                        enable_onnx_checker, operator_export_type, verbose,
-                       auto_update_opset, sortcut_optimize, output_names)
+                       auto_update_opset, deploy_backend, output_names)

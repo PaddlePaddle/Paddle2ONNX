@@ -24,6 +24,7 @@ from paddle2onnx.op_mapper import OpMapper
 from onnx import helper
 from paddle2onnx.utils import check_model, logging
 from onnx import TensorProto
+import paddle
 from paddle2onnx.graph import graph_helper
 
 
@@ -78,7 +79,7 @@ class ONNXGraph(Graph):
                  operator_export_type="ONNX",
                  block=None,
                  auto_update_opset=True,
-                 sortcut_optimize=True):
+                 deploy_backend=None):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
@@ -94,7 +95,61 @@ class ONNXGraph(Graph):
         if auto_update_opset:
             self.update_opset_version()
         self.static_quantize_pre_convert_dict = dict()
-        self.sortcut_optimize = sortcut_optimize
+        self.deploy_backend = deploy_backend
+        if self.deploy_backend is not None:
+            self.deploy_backend = self.deploy_backend.lower()
+        self.quantize_params_dict = dict()
+        self.tensor_to_be_quantize = list()
+
+    def replace_output_of_all_nodes(self, old_output_name, new_output_name):
+        assert isinstance(old_output_name, str) and isinstance(
+            new_output_name,
+            str), "old_output_name and new_output_name must be str"
+        for name, node in self.node_map.items():
+            if old_output_name in node.outputs:
+                for j in range(len(node.outputs)):
+                    if node.outputs[j] == old_output_name:
+                        node.outputs[j] = new_output_name
+                        self.update_node(node)
+
+    def replace_input_of_all_nodes(self, old_input_name, new_input_name):
+        assert isinstance(old_input_name, str) and isinstance(
+            new_input_name,
+            str), "old_input_name and new_input_name must be str"
+        for name, node in self.node_map.items():
+            if node.type in ["QuantizeLinear", "DequantizeLinear"]:
+                continue
+            if old_input_name in node.inputs:
+                for j in range(len(node.inputs)):
+                    if node.inputs[j] == old_input_name:
+                        node.inputs[j] = new_input_name
+                        self.update_node(node)
+
+    def is_graph_output(self, output_name):
+        for output in self.output_nodes:
+            if output.name == output_name:
+                return True
+        return False
+
+    def input_name_to_nodes(self):
+        input_name_to_nodes_dict = dict()
+        for name, node in self.node_map.items():
+            for input_name in node.inputs:
+                if input_name not in input_name_to_nodes_dict:
+                    input_name_to_nodes_dict[input_name] = [node]
+                else:
+                    input_name_to_nodes_dict[input_name].append(node)
+        return input_name_to_nodes_dict
+
+    def output_name_from_nodes(self):
+        output_name_to_nodes_dict = dict()
+        for name, node in self.node_map.items():
+            for output_name in node.outputs:
+                if output_name not in output_name_to_nodes_dict:
+                    output_name_to_nodes_dict[output_name] = [node]
+                else:
+                    output_name_to_nodes_dict[output_name].append(node)
+        return output_name_to_nodes_dict
 
     def detect_model_type(self):
         # this func will detect the model type: float, static, dynamic or new_type
@@ -120,7 +175,8 @@ class ONNXGraph(Graph):
                             if name in one_input:
                                 output_node_type.append(inner_node.type)
                 for ops in output_node_type:
-                    if ops.count("dequantize"):
+                    if ops.count("dequantize") and not ops.count(
+                            "quantize_dequantize"):
                         return "static"
         return "dynamic"
 
@@ -244,7 +300,8 @@ class ONNXGraph(Graph):
             vals=weight.flatten().tolist())
         node = helper.make_node(
             'Constant', inputs=[], outputs=[name], value=tensor)
-        self.parameters.pop(name)
+        if name in self.parameters:
+            self.parameters.pop(name)
         self.parameters[name] = node
         self.paddle_parameters[name] = param
 
@@ -357,8 +414,7 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     def export_proto(self, enable_onnx_checker=False, output_names=None):
-
-        op_nodes = [node.onnx_node for node in self.node_map.values()]
+        op_nodes = [node.onnx_node for node in self.get_topo_sort_list()]
         weight_nodes = [node for node in self.parameters.values()]
 
         onnx_graph = helper.make_graph(
@@ -387,13 +443,13 @@ class ONNXGraph(Graph):
               operator_export_type="ONNX",
               verbose=False,
               auto_update_opset=True,
-              sortcut_optimize=True):
+              deploy_backend=None):
         onnx_graph = ONNXGraph(
             paddle_graph,
             opset_version=opset_version,
             operator_export_type=operator_export_type,
             auto_update_opset=auto_update_opset,
-            sortcut_optimize=sortcut_optimize)
+            deploy_backend=deploy_backend)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)

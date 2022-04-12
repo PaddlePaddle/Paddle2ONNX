@@ -22,6 +22,9 @@ from paddle.fluid.framework import Variable, program_guard
 from paddle2onnx.utils import logging
 from paddle2onnx.op_mapper import mapper_helper
 from paddle2onnx.constant import dtypes
+import itertools
+import copy
+import onnx
 
 
 def prepend_feed_ops(inference_program,
@@ -128,30 +131,39 @@ def static_quantize_pre_convert(graph):
                 graph.update_parameters(weight_input, update_param)
                 input_shape = pre_node.input_shape('Y', 0)
 
+            scale_list = weight_scale.tolist()
             scale_node = graph.make_node(
-                'Constant',
-                dtype=dtypes.ONNX.FLOAT,
-                value=weight_scale.tolist())
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+            zero_list = [0] * len(weight_scale.tolist())
             zero_node = graph.make_node(
-                'Constant',
-                dtype=dtypes.ONNX.INT8,
-                value=[0] * len(weight_scale.tolist()))
+                'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
+            graph.quantize_params_dict[weight_input] = [
+                scale_node, zero_node, scale_list, zero_list, quant_axis
+            ]
 
             quantize_node = graph.make_node(
                 'QuantizeLinear',
                 inputs=[weight_input, scale_node, zero_node],
                 axis=quant_axis)
-            filter_node = graph.make_node(
-                'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                axis=quant_axis)
-            try:
-                outputs = pre_node.output('Out', 0)
-            except:
-                outputs = pre_node.output('Output', 0)
-            graph.static_quantize_pre_convert_dict[outputs] = node.output('Out',
-                                                                          0)
-            graph.static_quantize_pre_convert_dict[weight_input] = filter_node
+            if graph.is_graph_output(node.output('Out', 0)):
+                graph.make_node(
+                    'DequantizeLinear',
+                    inputs=[quantize_node, scale_node, zero_node],
+                    outputs=[node.output('Out', 0)],
+                    axis=quant_axis)
+            else:
+                filter_node = graph.make_node(
+                    'DequantizeLinear',
+                    inputs=[quantize_node, scale_node, zero_node],
+                    axis=quant_axis)
+                try:
+                    outputs = pre_node.output('Out', 0)
+                except:
+                    outputs = pre_node.output('Output', 0)
+                graph.static_quantize_pre_convert_dict[outputs] = node.output(
+                    'Out', 0)
+                graph.static_quantize_pre_convert_dict[
+                    weight_input] = filter_node
 
 
 def static_quantize_post_process(graph):

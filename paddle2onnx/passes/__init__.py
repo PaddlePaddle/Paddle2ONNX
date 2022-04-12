@@ -15,5 +15,5 @@
 from .pass_manager import PassManager
 from .inplace_node_pass import InplaceNodePass
 from .remove_isolated_node_pass import RemoveIsolatedNodePass
-from .add_qunatize_ops_pass import AddQuantizeOpsPass
 from .dumplicate_names_pass import DumplicateNamesPass
+from .quantize_model_process_pass import QuantizeModelProcessPass
