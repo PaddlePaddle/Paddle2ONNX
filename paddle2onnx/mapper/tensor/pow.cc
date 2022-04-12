@@ -26,8 +26,7 @@ void PowMapper::Opset7() {
 
   auto factor_node = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
                                            std::vector<float>(1, factor_));
-  if (input_info[0].dtype == P2ODataType::INT32 || input_info[0].dtype == P2ODataType::INT64
-   || input_info[0].dtype == P2ODataType::FP64) {
+  if (input_info[0].dtype != P2ODataType::FP32) {
        std::string x_cast_name = helper_->AutoCast(
         {input_info[0].name}, input_info[0].dtype, P2ODataType::FP32);
      auto node = helper_->MakeNode("Pow", {x_cast_name, factor_node});
