@@ -70,7 +70,7 @@ If you need to configure the input shape, use the following command:
 |--input_shape_dict| **[Optional]**  Configure the input shape, the default is empty|
 |--version |**[Optional]** check the version of paddle2onnx |
 |--output_names| **[Optional]**  Set the output name of the model, the default is empty, support configuration in list form，for example：--output_names "['my_output1','my_output2']"，or in dict form，for example："{'paddle_output1':'my_output1', 'paddle_output2':'my_output2'}"|
-|--enable_sortcut_optimize| **[Optional]**  Whether enable sortcut optimize in resnet block when convert quantize model, Default value is True|
+|--deploy_backend| **[Optional]**  When the exported model is a quantized model, configure the deployed inference engine, which can be ONNXRuntime, TensorRT or Others. When the exported model is configured as Others, export the float model and quantization table, the table content is {tensor_name: scale, zero}, the default is Others|
 
 - Two types of PaddlePaddle models
    - Combined model, parameters saved in one binary file. --model_filename and --params_filename represents the file name and parameter name under the directory designated by --model_dir. --model_filename and --params_filename are valid only with parameter --model_dir.
