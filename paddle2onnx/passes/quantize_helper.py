@@ -180,12 +180,58 @@ def merge_conv_bn(graph):
 
             alpha = bn_scale / np.sqrt(bn_var + epsilon)
 
-            new_bias = conv_bias * alpha + (bn_scale - bn_mean * alpha)
+            new_bias = conv_bias * alpha + (bn_bias - bn_mean * alpha)
             new_weight = conv_weight.transpose(1, 2, 3, 0) * alpha
             new_weight = new_weight.transpose(3, 0, 1, 2)
             weight_params["data"] = new_weight
             graph.update_parameters(conv_weight_node, weight_params)
 
+            # update weight scale
+            quantize_params = graph.quantize_params_dict[conv_weight_node]
+            scale_node = quantize_params[0]
+            zero_node = quantize_params[1]
+            graph.remove_node_by_name(scale_node)
+            graph.remove_node_by_name(zero_node)
+            scale_list = quantize_params[2]
+            quant_axis = quantize_params[4]
+            if len(scale_list) == 1:
+                topk_data_sort = np.amax(np.abs(new_weight))
+                scale = topk_data_sort / 127.0
+                scale_list = scale.tolist()
+                if not isinstance(scale_list, list):
+                    scale_list = [scale_list]
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+                zero_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT8, value=0)
+                graph.quantize_params_dict[conv_weight_node] = [
+                    scale_node, zero_node, scale_list, [0], quant_axis
+                ]
+            else:
+                weight_abs = np.abs(new_weight)
+                transposed_weight = weight_abs
+                if quant_axis == 1:
+                    transposed_weight = weight_abs.transpose(1, 0)
+                reshaped_weight = np.reshape(transposed_weight,
+                                             (len(scale_list), -1))
+                topk_data_sort, _ = mapper_helper.np_topk_helper(
+                    reshaped_weight, 1, axis=1)
+                scale = topk_data_sort / 127.0
+                scale_list = scale.tolist()
+                if not isinstance(scale_list, list):
+                    scale_list = [scale_list]
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+                zero_node = graph.make_node(
+                    'Constant',
+                    dtype=dtypes.ONNX.INT8,
+                    value=[0] * len(scale_list))
+                graph.quantize_params_dict[conv_weight_node] = [
+                    scale_node, zero_node, scale_list, [0] * len(scale_list),
+                    quant_axis
+                ]
+
+            # bias scale and bias
             topk_data_sort = np.amax(np.abs(new_bias))
             scale = topk_data_sort / 127.0
             scale_list = scale.tolist()
@@ -196,8 +242,8 @@ def merge_conv_bn(graph):
             zero_node = graph.make_node(
                 'Constant', dtype=dtypes.ONNX.INT32, value=0)
 
+            # add bias for conv
             new_bias = new_bias / scale
-
             bias_params = copy.copy(weight_params)
             bias_params['shape'] = [new_bias.shape[0]]
             bias_params["data"] = new_bias.astype("int32")
@@ -211,7 +257,7 @@ def merge_conv_bn(graph):
             if graph.quantize_model_mode in ["float"]:
                 return graph
             graph.quantize_params_dict[
-                conv_bias_node] = [scale_node, zero_node, scale_list, [0], 0]
+                conv_bias_node] = [scale_node, zero_node, scale_list, [0], -1]
     return graph
 
 

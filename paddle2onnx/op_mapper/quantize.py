@@ -219,8 +219,7 @@ class FakeQuantizeDequantizeAbsMax():
 
         reshaped_weight = np.reshape(weight_abs, (-1))
 
-        topk_data_sort, _ = mapper_helper.np_topk_helper(
-            reshaped_weight, 1, axis=0)
+        topk_data_sort = np.array(np.amax(reshaped_weight))
         scale = topk_data_sort / 127.0
 
         quantize_weight = weight_numpy / scale
@@ -232,6 +231,8 @@ class FakeQuantizeDequantizeAbsMax():
         graph.update_parameters(key, update_param)
 
         scale_list = np.squeeze(scale).tolist()
+        if not isinstance(scale_list, list):
+            scale_list = [scale_list]
         scale_int = scale_list[0]
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_int)
