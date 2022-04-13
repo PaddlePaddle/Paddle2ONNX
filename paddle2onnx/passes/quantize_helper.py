@@ -217,8 +217,7 @@ def merge_conv_bn(graph):
 
             # bias scale and bias
             scale = np.squeeze(
-                scale *
-                graph.quantize_params_dict[conv_node.inputs[0]][2][0]) * 127.0
+                scale * graph.quantize_params_dict[conv_node.inputs[0]][2])
             scale_list = scale.tolist()
             if not isinstance(scale_list, list):
                 scale_list = [scale_list]
@@ -262,6 +261,8 @@ def add_q_dq(graph):
             if try_replacing_upstream_output(graph, node.inputs[0],
                                              node.outputs[0]):
                 graph.remove_node_by_name(name)
+                graph.quantize_params_dict[node.inputs[
+                    0]] = graph.quantize_params_dict[node.outputs[0]]
             else:
                 graph.tensor_to_be_quantize.append(node.inputs[0])
                 graph.tensor_to_be_quantize.append(node.outputs[0])
@@ -390,6 +391,7 @@ def collect_all_scales(graph):
                     out_threshold = node.attr("out_threshold")
                     if out_threshold is None:
                         continue
+                    out_threshold = out_threshold / 127
                     zero_node = graph.make_node(
                         'Constant', dtype=dtypes.ONNX.INT8, value=0)
                     scale_node = graph.make_node(
