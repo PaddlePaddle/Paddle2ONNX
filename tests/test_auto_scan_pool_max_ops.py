@@ -34,7 +34,6 @@ class NetMaxpool1d(BaseNet):
         padding = self.config['padding']
         ceil_mode = self.config['ceil_mode']
         return_mask = self.config['return_mask']
-
         x = paddle.nn.functional.max_pool1d(
             inputs,
             kernel_size=kernel_size,

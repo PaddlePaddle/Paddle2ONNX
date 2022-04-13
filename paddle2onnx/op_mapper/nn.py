@@ -141,17 +141,43 @@ class Pool():
                 "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
                 "is %s." % node.attrs['data_format']
         k_size = node.attr('ksize')
-        if node.attr('global_pooling') or (
-                node.attr('adaptive') and
-            (k_size == [1, 1] or k_size == [1, 1, 1])):
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][1],
-                inputs=node.input('X'),
-                outputs=node.output('Out'))
+        assert not node.attr(
+            'global_pooling'
+        ), " when attr 'global_pooling' is True, it's not supported"
+        # support GlobalMaxPool or GlobalAveragePool, ouput_size should be [1,1] or [1, 1, 1]
+        if node.attr('adaptive') and (k_size == [1, 1] or k_size == [1, 1, 1]):
+            cls.global_pool(graph, node)
         elif node.attr('adaptive'):
             cls.adaptive_pool(graph, node)
         else:
             cls.non_adaptive_pool(graph, node)
+
+    @classmethod
+    def global_pool(cls, graph, node):
+        x_dtype = node.input_dtype('X', 0)
+        need_dtype_convert = False
+        input_name = node.input('X', 0)
+        if x_dtype != paddle.float32:
+            need_dtype_convert = True
+            input_name = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.FLOAT)
+
+        # if pool is adaptive, check if input shape of pool is fixed.
+        mapper_helper.is_static_shape(node.input_shape('X', 0))
+        if node.type == "max_pool2d_with_index":
+            op = 'GlobalMaxPool'
+        else:
+            op = cls.pool_type[node.attr('pooling_type')][1]
+        if need_dtype_convert:
+            onnx_node = graph.make_node(op, inputs=[input_name])
+            graph.make_node(
+                'Cast',
+                inputs=[onnx_node],
+                outputs=node.output('Out'),
+                to=dtypes.ONNX.DOUBLE)
+        else:
+            onnx_node = graph.make_node(
+                op, inputs=node.input('X'), outputs=node.output('Out'))
 
     @classmethod
     def non_adaptive_pool(cls, graph, node):
