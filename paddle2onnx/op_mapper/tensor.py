@@ -190,7 +190,7 @@ class Concat():
 
 @op_mapper('assign')
 class Assign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -266,7 +266,6 @@ class Unstack():
         for i in range(len(output_y)):
             mapper_helper.squeeze_helper(graph, output_y[i], [axis],
                                          node.output('Y', i))
-
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
@@ -614,7 +613,6 @@ class Slice():
                        'value': starts})
         else:
             starts_node = starts
-
         if isinstance(ends, list):
             ends_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
@@ -1141,7 +1139,7 @@ class Squeeze():
 
 @op_mapper('assign_value')
 class Assign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

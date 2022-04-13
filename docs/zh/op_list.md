@@ -9,7 +9,7 @@
 | arg_sort | 6~15 |
 | asin | 7~12 |
 | anchor_generator | 11~12 |
-| assign_value | 1~12 |
+| assign_value | 1~15 |
 | all | 6~12 |
 | atan | 7~12 |
 | any | 6~12 |
