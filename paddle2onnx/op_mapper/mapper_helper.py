@@ -422,19 +422,102 @@ def get_param_from_paddle_graph(graph, name):
     return param, weight
 
 
-def np_topk_helper(matrix, K, axis=1):
-    if axis == 0:
-        row_index = np.arange(matrix.shape[1 - axis])
-        topk_index = np.argpartition(-matrix, K, axis=axis)[0:K, :]
-        topk_data = matrix[topk_index, row_index]
-        topk_index_sort = np.argsort(-topk_data, axis=axis)
-        topk_data_sort = topk_data[topk_index_sort, row_index]
-        topk_index_sort = topk_index[0:K, :][topk_index_sort, row_index]
-    else:
-        column_index = np.arange(matrix.shape[1 - axis])[:, None]
-        topk_index = np.argpartition(-matrix, K, axis=axis)[:, 0:K]
-        topk_data = matrix[column_index, topk_index]
-        topk_index_sort = np.argsort(-topk_data, axis=axis)
-        topk_data_sort = topk_data[column_index, topk_index_sort]
-        topk_index_sort = topk_index[:, 0:K][column_index, topk_index_sort]
-    return topk_data_sort, topk_index_sort
+def compute_scale_zp(rmin, rmax, qmin, qmax, symmetric=False):
+    '''
+    Calculate the scale s and zero point z for the quantization relation
+    r = s(q-z), where r are the original values and q are the corresponding
+    quantized values.
+
+    r and z are calculated such that every value within [rmin,rmax] has an
+    approximate representation within [qmin,qmax]. In addition, qmin <= z <=
+    qmax is enforced. If the symmetric flag is set to True, the interval
+    [rmin,rmax] is symmetrized to [-absmax, +absmax], where
+    absmax = max(abs(rmin), abs(rmax)).
+
+    :parameter rmin: minimum value of r
+    :parameter rmax: maximum value of r
+    :parameter qmin: minimum value representable by the target quantization data type
+    :parameter qmax: maximum value representable by the target quantization data type
+    :return: zero and scale [z, s]
+
+    '''
+
+    # Adjust rmin and rmax such that 0 is included in the range. This is
+    # required to make sure zero can be represented by the quantization data
+    # type (i.e. to make sure qmin <= zero_point <= qmax)
+    rmin = min(rmin, 0)
+    rmax = max(rmax, 0)
+
+    if symmetric:
+        absmax = max(abs(rmin), abs(rmax))
+        rmin = -absmax
+        rmax = +absmax
+
+    scale = (rmax - rmin) / float(qmax - qmin) if rmax != rmin else 1.0
+    zero_point = round(qmin - rmin / scale)
+
+    return [zero_point, scale]
+
+
+def quantize_data(data, symmetric):
+    '''
+    :param data: data to quantize
+    :param qType: data type to quantize to. Supported types UINT8 and INT8
+    :param symmetric: whether symmetric quantization is used or not. This is applied to INT8.
+    :return: minimum, maximum, zero point, scale, and quantized weights
+
+    To pack weights, we compute a linear transformation
+
+    - when data `type == uint8` mode, from `[rmin, rmax]` -> :math:`[0, 2^{b-1}]` and
+    - when data `type == int8`, from `[-m , m]` -> :math:`[-(2^{b-1}-1), 2^{b-1}-1]` where
+        `m = max(abs(rmin), abs(rmax))`
+
+    and add necessary intermediate nodes to trasnform quantized weight to full weight using the equation
+
+    :math:`r = S(q-z)`, where
+
+    - *r*: real original value
+    - *q*: quantized value
+    - *S*: scale
+    - *z*: zero point
+    '''
+
+    rmin = 0
+    rmax = 0
+    zero_point = 0
+    scale = 1.0
+    if len(data):
+        rmin = min(data)
+        rmax = max(data)
+        if symmetric:
+            (qmin, qmax) = (-127, 127)
+        else:
+            (qmin, qmax) = (-128, 127)
+
+        zero_point, scale = compute_scale_zp(rmin, rmax, qmin, qmax, symmetric)
+
+    return rmin, rmax, zero_point, scale
+
+
+def quantize_weight_per_channel(weights, channel_axis):
+    channel_count = weights.shape[channel_axis]
+    rmin_list = []
+    rmax_list = []
+    zero_point_list = []
+    scale_list = []
+    for i in range(channel_count):
+        per_channel_data = weights.take(i, channel_axis)
+        rmin, rmax, zero_point, scale = quantize_data(
+            per_channel_data.flatten().tolist(), True)
+        rmin_list.append(rmin)
+        rmax_list.append(rmax)
+        zero_point_list.append(zero_point)
+        scale_list.append(scale)
+
+    return scale_list, zero_point_list
+
+
+def quantize_weight(weight):
+    # Update packed weight, zero point, and scale initializers
+    _, _, zero_point, scale = quantize_data(weight.flatten().tolist(), True)
+    return [scale], [zero_point]

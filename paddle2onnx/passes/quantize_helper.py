@@ -193,58 +193,53 @@ def merge_conv_bn(graph):
             scale_list = quantize_params[2]
             quant_axis = quantize_params[4]
             if len(scale_list) == 1:
-                topk_data_sort = np.amax(np.abs(new_weight))
-                scale = topk_data_sort / 127.0
-                scale_list = scale.tolist()
-                if not isinstance(scale_list, list):
-                    scale_list = [scale_list]
-                scale_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+                scale_list, zero_list = mapper_helper.quantize_weight(
+                    new_weight, quant_axis)
+                scale = np.array(scale_list)
                 zero_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT8, value=0)
+                    'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
                 graph.quantize_params_dict[conv_weight_node] = [
                     scale_node, zero_node, scale_list, [0], quant_axis
                 ]
             else:
-                weight_abs = np.abs(new_weight)
-                transposed_weight = weight_abs
-                if quant_axis == 1:
-                    transposed_weight = weight_abs.transpose(1, 0)
-                reshaped_weight = np.reshape(transposed_weight,
-                                             (len(scale_list), -1))
-                topk_data_sort, _ = mapper_helper.np_topk_helper(
-                    reshaped_weight, 1, axis=1)
-                scale = topk_data_sort / 127.0
-                scale_list = np.squeeze(scale).tolist()
-                if not isinstance(scale_list, list):
-                    scale_list = [scale_list]
+                scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
+                    new_weight, quant_axis)
+                scale = np.array(scale_list)
+                zero_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+                graph.quantize_params_dict[conv_weight_node] = [
+                    scale_node, zero_node, scale_list, zero_list, quant_axis
+                ]
+
+            # bias scale and bias
+            scale = np.squeeze(
+                scale *
+                graph.quantize_params_dict[conv_node.inputs[0]][2][0]) * 127.0
+            scale_list = scale.tolist()
+            if not isinstance(scale_list, list):
+                scale_list = [scale_list]
+            if len(scale_list) == 1:
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+                zero_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT32, value=0)
+            else:
                 scale_node = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
                 zero_node = graph.make_node(
                     'Constant',
-                    dtype=dtypes.ONNX.INT8,
+                    dtype=dtypes.ONNX.INT32,
                     value=[0] * len(scale_list))
-                graph.quantize_params_dict[conv_weight_node] = [
-                    scale_node, zero_node, scale_list, [0] * len(scale_list),
-                    quant_axis
-                ]
-
-            # bias scale and bias
-            topk_data_sort = np.amax(np.abs(new_bias))
-            scale = topk_data_sort / 127.0
-            scale_list = scale.tolist()
-            if not isinstance(scale_list, list):
-                scale_list = [scale_list]
-            scale_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT32, value=0)
 
             # add bias for conv
             new_bias = new_bias / scale
             bias_params = copy.copy(weight_params)
             bias_params['shape'] = [new_bias.shape[0]]
-            bias_params["data"] = np.around(new_bias).astype("int32")
+            bias_params["data"] = np.round(new_bias).astype("int32")
             bias_params['dtype'] = paddle.int32
             graph.update_parameters(conv_bias_node, bias_params)
 
@@ -395,7 +390,6 @@ def collect_all_scales(graph):
                     out_threshold = node.attr("out_threshold")
                     if out_threshold is None:
                         continue
-                    out_threshold = out_threshold / 127.
                     zero_node = graph.make_node(
                         'Constant', dtype=dtypes.ONNX.INT8, value=0)
                     scale_node = graph.make_node(

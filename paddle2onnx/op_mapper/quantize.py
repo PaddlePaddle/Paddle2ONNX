@@ -143,42 +143,15 @@ class FakeChannelWiseQuantizeDequantizeAbsMax():
         param, weight = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         weight_numpy = np.array(weight)
-        weight_abs = np.abs(weight_numpy)
-
-        input_shape = node.input_shape('X', 0)
+        scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
+            weight_numpy, quant_axis)
+        scale = np.array(scale_list)
         zero_node = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.INT8,
-            value=[0] * input_shape[quant_axis])
-        transposed_weight = weight_abs
-        if quant_axis == 1:
-            transposed_weight = weight_abs.transpose(1, 0)
-        reshaped_weight = np.reshape(transposed_weight,
-                                     (input_shape[quant_axis], -1))
-
-        topk_data_sort, _ = mapper_helper.np_topk_helper(
-            reshaped_weight, 1, axis=1)
-        scale = topk_data_sort / 127.0
-        if len(input_shape) == 4:
-            scale = np.expand_dims(scale, axis=[2, 3])
-        else:
-            scale = np.squeeze(scale)
-
-        quantize_weight = weight_numpy / scale
-        around_weight_data = np.around(quantize_weight)
-
-        dequantize_weight = around_weight_data * scale
-
-        param['data'] = dequantize_weight
-        graph.update_parameters(key, param)
-
-        scale_list = np.squeeze(scale).tolist()
-
+            'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
         graph.quantize_params_dict[node.input('X', 0)] = [
-            scale_node, zero_node, scale_list, [0] * input_shape[quant_axis],
-            quant_axis
+            scale_node, zero_node, scale_list, zero_list, quant_axis
         ]
         quantize_node = graph.make_node(
             'QuantizeLinear',
@@ -211,31 +184,12 @@ class FakeQuantizeDequantizeAbsMax():
         key = node.input('X', 0)
         update_param, weight = mapper_helper.get_param_from_paddle_graph(graph,
                                                                          key)
-
         weight_numpy = np.array(weight)
-        weight_abs = np.abs(weight_numpy)
+        scale_list, zero_list = mapper_helper.quantize_weight(weight_numpy)
 
-        zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
-
-        reshaped_weight = np.reshape(weight_abs, (-1))
-
-        topk_data_sort = np.array(np.amax(reshaped_weight))
-        scale = topk_data_sort / 127.0
-
-        quantize_weight = weight_numpy / scale
-        around_weight_data = np.around(quantize_weight)
-
-        dequantize_weight = around_weight_data * scale
-
-        update_param['data'] = dequantize_weight
-        graph.update_parameters(key, update_param)
-
-        scale_list = np.squeeze(scale).tolist()
-        if not isinstance(scale_list, list):
-            scale_list = [scale_list]
-        scale_int = scale_list[0]
         scale_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_int)
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+        zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
         graph.quantize_params_dict[node.input(
             'X', 0)] = [scale_node, zero_node, scale_list, [0], -1]
         quantize_node = graph.make_node(
@@ -353,36 +307,10 @@ class FakeChannelWiseQuantizeAbsMax():
         param, weight = mapper_helper.get_param_from_paddle_graph(graph, key)
 
         weight_numpy = np.array(weight)
-        weight_abs = np.abs(weight_numpy)
-
-        input_shape = node.input_shape('X', 0)
+        scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
+            weight_numpy)
         zero_node = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.INT8,
-            value=[0] * input_shape[quant_axis])
-        transposed_weight = weight_abs
-        if quant_axis == 1:
-            transposed_weight = weight_abs.transpose(1, 0)
-        reshaped_weight = np.reshape(transposed_weight,
-                                     (input_shape[quant_axis], -1))
-
-        topk_data_sort, _ = mapper_helper.np_topk_helper(
-            reshaped_weight, 1, axis=1)
-        scale = topk_data_sort / 127.0
-        if len(input_shape) == 4:
-            scale = np.expand_dims(scale, axis=[2, 3])
-        else:
-            scale = np.squeeze(scale)
-
-        quantize_weight = weight_numpy / scale
-        around_weight_data = np.around(quantize_weight)
-
-        dequantize_weight = around_weight_data * scale
-
-        param['data'] = dequantize_weight
-        graph.update_parameters(key, param)
-
-        scale_list = np.squeeze(scale).tolist()
+            'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
 
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
@@ -400,8 +328,7 @@ class FakeChannelWiseQuantizeAbsMax():
         update_param['data'] = vals.numpy()
         graph.update_parameters(key, update_param)
         graph.quantize_params_dict[node.input('X', 0)] = [
-            scale_node, zero_node, scale_list, [0] * input_shape[quant_axis],
-            quant_axis
+            scale_node, zero_node, scale_list, zero_list, quant_axis
         ]
 
 
