@@ -85,8 +85,8 @@ def split_helper(graph, input, axis=0, split=None, outputs=None):
         split_node = graph.make_node(
             "Split", inputs=inputs, axis=axis, outputs=outputs)
         return split_node
-
-
+    
+    
 def slice_helper(graph,
                  input,
                  axes,
