@@ -36,10 +36,14 @@ class WhereIndex():
 
 @op_mapper('top_k_v2')
 class TopKV2():
-    support_opset_version_range = (11, )
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        sorted = node.attr('sorted')
+        # for paddle, In gpu device, it always return the sorted value
+        # if not sorted:
+        #     sorted = True
         if 'K' in node.inputs and len(node.input('K')) > 0:
             k_node = node.input('K', 0)
             k_node_dtype = node.input_dtype('K', 0)
@@ -51,7 +55,7 @@ class TopKV2():
                 inputs=[node.input('X', 0), k_node],
                 outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 largest=node.attr('largest'),
-                sorted=node.attr('sorted'),
+                sorted=sorted,
                 axis=node.attr('axis'))
         else:
             k = node.attr('k')
@@ -63,7 +67,7 @@ class TopKV2():
                 inputs=[node.input('X', 0), k_node],
                 outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 largest=node.attr('largest'),
-                sorted=node.attr('sorted'),
+                sorted=sorted,
                 axis=node.attr('axis'))
 
 

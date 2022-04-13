@@ -32,6 +32,9 @@ class Net(BaseNet):
                                      mode=mode,
                                      value=value,
                                      data_format=data_format)
+        shape = paddle.shape(x)
+        x = paddle.reshape(x, shape)
+
         return x
 
 
@@ -55,11 +58,14 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
         data_format = None
         if len(input_shape) == 3:
-            data_format = draw(st.sampled_from(["NCL", "NLC"]))
+            #            data_format = draw(st.sampled_from(["NCL", "NLC"]))
+            data_format = "NCL"
         elif len(input_shape) == 4:
-            data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
+            #            data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
+            data_format = "NCHW"
         else:
-            data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
+            #            data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
+            data_format = "NCDHW"
 
         pad = None
         if len(input_shape) == 3:
@@ -116,6 +122,9 @@ class Net2(BaseNet):
                                      mode=mode,
                                      value=value,
                                      data_format=data_format)
+        shape = paddle.shape(x)
+        x = paddle.reshape(x, shape)
+
         return x
 
 
@@ -138,7 +147,8 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
         value = draw(st.floats(min_value=0, max_value=10))
 
         data_format = None
-        data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
+        #data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
+        data_format = "NCDHW"
 
         pad = draw(
             st.lists(
@@ -149,7 +159,7 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
             "op_names": ["pad3d"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [11],
+            "opset_version": [11, 12, 13, 14, 15],
             "input_spec_shape": [],
             "mode": mode,
             "value": value,

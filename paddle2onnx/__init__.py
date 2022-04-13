@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 
-__version__ = "0.9.2"
+__version__ = "0.9.5rc0"
 
 import paddle
 from .convert import dygraph2onnx, program2onnx
@@ -34,6 +34,13 @@ OP_WITHOUT_KERNEL_SET = {
 }
 
 
+def process_old_ops_desc(model):
+    for i in range(len(model.blocks[0].ops)):
+        if model.blocks[0].ops[i].type == "matmul":
+            if not model.blocks[0].ops[i].has_attr("head_number"):
+                model.blocks[0].ops[i]._set_attr("head_number", 1)
+
+
 def get_all_registered_ops(save_file=None):
     ops = list(OpMapper.OPSETS.keys())
     logging.warning("The number of all registered OPs is: {}".format(len(ops)))
@@ -52,6 +59,7 @@ def get_all_registered_ops(save_file=None):
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
     paddle_version = paddle.__version__
     if isinstance(model, paddle.static.Program):
+        process_old_ops_desc(model)
         if input_shape_dict is not None:
             model_version = model.desc._version()
             major_ver = model_version // 1000000
@@ -87,6 +95,7 @@ def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
             opset_version=opset_version,
             enable_onnx_checker=True)
     elif isinstance(model, paddle.jit.TranslatedLayer):
+        process_old_ops_desc(model.program())
         model_version = model.program().desc._version()
         major_ver = model_version // 1000000
         minor_ver = (model_version - major_ver * 1000000) // 1000

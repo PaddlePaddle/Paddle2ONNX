@@ -45,8 +45,9 @@ def unsqueeze_helper(graph, input, axes, outputs=None):
     inputs.append(input[0])
     if not isinstance(axes, list):
         axes = [axes]
-    if outputs is not None and not isinstance(outputs, list):
+    if outputs is not None and isinstance(outputs, six.string_types):
         outputs = [outputs]
+
     if graph.opset_version < 13:
         unsqueeze_node = graph.make_node(
             "Unsqueeze", inputs=inputs, outputs=outputs, axes=axes)
@@ -83,8 +84,8 @@ def split_helper(graph, input, axis=0, split=None, outputs=None):
         split_node = graph.make_node(
             "Split", inputs=inputs, axis=axis, outputs=outputs)
         return split_node
-
-
+    
+    
 def slice_helper(graph,
                  input,
                  axes,
@@ -102,14 +103,16 @@ def slice_helper(graph,
         starts = [starts]
     if ends is not None and not isinstance(ends, (list, six.string_types)):
         ends = [ends]
+
     if graph.opset_version < 10:
+        attrs = {
+            'starts': starts,
+            'ends': ends,
+        }
+        if axes not in [None, []]:
+            attrs['axes'] = axes
         slice_node = graph.make_node(
-            "Slice",
-            inputs=inputs,
-            outputs=outputs,
-            axes=axes,
-            starts=starts,
-            ends=ends)
+            "Slice", inputs=inputs, outputs=outputs, attrs=attrs)
         return slice_node
     else:
         if not isinstance(starts, six.string_types):
@@ -117,7 +120,7 @@ def slice_helper(graph,
         if not isinstance(ends, six.string_types):
             ends = graph.make_node('Constant', dtype=dtype, value=ends)
         inputs = inputs + [starts, ends]
-        if axes is not None:
+        if axes not in [None, []]:
             axes_node = graph.make_node('Constant', dtype=dtype, value=axes)
             inputs.append(axes_node)
         slice_node = graph.make_node("Slice", inputs=inputs, outputs=outputs)
