@@ -164,7 +164,7 @@ class Pool():
 
         # if pool is adaptive, check if input shape of pool is fixed.
         mapper_helper.is_static_shape(node.input_shape('X', 0))
-        if node.type == "max_pool2d_with_index":
+        if node.type in ["max_pool2d_with_index", "max_pool3d_with_index"]:
             op = 'GlobalMaxPool'
         else:
             op = cls.pool_type[node.attr('pooling_type')][1]
@@ -313,11 +313,12 @@ class Pool():
             attrs['auto_pad'] = 'VALID'
         if node.attr('pooling_type') == 'avg':
             attrs['count_include_pad'] = not node.attr('exclusive')
+        if node.type in ["max_pool2d_with_index", "max_pool3d_with_index"]:
+            op = 'MaxPool'
+        else:
+            op = cls.pool_type[node.attr('pooling_type')][0]
         if need_dtype_convert:
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][0],
-                inputs=[input_name],
-                attrs=attrs)
+            onnx_node = graph.make_node(op, inputs=[input_name], attrs=attrs)
             graph.make_node(
                 'Cast',
                 inputs=[onnx_node],
@@ -325,7 +326,7 @@ class Pool():
                 to=dtypes.ONNX.DOUBLE)
         else:
             onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][0],
+                op,
                 inputs=[input_name],
                 outputs=node.output('Out'),
                 attrs=attrs)
