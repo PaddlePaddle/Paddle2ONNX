@@ -113,9 +113,10 @@ class ConvTranspose():
             attrs=attrs)
 
 
-@op_mapper('pool2d')
+@op_mapper(
+    ['pool2d', 'pool3d', 'max_pool2d_with_index', 'max_pool3d_with_index'])
 class Pool():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
     pool_type = {
         'max': ('MaxPool', 'GlobalMaxPool'),
         'avg': ('AveragePool', 'GlobalAveragePool')
@@ -134,9 +135,26 @@ class Pool():
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == "AnyLayout",  \
-                            "The conv data format should be 'NCHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
+        if node.type not in ["max_pool2d_with_index", "max_pool3d_with_index"]:
+            assert node.attrs['data_format'] == 'NCHW' or node.attrs['data_format'] == 'NCDHW' or node.attrs[
+                'data_format'] == "AnyLayout", \
+                "The conv data format should be 'NCHW' or 'NCDHW', but received data format " \
+                "is %s." % node.attrs['data_format']
+        k_size = node.attr('ksize')
+        if node.attr('global_pooling') or (
+                node.attr('adaptive') and
+            (k_size == [1, 1] or k_size == [1, 1, 1])):
+            onnx_node = graph.make_node(
+                cls.pool_type[node.attr('pooling_type')][1],
+                inputs=node.input('X'),
+                outputs=node.output('Out'))
+        elif node.attr('adaptive'):
+            cls.adaptive_pool(graph, node)
+        else:
+            cls.non_adaptive_pool(graph, node)
+
+    @classmethod
+    def non_adaptive_pool(cls, graph, node):
         x_dtype = node.input_dtype('X', 0)
         need_dtype_convert = False
         input_name = node.input('X', 0)
@@ -145,138 +163,71 @@ class Pool():
             input_name = graph.make_node(
                 'Cast', inputs=node.input('X'), to=dtypes.ONNX.FLOAT)
 
-        if node.attr('global_pooling') or (node.attr('adaptive') and
-                                           node.attr('ksize') == [1, 1]):
-            if need_dtype_convert:
-                onnx_node = graph.make_node(
-                    cls.pool_type[node.attr('pooling_type')][1],
-                    inputs=[input_name])
-                graph.make_node(
-                    'Cast',
-                    inputs=[onnx_node],
-                    outputs=node.output('Out'),
-                    to=dtypes.ONNX.DOUBLE)
-            else:
-                onnx_node = graph.make_node(
-                    cls.pool_type[node.attr('pooling_type')][1],
-                    inputs=[input_name],
-                    outputs=node.output('Out'))
-        elif node.attr('adaptive'):
-            # if pool is adaptive, check if input shape of pool is fixed.
-            if node.input_shape('X', 0)[2:].count(-1) > 0:
-                raise Exception(
-                    "Converting this model to ONNX need with static input shape," \
-                    " please fix input shape of this model, see doc Q2 in" \
-                    " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
-                )
-            input_h, input_w = node.input_shape('X', 0)[2:]
-            output_h, output_w = node.output_shape('Out', 0)[2:]
-            stride_h = int(input_h / output_h)
-            stride_w = int(input_w / output_w)
+        input_shape = node.input_shape('X', 0)
+        pads = node.attr('paddings')
+        strides = node.attr('strides')
+        k_size = node.attr('ksize')
 
-            kernel_h = input_h - (output_h - 1) * stride_h
-            kernel_w = input_w - (output_w - 1) * stride_w
+        if len(pads) == 2 or len(pads) == 3:
+            pads = pads + pads
+        elif len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        elif len(pads) == 6:
+            pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
 
-            #check if kernel_size is fixed.
-            if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
-                    input_w, output_w):
-                raise Exception(
-                    "Cannot convert adaptive pool with input_size: {}, output_size: {}"
-                    .format(
-                        node.input_shape('X', 0), node.output_shape('Out', 0)))
+        for i in range(len(input_shape) - 2):
+            if input_shape[i + 2] > 0 and input_shape[i + 2] + pads[i] < k_size[
+                    i]:
+                k_size[i] = input_shape[i + 2] + pads[i]
+
+        input_x = [input_name]
+        # deal the case when max(k_size) <= max(pads)
+        if max(k_size) <= max(pads):
+            n = (int)(len(pads) / 2)
+            onnx_paddings = [0, 0] + pads[:n] + [0, 0] + pads[n:]
+            attrs_pad = {'mode': 'constant', }
+            if graph.opset_version >= 11:
+                pads_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.INT64,
+                           'value': onnx_paddings})
+                value_node = graph.make_node(
+                    'Constant',
+                    attrs={'dtype': dtypes.ONNX.FLOAT,
+                           'value': 0.0})
+                input_x = input_x + [pads_node, value_node]
             else:
-                attrs = {
-                    'kernel_shape': (kernel_h, kernel_w),
-                    'strides': (stride_h, stride_w),
-                }
-                if node.attr('ceil_mode') and graph.opset_version < 10:
-                    raise Exception(
-                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
-                    )
-                elif graph.opset_version > 10:
-                    attrs['ceil_mode'] = node.attr('ceil_mode')
-                auto_pad = node.attr('padding_algorithm')
-                if auto_pad == 'SAME':
-                    attrs['auto_pad'] = 'SAME_UPPER'
-                elif auto_pad == 'VALID':
-                    attrs['auto_pad'] = 'VALID'
-                if node.attr('pooling_type') == 'avg':
-                    attrs['count_include_pad'] = not node.attr('exclusive')
-                if need_dtype_convert:
-                    onnx_node = graph.make_node(
-                        cls.pool_type[node.attr('pooling_type')][0],
-                        inputs=[input_name],
-                        attrs=attrs)
-                    graph.make_node(
-                        'Cast',
-                        inputs=[onnx_node],
-                        outputs=node.output('Out'),
-                        to=dtypes.ONNX.DOUBLE)
-                else:
-                    onnx_node = graph.make_node(
-                        cls.pool_type[node.attr('pooling_type')][0],
-                        inputs=[input_name],
-                        outputs=node.output('Out'),
-                        attrs=attrs)
+                attrs_pad['pads'] = onnx_paddings
+                attrs_pad['value'] = 0.0
+            input_x = graph.make_node('Pad', inputs=input_x, attrs=attrs_pad)
+            pads = [0, 0] * n
+
+        attrs = {
+            'kernel_shape': k_size,
+            'strides': strides,
+        }
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
         else:
-            input_shape = node.input_shape('X', 0)
-            k_size = node.attr('ksize')
-            pads = node.attr('paddings')
-            strides = node.attr('strides')
+            attrs['pads'] = pads
+        if node.attr('ceil_mode') and graph.opset_version < 10:
+            raise Exception(
+                "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
+            )
+        elif node.attr('ceil_mode') is not None and graph.opset_version >= 10:
+            attrs['ceil_mode'] = node.attr('ceil_mode')
 
-            if len(pads) == 2:
-                pads = pads + pads
-            elif len(pads) == 4:
-                pads = [pads[i] for i in [0, 2, 1, 3]]
+        if node.attr('pooling_type') == 'avg':
+            attrs['count_include_pad'] = not node.attr('exclusive')
 
-            if input_shape[2] > 0 and input_shape[2] + pads[0] < k_size[0]:
-                k_size[0] = input_shape[2] + pads[0]
-            if input_shape[3] > 0 and input_shape[3] + pads[1] < k_size[1]:
-                k_size[1] = input_shape[3] + pads[1]
-
-            input_x = [input_name]
-            if max(k_size) <= max(pads):
-                onnx_paddings = [0, 0, pads[0], pads[1], 0, 0, pads[2], pads[3]]
-                attrs_pad = {'mode': 'constant', }
-                if graph.opset_version >= 11:
-                    pads_node = graph.make_node(
-                        'Constant',
-                        attrs={
-                            'dtype': dtypes.ONNX.INT64,
-                            'value': onnx_paddings
-                        })
-                    value_node = graph.make_node(
-                        'Constant',
-                        attrs={'dtype': dtypes.ONNX.FLOAT,
-                               'value': 0.0})
-                    input_x = input_x + [pads_node, value_node]
-                else:
-                    attrs_pad['pads'] = onnx_paddings
-                    attrs_pad['value'] = 0.0
-                input_x = graph.make_node(
-                    'Pad', inputs=input_x, attrs=attrs_pad)
-                pads = [0, 0, 0, 0]
-
-            attrs = {
-                'kernel_shape': k_size,
-                'strides': strides,
-            }
-            auto_pad = node.attr('padding_algorithm')
-            if auto_pad == 'SAME':
-                attrs['auto_pad'] = 'SAME_UPPER'
-            elif auto_pad == 'VALID':
-                attrs['auto_pad'] = 'VALID'
-            else:
-                attrs['pads'] = pads
-            if node.attr('ceil_mode') and graph.opset_version < 10:
-                raise Exception(
-                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
-                )
-            elif graph.opset_version >= 10:
-                attrs['ceil_mode'] = node.attr('ceil_mode')
-
-            if node.attr('pooling_type') == 'avg':
-                attrs['count_include_pad'] = not node.attr('exclusive')
+        if node.type in ["max_pool2d_with_index", "max_pool3d_with_index"]:
+            cls.get_max_pool2d_with_index(graph, node,
+                                          len(k_size), input_x, attrs,
+                                          need_dtype_convert)
+        else:
             if need_dtype_convert:
                 onnx_node = graph.make_node(
                     cls.pool_type[node.attr('pooling_type')][0],
@@ -294,116 +245,122 @@ class Pool():
                     outputs=node.output('Out'),
                     attrs=attrs)
 
-
-@op_mapper('pool3d')
-class Pool3D():
-    support_opset_version_range = (1, 12)
-    pool_type = {
-        'max': ('MaxPool', 'GlobalMaxPool'),
-        'avg': ('AveragePool', 'GlobalAveragePool')
-    }
-
     @classmethod
-    def is_same_span(cls, in_size, out_size):
-        spans = []
-        for i in range(out_size):
-            start = math.floor(i * (in_size / out_size))
-            end = math.ceil((i + 1) * (in_size / out_size))
-            spans.append(end - start)
-        if len(set(spans)) == 1:
-            return True
-        return False
+    def adaptive_pool(cls, graph, node):
+        x_dtype = node.input_dtype('X', 0)
+        need_dtype_convert = False
+        input_name = node.input('X', 0)
+        if x_dtype != paddle.float32:
+            need_dtype_convert = True
+            input_name = graph.make_node(
+                'Cast', inputs=node.input('X'), to=dtypes.ONNX.FLOAT)
+        # if pool is adaptive, check if input shape of pool is fixed.
+        mapper_helper.is_static_shape(node.input_shape('X', 0))
+        input_shape = np.array(node.input_shape('X', 0)[2:])
+        output_shape = np.array(node.output_shape('Out', 0)[2:])
+        stride = input_shape // output_shape
+        kernel = input_shape - (output_shape - 1) * stride
 
-    @classmethod
-    def opset_1(cls, graph, node, **kw):
-        assert node.attrs['data_format'] == 'NCDHW' or node.attrs['data_format'] == "AnyLayout",  \
-                            "The conv data format should be 'NCDHW', but received data format " \
-                            "is %s." % node.attrs['data_format']
-
-        if node.attr('global_pooling') or (node.attr('adaptive') and
-                                           node.attr('ksize') == [1, 1, 1]):
-            onnx_node = graph.make_node(
-                cls.pool_type[node.attr('pooling_type')][1],
-                inputs=node.input('X'),
-                outputs=node.output('Out'))
-        elif node.attr('adaptive'):
-            # if pool is adaptive, check if input shape of pool is fixed.
-            if node.input_shape('X', 0)[2:].count(-1) > 0:
-                raise Exception(
-                    "Converting this model to ONNX need with static input shape," \
-                    " please fix input shape of this model, see doc Q2 in" \
-                    " https://github.com/PaddlePaddle/paddle2onnx/blob/develop/docs/en/FAQ.md."
-                )
-            input_d, input_h, input_w = node.input_shape('X', 0)[2:]
-            output_d, output_h, output_w = node.output_shape('Out', 0)[2:]
-            stride_d = int(input_d / output_d)
-            stride_h = int(input_h / output_h)
-            stride_w = int(input_w / output_w)
-
-            kernel_d = input_d - (output_d - 1) * stride_d
-            kernel_h = input_h - (output_h - 1) * stride_h
-            kernel_w = input_w - (output_w - 1) * stride_w
-
-            #check if kernel_size is fixed.
-            if not cls.is_same_span(input_h, output_h) or not cls.is_same_span(
-                    input_w, output_w) or not cls.is_same_span(input_d,
-                                                               output_d):
+        for i in range(len(input_shape)):
+            # check if kernel_size is fixed.
+            if not cls.is_same_span(input_shape[i], output_shape[i]):
                 raise Exception(
                     "Cannot convert adaptive pool with input_size: {}, output_size: {}"
                     .format(
                         node.input_shape('X', 0), node.output_shape('Out', 0)))
-            else:
-                attrs = {
-                    'kernel_shape': (kernel_d, kernel_h, kernel_w),
-                    'strides': (stride_d, stride_h, stride_w),
-                }
-                if node.attr('ceil_mode') and graph.opset_version < 10:
-                    raise Exception(
-                        "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
-                    )
-                elif graph.opset_version > 10:
-                    attrs['ceil_mode'] = node.attr('ceil_mode')
-                auto_pad = node.attr('padding_algorithm')
-                if auto_pad == 'SAME':
-                    attrs['auto_pad'] = 'SAME_UPPER'
-                elif auto_pad == 'VALID':
-                    attrs['auto_pad'] = 'VALID'
-                if node.attr('pooling_type') == 'avg':
-                    attrs['count_include_pad'] = not node.attr('exclusive')
-                onnx_node = graph.make_node(
-                    cls.pool_type[node.attr('pooling_type')][0],
-                    inputs=node.input('X'),
-                    outputs=node.output('Out'),
-                    attrs=attrs)
-        else:
-            input_shape = node.input_shape('X', 0)
-            k_size = node.attr('ksize')
-            paddings = node.attr('paddings')
-            if input_shape[2] > 0 and input_shape[2] + paddings[0] < k_size[0]:
-                k_size[0] = input_shape[2] + paddings[0]
-            if input_shape[3] > 0 and input_shape[3] + paddings[1] < k_size[1]:
-                k_size[1] = input_shape[3] + paddings[1]
-            if input_shape[4] > 0 and input_shape[4] + paddings[2] < k_size[2]:
-                k_size[2] = input_shape[4] + paddings[2]
-            attrs = {
-                'kernel_shape': k_size,
-                'strides': node.attr('strides'),
-                'pads': node.attr('paddings') + node.attr('paddings'),
-            }
-            if node.attr('ceil_mode') and graph.opset_version < 10:
-                raise Exception(
-                    "Cannot convert pool with ceil_model == True to ONNX Opset version < 10"
-                )
-            elif graph.opset_version >= 10:
-                attrs['ceil_mode'] = node.attr('ceil_mode')
 
-            if node.attr('pooling_type') == 'avg':
-                attrs['count_include_pad'] = not node.attr('exclusive')
+        attrs = {
+            'kernel_shape': kernel,
+            'strides': stride,
+        }
+
+        if node.attr('ceil_mode') and graph.opset_version < 10:
+            raise Exception(
+                "Cannot convert pool with ceil_model == True to ONNX Opset version < 10."
+            )
+        elif node.attr('ceil_mode') is not None and graph.opset_version > 10:
+            attrs['ceil_mode'] = node.attr('ceil_mode')
+        auto_pad = node.attr('padding_algorithm')
+        if auto_pad == 'SAME':
+            attrs['auto_pad'] = 'SAME_UPPER'
+        elif auto_pad == 'VALID':
+            attrs['auto_pad'] = 'VALID'
+        if node.attr('pooling_type') == 'avg':
+            attrs['count_include_pad'] = not node.attr('exclusive')
+        if need_dtype_convert:
             onnx_node = graph.make_node(
                 cls.pool_type[node.attr('pooling_type')][0],
-                inputs=node.input('X'),
+                inputs=[input_name],
+                attrs=attrs)
+            graph.make_node(
+                'Cast',
+                inputs=[onnx_node],
+                outputs=node.output('Out'),
+                to=dtypes.ONNX.DOUBLE)
+        else:
+            onnx_node = graph.make_node(
+                cls.pool_type[node.attr('pooling_type')][0],
+                inputs=[input_name],
                 outputs=node.output('Out'),
                 attrs=attrs)
+
+    @classmethod
+    def get_max_pool2d_with_index(cls,
+                                  graph,
+                                  node,
+                                  ndims,
+                                  input,
+                                  attrs,
+                                  need_dtype_convert=False):
+        if graph.opset_version < 9:
+            raise Exception(
+                "Pool in onnx(opset<9) not support 'return index', Try converting with opset_version >=9"
+            )
+        mask_indices = graph.generate_node_name("pool")
+        flattened_indices = graph.generate_node_name("pool")
+        flattened_out = graph.generate_node_name("pool")
+        output_out = graph.generate_node_name("pool")
+
+        if need_dtype_convert:
+            graph.make_node(
+                'MaxPool',
+                inputs=input,
+                outputs=[output_out, mask_indices],
+                attrs=attrs)
+            graph.make_node(
+                'Cast',
+                inputs=[output_out],
+                outputs=node.output('Out'),
+                to=dtypes.ONNX.DOUBLE)
+        else:
+            graph.make_node(
+                'MaxPool',
+                inputs=input,
+                outputs=[node.output('Out', 0), mask_indices],
+                attrs=attrs)
+
+        graph.make_node(
+            'MaxPool',
+            inputs=input,
+            outputs=[flattened_out, flattened_indices],
+            kernel_shape=[1] * ndims,
+            strides=[1] * ndims)
+
+        axes = [2 + i for i in range(ndims)]
+        s = mapper_helper.slice_helper(
+            graph,
+            flattened_indices,
+            axes=axes,
+            starts=[0] * ndims,
+            ends=[1] * ndims)
+        onnx_node = graph.make_node("Sub", inputs=[mask_indices, s])
+        graph.make_node(
+            'Cast',
+            inputs=[onnx_node],
+            outputs=node.output('Mask'),
+            attrs={
+                'to': dtypes.DTYPE_PADDLE_ONNX_MAP[node.output_dtype('Mask', 0)]
+            })
 
 
 @op_mapper('elu')
