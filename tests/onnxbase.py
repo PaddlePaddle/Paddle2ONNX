@@ -264,15 +264,14 @@ class APIOnnx(object):
 
         included = False
         paddle_op_list = []
-        for op in self.ops:
-            for key, node in paddle_graph.node_map.items():
-                paddle_op_list.append(node.type)
-                if op == node.type:
-                    included = True
-                    break
+        assert len(self.ops) == 1, "You have to set one op name"
+        for key, node in paddle_graph.node_map.items():
+            op_type = node.type
+            op_type = op_type.replace("depthwise_", "")
+            if op_type == self.ops[0]:
+                included = True
 
-        if len(paddle_graph.node_map.keys()) == 0 and len(
-                self.ops) == 1 and self.ops[0] == '':
+        if len(paddle_graph.node_map.keys()) == 0 and self.ops[0] == '':
             included = True
 
         assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
@@ -289,7 +288,9 @@ class APIOnnx(object):
         find = False
         for block in prog.blocks:
             for op in block.ops:
-                if op.type == op_name:
+                op_type = node.type
+                op_type = op_type.replace("depthwise_", "")
+                if op_type == op_name:
                     find = True
         return find
 
