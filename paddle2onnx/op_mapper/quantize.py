@@ -219,19 +219,16 @@ class FakeQuantizeRangeAbsMax():
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
 
-        if graph.quantize_model_mode in ["static"]:
-            quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[input_node_name, scale_node, zero_node])
-            graph.make_node(
-                'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                outputs=node.output('Out', 0))
-        else:
-            quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[input_node_name, scale_node, zero_node],
-                outputs=node.output('Out', 0))
+        assert graph.quantize_model_mode in [
+            "static"
+        ], "fake_quantize_range_abs_max only can be in static quantize model"
+        quantize_node = graph.make_node(
+            'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
+        graph.make_node(
+            'DequantizeLinear',
+            inputs=[quantize_node, scale_node, zero_node],
+            outputs=node.output('Out', 0))
+
         graph.quantize_params_dict[node.input(
             'X', 0)] = [scale_node, zero_node, scale_list, [0], -1]
 
@@ -242,6 +239,9 @@ class FakeQuantizeMovingAverageAbsMax():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
+        assert graph.quantize_model_mode in [
+            "static"
+        ], "fake_quantize_moving_average_abs_max only can be in static quantize model"
         zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
 
         key = node.input('InScale', 0)
@@ -252,19 +252,12 @@ class FakeQuantizeMovingAverageAbsMax():
         scale_list = [float(in_scale[0]) / 127.0]
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-        if graph.quantize_model_mode in ["static"]:
-            quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[input_node_name, scale_node, zero_node])
-            graph.make_node(
-                'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                outputs=node.output('Out', 0))
-        else:
-            quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[input_node_name, scale_node, zero_node],
-                outputs=node.output('Out', 0))
+        quantize_node = graph.make_node(
+            'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
+        graph.make_node(
+            'DequantizeLinear',
+            inputs=[quantize_node, scale_node, zero_node],
+            outputs=node.output('Out', 0))
         graph.quantize_params_dict[node.input(
             'X', 0)] = [scale_node, zero_node, scale_list, [0], -1]
 
@@ -275,24 +268,9 @@ class FakeDequantizeMaxAbs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        if graph.quantize_model_mode in ["static"]:
-            return
-        zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
-
-        key = node.input('Scale', 0)
-        _, in_scale = mapper_helper.get_param_from_paddle_graph(graph, key)
-        in_scale = np.array(in_scale)
-
-        in_scale = in_scale / 127.0
-        in_scale_list = in_scale.tolist()
-        scale_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=in_scale_list[0])
-        graph.quantize_params_dict[node.input(
-            'X', 0)] = [scale_node, zero_node, in_scale_list, [0], -1]
-        graph.make_node(
-            'DequantizeLinear',
-            inputs=[node.input('X', 0), scale_node, zero_node],
-            outputs=node.output('Out', 0))
+        assert graph.quantize_model_mode in [
+            "static"
+        ], "fake_dequantize_max_abs only can be in static quantize model"
 
 
 @op_mapper('fake_channel_wise_quantize_abs_max')
@@ -301,14 +279,14 @@ class FakeChannelWiseQuantizeAbsMax():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
+        assert graph.quantize_model_mode in [
+            "static"
+        ], "fake_channel_wise_quantize_abs_max only can be in static quantize model"
         quant_axis = node.attr("quant_axis")
-        key = node.input('X', 0)
-
-        param, weight = mapper_helper.get_param_from_paddle_graph(graph, key)
-
-        weight_numpy = np.array(weight)
-        scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
-            weight_numpy)
+        key = node.output('OutScale', 0)
+        _, scale = mapper_helper.get_param_from_paddle_graph(graph, key)
+        scale_list = np.squeeze(scale).tolist()
+        zero_list = [0] * len(scale_list)
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
 
@@ -318,15 +296,12 @@ class FakeChannelWiseQuantizeAbsMax():
         quantize_node = graph.make_node(
             'QuantizeLinear',
             inputs=[node.input('X', 0), scale_node, zero_node],
+            axis=quant_axis)
+        graph.make_node(
+            'DequantizeLinear',
+            inputs=[quantize_node, scale_node, zero_node],
             outputs=node.output('Out'),
             axis=quant_axis)
-
-        key = node.output('OutScale', 0)
-        update_param, weight = mapper_helper.get_param_from_paddle_graph(graph,
-                                                                         key)
-
-        update_param['data'] = vals.numpy()
-        graph.update_parameters(key, update_param)
         graph.quantize_params_dict[node.input('X', 0)] = [
             scale_node, zero_node, scale_list, zero_list, quant_axis
         ]
@@ -338,71 +313,6 @@ class FakeChannelWiseDequantizeMaxAbs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        if graph.quantize_model_mode in ["static"]:
-            return
-
-        key = node.input('Scales', 0)
-        _, in_scale1 = mapper_helper.get_param_from_paddle_graph(graph, key)
-
-        key = node.input('Scales', 1)
-        _, in_scale2 = mapper_helper.get_param_from_paddle_graph(graph, key)
-
-        x_num_col_dims = node.attr('x_num_col_dims')
-        quant_axis = node.attr('quant_axis')
-
-        if in_scale2 is None:
-            input_shape = node.input_shape('X', 0)
-            channel = input_shape[quant_axis]
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
-            in_scale1 = np.array(in_scale1)
-            scale = in_scale1 / 127.0
-            scale_list = np.squeeze(scale).tolist()
-            scale_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-            graph.make_node(
-                'DequantizeLinear',
-                inputs=[node.input('X', 0), scale_node, zero_node],
-                outputs=node.output('Out'),
-                axis=quant_axis)
-            graph.quantize_params_dict[node.input('X', 0)] = [
-                scale_node, zero_node, scale_list, [0] * channel, quant_axis
-            ]
-            return
-
-        if x_num_col_dims > 1:
-            input_shape = node.input_shape('X', 0)
-            channel = input_shape[x_num_col_dims]
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
-            in_scale = np.array(in_scale1 * in_scale2[0])
-            scale = in_scale / (127.0 * 127.0)
-            scale_list = np.squeeze(scale).tolist()
-            scale_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-            graph.make_node(
-                'DequantizeLinear',
-                inputs=[node.input('X', 0), scale_node, zero_node],
-                outputs=node.output('Out'),
-                axis=x_num_col_dims)
-            graph.quantize_params_dict[node.input('X', 0)] = [
-                scale_node, zero_node, scale_list, [0] * channel, quant_axis
-            ]
-        else:
-            input_shape = node.input_shape('X', 0)
-            channel = input_shape[1]
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=[0] * channel)
-            in_scale = np.array(in_scale1 * in_scale2[0])
-            scale = in_scale / (127.0 * 127.0)
-            scale_list = np.squeeze(scale).tolist()
-            scale_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-            graph.make_node(
-                'DequantizeLinear',
-                inputs=[node.input('X', 0), scale_node, zero_node],
-                outputs=node.output('Out'),
-                axis=x_num_col_dims)
-            graph.quantize_params_dict[node.input('X', 0)] = [
-                scale_node, zero_node, scale_list, [0] * channel, quant_axis
-            ]
+        assert graph.quantize_model_mode in [
+            "static"
+        ], "fake_channel_wise_dequantize_max_abs only can be in static quantize model"

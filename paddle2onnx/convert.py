@@ -56,7 +56,7 @@ def export_onnx(paddle_graph,
         return
     if onnx_graph.deploy_backend in ["tensorrt", "onnxruntime"]:
         return
-    max_range_file_path = "max_range.txt"
+    max_range_file_path = "max_range.txt" if path is '' else path + "/max_range.txt"
     with open(max_range_file_path, 'wb') as f:
         for tensor, val in onnx_graph.quantize_params_dict.items():
             tensor = tensor + ": " + str(val[0]) + ", " + str(val[1])

@@ -101,35 +101,37 @@ def static_quantize_pre_convert(graph):
             if ipt not in outputs:
                 continue
 
-            weight_input = pre_node.input('Filter', 0)
-            if weight_input is None:
+            if pre_node.type.count("conv"):
+                weight_input = pre_node.input('Filter', 0)
+            else:
                 weight_input = pre_node.input('Y', 0)
             update_param, weight = mapper_helper.get_param_from_paddle_graph(
                 graph, weight_input)
 
-            key = node.input('Scales', 0)
-            if key is None:
+            if node.type.count("channel"):
+                key = node.input('Scales', 0)
+            else:
                 key = node.input('Scale', 0)
             _, weight_scale = mapper_helper.get_param_from_paddle_graph(graph,
                                                                         key)
+            if weight_scale is None:
+                continue
             weight_scale = weight_scale / 127.0
 
             quant_axis = node.attr('quant_axis')
-            if pre_node.type in ["conv2d", "depthwise_conv2d"]:
+            if pre_node.type.count("conv"):
                 if quant_axis is None:
-                    quant_axis = 0
+                    quant_axis = -1
                 new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
                 new_weight = new_weight.transpose(3, 0, 1, 2)
                 update_param['data'] = new_weight
                 graph.update_parameters(weight_input, update_param)
-                input_shape = pre_node.input_shape('Filter', 0)
             else:
                 if quant_axis is None:
-                    quant_axis = 1
+                    quant_axis = -1
                 new_weight = weight * weight_scale
                 update_param['data'] = new_weight
                 graph.update_parameters(weight_input, update_param)
-                input_shape = pre_node.input_shape('Y', 0)
 
             scale_list = weight_scale.tolist()
             scale_node = graph.make_node(
@@ -145,25 +147,18 @@ def static_quantize_pre_convert(graph):
                 'QuantizeLinear',
                 inputs=[weight_input, scale_node, zero_node],
                 axis=quant_axis)
-            if graph.is_graph_output(node.output('Out', 0)):
-                graph.make_node(
-                    'DequantizeLinear',
-                    inputs=[quantize_node, scale_node, zero_node],
-                    outputs=[node.output('Out', 0)],
-                    axis=quant_axis)
-            else:
-                filter_node = graph.make_node(
-                    'DequantizeLinear',
-                    inputs=[quantize_node, scale_node, zero_node],
-                    axis=quant_axis)
-                try:
-                    outputs = pre_node.output('Out', 0)
-                except:
-                    outputs = pre_node.output('Output', 0)
+            dequantize_node = graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                axis=quant_axis)
+            try:
+                outputs = pre_node.output('Out', 0)
+            except:
+                outputs = pre_node.output('Output', 0)
                 graph.static_quantize_pre_convert_dict[outputs] = node.output(
                     'Out', 0)
-                graph.static_quantize_pre_convert_dict[
-                    weight_input] = filter_node
+            graph.static_quantize_pre_convert_dict[
+                weight_input] = dequantize_node
 
 
 def static_quantize_post_process(graph):
