@@ -1918,12 +1918,16 @@ class Scatter():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        ids = node.input('Ids', 0)
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('Ids', 0)]
+        if input_dtype != dtypes.ONNX.INT64:
+            ids = graph.make_node('Cast', inputs=[ids], to=dtypes.ONNX.INT64)
+
         shape = graph.make_node(
             'Constant',
             value=[node.input_shape('Ids', 0)[0], 1],
             dtype=dtypes.ONNX.INT64)
-        reshape_index = graph.make_node(
-            'Reshape', inputs=[node.input('Ids', 0), shape])
+        reshape_index = graph.make_node('Reshape', inputs=[ids, shape])
         if not node.attr('overwrite'):
             raise Exception("overwrite = False not support yet.")
         else:
