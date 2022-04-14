@@ -11,8 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
 
@@ -20,29 +20,29 @@
 
 namespace paddle2onnx {
 
-class Conv2dMapper : public Mapper {
+class FillConstantBatchSizeLikeMapper : public Mapper {
  public:
-  Conv2dMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
+  FillConstantBatchSizeLikeMapper(const PaddleParser& p, OnnxHelper* helper,
+                                  int64_t block_id, int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    GetAttr("groups", &groups_);
-    GetAttr("dilations", &dilations_);
-    GetAttr("strides", &strides_);
-    GetAttr("paddings", &paddings_);
-    GetAttr("padding_algorithm", &padding_algorithm_);
-    GetAttr("data_format", &data_format_);
+    GetAttr("dtype", &dtype_);
+    GetAttr("value", &value_);
+    GetAttr("shape", &shape_);
+    GetAttr("str_value", &str_value_);
+    GetAttr("input_dim_idx", &input_dim_idx_);
+    GetAttr("output_dim_idx", &output_dim_idx_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpset(bool verbose = true);
   void Opset7();
 
  private:
-  std::vector<int64_t> dilations_;
-  std::vector<int64_t> strides_;
-  std::vector<int64_t> paddings_;
-  std::string padding_algorithm_;
-  std::string data_format_;
-  int64_t groups_;
+  int64_t dtype_;
+  float value_;
+  std::string str_value_;
+  int64_t input_dim_idx_;
+  int64_t output_dim_idx_;
+  std::vector<int64_t> shape_;
 };
 
 }  // namespace paddle2onnx

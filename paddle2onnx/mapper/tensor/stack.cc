@@ -24,9 +24,13 @@ void StackMapper::Opset7() {
   int32_t out_dtype = 0;
   std::vector<std::string> aligned_inputs =
       helper_->DtypeAlignment(x_info, &out_dtype);
+  auto axis = axis_;
+  if (axis < 0) {
+    axis = axis + x_info[0].Rank() + 1;
+  }
   for (size_t i = 0; i < aligned_inputs.size(); ++i) {
     aligned_inputs[i] =
-        helper_->Unsqueeze(aligned_inputs[i], std::vector<int64_t>(1, axis_));
+        helper_->Unsqueeze(aligned_inputs[i], std::vector<int64_t>(1, axis));
   }
   auto out = helper_->Concat(aligned_inputs, axis_);
   helper_->AutoCast(out, y_info[0].name, out_dtype, y_info[0].dtype);
