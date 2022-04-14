@@ -219,9 +219,7 @@ class FakeQuantizeRangeAbsMax():
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
 
-        assert graph.quantize_model_mode in [
-            "static"
-        ], "fake_quantize_range_abs_max only can be in static quantize model"
+        assert graph.quantize_model_mode == "static", "fake_quantize_range_abs_max only can be in static quantize model"
         quantize_node = graph.make_node(
             'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
         graph.make_node(
@@ -239,9 +237,7 @@ class FakeQuantizeMovingAverageAbsMax():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        assert graph.quantize_model_mode in [
-            "static"
-        ], "fake_quantize_moving_average_abs_max only can be in static quantize model"
+        assert graph.quantize_model_mode == "static", "fake_quantize_moving_average_abs_max only can be in static quantize model"
         zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
 
         key = node.input('InScale', 0)
@@ -268,9 +264,7 @@ class FakeDequantizeMaxAbs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        assert graph.quantize_model_mode in [
-            "static"
-        ], "fake_dequantize_max_abs only can be in static quantize model"
+        assert graph.quantize_model_mode == "static", "fake_dequantize_max_abs only can be in static quantize model"
 
 
 @op_mapper('fake_channel_wise_quantize_abs_max')
@@ -279,9 +273,7 @@ class FakeChannelWiseQuantizeAbsMax():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        assert graph.quantize_model_mode in [
-            "static"
-        ], "fake_channel_wise_quantize_abs_max only can be in static quantize model"
+        assert graph.quantize_model_mode == "static", "fake_channel_wise_quantize_abs_max only can be in static quantize model"
         quant_axis = node.attr("quant_axis")
         key = node.output('OutScale', 0)
         _, scale = mapper_helper.get_param_from_paddle_graph(graph, key)
@@ -313,6 +305,4 @@ class FakeChannelWiseDequantizeMaxAbs():
 
     @classmethod
     def opset_13(cls, graph, node, **kw):
-        assert graph.quantize_model_mode in [
-            "static"
-        ], "fake_channel_wise_dequantize_max_abs only can be in static quantize model"
+        assert graph.quantize_model_mode == "static", "fake_channel_wise_dequantize_max_abs only can be in static quantize model"
