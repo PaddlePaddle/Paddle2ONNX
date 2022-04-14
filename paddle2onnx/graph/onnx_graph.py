@@ -116,14 +116,14 @@ class ONNXGraph(Graph):
         return input_name_to_nodes_dict
 
     def output_name_from_nodes(self):
-        output_name_to_nodes_dict = dict()
+        output_name_from_nodes_dict = dict()
         for name, node in self.node_map.items():
             for output_name in node.outputs:
-                if output_name not in output_name_to_nodes_dict:
-                    output_name_to_nodes_dict[output_name] = [node]
+                if output_name not in output_name_from_nodes_dict:
+                    output_name_from_nodes_dict[output_name] = [node]
                 else:
-                    output_name_to_nodes_dict[output_name].append(node)
-        return output_name_to_nodes_dict
+                    output_name_from_nodes_dict[output_name].append(node)
+        return output_name_from_nodes_dict
 
     def detect_model_type(self):
         # this func will detect the model type: float, static, dynamic or new_type

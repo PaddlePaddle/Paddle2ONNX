@@ -192,7 +192,6 @@ def merge_conv_bn(graph):
             _, bn_var = mapper_helper.get_param_from_paddle_graph(graph,
                                                                   bn_var_node)
             epsilon = bn_node.attr("epsilon")
-            momentum = bn_node.attr("momentum")
 
             conv_bias = np.zeros((bn_bias.shape[0]))
             conv_bias_node = conv_weight_node + ".merged.bias"
@@ -284,13 +283,9 @@ def add_q_dq(graph):
             if try_replacing_upstream_output(graph, node.inputs[0],
                                              node.outputs[0]):
                 graph.remove_node_by_name(name)
-                graph.quantize_params_dict[node.inputs[
-                    0]] = graph.quantize_params_dict[node.outputs[0]]
             else:
                 graph.tensor_to_be_quantize.append(node.inputs[0])
                 graph.tensor_to_be_quantize.append(node.outputs[0])
-        if len(graph.quantize_params_dict) == 0:
-            continue
         if node.type in [
                 "Reshape", "Transpose", "Squeeze", "Unsqueeze", "AveragePool"
         ]:
