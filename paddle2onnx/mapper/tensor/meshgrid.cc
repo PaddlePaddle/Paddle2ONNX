@@ -19,7 +19,7 @@ REGISTER_MAPPER(meshgrid, MeshgridMapper)
 
 void MeshgridMapper::Opset8() {
   auto x_info = GetInput("X");
-  auto out_info = GetInput("Out");
+  auto out_info = GetOutput("Out");
 
   std::vector<std::string> x_shapes(x_info.size());
   for (size_t i = 0; i < x_info.size(); ++i) {

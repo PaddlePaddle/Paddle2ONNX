@@ -23,24 +23,27 @@ void ScaleMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   bool has_scale_tensor = HasInput("ScaleTensor");
-  // TODO(yeliang2258): just temporary use Identity
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
   bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
 
   if (!has_scale_tensor && is_scale_1 && is_bias_0) {
-    // TODO(yeliang2258): we could add a pass to eleminate all the identity op
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    // TODO(yeliang2258): we could add a pass to eleminate the scale is 1 or
-    // bias is 0
     auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
     std::string out = input;
     if (bias_after_scale_) {
-      if (!is_scale_1) {
-        auto scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
-                                       std::vector<float>(1, scale_));
-        out = helper_->MakeNode("Mul", {out, scale})->output(0);
+      if (!is_scale_1 || HasInput("ScaleTensor")) {
+        if (HasInput("ScaleTensor")) {
+          auto scale_info = GetInput("ScaleTensor");
+          auto scale = helper_->AutoCast(
+              scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+          out = helper_->MakeNode("Mul", {out, scale})->output(0);
+        } else {
+          auto scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
+                                         std::vector<float>(1, scale_));
+          out = helper_->MakeNode("Mul", {out, scale})->output(0);
+        }
       }
       if (!is_bias_0) {
         auto bias = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
@@ -53,10 +56,17 @@ void ScaleMapper::Opset7() {
                                       std::vector<float>(1, bias_));
         out = helper_->MakeNode("Add", {out, bias})->output(0);
       }
-      if (!is_scale_1) {
-        auto scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
-                                       std::vector<float>(1, scale_));
-        out = helper_->MakeNode("Mul", {out, scale})->output(0);
+      if (!is_scale_1 || HasInput("ScaleTensor")) {
+        if (HasInput("ScaleTensor")) {
+          auto scale_info = GetInput("ScaleTensor");
+          auto scale = helper_->AutoCast(
+              scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+          out = helper_->MakeNode("Mul", {out, scale})->output(0);
+        } else {
+          auto scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
+                                         std::vector<float>(1, scale_));
+          out = helper_->MakeNode("Mul", {out, scale})->output(0);
+        }
       }
     }
     helper_->AutoCast(out, output_info[0].name, P2ODataType::FP32,
