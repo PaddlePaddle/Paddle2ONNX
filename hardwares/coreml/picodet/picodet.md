@@ -85,7 +85,7 @@ paddle2onnx --model_dir . --model_filename model.pdmodel \
 
 这里注意把 里面模型的目录指向正确的文件夹。 
 
-`--input_shape_dict`用来指定了模型输入的shape: `{'inputs': [1,3,640,640]}`.
+`--input_shape_dict`用来指定了模型输入的shape: `{'image': [1,3,640,640]}`.
 
 `--opset_version` 指定了使用算子的版本为11， 目前可以有 9 - 12.
 
