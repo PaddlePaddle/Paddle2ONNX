@@ -86,6 +86,7 @@ void InterpolateMapper::Opset11() {
       std::vector<int64_t> out_size;
       if (x_info[0].Rank() == 5) {
         out_size.push_back(out_d_);
+        out_size.push_back(out_h_);
       }
       if (x_info[0].Rank() == 4) {
         out_size.push_back(out_h_);
