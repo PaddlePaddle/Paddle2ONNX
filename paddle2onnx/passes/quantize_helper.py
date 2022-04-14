@@ -42,7 +42,7 @@ def remove_all_quantize_ops(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
-        if node.type not in ["QuantizeLinear"]:
+        if node.type != "QuantizeLinear":
             continue
         nodes_to_be_remove = [name]
         inputs = node.inputs[0]
@@ -76,14 +76,14 @@ def merge_conv_add(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         conv_node_name, conv_node = node_map[idx]
-        if conv_node.type not in ["Conv"]:
+        if conv_node.type == "Conv":
             continue
         conv_outputs = conv_node.outputs[0]
         for bn_idx in range(idx + 1, len(node_map)):
             add_node_name, add_node = node_map[bn_idx]
-            if add_node.type in ["Conv"]:
+            if add_node.type == "Conv":
                 break
-            if add_node.type not in ["Add"]:
+            if add_node.type != "Add":
                 continue
             add_inputs = add_node.inputs
             add_outputs = add_node.outputs[0]
@@ -102,7 +102,7 @@ def merge_conv_add(graph):
             add_input_node = output_name_from_nodes[bias_node][0]
             bias_weight = None
             bias_node = None
-            if add_input_node.type in ["Reshape"]:
+            if add_input_node.type == "Reshape":
                 bias_node = add_input_node.inputs[0]
                 _, bias_weight = mapper_helper.get_param_from_paddle_graph(
                     graph, bias_node)
@@ -133,15 +133,15 @@ def merge_conv_bn(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         conv_node_name, conv_node = node_map[idx]
-        if conv_node.type not in ["Conv"]:
+        if conv_node.type != "Conv":
             continue
 
         conv_outputs = conv_node.outputs[0]
         for bn_idx in range(idx + 1, len(node_map)):
             bn_node_name, bn_node = node_map[bn_idx]
-            if bn_node.type in ["Conv"]:
+            if bn_node.type == "Conv":
                 break
-            if bn_node.type not in ["BatchNormalization"]:
+            if bn_node.type != "BatchNormalization":
                 continue
             bn_inputs = bn_node.inputs
             bn_outputs = bn_node.outputs
@@ -246,7 +246,7 @@ def merge_conv_bn(graph):
             conv_node.outputs = bn_node.outputs
             graph.update_node(conv_node)
             graph.remove_node_by_name(bn_node_name)
-            if graph.quantize_model_mode in ["float"]:
+            if graph.quantize_model_mode == "float":
                 return graph
             graph.quantize_params_dict[
                 conv_bias_node] = [scale_node, zero_node, scale_list, [0], -1]
@@ -426,7 +426,7 @@ def delete_redundant_quantize_ops(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
-        if node.type not in ["QuantizeLinear"]:
+        if node.type != "QuantizeLinear":
             continue
         nodes_to_be_remove = [name]
 
@@ -467,7 +467,7 @@ def add_shortcut_quantize_ops(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
-        if node.type not in ['QuantizeLinear']:
+        if node.type != 'QuantizeLinear':
             continue
         input_name = node.inputs[0]
 
@@ -484,7 +484,7 @@ def add_shortcut_quantize_ops(graph):
         if quant_axis is None:
             quant_axis = -1
         for another_node in another_nodes:
-            if another_node.type in ["QuantizeLinear"]:
+            if another_node.type == "QuantizeLinear":
                 continue
             quantize_node = graph.make_node(
                 'QuantizeLinear',
