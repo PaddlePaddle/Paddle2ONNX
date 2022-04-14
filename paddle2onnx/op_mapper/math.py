@@ -792,7 +792,7 @@ class Mean():
             "Reshape", inputs=[node.input("X")[0], shape])
         mean_node = graph.make_node(
             'ReduceMean',
-            inputs=node.input('X'),
+            inputs=flatten_node,
             outputs=node.output("Out"),
             keepdims=1)
 
