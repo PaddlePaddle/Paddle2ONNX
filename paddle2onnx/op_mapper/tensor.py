@@ -190,7 +190,7 @@ class Concat():
 
 @op_mapper('assign')
 class Assign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -266,7 +266,6 @@ class Unstack():
         for i in range(len(output_y)):
             mapper_helper.squeeze_helper(graph, output_y[i], [axis],
                                          node.output('Y', i))
-
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
@@ -614,7 +613,6 @@ class Slice():
                        'value': starts})
         else:
             starts_node = starts
-
         if isinstance(ends, list):
             ends_node = graph.make_node(
                 'Constant', attrs={'dtype': dtypes.ONNX.INT64,
@@ -1137,7 +1135,7 @@ class Squeeze():
 
 @op_mapper('assign_value')
 class Assign():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -1920,12 +1918,16 @@ class Scatter():
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        ids = node.input('Ids', 0)
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('Ids', 0)]
+        if input_dtype != dtypes.ONNX.INT64:
+            ids = graph.make_node('Cast', inputs=[ids], to=dtypes.ONNX.INT64)
+
         shape = graph.make_node(
             'Constant',
             value=[node.input_shape('Ids', 0)[0], 1],
             dtype=dtypes.ONNX.INT64)
-        reshape_index = graph.make_node(
-            'Reshape', inputs=[node.input('Ids', 0), shape])
+        reshape_index = graph.make_node('Reshape', inputs=[ids, shape])
         if not node.attr('overwrite'):
             raise Exception("overwrite = False not support yet.")
         else:
