@@ -27,6 +27,18 @@ REGISTER_MAPPER(floor, ActivationMapper)
 REGISTER_MAPPER(cos, ActivationMapper)
 REGISTER_MAPPER(sin, ActivationMapper)
 REGISTER_MAPPER(round, ActivationMapper)
+REGISTER_MAPPER(abs, ActivationMapper)
+REGISTER_MAPPER(acos, ActivationMapper)
+REGISTER_MAPPER(asin, ActivationMapper)
+REGISTER_MAPPER(atan, ActivationMapper)
+REGISTER_MAPPER(sinh, ActivationMapper)
+REGISTER_MAPPER(tan, ActivationMapper)
+REGISTER_MAPPER(ceil, ActivationMapper)
+REGISTER_MAPPER(cosh, ActivationMapper)
+REGISTER_MAPPER(softsign, ActivationMapper)
+REGISTER_MAPPER(sign, ActivationMapper)
+REGISTER_MAPPER(erf, ActivationMapper)
+REGISTER_MAPPER(reciprocal, ActivationMapper)
 REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
 REGISTER_MAPPER(gelu, GeluMapper)
 REGISTER_MAPPER(selu, SeluMapper)
@@ -35,6 +47,21 @@ REGISTER_MAPPER(hard_sigmoid, HardSigmoidMapper)
 REGISTER_MAPPER(swish, SwishMapper)
 REGISTER_MAPPER(hard_swish, HardSwishMapper)
 REGISTER_MAPPER(softmax, SoftMaxMapper)
+REGISTER_MAPPER(brelu, BReluMapper)
+REGISTER_MAPPER(elu, EluMapper)
+REGISTER_MAPPER(hard_shrink, HardShrinkMapper)
+REGISTER_MAPPER(softshrink, SoftShrinkMapper)
+REGISTER_MAPPER(mish, MishMapper)
+REGISTER_MAPPER(square, SquareMapper)
+REGISTER_MAPPER(size, SizeMapper)
+REGISTER_MAPPER(rsqrt, RsqrtMapper)
+REGISTER_MAPPER(logsigmoid, LogSigmoidMapper)
+REGISTER_MAPPER(log_softmax, LogSoftmaxMapper)
+REGISTER_MAPPER(tanh_shrink, TanhShrinkMapper)
+REGISTER_MAPPER(thresholded_relu, ThresholdedReluMapper)
+REGISTER_MAPPER(log1p, Log1PMapper)
+REGISTER_MAPPER(log2, Log2Mapper)
+REGISTER_MAPPER(log10, Log10Mapper)
 
 int32_t ActivationMapper::GetMinOpset(bool verbose) {
   if (OpType() == "softplus") {
@@ -53,6 +80,10 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
+  if (OpType() == "sinh" || OpType() == "cosh" || OpType() == "sign") {
+    Logger(verbose, 9) << RequireOpset(9) << std::endl;
+    return 9;
+  }
   return 7;
 }
 
@@ -62,7 +93,16 @@ void ActivationMapper::Opset7() {
   auto iter = op_mapper_.find(OpType());
   Assert(op_mapper_.end() != iter,
          "Cannot find " + OpType() + " in activation op_mapper.");
-  helper_->MakeNode(iter->second, {input_info[0].name}, {output_info[0].name});
+  if (OpType() == "erf") {
+    auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                   P2ODataType::FP32);
+    auto output = helper_->MakeNode(iter->second, {input})->output(0);
+    helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
+                      output_info[0].dtype);
+  } else {
+    helper_->MakeNode(iter->second, {input_info[0].name},
+                      {output_info[0].name});
+  }
 }
 
 void Relu6Mapper::Opset7() {
@@ -172,6 +212,16 @@ void HardSwishMapper::Opset7() {
                     {output_info[0].name});
 }
 
+void HardSwishMapper::Opset14() {
+  if (fabs(offset_ - 3.0) > 1e-05 || fabs(scale_ - 6.0) > 1e-05 ||
+      fabs(threshold_ - 6.0) > 1e-05) {
+    return Opset7();
+  }
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  helper_->MakeNode("HardSwish", {input_info[0].name}, {output_info[0].name});
+}
+
 void LeakyReluMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
@@ -250,4 +300,146 @@ void SoftMaxMapper::Opset13() {
   AddAttribute(node, "axis", axis);
 }
 
+void BReluMapper::Opset7() {
+  auto x_info = GetInput("X");
+  helper_->Clip(x_info[0].name, GetOutput("Out")[0].name, t_min_, t_max_,
+                x_info[0].dtype);
+}
+
+void EluMapper::Opset7() {
+  auto node = helper_->MakeNode("Elu", {GetInput("X")[0].name},
+                                {GetOutput("Out")[0].name});
+  AddAttribute(node, "alpha", alpha_);
+}
+
+void HardShrinkMapper::Opset9() {
+  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
+                                {GetOutput("Out")[0].name});
+  AddAttribute(node, "lambd", threshold_);
+  AddAttribute(node, "bias", float(0.0));
+}
+
+int32_t MishMapper::GetMinOpset(bool verbose) {
+  if (fabs(threshold_ - 20.0) > 1e-05) {
+    Error() << "Only support threshold = 20.0." << std::endl;
+    return -1;
+  }
+  return 7;
+}
+
+void MishMapper::Opset7() {
+  auto input_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                 P2ODataType::FP32);
+  auto softplus = helper_->MakeNode("Softplus", {input})->output(0);
+  auto tanh = helper_->MakeNode("Tanh", {softplus})->output(0);
+  auto output = helper_->MakeNode("Mul", {input, tanh})->output(0);
+  helper_->AutoCast(output, out_info[0].name, P2ODataType::FP32,
+                    out_info[0].dtype);
+}
+
+void SquareMapper::Opset7() {
+  auto input_info = GetInput("X");
+  helper_->MakeNode("Mul", {input_info[0].name, input_info[0].name},
+                    {GetOutput("Out")[0].name});
+}
+
+void SoftShrinkMapper::Opset9() {
+  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
+                                {GetOutput("Out")[0].name});
+  AddAttribute(node, "lambd", lambda_);
+  AddAttribute(node, "bias", lambda_);
+}
+
+void SizeMapper::Opset7() {
+  auto out_info = GetOutput("Out");
+  auto output =
+      helper_->MakeNode("Size", {GetInput("Input")[0].name})->output(0);
+  output = helper_->Reshape(output, {-1});
+  output = helper_->AutoCast(output, out_info[0].name, P2ODataType::INT64,
+                             out_info[0].dtype);
+}
+
+void RsqrtMapper::Opset7() {
+  auto output = helper_->MakeNode("Sqrt", {GetInput("X")[0].name})->output(0);
+  helper_->MakeNode("Reciprocal", {output}, {GetOutput("Out")[0].name});
+}
+
+void TanhShrinkMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto tanh = helper_->MakeNode("Tanh", {x_info[0].name})->output(0);
+  helper_->MakeNode("Sub", {x_info[0].name, tanh}, {GetOutput("Out")[0].name});
+}
+
+void LogSigmoidMapper::Opset7() {
+  auto output =
+      helper_->MakeNode("Sigmoid", {GetInput("X")[0].name})->output(0);
+  helper_->MakeNode("Log", {output}, {GetOutput("Out")[0].name});
+}
+
+void LogSoftmaxMapper::Opset7() {
+  auto input_info = GetInput("X");
+  auto axis = axis_;
+  if (axis < 0) {
+    axis += input_info[0].Rank();
+  }
+  if (axis == input_info[0].Rank() - 1) {
+    auto node = helper_->MakeNode("LogSoftmax", {input_info[0].name},
+                                  {GetOutput("Out")[0].name});
+    AddAttribute(node, "axis", axis);
+  } else {
+    auto perm = Arange(0, input_info[0].Rank());
+    perm[input_info[0].Rank() - 1] = axis;
+    perm[axis] = input_info[0].Rank() - 1;
+    auto output = helper_->Transpose(input_info[0].name, perm);
+    auto node = helper_->MakeNode("LogSoftmax", {output});
+    AddAttribute(node, "axis", int64_t(-1));
+    helper_->Transpose(node->output(0), GetOutput("Out")[0].name, perm);
+  }
+}
+
+void ThresholdedReluMapper::Opset10() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  auto input = x_info[0].name;
+  if (x_info[0].dtype != P2ODataType::FP32) {
+    input = helper_->AutoCast(input, x_info[0].dtype, P2ODataType::FP32);
+    auto node = helper_->MakeNode("ThresholdedRelu", {input});
+    AddAttribute(node, "alpha", threshold_);
+    helper_->AutoCast(node->output(0), out_info[0].name, P2ODataType::FP32,
+                      out_info[0].dtype);
+  } else {
+    auto node =
+        helper_->MakeNode("ThresholdedRelu", {input}, {out_info[0].name});
+    AddAttribute(node, "alpha", threshold_);
+  }
+}
+
+void Log1PMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  auto one = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), float(1.0));
+  auto input = helper_->MakeNode("Add", {x_info[0].name, one})->output(0);
+  helper_->MakeNode("Log", {input}, {out_info[0].name});
+}
+
+void Log2Mapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  double ln2 = 0.693147180559945309;
+  auto ln2_tensor = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln2);
+  auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
+  helper_->MakeNode("Div", {output, ln2_tensor}, {out_info[0].name});
+}
+
+void Log10Mapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  double ln10 = 2.30258509299404568401;
+  auto ln10_tensor =
+      helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln10);
+  auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
+  helper_->MakeNode("Div", {output, ln10_tensor}, {out_info[0].name});
+}
 }  // namespace paddle2onnx

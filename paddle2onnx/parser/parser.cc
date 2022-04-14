@@ -648,8 +648,10 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
     return sizeof(float);
   } else if (paddle_dtype == P2ODataType::FP64) {
     return sizeof(double);
+  } else if (paddle_dtype == P2ODataType::UINT8) {
+    return sizeof(uint8_t);
   } else {
-    Assert(false, "Unexpected data type");
+    Assert(false, "Unexpected data type: " + std::to_string(paddle_dtype));
   }
   return -1;
 }

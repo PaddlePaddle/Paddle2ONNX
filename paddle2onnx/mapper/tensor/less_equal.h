@@ -11,28 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-class FillConstantMapper : public Mapper {
+class LessEqualMapper : public Mapper {
  public:
-  FillConstantMapper(const PaddleParser& p, OnnxHelper* helper,
-                     int64_t block_id, int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("str_value", &str_value_);
-    GetAttr("value", &value_);
-  }
-
-  int32_t GetMinOpset(bool verbose = false);
+  LessEqualMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                  int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
   void Opset7();
-  void Opset9();
-
- private:
-  float GetFillValue();
-  std::string str_value_;
-  float value_;
+  void Opset12();
 };
 
 }  // namespace paddle2onnx

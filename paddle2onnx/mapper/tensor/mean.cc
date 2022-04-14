@@ -11,28 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "paddle2onnx/mapper/mapper.h"
+
+#include "paddle2onnx/mapper/tensor/mean.h"
 
 namespace paddle2onnx {
+REGISTER_MAPPER(mean, MeanMapper)
 
-class FillConstantMapper : public Mapper {
- public:
-  FillConstantMapper(const PaddleParser& p, OnnxHelper* helper,
-                     int64_t block_id, int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("str_value", &str_value_);
-    GetAttr("value", &value_);
-  }
-
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
-  void Opset9();
-
- private:
-  float GetFillValue();
-  std::string str_value_;
-  float value_;
-};
+void MeanMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  auto input = helper_->Reshape(x_info[0].name, {-1});
+  auto node = helper_->MakeNode("ReduceMean", {input}, {out_info[0].name});
+  AddAttribute(node, "axes", std::vector<int64_t>(1, 0));
+  AddAttribute(node, "keepdims", int64_t(1));
+}
 
 }  // namespace paddle2onnx

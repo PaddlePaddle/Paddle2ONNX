@@ -70,9 +70,12 @@ class OnnxHelper {
       int num_outputs = 1);
 
   template <typename T>
-  std::shared_ptr<ONNX_NAMESPACE::NodeProto> ConstOfShape(
+  std::string ConstOfShape(
       const std::string& input, const std::string& output,
       ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+  template <typename T>
+  std::string ConstOfShape(
+      const std::string& input, ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
 
   std::string AutoCast(const std::string& input, int32_t input_paddle_dtype,
                        int32_t to_paddle_dtype);
@@ -114,6 +117,10 @@ class OnnxHelper {
   std::string Concat(const std::vector<std::string>& input,
                      const std::string& output, int64_t axis);
   std::string Concat(const std::vector<std::string>& input, int64_t axis);
+
+  std::string Transpose(const std::string& input,
+                     const std::string& output, const std::vector<int64_t>& perm);
+  std::string Transpose(const std::string& input, const std::vector<int64_t>& perm);
 
   std::vector<std::string> Split(const std::string& input,
                                  const std::vector<std::string>& outputs,
@@ -336,7 +343,13 @@ std::string OnnxHelper::Constant(const std::vector<int64_t>& shape,
 }
 
 template <typename T>
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
+std::string OnnxHelper::ConstOfShape(const std::string& input, ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
+  auto output = MapperHelper::Get()->GenName("helper.constofshape");
+  return ConstOfShape(input, output, dtype, value);
+}
+
+template <typename T>
+std::string OnnxHelper::ConstOfShape(
     const std::string& input, const std::string& output,
     ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
   auto node = MakeNode("ConstantOfShape", {input}, {output});
@@ -369,7 +382,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::ConstOfShape(
            "Only support data type of FLOAT/DOUBLE/INT64/INT32 in ConstOfShape "
            "function.");
   }
-  return node;
+  return output;
 }
 
 template <typename T>
