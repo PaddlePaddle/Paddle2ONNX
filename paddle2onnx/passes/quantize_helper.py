@@ -114,7 +114,7 @@ def merge_conv_add(graph):
                 continue
             input_name_to_nodes = graph.input_name_to_nodes()
             if add_outputs in input_name_to_nodes and len(input_name_to_nodes[
-                    add_outputs]) > 1:
+                    add_outputs]) > 1 or graph.is_graph_output(conv_outputs):
                 continue
 
             bias_node = add_node.inputs[0] if conv_node.outputs[
@@ -130,6 +130,10 @@ def merge_conv_add(graph):
                 _, bias_weight = mapper_helper.get_param_from_paddle_graph(
                     graph, bias_node)
                 if bias_weight is None:
+                    break
+                _, reshape_tensor = mapper_helper.get_param_from_paddle_graph(
+                    graph, add_input_node.inputs[1])
+                if reshape_tensor is None:
                     break
             graph.remove_node(add_input_node)
 
@@ -216,7 +220,7 @@ def merge_conv_bn(graph):
             quant_axis = quantize_params[4]
             if len(scale_list) == 1:
                 scale_list, zero_list = mapper_helper.quantize_weight(
-                    new_weight, quant_axis)
+                    new_weight)
                 scale = np.array(scale_list)
                 zero_node = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
