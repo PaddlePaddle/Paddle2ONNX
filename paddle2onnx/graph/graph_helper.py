@@ -155,8 +155,8 @@ def static_quantize_pre_convert(graph):
                 outputs = pre_node.output('Out', 0)
             except:
                 outputs = pre_node.output('Output', 0)
-                graph.static_quantize_pre_convert_dict[outputs] = node.output(
-                    'Out', 0)
+            graph.static_quantize_pre_convert_dict[outputs] = node.output('Out',
+                                                                          0)
             graph.static_quantize_pre_convert_dict[
                 weight_input] = dequantize_node
 

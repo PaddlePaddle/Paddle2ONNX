@@ -87,7 +87,7 @@ class ONNXGraph(Graph):
         self.paddle_parameters = paddle_graph.parameters
         self.custom = []
         self.quantize_model_mode = self.detect_model_type()
-        if self.quantize_model_mode not in ["float"]:
+        if self.quantize_model_mode != "float":
             warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
             logging.warning(warning_info)
         if auto_update_opset:
@@ -98,30 +98,6 @@ class ONNXGraph(Graph):
             self.deploy_backend = self.deploy_backend.lower()
         self.quantize_params_dict = dict()
         self.tensor_to_be_quantize = list()
-
-    def replace_output_of_all_nodes(self, old_output_name, new_output_name):
-        assert isinstance(old_output_name, str) and isinstance(
-            new_output_name,
-            str), "old_output_name and new_output_name must be str"
-        for name, node in self.node_map.items():
-            if old_output_name in node.outputs:
-                for j in range(len(node.outputs)):
-                    if node.outputs[j] == old_output_name:
-                        node.outputs[j] = new_output_name
-                        self.update_node(node)
-
-    def replace_input_of_all_nodes(self, old_input_name, new_input_name):
-        assert isinstance(old_input_name, str) and isinstance(
-            new_input_name,
-            str), "old_input_name and new_input_name must be str"
-        for name, node in self.node_map.items():
-            if node.type in ["QuantizeLinear", "DequantizeLinear"]:
-                continue
-            if old_input_name in node.inputs:
-                for j in range(len(node.inputs)):
-                    if node.inputs[j] == old_input_name:
-                        node.inputs[j] = new_input_name
-                        self.update_node(node)
 
     def is_graph_output(self, output_name):
         for output in self.output_nodes:
@@ -153,30 +129,16 @@ class ONNXGraph(Graph):
         # this func will detect the model type: float, static, dynamic or new_type
         quantize_ops = False
         for layer_name, node in self.ctx.node_map.items():
-            if node.type.count("quantize"):
-                quantize_ops = True
-                break
-        if not quantize_ops:
-            return "float"
-
-        static_quantize_model = False
-        for layer_name, node in self.ctx.node_map.items():
             if node.type in ["dequantize_linear", "quantize_linear"]:
                 return "new_type"
-            if node.type.count("conv") or node.type.count("matmul"):
-                output_node_type = []
-                for key, value in node.outputs.items():
-                    name = value[0]
-                    for layer_name, inner_node in self.ctx.node_map.items():
-                        inputs = inner_node.inputs
-                        for one_input in inputs.values():
-                            if name in one_input:
-                                output_node_type.append(inner_node.type)
-                for ops in output_node_type:
-                    if ops.count("dequantize") and not ops.count(
-                            "quantize_dequantize"):
-                        return "static"
-        return "dynamic"
+
+            if node.type.count("quantize_dequantize"):
+                return "dynamic"
+
+            if node.type.count("dequantize"):
+                return "static"
+
+        return "float"
 
     def __str__(self):
         graph_str = 'graph { \n'

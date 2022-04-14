@@ -27,11 +27,34 @@ import copy
 import onnx
 
 
+def replace_output_of_all_nodes(graph,
+                                old_output_name: str,
+                                new_output_name: str):
+    for name, node in graph.node_map.items():
+        if old_output_name in node.outputs:
+            for j in range(len(node.outputs)):
+                if node.outputs[j] == old_output_name:
+                    node.outputs[j] = new_output_name
+                    graph.update_node(node)
+                    return
+
+
+def replace_input_of_all_nodes(graph, old_input_name: str, new_input_name: str):
+    for name, node in graph.node_map.items():
+        if node.type in ["QuantizeLinear", "DequantizeLinear"]:
+            continue
+        if old_input_name in node.inputs:
+            for j in range(len(node.inputs)):
+                if node.inputs[j] == old_input_name:
+                    node.inputs[j] = new_input_name
+                    graph.update_node(node)
+
+
 def try_replacing_upstream_output(graph, upstream_output_name, output_name):
     if output_name in graph.quantize_params_dict.keys() and \
         len(graph.input_name_to_nodes()[upstream_output_name]) == 1 and \
         not graph.is_graph_output(upstream_output_name):
-        graph.replace_output_of_all_nodes(upstream_output_name, output_name)
+        replace_output_of_all_nodes(graph, upstream_output_name, output_name)
         if upstream_output_name in graph.tensor_to_be_quantize:
             graph.tensor_to_be_quantize.remove(upstream_output_name)
         return True
@@ -320,7 +343,7 @@ def add_q_dq(graph):
                 'DequantizeLinear',
                 inputs=[tensor, scale_node, zero_node],
                 axis=quant_axis)
-            graph.replace_input_of_all_nodes(tensor, dequantize_node)
+            replace_input_of_all_nodes(graph, tensor, dequantize_node)
         else:
             new_name = tensor + ".pre"
             if graph.is_graph_output(tensor):
@@ -349,7 +372,7 @@ def add_q_dq(graph):
                     'DequantizeLinear',
                     inputs=[quantize_node, scale_node, zero_node],
                     axis=quant_axis)
-                graph.replace_input_of_all_nodes(tensor, dequantize_node)
+                replace_input_of_all_nodes(graph, tensor, dequantize_node)
     return graph
 
 
