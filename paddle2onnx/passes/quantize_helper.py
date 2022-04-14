@@ -64,33 +64,23 @@ def try_replacing_upstream_output(graph, upstream_output_name, output_name):
 def remove_all_quantize_ops(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
-        name, node = node_map[idx]
-        if node.type != "QuantizeLinear":
+        _, q_node = node_map[idx]
+        if q_node.type != "QuantizeLinear":
             continue
-        nodes_to_be_remove = [name]
-        inputs = node.inputs[0]
-        outputs = node.outputs[0]
-        for dequant_idx in range(idx + 1, len(node_map)):
-            inner_name, inner_node = node_map[dequant_idx]
-            inner_inputs = inner_node.inputs
-            inner_outputs = inner_node.outputs
-            if outputs in inner_inputs:
-                nodes_to_be_remove.append(inner_name)
-                outputs = inner_outputs[0]
-                break
+        nodes_to_be_remove = [q_node]
+        q_outputs = q_node.outputs[0]
+        q_inputs = q_node.inputs[0]
+        input_name_to_nodes_dict = graph.input_name_to_nodes()
+        input_name_to_nodes = input_name_to_nodes_dict[q_outputs]
+        dq_node = input_name_to_nodes[0]
 
-        for op_idx in range(dequant_idx + 1, len(node_map)):
-            op_name, op_node = node_map[op_idx]
-            op_inputs = op_node.inputs
-            if outputs in op_inputs:
-                for input_idx in range(len(op_inputs)):
-                    if op_node.inputs[input_idx] == outputs:
-                        op_node.inputs[input_idx] = inputs
-                        op_node.set_inputs(op_node.inputs)
-                        graph.update_node(op_node)
+        assert dq_node.type == "DequantizeLinear", "The output node of QuantizeLinear must be DequantizeLinear"
+        nodes_to_be_remove.append(dq_node)
+        dq_outputs = dq_node.outputs[0]
+        replace_input_of_all_nodes(graph, dq_outputs, q_inputs)
 
-        graph.remove_node_by_name(nodes_to_be_remove[0])
-        graph.remove_node_by_name(nodes_to_be_remove[1])
+        graph.remove_node(nodes_to_be_remove[0])
+        graph.remove_node(nodes_to_be_remove[1])
 
     return graph
 
@@ -102,57 +92,49 @@ def merge_conv_add(graph):
         if conv_node.type != "Conv":
             continue
         conv_outputs = conv_node.outputs[0]
-        for bn_idx in range(idx + 1, len(node_map)):
-            add_node_name, add_node = node_map[bn_idx]
-            if add_node.type == "Conv":
-                break
-            if add_node.type != "Add":
-                continue
-            add_inputs = add_node.inputs
-            add_outputs = add_node.outputs[0]
-            if conv_outputs not in add_inputs:
-                continue
-            input_name_to_nodes = graph.input_name_to_nodes()
-            if add_outputs in input_name_to_nodes and len(input_name_to_nodes[
-                    add_outputs]) > 1 or graph.is_graph_output(conv_outputs):
-                continue
+        input_name_to_nodes = graph.input_name_to_nodes()[conv_outputs]
+        if len(input_name_to_nodes) > 1 or graph.is_graph_output(conv_outputs):
+            continue
+        add_node = input_name_to_nodes[0]
+        if add_node.type != "Add":
+            continue
+        add_inputs = add_node.inputs
 
-            bias_node = add_node.inputs[0] if conv_node.outputs[
-                0] == add_node.inputs[1] else add_node.inputs[1]
-            output_name_from_nodes = graph.output_name_from_nodes()
-            if bias_node not in output_name_from_nodes:
-                continue
-            add_input_node = output_name_from_nodes[bias_node][0]
-            bias_weight = None
-            bias_node = None
-            if add_input_node.type == "Reshape":
-                bias_node = add_input_node.inputs[0]
-                _, bias_weight = mapper_helper.get_param_from_paddle_graph(
-                    graph, bias_node)
-                if bias_weight is None:
-                    break
-                _, reshape_tensor = mapper_helper.get_param_from_paddle_graph(
-                    graph, add_input_node.inputs[1])
-                if reshape_tensor is None:
-                    break
-            graph.remove_node(add_input_node)
+        bias_node = add_node.inputs[0] if conv_node.outputs[
+            0] == add_node.inputs[1] else add_node.inputs[1]
+        output_name_from_nodes = graph.output_name_from_nodes()
+        # bias node is a constant node, it can not be merge into conv
+        if bias_node not in output_name_from_nodes:
+            continue
+        bias_input_node = output_name_from_nodes[bias_node][0]
+        if bias_input_node.type != "Reshape":
+            continue
+        bias_node = bias_input_node.inputs[0]
+        _, bias_weight = mapper_helper.get_param_from_paddle_graph(graph,
+                                                                   bias_node)
+        if bias_weight is None:
+            continue
+        _, reshape_tensor = mapper_helper.get_param_from_paddle_graph(
+            graph, bias_input_node.inputs[1])
+        if reshape_tensor is None:
+            continue
+        graph.remove_node(bias_input_node)
 
-            topk_data_sort = np.amax(np.abs(bias_weight))
-            scale = topk_data_sort / 127.0
-            scale_list = scale.tolist()
-            if not isinstance(scale_list, list):
-                scale_list = [scale_list]
-            scale_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=0)
-            if bias_node not in graph.quantize_params_dict:
-                graph.quantize_params_dict[
-                    bias_node] = [scale_node, zero_node, scale_list, [0], 0]
-            conv_node.inputs.append(bias_node)
-            conv_node.outputs = add_node.outputs
-            graph.update_node(conv_node)
-            graph.remove_node_by_name(add_node_name)
+        topk_data_sort = np.amax(np.abs(bias_weight))
+        scale = topk_data_sort / 127.0
+        scale_list = scale.tolist()
+        if not isinstance(scale_list, list):
+            scale_list = [scale_list]
+        scale_node = graph.make_node(
+            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+        zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
+        if bias_node not in graph.quantize_params_dict:
+            graph.quantize_params_dict[
+                bias_node] = [scale_node, zero_node, scale_list, [0], 0]
+        conv_node.inputs.append(bias_node)
+        conv_node.outputs = add_node.outputs
+        graph.update_node(conv_node)
+        graph.remove_node(add_node)
     return graph
 
 
@@ -162,120 +144,111 @@ def merge_conv_bn(graph):
         conv_node_name, conv_node = node_map[idx]
         if conv_node.type != "Conv":
             continue
-
         conv_outputs = conv_node.outputs[0]
-        for bn_idx in range(idx + 1, len(node_map)):
-            bn_node_name, bn_node = node_map[bn_idx]
-            if bn_node.type == "Conv":
-                break
-            if bn_node.type != "BatchNormalization":
-                continue
-            bn_inputs = bn_node.inputs
-            bn_outputs = bn_node.outputs
-            if conv_outputs not in bn_inputs:
-                continue
-            input_name_to_nodes = graph.input_name_to_nodes()
-            if not conv_outputs in input_name_to_nodes.keys():
-                continue
-            if len(input_name_to_nodes[conv_outputs]) > 1:
-                continue
-            conv_weight_node = conv_node.inputs[1]
-            weight_params, conv_weight = mapper_helper.get_param_from_paddle_graph(
-                graph, conv_weight_node)
+        input_name_to_nodes = graph.input_name_to_nodes()[conv_outputs]
+        if len(input_name_to_nodes) > 1 or graph.is_graph_output(conv_outputs):
+            continue
+        bn_node = input_name_to_nodes[0]
+        if bn_node.type != "BatchNormalization":
+            continue
+        bn_inputs = bn_node.inputs
 
-            bn_scale_node = bn_node.inputs[1]
-            _, bn_scale = mapper_helper.get_param_from_paddle_graph(
-                graph, bn_scale_node)
-            bn_bias_node = bn_node.inputs[2]
-            _, bn_bias = mapper_helper.get_param_from_paddle_graph(graph,
-                                                                   bn_bias_node)
-            bn_mean_node = bn_node.inputs[3]
-            _, bn_mean = mapper_helper.get_param_from_paddle_graph(graph,
-                                                                   bn_mean_node)
-            bn_var_node = bn_node.inputs[4]
-            _, bn_var = mapper_helper.get_param_from_paddle_graph(graph,
-                                                                  bn_var_node)
-            epsilon = bn_node.attr("epsilon")
+        conv_weight_node = conv_node.inputs[1]
+        weight_params, conv_weight = mapper_helper.get_param_from_paddle_graph(
+            graph, conv_weight_node)
 
-            conv_bias = np.zeros((bn_bias.shape[0]))
-            conv_bias_node = conv_weight_node + ".merged.bias"
-            if len(conv_node.inputs) == 3:
-                conv_bias_node = conv_node.inputs[2]
-                _, conv_bias = mapper_helper.get_param_from_paddle_graph(
-                    graph, conv_bias_node)
+        bn_scale_node = bn_node.inputs[1]
+        _, bn_scale = mapper_helper.get_param_from_paddle_graph(graph,
+                                                                bn_scale_node)
+        bn_bias_node = bn_node.inputs[2]
+        _, bn_bias = mapper_helper.get_param_from_paddle_graph(graph,
+                                                               bn_bias_node)
+        bn_mean_node = bn_node.inputs[3]
+        _, bn_mean = mapper_helper.get_param_from_paddle_graph(graph,
+                                                               bn_mean_node)
+        bn_var_node = bn_node.inputs[4]
+        _, bn_var = mapper_helper.get_param_from_paddle_graph(graph,
+                                                              bn_var_node)
+        epsilon = bn_node.attr("epsilon")
 
-            alpha = bn_scale / np.sqrt(bn_var + epsilon)
-            new_bias = conv_bias * alpha + (bn_bias - bn_mean * alpha)
-            new_weight = conv_weight * np.expand_dims(alpha, axis=[1, 2, 3])
-            weight_params["data"] = new_weight
-            graph.update_parameters(conv_weight_node, weight_params)
+        conv_bias = np.zeros((bn_bias.shape[0]))
+        conv_bias_node = conv_weight_node + ".merged.bias"
+        if len(conv_node.inputs) == 3:
+            conv_bias_node = conv_node.inputs[2]
+            _, conv_bias = mapper_helper.get_param_from_paddle_graph(
+                graph, conv_bias_node)
 
-            # update weight scale
-            quantize_params = graph.quantize_params_dict[conv_weight_node]
-            scale_node = quantize_params[0]
-            zero_node = quantize_params[1]
-            graph.remove_node_by_name(scale_node)
-            graph.remove_node_by_name(zero_node)
-            scale_list = quantize_params[2]
-            quant_axis = quantize_params[4]
-            if len(scale_list) == 1:
-                scale_list, zero_list = mapper_helper.quantize_weight(
-                    new_weight)
-                scale = np.array(scale_list)
-                zero_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
-                scale_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-                graph.quantize_params_dict[conv_weight_node] = [
-                    scale_node, zero_node, scale_list, [0], quant_axis
-                ]
-            else:
-                scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
-                    new_weight, quant_axis)
-                scale = np.array(scale_list)
-                zero_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
-                scale_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-                graph.quantize_params_dict[conv_weight_node] = [
-                    scale_node, zero_node, scale_list, zero_list, quant_axis
-                ]
+        alpha = bn_scale / np.sqrt(bn_var + epsilon)
+        new_bias = conv_bias * alpha + (bn_bias - bn_mean * alpha)
+        new_weight = conv_weight * np.expand_dims(alpha, axis=[1, 2, 3])
+        weight_params["data"] = new_weight
+        graph.update_parameters(conv_weight_node, weight_params)
 
-            # bias scale and bias
-            scale = np.squeeze(
-                scale * graph.quantize_params_dict[conv_node.inputs[0]][2])
-            scale_list = scale.tolist()
-            if not isinstance(scale_list, list):
-                scale_list = [scale_list]
-            if len(scale_list) == 1:
-                scale_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-                zero_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT32, value=0)
-            else:
-                scale_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-                zero_node = graph.make_node(
-                    'Constant',
-                    dtype=dtypes.ONNX.INT32,
-                    value=[0] * len(scale_list))
+        # update weight scale
+        quantize_params = graph.quantize_params_dict[conv_weight_node]
+        scale_node = quantize_params[0]
+        zero_node = quantize_params[1]
+        graph.remove_node_by_name(scale_node)
+        graph.remove_node_by_name(zero_node)
+        scale_list = quantize_params[2]
+        quant_axis = quantize_params[4]
+        if len(scale_list) == 1:
+            scale_list, zero_list = mapper_helper.quantize_weight(new_weight)
+            scale = np.array(scale_list)
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+            graph.quantize_params_dict[conv_weight_node] = [
+                scale_node, zero_node, scale_list, [0], quant_axis
+            ]
+        else:
+            scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
+                new_weight, quant_axis)
+            scale = np.array(scale_list)
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+            graph.quantize_params_dict[conv_weight_node] = [
+                scale_node, zero_node, scale_list, zero_list, quant_axis
+            ]
 
-            # add bias for conv
-            new_bias = new_bias / scale
-            bias_params = copy.copy(weight_params)
-            bias_params['shape'] = [new_bias.shape[0]]
-            bias_params["data"] = np.round(new_bias).astype("int32")
-            bias_params['dtype'] = paddle.int32
-            graph.update_parameters(conv_bias_node, bias_params)
+        # bias scale and bias
+        scale = np.squeeze(scale *
+                           graph.quantize_params_dict[conv_node.inputs[0]][2])
+        scale_list = scale.tolist()
+        if not isinstance(scale_list, list):
+            scale_list = [scale_list]
+        if len(scale_list) == 1:
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT32, value=0)
+        else:
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+            zero_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT32,
+                value=[0] * len(scale_list))
 
-            conv_node.inputs.append(conv_bias_node)
-            conv_node.outputs = bn_node.outputs
-            graph.update_node(conv_node)
-            graph.remove_node_by_name(bn_node_name)
-            if graph.quantize_model_mode == "float":
-                return graph
-            graph.quantize_params_dict[
-                conv_bias_node] = [scale_node, zero_node, scale_list, [0], -1]
+        # add bias for conv
+        new_bias = new_bias / scale
+        bias_params = copy.copy(weight_params)
+        bias_params['shape'] = [new_bias.shape[0]]
+        bias_params["data"] = np.round(new_bias).astype("int32")
+        bias_params['dtype'] = paddle.int32
+        graph.update_parameters(conv_bias_node, bias_params)
+
+        conv_node.inputs.append(conv_bias_node)
+        conv_node.outputs = bn_node.outputs
+        graph.update_node(conv_node)
+        graph.remove_node(bn_node)
+        if graph.quantize_model_mode == "float":
+            return graph
+        graph.quantize_params_dict[
+            conv_bias_node] = [scale_node, zero_node, scale_list, [0], -1]
     return graph
 
 
