@@ -76,7 +76,7 @@ def merge_conv_add(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         conv_node_name, conv_node = node_map[idx]
-        if conv_node.type == "Conv":
+        if conv_node.type != "Conv":
             continue
         conv_outputs = conv_node.outputs[0]
         for bn_idx in range(idx + 1, len(node_map)):
