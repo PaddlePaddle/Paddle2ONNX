@@ -299,14 +299,14 @@ def add_q_dq(graph):
             logging.warning("[Quantize] Find unquantize tensor: {}".format(
                 tensor))
             continue
-        quantize_nodes = graph.quantize_params_dict[tensor]
+        quantize_params = graph.quantize_params_dict[tensor]
         assert len(
-            quantize_nodes
-        ) == 5, "The len of quantize_nodes must be 5, but get length is: {}".format(
-            len(quantize_nodes))
-        scale_node = quantize_nodes[0]
-        zero_node = quantize_nodes[1]
-        quant_axis = quantize_nodes[4]
+            quantize_params
+        ) == 5, "The len of quantize_params must be 5, but get length is: {}".format(
+            len(quantize_params))
+        scale_node = quantize_params[0]
+        zero_node = quantize_params[1]
+        quant_axis = quantize_params[4]
         if quant_axis is None:
             quant_axis = -1
 
@@ -420,41 +420,25 @@ def add_missing_quantize_ops(graph):
 def delete_redundant_quantize_ops(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
-        name, node = node_map[idx]
-        if node.type != "QuantizeLinear":
+        _, q_node = node_map[idx]
+        if q_node.type != "QuantizeLinear":
             continue
-        nodes_to_be_remove = [name]
-
-        inputs = node.inputs[0]
-        outputs = node.outputs[0]
-        for dequant_idx in range(idx + 1, len(node_map)):
-            dq_name, dq_node = node_map[dequant_idx]
-            dq_inputs = dq_node.inputs
-            dq_outputs = dq_node.outputs
-            if outputs in dq_inputs:
-                nodes_to_be_remove.append(dq_name)
-                outputs = dq_outputs[0]
-                break
-
-        if len(graph.input_name_to_nodes()[outputs]) > 1:
+        nodes_to_be_remove = [q_node]
+        q_inputs = q_node.inputs[0]
+        q_outputs = q_node.outputs[0]
+        input_name_to_nodes_dict = graph.input_name_to_nodes()
+        input_name_to_nodes = input_name_to_nodes_dict[q_outputs]
+        dq_node = input_name_to_nodes[0]
+        assert dq_node.type == "DequantizeLinear", "The output node of QuantizeLinear must be DequantizeLinear"
+        nodes_to_be_remove.append(dq_node)
+        dq_outputs = dq_node.outputs[0]
+        op_nodes = input_name_to_nodes_dict[dq_outputs]
+        op_types = [op_node.type for op_node in op_nodes]
+        if "Conv" in op_types or "MatMul" in op_types:
             continue
-
-        for op_idx in range(idx + 2, len(node_map)):
-            op_name, op_node = node_map[op_idx]
-            if len(nodes_to_be_remove) == 0:
-                break
-            if op_node.type in ["Conv", "MatMul"]:
-                continue
-            op_inputs = op_node.inputs
-            if outputs in op_inputs:
-                for input_idx in range(len(op_inputs)):
-                    if op_node.inputs[input_idx] == outputs:
-                        op_node.inputs[input_idx] = node.inputs[0]
-                        op_node.set_inputs(op_node.inputs)
-                        graph.update_node(op_node)
-                        graph.remove_node_by_name(nodes_to_be_remove[0])
-                        graph.remove_node_by_name(nodes_to_be_remove[1])
-                        nodes_to_be_remove = []
+        graph.remove_node(nodes_to_be_remove[0])
+        graph.remove_node(nodes_to_be_remove[1])
+        replace_input_of_all_nodes(graph, dq_outputs, q_inputs)
     return graph
 
 
@@ -472,10 +456,10 @@ def add_shortcut_quantize_ops(graph):
 
         assert input_name in graph.quantize_params_dict, "Can not find quantize param {} in quantize_params_dict".format(
             input_name)
-        quantize_nodes = graph.quantize_params_dict[input_name]
-        scale_node = quantize_nodes[0]
-        zero_node = quantize_nodes[1]
-        quant_axis = quantize_nodes[4]
+        quantize_params = graph.quantize_params_dict[input_name]
+        scale_node = quantize_params[0]
+        zero_node = quantize_params[1]
+        quant_axis = quantize_params[4]
         if quant_axis is None:
             quant_axis = -1
         for another_node in another_nodes:
