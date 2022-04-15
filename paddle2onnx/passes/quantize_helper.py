@@ -256,13 +256,20 @@ def add_q_dq(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
-        if node.type in ["Clip", "Relu"]:
-            if try_replacing_upstream_output(graph, node.inputs[0],
-                                             node.outputs[0]):
-                graph.remove_node_by_name(name)
-            else:
-                graph.tensor_to_be_quantize.append(node.inputs[0])
-                graph.tensor_to_be_quantize.append(node.outputs[0])
+        if node.type in ["Relu"]:
+            graph.make_node(
+                "LeakyRelu",
+                inputs=node.inputs,
+                outputs=node.outputs,
+                alpha=0.0)
+            graph.remove_node(node)
+            graph.tensor_to_be_quantize.append(node.inputs[0])
+            graph.tensor_to_be_quantize.append(node.outputs[0])
+            if node.inputs[
+                    0] not in graph.quantize_params_dict and node.outputs[
+                        0] in graph.quantize_params_dict:
+                graph.quantize_params_dict[node.inputs[
+                    0]] = graph.quantize_params_dict[node.outputs[0]]
         if node.type in [
                 "Reshape", "Transpose", "Squeeze", "Unsqueeze", "AveragePool"
         ]:
@@ -374,32 +381,35 @@ def remove_all_quantize_ops_and_save_max_range_file(graph):
 
 
 def collect_all_scales(graph):
+    input_name_to_nodes_dict = graph.input_name_to_nodes()
     node_map = list(graph.ctx.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
         outputs = node.outputs
-        for opts in outputs.values():
+        for key, opts in outputs.items():
+            if key not in ["Y", "Out", "Output"]:
+                continue
             for opt in opts:
                 if opt in graph.quantize_params_dict:
                     continue
-                else:
-                    out_threshold = node.attr("out_threshold")
-                    if out_threshold is None:
-                        continue
-                    out_threshold = out_threshold / 127
-                    zero_node = graph.make_node(
-                        'Constant', dtype=dtypes.ONNX.INT8, value=0)
-                    scale_node = graph.make_node(
-                        'Constant',
-                        dtype=dtypes.ONNX.FLOAT,
-                        value=out_threshold)
-                    graph.quantize_params_dict[opt] = [
-                        scale_node, zero_node, [out_threshold], [0], -1
-                    ]
+                if opt not in input_name_to_nodes_dict:
+                    continue
+                out_threshold = node.attr("out_threshold")
+                if out_threshold is None:
+                    continue
+                out_threshold = out_threshold / 127
+                zero_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT8, value=0)
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=out_threshold)
+                graph.quantize_params_dict[opt] = [
+                    scale_node, zero_node, [out_threshold], [0], -1
+                ]
 
     return graph
 
 
+# onnxruntime deploy for static and dynamic
 def add_missing_quantize_ops(graph):
     graph = collect_all_scales(graph)
 
