@@ -27,14 +27,6 @@ int32_t Conv2dMapper::GetMinOpset(bool verbose) {
     Error() << "Cannot support input with NHWC format." << std::endl;
     return -1;
   }
-  // strides should be less or equal than kernel size
-  auto kernel_info = GetInput("Filter");
-  if (kernel_info[0].shape[2] < strides_[0] ||
-      kernel_info[0].shape[3] < strides_[1]) {
-    Logger(verbose) << "Cannot handle the situation that kernel_size < strides"
-                    << std::endl;
-    return -1;
-  }
   if (padding_algorithm_ == "EXPLICIT") {
     if (paddings_.size() != 2 && paddings_.size() != 4) {
       Error() << "While padding_algorithm is EXPLICIT, size of paddings should "
