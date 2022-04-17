@@ -294,7 +294,7 @@ class APIOnnx(object):
         find = False
         for block in prog.blocks:
             for op in block.ops:
-                op_type = node.type
+                op_type = op.type
                 op_type = op_type.replace("depthwise_", "")
                 if op_type == op_name:
                     find = True
