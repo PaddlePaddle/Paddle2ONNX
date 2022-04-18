@@ -1,7 +1,7 @@
 if(NOT TARGET protobuf)
+    set(Protobuf_USE_STATIC_LIBS ON)
     include(FindProtobuf)
     find_package(Protobuf REQUIRED)
-    set(Protobuf_USE_STATIC_LIBS ON)
     include_directories(${PROTOBUF_INCLUDE_DIR})
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 endif()

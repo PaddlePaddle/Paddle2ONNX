@@ -8,6 +8,7 @@ option(PADDLE2ONNX_DEBUG "If open the debug log while converting model" OFF)
 option(BUILD_DEPLOY_KIT "If build paddle deploy kit" OFF) 
 option(ORT_DIRECTORY "If BUILD_DEPLOY_KIT is ON, use ORT_DIRECTORY to define the onnxruntime librarty path")
 set(ONNX_CUSTOM_PROTOC_PATH "" CACHE STRING "Set yourself Protobufc path")
+set(Protobuf_USE_STATIC_LIBS ON)
 
 if(PADDLE2ONNX_DEBUG)
   add_definitions(-DPADDLE2ONNX_DEBUG)
