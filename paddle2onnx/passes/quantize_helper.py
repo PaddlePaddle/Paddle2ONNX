@@ -177,7 +177,7 @@ def merge_conv_bn(graph):
             conv_bias_node = conv_node.inputs[2]
             _, conv_bias = mapper_helper.get_param_from_paddle_graph(
                 graph, conv_bias_node)
-
+        graph.only_dequantize.append(conv_bias_node)
         alpha = bn_scale / np.sqrt(bn_var + epsilon)
         new_bias = conv_bias * alpha + (bn_bias - bn_mean * alpha)
         new_weight = conv_weight * np.expand_dims(alpha, axis=[1, 2, 3])
@@ -234,12 +234,12 @@ def merge_conv_bn(graph):
                 value=[0] * len(scale_list))
 
         # add bias for conv
-        new_bias = new_bias / scale
-        bias_params = copy.copy(weight_params)
-        bias_params['shape'] = [new_bias.shape[0]]
-        bias_params["data"] = np.round(new_bias).astype("int32")
-        bias_params['dtype'] = paddle.int32
-        graph.update_parameters(conv_bias_node, bias_params)
+        # new_bias = new_bias / scale
+        # bias_params = copy.copy(weight_params)
+        # bias_params['shape'] = [new_bias.shape[0]]
+        # bias_params["data"] = np.round(new_bias).astype("int32")
+        # bias_params['dtype'] = paddle.int32
+        # graph.update_parameters(conv_bias_node, bias_params)
 
         conv_node.inputs.append(conv_bias_node)
         conv_node.outputs = bn_node.outputs
@@ -252,11 +252,22 @@ def merge_conv_bn(graph):
     return graph
 
 
+def can_be_quantize(tensor_names: list, graph):
+    for tensor_name in tensor_names:
+        if tensor_name not in graph.quantize_params_dict:
+            logging.warning("[Quantize] Find unquantize tensor: {}".format(
+                tensor_name))
+            return False
+    return True
+
+
 def add_q_dq(graph):
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
         if node.type in ["Relu"]:
+            if not can_be_quantize([node.inputs[0], node.outputs[0]], graph):
+                continue
             graph.make_node(
                 "LeakyRelu",
                 inputs=node.inputs,
@@ -273,22 +284,32 @@ def add_q_dq(graph):
         if node.type in [
                 "Reshape", "Transpose", "Squeeze", "Unsqueeze", "AveragePool"
         ]:
+            if not can_be_quantize([node.inputs[0], node.outputs[0]], graph):
+                continue
             graph.tensor_to_be_quantize.append(node.inputs[0])
             graph.tensor_to_be_quantize.append(node.outputs[0])
 
         if node.type in ["Conv"]:
-            graph.tensor_to_be_quantize.append(node.inputs[0])
-            graph.tensor_to_be_quantize.append(node.inputs[1])
-            graph.tensor_to_be_quantize.append(node.outputs[0])
+            tensor_names = [node.inputs[0], node.inputs[1], node.outputs[0]]
             if len(node.inputs) == 3:
-                graph.tensor_to_be_quantize.append(node.inputs[2])
+                tensor_names.append(node.inputs[2])
+            if not can_be_quantize(tensor_names, graph):
+                continue
+            for tensor_name in tensor_names:
+                graph.tensor_to_be_quantize(tensor_name)
 
         if node.type in ["Resize", "MaxPool"]:
+            if not can_be_quantize([node.inputs[0], node.outputs[0]], graph):
+                continue
             graph.tensor_to_be_quantize.append(node.inputs[0])
             graph.tensor_to_be_quantize.append(node.outputs[0])
 
         if node.type in ["Concat", "MatMul"]:
-            tensors_to_quantize = itertools.chain(node.inputs, node.outputs)
+            tensors_to_quantize = []
+            for tensor_name in itertools.chain(node.inputs, node.outputs):
+                tensors_to_quantize.append(tensor_name)
+            if not can_be_quantize(tensors_to_quantize, graph):
+                continue
             for tensor_name in tensors_to_quantize:
                 graph.tensor_to_be_quantize.append(tensor_name)
 
@@ -296,7 +317,11 @@ def add_q_dq(graph):
                 "ArgMax", "Mul", "LeakyRelu", "Sigmoid", "GlobalAveragePool",
                 "Split", "Pad", "Add"
         ]:
-            tensors_to_quantize = itertools.chain(node.inputs, node.outputs)
+            tensors_to_quantize = []
+            for tensor_name in itertools.chain(node.inputs, node.outputs):
+                tensors_to_quantize.append(tensor_name)
+            if not can_be_quantize(tensors_to_quantize, graph):
+                continue
             for tensor_name in tensors_to_quantize:
                 graph.tensor_to_be_quantize.append(tensor_name)
 
@@ -317,7 +342,15 @@ def add_q_dq(graph):
         if quant_axis is None:
             quant_axis = -1
 
-        if tensor.count(".merged.bias"):
+        if tensor in graph.only_dequantize:
+            params, weight = mapper_helper.get_param_from_paddle_graph(graph,
+                                                                       tensor)
+            scale = quantize_params[2][0]
+            new_weight = weight / scale
+            params['shape'] = [new_weight.shape[0]]
+            params["data"] = np.round(new_weight).astype("int32")
+            params['dtype'] = paddle.int8
+            graph.update_parameters(tensor, params)
             dequantize_node = graph.make_node(
                 'DequantizeLinear',
                 inputs=[tensor, scale_node, zero_node],
@@ -390,9 +423,12 @@ def collect_all_scales(graph):
             if key not in ["Y", "Out", "Output"]:
                 continue
             for opt in opts:
-                if opt in graph.quantize_params_dict:
+                input_name = opt
+                if opt in graph.static_quantize_pre_convert_dict.keys():
+                    input_name = graph.static_quantize_pre_convert_dict[opt]
+                if input_name in graph.quantize_params_dict:
                     continue
-                if opt not in input_name_to_nodes_dict:
+                if input_name not in input_name_to_nodes_dict:
                     continue
                 out_threshold = node.attr("out_threshold")
                 if out_threshold is None:
@@ -402,10 +438,51 @@ def collect_all_scales(graph):
                     'Constant', dtype=dtypes.ONNX.INT8, value=0)
                 scale_node = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.FLOAT, value=out_threshold)
-                graph.quantize_params_dict[opt] = [
+                graph.quantize_params_dict[input_name] = [
                     scale_node, zero_node, [out_threshold], [0], -1
                 ]
+        if node.type == "elementwise_add":
+            key = node.input('Y', 0)
+            bias_params, bias_data = mapper_helper.get_param_from_paddle_graph(
+                graph, key)
+            if bias_data is None:
+                key = node.input('X', 0)
+                bias_params, bias_data = mapper_helper.get_param_from_paddle_graph(
+                    graph, key)
+            if bias_data is None:
+                continue
+            if key in graph.quantize_params_dict:
+                continue
+            max_range = np.amax(np.abs(bias_data))
+            scale = float(max_range) / 127.0
+            scale_list = [scale]
 
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT8, value=0)
+            graph.quantize_params_dict[key] = [
+                scale_node, zero_node, scale_list, [0], -1
+            ]
+    # For OPs that don't change the value, the quantization attribute can be passed, this is a develop func
+    node_map = list(graph.node_map.items())
+    for idx in range(len(node_map)):
+        name, node = node_map[idx]
+        if node.type not in ["Reshape", "Transpose"]:
+            continue
+        if node.outputs[0] in graph.quantize_params_dict and node.inputs[
+                0] in graph.quantize_params_dict:
+            continue
+        if node.inputs[0] in graph.quantize_params_dict:
+            quantize_params = graph.quantize_params_dict[node.inputs[0]]
+            if len(quantize_params[2]) > 1:
+                continue
+            graph.quantize_params_dict[node.outputs[0]] = quantize_params
+        elif node.outputs[0] in graph.quantize_params_dict:
+            quantize_params = graph.quantize_params_dict[node.outputs[0]]
+            if len(quantize_params[2]) > 1:
+                continue
+            graph.quantize_params_dict[node.inputs[0]] = quantize_params
     return graph
 
 

@@ -98,6 +98,7 @@ class ONNXGraph(Graph):
             self.deploy_backend = self.deploy_backend.lower()
         self.quantize_params_dict = dict()
         self.tensor_to_be_quantize = list()
+        self.only_dequantize = list()
 
     def is_graph_output(self, output_name):
         for output in self.output_nodes:
