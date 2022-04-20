@@ -22,7 +22,7 @@ REGISTER_MAPPER(flatten2, Flatten2Mapper)
 
 int32_t Flatten2Mapper::GetMinOpset(bool verbose) {
   if (GetInput("X")[0].dtype != P2ODataType::FP32 || GetInput("X")[0].dtype != P2ODataType::FP64) {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
+    Logger(verbose, 9) << "While data type of input is not float32/float64, "<< RequireOpset(9) << std::endl;
     return 9;
   }
   return 7;
