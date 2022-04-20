@@ -67,7 +67,7 @@ class TestArgsortConvert(OPConvertAutoScanTest):
             return input_data
 
         if descending:
-            opset_version = [7, 11, 15]
+            opset_version = [11, 15]
         else:
             opset_version = [11, 15]
         config = {
