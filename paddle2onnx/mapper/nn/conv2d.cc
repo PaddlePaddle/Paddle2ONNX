@@ -27,13 +27,20 @@ int32_t Conv2dMapper::GetMinOpset(bool verbose) {
     Error() << "Cannot support input with NHWC format." << std::endl;
     return -1;
   }
-  // strides should be less or equal than kernel size
-  auto kernel_info = GetInput("Filter");
-  if (kernel_info[0].shape[2] < strides_[0] ||
-      kernel_info[0].shape[3] < strides_[1]) {
-    Logger(verbose) << "Cannot handle the situation that kernel_size < strides"
-                    << std::endl;
-    return -1;
+  if (padding_algorithm_ == "EXPLICIT") {
+    if (paddings_.size() != 2 && paddings_.size() != 4) {
+      Error() << "While padding_algorithm is EXPLICIT, size of paddings should "
+                 "be 2 or 4."
+              << std::endl;
+      return -1;
+    }
+  }
+  if (dilations_[0] != 1 || dilations_[1] != 1) {
+    if (padding_algorithm_ == "SAME") {
+      Error() << "While dilations != 1, cannot support padding = 'SAME'."
+              << std::endl;
+      return -1;
+    }
   }
   return 7;
 }
@@ -60,7 +67,16 @@ void Conv2dMapper::Opset7() {
     std::string auto_pad = "VALID";
     AddAttribute(node, "auto_pad", auto_pad);
   } else {
-    AddAttribute(node, "pads", paddings_);
+    std::vector<int64_t> paddings;
+    if (paddings_.size() == 2) {
+      paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
+      paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
+    } else {
+      paddings.assign(paddings_.begin(), paddings_.end());
+      paddings[1] = paddings_[2];
+      paddings[2] = paddings_[1];
+    }
+    AddAttribute(node, "pads", paddings);
   }
   helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                     output_info[0].dtype);

@@ -79,7 +79,7 @@ class TestStridedsliceConvert(OPConvertAutoScanTest):
 
         tmp = [i for i, val in enumerate(strides) if val == 1]
         if len(tmp) == len(strides) and isStridesTensor is False:
-            opset_version = [7, 9, 15]
+            opset_version = [10, 15]
         else:
             opset_version = [10, 15]
 

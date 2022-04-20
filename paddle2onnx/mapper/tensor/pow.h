@@ -20,29 +20,17 @@
 
 namespace paddle2onnx {
 
-class Conv2dMapper : public Mapper {
+class PowMapper : public Mapper {
  public:
-  Conv2dMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  PowMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    GetAttr("groups", &groups_);
-    GetAttr("dilations", &dilations_);
-    GetAttr("strides", &strides_);
-    GetAttr("paddings", &paddings_);
-    GetAttr("padding_algorithm", &padding_algorithm_);
-    GetAttr("data_format", &data_format_);
+    GetAttr("factor", &factor_);
   }
-
-  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 
  private:
-  std::vector<int64_t> dilations_;
-  std::vector<int64_t> strides_;
-  std::vector<int64_t> paddings_;
-  std::string padding_algorithm_;
-  std::string data_format_;
-  int64_t groups_;
+  float factor_ = 0.0;
 };
 
 }  // namespace paddle2onnx

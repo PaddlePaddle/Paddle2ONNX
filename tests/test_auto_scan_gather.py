@@ -47,6 +47,8 @@ class Net1(BaseNet):
         axis = self.config["axis"]
         axis = paddle.to_tensor(axis)
         x = paddle.gather(x, index, axis=axis)
+        shape = paddle.shape(x)
+        x = paddle.reshape(x, shape)
         return x
 
 
