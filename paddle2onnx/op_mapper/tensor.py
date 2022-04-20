@@ -267,6 +267,7 @@ class Unstack():
             mapper_helper.squeeze_helper(graph, output_y[i], [axis],
                                          node.output('Y', i))
 
+
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
     support_opset_version_range = (8, 15)
@@ -1177,10 +1178,17 @@ class Transpose():
 
 @op_mapper('flatten2')
 class Flatten():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)]
+        if input_dtype in [dtypes.ONNX.INT32, dtypes.ONNX.INT64
+                           ] and graph.opset_version < 9:
+            raise Exception(
+                "int32 or int64 not supported in onnx <9, please try with higher onnx opset_version>=9."
+            )
+
         graph.make_node(
             'Flatten',
             inputs=node.input('X'),
