@@ -190,16 +190,18 @@ class Swish():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
-        beta_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': [node.attr('beta')]})
-        beta_x_node = graph.make_node(
-            'Mul', inputs=[node.input('X')[0], beta_node])
-        sigmoid_node = graph.make_node('Sigmoid', inputs=[beta_x_node])
+        x = node.input('X')[0]
+        if fabs(node.attr("beta") - 1.0) > 1e-05:
+            beta_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [node.attr('beta')]})
+            x = graph.make_node(
+                'Mul', inputs=[node.input('X')[0], beta_node])
+        sigmoid_node = graph.make_node('Sigmoid', inputs=[x])
         graph.make_node(
             'Mul',
-            inputs=[node.input('X')[0], sigmoid_node],
+            inputs=[x, sigmoid_node],
             outputs=node.output('Out'))
 
 
