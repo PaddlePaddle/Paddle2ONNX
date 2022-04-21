@@ -20,6 +20,7 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 
+export ENABLE_DEV=OFF
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
 do
@@ -32,6 +33,20 @@ do
             echo ${file} >> result.txt
             bug=`expr ${bug} + 1`
         fi
+    fi
+done
+
+export ENABLE_DEV=ON
+dev_tests=("test_auto_scan_conv2d.py \
+           test_auto_scan_log.py")
+echo "=============dev test=========" >>result.txt
+for file in ${dev_tests}
+do
+    echo ${file}
+    $PY_CMD -m pytest ${file}
+    if [ $? -ne 0 ]; then
+        echo ${file} >> result.txt
+        bug=`expr ${bug} + 1`
     fi
 done
 
