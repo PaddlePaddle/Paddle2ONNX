@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include "paddle2onnx/mapper/exporter.h"
+#include "paddle2onnx/optimizer/paddle2onnx_optimizer.h"
 
 namespace paddle2onnx {
 
@@ -43,6 +44,9 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
         me.Run(parser, opset_version, auto_upgrade_opset, verbose,
                enable_onnx_checker, enable_experimental_op, enable_optimize);
     return pybind11::bytes(onnx_proto);
+  });
+  m.def("optimize", [](const std::string& model_path, const std::string& optimized_model_path) {
+    ONNX_NAMESPACE::optimization::OptimizePaddle2ONNX(model_path, optimized_model_path);
   });
 
   m.def("get_paddle_ops", [](const std::string& model_filename,
