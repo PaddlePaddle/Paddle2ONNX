@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 
-__version__ = "0.9.5rc0"
+__version__ = "0.9.5"
 
 import paddle
 from .convert import dygraph2onnx, program2onnx
@@ -39,6 +39,11 @@ def process_old_ops_desc(model):
         if model.blocks[0].ops[i].type == "matmul":
             if not model.blocks[0].ops[i].has_attr("head_number"):
                 model.blocks[0].ops[i]._set_attr("head_number", 1)
+        elif model.blocks[0].ops[i].type == "yolo_box":
+            if not model.blocks[0].ops[i].has_attr("iou_aware"):
+                model.blocks[0].ops[i]._set_attr("iou_aware", False)
+            if not model.blocks[0].ops[i].has_attr("iou_aware_factor"):
+                model.blocks[0].ops[i]._set_attr("iou_aware_factor", 0.5)
 
 
 def get_all_registered_ops(save_file=None):
