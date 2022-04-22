@@ -27,7 +27,6 @@ class ExpandMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
         GetAttr("expand_times", &expand_times_);
       }
-  int32_t GetMinOpset(bool verbose = false) { return 7; }
   void Opset7();
 
   private:
