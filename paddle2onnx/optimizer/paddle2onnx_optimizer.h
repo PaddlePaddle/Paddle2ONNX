@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #pragma once
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
 
 namespace ONNX_NAMESPACE {
 namespace optimization {
@@ -34,10 +35,15 @@ struct OptimizerOption {
     passes.push_back("fuse_matmul_add_bias_into_gemm");
     passes.push_back("eliminate_identity");
     passes.push_back("eliminate_deadend");
-
   }
 };
 
-bool OptimizePaddle2ONNX(const std::string& model_path, const std::string& optimized_model_path, const OptimizerOption& option = OptimizerOption());
-}
-}
+bool OptimizePaddle2ONNX(const std::string& model_path,
+                         const std::string& optimized_model_path,
+                         const OptimizerOption& option = OptimizerOption());
+bool OptimizePaddle2ONNX(
+    const std::string& model_path, const std::string& optimized_model_path,
+    const std::map<std::string, std::vector<int>>& shape_infos,
+    const OptimizerOption& option = OptimizerOption());
+}  // namespace optimization
+}  // namespace ONNX_NAMESPACE
