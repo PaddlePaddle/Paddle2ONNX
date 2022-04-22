@@ -3,5 +3,5 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-version = '0.9.5rc0'
-git_version = '0a143d2bf7f08a40fd69d6c4a864f69a1a19743e'
+version = '0.9.5'
+git_version = '16193aa8e8dffa1dcf7bd851f2b63295afb450c8'
