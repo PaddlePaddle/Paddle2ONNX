@@ -229,6 +229,14 @@ model = ct.converters.onnx.convert(
 之后可以看到:
 ![rec_coreml.mlmode](../assets/rec_coreml.png)
 
+相关代码请查看: 
+
+[orc_det_convert.py](ocr_det_convert.py)
+
+[orc_cls_convert.py](ocr_cls_convert.py)
+
+[orc_rec_convert.py](ocr_rec_convert.py)
+
 
 想直接尝试的朋友可以直接下载已经转换好的模型:
 
