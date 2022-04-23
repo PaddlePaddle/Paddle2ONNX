@@ -3,7 +3,7 @@ import coremltools as ct
 root = Path(__file__).parent
 
 model = ct.converters.onnx.convert(
-    model = "/media/winstonfan/Workspace/Work/Baidu/Hackathon2022/Models/ch_PP-OCRv2_rec_infer/rec_sim_fo.onnx",
+    model = "rec_sim_fo.onnx",
     minimum_ios_deployment_target = '13',
     image_input_names= ["x"]
 )
