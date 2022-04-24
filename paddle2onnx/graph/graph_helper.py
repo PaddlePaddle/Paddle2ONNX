@@ -121,8 +121,6 @@ def static_quantize_pre_convert(graph):
             quant_axis = node.attr('quant_axis')
             if pre_node.type.count("conv"):
                 quant_axis = 0
-                if quant_axis is None:
-                    quant_axis = -1
                 new_weight = weight.transpose(1, 2, 3, 0) * weight_scale
                 new_weight = new_weight.transpose(3, 0, 1, 2)
                 update_param['data'] = new_weight
