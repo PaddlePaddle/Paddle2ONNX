@@ -1,0 +1,86 @@
+#ifdef ENABLE_ORT_BACKEND
+#include "deploykit/backends/ort/ort_backend.h"
+#endif
+
+#ifdef ENABLE_TRT_BACKEND
+#include "deploykit/backends/tensorrt/trt_backend.h"
+#endif
+
+#ifdef ENABLE_ORT_BACKEND
+void TestOrtBackend() {
+  auto backend = deploykit::OrtBackend();
+  auto option = deploykit::OrtBackendOption();
+
+  if (!backend.InitFromPaddle("resnet50/inference.pdmodel",
+                         "resnet50/inference.pdiparams", option))  {
+    std::cerr << "Init failed." << std::endl;
+    return;
+  }
+  //  auto backend = deploykit::OrtBackend();
+  std::vector<deploykit::DataBlob> inputs(1);
+  inputs[0].name = "inputs";
+  inputs[0].Resize({1, 3, 224, 224}, deploykit::PaddleDataType::FP32);
+  std::vector<deploykit::DataBlob> outputs;
+  if (!backend.Infer(inputs, &outputs)) {
+    std::cerr << "Inference failed." << std::endl;
+    return;
+  }
+
+  std::cout << "Number of outputs: " << outputs.size() << std::endl;
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    std::cout << "Shape of outputs " << i << ": ";
+    for (size_t k = 0; k < outputs[i].shape.size(); ++k) {
+      std::cout << outputs[i].shape[k] << " ";
+    }
+    std::cout << std::endl;
+  }
+}
+#endif()
+
+#ifdef ENABLE_TRT_BACKEND
+void TestTrtBackend() {
+  auto backend = deploykit::TrtBackend();
+  auto option = deploykit::TrtBackendOption();
+  option.min_shape["inputs"] = {1, 3, 224, 224};
+  option.opt_shape["inputs"] = {4, 3, 224, 224};
+  option.max_shape["inputs"] = {8, 3, 224, 224};
+
+  if (!backend.InitFromPaddle("resnet50/inference.pdmodel",
+                         "resnet50/inference.pdiparams", option))  {
+    std::cerr << "Init failed." << std::endl;
+    return;
+  }
+  //  auto backend = deploykit::OrtBackend();
+  std::vector<deploykit::DataBlob> inputs(1);
+  inputs[0].name = "inputs";
+  inputs[0].Resize({1, 3, 224, 224}, deploykit::PaddleDataType::FP32);
+  std::vector<deploykit::DataBlob> outputs;
+  if (!backend.Infer(inputs, &outputs)) {
+    std::cerr << "Inference failed." << std::endl;
+    return;
+  }
+
+  std::cout << "Number of outputs: " << outputs.size() << std::endl;
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    std::cout << "Shape of outputs " << i << ": ";
+    for (size_t k = 0; k < outputs[i].shape.size(); ++k) {
+      std::cout << outputs[i].shape[k] << " ";
+    }
+    std::cout << std::endl;
+  }
+}
+#endif()
+
+
+int main() {
+#ifdef ENABLE_ORT_BACKEND
+  std::cout << "Test onnxruntime backend..." << std::endl;
+  TestOrtBackend();
+#endif()
+
+//#ifdef ENABLE_TRT_BACKEND
+//  std::cout << "Test tensorrt backend..." << std::endl;
+//  TestTrtBackend();
+//#endif()
+  return 0;
+}
