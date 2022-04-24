@@ -1,130 +1,68 @@
 # Paddle2ONNX
 
-[简体中文](README_zh.md) | English
+简体中文 | [English](README.md)
 
-## Introduction
+## 简介
 
-Paddle2ONNX enables users to convert models from PaddlePaddle to ONNX.
+paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。通过ONNX可以完成将Paddle模型到多种推理引擎的部署，包括TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对ONNX开源格式进行支持的推理引擎或硬件。
 
-- Supported model format. Paddle2ONNX supports both dynamic and static computational graph of PaddlePaddle. For static computational graph, Paddle2ONNX converts PaddlePaddle models saved by API [save_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/static/save_inference_model_cn.html#save-inference-model), for example [IPthon example](examples/tutorial.ipynb). For dynamic computational graph, it is now under experiment and more details will be released after the release of PaddlePaddle 2.0.
-- Supported operators. Paddle2ONNX can stably export models to ONNX Opset 9~11, and partialy support lower version opset. More details please refer to [Operator list](docs/en/op_list.md).
-- Supported models. You can find officially verified models by Paddle2ONNX in [model zoo](docs/en/model_zoo.md).
+## 环境依赖
 
-## AIStudio Tutorials
+- python >= 3.6
+- paddlepaddle >= 2.1.0
+- onnx >= 1.10.0
 
-- [Export and inference ONNX model in PaddlePaddle 2.0](https://aistudio.baidu.com/aistudio/projectdetail/1461212)
-- [How to deploy PP-OCR model using ONNX RunTime](https://aistudio.baidu.com/aistudio/projectdetail/1479970)
+## 安装
 
-## What we can do with Paddle2ONNX
-- Deploy PaddlePaddle model by ADLIK, [more details](https://github.com/Adlik/Adlik/tree/master/examples/paddle_model)
-- Deploy PaddlePaddle model by OpenVINO, [more details](https://paddlex.readthedocs.io/zh_CN/develop/deploy/openvino/index.html)
-- Deploy PaddlePaddle model by OpenCV, [more details](https://github.com/opencv/opencv/tree/master/samples/dnn/dnn_model_runner/dnn_conversion/paddlepaddle)
-- Deploy PaddlePaddle model by Triton, [more details](https://github.com/PaddlePaddle/PaddleX/blob/develop/deploy/cpp/docs/compile/triton/docker.md)
+```
+pip install paddle2onnx
+```
 
-## Environment Dependencies
+## 使用
 
-### Configuration
-     python >= 2.7  
-     static computational graph: paddlepaddle >= 1.8.0
-     dynamic computational graph: paddlepaddle >= 2.0.0
-     onnx == 1.7.0 | Optional
-## Installation
+### 获取PaddlePaddle部署模型
 
-### Via Pip
-
-     pip install paddle2onnx
+Paddle2ONNX在导出模型时，需要传入部署模型格式，包括两个文件  
+- `model_name.pdmodel`: 表示模型结构  
+- `model_name.pdiparams`: 表示模型参数
+[注意] 这里需要注意，两个文件其中参数文件后辍为`.pdiparams`，如你的参数文件后辍是`.pdparams`，那说明你的参数是训练过程中保存的，当前还不是部署模型格式。 部署模型的导出可以参照各个模型套件的导出模型文档。
 
 
-### From Source
+### 命令行转换
 
-     git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
-     cd Paddle2ONNX
-     python setup.py install
+```
+paddle2onnx --model_dir saved_inference_model \
+            --model_filename model.pdmodel \
+            --params_filename model.pdiparams \
+            --save_file model.onnx
+            --enable_dev_version True
+```
+如你有ONNX模型优化的需求，推荐使用`onnx-simplifier`，也可使用如下命令对模型进行优化
+```
+python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model.onnx
+```
+如需要修改导出的模型输入形状，如改为静态shape
+```
+python -m paddle2onnx.optimize --input_model model.onnx \
+                               --output_model new_model.onnx \
+                               --input_shape_dict "{'x':[1,3,224,224]}"
+```
 
-## Usage
-### Static Computational Graph
-#### Via Command Line Tool
-Uncombined PaddlePaddle model(parameters saved in different files)
-
-    paddle2onnx --model_dir paddle_model  --save_file onnx_file --opset_version 10 --enable_onnx_checker True
-
-Combined PaddlePaddle model(parameters saved in one binary file)
-
-    paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True
-
-If you need to configure the input shape, use the following command:
-
-    paddle2onnx --model_dir paddle_model  --model_filename model_filename --params_filename params_filename --save_file onnx_file --opset_version 10 --enable_onnx_checker True  --input_shape_dict "{'x': [1, 3, 224, 224]}"
-
-#### Parameters
-| Parameters | Description |
+#### 参数选项
+| 参数 |参数说明 |
 |----------|--------------|
-|--model_dir | The directory path of the paddlepaddle model saved by `paddle.fluid.io.save_inference_model`|
-|--model_filename |**[Optional]** The model file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
-|--params_filename |**[Optional]** the parameter file name under the directory designated by`--model_dir`. Only needed when all the model parameters saved in one binary file. Default value None|
-|--save_file | the directory path for the exported ONNX model|
-|--opset_version | **[Optional]** To configure the ONNX Opset version. Opset 9-11 are stably supported. Default value is 9.|
-|--enable_dev_version | **[Optional]** Whether to use new version of Paddle2ONNX while is under developing. Default value is False.|
-|--enable_onnx_checker| **[Optional]**  To check the validity of the exported ONNX model. It is suggested to turn on the switch. If set to True, onnx>=1.7.0 is required. Default value is False|
-|--enable_paddle_fallback| **[Optional]**  Whether custom op is exported using paddle_fallback mode. Default value is False|
-|--enable_auto_update_opset| **[Optional]**  Whether enable auto_update_opset. Default value is True|
-|--input_shape_dict| **[Optional]**  Configure the input shape, the default is empty|
-|--version |**[Optional]** check the version of paddle2onnx |
-|--output_names| **[Optional]**  Set the output name of the model, the default is empty, support configuration in list form，for example：--output_names "['my_output1','my_output2']"，or in dict form，for example："{'paddle_output1':'my_output1', 'paddle_output2':'my_output2'}"|
+|--model_dir | 配置包含Paddle模型的目录路径|
+|--model_filename |**[可选]** 配置位于`--model_dir`下存储网络结构的文件名|
+|--params_filename |**[可选]** 配置位于`--model_dir`下存储模型参数的文件名称|
+|--save_file | 指定转换后的模型保存目录路径 |
+|--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
+|--enable_dev_version | **[可选]** 是否使用新版本Paddle2ONNX（当前正在开发中），默认为False |
+|--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
+|--enable_auto_update_opset| **[可选]**  是否开启opset version自动升级,当低版本opset无法转换时，自动选择更高版本的opset 默认为True|
+|--input_shape_dict| **[可选]**  配置输入的shape, 默认为空|
+|--version |**[可选]** 查看paddle2onnx版本 |
 
-- Two types of PaddlePaddle models
-   - Combined model, parameters saved in one binary file. --model_filename and --params_filename represents the file name and parameter name under the directory designated by --model_dir. --model_filename and --params_filename are valid only with parameter --model_dir.
-   - Uncombined model, parameters saved in different files. Only --model_dir is needed，which contains '\_\_model\_\_' file and the seperated parameter files.
-- Use onnxruntime to verify the Converted model
-    - When using onnxruntime to verify the converted onnx model, please note that the onnxruntime and onnx versions need to match. [Onnxruntime and onnx version requirements. ](https://github.com/microsoft/onnxruntime/blob/master/docs/Versioning.md)
-- If there is a prompt that OP does not support during model conversion, users are welcome to develop by themselves, please refer to the document [OP Development Guide](docs/zh/Paddle2ONNX_Development_Guide.md)
-
-
-#### IPython tutorials
-
-- [Convert to ONNX from static computational graph](examples/tutorial.ipynb)
-
-### Dynamic Computational Graph
-
-```
-import paddle
-from paddle import nn
-from paddle.static import InputSpec
-import paddle2onnx as p2o
-
-class LinearNet(nn.Layer):
-    def __init__(self):
-        super(LinearNet, self).__init__()
-        self._linear = nn.Linear(784, 10)
-
-    def forward(self, x):
-        return self._linear(x)
-
-layer = LinearNet()
-
-# configure model inputs
-x_spec = InputSpec([None, 784], 'float32', 'x')
-
-# convert model to inference mode
-layer.eval()
-
-save_path = 'onnx.save/linear_net'
-p2o.dygraph2onnx(layer, save_path + '.onnx', input_spec=[x_spec])
-
-# when paddlepaddle>2.0.0, you can try:
-# paddle.onnx.export(layer, save_path, input_spec=[x_spec])
-
-```
-
-#### IPython tutorials
-
-- [Convert to ONNX from dynamic computational graph](examples/tutorial_dygraph2onnx.ipynb)
-
-## Documents
-
-- [model zoo](docs/en/model_zoo.md)
-- [op list](docs/en/op_list.md)
-- [update notes](docs/en/change_log.md)
+- 使用onnxruntime验证转换模型, 请注意安装最新版本（最低要求1.10.0）：
 
 ## License
-[Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
+Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
