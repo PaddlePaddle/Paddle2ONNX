@@ -85,8 +85,8 @@ def split_helper(graph, input, axis=0, split=None, outputs=None):
         split_node = graph.make_node(
             "Split", inputs=inputs, axis=axis, outputs=outputs)
         return split_node
-    
-    
+
+
 def slice_helper(graph,
                  input,
                  axes,
@@ -423,28 +423,6 @@ def get_param_from_paddle_graph(graph, name):
 
 
 def compute_scale_zp(rmin, rmax, qmin, qmax, symmetric=False):
-    '''
-    Calculate the scale s and zero point z for the quantization relation
-    r = s(q-z), where r are the original values and q are the corresponding
-    quantized values.
-
-    r and z are calculated such that every value within [rmin,rmax] has an
-    approximate representation within [qmin,qmax]. In addition, qmin <= z <=
-    qmax is enforced. If the symmetric flag is set to True, the interval
-    [rmin,rmax] is symmetrized to [-absmax, +absmax], where
-    absmax = max(abs(rmin), abs(rmax)).
-
-    :parameter rmin: minimum value of r
-    :parameter rmax: maximum value of r
-    :parameter qmin: minimum value representable by the target quantization data type
-    :parameter qmax: maximum value representable by the target quantization data type
-    :return: zero and scale [z, s]
-
-    '''
-
-    # Adjust rmin and rmax such that 0 is included in the range. This is
-    # required to make sure zero can be represented by the quantization data
-    # type (i.e. to make sure qmin <= zero_point <= qmax)
     rmin = min(rmin, 0)
     rmax = max(rmax, 0)
 
@@ -460,28 +438,6 @@ def compute_scale_zp(rmin, rmax, qmin, qmax, symmetric=False):
 
 
 def quantize_data(data, symmetric):
-    '''
-    :param data: data to quantize
-    :param qType: data type to quantize to. Supported types UINT8 and INT8
-    :param symmetric: whether symmetric quantization is used or not. This is applied to INT8.
-    :return: minimum, maximum, zero point, scale, and quantized weights
-
-    To pack weights, we compute a linear transformation
-
-    - when data `type == uint8` mode, from `[rmin, rmax]` -> :math:`[0, 2^{b-1}]` and
-    - when data `type == int8`, from `[-m , m]` -> :math:`[-(2^{b-1}-1), 2^{b-1}-1]` where
-        `m = max(abs(rmin), abs(rmax))`
-
-    and add necessary intermediate nodes to trasnform quantized weight to full weight using the equation
-
-    :math:`r = S(q-z)`, where
-
-    - *r*: real original value
-    - *q*: quantized value
-    - *S*: scale
-    - *z*: zero point
-    '''
-
     rmin = 0
     rmax = 0
     zero_point = 0

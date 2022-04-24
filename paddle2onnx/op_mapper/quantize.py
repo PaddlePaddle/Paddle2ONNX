@@ -76,12 +76,12 @@ class DequantizeLinear():
         key = node.input('X', 0)
         update_param, weight = mapper_helper.get_param_from_paddle_graph(graph,
                                                                          key)
-        if node.input('X', 0) not in graph.quantize_params_dict:
-            graph.quantize_params_dict[node.input('X', 0)] = [
-                scale_node, zero_node, scale_list, [0] * len(scale_list),
-                node.attr("quant_axis")
-            ]
+        graph.quantize_params_dict[node.input('X', 0)] = [
+            scale_node, zero_node, scale_list, [0] * len(scale_list),
+            node.attr("quant_axis")
+        ]
         quantize_node = node.input('X', 0)
+        # There are two cases here, it may be added after weight, or it may be added after quantization
         if weight is not None:
             if len(weight.shape) == 4:
                 new_weight = weight.transpose(1, 2, 3, 0) * weight_scale

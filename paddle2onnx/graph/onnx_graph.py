@@ -98,6 +98,7 @@ class ONNXGraph(Graph):
             self.deploy_backend = self.deploy_backend.lower()
         self.quantize_params_dict = dict()
         self.tensor_to_be_quantize = list()
+        self.only_dequantize = list()
 
     def is_graph_output(self, output_name):
         for output in self.output_nodes:
@@ -116,29 +117,46 @@ class ONNXGraph(Graph):
         return input_name_to_nodes_dict
 
     def output_name_from_nodes(self):
-        output_name_to_nodes_dict = dict()
+        output_name_from_nodes_dict = dict()
         for name, node in self.node_map.items():
             for output_name in node.outputs:
-                if output_name not in output_name_to_nodes_dict:
-                    output_name_to_nodes_dict[output_name] = [node]
+                if output_name not in output_name_from_nodes_dict:
+                    output_name_from_nodes_dict[output_name] = [node]
                 else:
-                    output_name_to_nodes_dict[output_name].append(node)
-        return output_name_to_nodes_dict
+                    output_name_from_nodes_dict[output_name].append(node)
+        return output_name_from_nodes_dict
 
+    # this func will detect the model type: float, static, dynamic or new_type
     def detect_model_type(self):
-        # this func will detect the model type: float, static, dynamic or new_type
+        # If not including any quantized OP, return float directly
         quantize_ops = False
         for layer_name, node in self.ctx.node_map.items():
+            if node.type.count("quantize"):
+                quantize_ops = True
+                break
+        if not quantize_ops:
+            return "float"
+
+        quantize_ops = False
+        for layer_name, node in self.ctx.node_map.items():
+            # dequantize_linear and quantize_linear only exists in new type
             if node.type in ["dequantize_linear", "quantize_linear"]:
                 return "new_type"
-
-            if node.type.count("quantize_dequantize"):
-                return "dynamic"
-
-            if node.type.count("dequantize"):
-                return "static"
-
-        return "float"
+            # If the next op of conv or matmul is a dequantize OP, it is a static type
+            if node.type.count("conv") or node.type.count("matmul"):
+                output_node_type = []
+                for key, value in node.outputs.items():
+                    name = value[0]
+                    for _, inner_node in self.ctx.node_map.items():
+                        inputs = inner_node.inputs
+                        for one_input in inputs.values():
+                            if name in one_input:
+                                output_node_type.append(inner_node.type)
+                for ops in output_node_type:
+                    if ops.count("dequantize") and not ops.count(
+                            "quantize_dequantize"):
+                        return "static"
+        return "dynamic"
 
     def __str__(self):
         graph_str = 'graph { \n'
