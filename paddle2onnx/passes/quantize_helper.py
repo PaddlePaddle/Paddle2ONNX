@@ -288,7 +288,7 @@ def add_q_dq(graph):
             if not can_be_quantize(tensor_names, graph):
                 continue
             for tensor_name in tensor_names:
-                graph.tensor_to_be_quantize(tensor_name)
+                graph.tensor_to_be_quantize.append(tensor_name)
 
         if node.type in ["Resize", "MaxPool"]:
             if not can_be_quantize([node.inputs[0], node.outputs[0]], graph):
