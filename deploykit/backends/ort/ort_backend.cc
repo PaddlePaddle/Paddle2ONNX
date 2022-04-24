@@ -168,7 +168,6 @@ bool OrtBackend::Infer(const std::vector<DataBlob>& inputs,
     return false;
   }
 
-  std::cout << "11111111" << std::endl;
   // Copy from DataBlob to Ort Inputs
   Ort::MemoryInfo memory_info("Cpu", OrtDeviceAllocator, 0, OrtMemTypeDefault);
   for (size_t i = 0; i < inputs.size(); ++i) {
@@ -180,7 +179,6 @@ bool OrtBackend::Infer(const std::vector<DataBlob>& inputs,
         inputs[i].shape.data(), inputs[i].shape.size(), ort_dtype);
     binding_->BindInput(inputs[i].name.c_str(), ort_value);
   }
-  std::cout << "11111112" << std::endl;
 
   // Inference with inputs
   try {
@@ -190,13 +188,10 @@ bool OrtBackend::Infer(const std::vector<DataBlob>& inputs,
     return false;
   }
 
-  std::cout << "11111113" << std::endl;
-
   // Copy result after inference
   std::vector<Ort::Value> ort_outputs = binding_->GetOutputValues();
   outputs->resize(ort_outputs.size());
   for (size_t i = 0; i < ort_outputs.size(); ++i) {
-    std::cout << "1111114 " << i << std::endl;
     (*outputs)[i].name = outputs_desc_[i].name;
     CopyToCpu(ort_outputs[i], &((*outputs)[i]));
   }
