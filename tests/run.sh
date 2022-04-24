@@ -99,6 +99,7 @@ dev_tests=("test_auto_scan_conv2d.py \
             test_auto_scan_yolo_box.py \
             test_auto_scan_log.py")
 echo "=============dev test=========" >>result.txt
+echo "=============dev test========="
 for file in ${dev_tests}
 do
     echo ${file}
