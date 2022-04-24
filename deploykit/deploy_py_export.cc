@@ -21,6 +21,10 @@
 #include "deploykit/backends/ort/ort_backend.h"
 #endif
 
+#ifdef ENABLE_TRT_BACKEND
+#include "deploykit/backends/tensorrt/trt_backend.h"
+#endif
+
 namespace deploykit {
 
 pybind11::dtype PaddleDataTypeToNumpyDataType(const int& paddle_dtype) {
@@ -135,6 +139,35 @@ PYBIND11_MODULE(deploykit_cpp2py_export, m) {
              return self.InitFromOnnx(file_name, option);
            })
       .def("infer", &PyBackendInfer<OrtBackend>);
+#endif
+
+#ifdef ENABLE_TRT_BACKEND
+  // tensorrt backend
+  pybind11::class_<TrtBackendOption>(m, "TrtBackendOption")
+      .def(pybind11::init())
+      .def_readwrite("gpu_id", &TrtBackendOption::gpu_id)
+      .def_readwrite("fixed_shape", &TrtBackendOption::fixed_shape)
+      .def_readwrite("serialize_file", &TrtBackendOption::serialize_file)
+      .def_readwrite("max_batch_size", &TrtBackendOption::max_batch_size)
+      .def_readwrite("max_shape", &TrtBackendOption::max_shape)
+      .def_readwrite("opt_shape", &TrtBackendOption::opt_shape)
+      .def_readwrite("min_shape", &TrtBackendOption::min_shape)
+      .def_readwrite("enable_fp16", &TrtBackendOption::enable_fp16)
+      .def_readwrite("enable_int8", &TrtBackendOption::enable_int8);
+  pybind11::class_<TrtBackend>(m, "TrtBackend")
+      .def(pybind11::init())
+      .def("load_paddle",
+           [](TrtBackend& self, const std::string& model_file,
+              const std::string& params_file, const TrtBackendOption& option,
+              bool debug) {
+             return self.InitFromPaddle(model_file, params_file, option, debug);
+           })
+      .def("load_onnx",
+           [](TrtBackend& self, const std::string& file_name,
+              const TrtBackendOption& option) {
+             return self.InitFromOnnx(file_name, option);
+           })
+      .def("infer", &PyBackendInfer<TrtBackend>);
 #endif
 }
 

@@ -159,7 +159,7 @@ void OrtBackend::CopyToCpu(const Ort::Value& value, DataBlob* blob) {
   }
 }
 
-bool OrtBackend::Infer(const std::vector<DataBlob>& inputs,
+bool OrtBackend::Infer(std::vector<DataBlob>& inputs,
                        std::vector<DataBlob>* outputs) {
   if (inputs.size() != inputs_desc_.size()) {
     KitLogger() << "[OrtBackend] Size of the inputs(" << inputs.size()
@@ -178,6 +178,10 @@ bool OrtBackend::Infer(const std::vector<DataBlob>& inputs,
         memory_info, inputs[i].GetData(), data_byte_count,
         inputs[i].shape.data(), inputs[i].shape.size(), ort_dtype);
     binding_->BindInput(inputs[i].name.c_str(), ort_value);
+  }
+
+  for (size_t i = 0; i < outputs_desc_.size(); ++i) {
+    binding_->BindOutput(outputs_desc_[i].name.c_str(), memory_info);
   }
 
   // Inference with inputs

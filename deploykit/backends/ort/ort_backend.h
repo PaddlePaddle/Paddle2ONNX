@@ -68,8 +68,7 @@ class OrtBackend {
                     const OrtBackendOption& option = OrtBackendOption(),
                     bool from_memory_buffer = false);
 
-  bool Infer(const std::vector<DataBlob>& inputs,
-             std::vector<DataBlob>* outputs);
+  bool Infer(std::vector<DataBlob>& inputs, std::vector<DataBlob>* outputs);
 
   bool Initliazed() const { return initialized_; }
 

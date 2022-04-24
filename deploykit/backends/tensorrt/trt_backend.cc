@@ -178,6 +178,10 @@ bool TrtBackend::Infer(std::vector<DataBlob>& inputs,
                            inputs[i].GetData(), inputs[i].Nbytes(),
                            cudaMemcpyHostToDevice, stream_) == 0,
            "[ERROR] Error occurs while copy memory from CPU to GPU.");
+    //    Assert(cudaMemcpy(inputs_buffer_[inputs[i].name].data(),
+    //                           inputs[i].GetData(), inputs[i].Nbytes(),
+    //                           cudaMemcpyHostToDevice) == 0,
+    //           "[ERROR] Error occurs while copy memory from CPU to GPU.");
   }
   if (!context_->enqueueV2(bindings_.data(), stream_, nullptr)) {
     KitLogger() << "Failed to Infer with TensorRT." << std::endl;
@@ -186,12 +190,17 @@ bool TrtBackend::Infer(std::vector<DataBlob>& inputs,
   for (size_t i = 0; i < outputs->size(); ++i) {
     Assert(cudaMemcpyAsync((*outputs)[i].data.data(),
                            outputs_buffer_[(*outputs)[i].name].data(),
-                           outputs_buffer_[(*outputs)[i].name].nbBytes(),
-                           cudaMemcpyDeviceToHost, stream_) == 0,
+                           (*outputs)[i].Nbytes(), cudaMemcpyDeviceToHost,
+                           stream_) == 0,
            "[ERROR] Error occurs while copy memory from GPU to CPU.");
+    //    Assert(cudaMemcpy((*outputs)[i].data.data(),
+    //                           outputs_buffer_[(*outputs)[i].name].data(),
+    //                           (*outputs)[i].Nbytes(),
+    //                           cudaMemcpyDeviceToHost) == 0,
+    //           "[ERROR] Error occurs while copy memory from GPU to CPU.");
   }
-  Assert(cudaStreamSynchronize(stream_) == 0,
-         "[ERROR] Error occurs while calling cudaStreamSynchronize().");
+  //  Assert(cudaStreamSynchronize(stream_) == 0,
+  //         "[ERROR] Error occurs while calling cudaStreamSynchronize().");
   return true;
 }
 
