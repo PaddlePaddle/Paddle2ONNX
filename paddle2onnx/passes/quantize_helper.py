@@ -233,14 +233,6 @@ def merge_conv_bn(graph):
                 dtype=dtypes.ONNX.INT32,
                 value=[0] * len(scale_list))
 
-        # add bias for conv
-        # new_bias = new_bias / scale
-        # bias_params = copy.copy(weight_params)
-        # bias_params['shape'] = [new_bias.shape[0]]
-        # bias_params["data"] = np.round(new_bias).astype("int32")
-        # bias_params['dtype'] = paddle.int32
-        # graph.update_parameters(conv_bias_node, bias_params)
-
         conv_node.inputs.append(conv_bias_node)
         conv_node.outputs = bn_node.outputs
         graph.update_node(conv_node)
@@ -305,9 +297,7 @@ def add_q_dq(graph):
             graph.tensor_to_be_quantize.append(node.outputs[0])
 
         if node.type in ["Concat", "MatMul"]:
-            tensors_to_quantize = []
-            for tensor_name in itertools.chain(node.inputs, node.outputs):
-                tensors_to_quantize.append(tensor_name)
+            tensors_to_quantize = node.inputs
             if not can_be_quantize(tensors_to_quantize, graph):
                 continue
             for tensor_name in tensors_to_quantize:
@@ -441,48 +431,6 @@ def collect_all_scales(graph):
                 graph.quantize_params_dict[input_name] = [
                     scale_node, zero_node, [out_threshold], [0], -1
                 ]
-        if node.type == "elementwise_add":
-            key = node.input('Y', 0)
-            bias_params, bias_data = mapper_helper.get_param_from_paddle_graph(
-                graph, key)
-            if bias_data is None:
-                key = node.input('X', 0)
-                bias_params, bias_data = mapper_helper.get_param_from_paddle_graph(
-                    graph, key)
-            if bias_data is None:
-                continue
-            if key in graph.quantize_params_dict:
-                continue
-            max_range = np.amax(np.abs(bias_data))
-            scale = float(max_range) / 127.0
-            scale_list = [scale]
-
-            scale_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-            zero_node = graph.make_node(
-                'Constant', dtype=dtypes.ONNX.INT8, value=0)
-            graph.quantize_params_dict[key] = [
-                scale_node, zero_node, scale_list, [0], -1
-            ]
-    # For OPs that don't change the value, the quantization attribute can be passed, this is a develop func
-    node_map = list(graph.node_map.items())
-    for idx in range(len(node_map)):
-        name, node = node_map[idx]
-        if node.type not in ["Reshape", "Transpose"]:
-            continue
-        if node.outputs[0] in graph.quantize_params_dict and node.inputs[
-                0] in graph.quantize_params_dict:
-            continue
-        if node.inputs[0] in graph.quantize_params_dict:
-            quantize_params = graph.quantize_params_dict[node.inputs[0]]
-            if len(quantize_params[2]) > 1:
-                continue
-            graph.quantize_params_dict[node.outputs[0]] = quantize_params
-        elif node.outputs[0] in graph.quantize_params_dict:
-            quantize_params = graph.quantize_params_dict[node.outputs[0]]
-            if len(quantize_params[2]) > 1:
-                continue
-            graph.quantize_params_dict[node.inputs[0]] = quantize_params
     return graph
 
 
@@ -499,7 +447,6 @@ def add_missing_quantize_ops(graph):
     # merge conv and bn
     graph = merge_conv_bn(graph)
 
-    # add Q and DQ
     graph = add_q_dq(graph)
     return graph
 
