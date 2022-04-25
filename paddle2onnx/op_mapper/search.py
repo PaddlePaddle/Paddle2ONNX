@@ -105,11 +105,12 @@ class ArgSort():
     @classmethod
     def opset_11(cls, graph, node, **kw):
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
-        k_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.INT64,
-                   'value': [node.attr('axis')]})
-        dim_size = graph.make_node('Gather', inputs=[shape, k_node])
+        from paddle2onnx.op_mapper import mapper_helper
+        axis = node.attr('axis')
+        if axis < 0:
+            axis = axis + len(node.input_shape('X', 0))
+        dim_size = mapper_helper.slice_helper(
+            graph, shape, axes=[0], starts=[axis], ends=[axis + 1])
         if not node.attr('descending'):
             graph.make_node(
                 'TopK',
@@ -127,7 +128,9 @@ class ArgSort():
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
-        k = node.input_var('X', 0).shape[node.attr('axis')]
+        shape = node.input_shape('X', 0)
+        k = shape[node.attr('axis')]
+        assert k > 0, "while input shape is dynamic, it only support opset version>=11."
         input_dtype = node.input_dtype('X', 0)
         dtype = dtypes.DTYPE_PADDLE_STR_MAP[input_dtype]
         inputs = node.input('X', 0)

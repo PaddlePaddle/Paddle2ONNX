@@ -17,16 +17,20 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(argsort, ArgsortMapper)
 
-void ArgsortMapper::Opset7() {
+void ArgsortMapper::Opset11() {
   auto x_info = GetInput("X");
   auto output_info = GetOutput("Out");
   auto indices_info = GetOutput("Indices");
 
   auto shape = helper_->MakeNode("Shape", {x_info[0].name})->output(0);
-  auto k_node = helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, axis_);
-  auto dim_size = helper_->MakeNode("Gather", {shape, k_node})->output(0);
+  if (axis_ < 0) {
+    axis_ = axis_ + x_info[0].Rank();
+  }
+  auto dim_size = helper_->Slice(shape, {0}, {axis_}, {axis_ + 1});
 
-  auto out_node = helper_->MakeNode("TopK", {x_info[0].name, dim_size}, {output_info[0].name, indices_info[0].name});
+  auto out_node =
+      helper_->MakeNode("TopK", {x_info[0].name, dim_size},
+                        {output_info[0].name, indices_info[0].name});
   AddAttribute(out_node, "axis", axis_);
   if (!descending_) {
     AddAttribute(out_node, "largest", static_cast<int64_t>(0));
