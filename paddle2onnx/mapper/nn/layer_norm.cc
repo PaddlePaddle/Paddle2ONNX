@@ -14,6 +14,7 @@
 
 #include "paddle2onnx/mapper/nn/layer_norm.h"
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -32,11 +33,15 @@ void LayerNormMapper::Opset7() {
   for (auto i = begin_norm_axis_; i < input_shape.size(); i++) {
     axes.push_back(i);
   }
+  if (begin_norm_axis_ == input_shape.size() - 1) {
+    axes[0] = -1;
+  }
 
+  float epsilon = epsilon_;
   std::string epsilon_node =
-      helper_->Constant({1}, GetOnnxDtype(P2ODataType::FP32), epsilon_);
+      helper_->Constant({}, GetOnnxDtype(P2ODataType::FP32), epsilon);
   std::string two_node =
-      helper_->Constant({1}, GetOnnxDtype(P2ODataType::FP32), 2.0);
+      helper_->Constant({}, GetOnnxDtype(P2ODataType::FP32), float(2.0));
 
   auto mean_node = helper_->MakeNode("ReduceMean", {input_name});
   AddAttribute(mean_node, "axes", axes);
@@ -73,16 +78,23 @@ void LayerNormMapper::Opset7() {
         scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
     std::string bias_name = helper_->AutoCast(
         bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
-    auto scale_node =
-        helper_->MakeNode("Reshape", {scale_name, weight_shape_node});
-    auto bias_node =
-        helper_->MakeNode("Reshape", {bias_name, weight_shape_node});
+    std::string scale_node = "";
+    std::string bias_node = "";
+    if (begin_norm_axis_ == input_shape.size() - 1) {
+      scale_node = helper_->Reshape(scale_name, {-1});
+      bias_node = helper_->Reshape(bias_name, {-1});
+    } else {
+      scale_node = helper_->MakeNode("Reshape", {scale_name, weight_shape_node})
+                       ->output(0);
+      bias_node = helper_->MakeNode("Reshape", {bias_name, weight_shape_node})
+                      ->output(0);
+    }
     auto layer_norm_pre_node = helper_->MakeNode(
         "Div", {numerator_node->output(0), denominator_node->output(0)});
-    auto layer_norm_node = helper_->MakeNode(
-        "Mul", {layer_norm_pre_node->output(0), scale_node->output(0)});
-    auto pre_cast_node = helper_->MakeNode(
-        "Add", {layer_norm_node->output(0), bias_node->output(0)});
+    auto layer_norm_node =
+        helper_->MakeNode("Mul", {layer_norm_pre_node->output(0), scale_node});
+    auto pre_cast_node =
+        helper_->MakeNode("Add", {layer_norm_node->output(0), bias_node});
     helper_->AutoCast(pre_cast_node->output(0), output_info[0].name,
                       P2ODataType::FP32, output_info[0].dtype);
     return;
@@ -91,12 +103,17 @@ void LayerNormMapper::Opset7() {
     auto bias_info = GetInput("Bias");
     std::string bias_name = helper_->AutoCast(
         bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
-    auto bias_node =
-        helper_->MakeNode("Reshape", {bias_name, weight_shape_node});
+    std::string bias_node = "";
+    if (begin_norm_axis_ == input_shape.size() - 1) {
+      bias_node = helper_->Reshape(bias_name, {-1});
+    } else {
+      bias_node = helper_->MakeNode("Reshape", {bias_name, weight_shape_node})
+                      ->output(0);
+    }
     auto layer_norm_node = helper_->MakeNode(
         "Div", {numerator_node->output(0), denominator_node->output(0)});
-    auto pre_cast_node = helper_->MakeNode(
-        "Add", {layer_norm_node->output(0), bias_node->output(0)});
+    auto pre_cast_node =
+        helper_->MakeNode("Add", {layer_norm_node->output(0), bias_node});
     helper_->AutoCast(pre_cast_node->output(0), output_info[0].name,
                       P2ODataType::FP32, output_info[0].dtype);
     return;
@@ -105,12 +122,17 @@ void LayerNormMapper::Opset7() {
     auto scale_info = GetInput("Scale");
     std::string scale_name = helper_->AutoCast(
         scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
-    auto scale_node =
-        helper_->MakeNode("Reshape", {scale_name, weight_shape_node});
+    std::string scale_node = "";
+    if (begin_norm_axis_ == input_shape.size() - 1) {
+      scale_node = helper_->Reshape(scale_name, {-1});
+    } else {
+      scale_node = helper_->MakeNode("Reshape", {scale_name, weight_shape_node})
+                       ->output(0);
+    }
     auto layer_norm_node = helper_->MakeNode(
         "Div", {numerator_node->output(0), denominator_node->output(0)});
-    auto pre_cast_node = helper_->MakeNode(
-        "Mul", {layer_norm_node->output(0), scale_node->output(0)});
+    auto pre_cast_node =
+        helper_->MakeNode("Mul", {layer_norm_node->output(0), scale_node});
     helper_->AutoCast(pre_cast_node->output(0), output_info[0].name,
                       P2ODataType::FP32, output_info[0].dtype);
     return;
