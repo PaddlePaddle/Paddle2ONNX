@@ -103,7 +103,7 @@ class ArgSort():
     support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
+    def opset_10(cls, graph, node, **kw):
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
         from paddle2onnx.op_mapper import mapper_helper
         axis = node.attr('axis')
@@ -111,26 +111,37 @@ class ArgSort():
             axis = axis + len(node.input_shape('X', 0))
         dim_size = mapper_helper.slice_helper(
             graph, shape, axes=[0], starts=[axis], ends=[axis + 1])
-        if not node.attr('descending'):
-            graph.make_node(
-                'TopK',
-                inputs=[node.input('X', 0), dim_size],
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
-                axis=node.attr('axis'),
-                largest=0)
+        if graph.opset_version > 10:
+            if not node.attr('descending'):
+                graph.make_node(
+                    'TopK',
+                    inputs=[node.input('X', 0), dim_size],
+                    outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                    axis=node.attr('axis'),
+                    largest=0)
+            else:
+                graph.make_node(
+                    'TopK',
+                    inputs=[node.input('X', 0), dim_size],
+                    outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                    axis=node.attr('axis'),
+                    largest=1)
         else:
-            graph.make_node(
-                'TopK',
-                inputs=[node.input('X', 0), dim_size],
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
-                axis=node.attr('axis'),
-                largest=1)
+            if not node.attr('descending'):
+                raise Exception(
+                    "descending=False only support opset version>=11.")
+            else:
+                graph.make_node(
+                    'TopK',
+                    inputs=[node.input('X', 0), dim_size],
+                    outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                    axis=node.attr('axis'))
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
         shape = node.input_shape('X', 0)
         k = shape[node.attr('axis')]
-        assert k > 0, "while input shape is dynamic, it only support opset version>=11."
+        assert k > 0, "while input shape is dynamic, it only support opset version>=10."
         input_dtype = node.input_dtype('X', 0)
         dtype = dtypes.DTYPE_PADDLE_STR_MAP[input_dtype]
         inputs = node.input('X', 0)

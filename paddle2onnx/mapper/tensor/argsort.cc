@@ -17,7 +17,17 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(argsort, ArgsortMapper)
 
-void ArgsortMapper::Opset11() {
+int32_t ArgsortMapper::GetMinOpset(bool verbose) {
+  if (!descending_) {
+    Logger(verbose, 11)
+        << "While descending=False only support opset version>=11., "
+        << RequireOpset(11) << std::endl;
+    return 11;
+  }
+  return 7;
+}
+
+void ArgsortMapper::Opset10() {
   auto x_info = GetInput("X");
   auto output_info = GetOutput("Out");
   auto indices_info = GetOutput("Indices");
@@ -32,11 +42,33 @@ void ArgsortMapper::Opset11() {
       helper_->MakeNode("TopK", {x_info[0].name, dim_size},
                         {output_info[0].name, indices_info[0].name});
   AddAttribute(out_node, "axis", axis_);
-  if (!descending_) {
-    AddAttribute(out_node, "largest", static_cast<int64_t>(0));
-  } else {
-    AddAttribute(out_node, "largest", static_cast<int64_t>(1));
+  if (helper_->GetOpsetVersion() > 10) {
+    if (!descending_) {
+      AddAttribute(out_node, "largest", static_cast<int64_t>(0));
+    } else {
+      AddAttribute(out_node, "largest", static_cast<int64_t>(1));
+    }
   }
+}
+
+void ArgsortMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  auto indices_info = GetOutput("Indices");
+
+  auto& input_shape = x_info[0].shape;
+  if (axis_ < 0) {
+    axis_ = axis_ + x_info[0].Rank();
+  }
+  auto k = input_shape[axis_];
+  Assert(k > 0,
+         "While input shape is dynamic, it only support opset version>=10.");
+  //  Assert(descending_,
+  //         "descending=False only support opset version>=11.");
+  auto out_node = helper_->MakeNode(
+      "TopK", {x_info[0].name}, {output_info[0].name, indices_info[0].name});
+  AddAttribute(out_node, "axis", axis_);
+  AddAttribute(out_node, "k", k);
 }
 
 }  // namespace paddle2onnx

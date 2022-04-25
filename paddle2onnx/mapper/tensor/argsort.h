@@ -25,8 +25,9 @@ class ArgsortMapper : public Mapper {
     GetAttr("descending", &descending_);
     GetAttr("axis", &axis_);
   }
-  int32_t GetMinOpset(bool verbose) { return 11; }
-  void Opset11();
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset10();
+  void Opset7();
 
  private:
   bool descending_;
