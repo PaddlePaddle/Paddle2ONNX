@@ -14,19 +14,19 @@
 
 #include "paddle2onnx/mapper/tensor/dist.h"
 
-#include <vector>
 #include <cmath>
+#include <vector>
 
 namespace paddle2onnx {
 
 REGISTER_MAPPER(dist, DistMapper)
 
-int __NaN=0xFFC00000,__Infinity=0x7F800000,__Neg_Infinity=0xFF800000;
-const float NaN=*((float *)&__NaN),Infinity=*((float *)&__Infinity),Neg_Infinity=*((float *)&__Neg_Infinity);
+const int g_NegIntInfinity = 0xFF800000;
+const float g_NegFloatInfinity = *((float *)&g_NegIntInfinity);
 
 int32_t DistMapper::GetMinOpset(bool verbose) {
   if (fabs(p_) < 1e-6) {
-    Logger(true, 9) << "While p is 0.0, "<< RequireOpset(9) << std::endl;
+    Logger(verbose, 9) << "While p is 0.0, " << RequireOpset(9) << std::endl;
     return 9;
   }
   return 7;
@@ -41,31 +41,34 @@ void DistMapper::Opset7() {
   auto abs_node = helper_->MakeNode("Abs", {sub_node->output(0)});
 
   if (fabs(p_) < 1e-6) {
-      auto sign_node = helper_->MakeNode("Sign", {abs_node->output(0)});
-      auto sum_node = helper_->MakeNode("ReduceSum", {sign_node->output(0)});
-      AddAttribute(sum_node, "keepdims", static_cast<int64_t>(0));
-      auto s_sum_node = helper_->Reshape(sum_node->output(0), {-1});
-      helper_->AutoCast(s_sum_node, output_info[0].name, x_info[0].dtype, output_info[0].dtype);
-  } else if (p_ == Infinity) {
-      auto max_node = helper_->MakeNode("ReduceMax", {abs_node->output(0)});
-      AddAttribute(max_node, "keepdims", static_cast<int64_t>(0));
-      auto s_max_node = helper_->Reshape(max_node->output(0), {-1});
-      helper_->AutoCast(s_max_node, output_info[0].name, x_info[0].dtype, output_info[0].dtype);
-  } else if (p_ == Neg_Infinity) {
-      auto min_node = helper_->MakeNode("ReduceMin", {abs_node->output(0)});
-      AddAttribute(min_node, "keepdims", static_cast<int64_t>(0));
-      auto s_min_node = helper_->Reshape(min_node->output(0), {-1});
-      helper_->AutoCast(s_min_node, output_info[0].name, x_info[0].dtype, output_info[0].dtype);
+    auto sign_node = helper_->MakeNode("Sign", {abs_node->output(0)});
+    auto sum_node = helper_->MakeNode("ReduceSum", {sign_node->output(0)});
+    AddAttribute(sum_node, "keepdims", static_cast<int64_t>(0));
+    auto s_sum_node = helper_->Reshape(sum_node->output(0), {-1});
+    helper_->AutoCast(s_sum_node, output_info[0].name, x_info[0].dtype,
+                      output_info[0].dtype);
+  } else if (p_ == std::numeric_limits<float>::infinity()) {
+    auto max_node = helper_->MakeNode("ReduceMax", {abs_node->output(0)});
+    AddAttribute(max_node, "keepdims", static_cast<int64_t>(0));
+    auto s_max_node = helper_->Reshape(max_node->output(0), {-1});
+    helper_->AutoCast(s_max_node, output_info[0].name, x_info[0].dtype,
+                      output_info[0].dtype);
+  } else if (p_ == g_NegFloatInfinity) {
+    auto min_node = helper_->MakeNode("ReduceMin", {abs_node->output(0)});
+    AddAttribute(min_node, "keepdims", static_cast<int64_t>(0));
+    auto s_min_node = helper_->Reshape(min_node->output(0), {-1});
+    helper_->AutoCast(s_min_node, output_info[0].name, x_info[0].dtype,
+                      output_info[0].dtype);
   } else {
-      std::string p = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), p_);
-      auto pow_node = helper_->MakeNode("Pow", {abs_node->output(0), p});
+    std::string p = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), p_);
+    auto pow_node = helper_->MakeNode("Pow", {abs_node->output(0), p});
 
-      auto sum_node = helper_->MakeNode("ReduceSum", {pow_node->output(0)});
-      AddAttribute(sum_node, "keepdims", static_cast<int64_t>(0));
-      auto s_node = helper_->Reshape(sum_node->output(0), {-1});
+    auto sum_node = helper_->MakeNode("ReduceSum", {pow_node->output(0)});
+    AddAttribute(sum_node, "keepdims", static_cast<int64_t>(0));
+    auto s_node = helper_->Reshape(sum_node->output(0), {-1});
 
-      auto p_1 = helper_->MakeNode("Reciprocal", {p});
-      helper_->MakeNode("Pow", {s_node, p_1->output(0)}, {output_info[0].name});
+    auto p_1 = helper_->MakeNode("Reciprocal", {p});
+    helper_->MakeNode("Pow", {s_node, p_1->output(0)}, {output_info[0].name});
   }
 }
 
