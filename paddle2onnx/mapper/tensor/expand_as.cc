@@ -21,6 +21,14 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(expand_as_v2, ExpandAsMapper)
 
+int32_t ExpandAsMapper::GetMinOpset(bool verbose) {
+  Assert(target_shape_.size() > 0 || HasInput("target_tensor"),
+         "Not find attribute: 'target_shape' or tensor 'target_tensor'");
+
+  Logger(verbose, 8) << RequireOpset(8) << std::endl;
+  return 8;
+};
+
 void ExpandAsMapper::Opset8() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
@@ -29,16 +37,13 @@ void ExpandAsMapper::Opset8() {
   if (HasInput("target_tensor")) {
     auto info = GetInput("target_tensor");
     target_shape = helper_->MakeNode("Shape", {info[0].name})->output(0);
-  } else if (target_shape_.size() > 0) {
-    target_shape = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, target_shape_);
   } else {
+    target_shape =
+        helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, target_shape_);
   }
-  Assert(target_shape.size() > 0,
-     "Not find attribute: 'target_shape' or tensor 'target_tensor'");
 
-  helper_->MakeNode("Expand",
-                      {input_info[0].name, target_shape},
-                      {output_info[0].name});
+  helper_->MakeNode("Expand", {input_info[0].name, target_shape},
+                    {output_info[0].name});
 }
 
 }  // namespace paddle2onnx
