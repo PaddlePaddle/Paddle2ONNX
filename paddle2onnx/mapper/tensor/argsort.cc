@@ -19,10 +19,18 @@ REGISTER_MAPPER(argsort, ArgsortMapper)
 
 int32_t ArgsortMapper::GetMinOpset(bool verbose) {
   if (!descending_) {
-    Logger(verbose, 11)
-        << "While descending=False only support opset version>=11., "
-        << RequireOpset(11) << std::endl;
+    Logger(verbose, 11) << "While descending=False, " << RequireOpset(11)
+                        << std::endl;
     return 11;
+  }
+
+  if (axis_ < 0) {
+    axis_ = axis_ + GetInput("X")[0].Rank();
+  }
+  if (GetInput("X")[0].shape[axis_] <= 0) {
+    Logger(verbose, 10) << "While input shape is dynamic, " << RequireOpset(10)
+                        << std::endl;
+    return 10;
   }
   return 7;
 }
@@ -56,19 +64,14 @@ void ArgsortMapper::Opset7() {
   auto output_info = GetOutput("Out");
   auto indices_info = GetOutput("Indices");
 
-  auto& input_shape = x_info[0].shape;
   if (axis_ < 0) {
     axis_ = axis_ + x_info[0].Rank();
   }
-  auto k = input_shape[axis_];
-  Assert(k > 0,
-         "While input shape is dynamic, it only support opset version>=10.");
-  //  Assert(descending_,
-  //         "descending=False only support opset version>=11.");
+
   auto out_node = helper_->MakeNode(
       "TopK", {x_info[0].name}, {output_info[0].name, indices_info[0].name});
   AddAttribute(out_node, "axis", axis_);
-  AddAttribute(out_node, "k", k);
+  AddAttribute(out_node, "k", x_info[0].shape[axis_]);
 }
 
 }  // namespace paddle2onnx
