@@ -22,9 +22,12 @@ namespace paddle2onnx {
 REGISTER_MAPPER(expand_as_v2, ExpandAsMapper)
 
 int32_t ExpandAsMapper::GetMinOpset(bool verbose) {
-  Assert(target_shape_.size() > 0 || HasInput("target_tensor"),
-         "Not find attribute: 'target_shape' or tensor 'target_tensor'");
-
+  if (target_shape_.size() == 0 && !HasInput("target_tensor")) {
+    Error() << "Attribute `target_shape` and input tensor `target_tensor` is "
+               "not exist"
+            << std::endl;
+    return -1;
+  }
   Logger(verbose, 8) << RequireOpset(8) << std::endl;
   return 8;
 };
