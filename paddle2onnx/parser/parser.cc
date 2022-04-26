@@ -304,21 +304,26 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
                 << std::endl;
   }
 
-  //  if (ExistsDumplicateTensorName()) {
-  //    return false;
-  //  }
   GetBlocksVarName2Id();
   GetBlocksOps();
   GetGlobalBlockInputOutputInfo();
-  return true;
+  return ProcessQuantizedWeights();
 }
 
 bool PaddleParser::IsConstantTensor(const int64_t& block_id,
                                     const std::string& tensor_name) const {
   Assert(block_id < _constant_ops.size(),
          "block_id is out of range while calling IsConstantTensor.");
-  auto iter = _constant_ops[block_id].find(tensor_name);
-  return iter != _constant_ops[block_id].end();
+  bool is_constant = false;
+  {
+    auto iter = _constant_ops[block_id].find(tensor_name);
+    is_constant = (iter != _constant_ops[block_id].end());
+  }
+  if (!is_constant) {
+    auto iter = params.find(tensor_name);
+    is_constant = (iter != params.end());
+  }
+  return is_constant;
 }
 
 void PaddleParser::GetBlocksVarName2Id() {
@@ -656,25 +661,69 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   return -1;
 }
 
-bool PaddleParser::ExistsDumplicateTensorName() const {
-  std::set<std::string> names;
-  for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
-    auto& op = prog->blocks(0).ops(i);
-    for (auto j = 0; j < op.outputs_size(); ++j) {
-      for (auto k = 0; k < op.outputs(j).arguments_size(); ++k) {
-        if (op.type() == "fetch") {
-          continue;
+bool PaddleParser::ProcessQuantizedWeights() {
+  std::unordered_map<std::string, std::vector<int>> tensor_indices;
+  for (auto i = 0; i < prog->blocks_size(); ++i) {
+    for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
+      auto& op = prog->blocks(i).ops(j);
+
+      for (auto k = 0; k < op.outputs_size(); ++k) {
+        for (auto m = 0; m < op.outputs(k).arguments_size(); ++m) {
+          tensor_indices[op.outputs(k).arguments(m)] = {i, j};
         }
-        if (names.find(op.outputs(j).arguments(k)) != names.end()) {
-          P2OLogger() << "There's dumplicate output name: "
-                      << op.outputs(j).arguments(k)
-                      << " in this model, not supported yet." << std::endl;
-          return true;
+      }
+
+      if (op.type() != "fake_channel_wise_dequantize_max_abs") {
+        continue;
+      }
+
+      auto x_info = GetOpInput(i, j, "X");
+      auto scales_info = GetOpInput(i, j, "Scales");
+      auto iter = tensor_indices.find(x_info[0].name);
+      if (iter == tensor_indices.end()) {
+        std::cerr << "[Paddle2ONNX] [Parser] Cannot find input information "
+                     "while process fake_channel_wise_dequantize_max_abs."
+                  << std::endl;
+        return false;
+      }
+      auto& input_op = prog->blocks((iter->second)[0]).ops((iter->second)[1]);
+      if (input_op.type() == "matmul_v2") {
+        auto y_info = GetOpInput((iter->second)[0], (iter->second)[1], "Y");
+        auto iter_y = params.find(y_info[0].name);
+        if (iter_y == params.end()) {
+          std::cerr << "[Paddle2ONNX] [Parser] Cannot find quantized input Y "
+                       "as weight in matmul_v2."
+                    << std::endl;
+          return false;
         }
-        names.insert(op.outputs(j).arguments(k));
+        auto iter_s = params.find(scales_info[0].name);
+        if (iter_s == params.end()) {
+          std::cerr << "[Paddle2ONNX] [Parser] Cannot find scale value as "
+                       "weight in fakce_channel_wise_dequantize_max_abs."
+                    << std::endl;
+          return false;
+        }
+        (iter_s->second).get(&((iter_y->second).scale));
+        GetOpAttr(op, "quant_axis", &((iter_y->second).quant_axis));
+      } else {
+        std::cerr << "[Paddle2ONNX] [Parser] Only support quantized weight for "
+                     "matmul_v2."
+                  << std::endl;
+        return false;
       }
     }
   }
-  return false;
+  return true;
 }
+
+// bool PaddleParser::GetWeightQuantScale(const std::string& weight_name,
+// std::string* scale_weight_name) const {
+//  auto iter = _weight_scales.find(weight_name);
+//  if (iter == _weight_scales.end()) {
+//    return false;
+//  }
+//  *scale_weight_num = iter->second;
+//  return true;
+//}
+
 }  // namespace paddle2onnx

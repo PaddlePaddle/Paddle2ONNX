@@ -32,7 +32,7 @@ struct ModelExporter {
   int32_t _total_ops_num = 0;
   int32_t _current_exported_num = 0;
 
-  void ExportParameters(const std::map<std::string, Weight>& params,
+  void ExportParameters(const PaddleParser& parser,
                         bool use_initializer = false);
   void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
                           const std::vector<TensorInfo>& output_infos);
