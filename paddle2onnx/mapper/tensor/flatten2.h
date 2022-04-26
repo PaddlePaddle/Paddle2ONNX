@@ -13,20 +13,25 @@
 // limitations under the License.
 
 #pragma once
+#include <string>
+#include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-class ExpandV2Mapper : public Mapper {
+class Flatten2Mapper : public Mapper {
  public:
-  ExpandV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                 int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) {
-    Logger(verbose, 8) << RequireOpset(8) << std::endl;
-    return 8;
+  Flatten2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+               int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("axis", &axis_);
   }
-  void Opset8();
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset7();
+
+ private:
+  int64_t axis_;
 };
 
 }  // namespace paddle2onnx

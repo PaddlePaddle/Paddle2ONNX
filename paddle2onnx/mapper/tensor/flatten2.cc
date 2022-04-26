@@ -12,21 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-#include "paddle2onnx/mapper/mapper.h"
+#include "paddle2onnx/mapper/tensor/flatten2.h"
+
+#include <string>
+#include <vector>
 
 namespace paddle2onnx {
+REGISTER_MAPPER(flatten2, Flatten2Mapper)
 
-class ExpandV2Mapper : public Mapper {
- public:
-  ExpandV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                 int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) {
-    Logger(verbose, 8) << RequireOpset(8) << std::endl;
-    return 8;
+int32_t Flatten2Mapper::GetMinOpset(bool verbose) {
+  if (GetInput("X")[0].dtype != P2ODataType::FP32 || GetInput("X")[0].dtype != P2ODataType::FP64) {
+    Logger(verbose, 9) << "While data type of input is not float32/float64, "<< RequireOpset(9) << std::endl;
+    return 9;
   }
-  void Opset8();
-};
+  return 7;
+}
+
+void Flatten2Mapper::Opset7() {
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+
+  int64_t axis = axis_;
+  auto node = helper_->MakeNode("Flatten", {input_info[0].name}, {output_info[0].name});
+  AddAttribute(node, "axis", axis);
+}
 
 }  // namespace paddle2onnx

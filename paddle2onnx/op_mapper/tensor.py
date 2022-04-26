@@ -255,17 +255,20 @@ class Unstack():
         axis = node.attr('axis')
         ndim = node.block.vars[node.input('X')[0]].ndim
         axis = axis + ndim if axis < 0 else axis
-        output_y = graph.make_node(
-            'Split',
-            inputs=node.input('X'),
+        output_y = mapper_helper.split_helper(
+            graph,
+            node.input('X'),
             axis=axis,
+            split=[1] * len(node.output('Y')),
             outputs=len(node.output('Y')))
+
         if isinstance(output_y, six.string_types):
             output_y = [output_y]
 
         for i in range(len(output_y)):
             mapper_helper.squeeze_helper(graph, output_y[i], [axis],
                                          node.output('Y', i))
+
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
@@ -380,24 +383,21 @@ class Split():
     def opset_1(cls, graph, node, **kw):
         sections = node.attr('sections')
         axis = cls.get_axis(graph, node)
+        input_shape = node.input_shape('X', 0)
         if len(sections) > 0:
-            input_shape = node.block.vars[node.input('X')[0]].shape
             section_index = [i for i, val in enumerate(sections) if val == -1]
             if input_shape[axis] != -1 and len(section_index) == 1:
                 sections[section_index[0]] = input_shape[axis] - sum(
                     sections) - 1
-            mapper_helper.split_helper(
-                graph,
-                node.input('X'),
-                axis=axis,
-                split=sections,
-                outputs=node.output('Out'))
         else:
-            graph.make_node(
-                'Split',
-                inputs=node.input('X'),
-                outputs=node.output('Out'),
-                axis=axis)
+            cnt = len(node.output('Out'))
+            sections = [input_shape[axis] // cnt] * cnt
+        mapper_helper.split_helper(
+            graph,
+            node.input('X'),
+            axis=axis,
+            split=sections,
+            outputs=node.output('Out'))
 
     @classmethod
     def get_axis(cls, graph, node):
@@ -1177,10 +1177,17 @@ class Transpose():
 
 @op_mapper('flatten2')
 class Flatten():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)]
+        if input_dtype in [dtypes.ONNX.INT32, dtypes.ONNX.INT64
+                           ] and graph.opset_version < 9:
+            raise Exception(
+                "int32 or int64 not supported in onnx <9, please try with higher onnx opset_version>=9."
+            )
+
         graph.make_node(
             'Flatten',
             inputs=node.input('X'),
