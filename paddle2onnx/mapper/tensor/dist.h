@@ -26,7 +26,6 @@ class DistMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("p", &p_);
   }
-  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 
  private:

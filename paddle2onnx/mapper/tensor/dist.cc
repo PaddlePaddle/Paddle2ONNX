@@ -24,14 +24,6 @@ REGISTER_MAPPER(dist, DistMapper)
 const int g_NegIntInfinity = 0xFF800000;
 const float g_NegFloatInfinity = *((float *)&g_NegIntInfinity);
 
-int32_t DistMapper::GetMinOpset(bool verbose) {
-  if (fabs(p_) < 1e-6) {
-    Logger(verbose, 9) << "While p is 0.0, " << RequireOpset(9) << std::endl;
-    return 9;
-  }
-  return 7;
-}
-
 void DistMapper::Opset7() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
