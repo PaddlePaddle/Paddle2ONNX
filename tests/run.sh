@@ -97,6 +97,10 @@ dev_tests=("test_auto_scan_conv2d.py \
             test_auto_scan_unsqueeze2.py \
             test_auto_scan_where.py \
             test_auto_scan_yolo_box.py \
+            test_auto_scan_dist.py \
+            test_auto_scan_yolo_box.py \
+            test_auto_scan_argsort.py \
+            test_auto_scan_expand_as.py \
             test_auto_scan_log.py")
 echo "=============dev test=========" >>result.txt
 echo "=============dev test========="
