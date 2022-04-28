@@ -4,4 +4,4 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 version = '0.9.5'
-git_version = '16193aa8e8dffa1dcf7bd851f2b63295afb450c8'
+git_version = '713360f25da0a989ca26e075a76ccb3b89c925f8'
