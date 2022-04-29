@@ -39,9 +39,14 @@ def replace_output_of_all_nodes(graph,
                     return
 
 
-def replace_input_of_all_nodes(graph, old_input_name: str, new_input_name: str):
+def replace_input_of_all_nodes(graph,
+                               old_input_name: str,
+                               new_input_name: str,
+                               ignore_nodes=None):
     for name, node in graph.node_map.items():
         if node.type in ["QuantizeLinear", "DequantizeLinear"]:
+            continue
+        if ignore_nodes is not None and node.layer_name in ignore_nodes:
             continue
         if old_input_name in node.inputs:
             for j in range(len(node.inputs)):
@@ -81,7 +86,7 @@ def remove_all_quantize_ops(graph):
 
         graph.remove_node(nodes_to_be_remove[0])
         graph.remove_node(nodes_to_be_remove[1])
-
+    graph = delete_redundant_clips(graph)
     return graph
 
 
@@ -183,6 +188,11 @@ def merge_conv_bn(graph):
         new_weight = conv_weight * np.expand_dims(alpha, axis=[1, 2, 3])
         weight_params["data"] = new_weight
         graph.update_parameters(conv_weight_node, weight_params)
+
+        bias_params = copy.copy(weight_params)
+        bias_params['shape'] = [new_bias.shape[0]]
+        bias_params["data"] = new_bias
+        graph.update_parameters(conv_bias_node, bias_params)
 
         # update weight scale
         quantize_params = graph.quantize_params_dict[conv_weight_node]
@@ -335,11 +345,12 @@ def add_q_dq(graph):
         if tensor in graph.only_dequantize:
             params, weight = mapper_helper.get_param_from_paddle_graph(graph,
                                                                        tensor)
+            assert weight is not None, "Can not get params {}".format(tensor)
             scale = quantize_params[2][0]
             new_weight = weight / scale
             params['shape'] = [new_weight.shape[0]]
             params["data"] = np.round(new_weight).astype("int32")
-            params['dtype'] = paddle.int8
+            params['dtype'] = paddle.int32
             graph.update_parameters(tensor, params)
             dequantize_node = graph.make_node(
                 'DequantizeLinear',
@@ -431,6 +442,20 @@ def collect_all_scales(graph):
                 graph.quantize_params_dict[input_name] = [
                     scale_node, zero_node, [out_threshold], [0], -1
                 ]
+    return graph
+
+
+def delete_redundant_clips(graph):
+    input_name_to_nodes_dict = graph.input_name_to_nodes()
+    for clip_op in graph.added_clips:
+        node = graph.get_node(clip_op)
+        outputs = node.outputs[0]
+        inputs = node.inputs[0]
+        next_node = input_name_to_nodes_dict[outputs][0]
+        if next_node.type in ["Conv", "Matmul"]:
+            continue
+        replace_input_of_all_nodes(graph, outputs, inputs)
+        graph.remove_node_by_name(clip_op)
     return graph
 
 

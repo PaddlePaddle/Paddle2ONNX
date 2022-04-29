@@ -21,13 +21,9 @@ from paddle2onnx.passes.quantize_helper import new_type_quantize_post_process, r
 class QuantizeModelProcessPass(object):
     @classmethod
     def tensorrt_deploy_model(cls, graph):
-        if graph.quantize_model_mode in ["static", "dynamic"]:
-            graph = add_shortcut_quantize_ops(graph)
-            return graph
-        elif graph.quantize_model_mode in ["new_type"]:
-            graph = delete_redundant_quantize_ops(graph)
-            graph = add_shortcut_quantize_ops(graph)
-            return graph
+        graph = delete_redundant_quantize_ops(graph)
+        graph = add_shortcut_quantize_ops(graph)
+        return graph
 
     @classmethod
     def onnxruntime_deploy_model(cls, graph):

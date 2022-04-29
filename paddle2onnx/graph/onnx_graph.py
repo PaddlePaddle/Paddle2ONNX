@@ -99,6 +99,7 @@ class ONNXGraph(Graph):
         self.quantize_params_dict = dict()
         self.tensor_to_be_quantize = list()
         self.only_dequantize = list()
+        self.added_clips = list()
 
     def is_graph_output(self, output_name):
         for output in self.output_nodes:

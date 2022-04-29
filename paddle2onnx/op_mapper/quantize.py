@@ -120,9 +120,13 @@ class FakeQuantizeDequantizeMovingAverageAbsMax():
         scale_list = float(in_scale[0]) / 127.0
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-        clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
-                                              float(in_scale[0]),
-                                              -1 * float(in_scale[0]))
+        if graph.deploy_backend == "onnxruntime":
+            clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
+                                                  float(in_scale[0]),
+                                                  -1 * float(in_scale[0]))
+            graph.added_clips.append(clip_node)
+        else:
+            clip_node = input_node_name
         quantize_node = graph.make_node(
             'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
         graph.make_node(
@@ -223,9 +227,13 @@ class FakeQuantizeRangeAbsMax():
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
 
         assert graph.quantize_model_mode == "static", "fake_quantize_range_abs_max only can be in static quantize model"
-        clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
-                                              float(in_scale[0]),
-                                              -1 * float(in_scale[0]))
+        if graph.deploy_backend == "onnxruntime":
+            clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
+                                                  float(in_scale[0]),
+                                                  -1 * float(in_scale[0]))
+            graph.added_clips.append(clip_node)
+        else:
+            clip_node = input_node_name
         quantize_node = graph.make_node(
             'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
         graph.make_node(
@@ -254,9 +262,13 @@ class FakeQuantizeMovingAverageAbsMax():
         scale_list = [float(in_scale[0]) / 127.0]
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-        clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
-                                              float(in_scale[0]),
-                                              -1 * float(in_scale[0]))
+        if graph.deploy_backend == "onnxruntime":
+            clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
+                                                  float(in_scale[0]),
+                                                  -1 * float(in_scale[0]))
+            graph.added_clips.append(clip_node)
+        else:
+            clip_node = input_node_name
         quantize_node = graph.make_node(
             'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
         graph.make_node(
