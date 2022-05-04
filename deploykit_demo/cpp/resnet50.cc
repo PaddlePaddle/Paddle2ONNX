@@ -1,21 +1,20 @@
 #include "deploykit/backends/ort/ort_backend.h"
-#include "deploykit/backends/tensorrt/trt_backend.h"
+//#include "deploykit/backends/tensorrt/trt_backend.h"
 
 int main() {
-  //  auto backend = deploykit::OrtBackend();
-  //  auto option = deploykit::OrtBackendOption();
-  auto backend = deploykit::TrtBackend();
-  auto option = deploykit::TrtBackendOption();
-  option.min_shape["inputs"] = {1, 3, 224, 224};
-  option.opt_shape["inputs"] = {4, 3, 224, 224};
-  option.max_shape["inputs"] = {8, 3, 224, 224};
+  auto backend = deploykit::OrtBackend();
+  auto option = deploykit::OrtBackendOption();
+  //  auto backend = deploykit::TrtBackend();
+  //  auto option = deploykit::TrtBackendOption();
+  //  option.min_shape["inputs"] = {1, 3, 224, 224};
+  //  option.opt_shape["inputs"] = {4, 3, 224, 224};
+  //  option.max_shape["inputs"] = {8, 3, 224, 224};
 
   if (!backend.InitFromPaddle("resnet50/inference.pdmodel",
                               "resnet50/inference.pdiparams", option)) {
     std::cerr << "Init failed." << std::endl;
     return -1;
   }
-  //  auto backend = deploykit::OrtBackend();
   std::vector<deploykit::DataBlob> inputs(1);
   inputs[0].name = "inputs";
   inputs[0].Resize({1, 3, 224, 224}, deploykit::PaddleDataType::FP32);
