@@ -49,11 +49,39 @@ void OrtBackend::BuildOption(const OrtBackendOption& option) {
   if (option.execution_mode >= 0) {
     session_options_.SetExecutionMode(ExecutionMode(option.execution_mode));
   }
+  if (option.use_gpu) {
+    auto all_providers = Ort::GetAvailableProviders();
+    bool support_cuda = false;
+    std::string providers_msg = "";
+    for (size_t i = 0; i < all_providers.size(); ++i) {
+      providers_msg = providers_msg + all_providers[i] + ", ";
+      if (all_providers[i] == "CUDAExecutionProvider") {
+        support_cuda = true;
+      }
+    }
+    if (!support_cuda) {
+      KitLogger() << "[WARN] Compiled deploykit with onnxruntime doesn't "
+                     "support GPU, the available providers are "
+                  << providers_msg << "will fallback to CPUExecutionProvider."
+                  << std::endl;
+    } else {
+      Assert(option.gpu_id >= 0, "Requires gpu_id > 0, but now gpu_id = " +
+                                     std::to_string(option.gpu_id) + ".");
+      OrtCUDAProviderOptions cuda_options;
+      cuda_options.device_id = option.gpu_id;
+      session_options_.AppendExecutionProvider_CUDA(cuda_options);
+    }
+  }
 }
 
 bool OrtBackend::InitFromPaddle(const std::string& model_file,
                                 const std::string& params_file,
                                 const OrtBackendOption& option, bool verbose) {
+  if (initialized_) {
+    KitLogger() << "OrtBackend is already initlized, cannot initialize again."
+                << std::endl;
+    return false;
+  }
 #ifdef ENABLE_PADDLE_FRONTEND
   std::string onnx_model_proto;
   if (!paddle2onnx::Export(model_file, params_file, &onnx_model_proto, false,

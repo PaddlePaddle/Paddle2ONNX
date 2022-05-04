@@ -1,9 +1,11 @@
 #include "deploykit/backends/ort/ort_backend.h"
-//#include "deploykit/backends/tensorrt/trt_backend.h"
+#include "deploykit/backends/tensorrt/trt_backend.h"
 
 int main() {
   auto backend = deploykit::OrtBackend();
   auto option = deploykit::OrtBackendOption();
+  option.use_gpu = true;
+
   //  auto backend = deploykit::TrtBackend();
   //  auto option = deploykit::TrtBackendOption();
   //  option.min_shape["inputs"] = {1, 3, 224, 224};
