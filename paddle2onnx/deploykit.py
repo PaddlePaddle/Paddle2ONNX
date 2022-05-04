@@ -16,7 +16,7 @@ from paddle2onnx.utils import logging
 try:
     import paddle2onnx.deploykit_cpp2py_export as deploykit_c
 except:
-    logging.warn(
+    logging.warning(
         "[Paddle2ONNX][WARN] This package didn't compile with deploykit, refer https://github.com/PaddlePaddle/Paddle2ONNX/tree/deploykit/docs/zh/deploykit.md for more details."
     )
 
