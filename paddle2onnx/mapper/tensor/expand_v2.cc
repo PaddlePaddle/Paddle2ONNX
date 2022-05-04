@@ -15,9 +15,9 @@
 #include "paddle2onnx/mapper/tensor/expand_v2.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(expand_v2, ExpandMapper)
+REGISTER_MAPPER(expand_v2, ExpandV2Mapper)
 
-void ExpandMapper::Opset8() {
+void ExpandV2Mapper::Opset8() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
 

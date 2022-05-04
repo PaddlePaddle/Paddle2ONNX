@@ -17,16 +17,21 @@
 
 namespace paddle2onnx {
 
-class ExpandV2Mapper : public Mapper {
+class ArgsortMapper : public Mapper {
  public:
-  ExpandV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                 int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) {
-    Logger(verbose, 8) << RequireOpset(8) << std::endl;
-    return 8;
+  ArgsortMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("descending", &descending_);
+    GetAttr("axis", &axis_);
   }
-  void Opset8();
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset10();
+  void Opset7();
+
+ private:
+  bool descending_;
+  int64_t axis_;
 };
 
 }  // namespace paddle2onnx
