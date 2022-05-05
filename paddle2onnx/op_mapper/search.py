@@ -36,10 +36,14 @@ class WhereIndex():
 
 @op_mapper('top_k_v2')
 class TopKV2():
-    support_opset_version_range = (11, )
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
+        sorted = node.attr('sorted')
+        # for paddle, In gpu device, it always return the sorted value
+        # if not sorted:
+        #     sorted = True
         if 'K' in node.inputs and len(node.input('K')) > 0:
             k_node = node.input('K', 0)
             k_node_dtype = node.input_dtype('K', 0)
@@ -51,7 +55,7 @@ class TopKV2():
                 inputs=[node.input('X', 0), k_node],
                 outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 largest=node.attr('largest'),
-                sorted=node.attr('sorted'),
+                sorted=sorted,
                 axis=node.attr('axis'))
         else:
             k = node.attr('k')
@@ -63,7 +67,7 @@ class TopKV2():
                 inputs=[node.input('X', 0), k_node],
                 outputs=[node.output('Out', 0), node.output('Indices', 0)],
                 largest=node.attr('largest'),
-                sorted=node.attr('sorted'),
+                sorted=sorted,
                 axis=node.attr('axis'))
 
 
@@ -99,31 +103,45 @@ class ArgSort():
     support_opset_version_range = (6, 15)
 
     @classmethod
-    def opset_11(cls, graph, node, **kw):
+    def opset_10(cls, graph, node, **kw):
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
-        k_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.INT64,
-                   'value': [node.attr('axis')]})
-        dim_size = graph.make_node('Gather', inputs=[shape, k_node])
-        if not node.attr('descending'):
-            graph.make_node(
-                'TopK',
-                inputs=[node.input('X', 0), dim_size],
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
-                axis=node.attr('axis'),
-                largest=0)
+        from paddle2onnx.op_mapper import mapper_helper
+        axis = node.attr('axis')
+        if axis < 0:
+            axis = axis + len(node.input_shape('X', 0))
+        dim_size = mapper_helper.slice_helper(
+            graph, shape, axes=[0], starts=[axis], ends=[axis + 1])
+        if graph.opset_version > 10:
+            if not node.attr('descending'):
+                graph.make_node(
+                    'TopK',
+                    inputs=[node.input('X', 0), dim_size],
+                    outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                    axis=node.attr('axis'),
+                    largest=0)
+            else:
+                graph.make_node(
+                    'TopK',
+                    inputs=[node.input('X', 0), dim_size],
+                    outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                    axis=node.attr('axis'),
+                    largest=1)
         else:
-            graph.make_node(
-                'TopK',
-                inputs=[node.input('X', 0), dim_size],
-                outputs=[node.output('Out', 0), node.output('Indices', 0)],
-                axis=node.attr('axis'),
-                largest=1)
+            if not node.attr('descending'):
+                raise Exception(
+                    "descending=False only support opset version>=11.")
+            else:
+                graph.make_node(
+                    'TopK',
+                    inputs=[node.input('X', 0), dim_size],
+                    outputs=[node.output('Out', 0), node.output('Indices', 0)],
+                    axis=node.attr('axis'))
 
     @classmethod
     def opset_6(cls, graph, node, **kw):
-        k = node.input_var('X', 0).shape[node.attr('axis')]
+        shape = node.input_shape('X', 0)
+        k = shape[node.attr('axis')]
+        assert k > 0, "while input shape is dynamic, it only support opset version>=10."
         input_dtype = node.input_dtype('X', 0)
         dtype = dtypes.DTYPE_PADDLE_STR_MAP[input_dtype]
         inputs = node.input('X', 0)

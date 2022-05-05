@@ -80,7 +80,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
                        reproduce=None,
                        min_success_num=25,
                        max_duration=-1):
-        if os.getenv('HYPOTHESIS_TEST_PROFILE', 'ci') == "dev":
+        if os.getenv("CE_STAGE", "OFF") == "ON":
             max_examples *= 10
             min_success_num *= 10
             # while at ce phase, there's no limit on time
@@ -190,8 +190,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
         for i, model in enumerate(models):
             model.eval()
             obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
-                          input_specs, delta, rtol)
-            obj.set_device_mode(use_gpu)
+                          input_specs, delta, rtol, use_gpu)
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
