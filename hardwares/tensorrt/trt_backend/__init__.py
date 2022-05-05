@@ -6,8 +6,10 @@ import os
 import copy
 import numpy as np
 
-
 EXPLICIT_BATCH = 1 << (int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
+EXPLICIT_PRECISION = 1 << (
+    int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_PRECISION)
+
 
 def remove_initializer_from_input(ori_model):
     model = copy.deepcopy(ori_model)
@@ -27,6 +29,7 @@ def remove_initializer_from_input(ori_model):
             inputs.remove(name_to_input[initializer.name])
     return model
 
+
 # Simple helper data class that's a little nicer to use than a 2-tuple.
 class HostDeviceMem(object):
     def __init__(self, host_mem, device_mem):
@@ -43,24 +46,36 @@ class HostDeviceMem(object):
     def __repr__(self):
         return self.__str__()
 
+
 class TrtEngine:
-    def __init__(self, onnx_model_file, shape_info=None, max_batch_size=None, static_shape=True, engine_file_path=None):
-        self.static_shape = static_shape
+    def __init__(self,
+                 onnx_model_file,
+                 shape_info=None,
+                 max_batch_size=None,
+                 use_int8=False,
+                 engine_file_path=None):
         self.max_batch_size = 1 if max_batch_size is None else max_batch_size
         TRT_LOGGER = trt.Logger()
         if engine_file_path is not None and os.path.exists(engine_file_path):
             # If a serialized engine exists, use it instead of building an engine.
             print("Reading engine from file {}".format(engine_file_path))
-            with open(engine_file_path, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
+            with open(engine_file_path,
+                      "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
                 self.engine = runtime.deserialize_cuda_engine(f.read())
         else:
             builder = trt.Builder(TRT_LOGGER)
             config = builder.create_builder_config()
-            network = builder.create_network(EXPLICIT_BATCH)
+            if use_int8:
+                network = builder.create_network(EXPLICIT_BATCH |
+                                                 EXPLICIT_PRECISION)
+            else:
+                network = builder.create_network(EXPLICIT_BATCH)
             parser = trt.OnnxParser(network, TRT_LOGGER)
             runtime = trt.Runtime(TRT_LOGGER)
             config.max_workspace_size = 1 << 28
-            
+            if use_int8:
+                config.set_flag(trt.BuilderFlag.INT8)
+
             import onnx
             print('Loading ONNX model...')
             onnx_model = onnx_model_file
@@ -71,19 +86,27 @@ class TrtEngine:
             if not parser.parse(onnx_model.SerializeToString()):
                 print("ERROR: Failed to parse the ONNX file.")
                 for error in range(parser.num_errors):
-                    print (parser.get_error(error))
+                    print(parser.get_error(error))
                 sys.exit(0)
-            
-            if static_shape:
+
+            if shape_info is None:
                 builder.max_batch_size = 1
                 for i in range(len(onnx_model.graph.input)):
-                    input_shape = [x.dim_value for x in onnx_model.graph.input[0].type.tensor_type.shape.dim]
+                    input_shape = [
+                        x.dim_value
+                        for x in onnx_model.graph.input[0]
+                        .type.tensor_type.shape.dim
+                    ]
                     for s in input_shape:
-                        assert s > 0, "In static shape mode, the input of onnx model should be fixed, but now it's {}".format(onnx_model.graph.input[i])
+                        assert s > 0, "In static shape mode, the input of onnx model should be fixed, but now it's {}".format(
+                            onnx_model.graph.input[i])
             else:
                 max_batch_size = 1
                 if shape_info is not None:
-                    assert len(shape_info) == network.num_inputs, "Length of shape_info: {} is not same with length of model input: {}".format(len(shape_info), network.num_inputs)
+                    assert len(
+                        shape_info
+                    ) == network.num_inputs, "Length of shape_info: {} is not same with length of model input: {}".format(
+                        len(shape_info), network.num_inputs)
                     profile = builder.create_optimization_profile()
                     for k, v in shape_info.items():
                         if v[2][0] > max_batch_size:
@@ -94,7 +117,7 @@ class TrtEngine:
                 if max_batch_size > self.max_batch_size:
                     self.max_batch_size = max_batch_size
                 builder.max_batch_size = self.max_batch_size
-        
+
             print('Completed parsing of ONNX file')
             print('Building an engine from onnx model may take a while...')
             plan = builder.build_serialized_network(network, config)
@@ -106,7 +129,7 @@ class TrtEngine:
                     f.write(self.engine.serialize())
 
         self.context = self.engine.create_execution_context()
-        if not static_shape:
+        if shape_info is not None:
             self.context.active_optimization_profile = 0
         self.stream = cuda.Stream()
         self.bindings = []
@@ -120,14 +143,21 @@ class TrtEngine:
                 self.outputs.append(HostDeviceMem(None, None))
 
         print("Completed TrtEngine init ...")
-       
 
     def infer(self, input_data):
-        assert len(self.inputs) == len(input_data), "Length of input_data: {} is not same with length of input: {}".format(len(input_data), len(self.inputs))
-        
+        assert len(self.inputs) == len(
+            input_data
+        ), "Length of input_data: {} is not same with length of input: {}".format(
+            len(input_data), len(self.inputs))
+
         self.allocate_buffers(input_data)
 
-        return self.do_inference_v2(self.context, bindings=self.bindings, inputs=self.inputs, outputs=self.outputs, stream=self.stream)
+        return self.do_inference_v2(
+            self.context,
+            bindings=self.bindings,
+            inputs=self.inputs,
+            outputs=self.outputs,
+            stream=self.stream)
 
     def do_inference_v2(self, context, bindings, inputs, outputs, stream):
         # Transfer input data to the GPU.
@@ -135,12 +165,15 @@ class TrtEngine:
         # Run inference.
         context.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
         # Transfer predictions back from the GPU.
-        [cuda.memcpy_dtoh_async(out.host, out.device, stream) for out in outputs]
+        [
+            cuda.memcpy_dtoh_async(out.host, out.device, stream)
+            for out in outputs
+        ]
         # Synchronize the stream
         stream.synchronize()
         # Return only the host outputs.
         return [out.host for out in outputs]
-    
+
     def allocate_buffers(self, input_data):
         input_idx = 0
         output_idx = 0
@@ -148,8 +181,10 @@ class TrtEngine:
             idx = self.engine.get_binding_index(binding)
             if self.engine.binding_is_input(binding):
                 if not input_data[input_idx].flags['C_CONTIGUOUS']:
-                    input_data[input_idx] = np.ascontiguousarray(input_data[input_idx])
-                self.context.set_binding_shape(idx, (input_data[input_idx].shape))
+                    input_data[input_idx] = np.ascontiguousarray(input_data[
+                        input_idx])
+                self.context.set_binding_shape(idx,
+                                               (input_data[input_idx].shape))
                 self.inputs[input_idx].host = input_data[input_idx]
                 nbytes = input_data[input_idx].nbytes
                 if self.inputs[input_idx].nbytes < nbytes:
@@ -160,27 +195,31 @@ class TrtEngine:
             else:
                 dtype = trt.nptype(self.engine.get_binding_dtype(binding))
                 shape = self.context.get_binding_shape(idx)
-                self.outputs[output_idx].host = np.ascontiguousarray(np.empty(shape, dtype=dtype))
+                self.outputs[output_idx].host = np.ascontiguousarray(
+                    np.empty(
+                        shape, dtype=dtype))
                 nbytes = self.outputs[output_idx].host.nbytes
                 if self.outputs[output_idx].nbytes < nbytes:
                     self.outputs[output_idx].nbytes = nbytes
-                    self.outputs[output_idx].device = cuda.mem_alloc(self.outputs[output_idx].host.nbytes)
+                    self.outputs[output_idx].device = cuda.mem_alloc(
+                        self.outputs[output_idx].host.nbytes)
                     self.bindings[idx] = int(self.outputs[output_idx].device)
                 output_idx += 1
+
 
 #
 #def main():
 #    import numpy as np
 #    import onnxruntime as rt
-#    onnx_model = 'resnet50.onnx' 
+#    onnx_model = 'resnet50.onnx'
 #
 #    # ONNXRuntime
 #    sess = rt.InferenceSession(onnx_model)
 #    input_name = sess.get_inputs()[0].name
 #    label_name = sess.get_outputs()[0].name
 #
-#    trt_engine = TrtEngine(onnx_model_file=onnx_model, shape_info={0:[[1, 3, 224, 224], [5, 3, 224, 224], [10, 3, 224, 224]]}, static_shape=False, engine_file_path='model.trt')
-#    
+#    trt_engine = TrtEngine(onnx_model_file=onnx_model, shape_info={0:[[1, 3, 224, 224], [5, 3, 224, 224], [10, 3, 224, 224]]}, engine_file_path='model.trt')
+#
 #    for i in range(10, 1, -1):
 #        batch_size = i
 #        data = np.array(np.random.randn(batch_size,3,224,224)).astype('float32')
