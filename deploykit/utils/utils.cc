@@ -12,21 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-#include "paddle2onnx/mapper/mapper.h"
+#include "deploykit/utils/utils.h"
 
-namespace paddle2onnx {
+namespace deploykit {
 
-class ExpandV2Mapper : public Mapper {
- public:
-  ExpandV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                 int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) {
-    Logger(verbose, 8) << RequireOpset(8) << std::endl;
-    return 8;
+void Assert(bool condition, const std::string& message) {
+  if (!condition) {
+    KitLogger() << message << std::endl;
+    std::abort();
   }
-  void Opset8();
-};
+}
 
-}  // namespace paddle2onnx
+KitLogger::KitLogger(bool verbose, const std::string& prefix) {
+  verbose_ = verbose;
+  line_ = "";
+  prefix_ = prefix;
+}
+
+KitLogger& KitLogger::operator<<(std::ostream& (*os)(std::ostream&)) {
+  if (!verbose_) {
+    return *this;
+  }
+  std::cout << prefix_ << " " << line_ << std::endl;
+  line_ = "";
+  return *this;
+}
+
+}  // namespace deploytkit

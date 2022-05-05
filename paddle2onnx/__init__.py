@@ -21,6 +21,7 @@ from .op_mapper import register_op_mapper
 from typing import TypeVar
 from paddle2onnx.utils import logging
 from paddle2onnx.op_mapper import OpMapper
+from . import deploykit
 
 OP_WITHOUT_KERNEL_SET = {
     'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',

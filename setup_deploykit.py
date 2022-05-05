@@ -36,6 +36,22 @@ import platform
 from textwrap import dedent
 import multiprocessing
 
+setup_configs = dict()
+setup_configs["BUILD_DEPLOYKIT"] = os.getenv("BUILD_DEPLOYKIT", "OFF")
+# build with onnxruntime backend
+setup_configs["ENABLE_ORT_BACKEND"] = os.getenv("ENABLE_ORT_BACKEND", "OFF")
+setup_configs["ORT_DIRECTORY"] = os.getenv("ORT_DIRECTORY",
+                                           os.path.dirname(__file__))
+# build with tensorrt backend
+setup_configs["ENABLE_TRT_BACKEND"] = os.getenv("ENABLE_TRT_BACKEND", "OFF")
+setup_configs["TRT_DIRECTORY"] = os.getenv("TRT_DIRECTORY",
+                                           os.path.dirname(__file__))
+setup_configs["CUDA_DIRECTORY"] = os.getenv("CUDA_DIRECTORY",
+                                            os.path.dirname(__file__))
+
+setup_configs["BUILD_DEPLOYKIT_PYTHON"] = os.getenv("BUILD_DEPLOYKIT_PYTHON",
+                                                    "ON")
+
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
 SRC_DIR = os.path.join(TOP_DIR, 'paddle2onnx')
 CMAKE_BUILD_DIR = os.path.join(TOP_DIR, '.setuptools-cmake-build')
@@ -168,6 +184,8 @@ class cmake_build(setuptools.Command):
                     sysconfig.get_config_var('EXT_SUFFIX') or ''),
             ]
             cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
+            for k, v in setup_configs.items():
+                cmake_args.append("-D{}={}".format(k, v))
             if WINDOWS:
                 cmake_args.extend([
                     # we need to link with libpython on windows, so
@@ -272,7 +290,9 @@ cmdclass = {
 
 ext_modules = [
     setuptools.Extension(
-        name=str('paddle2onnx.paddle2onnx_cpp2py_export'), sources=[])
+        name=str('paddle2onnx.paddle2onnx_cpp2py_export'), sources=[]),
+    setuptools.Extension(
+        name=str('paddle2onnx.deploykit_cpp2py_export'), sources=[]),
 ]
 
 ################################################################################

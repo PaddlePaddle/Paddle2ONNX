@@ -53,7 +53,7 @@ class TestArgsortConvert(OPConvertAutoScanTest):
             st.integers(
                 min_value=-len(input_shape), max_value=len(input_shape) - 1))
 
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
         descending = draw(st.booleans())
 
         def generator_data():
@@ -67,7 +67,7 @@ class TestArgsortConvert(OPConvertAutoScanTest):
             return input_data
 
         if descending:
-            opset_version = [7, 11, 15]
+            opset_version = [7, 10, 11, 15]
         else:
             opset_version = [11, 15]
         config = {
