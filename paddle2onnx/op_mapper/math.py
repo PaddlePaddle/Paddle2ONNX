@@ -738,68 +738,47 @@ class ReduceMean():
         op_type = kw['mapper_dict'][node.type]
 
         output_shape = node.output_shape('Out', 0)
-        need_unsqueeze = False
-        if not node.attr('keep_dim'):
-            if list(output_shape) == [1]:
-                need_unsqueeze = True
-
-        outputs = None
-        if not need_unsqueeze:
-            outputs = node.output('Out')
-
-        reduce_node = graph.make_node(
-            op_type,
-            inputs=node.input('X'),
-            outputs=outputs,
-            attrs={
-                'axes': node.attr('dim'),
-                'keepdims': node.attr('keep_dim')
-            })
-        if need_unsqueeze:
-            mapper_helper.unsqueeze_helper(graph, reduce_node, [0],
-                                           node.output('Out'))
-
-    @classmethod
-    def opset_13(cls, graph, node, **kw):
-        op_type = kw['mapper_dict'][node.type]
-
-        output_shape = node.output_shape('Out', 0)
-        need_unsqueeze = False
-        if not node.attr('keep_dim'):
-            if list(output_shape) == [1]:
-                need_unsqueeze = True
-
-        outputs = None
-        if not need_unsqueeze:
-            outputs = node.output('Out')
-
-        reduce_node = cls.compute_reduce_node(graph, node, op_type, outputs)
-        if need_unsqueeze:
-            mapper_helper.unsqueeze_helper(graph, reduce_node, [0],
-                                           node.output('Out'))
-
-    @classmethod
-    def compute_reduce_node(cls, graph, node, op_type, outputs):
-        if op_type == "ReduceSum":
-            axes_node = graph.make_node(
-                'Constant',
-                attrs={'dtype': dtypes.ONNX.INT64,
-                       'value': node.attr('dim')})
-            reduce_node = graph.make_node(
-                op_type,
-                inputs=node.input('X') + [axes_node],
-                outputs=outputs,
-                attrs={'keepdims': node.attr('keep_dim')})
+        reduce_all = node.attr("reduce_all")
+        axes = node.attr("dim")
+        if reduce_all:
+            axes = list(range(len(node.input_shape("X", 0))))
+        if len(axes) == len(node.input_shape("X", 0)):
+            reduce_all = True
+        keepdims = node.attr('keep_dim')
+        if keepdims:
+            cls.create_reduce_node(graph, op_type,
+                                   node.input("X"), node.output("Out"), axes, 1)
         else:
-            reduce_node = graph.make_node(
-                op_type,
-                inputs=node.input('X'),
+            if reduce_all:
+                shape = graph.make_node(
+                    "Constant", dtype=dtypes.ONNX.INT64, value=[-1])
+                flatten_node = graph.make_node(
+                    "Reshape", inputs=[node.input("X")[0], shape])
+                cls.create_reduce_node(graph, op_type, [flatten_node],
+                                       node.output("Out"), [0], 1)
+            else:
+                cls.create_reduce_node(graph, op_type,
+                                       node.input("X"),
+                                       node.output("Out"), axes, 0)
+
+    @classmethod
+    def create_reduce_node(cls, graph, op_type, inputs, outputs, axes,
+                           keepdims):
+        if graph.opset_version >= 13 and op_type == "ReduceSum":
+            axes = graph.make_node(
+                "Constant", dtype=dtypes.ONNX.INT64, value=axes)
+            output = graph.make_node(
+                "ReduceSum",
+                inputs=inputs + [axes],
                 outputs=outputs,
-                attrs={
-                    'axes': node.attr('dim'),
-                    'keepdims': node.attr('keep_dim')
-                })
-        return reduce_node
+                keepdims=keepdims)
+        else:
+            output = graph.make_node(
+                op_type,
+                inputs=inputs,
+                outputs=outputs,
+                axes=axes,
+                keepdims=keepdims)
 
 
 @op_mapper('mean')
@@ -807,11 +786,15 @@ class Mean():
     support_opset_version_range = (7, 15)
 
     @classmethod
-    def opset_1(cls, graph, node, **kw):
+    def opset_7(cls, graph, node, **kw):
+        shape = graph.make_node("Constant", dtype=dtypes.ONNX.INT64, value=[-1])
+        flatten_node = graph.make_node(
+            "Reshape", inputs=[node.input("X")[0], shape])
         mean_node = graph.make_node(
-            'ReduceMean', inputs=node.input('X'), keepdims=0)
-        mapper_helper.unsqueeze_helper(graph, mean_node, [0],
-                                       node.output('Out'))
+            'ReduceMean',
+            inputs=flatten_node,
+            outputs=node.output("Out"),
+            keepdims=1)
 
 
 @op_mapper('arg_max')
@@ -932,6 +915,7 @@ class Dist():
             'Sub', inputs=[node.input('X', 0), node.input('Y', 0)])
         abs_node = graph.make_node('Abs', inputs=sub_node)
         if node.attr('p') == 0:
+            assert graph.opset_version >= 9, "When p is 0, onnx opset should be (onnx_opset>=9)."
             sign_node = graph.make_node('Sign', inputs=abs_node)
             sum_node = graph.make_node(
                 'ReduceSum', inputs=sign_node, keepdims=0)

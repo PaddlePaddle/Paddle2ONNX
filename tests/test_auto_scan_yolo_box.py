@@ -94,7 +94,7 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
             "op_names": ["yolo_box"],
             "test_data_shapes": [input_shape, generator_data],
             "test_data_types": [[dtype], ["int32"]],
-            "opset_version": [9, 10, 11, 12, 13, 14, 15],
+            "opset_version": [11, 12, 13, 14, 15],
             "input_spec_shape": [],
             "anchors": anchors,
             "class_num": class_num,

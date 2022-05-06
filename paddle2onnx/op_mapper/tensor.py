@@ -255,17 +255,20 @@ class Unstack():
         axis = node.attr('axis')
         ndim = node.block.vars[node.input('X')[0]].ndim
         axis = axis + ndim if axis < 0 else axis
-        output_y = graph.make_node(
-            'Split',
-            inputs=node.input('X'),
+        output_y = mapper_helper.split_helper(
+            graph,
+            node.input('X'),
             axis=axis,
+            split=[1] * len(node.output('Y')),
             outputs=len(node.output('Y')))
+
         if isinstance(output_y, six.string_types):
             output_y = [output_y]
 
         for i in range(len(output_y)):
             mapper_helper.squeeze_helper(graph, output_y[i], [axis],
                                          node.output('Y', i))
+
 
 @op_mapper('expand_as_v2')
 class ExpandAsV2():
@@ -536,7 +539,7 @@ class Slice():
         # tensor[i,:] will decrease rank of origin input, example:
         # paddle.slice() will not decrease rank of origin input
         # if input shape is [2, 3], input[0, :] will generate output with shape [3], not [1, 3].
-        # paddle.slice(input, 0, 1, 0) will  generate output with shape [1, 3], not [3]. 
+        # paddle.slice(input, 0, 1, 0) will  generate output with shape [1, 3], not [3].
 
         decrease_axis = node.attr('decrease_axis')
         if len(decrease_axis) == 0:
@@ -930,9 +933,11 @@ class FillConstantBatchSizeLike():
         out_shape.insert(0, 1)
 
         dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.attr('dtype')]
-        value = node.attr('value')
+        if node.attr("str_value") is not None and node.attr("str_value") != "":
+            value = eval(node.attr("str_value"))
+        else:
+            value = node.attr('value')
         input_shape = node.input_shape('Input', 0)
-        value = int(value)
         constant = graph.make_node(
             'Constant',
             dtype=dtype,
@@ -945,19 +950,21 @@ class FillConstantBatchSizeLike():
         end = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT64, value=[input_dim_idx + 1])
         batch = graph.make_node('Slice', inputs=[shape, start, end])
-        repeat = graph.make_node(
-            'Constant',
-            dtype=dtypes.ONNX.INT64,
-            value=[1] * (len(out_shape) - 1))
-        repeat = graph.make_node('Concat', inputs=[batch, repeat], axis=-1)
+        repeat = batch
+        if len(out_shape) > 1:
+            repeat = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT64,
+                value=[1] * (len(out_shape) - 1))
+            repeat = graph.make_node('Concat', inputs=[batch, repeat], axis=-1)
         if output_dim_idx == 0:
             graph.make_node(
                 'Tile', inputs=[constant, repeat], outputs=node.output('Out'))
         else:
             out = graph.make_node('Tile', inputs=[constant, repeat])
             perm = list(range(len(out_shape)))
-            perm[0] = output_dim_idx
-            perm[output_dim_idx] = 0
+            del perm[0]
+            perm.insert(output_dim_idx, 0)
             graph.make_node(
                 'Transpose',
                 inputs=[out],
@@ -1182,10 +1189,17 @@ class Transpose():
 
 @op_mapper('flatten2')
 class Flatten():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)]
+        if input_dtype in [dtypes.ONNX.INT32, dtypes.ONNX.INT64
+                           ] and graph.opset_version < 9:
+            raise Exception(
+                "int32 or int64 not supported in onnx <9, please try with higher onnx opset_version>=9."
+            )
+
         graph.make_node(
             'Flatten',
             inputs=node.input('X'),

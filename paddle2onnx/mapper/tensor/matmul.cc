@@ -13,10 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/matmul.h"
-
-#include <iostream>
-#include <string>
-#include <vector>
+#include <cmath>
 
 namespace paddle2onnx {
 REGISTER_MAPPER(matmul, MatmulMapper)
@@ -46,7 +43,7 @@ void MatmulMapper::Opset7() {
   if (transpose_Y_) {
     input_y = GetTrans(input_y_info);
   }
-  if (abs(alpha_ - 1.0) < 1e-6) {
+  if (fabs(alpha_ - 1.0) < 1e-6) {
     auto node = helper_->MakeNode("MatMul", {input_x, input_y});
     helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                       input_y_info[0].dtype);
