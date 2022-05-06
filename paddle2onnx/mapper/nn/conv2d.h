@@ -31,14 +31,6 @@ class Conv2dMapper : public Mapper {
     GetAttr("paddings", &paddings_);
     GetAttr("padding_algorithm", &padding_algorithm_);
     GetAttr("data_format", &data_format_);
-    if (paddings_.size() == 2) {
-      paddings_.push_back(paddings_[0]);
-      paddings_.push_back(paddings_[1]);
-    } else if (paddings_.size() == 4) {
-      int32_t tmp = paddings_[1];
-      paddings_[1] = paddings_[2];
-      paddings_[2] = tmp;
-    }
   }
 
   int32_t GetMinOpset(bool verbose = false);

@@ -9,7 +9,7 @@
 | arg_sort | 6~15 |
 | asin | 7~12 |
 | anchor_generator | 11~12 |
-| assign_value | 1~12 |
+| assign_value | 1~15 |
 | all | 6~12 |
 | atan | 7~12 |
 | any | 6~12 |
@@ -141,7 +141,7 @@
 | rsqrt | 6~12 |
 | softmax | 1~15 |
 | scale | 7~15 |
-| scatter | 1~15 |
+| scatter | 11~15 |
 | scatter_nd_add | 11~12 |
 | sequence_expand | 1~12 |
 | selu | 6~12 |

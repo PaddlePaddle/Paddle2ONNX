@@ -46,8 +46,10 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
                 "Different output data types! res type is: {}, and expect type is: {}".
                 format(result.dtype, expect.dtype))
         assert res
-        assert result.shape == expect.shape
-        assert result.dtype == expect.dtype
+        assert result.shape == expect.shape, "result.shape: {} != expect.shape: {}".format(
+            result.shape, expect.shape)
+        assert result.dtype == expect.dtype, "result.dtype: {} != expect.dtype: {}".format(
+            result.dtype, expect.dtype)
     elif type(result) == list and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
@@ -185,6 +187,12 @@ class APIOnnx(object):
                 self.input_feed[str(i)] = in_data.numpy()
                 i += 1
 
+    def set_device_mode(self, is_gpu=True):
+        if paddle.device.is_compiled_with_cuda() is True and is_gpu:
+            self.places = ['gpu']
+        else:
+            self.places = ['cpu']
+
     def set_input_spec(self):
         if len(self.input_spec_shape) == 0:
             return
@@ -214,6 +222,9 @@ class APIOnnx(object):
         """
         paddle dygraph layer to onnx
         """
+        #        paddle.jit.save(instance, "model/model", input_spec=self.input_spec)
+        #        import sys
+        #        sys.exit(0)
         paddle.onnx.export(
             instance,
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
@@ -259,15 +270,14 @@ class APIOnnx(object):
 
         included = False
         paddle_op_list = []
-        for op in self.ops:
-            for key, node in paddle_graph.node_map.items():
-                paddle_op_list.append(node.type)
-                if op == node.type:
-                    included = True
-                    break
+        assert len(self.ops) == 1, "You have to set one op name"
+        for key, node in paddle_graph.node_map.items():
+            op_type = node.type
+            op_type = op_type.replace("depthwise_", "")
+            if op_type == self.ops[0]:
+                included = True
 
-        if len(paddle_graph.node_map.keys()) == 0 and len(
-                self.ops) == 1 and self.ops[0] == '':
+        if len(paddle_graph.node_map.keys()) == 0 and self.ops[0] == '':
             included = True
 
         assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
@@ -284,7 +294,9 @@ class APIOnnx(object):
         find = False
         for block in prog.blocks:
             for op in block.ops:
-                if op.type == op_name:
+                op_type = op.type
+                op_type = op_type.replace("depthwise_", "")
+                if op_type == op_name:
                     find = True
         return find
 

@@ -37,7 +37,7 @@ int32_t GatherMapper::GetMinOpset(bool verbose) {
 void GatherMapper::Opset7() {
   auto x_info = GetInput("X");
   auto index_info = GetInput("Index");
-  auto out_info = GetInput("Out");
+  auto out_info = GetOutput("Out");
 
   bool has_input_axis = HasInput("Axis");
   auto axis = axis_;
@@ -59,7 +59,7 @@ void GatherMapper::Opset7() {
 void GatherMapper::Opset11() {
   auto x_info = GetInput("X");
   auto index_info = GetInput("Index");
-  auto out_info = GetInput("Out");
+  auto out_info = GetOutput("Out");
 
   bool has_input_axis = HasInput("Axis");
   auto axis = axis_;

@@ -53,7 +53,7 @@ class TestDistConvert(OPConvertAutoScanTest):
         input2_shape[0] = input1_shape[1]
         input2_shape[1] = input1_shape[2]
 
-        p = 1
+        p = 0.0
         p_type = draw(st.sampled_from(["str", "float"]))
         if p_type == "str":
             p = draw(st.sampled_from(["inf", "-inf"]))
@@ -62,12 +62,14 @@ class TestDistConvert(OPConvertAutoScanTest):
             p = draw(st.floats(min_value=0, max_value=4.0))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
-
+        opset_version = [7, 9, 15]
+        if p == 0.0:
+            opset_version = [9, 15]
         config = {
             "op_names": ["dist"],
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "p": p,
         }
