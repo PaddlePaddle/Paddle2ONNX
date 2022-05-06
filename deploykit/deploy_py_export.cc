@@ -124,6 +124,8 @@ PYBIND11_MODULE(deploykit_cpp2py_export, m) {
                      &OrtBackendOption::inter_op_num_threads)
       .def_readwrite("intra_op_num_threads",
                      &OrtBackendOption::intra_op_num_threads)
+      .def_readwrite("use_gpu", &OrtBackendOption::use_gpu)
+      .def_readwrite("gpu_id", &OrtBackendOption::gpu_id)
       .def_readwrite("execution_mode", &OrtBackendOption::execution_mode);
   pybind11::class_<OrtBackend>(m, "OrtBackend")
       .def(pybind11::init())
