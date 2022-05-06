@@ -915,6 +915,7 @@ class Dist():
             'Sub', inputs=[node.input('X', 0), node.input('Y', 0)])
         abs_node = graph.make_node('Abs', inputs=sub_node)
         if node.attr('p') == 0:
+            assert graph.opset_version >= 9, "When p is 0, onnx opset should be (onnx_opset>=9)."
             sign_node = graph.make_node('Sign', inputs=abs_node)
             sum_node = graph.make_node(
                 'ReduceSum', inputs=sign_node, keepdims=0)
