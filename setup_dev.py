@@ -167,8 +167,6 @@ class cmake_build(setuptools.Command):
                 '-DPY_EXT_SUFFIX={}'.format(
                     sysconfig.get_config_var('EXT_SUFFIX') or ''),
             ]
-            #            if os.getenv("PADDLE2ONNX_DEBUG", "OFF") == "ON":
-            #                cmake_args.append("-DPADDLE2ONNX_DEBUG=ON")
             cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
             if WINDOWS:
                 cmake_args.extend([
@@ -178,8 +176,6 @@ class cmake_build(setuptools.Command):
                     '-DPY_VERSION={}'.format('{0}.{1}'.format(* \
                                                               sys.version_info[:2])),
                 ])
-                #                if USE_MSVC_STATIC_RUNTIME:
-                #                    cmake_args.append('-DONNX_USE_MSVC_STATIC_RUNTIME=ON')
                 if platform.architecture()[0] == '64bit':
                     cmake_args.extend(['-A', 'x64', '-T', 'host=x64'])
                 else:

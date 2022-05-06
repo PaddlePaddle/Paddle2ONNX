@@ -17,12 +17,15 @@
 
 namespace paddle2onnx {
 
-class ExpandMapper : public Mapper {
+class ExpandV2Mapper : public Mapper {
  public:
-  ExpandMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
+  ExpandV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) { return 8; }
+  int32_t GetMinOpset(bool verbose = false) {
+    Logger(verbose, 8) << RequireOpset(8) << std::endl;
+    return 8;
+  }
   void Opset8();
 };
 

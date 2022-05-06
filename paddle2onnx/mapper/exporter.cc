@@ -58,14 +58,6 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
 #ifdef PADDLE2ONNX_DEBUG
   P2OLogger(true) << "Converting operator: " << op.type() << std::endl;
 #endif
-  if (verbose) {
-    printf(
-        "\rConverting(%.2lf%%)... total number of operators is %d, current "
-        "operator: %s                         "
-        "            ",
-        _total_ops_num, _current_exported_num * 100 / (_total_ops_num + 0.001),
-        op.type().c_str());
-  }
   if (op.type() == "while") {
     return ExportLoop(parser, helper, opset_version, block_id, op_id, verbose);
   }
@@ -252,8 +244,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   }
   _helper.SetOpsetVersion(opset_version);
   P2OLogger()
-      << "This PaddlePaddle model will be exported to ONNX with opset_version="
-      << _helper.GetOpsetVersion() << "." << std::endl;
+      << "Use opset_version = " << _helper.GetOpsetVersion() << " for ONNX export."  << std::endl;
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
 
@@ -268,7 +259,6 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
     ExportOp(parser, &_helper, opset_version, 0, i, verbose);
   }
-  printf("\rConverted(100%)!                                          \n");
   // construct a onnx model proto
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
   // TODO(jiangjiajun) ir version is related to onnx version
@@ -308,11 +298,11 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     try {
       ONNX_NAMESPACE::checker::check_model(*(model.get()));
     } catch (...) {
-      P2OLogger() << "The exported ONNX model is invalid." << std::endl;
+      P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
       return "";
     }
     P2OLogger()
-        << "Congratulations, the model is exported to ONNX successfully!"
+        << "PaddlePaddle model is exported as ONNX format now."
         << std::endl;
   }
 

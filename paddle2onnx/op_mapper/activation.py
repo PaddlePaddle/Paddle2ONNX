@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import numpy as np
+import math
 from paddle2onnx.constant import dtypes
 from paddle2onnx.op_mapper import OpMapper as op_mapper
 from paddle2onnx.op_mapper import mapper_helper
@@ -190,16 +191,18 @@ class Swish():
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
-        beta_node = graph.make_node(
-            'Constant',
-            attrs={'dtype': dtypes.ONNX.FLOAT,
-                   'value': [node.attr('beta')]})
-        beta_x_node = graph.make_node(
-            'Mul', inputs=[node.input('X')[0], beta_node])
-        sigmoid_node = graph.make_node('Sigmoid', inputs=[beta_x_node])
+        x = node.input('X')[0]
+        if math.fabs(node.attr("beta") - 1.0) > 1e-05:
+            beta_node = graph.make_node(
+                'Constant',
+                attrs={'dtype': dtypes.ONNX.FLOAT,
+                       'value': [node.attr('beta')]})
+            x = graph.make_node(
+                'Mul', inputs=[x, beta_node])
+        sigmoid_node = graph.make_node('Sigmoid', inputs=[x])
         graph.make_node(
             'Mul',
-            inputs=[node.input('X')[0], sigmoid_node],
+            inputs=[x, sigmoid_node],
             outputs=node.output('Out'))
 
 
