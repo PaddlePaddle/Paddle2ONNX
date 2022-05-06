@@ -68,6 +68,7 @@ def try_replacing_upstream_output(graph, upstream_output_name, output_name):
 
 def remove_all_quantize_ops(graph):
     node_map = list(graph.node_map.items())
+    input_name_to_nodes_dict = graph.input_name_to_nodes()
     for idx in range(len(node_map)):
         _, q_node = node_map[idx]
         if q_node.type != "QuantizeLinear":
@@ -75,7 +76,6 @@ def remove_all_quantize_ops(graph):
         nodes_to_be_remove = [q_node]
         q_outputs = q_node.outputs[0]
         q_inputs = q_node.inputs[0]
-        input_name_to_nodes_dict = graph.input_name_to_nodes()
         input_name_to_nodes = input_name_to_nodes_dict[q_outputs]
         dq_node = input_name_to_nodes[0]
 
@@ -452,7 +452,7 @@ def delete_redundant_clips(graph):
         outputs = node.outputs[0]
         inputs = node.inputs[0]
         next_node = input_name_to_nodes_dict[outputs][0]
-        if next_node.type in ["Conv", "Matmul"]:
+        if next_node.type in ["Conv", "MatMul"]:
             continue
         replace_input_of_all_nodes(graph, outputs, inputs)
         graph.remove_node_by_name(clip_op)
