@@ -174,10 +174,16 @@ bool TrtBackend::Infer(std::vector<DataBlob>& inputs,
   AllocateBufferInDynamicShape(inputs, outputs);
   std::vector<void*> input_binds(inputs.size());
   for (size_t i = 0; i < inputs.size(); ++i) {
-    Assert(cudaMemcpyAsync(inputs_buffer_[inputs[i].name].data(),
-                           inputs[i].GetData(), inputs[i].Nbytes(),
-                           cudaMemcpyHostToDevice, stream_) == 0,
-           "[ERROR] Error occurs while copy memory from CPU to GPU.");
+    if (inputs[0].dtype == PaddleDataType::INT64) {
+      int64_t* data = static_cast<int64_t*>(inputs[i].GetData());
+      std::vector<int32_t> casted_data(data, data + inputs[i].Numel());
+      Assert(cudaMemcpyAsync(inputs_buffer_[inputs[i].name].data(), static_cast<void*>(casted_data.data()), inputs[i].Nbytes() / 2, cudaMemcpyHostToDevice, stream_) == 0, "[ERROR] Error occurs while copy memory from CPU to GPU.");
+    } else {
+      Assert(cudaMemcpyAsync(inputs_buffer_[inputs[i].name].data(),
+                             inputs[i].GetData(), inputs[i].Nbytes(),
+                             cudaMemcpyHostToDevice, stream_) == 0,
+             "[ERROR] Error occurs while copy memory from CPU to GPU.");
+    }
     //    Assert(cudaMemcpy(inputs_buffer_[inputs[i].name].data(),
     //                           inputs[i].GetData(), inputs[i].Nbytes(),
     //                           cudaMemcpyHostToDevice) == 0,
