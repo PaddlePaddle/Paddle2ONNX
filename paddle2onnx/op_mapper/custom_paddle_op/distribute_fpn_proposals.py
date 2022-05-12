@@ -67,19 +67,20 @@ class DistributeFpnProposals(CustomPaddleOp):
         #rois_idx_restore = paddle.cast(rois_idx_restore, dtype='int32')
         return {'MultiFpnRois': rois, 'RestoreIndex': [rois_idx_restore]}
 
+
 @op_mapper('distribute_fpn_proposals')
-class Distributefpnproposals:
+class Distributefpnproposals():
     @classmethod
     def opset_1(cls, graph, node, **kw):
         node = graph.make_node(
             'distribute_fpn_proposals',
             inputs=node.input('FpnRois'),
             outputs=node.output('MultiFpnRois') + node.output('RestoreIndex'),
-            max_level = node.attr('max_level'),
-            min_level = node.attr('min_level'),
-            refer_level = node.attr('refer_level'),
-            refer_scale = node.attr('refer_scale'),
-            domain = 'custom')
+            max_level=node.attr('max_level'),
+            min_level=node.attr('min_level'),
+            refer_level=node.attr('refer_level'),
+            refer_scale=node.attr('refer_scale'),
+            domain='baidu')
 
 
 register_custom_paddle_op('distribute_fpn_proposals', DistributeFpnProposals)
