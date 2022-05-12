@@ -93,7 +93,7 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs,
                               &loop_helper.nodes);
-  std::unordered_map<std::string, std::string> renamer;
+  std::map<std::string, std::string> renamer;
   for (auto& item : inputs) {
     auto name = MapperHelper::Get()->GenName("loop.input");
     renamer[item->name()] = name;
