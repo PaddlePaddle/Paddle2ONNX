@@ -753,10 +753,13 @@ class Dropout():
 
 @op_mapper('roi_align')
 class RoiAlign():
-    support_opset_version_range = (10, 12)
+    support_opset_version_range = (10, 16)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        if node.attr('aligned') and graph.opset_version < 16:
+            raise Exception(
+                'when aligned is true, onnx opset should be (onnx_opset>= 16)')
         rois_shape = graph.make_node('Shape', inputs=[node.input('ROIs', 0)])
         starts = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,

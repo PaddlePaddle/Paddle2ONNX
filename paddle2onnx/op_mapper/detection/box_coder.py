@@ -32,9 +32,8 @@ class BoxCoder():
     def opset_7(cls, graph, node, **kw):
         input_names = node.input_names
 
-        prior_var = node.input_var('PriorBox', 0)
         t_size = node.input_shape('TargetBox', 0)
-        p_size = prior_var.shape
+        p_size = node.input_shape('PriorBox', 0)
 
         # get the outout_name
         result_name = node.output('OutputBox', 0)
@@ -172,7 +171,6 @@ class BoxCoder():
                 raise Exception(
                     "The op box_coder has variable do not support aixs broadcast"
                 )
-            prior_variance_var = node.input_var('PriorBoxVar', 0)
             axes = []
             var_split_inputs_name = [result_name + "@variance_split"]
             tmp_node = graph.make_node(
