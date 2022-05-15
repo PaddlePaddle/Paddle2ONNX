@@ -27,15 +27,36 @@
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
 
-void ModelExporter::ExportParameters(
-    const std::map<std::string, Weight>& params, bool use_initializer) {
-  for (auto& item : params) {
+void ModelExporter::ExportParameters(const PaddleParser& parser,
+                                     bool use_initializer) {
+  for (auto& item : parser.params) {
     // TODO(jiangjiajun) I'm not handling use_initializer now, but some day I
     // will
     auto node = MakeConstant(item.first, item.second);
     parameters.push_back(std::move(node));
   }
 }
+
+// bool ModelExporter::ExportQuantizedParameters(const PaddleParser& parser,
+// bool use_initializer) {
+//  for (auto& item: parser.params) {
+//    std::string scale_name = "";
+//    if (!parser.GetWeightQuantScale(item.first, &scale_name)) {
+//      continue;
+//    }
+//    auto iter = parser.params.find(scale_name);
+//    if (iter == parser.params.end()) {
+//      std::cerr << "[Paddle2ONNX] [ERROR] Cannot find scale value: " <<
+//      scale_name << " for weight: " << item.first << "." << std::endl;
+//      return false;
+//    }
+//    auto new_weight = DequantizeWeight(item.second, iter-second);
+//    auto new_name = MapperHelper::Get()->GenName("dequantized_weight");
+//    auto node = MakeConstant(new_name, new_weight);
+//    parameters.push_back(std::move(node));
+//  }
+//  return true;
+//}
 
 void ModelExporter::ExportInputOutputs(
     const std::vector<TensorInfo>& input_infos,
@@ -243,9 +264,9 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
   }
   _helper.SetOpsetVersion(opset_version);
-  P2OLogger()
-      << "Use opset_version = " << _helper.GetOpsetVersion() << " for ONNX export."  << std::endl;
-  ExportParameters(parser.params);
+  P2OLogger() << "Use opset_version = " << _helper.GetOpsetVersion()
+              << " for ONNX export." << std::endl;
+  ExportParameters(parser);
   ExportInputOutputs(parser.inputs, parser.outputs);
 
   // Only convert blocks 0 now
@@ -301,9 +322,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
       return "";
     }
-    P2OLogger()
-        << "PaddlePaddle model is exported as ONNX format now."
-        << std::endl;
+    P2OLogger() << "PaddlePaddle model is exported as ONNX format now."
+                << std::endl;
   }
 
   std::string out;

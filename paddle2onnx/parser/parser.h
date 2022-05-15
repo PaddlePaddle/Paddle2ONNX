@@ -23,7 +23,29 @@
 
 namespace paddle2onnx {
 
-enum P2ODataType { BOOL, INT16, INT32, INT64, FP16, FP32, FP64, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, UINT8};
+enum P2ODataType {
+  BOOL,
+  INT16,
+  INT32,
+  INT64,
+  FP16,
+  FP32,
+  FP64,
+  X7,
+  X8,
+  X9,
+  X10,
+  X11,
+  X12,
+  X13,
+  X14,
+  X15,
+  X16,
+  X17,
+  X18,
+  X19,
+  UINT8
+};
 int32_t PaddleDataTypeSize(int32_t paddle_dtype);
 
 struct TensorInfo {
@@ -47,6 +69,11 @@ struct Weight {
   std::vector<int32_t> shape;
   int32_t dtype;
 
+  // for dequantization
+  // optional
+  std::vector<float> scale;
+  int64_t quant_axis;
+
   template <typename T>
   void set(int32_t data_type, const std::vector<int64_t>& dims,
            const std::vector<T>& data) {
@@ -60,11 +87,29 @@ struct Weight {
     }
   }
   template <typename T>
-  void get(std::vector<T>* data) {
+  void get(std::vector<T>* data) const {
     int64_t nums = std::accumulate(std::begin(shape), std::end(shape), 1,
                                    std::multiplies<int64_t>());
     data->resize(nums);
-    memcpy(data->data(), buffer.data(), buffer.size());
+    if (dtype == P2ODataType::INT64) {
+      std::vector<int64_t> value(nums);
+      memcpy(value.data(), buffer.data(), nums * sizeof(int64_t));
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::INT32) {
+      std::vector<int32_t> value(nums);
+      memcpy(value.data(), buffer.data(), nums * sizeof(int32_t));
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::FP32) {
+      std::vector<float> value(nums);
+      memcpy(value.data(), buffer.data(), nums * sizeof(float));
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::FP64) {
+      std::vector<double> value(nums);
+      memcpy(value.data(), buffer.data(), nums * sizeof(double));
+      data->assign(value.begin(), value.end());
+    } else {
+      Assert(false, "Weight::get() only support int64/int32/float32/float64.");
+    }
   }
 };
 
@@ -72,10 +117,11 @@ class PaddleParser {
  public:
   // recording variable name:id for each block of a program
   std::vector<std::map<std::string, int32_t>> _blocks_var_name2id;
-  // recoring set of operators for each block
+  // recording set of operators for each block
   std::vector<std::vector<const paddle2onnx::framework::proto::OpDesc*>>
       _blocks_ops;
   std::shared_ptr<paddle2onnx::framework::proto::ProgramDesc> prog;
+
   std::map<std::string, Weight> params;
   std::vector<TensorInfo> inputs;
   std::vector<TensorInfo> outputs;
@@ -128,6 +174,9 @@ class PaddleParser {
   bool TryGetTensorValue(const int64_t& block_id,
                          const std::string& tensor_name,
                          std::vector<T>* data) const;
+  //  // Get scale info for quantized weight tensor
+  //  bool GetWeightQuantScale(const std::string& weight_name, std::string*
+  //  scale_name) const;
 
  private:
   // If the model has same output name in difference operators
@@ -143,46 +192,63 @@ class PaddleParser {
   bool LoadProgram(const std::string& model, bool from_memory_buffer);
   bool LoadParams(const std::string& path);
   bool LoadParamsFromMemoryBuffer(const std::string& buffer);
+
+  //  // parse model, find all the quantized weights and record their scales
+  //  void RecordWeightQuantScaleInfo();
   // This is a trick flag
   // While there's a nms operator in paddle model,
   // the shape inference of paddle is not correct
   bool _has_nms = false;
   std::vector<std::unordered_map<std::string, int64_t>> _constant_ops;
+  //  // weight scales will record scale infomation for all the weights of
+  //  matmul/conv2d
+  bool ProcessQuantizedWeights();
+  //  std::map<std::string, std::vector<float>> _weight_scales;
 };
 
 template <typename T>
 bool PaddleParser::TryGetTensorValue(const int64_t& block_id,
                                      const std::string& tensor_name,
                                      std::vector<T>* data) const {
-  Assert(block_id < _constant_ops.size(),
-         "block_id is out of range while calling TryGetTensorValue.");
-  auto iter = _constant_ops[block_id].find(tensor_name);
-  if (iter == _constant_ops[block_id].end()) {
-    return false;
+  {
+    auto iter = params.find(tensor_name);
+    if (iter != params.end()) {
+      (iter->second).get(data);
+      return true;
+    }
   }
-  Assert(iter->second < _blocks_ops[block_id].size(),
-         "op_idx is out of range while calling TryGetTensorValue.");
-  auto op = _blocks_ops[block_id][iter->second];
-  int64_t dtype;
-  GetOpAttr(*op, "dtype", &dtype);
-  if (dtype == P2ODataType::INT64) {
-    std::vector<int64_t> value;
-    GetOpAttr(*op, "int64_values", &value);
-    data->assign(value.begin(), value.end());
-  } else if (dtype == P2ODataType::INT32) {
-    std::vector<int64_t> value;
-    GetOpAttr(*op, "int32_values", &value);
-    data->assign(value.begin(), value.end());
-  } else if (dtype == P2ODataType::FP32) {
-    std::vector<float> value;
-    GetOpAttr(*op, "fp32_values", &value);
-    data->assign(value.begin(), value.end());
-  } else {
-    Assert(
-        false,
-        "Only support int32/int64/float32 data type in assign_value operator.");
+  {
+    Assert(block_id < _constant_ops.size(),
+           "block_id is out of range while calling TryGetTensorValue.");
+    auto iter = _constant_ops[block_id].find(tensor_name);
+    if (iter == _constant_ops[block_id].end()) {
+      return false;
+    }
+    Assert(iter->second < _blocks_ops[block_id].size(),
+           "op_idx is out of range while calling TryGetTensorValue.");
+    auto op = _blocks_ops[block_id][iter->second];
+    int64_t dtype;
+    GetOpAttr(*op, "dtype", &dtype);
+    if (dtype == P2ODataType::INT64) {
+      std::vector<int64_t> value;
+      GetOpAttr(*op, "int64_values", &value);
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::INT32) {
+      std::vector<int64_t> value;
+      GetOpAttr(*op, "int32_values", &value);
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::FP32) {
+      std::vector<float> value;
+      GetOpAttr(*op, "fp32_values", &value);
+      data->assign(value.begin(), value.end());
+    } else {
+      Assert(false,
+             "Only support int32/int64/float32 data type in assign_value "
+             "operator.");
+    }
+    return true;
   }
-  return true;
+  return false;
 }
 
 }  // namespace paddle2onnx
