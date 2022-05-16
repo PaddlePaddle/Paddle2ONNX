@@ -147,7 +147,7 @@ class PaddleParser {
   // While there's a nms operator in paddle model,
   // the shape inference of paddle is not correct
   bool _has_nms = false;
-  std::vector<std::unordered_map<std::string, int64_t>> _constant_ops;
+  std::vector<std::map<std::string, int64_t>> _constant_ops;
 };
 
 template <typename T>
