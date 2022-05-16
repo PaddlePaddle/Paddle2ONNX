@@ -87,6 +87,7 @@ dev_tests=("test_auto_scan_conv2d.py \
             test_auto_scan_split.py \
             test_auto_scan_squeeze2.py \
             test_auto_scan_stack.py \
+            test_auto_scan_unstack.py \
             test_auto_scan_strided_slice.py \
             test_auto_scan_sum.py \
             test_auto_scan_shrink_ops.py \
