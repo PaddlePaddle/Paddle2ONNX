@@ -149,6 +149,26 @@ def squeeze_helper(graph, input, axes=None, outputs=None):
         return squeeze_node
 
 
+def unsqueeze_helper(graph, input, axes, outputs=None):
+    inputs = []
+    if isinstance(input, list):
+        input = input[0]
+    inputs.append(input)
+    if not isinstance(axes, list):
+        axes = [axes]
+    if graph.opset_version < 13:
+        unsqueeze_node = graph.make_node(
+            'Unsqueeze', inputs=inputs, axes=axes, outputs=outputs)
+    else:
+        axes_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': axes})
+        inputs.append(axes_node)
+        unsqueeze_node = graph.make_node(
+            'Unsqueeze', inputs=inputs, outputs=outputs)
+    return unsqueeze_node
+
+
 def split_helper(graph, inputs, outputs, axis, split, dtype=paddle.float32):
     if not isinstance(inputs, (list, tuple)):
         inputs = [inputs]

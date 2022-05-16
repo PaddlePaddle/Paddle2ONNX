@@ -561,34 +561,48 @@ class LayerNorm():
         add_eps = graph.make_node("Add", inputs=[variance, epsilon])
         denominator = graph.make_node("Sqrt", inputs=[add_eps])
 
+        ipt_shape = graph.make_node("Shape", inputs=[ipt])
+        weight_shape = mapper_helper.slice_helper(
+            graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
         if 'Bias' in node.inputs and 'Scale' in node.inputs and len(
                 node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
-            ipt_shape = graph.make_node("Shape", inputs=[ipt])
-            weight_shape = mapper_helper.slice_helper(
-                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
-            scale = graph.make_node(
-                "Reshape", inputs=[node.input('Scale', 0), weight_shape])
-            bias = graph.make_node(
-                "Reshape", inputs=[node.input('Bias', 0), weight_shape])
+            if normalized_shape == ipt_dims - 1:
+                shape_const = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+                scale = graph.make_node(
+                    "Reshape", inputs=[node.input('Scale', 0), shape_const])
+                bias = graph.make_node(
+                    "Reshape", inputs=[node.input('Bias', 0), shape_const])
+            else:
+                scale = graph.make_node(
+                    "Reshape", inputs=[node.input('Scale', 0), weight_shape])
+                bias = graph.make_node(
+                    "Reshape", inputs=[node.input('Bias', 0), weight_shape])
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
             layer_norm = graph.make_node("Mul", inputs=[layer_norm, scale])
             graph.make_node(
                 "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
         elif 'Bias' in node.inputs and len(node.input('Bias')) > 0:
-            ipt_shape = graph.make_node("Shape", inputs=[ipt])
-            weight_shape = mapper_helper.slice_helper(
-                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
-            bias = graph.make_node(
-                "Reshape", inputs=[node.input('Bias', 0), weight_shape])
+            if normalized_shape == ipt_dims - 1:
+                shape_const = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+                bias = graph.make_node(
+                    "Reshape", inputs=[node.input('Bias', 0), shape_const])
+            else:
+                bias = graph.make_node(
+                    "Reshape", inputs=[node.input('Bias', 0), weight_shape])
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
             graph.make_node(
                 "Add", inputs=[layer_norm, bias], outputs=node.output('Y'))
         elif 'Scale' in node.inputs and len(node.input('Scale')) > 0:
-            ipt_shape = graph.make_node("Shape", inputs=[ipt])
-            weight_shape = mapper_helper.slice_helper(
-                graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
-            scale = graph.make_node(
-                "Reshape", inputs=[node.input('Scale', 0), weight_shape])
+            if normalized_shape == ipt_dims - 1:
+                shape_const = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT64, value=[-1])
+                scale = graph.make_node(
+                    "Reshape", inputs=[node.input('Scale', 0), shape_const])
+            else:
+                scale = graph.make_node(
+                    "Reshape", inputs=[node.input('Scale', 0), weight_shape])
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
             graph.make_node(
                 "Mul", inputs=[layer_norm, scale], outputs=node.output('Y'))
@@ -739,10 +753,13 @@ class Dropout():
 
 @op_mapper('roi_align')
 class RoiAlign():
-    support_opset_version_range = (10, 12)
+    support_opset_version_range = (10, 16)
 
     @classmethod
     def opset_10(cls, graph, node, **kw):
+        if node.attr('aligned') and graph.opset_version < 16:
+            raise Exception(
+                'when aligned is true, onnx opset should be (onnx_opset>= 16)')
         rois_shape = graph.make_node('Shape', inputs=[node.input('ROIs', 0)])
         starts = graph.make_node(
             'Constant', attrs={'dtype': dtypes.ONNX.INT64,

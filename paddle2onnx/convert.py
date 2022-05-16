@@ -160,7 +160,7 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
                 "The output_spec should be 'list', but received type is %s." %
                 type(output_spec))
         for var in output_spec:
-            if not isinstance(var, core.VarBase):
+            if not isinstance(var, (core.VarBase, Variable)):
                 raise TypeError(
                     "The element in output_spec list should be 'Variable', but received element's type is %s."
                     % type(var))

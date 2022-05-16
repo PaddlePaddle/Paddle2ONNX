@@ -106,10 +106,24 @@ class OpMapper(object):
                 else:
                     custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
                         node.type](node)
-                    custom_paddle_graph = custom_paddle_op.get_paddle_graph()
+                    custom_paddle_graph, output_results = custom_paddle_op.get_paddle_graph(
+                    )
                     OpMapper.check_support_status(custom_paddle_graph.node_map,
                                                   graph.opset_version)
                     graph.build_op_nodes(custom_paddle_graph.node_map)
+
+                    node_output_results = dict()
+                    for k in node.output_names:
+                        custom_outs = output_results[k]
+                        node_outs = node.output(k)
+                        assert len(custom_outs) == len(
+                            node_outs
+                        ), "Length of custom implementation operator's outputs is not same with the length of original operator's outputs."
+                        for i in range(len(custom_outs)):
+                            graph.make_node(
+                                "Identity",
+                                inputs=[custom_outs[i]],
+                                outputs=[node_outs[i]])
             else:
                 opsets = OpMapper.OPSETS[node.type]
                 versions = list(opsets.keys())
@@ -131,7 +145,8 @@ class OpMapper(object):
             if node.type in OpMapper.REGISTER_CUSTOM_PADDLE_OP:  #如果是custom的op，获取custom的推荐op
                 custom_paddle_op = OpMapper.REGISTER_CUSTOM_PADDLE_OP[
                     node.type](node)
-                custom_paddle_graph = custom_paddle_op.get_paddle_graph()
+                custom_paddle_graph, output_results = custom_paddle_op.get_paddle_graph(
+                )
                 custom_recommend_opset_version = OpMapper.check_support_status(
                     custom_paddle_graph.node_map, opset_version, True)
                 recommend_opset_version = max(recommend_opset_version,
@@ -238,24 +253,6 @@ class CustomPaddleOp(object):
             return None
         return self.inputs[name][idx]
 
-    def rename_node_output(self, graph, old_name, new_name):
-        output_idx = None
-        for idx in range(len(graph.output_nodes)):
-            if graph.output_nodes[idx].layer_name == old_name:
-                output_idx = idx
-                break
-        graph.output_nodes[output_idx].layer_name = new_name
-        need_rename_nodes = []
-        for name, node in graph.node_map.items():
-            for arg_name, outputs in node.outputs.items():
-                for idx in range(len(outputs)):
-                    if outputs[idx] == old_name:
-                        node.outputs[arg_name][idx] = new_name
-                        need_rename_nodes.append(node)
-        for node in need_rename_nodes:
-            graph.node_map[node.layer_name] = node
-        return graph
-
     def get_paddle_graph(self):
         scope_prefix = self.generate_scope_name(self.node)
         scope = paddle.static.Scope()
@@ -277,14 +274,10 @@ class CustomPaddleOp(object):
                         fetch_vars,
                         scope=scope)
 
-        for arg_name, opts in res.items():
-            for idx in range(len(opts)):
-                new_name = self.node.output(arg_name, idx)
-                old_name = opts[idx].name
-                paddle_graph = self.rename_node_output(paddle_graph, old_name,
-                                                       new_name)
-
-        return paddle_graph
+        output_results = dict()
+        for arg_name, outs in res.items():
+            output_results[arg_name] = [out.name for out in outs]
+        return paddle_graph, output_results
 
 
 def register_custom_paddle_op(paddle_op, custom_op):
