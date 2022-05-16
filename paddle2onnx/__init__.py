@@ -21,7 +21,6 @@ from .op_mapper import register_op_mapper
 from typing import TypeVar
 from paddle2onnx.utils import logging
 from paddle2onnx.op_mapper import OpMapper
-from . import deploykit
 from . import command
 
 OP_WITHOUT_KERNEL_SET = {
