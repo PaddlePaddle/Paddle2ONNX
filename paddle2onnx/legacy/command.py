@@ -18,6 +18,7 @@ import argparse
 import ast
 import sys
 import os
+import paddle.fluid as fluid
 from paddle2onnx.utils import logging
 
 
@@ -27,6 +28,7 @@ def str2list(v):
     v = v.replace(" ", "")
     v = eval(v)
     return v
+
 
 def arg_parser():
     parser = argparse.ArgumentParser()
@@ -138,9 +140,75 @@ def program2onnx(model_dir,
                  input_shape_dict=None,
                  output_names=None,
                  auto_update_opset=True):
-    logging.warning("[Deprecated] `paddle2onnx.command.program2onnx` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`")
-    from paddle2onnx.legacy.command import program2onnx
-    return program2onnx(model_dir, save_file, model_filename, params_filename, opset_version, enable_onnx_checker, operator_export_type, input_shape_dict, output_names, auto_update_opset)
+    try:
+        import paddle
+    except:
+        logging.error(
+            "paddlepaddle not installed, use \"pip install paddlepaddle\"")
+
+    v0, v1, v2 = paddle.__version__.split('.')
+    if v0 == '0' and v1 == '0' and v2 == '0':
+        logging.warning("You are use develop version of paddlepaddle")
+    elif int(v0) <= 1 and int(v1) < 8:
+        raise ImportError("paddlepaddle>=1.8.0 is required")
+
+    import paddle2onnx as p2o
+    # convert model save with 'paddle.fluid.io.save_inference_model'
+    if hasattr(paddle, 'enable_static'):
+        paddle.enable_static()
+    exe = fluid.Executor(fluid.CPUPlace())
+    if model_filename is None and params_filename is None:
+        [program, feed_var_names, fetch_vars] = fluid.io.load_inference_model(
+            model_dir, exe)
+    else:
+        [program, feed_var_names, fetch_vars] = fluid.io.load_inference_model(
+            model_dir,
+            exe,
+            model_filename=model_filename,
+            params_filename=params_filename)
+
+    OP_WITHOUT_KERNEL_SET = {
+        'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
+        'conditional_block', 'while', 'send', 'recv', 'listen_and_serv',
+        'fl_listen_and_serv', 'ncclInit', 'select', 'checkpoint_notify',
+        'gen_bkcl_id', 'c_gen_bkcl_id', 'gen_nccl_id', 'c_gen_nccl_id',
+        'c_comm_init', 'c_sync_calc_stream', 'c_sync_comm_stream',
+        'queue_generator', 'dequeue', 'enqueue', 'heter_listen_and_serv',
+        'c_wait_comm', 'c_wait_compute', 'c_gen_hccl_id', 'c_comm_init_hccl',
+        'copy_cross_scope'
+    }
+    if input_shape_dict is not None:
+        import paddle2onnx
+        paddle2onnx.legacy.process_old_ops_desc(program)
+        paddle_version = paddle.__version__
+        model_version = program.desc._version()
+        major_ver = model_version // 1000000
+        minor_ver = (model_version - major_ver * 1000000) // 1000
+        patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
+        model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
+        if model_version != paddle_version:
+            logging.warning(
+                "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
+                format(model_version, paddle_version))
+
+        for k, v in input_shape_dict.items():
+            program.blocks[0].var(k).desc.set_shape(v)
+        for i in range(len(program.blocks[0].ops)):
+            if program.blocks[0].ops[i].type in OP_WITHOUT_KERNEL_SET:
+                continue
+            program.blocks[0].ops[i].desc.infer_shape(program.blocks[0].desc)
+    p2o.program2onnx(
+        program,
+        fluid.global_scope(),
+        save_file,
+        feed_var_names=feed_var_names,
+        target_vars=fetch_vars,
+        opset_version=opset_version,
+        enable_onnx_checker=enable_onnx_checker,
+        operator_export_type=operator_export_type,
+        auto_update_opset=auto_update_opset,
+        output_names=output_names)
+
 
 def main():
     if len(sys.argv) < 2:
@@ -155,7 +223,7 @@ def main():
 
     if args.version:
         import paddle2onnx
-        logging.info("paddle2onnx-{} with python>=3.6, paddlepaddle>=2.0.0".
+        logging.info("paddle2onnx-{} with python>=2.7, paddlepaddle>=1.8.0".
                      format(paddle2onnx.__version__))
         return
 
@@ -166,20 +234,26 @@ def main():
 
     operator_export_type = "ONNX"
     if args.enable_paddle_fallback:
-        logging.warning("[Deprecated] The flag `--enable_paddle_fallback` will be deprecated, and only works while `--enable_dev_version False` now.")
         operator_export_type = "PaddleFallback"
 
-    if args.output_names is not None and args.enable_dev_version:
-        logging.warning("[Deprecated] The flag `--output_names` is deprecated, if you need to modify the output name, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx ")
+    if args.output_names is not None:
         if not isinstance(args.output_names, (list, dict)):
             raise TypeError(
                 "The output_names should be 'list' or 'dict', but received type is %s."
                 % type(args.output_names))
 
-    if input_shape_dict is not None and args.enable_dev_version:
-        logging.warning("[Deprecated] The flag `--input_shape_dict` is deprecated, if you need to modify the input shape of PaddlePaddle model, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle ")
-
     if args.enable_dev_version:
+        if args.enable_paddle_fallback:
+            logging.warn(
+                "--enable_paddle_fallback is deprecated while --enable_dev_version=True."
+            )
+        if args.output_names is not None:
+            logging.warn(
+                "--output_names is deprecated while --enable_dev_version=True.")
+        if input_shape_dict is not None:
+            logging.warn(
+                "--input_shape_dict is deprecated while --enable_dev_version=True."
+            )
         model_file = os.path.join(args.model_dir, args.model_filename)
         if args.params_filename is None:
             params_file = ""
