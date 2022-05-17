@@ -141,8 +141,8 @@
 | rsqrt | 6~12 |
 | softmax | 1~15 |
 | scale | 7~15 |
-| scatter | 11~15 |
-| scatter_nd_add | 11~12 |
+| scatter | 1~12 |
+| scatter_nd_add | 11~15 |
 | sequence_expand | 1~12 |
 | selu | 6~12 |
 | softmax_with_cross_entropy | 12 |

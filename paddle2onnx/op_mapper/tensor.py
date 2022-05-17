@@ -1964,22 +1964,26 @@ class Scatter():
 
 @op_mapper('scatter_nd_add')
 class ScatterndAdd():
-    support_opset_version_range = (11, 12)
+    support_opset_version_range = (11, 15)
 
     @classmethod
     def opset_11(cls, graph, node, **kw):
         shape = graph.make_node('Shape', inputs=node.input('X', 0))
+        indices = node.input('Index', 0)
+        input_dtype = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('Index', 0)]
+        if input_dtype != dtypes.ONNX.INT64:
+            indices = graph.make_node(
+                'Cast', inputs=[indices], to=dtypes.ONNX.INT64)
+
         zero_like_node = graph.make_node(
             'ConstantOfShape',
             inputs=[shape],
             dims=[1],
-            dtype=dtypes.ONNX.FLOAT,
+            dtype=dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype('X', 0)],
             value=[0])
         add_node = graph.make_node(
             'ScatterND',
-            inputs=[
-                zero_like_node, node.input('Index', 0), node.input('Updates', 0)
-            ], )
+            inputs=[zero_like_node, indices, node.input('Updates', 0)], )
         graph.make_node(
             'Add',
             inputs=[node.input('X', 0), add_node],
