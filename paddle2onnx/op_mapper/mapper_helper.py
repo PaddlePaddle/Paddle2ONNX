@@ -350,6 +350,23 @@ def cast(graph, input, origin_dtype, target_dtype):
     return input
 
 
+def get_shape_node(graph, input, start, end):
+    input_node = graph.make_node('Shape', inputs=input)
+    if graph.opset_version < 10:
+        shape_node = graph.make_node(
+            'Slice', inputs=[input_node], starts=[start], ends=[end])
+    else:
+        starts_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [start]})
+        ends_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [end]})
+        shape_node = graph.make_node(
+            'Slice', inputs=[input_node, starts_node, ends_node])
+    return shape_node
+
+
 def shape_alignment(graph, nodes, node_shapes):
     assert len(nodes) == len(
         node_shapes), "Length of nodes and node_shapes should be equal."

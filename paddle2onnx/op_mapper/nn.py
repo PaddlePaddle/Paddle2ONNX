@@ -26,7 +26,7 @@ import paddle
 
 @op_mapper(['conv2d', 'depthwise_conv2d', 'conv3d'])
 class Conv():
-    support_opset_version_range = (1, 12)
+    support_opset_version_range = (1, 15)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):
@@ -53,17 +53,132 @@ class Conv():
             'group': group
         }
         auto_pad = node.attr('padding_algorithm')
+        input_node = node.input('Input')[0]
         if auto_pad == 'SAME':
-            attrs['auto_pad'] = 'SAME_UPPER'
+            if max(kernel_shape) >= max(strides):
+                attrs['auto_pad'] = 'SAME_UPPER'
+            else:
+                input_shape = node.input_shape('Input', 0)[2:]
+                if input_shape[0] > 0 and input_shape[1] > 0:
+                    attrs['pads'] = cls.get_pads(input_shape, node)
+                elif graph.opset_version >= 11:
+                    input_node = cls.autopad(graph, node)
+                else:
+                    raise Exception(
+                        "Conv in onnx should need opset_version>=11, when kernel_shape < strides," \
+                        "Try converting with opset_version>=11 "
+                    )
         elif auto_pad == 'VALID':
             attrs['auto_pad'] = 'VALID'
         else:
             attrs['pads'] = pads
         graph.make_node(
             'Conv',
-            inputs=node.input('Input') + node.input('Filter'),
+            inputs=[input_node] + node.input('Filter'),
             outputs=node.output('Output'),
             attrs=attrs)
+
+    @classmethod
+    def get_pads(cls, input_shape, node):
+        kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[2:]
+        strides = node.attr('strides')
+
+        output_spatial_shape = (np.array(input_shape) + strides - 1) // strides
+        total_pad = (output_spatial_shape - 1) * strides + (
+            (np.array(kernel_shape) - 1) * dilations + 1) - input_shape
+        pads = []
+        for i in range(len(total_pad)):
+            pad = max(0, total_pad[i])
+            pad_head = pad >> 1
+            pad_tail = pad - pad_head
+            pads = pads + [pad_head, pad_tail]
+
+        if len(pads) == 4:
+            pads = [pads[i] for i in [0, 2, 1, 3]]
+        elif len(pads) == 6:
+            pads = [pads[i] for i in [0, 2, 4, 1, 3, 5]]
+        return pads
+
+    @classmethod
+    def autopad(cls, graph, node):
+        kernel_shape = node.input_shape('Filter', 0)
+        dilations = node.attr('dilations')
+        kernel_shape = kernel_shape[2:]
+        strides = node.attr('strides')
+
+        input_node = node.input('Input')[0]
+        input_shape = node.input_shape('Input', 0)
+        out_shape = mapper_helper.get_shape_node(graph, input_node, 2,
+                                                 len(input_shape))
+
+        strides_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': strides})
+        dilated_kernel_shape = [(kernel - 1) * dilation + 1 for kernel, dilation
+                                in zip(kernel_shape, dilations)]
+        dilated_kernel_shape_node = graph.make_node(
+            'Constant',
+            attrs={'dtype': dtypes.ONNX.INT64,
+                   'value': dilated_kernel_shape})
+
+        zero = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': 0})
+        # one = graph.make_node(
+        #     'Constant', attrs={
+        #         'dtype': dtypes.ONNX.INT64,
+        #         'value': 1
+        #     })
+        two = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': 2})
+
+        mod = graph.make_node('Mod', inputs=[out_shape, strides_node])
+        leftSub = graph.make_node(
+            'Sub', inputs=[dilated_kernel_shape_node, strides_node])
+        rightSub = graph.make_node(
+            'Sub', inputs=[dilated_kernel_shape_node, mod])
+        if graph.opset_version < 12:
+            cast_leftSub = graph.make_node(
+                'Cast', inputs=[leftSub], to=dtypes.ONNX.FLOAT)
+            cast_zero = graph.make_node(
+                'Cast', inputs=[zero], to=dtypes.ONNX.FLOAT)
+            left = graph.make_node('Max', inputs=[cast_leftSub, cast_zero])
+            cast_rightSub = graph.make_node(
+                'Cast', inputs=[rightSub], to=dtypes.ONNX.FLOAT)
+            right = graph.make_node('Max', inputs=[cast_rightSub, cast_zero])
+
+            left = graph.make_node('Cast', inputs=[left], to=dtypes.ONNX.INT64)
+            right = graph.make_node(
+                'Cast', inputs=[right], to=dtypes.ONNX.INT64)
+        else:
+            left = graph.make_node('Max', inputs=[leftSub, zero])
+            right = graph.make_node('Max', inputs=[rightSub, zero])
+
+        equal_node = graph.make_node('Equal', inputs=[mod, zero])
+        total_pad_node = graph.make_node(
+            'Where', inputs=[equal_node, left, right])
+
+        two_zero = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.INT64,
+                               'value': [0, 0]})
+
+        pad_before = graph.make_node('Div', inputs=[total_pad_node, two])
+        pad_after = graph.make_node('Sub', inputs=[total_pad_node, pad_before])
+
+        pad_node = graph.make_node(
+            'Concat',
+            inputs=[two_zero, pad_before, two_zero, pad_after],
+            axis=0)
+        attrs_pad = {'mode': 'constant'}
+        value_node = graph.make_node(
+            'Constant', attrs={'dtype': dtypes.ONNX.FLOAT,
+                               'value': 0.0})
+        input = node.input('Input') + [pad_node, value_node]
+        input = graph.make_node('Pad', inputs=input, attrs=attrs_pad)
+        return input
 
 
 @op_mapper(
