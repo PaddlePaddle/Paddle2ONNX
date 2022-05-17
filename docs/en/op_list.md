@@ -104,6 +104,8 @@
 | masked_select | 11~15 |
 | matmul | 1~12 |
 | matmul_v2 | 1~12 |
+| max_pool2d_with_index | 1~15 |
+| max_pool3d_with_index | 1~15 |
 | mean | 1~12 |
 | meshgrid | 8~15 |
 | mul | 5~15 |
@@ -118,8 +120,8 @@
 | pad2d | 1~12 |
 | pad3d | 1~12 |
 | pixel_shuffle | 11~15 |
-| pool2d | 1~12 | limited supported |
-| pool3d | 1~12 | limited supported |
+| pool2d | 1~15 | limited supported |
+| pool3d | 1~15 | limited supported |
 | pow | 8~12 |
 | prior_box | 1~12 |
 | prelu | 1~12 |
