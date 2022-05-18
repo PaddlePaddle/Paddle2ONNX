@@ -28,6 +28,7 @@ def str2list(v):
     v = eval(v)
     return v
 
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -138,9 +139,15 @@ def program2onnx(model_dir,
                  input_shape_dict=None,
                  output_names=None,
                  auto_update_opset=True):
-    logging.warning("[Deprecated] `paddle2onnx.command.program2onnx` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`")
+    logging.warning(
+        "[Deprecated] `paddle2onnx.command.program2onnx` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
+    )
     from paddle2onnx.legacy.command import program2onnx
-    return program2onnx(model_dir, save_file, model_filename, params_filename, opset_version, enable_onnx_checker, operator_export_type, input_shape_dict, output_names, auto_update_opset)
+    return program2onnx(model_dir, save_file, model_filename, params_filename,
+                        opset_version, enable_onnx_checker,
+                        operator_export_type, input_shape_dict, output_names,
+                        auto_update_opset)
+
 
 def main():
     if len(sys.argv) < 2:
@@ -166,18 +173,24 @@ def main():
 
     operator_export_type = "ONNX"
     if args.enable_paddle_fallback:
-        logging.warning("[Deprecated] The flag `--enable_paddle_fallback` will be deprecated, and only works while `--enable_dev_version False` now.")
+        logging.warning(
+            "[Deprecated] The flag `--enable_paddle_fallback` will be deprecated, and only works while `--enable_dev_version False` now."
+        )
         operator_export_type = "PaddleFallback"
 
     if args.output_names is not None and args.enable_dev_version:
-        logging.warning("[Deprecated] The flag `--output_names` is deprecated, if you need to modify the output name, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx ")
+        logging.warning(
+            "[Deprecated] The flag `--output_names` is deprecated, if you need to modify the output name, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx "
+        )
         if not isinstance(args.output_names, (list, dict)):
             raise TypeError(
                 "The output_names should be 'list' or 'dict', but received type is %s."
                 % type(args.output_names))
 
     if input_shape_dict is not None and args.enable_dev_version:
-        logging.warning("[Deprecated] The flag `--input_shape_dict` is deprecated, if you need to modify the input shape of PaddlePaddle model, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle ")
+        logging.warning(
+            "[Deprecated] The flag `--input_shape_dict` is deprecated, if you need to modify the input shape of PaddlePaddle model, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle "
+        )
 
     if args.enable_dev_version:
         model_file = os.path.join(args.model_dir, args.model_filename)
@@ -185,7 +198,7 @@ def main():
             params_file = ""
         else:
             params_file = os.path.join(args.model_dir, args.params_filename)
-        return c_paddle_to_onnx(
+        c_paddle_to_onnx(
             model_file=model_file,
             params_file=params_file,
             save_file=args.save_file,
@@ -195,6 +208,14 @@ def main():
             enable_onnx_checker=args.enable_onnx_checker,
             enable_experimental_op=True,
             enable_optimize=True)
+        logging.info("================================================")
+        logging.info("")
+        logging.info(
+            "Model Convertd! Fill this survey to help Paddle2ONNX better, https://iwenjuan.baidu.com/?code=r8hu2s "
+        )
+        logging.info("")
+        logging.info("================================================")
+        return
 
     program2onnx(
         args.model_dir,
@@ -207,6 +228,14 @@ def main():
         input_shape_dict=input_shape_dict,
         output_names=args.output_names,
         auto_update_opset=args.enable_auto_update_opset)
+
+    logging.info("================================================")
+    logging.info("")
+    logging.info(
+        "Model Convertd! Fill this survey to help Paddle2ONNX better, https://iwenjuan.baidu.com/?code=r8hu2s "
+    )
+    logging.info("")
+    logging.info("================================================")
 
 
 if __name__ == "__main__":
