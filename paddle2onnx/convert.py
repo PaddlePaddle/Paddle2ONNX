@@ -30,6 +30,11 @@ def export_onnx(paddle_graph,
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
+    if "enable_dev_version" in configs and not configs["enable_dev_version"]:
+        from paddle2onnx.legacy.convert import dygraph2onnx
+        return dygraph2onnx(layer, save_file, input_spec, opset_version,
+                            **configs)
+
     import os
     import time
     import paddle2onnx
