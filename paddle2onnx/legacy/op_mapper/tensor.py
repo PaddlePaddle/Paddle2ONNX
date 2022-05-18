@@ -995,7 +995,7 @@ class FullLike():
             outputs=node.output('Out'),
             dims=[1],
             dtype=onnx_dtype,
-            value=np.array(value).astype(np_dtype))
+            value=np.array(value).astype(np_dtype).tolist())
 
 
 @op_mapper('fill_zeros_like')
