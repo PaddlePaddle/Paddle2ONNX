@@ -225,13 +225,17 @@ class APIOnnx(object):
         #        paddle.jit.save(instance, "model/model", input_spec=self.input_spec)
         #        import sys
         #        sys.exit(0)
+        enable_dev_version = True
+        if os.getenv("ENABLE_DEV", "OFF") == "OFF":
+            enable_dev_version = False
         paddle.onnx.export(
             instance,
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
             enable_onnx_checker=True,
-            auto_update_opset=False)
+            auto_update_opset=False,
+            enable_dev_version=enable_dev_version)
 
     def _dygraph_jit_save(self, instance):
         """
@@ -266,7 +270,8 @@ class APIOnnx(object):
             "op_check_folder",
             input_spec=self.input_spec,
             opset_version=version,
-            get_paddle_graph=True)
+            get_paddle_graph=True,
+            enable_dev_version=False)
 
         included = False
         paddle_op_list = []
