@@ -55,13 +55,13 @@ class Net(paddle.nn.Layer):
 def test_Unsample_size():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(size=[12, 12], align_mode=1)
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -73,14 +73,14 @@ def test_Unsample_size():
 # def test_Unsample_size_tensor():
 #     """
 #     api: paddle.Upsample
-#     op version: 9, 10, 11, 12
+#     op version: 11, 12
 #     """
 #     op = Net(scale_factor=(paddle.to_tensor(2), paddle.to_tensor(2)),
 #              align_mode=1)
 #
 #     op.eval()
 #     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+#     obj = APIOnnx(op, 'nn_Unsample', [11, 12])
 #     obj.set_input_data(
 #         "input_data",
 #         paddle.to_tensor(
@@ -91,13 +91,13 @@ def test_Unsample_size():
 def test_Unsample_scale_factor():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(scale_factor=[2, 3])
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -108,7 +108,7 @@ def test_Unsample_scale_factor():
 def test_Unsample_size_linear_tensor():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(size=paddle.to_tensor(
         12, dtype='int32'),
@@ -129,7 +129,7 @@ def test_Unsample_size_linear_tensor():
 def test_Unsample_size_linear():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(size=[12],
              mode='linear',
@@ -139,7 +139,7 @@ def test_Unsample_size_linear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -150,7 +150,7 @@ def test_Unsample_size_linear():
 def test_Unsample_scale_factor_linear():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(scale_factor=[1.5],
              mode='linear',
@@ -160,7 +160,7 @@ def test_Unsample_scale_factor_linear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -171,7 +171,7 @@ def test_Unsample_scale_factor_linear():
 def test_Unsample_size_bilinear():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(size=[12, 15],
              mode='bilinear',
@@ -181,7 +181,7 @@ def test_Unsample_size_bilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -192,7 +192,7 @@ def test_Unsample_size_bilinear():
 def test_Unsample_scale_factor_bilinear():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(scale_factor=[2, 3],
              mode='bilinear',
@@ -202,7 +202,7 @@ def test_Unsample_scale_factor_bilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -213,7 +213,7 @@ def test_Unsample_scale_factor_bilinear():
 def test_Unsample_size_nearest():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(size=[12, 15],
              mode='nearest',
@@ -223,7 +223,7 @@ def test_Unsample_size_nearest():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -234,7 +234,7 @@ def test_Unsample_size_nearest():
 def test_Unsample_scale_factor_nearest():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(scale_factor=[2, 3],
              mode='nearest',
@@ -244,7 +244,7 @@ def test_Unsample_scale_factor_nearest():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -297,7 +297,7 @@ def test_Unsample_scale_factor_bicubic():
 def test_Unsample_size_trilinear():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(size=[12, 15, 20],
              mode='trilinear',
@@ -307,7 +307,7 @@ def test_Unsample_size_trilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -318,7 +318,7 @@ def test_Unsample_size_trilinear():
 def test_Unsample_scale_factor_trilinear():
     """
     api: paddle.Upsample
-    op version: 9, 10, 11, 12
+    op version: 11, 12
     """
     op = Net(scale_factor=[2, 3, 4],
              mode='trilinear',
@@ -328,7 +328,7 @@ def test_Unsample_scale_factor_trilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [9, 10, 11, 12])
+    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(

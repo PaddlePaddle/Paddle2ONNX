@@ -45,7 +45,32 @@ ignore="test_expand_as.py \
         test_auto_scan_uniform_random.py \
         test_auto_scan_unique.py \
         test_auto_scan_where_index.py \
-        test_uniform.py"
+        test_uniform.py \
+        test_ceil.py \
+        test_dot.py \
+        test_floor_divide.py \
+        test_has_nan.py \
+        test_index_select.py \
+        test_isfinite.py \
+        test_isinf.py \
+        test_isnan.py \
+        test_mask_select.py \
+        test_median.py \
+        test_mv.py \
+        test_nn_AdaptiveAvgPool3D.py \
+        test_nn_Conv3D.py \
+        test_nn_Conv3DTranspose.py \
+        test_nn_GroupNorm.py \
+        test_nn_InstanceNorm3D.py \
+        test_nn_MaxPool3D.py \
+        test_nn_PixelShuffle.py \
+        test_nn_Upsample.py \
+        test_nonzero.py \
+        test_normalize.py \
+        test_scatter_nd_add.py \
+        test_scatter.py \
+        test_unique.py \
+        test_unsqueeze.py"
 bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
