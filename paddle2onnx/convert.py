@@ -43,7 +43,7 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
     timestamp = int(time.time() * 100)
     paddle_model_dir = os.path.join(dirname, "paddle_model_" + str(timestamp),
                                     "model")
-    paddle.jit.save(layer, paddle_model_dir, input_spec, **configs)
+    paddle.jit.save(layer, paddle_model_dir, input_spec)
     logging.info("PaddlePaddle model saved in {}.".format(
         os.path.join(dirname, "paddle_model_" + str(timestamp))))
     model_file = paddle_model_dir + ".pdmodel"

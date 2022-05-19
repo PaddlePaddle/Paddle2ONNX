@@ -331,15 +331,16 @@ class APIOnnx(object):
             elif os.getenv("ENABLE_DEV", "OFF") == "ON":
                 assert len(
                     self.ops
-                ) == 1, "Need to make sure the number of ops in config is 1."
+                ) <= 1, "Need to make sure the number of ops in config is 1."
                 import shutil
                 if os.path.exists(self.name):
                     shutil.rmtree(self.name)
                 paddle.jit.save(self._func,
                                 os.path.join(self.name, "model"),
                                 self.input_spec)
-                self.dev_check_ops(self.ops[0],
-                                   os.path.join(self.name, "model.pdmodel"))
+                if len(self.ops) > 0:
+                    self.dev_check_ops(self.ops[0],
+                                       os.path.join(self.name, "model.pdmodel"))
                 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
                 model_file = os.path.join(self.name, "model.pdmodel")
                 params_file = os.path.join(self.name, "model.pdiparams")
