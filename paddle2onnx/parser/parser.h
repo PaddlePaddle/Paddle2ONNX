@@ -23,7 +23,29 @@
 
 namespace paddle2onnx {
 
-enum P2ODataType { BOOL, INT16, INT32, INT64, FP16, FP32, FP64, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, UINT8};
+enum P2ODataType {
+  BOOL,
+  INT16,
+  INT32,
+  INT64,
+  FP16,
+  FP32,
+  FP64,
+  X7,
+  X8,
+  X9,
+  X10,
+  X11,
+  X12,
+  X13,
+  X14,
+  X15,
+  X16,
+  X17,
+  X18,
+  X19,
+  UINT8
+};
 int32_t PaddleDataTypeSize(int32_t paddle_dtype);
 
 struct TensorInfo {
@@ -80,13 +102,10 @@ class PaddleParser {
   std::vector<TensorInfo> inputs;
   std::vector<TensorInfo> outputs;
 
-  // Sometimes the model contains no parameters
-  // In this case, we only need the model_file
-  // If from_memory_buffer is true, means we read the model from memory instead
-  // of disk
-  bool Init(const std::string& _model, bool from_memory_buffer = false);
-  bool Init(const std::string& _model, const std::string& _params,
-            bool from_memory_buffer = false);
+  bool Init(const std::string& _model, const std::string& _params = "");
+  bool Init(const void* model_buffer, int model_size,
+            const void* params_buffer = nullptr, int params_size = 0);
+  void InitBlock();
 
   int NumOfBlocks() const;
   int NumOfOps(int block_idx) const;
@@ -140,9 +159,11 @@ class PaddleParser {
       const paddle2onnx::framework::proto::BlockDesc& block) const;
   void GetGlobalBlockInputOutputInfo();
   bool GetParamNames(std::vector<std::string>* var_names);
-  bool LoadProgram(const std::string& model, bool from_memory_buffer);
+  bool LoadProgram(const std::string& model);
+  bool LoadProgram(const void* model_buffer, int model_size);
   bool LoadParams(const std::string& path);
   bool LoadParamsFromMemoryBuffer(const std::string& buffer);
+  bool LoadParamsFromMemoryBuffer(const void* params_buffer, int params_size);
   // This is a trick flag
   // While there's a nms operator in paddle model,
   // the shape inference of paddle is not correct
