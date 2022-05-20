@@ -18,6 +18,8 @@ paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。
 pip install paddle2onnx
 ```
 
+- [Github 源码安装方式](docs/zh/compile.md)
+
 ## 使用
 
 ### 获取PaddlePaddle部署模型
