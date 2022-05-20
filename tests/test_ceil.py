@@ -33,21 +33,6 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_ceil_6():
-    """
-    api: paddle.ceil
-    op version: 6
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'ceil', [6])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3]).astype('float32')))
-    obj.run()
-
-
 def test_ceil_9():
     """
     api: paddle.ceil

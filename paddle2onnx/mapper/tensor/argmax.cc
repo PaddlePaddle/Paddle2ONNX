@@ -24,11 +24,26 @@ void ArgMaxMapper::Opset7() {
   if (flatten_) {
     input = helper_->Flatten(input_info[0].name);
   }
+
+  // Make sure the output tensor has to be 1D-Tensor
+  bool need_unsqueeze = false;
+  if (flatten_ || input_info[0].shape.size() <= 1) {
+    if (!keepdims_) {
+      need_unsqueeze = true;
+    }
+  }
+
   auto arg_node = helper_->MakeNode("ArgMax", {input});
   AddAttribute(arg_node, "axis", axis_);
   AddAttribute(arg_node, "keepdims", static_cast<int64_t>(keepdims_));
-  helper_->AutoCast(arg_node->output(0), output_info[0].name,
-                    P2ODataType::INT64, output_info[0].dtype);
+  if (!need_unsqueeze) {
+    helper_->AutoCast(arg_node->output(0), output_info[0].name,
+                      P2ODataType::INT64, output_info[0].dtype);
+  } else {
+    auto out = helper_->Unsqueeze(arg_node->output(0), {0});
+    helper_->AutoCast(out, output_info[0].name, P2ODataType::INT64,
+                      output_info[0].dtype);
+  }
 }
 
 }  // namespace paddle2onnx

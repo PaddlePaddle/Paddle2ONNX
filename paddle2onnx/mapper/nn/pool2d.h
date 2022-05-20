@@ -30,7 +30,7 @@ class Pool2dMapper : public Mapper {
     GetAttr("pooling_type", &pooling_type_);
     GetAttr("data_format", &data_format_);
     GetAttr("ksize", &k_size_);
-    GetAttr("ceil_mode", &ceil_mod_);
+    GetAttr("ceil_mode", &ceil_mode_);
     GetAttr("padding_algorithm", &padding_algorithm_);
     GetAttr("global_pooling", &global_pooling_);
     GetAttr("adaptive", &adaptive_);
@@ -48,7 +48,7 @@ class Pool2dMapper : public Mapper {
                     const std::vector<TensorInfo>& output_info);
   void NoAdaptivePool(const std::vector<TensorInfo>& input_info,
                       const std::vector<TensorInfo>& output_info);
-  bool ceil_mod_;
+  bool ceil_mode_;
   bool global_pooling_;
   bool adaptive_;
   bool exclusive_;

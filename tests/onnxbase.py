@@ -225,13 +225,17 @@ class APIOnnx(object):
         #        paddle.jit.save(instance, "model/model", input_spec=self.input_spec)
         #        import sys
         #        sys.exit(0)
+        enable_dev_version = True
+        if os.getenv("ENABLE_DEV", "OFF") == "OFF":
+            enable_dev_version = False
         paddle.onnx.export(
             instance,
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
             enable_onnx_checker=True,
-            auto_update_opset=False)
+            auto_update_opset=False,
+            enable_dev_version=enable_dev_version)
 
     def _dygraph_jit_save(self, instance):
         """
@@ -266,7 +270,8 @@ class APIOnnx(object):
             "op_check_folder",
             input_spec=self.input_spec,
             opset_version=version,
-            get_paddle_graph=True)
+            get_paddle_graph=True,
+            enable_dev_version=False)
 
         included = False
         paddle_op_list = []
@@ -331,15 +336,16 @@ class APIOnnx(object):
             elif os.getenv("ENABLE_DEV", "OFF") == "ON":
                 assert len(
                     self.ops
-                ) == 1, "Need to make sure the number of ops in config is 1."
+                ) <= 1, "Need to make sure the number of ops in config is 1."
                 import shutil
                 if os.path.exists(self.name):
                     shutil.rmtree(self.name)
                 paddle.jit.save(self._func,
                                 os.path.join(self.name, "model"),
                                 self.input_spec)
-                self.dev_check_ops(self.ops[0],
-                                   os.path.join(self.name, "model.pdmodel"))
+                if len(self.ops) > 0:
+                    self.dev_check_ops(self.ops[0],
+                                       os.path.join(self.name, "model.pdmodel"))
                 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
                 model_file = os.path.join(self.name, "model.pdmodel")
                 params_file = os.path.join(self.name, "model.pdiparams")
