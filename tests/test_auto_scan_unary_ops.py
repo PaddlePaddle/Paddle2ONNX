@@ -50,6 +50,7 @@ op_api_map = {
     "sqrt": paddle.sqrt,
     "square": paddle.square,
     "swish": paddle.nn.functional.swish,
+    "silu": paddle.nn.functional.silu,
     "tanh": paddle.tanh,
     "tan": paddle.tan,
 }
@@ -88,6 +89,7 @@ opset_version_map = {
     "swish": [7, 13, 14, 15],
     "tanh": [7, 13, 15],
     "tan": [7, 15],
+    "silu": [7, 15],
 }
 
 
