@@ -17,8 +17,30 @@ from . import command
 from .convert import dygraph2onnx
 from .convert import program2onnx
 
+
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
-    logging.warning("[Deprecated] `paddle2onnx.run_convert` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`")
+    logging.warning(
+        "[Deprecated] `paddle2onnx.run_convert` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
+    )
     from paddle2onnx.legacy import run_convert
     return run_convert(model, input_shape_dict, scope, opset_version)
 
+
+def export(model_file,
+           params_file="",
+           save_file=None,
+           opset_version=11,
+           auto_upgrade_opset=True,
+           verbose=True,
+           enable_onnx_checker=True,
+           enable_experimental_op=True,
+           enable_optimize=True):
+    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+    onnx_model_str = c_p2o.export(
+        model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+        enable_onnx_checker, enable_experimental_op, enable_optimize)
+    if save_file is not None:
+        with open(save_file, "wb") as f:
+            f.write(onnx_model_str)
+    else:
+        return onnx_model_str
