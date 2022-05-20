@@ -42,6 +42,8 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
       return pybind11::bytes("");
     }
     std::string onnx_proto(out, out + size);
+    delete out;
+    out = nullptr;
     return pybind11::bytes(onnx_proto);
   });
   m.def(
