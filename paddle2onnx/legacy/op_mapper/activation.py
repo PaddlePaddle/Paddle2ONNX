@@ -41,6 +41,16 @@ class ActivationOps():
             onnx_type, inputs=node.input('X'), outputs=node.output('Out'))
 
 
+@op_mapper('silu')
+class Silu():
+    support_opset_version_range = (7, 15)
+
+    @classmethod
+    def opset_7(cls, graph, node, **kw):
+        x = node.input('X')[0]
+        out = graph.make_node('Sigmoid', inputs=[x])
+        graph.make_node('Mul', inputs=[x, out], outputs=node.output('Out'))
+
 @op_mapper('leaky_relu')
 class LeakyRelu():
     support_opset_version_range = (7, 15)
