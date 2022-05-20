@@ -35,6 +35,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                        << ", parameters file: " << params_filename << std::endl;
     char* out = nullptr;
     int size = 0;
+
     if (!Export(model_filename.c_str(), params_filename.c_str(), &out, size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize)) {
@@ -54,35 +55,5 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
             model_path, optimized_model_path, shape_infos);
       });
 
-  m.def("get_paddle_ops", [](const std::string& model_filename,
-                             const std::string& params_filename) {
-    auto parser = PaddleParser();
-    if (params_filename != "") {
-      parser.Init(model_filename, params_filename);
-    } else {
-      parser.Init(model_filename);
-    }
-    auto prog = parser.prog;
-
-    std::vector<std::string> op_list;
-    for (auto i = 0; i < prog->blocks_size(); ++i) {
-      for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
-        if (prog->blocks(i).ops(j).type() == "feed") {
-          continue;
-        }
-        if (prog->blocks(i).ops(j).type() == "fetch") {
-          continue;
-        }
-        op_list.push_back(prog->blocks(i).ops(j).type());
-      }
-    }
-    return op_list;
-  });
-
-  // This interface can output all developed OPs and write them to the file_path
-  m.def("get_all_registered_ops", [](const std::string& file_path) {
-    int64_t total_ops = MapperHelper::Get()->GetAllOps(file_path);
-    return total_ops;
-  });
 }
 }  // namespace paddle2onnx
