@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/nn/pool.h"
+#include "paddle2onnx/mapper/nn/pool2d.h"
 
 #include <cmath>
 
@@ -58,7 +58,7 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
   AddAttribute(node, "strides", strides);
 
   if (helper_->GetOpsetVersion() > 10) {
-    AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mod_));
+    AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
   }
 
   std::string auto_pad = "NOTSET";
@@ -133,13 +133,15 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   std::string auto_pad = "NOTSET";
   if (padding_algorithm_ == "SAME") {
     auto_pad = "SAME_UPPER";
+    AddAttribute(node, "auto_pad", auto_pad);
   } else if (padding_algorithm_ == "VALID") {
     auto_pad = "VALID";
+    AddAttribute(node, "auto_pad", auto_pad);
+  } else {
+    AddAttribute(node, "pads", pads_);
   }
-  AddAttribute(node, "auto_pad", auto_pad);
-  AddAttribute(node, "pads", pads_);
   if (helper_->GetOpsetVersion() >= 10) {
-    AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mod_));
+    AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
   }
   if (pooling_type_ == "avg") {
     AddAttribute(node, "count_include_pad", static_cast<int64_t>(exclusive_));
@@ -154,6 +156,16 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
   }
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
+
+  if (global_pooling_ || (k_size_[0] == 1 && k_size_[1] == 1)) {
+    if (ceil_mode_) {
+      Logger(verbose, 10) << "While ceil_model is True, " << RequireOpset(10)
+                          << std::endl;
+      return 10;
+    }
+    return 7;
+  }
+
   if (adaptive_) {
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
@@ -182,7 +194,9 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     return -1;
   }
 
-  if (ceil_mod_) {
+  if (ceil_mode_) {
+    Logger(verbose, 10) << "While ceil_model is True, " << RequireOpset(10)
+                        << std::endl;
     return 10;
   }
   return 7;

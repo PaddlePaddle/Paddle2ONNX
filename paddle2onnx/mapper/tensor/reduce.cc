@@ -21,6 +21,8 @@ REGISTER_MAPPER(reduce_min, ReduceMapper)
 REGISTER_MAPPER(reduce_max, ReduceMapper)
 REGISTER_MAPPER(reduce_prod, ReduceMapper)
 REGISTER_MAPPER(logsumexp, ReduceMapper)
+REGISTER_MAPPER(reduce_all, ReduceMapper)
+REGISTER_MAPPER(reduce_any, ReduceMapper)
 
 void ReduceMapper::Opset7() {
   auto x_info = GetInput("X");
@@ -50,6 +52,30 @@ void ReduceMapper::Opset7() {
         helper_->MakeNode(op_map[OpType()], {x_info[0].name, dims});
     AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
     out = reduce_node->output(0);
+  } else if (OpType() == "reduce_all") {
+    auto int32_x =
+        helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
+    auto reduce_node = helper_->MakeNode("ReduceMin", {int32_x});
+    if (!reduce_all_) {
+      AddAttribute(reduce_node, "axes", dim_);
+    } else {
+      AddAttribute(reduce_node, "axes", Arange(0, x_info[0].Rank()));
+    }
+    AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
+    out = helper_->AutoCast(reduce_node->output(0), P2ODataType::INT32,
+                            P2ODataType::BOOL);
+  } else if (OpType() == "reduce_any") {
+    auto int32_x =
+        helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
+    auto reduce_node = helper_->MakeNode("ReduceMax", {int32_x});
+    if (!reduce_all_) {
+      AddAttribute(reduce_node, "axes", dim_);
+    } else {
+      AddAttribute(reduce_node, "axes", Arange(0, x_info[0].Rank()));
+    }
+    AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
+    out = helper_->AutoCast(reduce_node->output(0), P2ODataType::INT32,
+                            P2ODataType::BOOL);
   } else {
     auto reduce_node = helper_->MakeNode(op_map[OpType()], {x_info[0].name});
     if (!reduce_all_) {
