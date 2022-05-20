@@ -4,7 +4,10 @@
 
 ## 简介
 
-paddle2onnx支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。通过ONNX可以完成将Paddle模型到多种推理引擎的部署，包括TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对ONNX开源格式进行支持的推理引擎或硬件。
+Paddle2ONNX支持将**PaddlePaddle**模型格式转化到**ONNX**模型格式。通过ONNX可以完成将Paddle模型到多种推理引擎的部署，包括TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对ONNX开源格式进行支持的推理引擎或硬件。
+
+## 模型库
+Paddle2ONNX建设了一个飞桨热点模型的模型库，包括PicoDet、OCR、HumanSeg等多种领域模型，有需求的开发者可直接下载使用，进入目录[model_zoo](./model_zoo)了解更多详情！
 
 ## 环境依赖
 
