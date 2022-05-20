@@ -57,11 +57,11 @@ python -m paddle2onnx.optimize --input_model model.onnx \
 |--model_filename |**[可选]** 配置位于`--model_dir`下存储网络结构的文件名|
 |--params_filename |**[可选]** 配置位于`--model_dir`下存储模型参数的文件名称|
 |--save_file | 指定转换后的模型保存目录路径 |
-|--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前比较稳定地支持9、10、11三个版本，默认为9 |
-|--enable_dev_version | **[可选]** 是否使用新版本Paddle2ONNX（当前正在开发中），默认为False |
-|--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True，需要安装 onnx>=1.7.0, 默认为False|
+|--opset_version | **[可选]** 配置转换为ONNX的OpSet版本，目前支持7~15等多个版本，默认为9 |
+|--enable_dev_version | **[可选]** 是否使用新版本Paddle2ONNX（推荐使用），默认为False |
+|--enable_onnx_checker| **[可选]**  配置是否检查导出为ONNX模型的正确性, 建议打开此开关。若指定为True， 默认为False|
 |--enable_auto_update_opset| **[可选]**  是否开启opset version自动升级,当低版本opset无法转换时，自动选择更高版本的opset 默认为True|
-|--input_shape_dict| **[可选]**  配置输入的shape, 默认为空|
+|--input_shape_dict| **[可选]**  配置输入的shape, 默认为空; 此参数即将移除，如需要固定Paddle模型输入Shape，请使用[此工具](https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle)处理|
 |--version |**[可选]** 查看paddle2onnx版本 |
 
 - 使用onnxruntime验证转换模型, 请注意安装最新版本（最低要求1.10.0）：
