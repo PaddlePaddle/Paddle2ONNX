@@ -22,24 +22,6 @@
 
 namespace paddle2onnx {
 
-bool ReadBinaryFile(const std::string& path, std::string* contents) {
-  std::ifstream fin(path, std::ios::in | std::ios::binary);
-  if (!fin.is_open()) {
-    std::cerr << "Fail to read file " << path
-              << ", please make sure your model file or file path is valid."
-              << std::endl;
-    return false;
-  }
-  fin.seekg(0, std::ios::end);
-  contents->clear();
-  contents->resize(fin.tellg());
-  fin.seekg(0, std::ios::beg);
-  fin.read(&(contents->at(0)), contents->size());
-  fin.close();
-  return true;
-}
-
-
 PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
   m.doc() = "Paddle2ONNX: export PaddlePaddle to ONNX";
   m.def("export", [](const std::string& model_filename,
@@ -54,11 +36,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     char* out = nullptr;
     int size = 0;
 
-    std::string model_buffer;
-    std::string params_buffer;
-    ReadBinaryFile(model_filename, &model_buffer);
-    ReadBinaryFile(params_filename, &params_buffer);
-    if (!Export(model_buffer.c_str(), model_buffer.size(), params_buffer.c_str(), params_buffer.size(), &out, size,
+    if (!Export(model_filename.c_str(), params_filename.c_str(), &out, size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize)) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
