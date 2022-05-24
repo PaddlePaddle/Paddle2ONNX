@@ -182,6 +182,7 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(const void* params_buffer,
                                               int params_size) {
   params.clear();
 
+  const char* read_pointer = reinterpret_cast<const char*>(params_buffer);
   std::vector<std::string> var_names;
   GetParamNames(&var_names);
 
@@ -197,18 +198,16 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(const void* params_buffer,
     {
       // read version, we don't need this
       uint32_t version;
-      std::memcpy(reinterpret_cast<void*>(&version), params_buffer,
-                  sizeof(version));
-      params_buffer += sizeof(version);
+      std::memcpy(&version, read_pointer, sizeof(version));
+      read_pointer += sizeof(version);
       params_size -= sizeof(version);
     }
     {
       // read lod_level, we don't use it
       // this has to be zero, otherwise not support
       uint64_t lod_level;
-      std::memcpy(reinterpret_cast<void*>(&lod_level), params_buffer,
-                  sizeof(lod_level));
-      params_buffer += sizeof(lod_level);
+      std::memcpy(&lod_level, read_pointer, sizeof(lod_level));
+      read_pointer += sizeof(lod_level);
       params_size -= sizeof(lod_level);
       if (lod_level != 0) {
         P2OLogger() << "Only supports weight with lod_level = 0." << std::endl;
@@ -218,21 +217,20 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(const void* params_buffer,
     {
       // Another version, we don't use it
       uint32_t version;
-      std::memcpy(reinterpret_cast<void*>(&version), params_buffer,
-                  sizeof(version));
-      params_buffer += sizeof(version);
+      std::memcpy(&version, read_pointer, sizeof(version));
+      read_pointer += sizeof(version);
       params_size -= sizeof(version);
     }
     {
       // read size of TensorDesc
       int32_t size;
-      std::memcpy(reinterpret_cast<void*>(&size), params_buffer, sizeof(size));
-      params_buffer += sizeof(size);
+      std::memcpy(&size, read_pointer, sizeof(size));
+      read_pointer += sizeof(size);
       params_size -= sizeof(size);
       // read TensorDesc
       std::unique_ptr<char[]> buf(new char[size]);
-      std::memcpy(reinterpret_cast<void*>(buf.get()), params_buffer, size);
-      params_buffer += size;
+      std::memcpy(buf.get(), read_pointer, size);
+      read_pointer += size;
       params_size -= size;
 
       std::unique_ptr<paddle2onnx::framework::proto::VarType_TensorDesc>
@@ -251,9 +249,9 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(const void* params_buffer,
 
       // read weight data
       weight.buffer.resize(numel * PaddleDataTypeSize(data_type));
-      std::memcpy(reinterpret_cast<void*>(weight.buffer.data()), params_buffer,
+      std::memcpy(weight.buffer.data(), read_pointer,
                   numel * PaddleDataTypeSize(data_type));
-      params_buffer += numel * PaddleDataTypeSize(data_type);
+      read_pointer += numel * PaddleDataTypeSize(data_type);
       params_size -= numel * PaddleDataTypeSize(data_type);
       params[var_names[index]] = weight;
     }
