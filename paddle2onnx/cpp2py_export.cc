@@ -30,9 +30,9 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      bool enable_onnx_checker = true,
                      bool enable_experimental_op = true,
                      bool enable_optimize = true) {
-    P2OLogger(verbose) << "Start to parse PaddlePaddle model(model file: "
-                       << model_filename
-                       << ", parameters file: " << params_filename << std::endl;
+    P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
+    P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
+    P2OLogger(verbose) << "Paramters file path: " << params_filename << std::endl;
     char* out = nullptr;
     int size = 0;
 
