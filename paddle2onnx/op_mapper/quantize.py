@@ -36,7 +36,7 @@ class QuantizeLinear():
         scale_key = node.input('Scale', 0)
         param, weight_scale = mapper_helper.get_param_from_paddle_graph(
             graph, scale_key)
-        weight_scale = weight_scale / 127
+        weight_scale = weight_scale / 127.0
 
         zero_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.INT8, value=[0])
@@ -64,7 +64,7 @@ class DequantizeLinear():
         scale_key = node.input('Scale', 0)
         param, weight_scale = mapper_helper.get_param_from_paddle_graph(
             graph, scale_key)
-        weight_scale = weight_scale / 127
+        weight_scale = weight_scale / 127.0
 
         scale_list = weight_scale.squeeze().tolist()
         if not isinstance(scale_list, list):
@@ -120,21 +120,14 @@ class FakeQuantizeDequantizeMovingAverageAbsMax():
         scale_list = float(in_scale[0]) / 127.0
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
-        if graph.deploy_backend == "onnxruntime":
-            clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
-                                                  float(in_scale[0]),
-                                                  -1 * float(in_scale[0]))
-            graph.added_clips.append(clip_node)
-        else:
-            clip_node = input_node_name
         quantize_node = graph.make_node(
-            'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
+            'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
         graph.make_node(
             'DequantizeLinear',
             inputs=[quantize_node, scale_node, zero_node],
             outputs=node.output('Out', 0))
 
-        graph.quantize_params_dict[clip_node] = [
+        graph.quantize_params_dict[input_node_name] = [
             scale_node, zero_node, [scale_list], [0], node.attr("quant_axis")
         ]
 
@@ -198,7 +191,7 @@ class FakeQuantizeDequantizeAbsMax():
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
         zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
         graph.quantize_params_dict[node.input(
-            'X', 0)] = [scale_node, zero_node, scale_list, [0], -1]
+            'X', 0)] = [scale_node, zero_node, scale_list, [0], 1]
         quantize_node = graph.make_node(
             'QuantizeLinear',
             inputs=[node.input('X', 0), scale_node, zero_node])
@@ -227,22 +220,15 @@ class FakeQuantizeRangeAbsMax():
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
 
         assert graph.quantize_model_mode == "static", "fake_quantize_range_abs_max only can be in static quantize model"
-        if graph.deploy_backend == "onnxruntime":
-            clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
-                                                  float(in_scale[0]),
-                                                  -1 * float(in_scale[0]))
-            graph.added_clips.append(clip_node)
-        else:
-            clip_node = input_node_name
         quantize_node = graph.make_node(
-            'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
+            'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
         graph.make_node(
             'DequantizeLinear',
             inputs=[quantize_node, scale_node, zero_node],
             outputs=node.output('Out', 0))
 
         graph.quantize_params_dict[
-            clip_node] = [scale_node, zero_node, scale_list, [0], -1]
+            input_node_name] = [scale_node, zero_node, scale_list, [0], 1]
 
 
 @op_mapper('fake_quantize_moving_average_abs_max')
@@ -262,21 +248,14 @@ class FakeQuantizeMovingAverageAbsMax():
         scale_list = [float(in_scale[0]) / 127.0]
         scale_node = graph.make_node(
             'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-        if graph.deploy_backend == "onnxruntime":
-            clip_node = mapper_helper.clip_helper(graph, node, input_node_name,
-                                                  float(in_scale[0]),
-                                                  -1 * float(in_scale[0]))
-            graph.added_clips.append(clip_node)
-        else:
-            clip_node = input_node_name
         quantize_node = graph.make_node(
-            'QuantizeLinear', inputs=[clip_node, scale_node, zero_node])
+            'QuantizeLinear', inputs=[input_node_name, scale_node, zero_node])
         graph.make_node(
             'DequantizeLinear',
             inputs=[quantize_node, scale_node, zero_node],
             outputs=node.output('Out', 0))
         graph.quantize_params_dict[
-            clip_node] = [scale_node, zero_node, scale_list, [0], -1]
+            input_node_name] = [scale_node, zero_node, scale_list, [0], 1]
 
 
 @op_mapper('fake_dequantize_max_abs')

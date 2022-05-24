@@ -17,6 +17,7 @@ __version__ = "0.9.5"
 
 import paddle
 from .convert import dygraph2onnx, program2onnx
+from .command import c_paddle_to_onnx
 from .op_mapper import register_op_mapper
 from typing import TypeVar
 from paddle2onnx.utils import logging

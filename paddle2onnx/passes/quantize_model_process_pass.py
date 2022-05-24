@@ -14,7 +14,7 @@
 
 from paddle2onnx.passes import PassManager
 from paddle2onnx.utils import logging
-from paddle2onnx.passes.quantize_helper import new_type_quantize_post_process, remove_all_quantize_ops_and_save_max_range_file, add_missing_quantize_ops, delete_redundant_quantize_ops, add_shortcut_quantize_ops
+from paddle2onnx.passes.quantize_helper import add_missing_quantize_ops_for_tensorrt, new_type_quantize_post_process, remove_all_quantize_ops_and_save_max_range_file, add_missing_quantize_ops_for_onnxruntime, delete_redundant_quantize_ops, add_shortcut_quantize_ops
 
 
 @PassManager('quantize_model_process_pass')
@@ -22,13 +22,15 @@ class QuantizeModelProcessPass(object):
     @classmethod
     def tensorrt_deploy_model(cls, graph):
         graph = delete_redundant_quantize_ops(graph)
-        graph = add_shortcut_quantize_ops(graph)
+        graph = add_missing_quantize_ops_for_tensorrt(graph)
+        # graph = add_shortcut_quantize_ops(graph)
+        graph = add_quantize_ops(graph)
         return graph
 
     @classmethod
     def onnxruntime_deploy_model(cls, graph):
         if graph.quantize_model_mode in ["static", "dynamic"]:
-            graph = add_missing_quantize_ops(graph)
+            graph = add_missing_quantize_ops_for_onnxruntime(graph)
             return graph
         elif graph.quantize_model_mode in ["new_type"]:
             graph = new_type_quantize_post_process(graph)

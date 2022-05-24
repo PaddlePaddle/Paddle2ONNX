@@ -250,7 +250,7 @@ def merge_conv_bn(graph):
         if graph.quantize_model_mode == "float":
             return graph
         graph.quantize_params_dict[
-            conv_bias_node] = [scale_node, zero_node, scale_list, [0], -1]
+            conv_bias_node] = [scale_node, zero_node, scale_list, [0], 0]
     return graph
 
 
@@ -291,6 +291,12 @@ def add_q_dq(graph):
             graph.tensor_to_be_quantize.append(node.inputs[0])
             graph.tensor_to_be_quantize.append(node.outputs[0])
 
+        if node.type in ["Resize", "MaxPool"]:
+            if not can_be_quantize([node.inputs[0], node.outputs[0]], graph):
+                continue
+            graph.tensor_to_be_quantize.append(node.inputs[0])
+            graph.tensor_to_be_quantize.append(node.outputs[0])
+
         if node.type in ["Conv"]:
             tensor_names = [node.inputs[0], node.inputs[1], node.outputs[0]]
             if len(node.inputs) == 3:
@@ -300,14 +306,30 @@ def add_q_dq(graph):
             for tensor_name in tensor_names:
                 graph.tensor_to_be_quantize.append(tensor_name)
 
-        if node.type in ["Resize", "MaxPool"]:
-            if not can_be_quantize([node.inputs[0], node.outputs[0]], graph):
+        if node.type in ["Concat"]:
+            tensors_to_quantize = copy.copy(node.inputs)
+            if not can_be_quantize(tensors_to_quantize, graph):
                 continue
-            graph.tensor_to_be_quantize.append(node.inputs[0])
-            graph.tensor_to_be_quantize.append(node.outputs[0])
+            for tensor_name in tensors_to_quantize:
+                graph.tensor_to_be_quantize.append(tensor_name)
 
-        if node.type in ["Concat", "MatMul"]:
-            tensors_to_quantize = node.inputs
+        if node.type in ["MatMul"]:
+            tensors_to_quantize = copy.copy(node.inputs)
+            for tensor_name in tensors_to_quantize:
+                if tensor_name in graph.quantize_params_dict:
+                    continue
+                _, weight = mapper_helper.get_param_from_paddle_graph(
+                    graph, tensor_name)
+                scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
+                    weight, 1)
+                zero_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.INT8, value=zero_list)
+                scale_node = graph.make_node(
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+                graph.quantize_params_dict[tensor_name] = [
+                    scale_node, zero_node, scale_list, zero_list, 1
+                ]
+
             if not can_be_quantize(tensors_to_quantize, graph):
                 continue
             for tensor_name in tensors_to_quantize:
@@ -340,13 +362,13 @@ def add_q_dq(graph):
         zero_node = quantize_params[1]
         quant_axis = quantize_params[4]
         if quant_axis is None:
-            quant_axis = -1
+            quant_axis = 1
 
         if tensor in graph.only_dequantize:
             params, weight = mapper_helper.get_param_from_paddle_graph(graph,
                                                                        tensor)
             assert weight is not None, "Can not get params {}".format(tensor)
-            scale = quantize_params[2][0]
+            scale = quantize_params[2]
             new_weight = weight / scale
             params['shape'] = [new_weight.shape[0]]
             params["data"] = np.round(new_weight).astype("int32")
@@ -434,15 +456,43 @@ def collect_all_scales(graph):
                 out_threshold = node.attr("out_threshold")
                 if out_threshold is None:
                     continue
-                out_threshold = out_threshold / 127
+                scale = (2. * out_threshold) / 255.
+                zero_point = round(-128. + out_threshold / scale)
                 zero_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.INT8, value=0)
+                    'Constant', dtype=dtypes.ONNX.INT8, value=zero_point)
                 scale_node = graph.make_node(
-                    'Constant', dtype=dtypes.ONNX.FLOAT, value=out_threshold)
+                    'Constant', dtype=dtypes.ONNX.FLOAT, value=scale)
                 graph.quantize_params_dict[input_name] = [
-                    scale_node, zero_node, [out_threshold], [0], -1
+                    scale_node, zero_node, [scale], [zero_point], 1
                 ]
     return graph
+
+
+def add_missing_quantize_ops_for_tensorrt(graph):
+    # in TensorRT, all quantized op: conv, liner, MaxPool, AvgPool, AdaptiveAvgPool, rnn
+    graph = collect_all_scales(graph)
+    node_map = list(graph.node_map.items())
+    for idx in range(len(node_map)):
+        name, node = node_map[idx]
+        if node.type.count("Pool"):
+            inputs = node.inputs[0]
+            print(inputs)
+            if inputs not in graph.quantize_params_dict.keys():
+                continue
+            quantize_params = graph.quantize_params_dict[inputs]
+            scale_node = quantize_params[0]
+            zero_node = quantize_params[1]
+            quant_axis = quantize_params[4]
+
+            quantize_node = graph.make_node(
+                'QuantizeLinear',
+                inputs=[inputs, scale_node, zero_node],
+                axis=quant_axis)
+            dequantize_node = graph.make_node(
+                'DequantizeLinear',
+                inputs=[quantize_node, scale_node, zero_node],
+                axis=quant_axis)
+            replace_input_of_all_nodes(graph, inputs, dequantize_node)
 
 
 def delete_redundant_clips(graph):
@@ -460,7 +510,7 @@ def delete_redundant_clips(graph):
 
 
 # onnxruntime deploy for static and dynamic
-def add_missing_quantize_ops(graph):
+def add_missing_quantize_ops_for_onnxruntime(graph):
     graph = collect_all_scales(graph)
 
     # delete all Q and DQ
@@ -502,6 +552,7 @@ def delete_redundant_quantize_ops(graph):
 
 
 def add_shortcut_quantize_ops(graph):
+    # This code is just for inference acceleration: https://github.com/NVIDIA/TensorRT/blob/master/tools/pytorch-quantization/docs/source/tutorials/quant_resnet50.rst#further-optimization
     node_map = list(graph.node_map.items())
     for idx in range(len(node_map)):
         name, node = node_map[idx]
@@ -520,9 +571,11 @@ def add_shortcut_quantize_ops(graph):
         zero_node = quantize_params[1]
         quant_axis = quantize_params[4]
         if quant_axis is None:
-            quant_axis = -1
+            quant_axis = 1
         for another_node in another_nodes:
             if another_node.type == "QuantizeLinear":
+                continue
+            if another_node.type != "Add":
                 continue
             quantize_node = graph.make_node(
                 'QuantizeLinear',
