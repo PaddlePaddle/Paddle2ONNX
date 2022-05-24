@@ -28,7 +28,6 @@ def str2list(v):
     v = eval(v)
     return v
 
-
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -208,13 +207,8 @@ def main():
             enable_onnx_checker=args.enable_onnx_checker,
             enable_experimental_op=True,
             enable_optimize=True)
-        logging.info("================================================")
-        logging.info("")
-        logging.info(
-            "Model Convertd! Fill this survey to help Paddle2ONNX better, https://iwenjuan.baidu.com/?code=r8hu2s "
-        )
-        logging.info("")
-        logging.info("================================================")
+        logging.info("===============Make PaddlePaddle Better!================")
+        logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
         return
 
     program2onnx(
@@ -228,15 +222,8 @@ def main():
         input_shape_dict=input_shape_dict,
         output_names=args.output_names,
         auto_update_opset=args.enable_auto_update_opset)
-
-    logging.info("================================================")
-    logging.info("")
-    logging.info(
-        "Model Convertd! Fill this survey to help Paddle2ONNX better, https://iwenjuan.baidu.com/?code=r8hu2s "
-    )
-    logging.info("")
-    logging.info("================================================")
-
+    logging.info("===============Make PaddlePaddle Better!================")
+    logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
 
 if __name__ == "__main__":
     main()
