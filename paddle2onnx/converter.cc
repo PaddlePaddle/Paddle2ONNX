@@ -16,17 +16,19 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <string>
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
 
-PADDLE2ONNX_DECL bool IsExportable(
-    const std::string& model, const std::string& params,
-    bool from_memory_buffer, int32_t opset_version, bool auto_upgrade_opset,
-    bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
-    bool enable_optimize) {
+PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
+                                   int32_t opset_version,
+                                   bool auto_upgrade_opset, bool verbose,
+                                   bool enable_onnx_checker,
+                                   bool enable_experimental_op,
+                                   bool enable_optimize) {
   auto parser = PaddleParser();
-  if (!parser.Init(model, params, from_memory_buffer)) {
+  if (!parser.Init(model, params)) {
     return false;
   }
   paddle2onnx::ModelExporter me;
@@ -48,26 +50,86 @@ PADDLE2ONNX_DECL bool IsExportable(
   return true;
 }
 
-PADDLE2ONNX_DECL bool Export(const std::string& model,
-                             const std::string& params, std::string* out,
-                             bool from_memory_buffer, int32_t opset_version,
+PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
+                                   const void* params_buffer, int params_size,
+                                   int32_t opset_version,
+                                   bool auto_upgrade_opset, bool verbose,
+                                   bool enable_onnx_checker,
+                                   bool enable_experimental_op,
+                                   bool enable_optimize) {
+  auto parser = PaddleParser();
+  if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
+    return false;
+  }
+  paddle2onnx::ModelExporter me;
+  std::set<std::string> unsupported_ops;
+  if (!me.CheckIfOpSupported(parser, &unsupported_ops,
+                             enable_experimental_op)) {
+    return false;
+  }
+  if (me.GetMinOpset(parser, false) < 0) {
+    return false;
+  }
+  std::string onnx_model =
+      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
+             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  if (onnx_model.empty()) {
+    P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
+                             int& out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
                              bool enable_experimental_op,
                              bool enable_optimize) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
-  if (!parser.Init(model, params, from_memory_buffer)) {
+  if (!parser.Init(model, params)) {
     P2OLogger(verbose) << "Paddle model parsing failed." << std::endl;
     return false;
   }
   paddle2onnx::ModelExporter me;
-  *out = me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-                enable_onnx_checker, enable_experimental_op, enable_optimize);
-  if (out->empty()) {
+  std::string result =
+      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
+             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
+  out_size = result.size();
+  *out = new char[out_size]();
+  std::memcpy(*out, result.data(), out_size);
+  return true;
+}
+
+PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
+                             const void* params_buffer, int params_size,
+                             char** out, int& out_size, int32_t opset_version,
+                             bool auto_upgrade_opset, bool verbose,
+                             bool enable_onnx_checker,
+                             bool enable_experimental_op,
+                             bool enable_optimize) {
+  auto parser = PaddleParser();
+  P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
+  if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
+    P2OLogger(verbose) << "Paddle model parsing failed." << std::endl;
+    return false;
+  }
+  paddle2onnx::ModelExporter me;
+  std::string result =
+      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
+             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  if (result.empty()) {
+    P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
+    return false;
+  }
+  out_size = result.size();
+  *out = new char[out_size]();
+  std::memcpy(*out, result.data(), out_size);
   return true;
 }
 }  // namespace paddle2onnx

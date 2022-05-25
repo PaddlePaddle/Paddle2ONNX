@@ -62,6 +62,7 @@ REGISTER_MAPPER(thresholded_relu, ThresholdedReluMapper)
 REGISTER_MAPPER(log1p, Log1PMapper)
 REGISTER_MAPPER(log2, Log2Mapper)
 REGISTER_MAPPER(log10, Log10Mapper)
+REGISTER_MAPPER(silu, SiluMapper)
 
 int32_t ActivationMapper::GetMinOpset(bool verbose) {
   if (OpType() == "softplus") {
@@ -441,5 +442,12 @@ void Log10Mapper::Opset7() {
       helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln10);
   auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
   helper_->MakeNode("Div", {output, ln10_tensor}, {out_info[0].name});
+}
+
+void SiluMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+  auto out = helper_->MakeNode("Sigmoid", {x_info[0].name})->output(0);
+  helper_->MakeNode("Mul", {x_info[0].name, out}, {out_info[0].name});
 }
 }  // namespace paddle2onnx

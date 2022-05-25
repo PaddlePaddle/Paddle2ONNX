@@ -121,7 +121,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
   // process dumplicate tensor names
-  std::unordered_map<std::string, std::string> renamer;
+  std::map<std::string, std::string> renamer;
   std::set<std::string> tensor_names;
   for (auto& item : *parameters) {
     for (size_t i = 0; i < item->output_size(); ++i) {

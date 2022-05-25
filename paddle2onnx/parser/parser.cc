@@ -14,6 +14,7 @@
 
 #include "paddle2onnx/parser/parser.h"
 
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -21,18 +22,8 @@
 #include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
-bool PaddleParser::LoadProgram(const std::string& model,
-                               bool from_memory_buffer) {
+bool PaddleParser::LoadProgram(const std::string& model) {
   prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
-  if (from_memory_buffer) {
-    if (!prog->ParseFromString(model)) {
-      P2OLogger() << "Failed to parse PaddlePaddle model from memory buffer."
-                  << std::endl;
-      return false;
-    }
-    return true;
-  }
-
   std::ifstream fin(model, std::ios::in | std::ios::binary);
   if (!fin.is_open()) {
     P2OLogger() << "Failed to read model file: " << model
@@ -52,6 +43,16 @@ bool PaddleParser::LoadProgram(const std::string& model,
   prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
   if (!prog->ParseFromString(contents)) {
     P2OLogger() << "Failed to parse paddlepaddle model from read content."
+                << std::endl;
+    return false;
+  }
+  return true;
+}
+
+bool PaddleParser::LoadProgram(const void* model_buffer, int model_size) {
+  prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
+  if (!prog->ParseFromArray(model_buffer, model_size)) {
+    P2OLogger() << "Failed to parse PaddlePaddle model from memory buffer."
                 << std::endl;
     return false;
   }
@@ -177,6 +178,87 @@ bool PaddleParser::LoadParamsFromMemoryBuffer(
   return true;
 }
 
+bool PaddleParser::LoadParamsFromMemoryBuffer(const void* params_buffer,
+                                              int params_size) {
+  params.clear();
+
+  const char* read_pointer = reinterpret_cast<const char*>(params_buffer);
+  std::vector<std::string> var_names;
+  GetParamNames(&var_names);
+
+  while (params_size > 0) {
+    auto index = params.size();
+    if (index >= var_names.size()) {
+      P2OLogger() << "Unexcepted situation happend, while reading the "
+                     "parameters of PaddlePaddle model."
+                  << std::endl;
+      return false;
+    }
+
+    {
+      // read version, we don't need this
+      uint32_t version;
+      std::memcpy(&version, read_pointer, sizeof(version));
+      read_pointer += sizeof(version);
+      params_size -= sizeof(version);
+    }
+    {
+      // read lod_level, we don't use it
+      // this has to be zero, otherwise not support
+      uint64_t lod_level;
+      std::memcpy(&lod_level, read_pointer, sizeof(lod_level));
+      read_pointer += sizeof(lod_level);
+      params_size -= sizeof(lod_level);
+      if (lod_level != 0) {
+        P2OLogger() << "Only supports weight with lod_level = 0." << std::endl;
+        return false;
+      }
+    }
+    {
+      // Another version, we don't use it
+      uint32_t version;
+      std::memcpy(&version, read_pointer, sizeof(version));
+      read_pointer += sizeof(version);
+      params_size -= sizeof(version);
+    }
+    {
+      // read size of TensorDesc
+      int32_t size;
+      std::memcpy(&size, read_pointer, sizeof(size));
+      read_pointer += sizeof(size);
+      params_size -= sizeof(size);
+      // read TensorDesc
+      std::unique_ptr<char[]> buf(new char[size]);
+      std::memcpy(buf.get(), read_pointer, size);
+      read_pointer += size;
+      params_size -= size;
+
+      std::unique_ptr<paddle2onnx::framework::proto::VarType_TensorDesc>
+          tensor_desc(new paddle2onnx::framework::proto::VarType_TensorDesc());
+      tensor_desc->ParseFromArray(buf.get(), size);
+
+      Weight weight;
+
+      int32_t numel = 1;
+      int32_t data_type = tensor_desc->data_type();
+      weight.dtype = data_type;
+      for (auto i = 0; i < tensor_desc->dims().size(); ++i) {
+        numel *= tensor_desc->dims()[i];
+        weight.shape.push_back(tensor_desc->dims()[i]);
+      }
+
+      // read weight data
+      weight.buffer.resize(numel * PaddleDataTypeSize(data_type));
+      std::memcpy(weight.buffer.data(), read_pointer,
+                  numel * PaddleDataTypeSize(data_type));
+      read_pointer += numel * PaddleDataTypeSize(data_type);
+      params_size -= numel * PaddleDataTypeSize(data_type);
+      params[var_names[index]] = weight;
+    }
+  }
+  return true;
+}
+
 bool PaddleParser::LoadParams(const std::string& path) {
   params.clear();
   std::ifstream is(path, std::ios::in | std::ios::binary);
@@ -273,27 +355,23 @@ const framework::proto::OpDesc& PaddleParser::GetOpDesc(int32_t block_idx,
   return prog->blocks(block_idx).ops(op_idx);
 }
 
-// Sometimes the model contains no parameters
-// In this case, we only need the model_file
-bool PaddleParser::Init(const std::string& _model, bool from_memory_buffer) {
-  return Init(_model, "", from_memory_buffer);
+void PaddleParser::InitBlock() {
+  //  if (ExistsDumplicateTensorName()) {
+  //    return false;
+  //  }
+  GetBlocksVarName2Id();
+  GetBlocksOps();
+  GetGlobalBlockInputOutputInfo();
 }
 
-bool PaddleParser::Init(const std::string& _model, const std::string& _params,
-                        bool from_memory_buffer) {
+bool PaddleParser::Init(const std::string& _model, const std::string& _params) {
   std::vector<Weight> weights;
-  if (!LoadProgram(_model, from_memory_buffer)) {
+  if (!LoadProgram(_model)) {
     P2OLogger() << "Failed to load program of PaddlePaddle model." << std::endl;
     return false;
   }
   if (_params != "") {
-    auto ret = true;
-    if (from_memory_buffer) {
-      ret = LoadParamsFromMemoryBuffer(_params);
-    } else {
-      ret = LoadParams(_params);
-    }
-    if (!ret) {
+    if (!LoadParams(_params)) {
       P2OLogger() << "Failed to load parameters of PaddlePaddle model."
                   << std::endl;
       return false;
@@ -303,13 +381,32 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params,
                    "valid while the model contains no weights."
                 << std::endl;
   }
+  InitBlock();
+  return true;
+}
 
-  //  if (ExistsDumplicateTensorName()) {
-  //    return false;
-  //  }
-  GetBlocksVarName2Id();
-  GetBlocksOps();
-  GetGlobalBlockInputOutputInfo();
+bool PaddleParser::Init(const void* model_buffer, int model_size,
+                        const void* params_buffer, int params_size) {
+  std::vector<Weight> weights;
+  if (!LoadProgram(model_buffer, model_size)) {
+    P2OLogger() << "Failed to load program of PaddlePaddle model from memory."
+                << std::endl;
+    return false;
+  }
+  if (params_buffer != nullptr && params_size > 0) {
+    if (!LoadParamsFromMemoryBuffer(params_buffer, params_size)) {
+      P2OLogger()
+          << "Failed to load parameters of PaddlePaddle model from memory."
+          << std::endl;
+      return false;
+    }
+  } else {
+    P2OLogger()
+        << "[WARN][FromMemory] You haven't set a parameters file, this is only "
+           "valid while the model contains no weights."
+        << std::endl;
+  }
+  InitBlock();
   return true;
 }
 
