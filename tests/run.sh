@@ -45,6 +45,7 @@ ignore="test_expand_as.py \
         test_auto_scan_uniform_random.py \
         test_auto_scan_unique.py \
         test_auto_scan_where_index.py \
+        test_auto_scan_dist.py \
         test_uniform.py \
         test_ceil.py \
         test_dot.py \
