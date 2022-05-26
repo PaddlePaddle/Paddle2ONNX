@@ -17,7 +17,7 @@ make -j8
 make install
 
 # 将编译目录加入环境变量
-export PATH=${PWD}/installed_protobuf_lib:${PATH}
+export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 ```
 ### 安装Paddle2ONNX
 ```
