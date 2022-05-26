@@ -456,8 +456,8 @@ def collect_all_scales(graph):
                 out_threshold = node.attr("out_threshold")
                 if out_threshold is None:
                     continue
-                scale = (2. * out_threshold) / 255.
-                zero_point = round(-128. + out_threshold / scale)
+                scale = out_threshold / 127.
+                zero_point = 0
                 zero_node = graph.make_node(
                     'Constant', dtype=dtypes.ONNX.INT8, value=zero_point)
                 scale_node = graph.make_node(
@@ -481,17 +481,15 @@ def add_missing_quantize_ops_for_tensorrt(graph):
             quantize_params = graph.quantize_params_dict[inputs]
             scale_node = quantize_params[0]
             zero_node = quantize_params[1]
-            quant_axis = quantize_params[4]
+            # quant_axis = quantize_params[4]
 
             quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[inputs, scale_node, zero_node],
-                axis=quant_axis)
+                'QuantizeLinear', inputs=[inputs, scale_node, zero_node])
             dequantize_node = graph.make_node(
                 'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                axis=quant_axis)
+                inputs=[quantize_node, scale_node, zero_node])
             replace_input_of_all_nodes(graph, inputs, dequantize_node)
+    return graph
 
 
 def delete_redundant_clips(graph):
@@ -568,22 +566,17 @@ def add_shortcut_quantize_ops(graph):
         quantize_params = graph.quantize_params_dict[input_name]
         scale_node = quantize_params[0]
         zero_node = quantize_params[1]
-        quant_axis = quantize_params[4]
-        if quant_axis is None:
-            quant_axis = 1
+
         for another_node in another_nodes:
             if another_node.type == "QuantizeLinear":
                 continue
             if another_node.type != "Add":
                 continue
             quantize_node = graph.make_node(
-                'QuantizeLinear',
-                inputs=[input_name, scale_node, zero_node],
-                axis=quant_axis)
+                'QuantizeLinear', inputs=[input_name, scale_node, zero_node])
             dequantize_node = graph.make_node(
                 'DequantizeLinear',
-                inputs=[quantize_node, scale_node, zero_node],
-                axis=quant_axis)
+                inputs=[quantize_node, scale_node, zero_node])
             inputs = another_node.inputs
             for ipt_idx in range(len(inputs)):
                 if inputs[ipt_idx] == input_name:

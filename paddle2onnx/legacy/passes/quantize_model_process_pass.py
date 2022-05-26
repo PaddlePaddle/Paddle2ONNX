@@ -23,7 +23,7 @@ class QuantizeModelProcessPass(object):
     def tensorrt_deploy_model(cls, graph):
         graph = delete_redundant_quantize_ops(graph)
         graph = add_missing_quantize_ops_for_tensorrt(graph)
-        # graph = add_shortcut_quantize_ops(graph)
+        graph = add_shortcut_quantize_ops(graph)
         return graph
 
     @classmethod
