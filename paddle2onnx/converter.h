@@ -41,7 +41,7 @@ PADDLE2ONNX_DECL bool IsExportable(
     bool enable_experimental_op = false, bool enable_optimize = true);
 
 PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
-                             int& out_size, int32_t opset_version = 11,
+                             int* out_size, int32_t opset_version = 11,
                              bool auto_upgrade_opset = true,
                              bool verbose = false,
                              bool enable_onnx_checker = true,
@@ -50,7 +50,7 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
 
 PADDLE2ONNX_DECL bool Export(
     const void* model_buffer, int model_size, const void* params_buffer,
-    int params_size, char** out, int& out_size, int32_t opset_version = 11,
+    int params_size, char** out, int* out_size, int32_t opset_version = 11,
     bool auto_upgrade_opset = true, bool verbose = false,
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
     bool enable_optimize = true);

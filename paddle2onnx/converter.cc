@@ -81,7 +81,7 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
 }
 
 PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
-                             int& out_size, int32_t opset_version,
+                             int* out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
                              bool enable_experimental_op,
@@ -100,15 +100,15 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
-  out_size = result.size();
-  *out = new char[out_size]();
-  std::memcpy(*out, result.data(), out_size);
+  *out_size = result.size();
+  *out = new char[*out_size]();
+  std::memcpy(*out, result.data(), *out_size);
   return true;
 }
 
 PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
                              const void* params_buffer, int params_size,
-                             char** out, int& out_size, int32_t opset_version,
+                             char** out, int* out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
                              bool enable_experimental_op,
@@ -127,9 +127,9 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
-  out_size = result.size();
-  *out = new char[out_size]();
-  std::memcpy(*out, result.data(), out_size);
+  *out_size = result.size();
+  *out = new char[*out_size]();
+  std::memcpy(*out, result.data(), *out_size);
   return true;
 }
 }  // namespace paddle2onnx
