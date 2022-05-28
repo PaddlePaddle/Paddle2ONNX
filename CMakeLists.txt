@@ -62,9 +62,19 @@ list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/cp
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 if (WITH_STATIC)
     ADD_LIBRARY(paddle2onnx STATIC ${ALL_SRCS})
-    TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx )
+    set_target_properties(paddle2onnx
+                        PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+    set_target_properties(paddle2onnx
+                          PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
+    set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
+    TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx)
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
+    set_target_properties(paddle2onnx
+                        PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+    set_target_properties(paddle2onnx
+                          PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
+    set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
 endif()
 
