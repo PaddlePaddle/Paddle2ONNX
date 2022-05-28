@@ -66,6 +66,7 @@ if (WITH_STATIC)
                         PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     set_target_properties(paddle2onnx
                           PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
+    set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx)
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
@@ -73,6 +74,7 @@ else ()
                         PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     set_target_properties(paddle2onnx
                           PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
+    set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
 endif()
 
