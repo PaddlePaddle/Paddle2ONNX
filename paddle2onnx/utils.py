@@ -19,7 +19,6 @@ import collections
 import time
 import os
 import sys
-import six
 
 
 def try_import(module_name):
