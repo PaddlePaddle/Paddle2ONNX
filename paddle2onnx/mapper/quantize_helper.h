@@ -14,6 +14,7 @@
 
 #pragma once
 #include <onnx/onnx_pb.h>
+#include <fstream>
 
 #include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"

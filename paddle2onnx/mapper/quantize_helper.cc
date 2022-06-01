@@ -86,6 +86,18 @@ void QuantizeModelProcess::process_quantize_model(
     OnnxHelper& helper, const std::string deploy_backend) {
   if (deploy_backend == "others") {
     remove_all_quantize_ops(parameters, inputs, outputs, nodes, helper);
+    std::ofstream outfile;
+    outfile.open("max_range.txt", std::ios::out);
+    for (auto iter = helper.quantize_info.begin();
+         iter != helper.quantize_info.end(); iter++) {
+      std::string log = iter->first;
+      auto scale = iter->second.scale_;
+      if (scale.size() == 1) {
+        log = log + ": " + std::to_string(scale[0] * 127);
+      }
+      outfile << log << std::endl;
+    }
+    outfile.close();
   }
 }
 

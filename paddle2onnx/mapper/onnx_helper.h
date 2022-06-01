@@ -61,9 +61,9 @@ struct QuantizeInfo {
     scale_node_ = scale_node;
     quantize_axis_ = quantize_axis;
     scale_.resize(scale.size());
-    memcpy(scale_.data(), scale.data(), scale.size());
+    memcpy(scale_.data(), scale.data(), scale.size() * sizeof(float));
     zeros_.resize(zeros.size());
-    memcpy(zeros_.data(), zeros.data(), zeros.size());
+    memcpy(zeros_.data(), zeros.data(), zeros.size() * sizeof(int64_t));
   }
 };
 
