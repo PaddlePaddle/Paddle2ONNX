@@ -414,8 +414,16 @@ bool PaddleParser::IsConstantTensor(const int64_t& block_id,
                                     const std::string& tensor_name) const {
   Assert(block_id < _constant_ops.size(),
          "block_id is out of range while calling IsConstantTensor.");
-  auto iter = _constant_ops[block_id].find(tensor_name);
-  return iter != _constant_ops[block_id].end();
+  bool is_constant = false;
+  {
+    auto iter = _constant_ops[block_id].find(tensor_name);
+    is_constant = (iter != _constant_ops[block_id].end());
+  }
+  if (!is_constant) {
+    auto iter = params.find(tensor_name);
+    is_constant = (iter != params.end());
+  }
+  return is_constant;
 }
 
 void PaddleParser::GetBlocksVarName2Id() {
@@ -735,6 +743,8 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   Assert(paddle_dtype != FP16, "Float16 is not supported.");
   if (paddle_dtype == P2ODataType::BOOL) {
     return sizeof(bool);
+  } else if (paddle_dtype == P2ODataType::INT8) {
+    return sizeof(int8_t);
   } else if (paddle_dtype == P2ODataType::INT16) {
     return sizeof(int16_t);
   } else if (paddle_dtype == P2ODataType::INT32) {

@@ -50,6 +50,7 @@ class OnnxHelper {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> nodes;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> value_infos;
   int32_t opset_version = 7;
+  std::map<std::string, Weight> updated_params;
 
   void Clear() { nodes.clear(); }
 
@@ -70,12 +71,11 @@ class OnnxHelper {
       int num_outputs = 1);
 
   template <typename T>
-  std::string ConstOfShape(
-      const std::string& input, const std::string& output,
-      ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+  std::string ConstOfShape(const std::string& input, const std::string& output,
+                           ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
   template <typename T>
-  std::string ConstOfShape(
-      const std::string& input, ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
+  std::string ConstOfShape(const std::string& input,
+                           ONNX_NAMESPACE::TensorProto_DataType dtype, T value);
 
   std::string AutoCast(const std::string& input, int32_t input_paddle_dtype,
                        int32_t to_paddle_dtype);
@@ -118,9 +118,10 @@ class OnnxHelper {
                      const std::string& output, int64_t axis);
   std::string Concat(const std::vector<std::string>& input, int64_t axis);
 
+  std::string Transpose(const std::string& input, const std::string& output,
+                        const std::vector<int64_t>& perm);
   std::string Transpose(const std::string& input,
-                     const std::string& output, const std::vector<int64_t>& perm);
-  std::string Transpose(const std::string& input, const std::vector<int64_t>& perm);
+                        const std::vector<int64_t>& perm);
 
   std::vector<std::string> Split(const std::string& input,
                                  const std::vector<std::string>& outputs,
@@ -268,11 +269,18 @@ std::string OnnxHelper::Constant(const std::string& output,
     }
     tensor->set_raw_data(std::string((const char*)(data), numel));
     delete[] data;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT8) {
+    std::vector<int8_t> data;
+    data.reserve(numel);
+    for (auto& i : value) {
+      data.push_back(static_cast<int8_t>(i));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel));
   } else {
-    Assert(
-        false,
-        "Only support data type of BOOL/FLOAT/DOUBLE/INT32/INT64 in Constant "
-        "function.");
+    Assert(false,
+           "Only support data type of BOOL/FLOAT/DOUBLE/INT32/INT64/INT8 in "
+           "Constant "
+           "function.");
   }
   nodes.push_back(node);
   return output;
@@ -317,6 +325,9 @@ std::string OnnxHelper::Constant(const std::string& output,
   } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
     std::vector<int32_t> data(numel, static_cast<int32_t>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT8) {
+    std::vector<int8_t> data(numel, static_cast<int8_t>(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel));
   } else if (dtype == ONNX_NAMESPACE::TensorProto::BOOL) {
     bool* data = new bool[numel];
     for (size_t i = 0; i < numel; ++i) {
@@ -343,15 +354,18 @@ std::string OnnxHelper::Constant(const std::vector<int64_t>& shape,
 }
 
 template <typename T>
-std::string OnnxHelper::ConstOfShape(const std::string& input, ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
+std::string OnnxHelper::ConstOfShape(const std::string& input,
+                                     ONNX_NAMESPACE::TensorProto_DataType dtype,
+                                     T value) {
   auto output = MapperHelper::Get()->GenName("helper.constofshape");
   return ConstOfShape(input, output, dtype, value);
 }
 
 template <typename T>
-std::string OnnxHelper::ConstOfShape(
-    const std::string& input, const std::string& output,
-    ONNX_NAMESPACE::TensorProto_DataType dtype, T value) {
+std::string OnnxHelper::ConstOfShape(const std::string& input,
+                                     const std::string& output,
+                                     ONNX_NAMESPACE::TensorProto_DataType dtype,
+                                     T value) {
   auto node = MakeNode("ConstantOfShape", {input}, {output});
   auto attr = node->add_attribute();
   attr->set_name("value");
