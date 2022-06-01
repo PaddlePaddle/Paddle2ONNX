@@ -50,16 +50,16 @@ void DequantizeLinearMapper::Opset10() {
   std::vector<float> scales;
   Assert(TryGetInputValue("Scale", &scales),
          "Failed to read tensor value of `Scale`.");
-  std::vector<float> onnx_scale;
-  onnx_scale.reserve(scales.size());
+  std::vector<float> onnx_scales;
+  onnx_scales.reserve(scales.size());
   for (auto i : scales) {
-    onnx_scale.push_back(i / 127);
+    onnx_scales.push_back(i / 127);
   }
 
   auto scale_node =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scale);
+      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
 
-  std::vector<float> onnx_zeros(onnx_scale.size(), 0);
+  std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
   auto zero_node =
       helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
 
@@ -81,10 +81,10 @@ void DequantizeLinearMapper::Opset10() {
            "be 1.");
     for (auto j = 0; j < x_shape[1]; ++j) {
       float scale_value = 0;
-      if (onnx_scale.size() == 1) {
-        scale_value = onnx_scale[0];
+      if (onnx_scales.size() == 1) {
+        scale_value = onnx_scales[0];
       } else {
-        scale_value = onnx_scale[j];
+        scale_value = onnx_scales[j];
       }
       for (auto i = 0; i < x_shape[0]; ++i) {
         auto offset = i * x_shape[1] + j;
@@ -95,7 +95,7 @@ void DequantizeLinearMapper::Opset10() {
     Assert(quant_axis_ == 1 || quant_axis_ == 0,
            "When the size of input shape is 4, the quant_axis the weight must "
            "be 0 or 1.");
-    if (quant_axis_ = 0) {
+    if (quant_axis_ == 0) {
       auto inner_offset = 1;
       for (auto i : x_shape) {
         inner_offset *= i;
@@ -103,10 +103,10 @@ void DequantizeLinearMapper::Opset10() {
       inner_offset /= x_shape[0];
       for (int i = 0; i < x_shape[0]; ++i) {
         float scale_value = 0;
-        if (onnx_scale.size() == 1) {
-          scale_value = onnx_scale[0];
+        if (onnx_scales.size() == 1) {
+          scale_value = onnx_scales[0];
         } else {
-          scale_value = onnx_scale[i];
+          scale_value = onnx_scales[i];
         }
         for (auto j = 0; j < inner_offset; ++j) {
           auto offset = i * inner_offset + j;
@@ -119,10 +119,10 @@ void DequantizeLinearMapper::Opset10() {
       for (auto i = 0; i < x_shape[0]; ++i) {
         for (auto j = 0; j < x_shape[1]; ++j) {
           float scale_value = 0;
-          if (onnx_scale.size() == 1) {
-            scale_value = onnx_scale[0];
+          if (onnx_scales.size() == 1) {
+            scale_value = onnx_scales[0];
           } else {
-            scale_value = onnx_scale[j];
+            scale_value = onnx_scales[j];
           }
           for (auto k = 0; k < inner_offset; k++) {
             auto offset = i * outter_offset + j * inner_offset + k;
@@ -132,6 +132,9 @@ void DequantizeLinearMapper::Opset10() {
       }
     }
   }
+  QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
+                             quant_axis_);
+  helper_->quantize_info[x_info[0].name] = quantize_info;
   Weight save_weight;
   save_weight.set(P2ODataType::FP32, x_shape, weight);
   helper_->updated_params[x_info[0].name] = save_weight;

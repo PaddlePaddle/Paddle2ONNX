@@ -50,16 +50,16 @@ void QuantizeLinearMapper::Opset10() {
   std::vector<float> scales;
   Assert(TryGetInputValue("Scale", &scales),
          "Failed to read tensor value of `Scale`.");
-  std::vector<float> onnx_scale;
-  onnx_scale.reserve(scales.size());
+  std::vector<float> onnx_scales;
+  onnx_scales.reserve(scales.size());
   for (auto i : scales) {
-    onnx_scale.push_back(i / 127);
+    onnx_scales.push_back(i / 127);
   }
 
   auto scale_node =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scale);
+      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
 
-  std::vector<float> onnx_zeros(onnx_scale.size(), 0);
+  std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
   auto zero_node =
       helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
   auto node = helper_->MakeNode("QuantizeLinear",
@@ -68,5 +68,8 @@ void QuantizeLinearMapper::Opset10() {
   if (helper_->GetOpsetVersion() >= 13 && quant_axis_ != 1) {
     AddAttribute(node, "axis", quant_axis_);
   }
+  QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
+                             quant_axis_);
+  helper_->quantize_info[x_info[0].name] = quantize_info;
 }
 }  // namespace paddle2onnx

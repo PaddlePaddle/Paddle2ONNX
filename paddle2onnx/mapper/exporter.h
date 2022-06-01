@@ -19,6 +19,7 @@
 #include <set>
 
 #include "paddle2onnx/mapper/mapper.h"
+#include "paddle2onnx/mapper/quantize_helper.h"
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
@@ -49,6 +50,7 @@ struct ModelExporter {
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
  public:
+  QuantizeModelProcess quantize_model_process;
   // Get a proper opset version in range of [7, 15]
   // Also will check the model is convertable, this will include 2 parts
   //    1. is the op convert function implemented

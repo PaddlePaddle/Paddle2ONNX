@@ -45,12 +45,35 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
     const TensorInfo& info);
 
+struct QuantizeInfo {
+ public:
+  std::vector<float> scale_;
+  std::vector<int64_t> zeros_;
+  std::string zeros_node_;
+  std::string scale_node_;
+  int64_t quantize_axis_;
+
+  QuantizeInfo() {}
+  QuantizeInfo(const std::vector<float>& scale,
+               const std::vector<int64_t>& zeros, const std::string& scale_node,
+               const std::string& zeros_node, const int64_t& quantize_axis) {
+    zeros_node_ = zeros_node;
+    scale_node_ = scale_node;
+    quantize_axis_ = quantize_axis;
+    scale_.resize(scale.size());
+    memcpy(scale_.data(), scale.data(), scale.size());
+    zeros_.resize(zeros.size());
+    memcpy(zeros_.data(), zeros.data(), zeros.size());
+  }
+};
+
 class OnnxHelper {
  public:
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> nodes;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> value_infos;
   int32_t opset_version = 7;
   std::map<std::string, Weight> updated_params;
+  std::map<std::string, QuantizeInfo> quantize_info;
 
   void Clear() { nodes.clear(); }
 
