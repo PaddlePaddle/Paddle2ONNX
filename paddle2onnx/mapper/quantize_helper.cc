@@ -84,7 +84,29 @@ void QuantizeModelProcess::process_quantize_model(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
     OnnxHelper& helper, const std::string deploy_backend) {
+  // Determine whether the model contains quantization-related OPs, if not, exit
+  // directly
+  bool quantized_model = false;
+  for (auto& node : *nodes) {
+    if (node->op_type() == "QuantizeLinear" ||
+        node->op_type() == "DequantizeLinear") {
+      quantized_model = true;
+      break;
+    }
+  }
+  if (!quantized_model) {
+    return;
+  }
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true)
+      << "Converting model is a quantized model, and your deploy_backend is: "
+      << deploy_backend << std::endl;
+#endif
+  // Determine the format of the exported ONNX quantization model according to
+  // the deploy_backend
   if (deploy_backend == "others") {
+    // If deploy_backend is others, the quantization model is exported as a
+    // float model + quantization table.
     remove_all_quantize_ops(parameters, inputs, outputs, nodes, helper);
     std::ofstream outfile;
     outfile.open("max_range.txt", std::ios::out);

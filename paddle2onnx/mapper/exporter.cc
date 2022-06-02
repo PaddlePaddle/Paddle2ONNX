@@ -274,7 +274,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
     ExportOp(parser, &_helper, opset_version, 0, i, verbose);
   }
-  // Update int8 weights in quantized OP to float32e
+  // Update int8 weights in quantized OP to float32
   UpdateParameters(_helper.updated_params);
   // construct a onnx model proto
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
@@ -288,6 +288,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   opset_id->set_version(opset_version);
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
+  // If the model is not a quantized model, this func will not take effecte
   quantize_model_process.process_quantize_model(
       &parameters, &inputs, &outputs, &_helper.nodes, _helper, "others");
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
