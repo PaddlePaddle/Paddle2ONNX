@@ -72,7 +72,10 @@ class OnnxHelper {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> nodes;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> value_infos;
   int32_t opset_version = 7;
+  // Use updated_params to store params that were changed during conversion
   std::map<std::string, Weight> updated_params;
+  // Use quantize_info to record quantization-related information, scale and
+  // zero information corresponding to each tensor
   std::map<std::string, QuantizeInfo> quantize_info;
 
   void Clear() { nodes.clear(); }
