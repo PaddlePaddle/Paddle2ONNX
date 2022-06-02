@@ -94,8 +94,8 @@ void QuantizeModelProcess::process_quantize_model(
       auto scale = iter->second.scale_;
       if (scale.size() == 1) {
         log = log + ": " + std::to_string(scale[0] * 127);
+        outfile << log << std::endl;
       }
-      outfile << log << std::endl;
     }
     outfile.close();
   }

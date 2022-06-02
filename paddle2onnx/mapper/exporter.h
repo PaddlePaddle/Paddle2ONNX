@@ -35,6 +35,8 @@ struct ModelExporter {
 
   void ExportParameters(const std::map<std::string, Weight>& params,
                         bool use_initializer = false);
+
+  // Update parameters constant node
   void UpdateParameters(const std::map<std::string, Weight>& params);
   void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
                           const std::vector<TensorInfo>& output_infos);

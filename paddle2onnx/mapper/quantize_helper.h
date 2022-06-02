@@ -23,7 +23,8 @@ namespace paddle2onnx {
 struct QuantizeModelProcess {
  public:
   std::vector<QuantizeInfo> quantize_info;
-  // Convert to different model formats based on backend
+  // Convert to different model formats based on backend, backend can be
+  // TensorRT, ONNXRuntime and Others
   void process_quantize_model(
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
@@ -31,6 +32,7 @@ struct QuantizeModelProcess {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       OnnxHelper& helper, const std::string deploy_backend);
 
+  // Remove all Quantize and Dequantize ops
   void remove_all_quantize_ops(
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
@@ -38,6 +40,7 @@ struct QuantizeModelProcess {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       OnnxHelper& helper);
 
+  // Generate name2node_dict to save input name and its related nodes
   void input_name_to_nodes(
       const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& nodes,
       std::map<std::string,
