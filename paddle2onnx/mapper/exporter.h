@@ -36,7 +36,9 @@ struct ModelExporter {
   void ExportParameters(const std::map<std::string, Weight>& params,
                         bool use_initializer = false);
 
-  // Update parameters constant node
+  // Update constant node in parameters. When process quantize model, the weight
+  // dtype may be int8, it should be convet to float32 and use this func to
+  // update converted params.
   void UpdateParameters(const std::map<std::string, Weight>& params);
   void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
                           const std::vector<TensorInfo>& output_infos);
