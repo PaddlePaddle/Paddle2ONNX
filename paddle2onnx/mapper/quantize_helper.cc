@@ -16,7 +16,7 @@
 
 namespace paddle2onnx {
 
-void QuantizeModelProcess::remove_node_by_name(
+void QuantizeModelProcessor::RemoveNodeByName(
     const std::map<std::string,
                    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>&
         name2node_dict,
@@ -27,13 +27,13 @@ void QuantizeModelProcess::remove_node_by_name(
       std::string input_name = (*iter)->input(0);
       std::string output_name = (*iter)->output(0);
       nodes->erase(iter);
-      replace_input_of_all_nodes(name2node_dict, output_name, input_name);
+      ReplaceInputOfAllNodes(name2node_dict, output_name, input_name);
       return;
     }
   }
 }
 
-void QuantizeModelProcess::replace_input_of_all_nodes(
+void QuantizeModelProcessor::ReplaceInputOfAllNodes(
     const std::map<std::string,
                    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>&
         name2node_dict,
@@ -59,7 +59,7 @@ void QuantizeModelProcess::replace_input_of_all_nodes(
   }
 }
 
-void QuantizeModelProcess::input_name_to_nodes(
+void QuantizeModelProcessor::InputNameToNodes(
     const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& nodes,
     std::map<std::string,
              std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>*
@@ -78,12 +78,12 @@ void QuantizeModelProcess::input_name_to_nodes(
   }
 }
 
-void QuantizeModelProcess::process_quantize_model(
+void QuantizeModelProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-    OnnxHelper& helper, const std::string deploy_backend) {
+    OnnxHelper& helper, const std::string& deploy_backend) {
   // Determine whether the model contains quantization-related OPs, if not, exit
   // directly
   bool quantized_model = false;
@@ -107,9 +107,13 @@ void QuantizeModelProcess::process_quantize_model(
   if (deploy_backend == "others") {
     // If deploy_backend is others, the quantization model is exported as a
     // float model + quantization table.
-    remove_all_quantize_ops(parameters, inputs, outputs, nodes, helper);
+    RemoveAllQuantizeOps(parameters, inputs, outputs, nodes, helper);
     std::ofstream outfile;
     outfile.open("max_range.txt", std::ios::out);
+    if (!outfile.is_open()) {
+      std::cout << "[WARNING] Can not open max_range.txt." << std::endl;
+      return;
+    }
     for (auto iter = helper.quantize_info.begin();
          iter != helper.quantize_info.end(); iter++) {
       std::string log = iter->first;
@@ -123,7 +127,7 @@ void QuantizeModelProcess::process_quantize_model(
   }
 }
 
-void QuantizeModelProcess::remove_all_quantize_ops(
+void QuantizeModelProcessor::RemoveAllQuantizeOps(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
@@ -136,18 +140,18 @@ void QuantizeModelProcess::remove_all_quantize_ops(
   }
   std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
       name2node_dict;
-  input_name_to_nodes(*nodes, &name2node_dict);
+  InputNameToNodes(*nodes, &name2node_dict);
   for (auto iter = nodes->begin(); iter < nodes->end(); iter++) {
     auto node = *iter;
     if (node->op_type() != "QuantizeLinear") {
       continue;
     }
     std::string input_name = node->input(0);
-    remove_node_by_name(name2node_dict, nodes, node->name());
+    RemoveNodeByName(name2node_dict, nodes, node->name());
     auto next_node_names = name2node_dict[node->output(0)];
     std::string output_name = next_node_names[0]->output(0);
-    remove_node_by_name(name2node_dict, nodes, next_node_names[0]->name());
-    replace_input_of_all_nodes(name2node_dict, output_name, input_name);
+    RemoveNodeByName(name2node_dict, nodes, next_node_names[0]->name());
+    ReplaceInputOfAllNodes(name2node_dict, output_name, input_name);
   }
 }
 }

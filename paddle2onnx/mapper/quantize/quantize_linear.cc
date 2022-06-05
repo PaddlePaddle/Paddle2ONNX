@@ -38,7 +38,8 @@ int32_t QuantizeLinearMapper::GetMinOpset(bool verbose) {
               << std::endl;
       return -1;
     }
-    Logger(verbose, 13) << RequireOpset(13) << std::endl;
+    Logger(verbose, 13) << "While size of scales greater than 1, "
+                        << RequireOpset(13) << std::endl;
     return 13;
   }
   Logger(verbose, 10) << RequireOpset(10) << std::endl;

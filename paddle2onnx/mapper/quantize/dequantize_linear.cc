@@ -38,21 +38,98 @@ int32_t DequantizeLinearMapper::GetMinOpset(bool verbose) {
               << std::endl;
       return -1;
     }
-    Logger(verbose, 13) << RequireOpset(13) << std::endl;
+    Logger(verbose, 13) << "While size of scales greater than 1, "
+                        << RequireOpset(13) << std::endl;
     return 13;
   }
+  auto x_info = GetInput("X");
+  auto x_shape = x_info[0].shape;
+  if (x_shape.size() == 2) {
+    if (quant_axis_ != 1) {
+      Error() << "When the rank of input is 2, the attribute quant_axis "
+                 "requires to be 1."
+              << std::endl;
+      return -1;
+    }
+  } else if (x_shape.size() == 4) {
+    if (!(quant_axis_ == 1 || quant_axis_ == 0)) {
+      Error() << "When the rank of input is 4, the attribute quant_axis "
+                 "requires to be 0 or 1."
+              << std::endl;
+      return -1;
+    }
+  }
+
   Logger(verbose, 10) << RequireOpset(10) << std::endl;
   return 10;
 }
 
+void DequantizeLinearMapper::ConvertInt8ToFp32(
+    const std::vector<float> &onnx_scales, std::vector<float> *weight) {
+  auto x_info = GetInput("X");
+  auto x_shape = x_info[0].shape;
+  if (x_shape.size() == 2) {
+    for (auto j = 0; j < x_shape[1]; ++j) {
+      float scale_value = 0;
+      if (onnx_scales.size() == 1) {
+        scale_value = onnx_scales[0];
+      } else {
+        scale_value = onnx_scales[j];
+      }
+      for (auto i = 0; i < x_shape[0]; ++i) {
+        auto offset = i * x_shape[1] + j;
+        (*weight)[offset] *= scale_value;
+      }
+    }
+  } else if (x_shape.size() == 4) {
+    if (quant_axis_ == 0) {
+      auto inner_offset = 1;
+      for (auto i : x_shape) {
+        inner_offset *= i;
+      }
+      inner_offset /= x_shape[0];
+      for (int i = 0; i < x_shape[0]; ++i) {
+        float scale_value = 0;
+        if (onnx_scales.size() == 1) {
+          scale_value = onnx_scales[0];
+        } else {
+          scale_value = onnx_scales[i];
+        }
+        for (auto j = 0; j < inner_offset; ++j) {
+          auto offset = i * inner_offset + j;
+          (*weight)[offset] *= scale_value;
+        }
+      }
+    } else {
+      auto inner_offset = x_shape[2] * x_shape[3];
+      auto outter_offset = x_shape[1] * inner_offset;
+      for (auto i = 0; i < x_shape[0]; ++i) {
+        for (auto j = 0; j < x_shape[1]; ++j) {
+          float scale_value = 0;
+          if (onnx_scales.size() == 1) {
+            scale_value = onnx_scales[0];
+          } else {
+            scale_value = onnx_scales[j];
+          }
+          for (auto k = 0; k < inner_offset; k++) {
+            auto offset = i * outter_offset + j * inner_offset + k;
+            (*weight)[offset] *= scale_value;
+          }
+        }
+      }
+    }
+  }
+}
+
 void DequantizeLinearMapper::Opset10() {
   auto x_info = GetInput("X");
+  auto x_shape = x_info[0].shape;
   std::vector<float> scales;
   Assert(TryGetInputValue("Scale", &scales),
          "Failed to read tensor value of `Scale`.");
   std::vector<float> onnx_scales;
   onnx_scales.reserve(scales.size());
-  for (auto i : scales) {
+  for (auto &i : scales) {
     onnx_scales.push_back(i / 127);
   }
 
@@ -74,70 +151,14 @@ void DequantizeLinearMapper::Opset10() {
     }
     return;
   }
-  auto x_shape = x_info[0].shape;
-  if (x_shape.size() == 2) {
-    Assert(quant_axis_ == 1,
-           "When the size of input shape is 2, the quant_axis the weight must "
-           "be 1.");
-    for (auto j = 0; j < x_shape[1]; ++j) {
-      float scale_value = 0;
-      if (onnx_scales.size() == 1) {
-        scale_value = onnx_scales[0];
-      } else {
-        scale_value = onnx_scales[j];
-      }
-      for (auto i = 0; i < x_shape[0]; ++i) {
-        auto offset = i * x_shape[1] + j;
-        weight[offset] *= scale_value;
-      }
-    }
-  } else if (x_shape.size() == 4) {
-    Assert(quant_axis_ == 1 || quant_axis_ == 0,
-           "When the size of input shape is 4, the quant_axis the weight must "
-           "be 0 or 1.");
-    if (quant_axis_ == 0) {
-      auto inner_offset = 1;
-      for (auto i : x_shape) {
-        inner_offset *= i;
-      }
-      inner_offset /= x_shape[0];
-      for (int i = 0; i < x_shape[0]; ++i) {
-        float scale_value = 0;
-        if (onnx_scales.size() == 1) {
-          scale_value = onnx_scales[0];
-        } else {
-          scale_value = onnx_scales[i];
-        }
-        for (auto j = 0; j < inner_offset; ++j) {
-          auto offset = i * inner_offset + j;
-          weight[offset] *= scale_value;
-        }
-      }
-    } else {
-      auto inner_offset = x_shape[2] * x_shape[3];
-      auto outter_offset = x_shape[1] * inner_offset;
-      for (auto i = 0; i < x_shape[0]; ++i) {
-        for (auto j = 0; j < x_shape[1]; ++j) {
-          float scale_value = 0;
-          if (onnx_scales.size() == 1) {
-            scale_value = onnx_scales[0];
-          } else {
-            scale_value = onnx_scales[j];
-          }
-          for (auto k = 0; k < inner_offset; k++) {
-            auto offset = i * outter_offset + j * inner_offset + k;
-            weight[offset] *= scale_value;
-          }
-        }
-      }
-    }
-  }
+  ConvertInt8ToFp32(onnx_scales, &weight);
+
   QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
                              quant_axis_);
   helper_->quantize_info[x_info[0].name] = quantize_info;
-  Weight save_weight;
-  save_weight.set(P2ODataType::FP32, x_shape, weight);
-  helper_->updated_params[x_info[0].name] = save_weight;
+  Weight fp32_weight;
+  fp32_weight.set(P2ODataType::FP32, x_shape, weight);
+  helper_->updated_params[x_info[0].name] = fp32_weight;
   auto node = helper_->MakeNode("QuantizeLinear",
                                 {x_info[0].name, scale_node, zero_node});
   if (helper_->GetOpsetVersion() >= 13 && quant_axis_ != 1) {

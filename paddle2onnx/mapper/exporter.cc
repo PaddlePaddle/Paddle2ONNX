@@ -289,7 +289,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
   // If the model is not a quantized model, this func will not take effecte
-  quantize_model_process.process_quantize_model(
+  quantize_model_processer.ProcessQuantizeModel(
       &parameters, &inputs, &outputs, &_helper.nodes, _helper, "others");
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 

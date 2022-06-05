@@ -33,6 +33,8 @@ class DequantizeLinearMapper : public Mapper {
   void Opset10();
 
  private:
+  void ConvertInt8ToFp32(const std::vector<float>& onnx_scales,
+                         std::vector<float>* weight);
   int64_t quant_axis_ = 1;
   int64_t bit_length_ = 8;
 };

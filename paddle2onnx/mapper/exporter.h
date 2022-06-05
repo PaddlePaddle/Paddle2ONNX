@@ -54,7 +54,7 @@ struct ModelExporter {
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
  public:
-  QuantizeModelProcess quantize_model_process;
+  QuantizeModelProcessor quantize_model_processer;
   // Get a proper opset version in range of [7, 15]
   // Also will check the model is convertable, this will include 2 parts
   //    1. is the op convert function implemented

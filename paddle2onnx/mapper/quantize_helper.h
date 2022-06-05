@@ -20,20 +20,20 @@
 #include "paddle2onnx/parser/parser.h"
 namespace paddle2onnx {
 
-struct QuantizeModelProcess {
+struct QuantizeModelProcessor {
  public:
   std::vector<QuantizeInfo> quantize_info;
   // Convert to different model formats based on backend, backend can be
   // TensorRT, ONNXRuntime and Others
-  void process_quantize_model(
+  void ProcessQuantizeModel(
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-      OnnxHelper& helper, const std::string deploy_backend);
+      OnnxHelper& helper, const std::string& deploy_backend);
 
   // Remove all Quantize and Dequantize ops
-  void remove_all_quantize_ops(
+  void RemoveAllQuantizeOps(
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
@@ -41,20 +41,20 @@ struct QuantizeModelProcess {
       OnnxHelper& helper);
 
   // Generate name2node_dict to save input name and its related nodes
-  void input_name_to_nodes(
+  void InputNameToNodes(
       const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& nodes,
       std::map<std::string,
                std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>*
           name2node_dict);
 
-  void remove_node_by_name(
+  void RemoveNodeByName(
       const std::map<std::string,
                      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>&
           name2node_dict,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       const std::string& name);
 
-  void replace_input_of_all_nodes(
+  void ReplaceInputOfAllNodes(
       const std::map<std::string,
                      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>&
           name2node_dict,
