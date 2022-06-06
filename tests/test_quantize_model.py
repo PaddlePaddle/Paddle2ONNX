@@ -25,6 +25,7 @@ import paddle
 import paddle.fluid as fluid
 from paddle.dataset.common import download
 from paddle.fluid.contrib.slim.quantization import PostTrainingQuantization
+import platform
 
 if platform.system() == "Windows":
     os.system('set no_proxy=bcebos.com')
