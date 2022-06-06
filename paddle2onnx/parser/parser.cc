@@ -437,6 +437,7 @@ void PaddleParser::GetBlocksVarName2Id() {
 }
 
 void PaddleParser::GetBlocksOps() {
+  is_quantized_model = false;
   _blocks_ops.clear();
   _constant_ops.clear();
   _blocks_ops.resize(prog->blocks_size());
@@ -447,6 +448,14 @@ void PaddleParser::GetBlocksOps() {
       _blocks_ops[i].push_back(&prog->blocks(i).ops(j));
       if (prog->blocks(i).ops(j).type() == "assign_value") {
         _constant_ops[i][prog->blocks(i).ops(j).outputs(0).arguments(0)] = j;
+      }
+      // Determine whether the model is a quantized model, if it is a quantized
+      // model, set is_quantized_model to be true
+      if (!is_quantized_model &&
+          prog->blocks(i).ops(j).type().find("quantize") != std::string::npos) {
+        is_quantized_model = true;
+        P2OLogger() << "[Info] The Paddle model is a quantized model. "
+                    << std::endl;
       }
     }
   }

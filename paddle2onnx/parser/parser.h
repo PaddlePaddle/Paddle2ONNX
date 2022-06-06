@@ -125,6 +125,8 @@ class PaddleParser {
   std::map<std::string, Weight> params;
   std::vector<TensorInfo> inputs;
   std::vector<TensorInfo> outputs;
+  bool is_quantized_model = false;  // If the Paddle model is a quantized model,
+                                    // set is_quantized_model to be true
 
   bool Init(const std::string& _model, const std::string& _params = "");
   bool Init(const void* model_buffer, int model_size,
