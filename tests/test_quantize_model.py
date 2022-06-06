@@ -146,18 +146,10 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.infer_iterations = 50000 if os.environ.get(
             'DATASET') == 'full' else 2
 
-        self.timestamp = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())
-        self.int8_model = os.path.join(os.getcwd(),
-                                       "post_training_" + self.timestamp)
         self.int8_model = "./post_training_quantize_model/"
 
     def tearDown(self):
         pass
-        # try:
-        #     os.system("rm -rf {}".format(self.int8_model))
-        # except Exception as e:
-        #     print("Failed to delete {} due to {}".format(self.int8_model,
-        #                                                  str(e)))
 
     def cache_unzipping(self, target_folder, zip_path):
         if not os.path.exists(target_folder):
@@ -337,16 +329,15 @@ class TestPostTrainingQuantization(unittest.TestCase):
         print("Start FP32 inference for {0} on {1} images ...".format(
             model, infer_iterations * batch_size))
         (fp32_throughput, fp32_latency, fp32_acc1) = self.run_program(
-            model_cache_folder + "/MobileNetV1_infer", batch_size,
-            infer_iterations, "inference.pdmodel", "inference.pdiparams")
+            model_cache_folder, batch_size, infer_iterations,
+            "inference.pdmodel", "inference.pdiparams")
 
         print("Start INT8 post training quantization for {0} on {1} images ...".
               format(model, sample_iterations * batch_size))
         self.generate_quantized_model(
-            model_cache_folder + "/MobileNetV1_infer", quantizable_op_type,
-            algo, round_type, is_full_quantize, is_use_cache_file,
-            is_optimize_model, onnx_format, "inference.pdmodel",
-            "inference.pdiparams")
+            model_cache_folder, quantizable_op_type, algo, round_type,
+            is_full_quantize, is_use_cache_file, is_optimize_model, onnx_format,
+            "inference.pdmodel", "inference.pdiparams")
 
         print("Start INT8 inference for {0} on {1} images ...".format(
             model, infer_iterations * batch_size))
@@ -386,7 +377,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
 
 class TestPostTrainingAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
     def test_post_training_onnx_format_mobilenetv1(self):
-        model = "MobileNetV1_infer"
+        model = "MobileNetV1_infer/MobileNetV1_infer"
         algo = "mse"
         round_type = "round"
         data_urls = [
