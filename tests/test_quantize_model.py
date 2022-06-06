@@ -419,13 +419,13 @@ class TestPostTrainingAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
 
 class TestPostTrainingForResnet50ONNXFormat(TestPostTrainingQuantization):
     def test_post_training_resnet50(self):
-        model = "ResNet-50"
+        model = "ResNet50_infer"
         algo = "mse"
         round_type = "round"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
         ]
-        data_md5s = ['4a5194524823d9b76da6e738e1367881']
+        data_md5s = ['8b5e4dc0c1b12635e7f299c24038a451']
         quantizable_op_type = ["conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False
