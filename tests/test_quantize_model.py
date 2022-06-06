@@ -26,6 +26,11 @@ import paddle.fluid as fluid
 from paddle.dataset.common import download
 from paddle.fluid.contrib.slim.quantization import PostTrainingQuantization
 
+if platform.system() == "Windows":
+    os.system('set no_proxy=bcebos.com')
+else:
+    os.system('export no_proxy=bcebos.com')
+
 paddle.enable_static()
 
 random.seed(0)

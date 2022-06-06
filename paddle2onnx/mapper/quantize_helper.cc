@@ -146,9 +146,14 @@ void QuantizeModelProcessor::RemoveAllQuantizeOps(
     if (node->op_type() != "QuantizeLinear") {
       continue;
     }
+    auto next_node_names = name2node_dict[node->output(0)];
+
+    if (next_node_names.empty() || !next_node_names[0]->has_op_type() ||
+        next_node_names[0]->op_type() != "DequantizeLinear") {
+      continue;
+    }
     std::string input_name = node->input(0);
     RemoveNodeByName(name2node_dict, nodes, node->name());
-    auto next_node_names = name2node_dict[node->output(0)];
     std::string output_name = next_node_names[0]->output(0);
     RemoveNodeByName(name2node_dict, nodes, next_node_names[0]->name());
     ReplaceInputOfAllNodes(name2node_dict, output_name, input_name);

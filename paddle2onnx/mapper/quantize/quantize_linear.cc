@@ -66,7 +66,7 @@ void QuantizeLinearMapper::Opset10() {
   auto node = helper_->MakeNode("QuantizeLinear",
                                 {x_info[0].name, scale_node, zero_node},
                                 {GetOutput("Y")[0].name});
-  if (helper_->GetOpsetVersion() >= 13 && quant_axis_ != 1) {
+  if (helper_->GetOpsetVersion() >= 13) {
     AddAttribute(node, "axis", quant_axis_);
   }
   QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,

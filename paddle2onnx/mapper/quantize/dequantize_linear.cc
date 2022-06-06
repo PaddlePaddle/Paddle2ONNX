@@ -146,7 +146,7 @@ void DequantizeLinearMapper::Opset10() {
     auto node = helper_->MakeNode("DequantizeLinear",
                                   {x_info[0].name, scale_node, zero_node},
                                   {GetOutput("Y")[0].name});
-    if (helper_->GetOpsetVersion() >= 13 && quant_axis_ != 1) {
+    if (helper_->GetOpsetVersion() >= 13) {
       AddAttribute(node, "axis", quant_axis_);
     }
     return;
@@ -161,7 +161,7 @@ void DequantizeLinearMapper::Opset10() {
   helper_->updated_params[x_info[0].name] = fp32_weight;
   auto node = helper_->MakeNode("QuantizeLinear",
                                 {x_info[0].name, scale_node, zero_node});
-  if (helper_->GetOpsetVersion() >= 13 && quant_axis_ != 1) {
+  if (helper_->GetOpsetVersion() >= 13) {
     AddAttribute(node, "axis", quant_axis_);
   }
   auto dq_node = helper_->MakeNode("DequantizeLinear",
