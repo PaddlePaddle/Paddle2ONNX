@@ -60,7 +60,11 @@ class TestQuantizeLinearConvert(OPConvertAutoScanTest):
         zero_shape = input_shape[quant_axis]
 
         def generator_data():
-            input_data = randtool("int", -10, 10, input_shape)
+            input_data = randtool("float", -10, 10, input_shape)
+            floor_data = np.floor(input_data)
+            diff = abs(input_data - floor_data)
+            res = abs(diff - 0.5)
+            input_data[res < 1e-5] = 1
             return input_data
 
         config = {
