@@ -17,7 +17,10 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(eye, EyeMapper)
 
-int32_t EyeMapper::GetMinOpset(bool verbose) { return 9; }
+int32_t EyeMapper::GetMinOpset(bool verbose) {
+  Logger(verbose, 9) << RequireOpset(9) << std::endl;
+  return 9;
+}
 
 void EyeMapper::Opset9() {
   auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");

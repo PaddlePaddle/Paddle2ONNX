@@ -27,6 +27,9 @@ class EyeMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("num_rows", &num_rows_);
     GetAttr("num_columns", &num_columns_);
+    if (num_columns_ == -1) {
+      num_columns_ = num_rows_;
+    }
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset9();
