@@ -58,4 +58,18 @@ class ElementWiseModMapper : public Mapper {
   void Opset10();
 };
 
+class ElementWiseFloordivMapper : public Mapper {
+ public:
+  ElementWiseFloordivMapper(const PaddleParser& p, OnnxHelper* helper,
+                            int64_t block_id, int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("axis", &axis_);
+  }
+
+  void Opset7();
+
+ private:
+  int64_t axis_;
+};
+
 }  // namespace paddle2onnx
