@@ -13,8 +13,11 @@
 # limitations under the License.
 
 wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar
+tar xf MobileNetV1_infer.tar
 wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
+tar xf ResNet50_infer.tar
 wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.bcebos.com/int8/calibration_test_data.tar.gz
+mkdir small_data/ && tar xf calibration_test_data.tar.gz -C small_data/
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \

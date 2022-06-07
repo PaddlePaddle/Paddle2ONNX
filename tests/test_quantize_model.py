@@ -383,7 +383,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
 
 class TestPostTrainingAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
     def test_post_training_onnx_format_mobilenetv1(self):
-        model = "MobileNetV1_infer/MobileNetV1_infer"
+        model = "MobileNetV1_infer"
         algo = "mse"
         round_type = "round"
         data_urls = [
