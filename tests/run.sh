@@ -18,7 +18,6 @@ ignore="test_expand_as.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
         test_auto_scan_top_k.py \
-        test_auto_scan_dot.py \
         test_auto_scan_eye.py \
         test_auto_scan_flip.py \
         test_auto_scan_floordiv.py \
@@ -47,7 +46,6 @@ ignore="test_expand_as.py \
         test_auto_scan_dist.py \
         test_uniform.py \
         test_ceil.py \
-        test_dot.py \
         test_floor_divide.py \
         test_has_nan.py \
         test_index_select.py \
@@ -74,7 +72,7 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 
-export ENABLE_DEV=OFF
+export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
 do
