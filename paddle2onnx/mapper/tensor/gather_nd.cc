@@ -15,14 +15,14 @@
 #include "paddle2onnx/mapper/tensor/gather_nd.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(gather_nd, gatherNdMapper)
+REGISTER_MAPPER(gather_nd, GatherNdMapper)
 
-int32_t gatherNdMapper::GetMinOpset(bool verbose) {
+int32_t GatherNdMapper::GetMinOpset(bool verbose) {
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }
 
-void gatherNdMapper::Opset11() {
+void GatherNdMapper::Opset11() {
   auto input_x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
   auto input_index_info = parser_->GetOpInput(block_idx_, op_idx_, "Index");
   auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
