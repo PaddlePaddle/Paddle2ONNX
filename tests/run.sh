@@ -20,7 +20,6 @@ ignore="test_expand_as.py \
         test_auto_scan_top_k.py \
         test_auto_scan_dot.py \
         test_auto_scan_flip.py \
-        test_auto_scan_floordiv.py \
         test_auto_scan_gather_nd.py \
         test_auto_scan_group_norm.py \
         test_auto_scan_index_select.py \
