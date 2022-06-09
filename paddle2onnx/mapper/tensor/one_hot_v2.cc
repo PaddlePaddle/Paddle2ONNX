@@ -19,20 +19,22 @@ REGISTER_MAPPER(one_hot_v2, OneHotV2Mapper)
 
 int32_t OneHotV2Mapper::GetMinOpset(bool verbose) {
   if (allow_out_of_range_) {
-    Error() << "allow_out_of_range can not be true in one_hot_v2." << std::endl;
+    Error() << "allow_out_of_range is not supported in one_hot_v2."
+            << std::endl;
     return -1;
   }
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto output_info = GetOutput("Out");
   if (output_info[0].dtype != dtype_) {
     Error() << "dtype attribute and output dtype do not match." << std::endl;
     return -1;
   }
+  Logger(verbose, 9) << RequireOpset(9) << std::endl;
   return 9;
 }
 
 void OneHotV2Mapper::Opset9() {
-  auto input_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::string casted_input = helper_->AutoCast(
       input_info[0].name, input_info[0].dtype, P2ODataType::INT64);
@@ -42,9 +44,8 @@ void OneHotV2Mapper::Opset9() {
       helper_->Constant(GetOnnxDtype(output_info[0].dtype), vals);
 
   std::string depth_node = "";
-  if (parser_->OpHasInput(block_idx_, op_idx_, "depth_tensor")) {
-    auto input_depth_info =
-        parser_->GetOpInput(block_idx_, op_idx_, "depth_tensor");
+  if (HasInput("depth_tensor")) {
+    auto input_depth_info = GetInput("depth_tensor");
     depth_node = input_depth_info[0].name;
   } else {
     depth_node =
