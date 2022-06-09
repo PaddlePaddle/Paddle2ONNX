@@ -23,8 +23,8 @@ int32_t GatherNdMapper::GetMinOpset(bool verbose) {
 }
 
 void GatherNdMapper::Opset11() {
-  auto input_x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto input_index_info = parser_->GetOpInput(block_idx_, op_idx_, "Index");
+  auto input_x_info = GetInput("X");
+  auto input_index_info = GetInput("Index");
   auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
 
   std::string index_node = helper_->AutoCast(
