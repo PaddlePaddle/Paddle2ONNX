@@ -19,17 +19,19 @@ REGISTER_MAPPER(scatter, ScatterMapper)
 
 int32_t ScatterMapper::GetMinOpset(bool verbose) {
   if (!overwrite_) {
-    Error() << "overwrite = False not support yet." << std::endl;
-    return -1;
+    Logger(verbose, 16) << "While overwrite is False, " << RequireOpset(16)
+                        << std::endl;
+    return 16;
   }
+  Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }
 
 void ScatterMapper::Opset11() {
-  auto input_x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto input_ids_info = parser_->GetOpInput(block_idx_, op_idx_, "Ids");
-  auto input_updates_info = parser_->GetOpInput(block_idx_, op_idx_, "Updates");
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_x_info = GetInput("X");
+  auto input_ids_info = GetInput("Ids");
+  auto input_updates_info = GetInput("Updates");
+  auto output_info = GetOutput("Out");
 
   std::string ids_node = helper_->AutoCast(
       input_ids_info[0].name, input_ids_info[0].dtype, P2ODataType::INT64);
@@ -41,10 +43,13 @@ void ScatterMapper::Opset11() {
   auto reshape_index_node =
       helper_->MakeNode("Reshape", {ids_node, shape_node});
 
-  helper_->MakeNode("ScatterND",
-                    {input_x_info[0].name, reshape_index_node->output(0),
-                     input_updates_info[0].name},
-                    {output_info[0].name});
+  auto node = helper_->MakeNode(
+      "ScatterND", {input_x_info[0].name, reshape_index_node->output(0),
+                    input_updates_info[0].name},
+      {output_info[0].name});
+  if (!overwrite_) {
+    AddAttribute(node, "reduction", "add");
+  }
 }
 
 }  // namespace paddle2onnx
