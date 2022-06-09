@@ -25,7 +25,7 @@ int32_t GatherNdMapper::GetMinOpset(bool verbose) {
 void GatherNdMapper::Opset11() {
   auto input_x_info = GetInput("X");
   auto input_index_info = GetInput("Index");
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto output_info = GetOutput("Out");
 
   std::string index_node = helper_->AutoCast(
       input_index_info[0].name, input_index_info[0].dtype, P2ODataType::INT64);
