@@ -23,6 +23,12 @@ class FlipMapper : public Mapper {
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axes_);
+    auto input_info = GetInput("X");
+    for (auto i = 0; i < axes_.size(); i++) {
+      if (axes_[i] < 0) {
+        axes_[i] += input_info[0].Rank();
+      }
+    }
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7();

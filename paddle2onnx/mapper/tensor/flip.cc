@@ -20,12 +20,9 @@ REGISTER_MAPPER(flip, FlipMapper)
 int32_t FlipMapper::GetMinOpset(bool verbose) {
   auto input_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
   for (auto i = 0; i < axes_.size(); i++) {
-    if (axes_[i] < 0) {
-      axes_[i] += input_info[0].Rank();
-    }
     if (input_info[0].shape[axes_[i]] <= 0) {
       Error() << "The dimension in axis of input must be fixed for flip "
-                 "operator, but now the input shape in axis is unknow."
+                 "operator, but now the input shape in axis is unkown."
               << std::endl;
       return -1;
     }
@@ -34,8 +31,8 @@ int32_t FlipMapper::GetMinOpset(bool verbose) {
 }
 
 void FlipMapper::Opset7() {
-  auto input_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::string input_name = input_info[0].name;
   bool need_convert = false;
@@ -54,9 +51,8 @@ void FlipMapper::Opset7() {
         continue;
       }
       if (need_convert) {
-        input_name =
-            helper_->AutoCast(temp_input, output_info[0].name,
-                              input_info[0].dtype, output_info[0].dtype);
+        input_name = helper_->AutoCast(temp_input, output_info[0].name,
+                                       P2ODataType::FP32, output_info[0].dtype);
       } else {
         auto out_node =
             helper_->MakeNode("Identity", {temp_input}, {output_info[0].name});
@@ -66,20 +62,20 @@ void FlipMapper::Opset7() {
       split.resize(input_info[0].shape[axis], 1);
       std::vector<std::string> splits_outputs =
           helper_->Split(temp_input, split, axis);
-
       std::vector<std::string> reversed_splits;
-      for (auto index = splits_outputs.size() - 1; index >= 0; --index) {
+      for (int64_t index = splits_outputs.size() - 1; index >= 0; --index) {
         reversed_splits.push_back(splits_outputs[index]);
       }
       if (i != axes_.size() - 1) {
         auto concat_node = helper_->MakeNode("Concat", reversed_splits);
         AddAttribute(concat_node, "axis", axis);
+        temp_input = concat_node->output(0);
       } else {
         if (need_convert) {
           auto concat_node = helper_->MakeNode("Concat", reversed_splits);
           AddAttribute(concat_node, "axis", axis);
           helper_->AutoCast(concat_node->output(0), output_info[0].name,
-                            input_info[0].dtype, output_info[0].dtype);
+                            P2ODataType::FP32, output_info[0].dtype);
         } else {
           auto concat_node = helper_->MakeNode("Concat", reversed_splits,
                                                {output_info[0].name});

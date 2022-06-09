@@ -23,7 +23,7 @@ int32_t EyeMapper::GetMinOpset(bool verbose) {
 }
 
 void EyeMapper::Opset9() {
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto output_info = GetOutput("Out");
 
   std::string constant_node = helper_->Constant(
       {num_rows_, num_columns_}, GetOnnxDtype(output_info[0].dtype), 0);
