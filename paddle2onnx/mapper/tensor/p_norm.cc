@@ -18,8 +18,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(p_norm, PNormMapper)
 
 void PNormMapper::Opset7() {
-  auto input_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
 
   std::string pnode =
       helper_->Constant({1}, GetOnnxDtype(input_info[0].dtype), porder_);
