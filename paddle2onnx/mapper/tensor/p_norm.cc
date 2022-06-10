@@ -31,14 +31,15 @@ void PNormMapper::Opset7() {
   if (helper_->GetOpsetVersion() < 13) {
     auto node = helper_->MakeNode("ReduceSum", {pow_node->output(0)});
     AddAttribute(node, "axes", axes_val);
-    AddAttribute(node, "keepdims", keepdim_);
+    AddAttribute(node, "keepdims", static_cast<int64_t>(keepdim_));
     reducesum_node = node->output(0);
   } else {
     std::string axes_node =
         helper_->Constant(GetOnnxDtype(P2ODataType::INT64), axes_val);
-    reducesum_node =
-        helper_->MakeNode("ReduceSum", {pow_node->output(0), axes_node})
-            ->output(0);
+    auto node =
+        helper_->MakeNode("ReduceSum", {pow_node->output(0), axes_node});
+    AddAttribute(node, "keepdims", static_cast<int64_t>(keepdim_));
+    reducesum_node = node->output(0);
   }
 
   std::string pnode1 =

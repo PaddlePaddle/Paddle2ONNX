@@ -32,7 +32,7 @@ class PNormMapper : public Mapper {
   void Opset7();
 
  private:
-  int64_t keepdim_;
+  bool keepdim_;
   int64_t axis_;
   float porder_;
 };
