@@ -35,7 +35,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     P2OLogger(verbose) << "Paramters file path: " << params_filename << std::endl;
     char* out = nullptr;
     int size = 0;
-    if (!Export(model_filename.c_str(), params_filename.c_str(), &out, size,
+    if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize)) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;

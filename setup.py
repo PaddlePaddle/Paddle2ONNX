@@ -310,6 +310,7 @@ setuptools.setup(
     author_email='paddle-infer@baidu.com',
     url='https://github.com/PaddlePaddle/Paddle2ONNX.git',
     #    install_requires=['six', 'protobuf', 'onnx<=1.9.0'],
+    install_requires=['six'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

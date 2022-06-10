@@ -18,11 +18,7 @@ ignore="test_expand_as.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
         test_auto_scan_top_k.py \
-        test_auto_scan_dot.py \
-        test_auto_scan_eye.py \
         test_auto_scan_flip.py \
-        test_auto_scan_floordiv.py \
-        test_auto_scan_gather_nd.py \
         test_auto_scan_group_norm.py \
         test_auto_scan_index_select.py \
         test_auto_scan_instance_norm.py \
@@ -44,10 +40,9 @@ ignore="test_expand_as.py \
         test_auto_scan_uniform_random_batch_size_like.py \
         test_auto_scan_uniform_random.py \
         test_auto_scan_unique.py \
-        test_auto_scan_where_index.py \
+        test_auto_scan_dist.py \
         test_uniform.py \
         test_ceil.py \
-        test_dot.py \
         test_floor_divide.py \
         test_has_nan.py \
         test_index_select.py \
@@ -65,7 +60,6 @@ ignore="test_expand_as.py \
         test_nn_MaxPool3D.py \
         test_nn_PixelShuffle.py \
         test_nn_Upsample.py \
-        test_nonzero.py \
         test_normalize.py \
         test_scatter_nd_add.py \
         test_scatter.py \
@@ -75,7 +69,7 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 
-export ENABLE_DEV=OFF
+export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
 do

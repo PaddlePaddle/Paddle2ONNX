@@ -74,6 +74,10 @@ class MultiClassNMS():
                     outputs=num_class,
                     axis=0)
             bbox_ids = []
+            if not isinstance(scores_list, list):
+                scores_list = [scores_list]
+            if not isinstance(bboxes_list, list):
+                bboxes_list = [bboxes_list]
             for i in range(num_class):
                 bbox_id = cls.nms(graph,
                                   node,
