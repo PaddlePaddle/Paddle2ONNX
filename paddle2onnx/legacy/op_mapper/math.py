@@ -995,8 +995,9 @@ class Scale():
     def opset_7(cls, graph, node, **kw):
         scale = node.attr('scale')
         bias = node.attr('bias')
-        if len(node.input('ScaleTensor')) == 0 and np.fabs(
-                scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
+        if node.input('ScaleTensor') is not None and len(
+                node.input('ScaleTensor')) == 0 and np.fabs(
+                    scale - 1.0) < 1e-06 and np.fabs(bias - 0.0) < 1e-06:
             graph.make_node(
                 'Identity', inputs=node.input('X'), outputs=node.output('Out'))
         else:
@@ -1013,7 +1014,8 @@ class Scale():
                 data_type = input_dtype
                 cast_node = node.input('X')[0]
 
-            if len(node.input('ScaleTensor')) > 0:
+            if node.input('ScaleTensor') is not None and len(
+                    node.input('ScaleTensor')) > 0:
                 scale_node = node.input('ScaleTensor')[0]
                 scale_type = dtypes.DTYPE_PADDLE_ONNX_MAP[node.input_dtype(
                     'ScaleTensor', 0)]

@@ -465,6 +465,24 @@ class Norm():
             axis=node.attr('axis'))
 
 
+@op_mapper('data_norm')
+class DataNorm():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        mean_arr = graph.make_node(
+            'Div', inputs=node.input('BatchSum') + node.input('BatchSize'))
+        scale_arr = graph.make_node(
+            'Div',
+            inputs=node.input('BatchSize') + node.input('BatchSquareSum'))
+        scale_arr = graph.make_node('Sqrt', inputs=[scale_arr])
+        out = graph.make_node('Sub', inputs=node.input('X') + [mean_arr])
+
+        node = graph.make_node(
+            'Mul', inputs=[out, scale_arr], outputs=node.output('Y'))
+
+
 @op_mapper('softshrink')
 class SoftShrink():
     support_opset_version_range = (9, 15)

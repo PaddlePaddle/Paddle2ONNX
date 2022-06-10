@@ -410,7 +410,8 @@ class Split():
 
     @classmethod
     def get_axis(cls, graph, node):
-        if len(node.input('AxisTensor')) > 0:
+        if node.input('AxisTensor') is not None and len(
+                node.input('AxisTensor')) > 0:
             axis_node = node.input('AxisTensor')[0]
             # When axis is tensor, only int32 and int64 are supported
             if axis_node not in graph.parameters:

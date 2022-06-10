@@ -144,7 +144,8 @@ class ONNXGraph(Graph):
             if node.type in ["dequantize_linear", "quantize_linear"]:
                 return "new_type"
             # If the next op of conv or matmul is a dequantize OP, it is a static type
-            if node.type.count("conv") or node.type.count("matmul"):
+            if node.type.count("conv") or node.type.count(
+                    "matmul") or node.type.count("mul"):
                 output_node_type = []
                 for key, value in node.outputs.items():
                     name = value[0]
