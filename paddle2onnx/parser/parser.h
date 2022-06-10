@@ -44,7 +44,8 @@ enum P2ODataType {
   X17,
   X18,
   X19,
-  UINT8
+  UINT8,
+  INT8
 };
 int32_t PaddleDataTypeSize(int32_t paddle_dtype);
 

@@ -121,39 +121,91 @@ void ElementWiseFloordivMapper::Opset7() {
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");
 
+  // // Pod Types
+  // BOOL = 0;
+  // INT16 = 1;
+  // INT32 = 2;
+  // INT64 = 3;
+  // FP16 = 4;
+  // FP32 = 5;
+  // FP64 = 6;
+  // // Tensor<size_t> is used in C++.
+  // SIZE_T = 19;
+  // UINT8 = 20;
+  // INT8 = 21;
+  // BF16 = 22;
+  // COMPLEX64 = 23;
+  // COMPLEX128 = 24;
+
   bool is_int = false;
-  if (input_x_info[0].dtype <= 3 || input_x_info[0].dtype == 20 ||
-      input_y_info[0].dtype <= 3 || input_y_info[0].dtype == 20) {
+  if (input_x_info[0].dtype <= 3 ||
+      input_x_info[0].dtype == P2ODataType::UINT8 ||
+      input_x_info[0].dtype == P2ODataType::INT8 ||
+      input_y_info[0].dtype <= 3 ||
+      input_y_info[0].dtype == P2ODataType::UINT8 ||
+      input_y_info[0].dtype == P2ODataType::INT8) {
     is_int = true;
   }
-  if (axis_ == -1 || axis_ == input_x_info[0].Rank() - 1 ||
-      input_x_info[0].Rank() == input_y_info[0].Rank()) {
-    if (is_int) {
-      helper_->MakeNode("Div", {input_x_info[0].name, input_y_info[0].name},
-                        {output_info[0].name});
-    } else {
-      auto div_node = helper_->MakeNode(
-          "Div", {input_x_info[0].name, input_y_info[0].name});
-      helper_->MakeNode("Floor", {div_node->output(0)}, {output_info[0].name});
+
+  P2OLogger() << "floor div is int: " << is_int << std::endl;
+
+  Assert(axis_ == -1, "floor div axis is fixed to -1");
+
+  if (is_int) {
+    // Integer division does trunction rounding
+    auto div = helper_->MakeNode(
+        "Div", {input_x_info[0].name, input_y_info[0].name}, 1);
+    auto zero =
+        helper_->Constant<int64_t>(GetOnnxDtype(P2ODataType::INT64), {0});
+
+    // compute negtive
+    auto opset_ver = helper_->GetOpsetVersion();
+    auto self = input_x_info[0];
+    auto other = input_y_info[0];
+    std::string x = self.name;
+    std::string y = other.name;
+    std::shared_ptr<ONNX_NAMESPACE::NodeProto> self_lt_zero, other_lt_zero;
+    if (opset_ver <= 8) {
+      x = helper_->AutoCast(self.name, self.dtype, P2ODataType::FP32);
+      y = helper_->AutoCast(self.name, self.dtype, P2ODataType::FP32);
+
+      self_lt_zero = helper_->MakeNode("Less", {x, zero}, 1);
+      other_lt_zero = helper_->MakeNode("Less", {y, zero}, 1);
     }
+    {
+      // opset 9
+      if (self.dtype == P2ODataType::BOOL && other.dtype == P2ODataType::BOOL) {
+        x = helper_->AutoCast(self.name, self.dtype, P2ODataType::INT32);
+        y = helper_->AutoCast(other.name, other.dtype, P2ODataType::INT32);
+      }
+
+      self_lt_zero = helper_->MakeNode("Less", {x, zero}, 1);
+      other_lt_zero = helper_->MakeNode("Less", {y, zero}, 1);
+    }
+
+    auto negtive = helper_->MakeNode(
+        "Xor", {self_lt_zero->output(0), other_lt_zero->output(0)}, 1);
+
+    auto div_other = helper_->MakeNode("Mul", {div->output(0), other.name}, 1);
+    auto mod = helper_->MakeNode("Sub", {self.name, div_other->output(0)}, 1);
+
+    auto mod_eq_zero = helper_->MakeNode("Equal", {mod->output(0), zero}, 1);
+    auto not_eq_zero = helper_->MakeNode("Not", {mod_eq_zero->output(0)}, 1);
+    auto fixup_mask = helper_->MakeNode(
+        "And", {negtive->output(0), not_eq_zero->output(0)}, 1);
+
+    auto one =
+        helper_->Constant<int64_t>(GetOnnxDtype(P2ODataType::INT64), {1});
+    auto fixup = helper_->MakeNode("Mul", {fixup_mask->output(0), one}, 1);
+
+    helper_->MakeNode("Sub", {div->output(0), fixup->output(0)},
+                      {output_info[0].name});
+
   } else {
-    std::vector<int64_t> broadcast_shape;
-    broadcast_shape.resize(axis_ + input_x_info[0].Rank(), 1);
-    for (auto i = 0; i < input_y_info[0].Rank(); ++i) {
-      broadcast_shape[axis_ + i] = input_y_info[0].shape[i];
-    }
-    std::string broadcast_shape_node =
-        helper_->Constant(GetOnnxDtype(P2ODataType::INT64), broadcast_shape);
-    auto y_node = helper_->MakeNode(
-        "Reshape", {input_y_info[0].name, broadcast_shape_node});
-    if (is_int) {
-      helper_->MakeNode("Div", {input_x_info[0].name, y_node->output(0)},
-                        {output_info[0].name});
-    } else {
-      auto div_node =
-          helper_->MakeNode("Div", {input_x_info[0].name, y_node->output(0)});
-      helper_->MakeNode("Floor", {div_node->output(0)}, {output_info[0].name});
-    }
+    // float
+    auto div_node =
+        helper_->MakeNode("Div", {input_x_info[0].name, input_y_info[0].name});
+    helper_->MakeNode("Floor", {div_node->output(0)}, {output_info[0].name});
   }
 }
 
