@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class EyeMapper : public Mapper {
  public:
   EyeMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-            int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+            int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("num_rows", &num_rows_);
     GetAttr("num_columns", &num_columns_);
     if (num_columns_ == -1) {

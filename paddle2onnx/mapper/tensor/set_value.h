@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class SetValueMapper : public Mapper {
  public:
   SetValueMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                 int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+                 int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     MarkAsExperimentalOp();
     GetAttr("axes", &axes_);
     GetAttr("starts", &starts_);

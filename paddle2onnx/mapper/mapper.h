@@ -25,11 +25,12 @@ class Mapper {
  public:
   Mapper() {}
   Mapper(const PaddleParser& p, OnnxHelper* helper, int32_t block_id,
-         int32_t op_id)
+         int32_t op_id, std::string name={})
       : parser_(&p) {
     block_idx_ = block_id;
     op_idx_ = op_id;
     helper_ = helper;
+    name_ = name;
   }
 
   P2OLogger Logger(const bool& verbose, const int32_t& opset_version = 100) {
@@ -135,11 +136,17 @@ class Mapper {
   OnnxHelper* helper_;
   int32_t block_idx_;
   int32_t op_idx_;
+  std::string name_; // op transform name
 
   std::string OpType() const {
     auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
     return op.type();
   }
+
+  std::string Name() const {
+    return name_;
+  }
+
   bool HasInput(const std::string& name) const {
     return parser_->OpHasInput(block_idx_, op_idx_, name);
   }

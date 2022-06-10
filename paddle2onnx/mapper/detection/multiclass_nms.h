@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class NMSMapper : public Mapper {
  public:
   NMSMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-            int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+            int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     // NMS is a post process operators for object detection
     // We have found there're difference between `multi_class_nms3` in
     // PaddlePaddle and `NonMaxSuppresion` in ONNX

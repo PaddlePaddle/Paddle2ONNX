@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class SplitMapper : public Mapper {
  public:
   SplitMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+              int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("axis", &axis_);
     GetAttr("sections", &sections_);
   }

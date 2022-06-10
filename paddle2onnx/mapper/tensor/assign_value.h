@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class AssignValueMapper : public Mapper {
  public:
   AssignValueMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                    int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+                    int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("dtype", &dtype_);
     GetAttr("shape", &shape_);
     int32_t dtype = static_cast<int32_t>(dtype_);

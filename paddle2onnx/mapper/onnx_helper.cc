@@ -157,6 +157,9 @@ std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::string& op_type, const std::vector<std::string>& inputs,
     const std::vector<std::string>& outputs) {
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
+#endif
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   auto node_name = MapperHelper::Get()->GenName(op_type);
   node->set_name(node_name);
@@ -174,6 +177,9 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::string& op_type, const std::vector<std::string>& inputs,
     int num_outputs) {
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
+#endif
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   auto node_name = MapperHelper::Get()->GenName(op_type);
   node->set_name(node_name);

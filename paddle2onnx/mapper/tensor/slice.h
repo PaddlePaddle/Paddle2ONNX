@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class SliceMapper : public Mapper {
  public:
   SliceMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+              int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("axes", &axes_);
     GetAttr("starts", &starts_);
     GetAttr("ends", &ends_);

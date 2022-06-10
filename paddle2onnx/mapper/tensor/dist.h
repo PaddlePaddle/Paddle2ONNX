@@ -22,8 +22,8 @@ namespace paddle2onnx {
 class DistMapper : public Mapper {
  public:
   DistMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-             int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+             int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("p", &p_);
   }
   void Opset7();

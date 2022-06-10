@@ -20,8 +20,8 @@ namespace paddle2onnx {
 class InterpolateMapper : public Mapper {
  public:
   InterpolateMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                    int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+                    int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("data_layout", &data_layout_);
     GetAttr("align_corners", &align_corners_);
     GetAttr("align_mode", &align_mode_);

@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class Pool2dMapper : public Mapper {
  public:
   Pool2dMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+               int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     op_mapper_["max"] = {"MaxPool", "GlobalMaxPool"};
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
     GetAttr("pooling_type", &pooling_type_);

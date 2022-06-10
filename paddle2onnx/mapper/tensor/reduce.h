@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class ReduceMapper : public Mapper {
  public:
   ReduceMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+               int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     if (OpType() == "logsumexp") {
       GetAttr("keepdim", &keep_dim_);
       GetAttr("reduce_all", &reduce_all_);

@@ -23,8 +23,8 @@ namespace paddle2onnx {
 class ArgMinMapper : public Mapper {
  public:
   ArgMinMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
+               int64_t op_id, std::string name={})
+      : Mapper(p, helper, block_id, op_id, name) {
     GetAttr("flatten", &flatten_);
     GetAttr("keepdims", &keepdims_);
     GetAttr("axis", &axis_);
