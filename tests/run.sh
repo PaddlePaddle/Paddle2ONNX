@@ -26,7 +26,6 @@ ignore="test_expand_as.py \
         test_auto_scan_linspace.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_mv.py \
-        test_auto_scan_one_hot_v2.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_pixel_shuffle.py \
         test_auto_scan_roll.py \
