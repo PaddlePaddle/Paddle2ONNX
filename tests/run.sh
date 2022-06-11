@@ -29,7 +29,6 @@ ignore="test_expand_as.py \
         test_auto_scan_one_hot_v2.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_pixel_shuffle.py \
-        test_auto_scan_p_norm.py \
         test_auto_scan_roll.py \
         test_auto_scan_scatter.py \
         test_auto_scan_set_value.py \
