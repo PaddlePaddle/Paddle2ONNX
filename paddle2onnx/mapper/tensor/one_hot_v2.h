@@ -12,24 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/eye.h"
+#pragma once
+#include <string>
+#include <vector>
+
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(eye, EyeMapper)
 
-int32_t EyeMapper::GetMinOpset(bool verbose) {
-  Logger(verbose, 9) << RequireOpset(9) << std::endl;
-  return 9;
-}
+class OneHotV2Mapper : public Mapper {
+ public:
+  OneHotV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                 int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("allow_out_of_range", &allow_out_of_range_);
+    GetAttr("depth", &depth_);
+    GetAttr("dtype", &dtype_);
+  }
+  int32_t GetMinOpset(bool verbose);
+  void Opset9();
 
-void EyeMapper::Opset9() {
-  auto output_info = GetOutput("Out");
-
-  std::string constant_node = helper_->Constant(
-      {num_rows_, num_columns_}, GetOnnxDtype(output_info[0].dtype), 0);
-
-  auto node =
-      helper_->MakeNode("EyeLike", {constant_node}, {output_info[0].name});
-}
+ private:
+  bool allow_out_of_range_;
+  int64_t depth_;
+  int64_t dtype_;
+};
 
 }  // namespace paddle2onnx
