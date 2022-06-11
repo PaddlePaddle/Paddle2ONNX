@@ -18,7 +18,6 @@ ignore="test_expand_as.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
         test_auto_scan_top_k.py \
-        test_auto_scan_flip.py \
         test_auto_scan_group_norm.py \
         test_auto_scan_index_select.py \
         test_auto_scan_instance_norm.py \
@@ -27,7 +26,6 @@ ignore="test_expand_as.py \
         test_auto_scan_linspace.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_mv.py \
-        test_auto_scan_norm.py \
         test_auto_scan_one_hot_v2.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_pixel_shuffle.py \

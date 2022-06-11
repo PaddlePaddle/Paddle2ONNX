@@ -18,9 +18,9 @@ namespace paddle2onnx {
 REGISTER_MAPPER(dot, DotMapper)
 
 void DotMapper::Opset7() {
-  auto input_x_info = parser_->GetOpInput(block_idx_, op_idx_, "X");
-  auto input_y_info = parser_->GetOpInput(block_idx_, op_idx_, "Y");
-  auto output_info = parser_->GetOpOutput(block_idx_, op_idx_, "Out");
+  auto input_x_info = GetInput("X");
+  auto input_y_info = GetInput("Y");
+  auto output_info = GetOutput("Out");
 
   auto mul_node =
       helper_->MakeNode("Mul", {input_x_info[0].name, input_y_info[0].name});
