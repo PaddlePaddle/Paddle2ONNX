@@ -18,11 +18,6 @@ namespace paddle2onnx {
 REGISTER_MAPPER(scatter, ScatterMapper)
 
 int32_t ScatterMapper::GetMinOpset(bool verbose) {
-  if (!overwrite_) {
-    Logger(verbose, 16) << "While overwrite is False, " << RequireOpset(16)
-                        << std::endl;
-    return 16;
-  }
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }
@@ -43,12 +38,20 @@ void ScatterMapper::Opset11() {
   auto reshape_index_node =
       helper_->MakeNode("Reshape", {ids_node, shape_node});
 
-  auto node = helper_->MakeNode(
-      "ScatterND", {input_x_info[0].name, reshape_index_node->output(0),
-                    input_updates_info[0].name},
-      {output_info[0].name});
-  if (!overwrite_) {
-    AddAttribute(node, "reduction", "add");
+  if (overwrite_) {
+    auto node = helper_->MakeNode(
+        "ScatterND", {input_x_info[0].name, reshape_index_node->output(0),
+                      input_updates_info[0].name},
+        {output_info[0].name});
+  } else {
+    auto shape_node = helper_->MakeNode("Shape", {input_x_info[0].name});
+    auto zero_node = helper_->ConstOfShape(
+        shape_node->output(0), GetOnnxDtype(input_x_info[0].dtype), 0);
+    auto scatter_node = helper_->MakeNode(
+        "ScatterND",
+        {zero_node, reshape_index_node->output(0), input_updates_info[0].name});
+    helper_->MakeNode("Add", {input_x_info[0].name, scatter_node->output(0)},
+                      {output_info[0].name});
   }
 }
 
