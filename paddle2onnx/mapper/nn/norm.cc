@@ -12,24 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/eye.h"
+#include "paddle2onnx/mapper/nn/norm.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(eye, EyeMapper)
+REGISTER_MAPPER(norm, NormMapper)
 
-int32_t EyeMapper::GetMinOpset(bool verbose) {
-  Logger(verbose, 9) << RequireOpset(9) << std::endl;
-  return 9;
-}
-
-void EyeMapper::Opset9() {
+void NormMapper::Opset7() {
+  auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-
-  std::string constant_node = helper_->Constant(
-      {num_rows_, num_columns_}, GetOnnxDtype(output_info[0].dtype), 0);
-
-  auto node =
-      helper_->MakeNode("EyeLike", {constant_node}, {output_info[0].name});
+  auto node = helper_->MakeNode("LpNormalization", {input_info[0].name},
+                                {output_info[0].name});
+  AddAttribute(node, "axis", axis_);
 }
 
 }  // namespace paddle2onnx
