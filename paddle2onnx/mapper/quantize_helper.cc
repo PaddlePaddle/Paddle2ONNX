@@ -111,9 +111,9 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     std::ofstream outfile;
     outfile.open("max_range.txt", std::ios::out);
     if (!outfile.is_open()) {
-      std::cout << "[WARNING] Quantize model processer failed to write range "
-                   "information in current location."
-                << std::endl;
+      P2OLogger() << "[WARNING] Quantize model processer failed to write range "
+                     "information in current location."
+                  << std::endl;
       return;
     }
     for (auto iter = helper.quantize_info.begin();
