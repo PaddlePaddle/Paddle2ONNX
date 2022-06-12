@@ -47,19 +47,21 @@ class TestScatterConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=1, max_size=5))
 
-        index_shape = [input_shape[0]]
+        index_shape = draw(st.integers(min_value=1, max_value=input_shape[0]))
+
         update_shape = input_shape
+        update_shape[0] = index_shape
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         index_dtype = draw(st.sampled_from(["int32", "int64"]))
-        opset_version = [11, 15]
         overwrite = True
+        opset_version = [11, 15]
         if draw(st.booleans()):
-            opset_version = [16]
             overwrite = False
+            opset_version = [16]
 
         def generator_index():
-            index_list = randtool("int", 1, 2, index_shape)
+            index_list = randtool("int", 0, input_shape[0], index_shape)
             return index_list
 
         config = {
