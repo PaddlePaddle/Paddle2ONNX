@@ -37,6 +37,21 @@ void ModelExporter::ExportParameters(
   }
 }
 
+void ModelExporter::UpdateParameters(
+    const std::map<std::string, Weight>& params) {
+  for (auto& item : params) {
+    auto node = MakeConstant(item.first, item.second);
+    for (int i = 0; i < parameters.size(); ++i) {
+      auto old_node = parameters[i];
+      if (old_node->output(0) == item.first) {
+        parameters.erase(parameters.begin() + i);
+        parameters.push_back(std::move(node));
+        break;
+      }
+    }
+  }
+}
+
 void ModelExporter::ExportInputOutputs(
     const std::vector<TensorInfo>& input_infos,
     const std::vector<TensorInfo>& output_infos) {
@@ -243,8 +258,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
   }
   _helper.SetOpsetVersion(opset_version);
-  P2OLogger()
-      << "Use opset_version = " << _helper.GetOpsetVersion() << " for ONNX export."  << std::endl;
+  P2OLogger() << "Use opset_version = " << _helper.GetOpsetVersion()
+              << " for ONNX export." << std::endl;
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
 
@@ -259,6 +274,11 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
     ExportOp(parser, &_helper, opset_version, 0, i, verbose);
   }
+  if (parser.is_quantized_model) {
+    // Update int8 weights in quantized OP to float32
+    UpdateParameters(_helper.updated_params);
+  }
+
   // construct a onnx model proto
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
   // TODO(jiangjiajun) ir version is related to onnx version
@@ -271,6 +291,12 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   opset_id->set_version(opset_version);
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
+  if (parser.is_quantized_model) {
+    quantize_model_processer.ProcessQuantizeModel(
+        &parameters, &inputs, &outputs, &_helper.nodes, _helper,
+        "others");  // TODO(yeliang): set ONNXRuntime as the default deploy
+                    // backend
+  }
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
   for (auto& item : parameters) {
@@ -301,9 +327,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
       return "";
     }
-    P2OLogger()
-        << "PaddlePaddle model is exported as ONNX format now."
-        << std::endl;
+    P2OLogger() << "PaddlePaddle model is exported as ONNX format now."
+                << std::endl;
   }
 
   std::string out;
