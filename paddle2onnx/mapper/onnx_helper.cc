@@ -70,12 +70,15 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 }
 
 ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
-  Assert((paddle_dtype >= 0 && paddle_dtype <= 6) || paddle_dtype == 20,
+  Assert((paddle_dtype >= 0 && paddle_dtype <= 6) || paddle_dtype == 20 ||
+             paddle_dtype == 21,
          "Unknow paddle data type: " + std::to_string(paddle_dtype) +
              " While call GetOnnxDtype.");
   auto onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT;
   if (paddle_dtype == P2ODataType::BOOL) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::BOOL;
+  } else if (paddle_dtype == P2ODataType::INT8) {
+    onnx_dtype = ONNX_NAMESPACE::TensorProto::INT8;
   } else if (paddle_dtype == P2ODataType::INT16) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::INT16;
   } else if (paddle_dtype == P2ODataType::INT32) {
