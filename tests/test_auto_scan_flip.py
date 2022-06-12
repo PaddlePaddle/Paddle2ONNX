@@ -68,7 +68,7 @@ class TestFlattenConvert(OPConvertAutoScanTest):
             "op_names": ["flip"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "opset_version": [7, 15],
             "input_spec_shape": [input_spec_shape],
             "axis": axis
         }
