@@ -194,9 +194,12 @@ void ElementWiseFloordivMapper::Opset7() {
     auto fixup_mask = helper_->MakeNode(
         "And", {negtive->output(0), not_eq_zero->output(0)}, 1);
 
+    auto fixup_mask_int64 = helper_->AutoCast(
+        fixup_mask->output(0), P2ODataType::BOOL, P2ODataType::INT64);
+
     auto one =
         helper_->Constant<int64_t>(GetOnnxDtype(P2ODataType::INT64), {1});
-    auto fixup = helper_->MakeNode("Mul", {fixup_mask->output(0), one}, 1);
+    auto fixup = helper_->MakeNode("Mul", {fixup_mask_int64, one}, 1);
 
     helper_->MakeNode("Sub", {div->output(0), fixup->output(0)},
                       {output_info[0].name});
