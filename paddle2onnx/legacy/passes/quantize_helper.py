@@ -320,6 +320,8 @@ def add_q_dq(graph):
                     continue
                 _, weight = mapper_helper.get_param_from_paddle_graph(
                     graph, tensor_name)
+                if weight is None:
+                    continue
                 scale_list, zero_list = mapper_helper.quantize_weight_per_channel(
                     weight, 1)
                 zero_node = graph.make_node(

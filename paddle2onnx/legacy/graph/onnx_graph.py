@@ -252,6 +252,10 @@ class ONNXGraph(Graph):
             weight = param['data']
             if weight is not np.ndarray:
                 weight = np.array(weight)
+            print(param['dtype'])
+            if param['dtype'] == paddle.int64 or param[
+                    'dtype'] == paddle.int32 or param['dtype'] == paddle.bool:
+                weight = weight.astype("int32")
             tensor = helper.make_tensor(
                 name=name,
                 dims=param['shape'],
