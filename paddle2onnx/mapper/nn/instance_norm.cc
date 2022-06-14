@@ -46,7 +46,7 @@ void InstanceNormMapper::Opset7() {
   if (HasInput("Bias")) {
     bias = GetInput("Bias")[0].name;
   } else {
-    scale = helper_->Constant(GetOnnxDtype(input_info[0].dtype), std::vector<float>(num_groups, 0.0));
+    bias = helper_->Constant(GetOnnxDtype(input_info[0].dtype), std::vector<float>(num_groups, 0.0));
   }
 
   auto node = helper_->MakeNode(
