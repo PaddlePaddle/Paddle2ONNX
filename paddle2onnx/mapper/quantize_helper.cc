@@ -454,7 +454,6 @@ void QuantizeModelProcessor::MergeConvAdd() {
       continue;
     }
     std::vector<float> bias_val;
-    // mapper.TryGetInputValue(bias_node, &bias_val);
     GetTensorByName(bias_node, &bias_val);
 
     // continue if bias is not a constant
@@ -462,11 +461,17 @@ void QuantizeModelProcessor::MergeConvAdd() {
       continue;
     }
     std::vector<int64_t> shape_val;
-    // mapper.TryGetInputValue(before_nodes[0]->input(1), &shape_val);
     GetTensorByName(before_nodes[0]->input(1), &shape_val);
 
     // continue if shape of reshape Op is not a constant
     if (shape_val.empty()) {
+      continue;
+    }
+
+    // if shape_val == [1, bias_val.size(), 1, 1]
+    std::vector<int64_t> target = {1, static_cast<int64_t>(bias_val.size()), 1,
+                                   1};
+    if (target != shape_val) {
       continue;
     }
 
