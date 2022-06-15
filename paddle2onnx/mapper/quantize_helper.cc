@@ -150,12 +150,14 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 #endif
 }
 
+// According to:
+// https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
 void QuantizeModelProcessor::AddQDQ() {
   UpdateInputNameToNodes();
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
 
-    // Here we only add Relu, Conv and matmul
+    // Here we only add Relu, Conv, mul and matmul
     if (node->op_type() == "Relu") {
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
@@ -207,6 +209,16 @@ void QuantizeModelProcessor::AddQDQ() {
                                                  zero_node, quantize_axis);
         helper_->quantize_info[name] = matmul_weight_quantize_info;
       }
+      if (!CanBeQuantize(tensor_names)) {
+        continue;
+      }
+      for (auto name : tensor_names) {
+        AppendQuantizeTensor(name);
+      }
+    }
+    if (node->op_type() == "Mul") {
+      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
+                                               node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
         continue;
       }
