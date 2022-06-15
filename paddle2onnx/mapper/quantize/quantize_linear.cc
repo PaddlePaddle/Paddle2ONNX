@@ -56,13 +56,21 @@ void QuantizeLinearMapper::Opset10() {
   for (auto i : scales) {
     onnx_scales.push_back(i / 127);
   }
-
-  auto scale_node =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
-
   std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
-  auto zero_node =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
+
+  std::string scale_node, zero_node;
+  if (onnx_scales.size() == 1) {
+    scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
+                                   onnx_scales[0]);
+    zero_node =
+        helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros[0]);
+  } else {
+    scale_node =
+        helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
+    zero_node =
+        helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
+  }
+
   auto node = helper_->MakeNode("QuantizeLinear",
                                 {x_info[0].name, scale_node, zero_node},
                                 {GetOutput("Y")[0].name});

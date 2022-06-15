@@ -41,13 +41,18 @@ void ModelExporter::UpdateParameters(
     const std::map<std::string, Weight>& params) {
   for (auto& item : params) {
     auto node = MakeConstant(item.first, item.second);
+    bool updated = false;
     for (int i = 0; i < parameters.size(); ++i) {
       auto old_node = parameters[i];
       if (old_node->output(0) == item.first) {
         parameters.erase(parameters.begin() + i);
         parameters.push_back(std::move(node));
+        updated = true;
         break;
       }
+    }
+    if (!updated) {
+      parameters.push_back(std::move(node));
     }
   }
 }
@@ -274,10 +279,6 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
     ExportOp(parser, &_helper, opset_version, 0, i, verbose);
   }
-  if (parser.is_quantized_model) {
-    // Update int8 weights in quantized OP to float32
-    UpdateParameters(_helper.updated_params);
-  }
 
   // construct a onnx model proto
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
@@ -293,9 +294,10 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
   if (parser.is_quantized_model) {
     quantize_model_processer.ProcessQuantizeModel(
-        &parameters, &inputs, &outputs, &_helper.nodes, _helper,
-        "others");  // TODO(yeliang): set ONNXRuntime as the default deploy
-                    // backend
+        &parameters, &inputs, &outputs, &_helper.nodes, &_helper, "onnxruntime",
+        parser);
+    // Update int8 weights in quantized OP to float32
+    UpdateParameters(_helper.updated_params);
   }
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
