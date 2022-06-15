@@ -124,18 +124,28 @@ def merge_conv_add(graph):
         if reshape_tensor is None:
             continue
         graph.remove_node(bias_input_node)
-
-        topk_data_sort = np.amax(np.abs(bias_weight))
-        scale = topk_data_sort / 127.0
+        # bias scale
+        scale = np.squeeze(graph.quantize_params_dict[conv_node.inputs[1]][2] *
+                           graph.quantize_params_dict[conv_node.inputs[0]][2])
         scale_list = scale.tolist()
         if not isinstance(scale_list, list):
             scale_list = [scale_list]
-        scale_node = graph.make_node(
-            'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
-        zero_node = graph.make_node('Constant', dtype=dtypes.ONNX.INT8, value=0)
-        if bias_node not in graph.quantize_params_dict:
-            graph.quantize_params_dict[
-                bias_node] = [scale_node, zero_node, scale_list, [0], 0]
+        if len(scale_list) == 1:
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list[0])
+            zero_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.INT32, value=0)
+        else:
+            scale_node = graph.make_node(
+                'Constant', dtype=dtypes.ONNX.FLOAT, value=scale_list)
+            zero_node = graph.make_node(
+                'Constant',
+                dtype=dtypes.ONNX.INT32,
+                value=[0] * len(scale_list))
+
+        graph.quantize_params_dict[bias_node] = [
+            scale_node, zero_node, scale_list, [0] * len(scale_list), 0
+        ]
         conv_node.inputs.append(bias_node)
         conv_node.outputs = add_node.outputs
         graph.update_node(conv_node)
