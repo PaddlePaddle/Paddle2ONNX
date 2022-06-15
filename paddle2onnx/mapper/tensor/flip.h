@@ -12,24 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/eye.h"
+#pragma once
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(eye, EyeMapper)
 
-int32_t EyeMapper::GetMinOpset(bool verbose) {
-  Logger(verbose, 9) << RequireOpset(9) << std::endl;
-  return 9;
-}
+class FlipMapper : public Mapper {
+ public:
+  FlipMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+             int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("axis", &axes_);
+    auto input_info = GetInput("X");
+    for (auto i = 0; i < axes_.size(); i++) {
+      if (axes_[i] < 0) {
+        axes_[i] += input_info[0].Rank();
+      }
+    }
+  }
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset7();
 
-void EyeMapper::Opset9() {
-  auto output_info = GetOutput("Out");
-
-  std::string constant_node = helper_->Constant(
-      {num_rows_, num_columns_}, GetOnnxDtype(output_info[0].dtype), 0);
-
-  auto node =
-      helper_->MakeNode("EyeLike", {constant_node}, {output_info[0].name});
-}
+ private:
+  std::vector<int64_t> axes_;
+};
 
 }  // namespace paddle2onnx
