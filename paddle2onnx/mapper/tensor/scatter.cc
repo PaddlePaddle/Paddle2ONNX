@@ -19,10 +19,9 @@ REGISTER_MAPPER(scatter, ScatterMapper)
 
 int32_t ScatterMapper::GetMinOpset(bool verbose) {
   if (!overwrite_) {
-    Logger(verbose, 16) << "While overwrite is False, " << RequireOpset(16)
-                        << std::endl;
-    return 16;  // TODO(yeliang): Check if any other OPs need to upgrade to
-                // opset version 16.
+    Error() << "overwrite = False not support yet." << std::endl;
+    return -1;  // TODO(yeliang): overwrite can be False when opset version is
+                // 16
   }
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
@@ -48,9 +47,6 @@ void ScatterMapper::Opset11() {
       "ScatterND", {input_x_info[0].name, reshape_index_node->output(0),
                     input_updates_info[0].name},
       {output_info[0].name});
-  if (!overwrite_) {
-    AddAttribute(node, "reduction", "add");
-  }
 }
 
 }  // namespace paddle2onnx
