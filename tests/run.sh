@@ -35,7 +35,6 @@ ignore="test_expand_as.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_pixel_shuffle.py \
         test_auto_scan_roll.py \
-        test_auto_scan_scatter.py \
         test_auto_scan_set_value.py \
         test_auto_scan_top_k.py \
         test_auto_scan_unfold.py \
@@ -64,7 +63,6 @@ ignore="test_expand_as.py \
         test_nn_Upsample.py \
         test_normalize.py \
         test_scatter_nd_add.py \
-        test_scatter.py \
         test_unique.py \
         test_unsqueeze.py"
 bug=0
