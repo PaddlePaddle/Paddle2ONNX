@@ -18,6 +18,9 @@ namespace paddle2onnx {
 
 void QuantizeModelProcessor::RemoveNodeByName(const std::string& name,
                                               const bool& update_io) {
+  if (name.empty()) {
+    return;
+  }
   for (auto iter = nodes_->begin(); iter != nodes_->end(); iter++) {
     if ((*iter)->name() == name) {
       std::string input_name = (*iter)->input(0);
@@ -290,6 +293,12 @@ void QuantizeModelProcessor::MergeConvBN() {
       continue;
     }
 
+    bool act_has_quantize_info =
+        helper_->quantize_info.find(conv_node->input(0)) !=
+        helper_->quantize_info.end();
+    if (!act_has_quantize_info) {
+      continue;
+    }
     auto next_nodes = name2node_dict_[conv_node->output(0)];
 
     if (next_nodes.size() > 1 || IsGraphOutput(conv_node->output(0))) {
@@ -297,7 +306,8 @@ void QuantizeModelProcessor::MergeConvBN() {
     }
 
     auto bn_node = next_nodes[0];
-    if (bn_node->op_type() != "BatchNormalization") {
+    if (bn_node->op_type() != "BatchNormalization" ||
+        IsGraphOutput(bn_node->output(0))) {
       continue;
     }
 
@@ -424,6 +434,12 @@ void QuantizeModelProcessor::MergeConvAdd() {
     if (node->op_type() != "Conv") {
       continue;
     }
+    // if act input of conv does not have quantize info, continue
+    bool act_has_quantize_info = helper_->quantize_info.find(node->input(0)) !=
+                                 helper_->quantize_info.end();
+    if (!act_has_quantize_info) {
+      continue;
+    }
 
     auto next_nodes = name2node_dict_[node->output(0)];
 
@@ -432,30 +448,30 @@ void QuantizeModelProcessor::MergeConvAdd() {
     }
 
     auto next_node = next_nodes[0];
-    if (next_node->op_type() != "Add") {
+    if (next_node->op_type() != "Add" || IsGraphOutput(next_node->output(0))) {
       continue;
     }
-
-    std::string bias_node = node->output(0) == next_node->input(0)
-                                ? next_node->input(1)
-                                : next_node->input(0);
-
+    std::string reshape_node = node->output(0) == next_node->input(0)
+                                   ? next_node->input(1)
+                                   : next_node->input(0);
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> before_nodes;
     for (auto& node : *nodes_) {
       for (size_t i = 0; i < node->output_size(); ++i) {
         std::string node_output = node->output(i);
-        if (node_output == bias_node) {
+        if (node_output == reshape_node) {
           before_nodes.push_back(node);
+          break;
         }
       }
     }
 
-    if (before_nodes[0]->op_type() != "Reshape") {
+    if (before_nodes.empty() || before_nodes[0]->op_type() != "Reshape") {
       continue;
     }
+
+    std::string bias_node = before_nodes[0]->input(0);
     std::vector<float> bias_val;
     GetTensorByName(bias_node, &bias_val);
-
     // continue if bias is not a constant
     if (bias_val.empty()) {
       continue;
@@ -467,17 +483,14 @@ void QuantizeModelProcessor::MergeConvAdd() {
     if (shape_val.empty()) {
       continue;
     }
-
     // if shape_val == [1, bias_val.size(), 1, 1]
     std::vector<int64_t> target = {1, static_cast<int64_t>(bias_val.size()), 1,
                                    1};
     if (target != shape_val) {
       continue;
     }
-
     // rename Reshape op
     RemoveNodeByName(before_nodes[0]->name());
-
     // add scale for bias
     std::vector<float> weight_scale =
         helper_->quantize_info[node->input(1)].scale_;
@@ -741,6 +754,58 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
   if (iter != parser_->params.end()) {
     (iter->second).get(value);
     return true;
+  }
+  for (auto iter = nodes_->begin(); iter != nodes_->end(); iter++) {
+    auto node = *iter;
+    if (node->op_type() != "Constant") {
+      continue;
+    }
+    if (node->output(0) == name) {
+      for (auto i = 0; i < node->attribute_size(); i++) {
+        auto attr = node->attribute(i);
+        if (attr.name() == "value") {
+          auto tensor = attr.mutable_t();
+          auto dtype = tensor->data_type();
+          std::vector<int64_t> shape;
+          for (int64_t i = 0; i < tensor->dims_size(); i++) {
+            shape.push_back(tensor->dims(i));
+          }
+          int64_t nums = 1;
+          for (auto i : shape) nums *= i;
+          value->resize(nums);
+          if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+            std::vector<int64_t> val(shape[0], 0);
+            memcpy(val.data(), tensor->raw_data().data(),
+                   nums * sizeof(int64_t));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+            std::vector<int32_t> val(shape[0], 0);
+            memcpy(val.data(), tensor->raw_data().data(),
+                   nums * sizeof(int32_t));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+            std::vector<int32_t> val(shape[0], 0);
+            memcpy(val.data(), tensor->raw_data().data(), nums * sizeof(float));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+            std::vector<int32_t> val(shape[0], 0);
+            memcpy(val.data(), tensor->raw_data().data(),
+                   nums * sizeof(double));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else {
+            P2OLogger() << "[WARNING] Quantize helper function GetTensorByName "
+                           "only support get int64_t/int32_t/float/double "
+                           "value from Constant now."
+                        << std::endl;
+            return false;
+          }
+        }
+      }
+    }
   }
   return false;
 }
