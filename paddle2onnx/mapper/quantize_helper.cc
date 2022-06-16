@@ -160,7 +160,8 @@ void QuantizeModelProcessor::AddQDQ() {
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
 
-    // Here we only add Relu, Conv, mul and matmul
+    // Here we only add Relu, Conv, mul and matmul, all tensors should add Q and
+    // DQ will be saved in tensors_to_be_quantize
     if (node->op_type() == "Relu") {
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
@@ -368,13 +369,13 @@ void QuantizeModelProcessor::MergeConvBN() {
         new_weight[index] = conv_weight[index] * alpha[i];
       }
     }
+    // update weight
     std::vector<int64_t> weight_shape;
     GetTensorShape(conv_node->input(1), &weight_shape);
-
     Weight updated_conv_weight;
     updated_conv_weight.set(P2ODataType::FP32, weight_shape, new_weight);
     helper_->updated_params[conv_node->input(1)] = updated_conv_weight;
-
+    // update bias
     Weight updated_bias_weight;
     std::vector<int64_t> bias_shape = {static_cast<int64_t>(new_bias.size())};
     updated_bias_weight.set(P2ODataType::FP32, bias_shape, new_bias);
@@ -404,7 +405,7 @@ void QuantizeModelProcessor::MergeConvBN() {
                                               weight_scale_node,
                                               weight_zero_node, quantize_axis);
     helper_->quantize_info[conv_node->input(1)] = updated_weight_quantize_info;
-    // bias scale and bias
+    // add bias scale and update bias
     auto act_quantize_info = helper_->quantize_info[conv_node->input(0)];
     std::vector<float> act_scale = act_quantize_info.scale_;
     std::vector<float> bias_scale;
@@ -479,11 +480,11 @@ void QuantizeModelProcessor::MergeConvAdd() {
     std::vector<int64_t> shape_val;
     GetTensorByName(before_nodes[0]->input(1), &shape_val);
 
-    // continue if shape of reshape Op is not a constant
+    // continue if shape tensor of reshape op is not a constant
     if (shape_val.empty()) {
       continue;
     }
-    // if shape_val == [1, bias_val.size(), 1, 1]
+    // continue if shape_val != [1, bias_val.size(), 1, 1]
     std::vector<int64_t> target = {1, static_cast<int64_t>(bias_val.size()), 1,
                                    1};
     if (target != shape_val) {
@@ -561,6 +562,14 @@ void QuantizeModelProcessor::RemoveIsolatedNodes() {
 }
 
 void QuantizeModelProcessor::GetTopoSort() {
+  // return the topo sort of nodes;
+  // 1. Get i2o_mapper and  constant_nodes, i2o_mapper means the node map to its
+  // all output nodes, constant_nodes save all constant nodes.
+  // 2. Nodes without output nodes are first saved to new_nodes, and then
+  // cyclically delete the records of the node in i2o_mapper items, and nodes
+  // whose output nodes are empty are also saved to new_nodes in turn.
+  // 3. Store constant nodes in new_nodes.
+  // 4. Reverse new_nodes, then assign to nodes.
   std::map<std::string, std::vector<std::string>> i2o_mapper;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> constant_nodes;
   std::map<std::string, std::shared_ptr<ONNX_NAMESPACE::NodeProto>>
@@ -616,7 +625,9 @@ void QuantizeModelProcessor::GetTopoSort() {
     for (auto iter = i2o_mapper.begin(); iter != i2o_mapper.end(); iter++) {
       std::string input_node_name = iter->first;
       std::vector<std::string>* output_nodes_name = &iter->second;
-      if (output_nodes_name->empty()) continue;
+      if (output_nodes_name->empty()) {
+        continue;
+      }
       auto in_inter = std::find(output_nodes_name->begin(),
                                 output_nodes_name->end(), current_node_name);
       if (in_inter != output_nodes_name->end()) {
@@ -632,6 +643,9 @@ void QuantizeModelProcessor::GetTopoSort() {
     new_nodes.push_back(node);
   }
   std::reverse(new_nodes.begin(), new_nodes.end());
+  Assert(nodes_->size() == new_nodes.size(),
+         "The number of nodes after topological sorting is not equal to the "
+         "number before sorting");
   *nodes_ = new_nodes;
 }
 
@@ -666,7 +680,7 @@ bool QuantizeModelProcessor::IsGraphOutput(const std::string name) {
   return false;
 }
 
-// try get tensor value
+// Try get tensor shape value
 void QuantizeModelProcessor::GetTensorShape(const std::string& name,
                                             std::vector<int64_t>* shape) {
   for (auto& item : *parameters_) {
@@ -744,7 +758,11 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
 template <typename T>
 bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
                                              std::vector<T>* value) {
-  // find params in helper first
+  // Find tensor values in the following order, if found, store the data in
+  // value, and return true：
+  // 1. updated_parameters.
+  // 2. parameters of original graph
+  // 3. constant node in nodes
   auto updated_params_iter = helper_->updated_params.find(name);
   if (updated_params_iter != helper_->updated_params.end()) {
     (updated_params_iter->second).get(value);

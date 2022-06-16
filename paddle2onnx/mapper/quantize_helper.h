@@ -55,6 +55,8 @@ struct QuantizeModelProcessor {
   void AppendQuantizeTensor(const std::string& tensor,
                             const bool& only_dequantize = false);
 
+  // According to:
+  // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
   void AddQDQ();
 
   // merge conv + add
