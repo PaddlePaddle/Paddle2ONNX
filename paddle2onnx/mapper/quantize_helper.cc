@@ -49,7 +49,6 @@ void QuantizeModelProcessor::ReplaceInputOfAllNodes(
     need_remove_nodes = iter->second;
   }
   for (auto& node : need_remove_nodes) {
-    std::vector<std::string> inputs;
     for (size_t i = 0; i < node->input_size(); ++i) {
       if (node->input(i) == old_name) {
         node->set_input(i, new_name);
@@ -142,7 +141,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
   } else {
     Assert(true,
            "[QuantizeModelProcessor] Now supported backend are: ONNXRuntime "
-           "and Other, but your backend is: " +
+           "and Others, but your backend is: " +
                deploy_backend);
   }
 }
