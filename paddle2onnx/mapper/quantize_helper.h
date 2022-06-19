@@ -34,8 +34,12 @@ struct QuantizeModelProcessor {
 
   std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
       name2node_dict_;
-  std::vector<std::string> tensors_to_be_quantize;
-  std::vector<std::string> only_dequantize_tensors;
+  std::vector<std::string> tensors_to_be_quantize;  // records those tensors
+                                                    // that need to add quantize
+                                                    // and dequantize op
+  std::vector<std::string> only_dequantize_tensors;  // records those tensors
+                                                     // that only need to add
+                                                     // the dequantize op
   // Convert to different model formats based on backend, backend can be
   // TensorRT, ONNXRuntime and Others
   void ProcessQuantizeModel(
@@ -52,6 +56,8 @@ struct QuantizeModelProcessor {
   // If all tensors in tensor_names have quantize info, return True, otherwise
   // return false
   bool CanBeQuantize(const std::vector<std::string>& tensor_names);
+  // only_dequantize records those tensors that only need to add the dequantize
+  // op
   void AppendQuantizeTensor(const std::string& tensor,
                             const bool& only_dequantize = false);
 
@@ -65,14 +71,11 @@ struct QuantizeModelProcessor {
   // merge conv + BN
   void MergeConvBN();
 
-  bool IsGraphOutput(const std::string name);
-
-  // Remove isolated ops, just for debug use
-  void RemoveIsolatedNodes();
+  bool IsGraphOutput(const std::string& name);
 
   // Because processing the quantize model will add new nodes, which will
   // destroy the topo sorting of nodes, this function will sort the nodes again
-  void GetTopoSort();
+  void SortNodes();
 
   void GetTensorShape(const std::string& name, std::vector<int64_t>* shape);
 
