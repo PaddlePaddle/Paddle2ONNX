@@ -142,7 +142,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     Assert(false,
            "[QuantizeModelProcessor] Only support 'onnxruntime' / 'others' as "
            "backend now, but now the backend is: " +
-               deploy_backend + ".")
+               deploy_backend + ".");
   }
 }
 
@@ -719,64 +719,7 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
     (updated_params_iter->second).get(value);
     return true;
   }
-  auto iter = parser_->params.find(name);
-  if (iter != parser_->params.end()) {
-    (iter->second).get(value);
-    return true;
-  }
-  for (auto iter = nodes_->begin(); iter != nodes_->end(); iter++) {
-    auto node = *iter;
-    if (node->op_type() != "Constant") {
-      continue;
-    }
-    if (node->output(0) == name) {
-      for (auto i = 0; i < node->attribute_size(); i++) {
-        auto attr = node->attribute(i);
-        if (attr.name() == "value") {
-          auto tensor = attr.mutable_t();
-          auto dtype = tensor->data_type();
-          std::vector<int64_t> shape;
-          for (int64_t i = 0; i < tensor->dims_size(); i++) {
-            shape.push_back(tensor->dims(i));
-          }
-          int64_t nums = 1;
-          for (auto& i : shape) nums *= i;
-          value->resize(nums);
-          if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
-            std::vector<int64_t> val(nums, 0);
-            memcpy(val.data(), tensor->raw_data().data(),
-                   nums * sizeof(int64_t));
-            value->assign(val.begin(), val.end());
-            return true;
-          } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
-            std::vector<int32_t> val(nums, 0);
-            memcpy(val.data(), tensor->raw_data().data(),
-                   nums * sizeof(int32_t));
-            value->assign(val.begin(), val.end());
-            return true;
-          } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
-            std::vector<int32_t> val(nums, 0);
-            memcpy(val.data(), tensor->raw_data().data(), nums * sizeof(float));
-            value->assign(val.begin(), val.end());
-            return true;
-          } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
-            std::vector<int32_t> val(nums, 0);
-            memcpy(val.data(), tensor->raw_data().data(),
-                   nums * sizeof(double));
-            value->assign(val.begin(), val.end());
-            return true;
-          } else {
-            P2OLogger() << "[WARNING] Quantize helper function GetTensorByName "
-                           "only support get int64_t/int32_t/float/double "
-                           "value from Constant now."
-                        << std::endl;
-            return false;
-          }
-        }
-      }
-    }
-  }
-  return false;
+  return helper_->GetTensorValue(*parser_, name, value);
 }
 
 bool QuantizeModelProcessor::CanBeQuantize(
