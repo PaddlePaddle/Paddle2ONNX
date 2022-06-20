@@ -139,7 +139,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     AddQDQ();
     SortNodes();
   } else {
-    Assert(true,
+    Assert(false,
            "[QuantizeModelProcessor] Now supported backend are: ONNXRuntime "
            "and Others, but your backend is: " +
                deploy_backend);
@@ -711,9 +711,9 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
                                              std::vector<T>* value) {
   // Find tensor values in the following order, if found, store the data in
   // value, and return true：
-  // 1. updated_parameters.
-  // 2. parameters of original graph
-  // 3. constant node in nodes
+  // 1. updated_parameters, the weight of conv or matmul.
+  // 2. parameters of original graph, the scale or bias of BN.
+  // 3. constant node in nodes, other vals.
   auto updated_params_iter = helper_->updated_params.find(name);
   if (updated_params_iter != helper_->updated_params.end()) {
     (updated_params_iter->second).get(value);
