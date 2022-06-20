@@ -274,13 +274,115 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.assertLess(delta_value, diff_threshold)
 
 
-class TestPostTrainingmseForMnistONNXFormatFullQuant(
+class TestPostTrainingMseForMnistONNXFormatFullQuant(
         TestPostTrainingQuantization):
     def test_post_training_mse_onnx_format_full_quant(self):
         model_name = "mnist_model"
         data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
         data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "mse"
+        round_type = "round"
+        quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
+        is_full_quantize = True
+        is_use_cache_file = False
+        is_optimize_model = False
+        onnx_format = True
+        diff_threshold = 0.01
+        batch_size = 10
+        infer_iterations = 50
+        quant_iterations = 5
+        self.run_test(
+            model_name,
+            data_url,
+            data_md5,
+            algo,
+            round_type,
+            quantizable_op_type,
+            is_full_quantize,
+            is_use_cache_file,
+            is_optimize_model,
+            diff_threshold,
+            batch_size,
+            infer_iterations,
+            quant_iterations,
+            onnx_format=onnx_format)
+
+
+class TestPostTrainingKlForMnistONNXFormatFullQuant(
+        TestPostTrainingQuantization):
+    def test_post_training_kl_onnx_format_full_quant(self):
+        model_name = "mnist_model"
+        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
+        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
+        algo = "KL"
+        round_type = "round"
+        quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
+        is_full_quantize = True
+        is_use_cache_file = False
+        is_optimize_model = False
+        onnx_format = True
+        diff_threshold = 0.01
+        batch_size = 10
+        infer_iterations = 50
+        quant_iterations = 5
+        self.run_test(
+            model_name,
+            data_url,
+            data_md5,
+            algo,
+            round_type,
+            quantizable_op_type,
+            is_full_quantize,
+            is_use_cache_file,
+            is_optimize_model,
+            diff_threshold,
+            batch_size,
+            infer_iterations,
+            quant_iterations,
+            onnx_format=onnx_format)
+
+
+class TestPostTrainingHistForMnistONNXFormatFullQuant(
+        TestPostTrainingQuantization):
+    def test_post_training_hist_onnx_format_full_quant(self):
+        model_name = "mnist_model"
+        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
+        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
+        algo = "hist"
+        round_type = "round"
+        quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
+        is_full_quantize = True
+        is_use_cache_file = False
+        is_optimize_model = False
+        onnx_format = True
+        diff_threshold = 0.01
+        batch_size = 10
+        infer_iterations = 50
+        quant_iterations = 5
+        self.run_test(
+            model_name,
+            data_url,
+            data_md5,
+            algo,
+            round_type,
+            quantizable_op_type,
+            is_full_quantize,
+            is_use_cache_file,
+            is_optimize_model,
+            diff_threshold,
+            batch_size,
+            infer_iterations,
+            quant_iterations,
+            onnx_format=onnx_format)
+
+
+class TestPostTrainingAvgForMnistONNXFormatFullQuant(
+        TestPostTrainingQuantization):
+    def test_post_training_abg_onnx_format_full_quant(self):
+        model_name = "mnist_model"
+        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
+        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
+        algo = "avg"
         round_type = "round"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True

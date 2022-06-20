@@ -140,9 +140,9 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     SortNodes();
   } else {
     Assert(false,
-           "[QuantizeModelProcessor] Now supported backend are: ONNXRuntime "
-           "and Others, but your backend is: " +
-               deploy_backend);
+           "[QuantizeModelProcessor] Only support 'onnxruntime' / 'others' as "
+           "backend now, but now the backend is: " +
+               deploy_backend + ".")
   }
 }
 
