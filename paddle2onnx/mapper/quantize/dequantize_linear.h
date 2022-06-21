@@ -27,9 +27,6 @@ class DequantizeLinearMapper : public Mapper {
     if (quant_axis_ == -1) {
       quant_axis_ = 1;
     }
-    if (HasAttr("round_type")) {
-      GetAttr("round_type", &round_type_);
-    }
   }
 
   int32_t GetMinOpset(bool verbose = false);
@@ -38,8 +35,6 @@ class DequantizeLinearMapper : public Mapper {
  private:
   void ConvertInt8ToFp32(const std::vector<float>& onnx_scales,
                          std::vector<float>* weight);
-  int64_t round_type_ = 0;  // 0: rounding to nearest ties to even. 1: rounding
-                            // to nearest ties away from zero.
   int64_t quant_axis_ = 1;
   int64_t bit_length_ = 8;
 };
