@@ -22,10 +22,6 @@ mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddl
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
-        test_quantize_model_minist.py \
-        test_quantize_model.py \
-        test_auto_scan_quantize_linear.py \
-        test_auto_scan_dequantize_linear.py \
         test_split.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
