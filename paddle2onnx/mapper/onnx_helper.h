@@ -85,8 +85,7 @@ class OnnxHelper {
   int32_t GetOpsetVersion() { return opset_version; }
 
   template <typename T>
-  bool GetTensorValue(const PaddleParser& parser, const std::string& name,
-                      std::vector<T>* value);
+  bool TryGetTensorValue(const std::string& name, std::vector<T>* value);
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
       const std::string& op_type, const std::vector<std::string>& inputs,
@@ -494,15 +493,8 @@ std::string OnnxHelper::Assign(
 }
 
 template <typename T>
-bool OnnxHelper::GetTensorValue(const PaddleParser& parser,
-                                const std::string& name,
-                                std::vector<T>* value) {
-  for (int64_t block_index = 0; block_index < parser.NumOfBlocks();
-       block_index++) {
-    if (parser.TryGetTensorValue(block_index, name, value)) {
-      return true;
-    }
-  }
+bool OnnxHelper::TryGetTensorValue(const std::string& name,
+                                   std::vector<T>* value) {
   for (auto iter = nodes.begin(); iter != nodes.end(); iter++) {
     auto node = *iter;
     if (node->op_type() != "Constant") {
@@ -545,7 +537,7 @@ bool OnnxHelper::GetTensorValue(const PaddleParser& parser,
             value->assign(val.begin(), val.end());
             return true;
           } else {
-            P2OLogger() << "[WARNING] OnnxHelper function GetTensorValue "
+            P2OLogger() << "[WARNING] OnnxHelper function TryGetTensorValue "
                            "only support get int64_t/int32_t/float/double "
                            "value from Constant now."
                         << std::endl;

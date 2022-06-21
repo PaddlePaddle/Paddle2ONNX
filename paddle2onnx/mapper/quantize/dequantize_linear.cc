@@ -31,13 +31,10 @@ int32_t DequantizeLinearMapper::GetMinOpset(bool verbose) {
     Error() << "Only support bit_length = 8." << std::endl;
     return -1;
   }
-  if (HasAttr("round_type")) {
-    GetAttr("round_type", &round_type_);
-    if (round_type_ == 1) {
-      Error() << "The round_type attr of dequantize_linear must be 0."
-              << std::endl;
-      return -1;
-    }
+  if (round_type_ != 0) {
+    Error() << "The round_type attr of dequantize_linear must be 0."
+            << std::endl;
+    return -1;
   }
   if (scales.size() > 1) {
     auto x_info = GetInput("X");

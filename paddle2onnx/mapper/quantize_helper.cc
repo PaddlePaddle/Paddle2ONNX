@@ -719,7 +719,13 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
     (updated_params_iter->second).get(value);
     return true;
   }
-  return helper_->GetTensorValue(*parser_, name, value);
+  for (int64_t block_index = 0; block_index < parser_->NumOfBlocks();
+       block_index++) {
+    if (parser_->TryGetTensorValue(block_index, name, value)) {
+      return true;
+    }
+  }
+  return helper_->TryGetTensorValue(name, value);
 }
 
 bool QuantizeModelProcessor::CanBeQuantize(

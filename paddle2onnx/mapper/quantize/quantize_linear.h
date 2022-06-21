@@ -27,6 +27,9 @@ class QuantizeLinearMapper : public Mapper {
     if (quant_axis_ == -1) {
       quant_axis_ = 1;
     }
+    if (HasAttr("round_type")) {
+      GetAttr("round_type", &round_type_);
+    }
   }
 
   int32_t GetMinOpset(bool verbose = false);
