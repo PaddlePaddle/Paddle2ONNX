@@ -37,7 +37,7 @@ Paddle2ONNX在导出模型时，需要传入部署模型格式，包括两个文
 paddle2onnx --model_dir saved_inference_model \
             --model_filename model.pdmodel \
             --params_filename model.pdiparams \
-            --save_file model.onnx
+            --save_file model.onnx \
             --enable_dev_version True
 ```
 如你有ONNX模型优化的需求，推荐使用`onnx-simplifier`，也可使用如下命令对模型进行优化

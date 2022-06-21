@@ -15,6 +15,7 @@
 #pragma once
 #include <fstream>
 #include <map>
+#include <string>
 
 #include "paddle2onnx/utils/utils.h"
 // This code is modified from
@@ -29,7 +30,9 @@ class OnnxHelper;
     op_name##Generator() { MapperHelper::Get()->Push(#op_name, this); } \
     Mapper* Create(const PaddleParser& p, OnnxHelper* h, int64_t b,     \
                    int64_t o) {                                         \
-      return new class_name(p, h, b, o);                                \
+      auto m = new class_name(p, h, b, o);                              \
+      m->name_ = #class_name;                                           \
+      return m;                                                         \
     }                                                                   \
   };                                                                    \
   op_name##Generator* op_name##inst = new op_name##Generator();

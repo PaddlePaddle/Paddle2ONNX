@@ -19,6 +19,7 @@
 #include <set>
 
 #include "paddle2onnx/mapper/mapper.h"
+#include "paddle2onnx/mapper/quantize_helper.h"
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
@@ -34,6 +35,11 @@ struct ModelExporter {
 
   void ExportParameters(const std::map<std::string, Weight>& params,
                         bool use_initializer = false);
+
+  // Update constant node in parameters. When process quantize model, the weight
+  // dtype may be int8, it should be convet to float32 and use this func to
+  // update converted params.
+  void UpdateParameters(const std::map<std::string, Weight>& params);
   void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
                           const std::vector<TensorInfo>& output_infos);
   void ExportOp(const PaddleParser& parser, OnnxHelper* helper,
@@ -48,6 +54,7 @@ struct ModelExporter {
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
  public:
+  QuantizeModelProcessor quantize_model_processer;
   // Get a proper opset version in range of [7, 15]
   // Also will check the model is convertable, this will include 2 parts
   //    1. is the op convert function implemented

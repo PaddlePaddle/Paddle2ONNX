@@ -37,6 +37,26 @@ void ModelExporter::ExportParameters(
   }
 }
 
+void ModelExporter::UpdateParameters(
+    const std::map<std::string, Weight>& params) {
+  for (auto& item : params) {
+    auto node = MakeConstant(item.first, item.second);
+    bool updated = false;
+    for (int i = 0; i < parameters.size(); ++i) {
+      auto old_node = parameters[i];
+      if (old_node->output(0) == item.first) {
+        parameters.erase(parameters.begin() + i);
+        parameters.push_back(std::move(node));
+        updated = true;
+        break;
+      }
+    }
+    if (!updated) {
+      parameters.push_back(std::move(node));
+    }
+  }
+}
+
 void ModelExporter::ExportInputOutputs(
     const std::vector<TensorInfo>& input_infos,
     const std::vector<TensorInfo>& output_infos) {
@@ -56,17 +76,24 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
   _current_exported_num += 1;
   auto op = parser.GetOpDesc(block_id, op_id);
 #ifdef PADDLE2ONNX_DEBUG
-  P2OLogger(true) << "Converting operator: " << op.type() << std::endl;
+  P2OLogger(true) << "---Converting operator: " << op.type() << " ---"
+                  << std::endl;
 #endif
   if (op.type() == "while") {
     return ExportLoop(parser, helper, opset_version, block_id, op_id, verbose);
   }
+
   auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, helper,
                                                   block_id, op_id);
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true) << "Mapper Name: " << mapper->Name() << std::endl;
+#endif
   mapper->Run();
   delete mapper;
+
 #ifdef PADDLE2ONNX_DEBUG
-  P2OLogger(true) << "Operator: " << op.type() << " done." << std::endl;
+  P2OLogger(true) << "---Converting operator: " << op.type() << " done---"
+                  << std::endl;
 #endif
 }
 
@@ -243,8 +270,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
   }
   _helper.SetOpsetVersion(opset_version);
-  P2OLogger()
-      << "Use opset_version = " << _helper.GetOpsetVersion() << " for ONNX export."  << std::endl;
+  P2OLogger() << "Use opset_version = " << _helper.GetOpsetVersion()
+              << " for ONNX export." << std::endl;
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
 
@@ -259,6 +286,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
     ExportOp(parser, &_helper, opset_version, 0, i, verbose);
   }
+
   // construct a onnx model proto
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
   // TODO(jiangjiajun) ir version is related to onnx version
@@ -271,6 +299,13 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   opset_id->set_version(opset_version);
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
+  if (parser.is_quantized_model) {
+    quantize_model_processer.ProcessQuantizeModel(
+        &parameters, &inputs, &outputs, &_helper.nodes, &_helper, "onnxruntime",
+        parser);
+    // Update int8 weights in quantized OP to float32
+    UpdateParameters(_helper.updated_params);
+  }
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
   for (auto& item : parameters) {
@@ -301,9 +336,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
       return "";
     }
-    P2OLogger()
-        << "PaddlePaddle model is exported as ONNX format now."
-        << std::endl;
+    P2OLogger() << "PaddlePaddle model is exported as ONNX format now."
+                << std::endl;
   }
 
   std::string out;

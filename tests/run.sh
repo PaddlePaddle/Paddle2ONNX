@@ -11,33 +11,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz
+tar xf ~/.cache/paddle/dataset/int8/download/mnist_model.tar.gz -C ~/.cache/paddle/dataset/int8/download/mnist_model
+wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar
+tar xf ~/.cache/paddle/dataset/int8/download/MobileNetV1_infer.tar -C ~/.cache/paddle/dataset/int8/download/
+wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
+tar xf ~/.cache/paddle/dataset/int8/download/ResNet50_infer.tar -C ~/.cache/paddle/dataset/int8/download/
+wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.bcebos.com/int8/calibration_test_data.tar.gz
+mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddle/dataset/int8/download/calibration_test_data.tar.gz -C ~/.cache/paddle/dataset/int8/download/small_data/
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
+        test_quantize_model_minist.py \
+        test_quantize_model.py \
+        test_auto_scan_quantize_linear.py \
+        test_auto_scan_dequantize_linear.py \
         test_split.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
         test_auto_scan_top_k.py \
-        test_auto_scan_dot.py \
-        test_auto_scan_eye.py \
-        test_auto_scan_flip.py \
-        test_auto_scan_floordiv.py \
-        test_auto_scan_gather_nd.py \
         test_auto_scan_group_norm.py \
         test_auto_scan_index_select.py \
-        test_auto_scan_instance_norm.py \
         test_auto_scan_interpolate_v1_ops.py \
         test_auto_scan_isx_ops.py \
         test_auto_scan_linspace.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_mv.py \
-        test_auto_scan_norm.py \
-        test_auto_scan_one_hot_v2.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_pixel_shuffle.py \
-        test_auto_scan_p_norm.py \
         test_auto_scan_roll.py \
-        test_auto_scan_scatter.py \
         test_auto_scan_set_value.py \
         test_auto_scan_top_k.py \
         test_auto_scan_unfold.py \
@@ -47,7 +49,6 @@ ignore="test_expand_as.py \
         test_auto_scan_dist.py \
         test_uniform.py \
         test_ceil.py \
-        test_dot.py \
         test_floor_divide.py \
         test_has_nan.py \
         test_index_select.py \
@@ -67,14 +68,13 @@ ignore="test_expand_as.py \
         test_nn_Upsample.py \
         test_normalize.py \
         test_scatter_nd_add.py \
-        test_scatter.py \
         test_unique.py \
         test_unsqueeze.py"
 bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 
-export ENABLE_DEV=OFF
+export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
 do

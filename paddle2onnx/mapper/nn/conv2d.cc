@@ -49,11 +49,9 @@ void Conv2dMapper::Opset7() {
   auto kernel_info = GetInput("Filter");
   auto input_info = GetInput("Input");
   auto output_info = GetOutput("Output");
-  auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                 P2ODataType::FP32);
-  auto kernel = helper_->AutoCast(kernel_info[0].name, kernel_info[0].dtype,
-                                  P2ODataType::FP32);
-  auto node = helper_->MakeNode("Conv", {input, kernel});
+
+  auto node = helper_->MakeNode(
+      "Conv", {input_info[0].name, kernel_info[0].name}, {output_info[0].name});
   AddAttribute(node, "dilations", dilations_);
   std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
                                        kernel_info[0].shape[3]};
@@ -78,8 +76,6 @@ void Conv2dMapper::Opset7() {
     }
     AddAttribute(node, "pads", paddings);
   }
-  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                    output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx
