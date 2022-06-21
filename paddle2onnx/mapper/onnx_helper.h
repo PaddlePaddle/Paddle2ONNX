@@ -497,10 +497,11 @@ template <typename T>
 bool OnnxHelper::GetTensorValue(const PaddleParser& parser,
                                 const std::string& name,
                                 std::vector<T>* value) {
-  auto iter = parser.params.find(name);
-  if (iter != parser.params.end()) {
-    (iter->second).get(value);
-    return true;
+  for (int64_t block_index = 0; block_index < parser.NumOfBlocks();
+       block_index++) {
+    if (parser.TryGetTensorValue(block_index, name, value)) {
+      return true;
+    }
   }
   for (auto iter = nodes.begin(); iter != nodes.end(); iter++) {
     auto node = *iter;
