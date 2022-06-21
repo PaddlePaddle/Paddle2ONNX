@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz
+tar xf ~/.cache/paddle/dataset/int8/download/mnist_model.tar.gz -C ~/.cache/paddle/dataset/int8/download/mnist_model
 wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar
 tar xf ~/.cache/paddle/dataset/int8/download/MobileNetV1_infer.tar -C ~/.cache/paddle/dataset/int8/download/
 wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
@@ -21,6 +22,10 @@ mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddl
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
+        test_quantize_model_minist.py \
+        test_quantize_model.py \
+        test_auto_scan_quantize_linear.py \
+        test_auto_scan_dequantize_linear.py \
         test_split.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
