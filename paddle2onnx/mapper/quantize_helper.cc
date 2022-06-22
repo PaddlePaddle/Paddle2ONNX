@@ -539,15 +539,18 @@ void QuantizeModelProcessor::SortNodes() {
         if (input_node->op_type() == "Constant") {
           continue;
         }
-        if (input == input_node->output(0)) {
-          if (i2o_mapper.find(input_node->name()) == i2o_mapper.end()) {
-            i2o_mapper[input_node->name()] = {node->name()};
-          } else {
-            auto iter =
-                std::find(i2o_mapper[input_node->name()].begin(),
-                          i2o_mapper[input_node->name()].end(), node->name());
-            if (iter == i2o_mapper[input_node->name()].end()) {
-              i2o_mapper[input_node->name()].push_back(node->name());
+        for (int64_t out_index = 0; out_index < input_node->output_size();
+             out_index++) {
+          if (input == input_node->output(out_index)) {
+            if (i2o_mapper.find(input_node->name()) == i2o_mapper.end()) {
+              i2o_mapper[input_node->name()] = {node->name()};
+            } else {
+              auto iter =
+                  std::find(i2o_mapper[input_node->name()].begin(),
+                            i2o_mapper[input_node->name()].end(), node->name());
+              if (iter == i2o_mapper[input_node->name()].end()) {
+                i2o_mapper[input_node->name()].push_back(node->name());
+              }
             }
           }
         }
@@ -587,6 +590,7 @@ void QuantizeModelProcessor::SortNodes() {
     }
     index++;
   }
+  // for(auto node : new_nodes)std::cout<< node->op_type()<<std::endl;
   for (auto& node : constant_nodes) {
     new_nodes.push_back(node);
   }
@@ -731,7 +735,8 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
 bool QuantizeModelProcessor::CanBeQuantize(
     const std::vector<std::string>& tensor_names) {
   for (auto& tensor : tensor_names) {
-    if (helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
+    if (IsGraphOutput(tensor) ||
+        helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
       return false;
     }
   }

@@ -399,7 +399,7 @@ class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
         is_use_cache_file = False
         is_optimize_model = False
         onnx_format = True
-        diff_threshold = 0.05
+        diff_threshold = 0.09
         self.run_test(
             model,
             algo,
@@ -434,7 +434,7 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         is_use_cache_file = False
         is_optimize_model = False
         onnx_format = True
-        diff_threshold = 0.08
+        diff_threshold = 0.09
         self.run_test(
             model,
             algo,
