@@ -158,7 +158,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
     def generate_quantized_model(self,
                                  model_path,
                                  algo="KL",
-                                 round_type="round",
+                                 round_type="TiesToEven",
                                  quantizable_op_type=["conv2d"],
                                  is_full_quantize=False,
                                  is_use_cache_file=False,
@@ -281,7 +281,7 @@ class TestPostTrainingMseForMnistONNXFormatFullQuant(
         data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
         data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "mse"
-        round_type = "round"
+        round_type = "TiesToEven"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False
@@ -315,7 +315,7 @@ class TestPostTrainingKlForMnistONNXFormatFullQuant(
         data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
         data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "KL"
-        round_type = "round"
+        round_type = "TiesToEven"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False
@@ -349,7 +349,7 @@ class TestPostTrainingHistForMnistONNXFormatFullQuant(
         data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
         data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "hist"
-        round_type = "round"
+        round_type = "TiesToEven"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False
@@ -383,7 +383,7 @@ class TestPostTrainingAvgForMnistONNXFormatFullQuant(
         data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
         data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "avg"
-        round_type = "round"
+        round_type = "TiesToEven"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False

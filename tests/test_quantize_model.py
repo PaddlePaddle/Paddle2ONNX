@@ -276,7 +276,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
                                  model_path,
                                  quantizable_op_type,
                                  algo="mse",
-                                 round_type="round",
+                                 round_type="TiesToEven",
                                  is_full_quantize=False,
                                  is_use_cache_file=False,
                                  is_optimize_model=False,
@@ -385,7 +385,7 @@ class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
     def test_post_training_mse_onnx_format_mobilenetv1(self):
         model = "MobileNetV1_infer"
         algo = "mse"
-        round_type = "round"
+        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
         ]
@@ -399,7 +399,7 @@ class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
         is_use_cache_file = False
         is_optimize_model = False
         onnx_format = True
-        diff_threshold = 0.05
+        diff_threshold = 0.09
         self.run_test(
             model,
             algo,
@@ -420,7 +420,7 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         model = "MobileNetV1_infer"
         algos = ["hist", "KL", "avg"]
         algo = np.random.choice(algos)
-        round_type = "round"
+        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
         ]
@@ -434,7 +434,7 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         is_use_cache_file = False
         is_optimize_model = False
         onnx_format = True
-        diff_threshold = 0.08
+        diff_threshold = 0.09
         self.run_test(
             model,
             algo,
@@ -453,7 +453,7 @@ class TestPostTrainingMseONNXFormatForResnet50(TestPostTrainingQuantization):
     def test_post_training_mse_onnx_format_resnet50(self):
         model = "ResNet50_infer"
         algo = "mse"
-        round_type = "round"
+        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
         ]
@@ -484,7 +484,7 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         model = "ResNet50_infer"
         algos = ["hist", "KL", "avg"]
         algo = np.random.choice(algos)
-        round_type = "round"
+        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
         ]
