@@ -69,7 +69,8 @@ ignore="test_expand_as.py \
 bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
-
+$PY_CMD -m pip uninstall onnxruntime
+$PY_CMD -m pip install onnxruntime==1.11.1
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
