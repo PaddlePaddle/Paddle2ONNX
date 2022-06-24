@@ -223,6 +223,39 @@ void QuantizeModelProcessor::AddQDQ() {
         AppendQuantizeTensor(name);
       }
     }
+    if (node->op_type() == "Add") {
+      // Prevent MatMul and Add from merging into Gemm
+      std::vector<std::string> tensor_names = {node->input(0), node->input(1)};
+      for (auto& name : tensor_names) {
+        if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
+          continue;
+        }
+        std::vector<float> add_bias;
+        if (!GetTensorByName(name, &add_bias)) {
+          continue;
+        }
+        std::vector<int64_t> add_bias_shape;
+        GetTensorShape(name, &add_bias_shape);
+        int64_t quantize_axis = 0;
+        std::vector<float> scale;
+        std::vector<int64_t> zeros;
+        GetChannelWiseQuantizeInfo(add_bias, add_bias_shape, quantize_axis,
+                                   &scale, &zeros);
+        auto scale_node =
+            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
+        auto zero_node =
+            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+        QuantizeInfo add_bias_quantize_info(scale, zeros, scale_node, zero_node,
+                                            quantize_axis);
+        helper_->quantize_info[name] = add_bias_quantize_info;
+      }
+      if (!CanBeQuantize(tensor_names)) {
+        continue;
+      }
+      for (auto& name : tensor_names) {
+        AppendQuantizeTensor(name);
+      }
+    }
   }
   // update name2node_dict for the change of Relu op.
   UpdateInputNameToNodes();
