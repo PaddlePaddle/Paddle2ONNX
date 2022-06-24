@@ -225,7 +225,8 @@ void QuantizeModelProcessor::AddQDQ() {
     }
     if (node->op_type() == "Add") {
       // Prevent MatMul and Add from merging into Gemm
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1)};
+      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
+                                               node->output(0)};
       for (auto& name : tensor_names) {
         if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
           continue;
