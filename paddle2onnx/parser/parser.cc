@@ -719,13 +719,25 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
 void PaddleParser::GetGlobalBlockInputOutputInfo() {
   inputs.clear();
   outputs.clear();
+  // record the origin order of Paddle model
+  std::vector<TensorInfo> inputs_with_no_order;
+  std::vector<TensorInfo> outputs_with_no_order;
+  std::vector<int64_t> input_order;
+  std::vector<int64_t> output_order;
+
   for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
     if (prog->blocks(0).ops(i).type() == "fetch") {
       std::string name = prog->blocks(0).ops(i).inputs(0).arguments(0);
-      outputs.push_back(GetTensorInfo(name, prog->blocks(0)));
+      outputs_with_no_order.push_back(GetTensorInfo(name, prog->blocks(0)));
+      int64_t order = -1;
+      GetOpAttr(prog->blocks(0).ops(i), "col", &order);
+      output_order.push_back(order);
     } else if (prog->blocks(0).ops(i).type() == "feed") {
       std::string name = prog->blocks(0).ops(i).outputs(0).arguments(0);
-      inputs.push_back(GetTensorInfo(name, prog->blocks(0)));
+      inputs_with_no_order.push_back(GetTensorInfo(name, prog->blocks(0)));
+      int64_t order = -1;
+      GetOpAttr(prog->blocks(0).ops(i), "col", &order);
+      input_order.push_back(order);
     }
 
     // This is a trick check, due to the uncorrect shape inference of Paddle
@@ -734,6 +746,16 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
     if (prog->blocks(0).ops(i).type() == "multiclass_nms3") {
       _has_nms = true;
     }
+  }
+
+  // Reorder the inputs and outputs to keep same with the origin Paddle model
+  inputs.resize(input_order.size());
+  for (size_t i = 0; i < input_order.size(); ++i) {
+    inputs[input_order[i]] = inputs_with_no_order[i];
+  }
+  outputs.resize(output_order.size());
+  for (size_t i = 0; i < output_order.size(); ++i) {
+    outputs[output_order[i]] = outputs_with_no_order[i];
   }
 
   // Trick setting for nms, remove this after shape inference fixed
