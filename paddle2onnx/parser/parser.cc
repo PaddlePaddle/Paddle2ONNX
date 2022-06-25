@@ -748,7 +748,7 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
     }
   }
 
-  // Reorder the inputs and outputs to keep same with the origin Paddle model
+  // Reorder the inputs and outputs to keep same with the original Paddle model
   inputs.resize(input_order.size());
   for (size_t i = 0; i < input_order.size(); ++i) {
     inputs[input_order[i]] = inputs_with_no_order[i];
