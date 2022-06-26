@@ -162,10 +162,8 @@ void QuantizeModelProcessor::AddQDQ() {
       if (!CanBeQuantize(tensor_names)) {
         continue;
       }
-      auto leaky_node =
-          helper_->MakeNode("LeakyRelu", {node->input(0)}, {node->output(0)});
-      AddAttribute(leaky_node, "alpha", static_cast<float>(0.0));
-      RemoveNodeByName(node->name(), false);
+      node->set_op_type("LeakyRelu");
+      AddAttribute(node, "alpha", static_cast<float>(0.0));
       for (auto& name : tensor_names) {
         AppendQuantizeTensor(name);
       }
