@@ -128,11 +128,13 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     outfile.close();
   } else if (deploy_backend == "onnxruntime") {
     // When deploy_backend is ONNXRuntime, use the follow four steps to process:
-    // 1. remove all quantize ops
-    // 2. merge conv and add
-    // 3. merge conv and bn
-    // 4. add Q and DQ according ONNXRuntime quantize OP fuse patten.
-    // 5. use topo sort in nodes
+    // 1. broadcast quantize info
+    // 2. remove all quantize ops
+    // 3. merge conv and add
+    // 4. merge conv and bn
+    // 5. add Q and DQ according ONNXRuntime quantize OP fuse patten.
+    // 6. use topo sort in nodes
+    QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
     MergeConvAdd();
     MergeConvBN();
@@ -182,7 +184,8 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "MatMul") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1)};
+      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
+                                               node->output(0)};
       for (auto& name : tensor_names) {
         if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
           continue;
@@ -192,7 +195,9 @@ void QuantizeModelProcessor::AddQDQ() {
           continue;
         }
         std::vector<int64_t> matmul_weight_shape;
-        GetTensorShape(name, &matmul_weight_shape);
+        if (!GetTensorShape(name, &matmul_weight_shape)) {
+          continue;
+        }
         int64_t quantize_axis = 1;
         std::vector<float> scale;
         std::vector<int64_t> zeros;
@@ -207,7 +212,10 @@ void QuantizeModelProcessor::AddQDQ() {
         helper_->quantize_info[name] = matmul_weight_quantize_info;
       }
       if (!CanBeQuantize(tensor_names)) {
-        continue;
+        tensor_names.pop_back();
+        if (!CanBeQuantize(tensor_names)) {
+          continue;
+        }
       }
       for (auto& name : tensor_names) {
         AppendQuantizeTensor(name);
@@ -216,40 +224,6 @@ void QuantizeModelProcessor::AddQDQ() {
     if (node->op_type() == "Mul") {
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
-      if (!CanBeQuantize(tensor_names)) {
-        continue;
-      }
-      for (auto& name : tensor_names) {
-        AppendQuantizeTensor(name);
-      }
-    }
-    if (node->op_type() == "Add") {
-      // Prevent MatMul and Add from merging into Gemm
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
-                                               node->output(0)};
-      for (auto& name : tensor_names) {
-        if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
-          continue;
-        }
-        std::vector<float> add_bias;
-        if (!GetTensorByName(name, &add_bias)) {
-          continue;
-        }
-        std::vector<int64_t> add_bias_shape;
-        GetTensorShape(name, &add_bias_shape);
-        int64_t quantize_axis = 0;
-        std::vector<float> scale;
-        std::vector<int64_t> zeros;
-        GetChannelWiseQuantizeInfo(add_bias, add_bias_shape, quantize_axis,
-                                   &scale, &zeros);
-        auto scale_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
-        auto zero_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
-        QuantizeInfo add_bias_quantize_info(scale, zeros, scale_node, zero_node,
-                                            quantize_axis);
-        helper_->quantize_info[name] = add_bias_quantize_info;
-      }
       if (!CanBeQuantize(tensor_names)) {
         continue;
       }
@@ -397,7 +371,8 @@ void QuantizeModelProcessor::MergeConvBN() {
     }
     // update weight
     std::vector<int64_t> weight_shape;
-    GetTensorShape(conv_node->input(1), &weight_shape);
+    Assert(GetTensorShape(conv_node->input(1), &weight_shape),
+           "Can not get the shape of " + conv_node->input(1) + " in Conv.");
     Weight updated_conv_weight;
     updated_conv_weight.set(P2ODataType::FP32, weight_shape, new_weight);
     helper_->updated_params[conv_node->input(1)] = updated_conv_weight;
@@ -656,6 +631,35 @@ void QuantizeModelProcessor::RemoveAllQuantizeOps() {
   }
 }
 
+void QuantizeModelProcessor::QuantizeInfoBroadcast() {
+  UpdateInputNameToNodes();
+  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
+    auto node = *iter;
+    if (node->op_type() != "Identity") {
+      continue;
+    }
+    std::string input_name = node->input(0);
+    std::string output_name = node->output(0);
+    auto input_quantize_info_iter = helper_->quantize_info.find(input_name);
+    auto output_quantize_info_iter = helper_->quantize_info.find(output_name);
+    // The input and output of Identity do not have quantize info
+    if (input_quantize_info_iter == helper_->quantize_info.end() &&
+        output_quantize_info_iter == helper_->quantize_info.end()) {
+      continue;
+    }
+    // The input and output of Identity have quantize info
+    if (input_quantize_info_iter != helper_->quantize_info.end() &&
+        output_quantize_info_iter != helper_->quantize_info.end()) {
+      continue;
+    }
+    if (input_quantize_info_iter != helper_->quantize_info.end()) {
+      helper_->quantize_info[output_name] = helper_->quantize_info[input_name];
+    } else if (output_quantize_info_iter != helper_->quantize_info.end()) {
+      helper_->quantize_info[input_name] = helper_->quantize_info[output_name];
+    }
+  }
+}
+
 bool QuantizeModelProcessor::IsGraphOutput(const std::string& name) {
   for (auto& item : *outputs_) {
     auto out_node = (*item.get());
@@ -667,7 +671,7 @@ bool QuantizeModelProcessor::IsGraphOutput(const std::string& name) {
 }
 
 // Try get tensor shape value
-void QuantizeModelProcessor::GetTensorShape(const std::string& name,
+bool QuantizeModelProcessor::GetTensorShape(const std::string& name,
                                             std::vector<int64_t>* shape) {
   for (auto& item : *parameters_) {
     auto node = *(item.get());
@@ -684,6 +688,7 @@ void QuantizeModelProcessor::GetTensorShape(const std::string& name,
       }
     }
   }
+  return !shape->empty();
 }
 
 void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
