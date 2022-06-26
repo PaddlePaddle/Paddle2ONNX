@@ -251,7 +251,8 @@ void QuantizeModelProcessor::AddQDQ() {
       // if only add DequantizeLinear
       std::vector<float> scale = quantize_info.scale_;
       std::vector<float> bias;
-      GetTensorByName(name, &bias);
+      Assert(GetTensorByName(name, &bias),
+             "[QuantizeModelProcessor] Can not find bias value: " + name);
       std::vector<int32_t> new_bias(scale.size(), 0);
       for (int64_t i = 0; i < bias.size(); i++) {
         float scale_val = scale.size() == 1 ? scale[0] : scale[i];
@@ -470,17 +471,15 @@ void QuantizeModelProcessor::MergeConvAdd() {
     }
 
     std::string bias_node = before_nodes[0]->input(0);
-    std::vector<float> bias_val;
-    GetTensorByName(bias_node, &bias_val);
     // continue if bias is not a constant
-    if (bias_val.empty()) {
+    std::vector<float> bias_val;
+    if (!GetTensorByName(bias_node, &bias_val)) {
       continue;
     }
-    std::vector<int64_t> shape_val;
-    GetTensorByName(before_nodes[0]->input(1), &shape_val);
 
     // continue if shape tensor of reshape op is not a constant
-    if (shape_val.empty()) {
+    std::vector<int64_t> shape_val;
+    if (!GetTensorByName(before_nodes[0]->input(1), &shape_val)) {
       continue;
     }
     // continue if shape_val != [1, bias_val.size(), 1, 1]
