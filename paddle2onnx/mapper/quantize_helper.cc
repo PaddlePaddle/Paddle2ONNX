@@ -442,6 +442,13 @@ void QuantizeModelProcessor::MergeConvAdd() {
       continue;
     }
 
+    // if weight of conv does not have quantize info, continue
+    bool weight_has_quantize_info =
+        helper_->quantize_info.find(node->input(1)) !=
+        helper_->quantize_info.end();
+    if (!weight_has_quantize_info) {
+      continue;
+    }
     auto next_nodes = name2node_dict_[node->output(0)];
 
     if (next_nodes.size() > 1 || IsGraphOutput(node->output(0))) {
@@ -466,7 +473,7 @@ void QuantizeModelProcessor::MergeConvAdd() {
       }
     }
 
-    if (before_nodes.empty() || before_nodes[0]->op_type() != "Reshape") {
+    if (before_nodes.size() != 1 || before_nodes[0]->op_type() != "Reshape") {
       continue;
     }
 
@@ -628,6 +635,8 @@ void QuantizeModelProcessor::RemoveAllQuantizeOps() {
   }
 }
 
+// Broadcast quantize info between the input and output of the OPs that will not
+// change quantize info
 void QuantizeModelProcessor::QuantizeInfoBroadcast() {
   UpdateInputNameToNodes();
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
@@ -697,6 +706,7 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
       max_val = abs(tensor[i]);
     }
   }
+  Assert(max_val >= 0, "[GetTensorWiseQuantizeInfo] Get minus scale");
   scale->push_back(max_val / 127);
   zero->push_back(0);
 }
@@ -721,6 +731,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
           max_val = abs(tensor[index + j]);
         }
       }
+      Assert(max_val >= 0, "[GetChannelWiseQuantizeInfo] Get minus scale");
       scale->push_back(max_val / 127);
       zero->push_back(0);
     } else if (quant_axis == 1) {
@@ -735,6 +746,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
           }
         }
       }
+      Assert(max_val >= 0, "[GetChannelWiseQuantizeInfo] Get minus scale");
       scale->push_back(max_val / 127);
       zero->push_back(0);
     } else {
