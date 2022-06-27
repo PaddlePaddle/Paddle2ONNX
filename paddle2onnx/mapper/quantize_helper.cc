@@ -706,7 +706,7 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
       max_val = abs(tensor[i]);
     }
   }
-  Assert(max_val >= 0, "[GetTensorWiseQuantizeInfo] Get minus scale");
+  Assert(max_val > 0, "[GetTensorWiseQuantizeInfo] Get zero scale");
   scale->push_back(max_val / 127);
   zero->push_back(0);
 }
@@ -731,7 +731,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
           max_val = abs(tensor[index + j]);
         }
       }
-      Assert(max_val >= 0, "[GetChannelWiseQuantizeInfo] Get minus scale");
+      Assert(max_val > 0, "[GetChannelWiseQuantizeInfo] Get zero scale");
       scale->push_back(max_val / 127);
       zero->push_back(0);
     } else if (quant_axis == 1) {
@@ -746,7 +746,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
           }
         }
       }
-      Assert(max_val >= 0, "[GetChannelWiseQuantizeInfo] Get minus scale");
+      Assert(max_val > 0, "[GetChannelWiseQuantizeInfo] Get zero scale");
       scale->push_back(max_val / 127);
       zero->push_back(0);
     } else {
