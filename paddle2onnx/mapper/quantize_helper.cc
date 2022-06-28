@@ -708,7 +708,7 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
   }
   Assert(max_val > 0,
          "[GetChannelWiseQuantizeInfo] Require the scale > 0, but now it's " +
-             std::to_string(max_value) + ".");
+             std::to_string(max_val) + ".");
   scale->push_back(max_val / 127);
   zero->push_back(0);
 }
@@ -736,7 +736,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
       Assert(
           max_val > 0,
           "[GetChannelWiseQuantizeInfo] Require the scale > 0, but now it's " +
-              std::to_string(max_value) + ".");
+              std::to_string(max_val) + ".");
       scale->push_back(max_val / 127);
       zero->push_back(0);
     } else if (quant_axis == 1) {
@@ -754,7 +754,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
       Assert(
           max_val > 0,
           "[GetChannelWiseQuantizeInfo] Require the scale > 0, but now it's " +
-              std::to_string(max_value) + ".");
+              std::to_string(max_val) + ".");
       scale->push_back(max_val / 127);
       zero->push_back(0);
     } else {
