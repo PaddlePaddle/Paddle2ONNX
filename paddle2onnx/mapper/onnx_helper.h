@@ -84,6 +84,9 @@ class OnnxHelper {
 
   int32_t GetOpsetVersion() { return opset_version; }
 
+  template <typename T>
+  bool TryGetTensorValue(const std::string& name, std::vector<T>* value);
+
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
       const std::string& op_type, const std::vector<std::string>& inputs,
       const std::vector<std::string>& outputs);
@@ -487,6 +490,64 @@ std::string OnnxHelper::Assign(
     const std::vector<int64_t>& shape, const std::vector<T>& value) {
   auto output = MapperHelper::Get()->GenName("helper.constant");
   return Assign(output, dtype, shape, value);
+}
+
+template <typename T>
+bool OnnxHelper::TryGetTensorValue(const std::string& name,
+                                   std::vector<T>* value) {
+  for (auto iter = nodes.begin(); iter != nodes.end(); iter++) {
+    auto node = *iter;
+    if (node->op_type() != "Constant") {
+      continue;
+    }
+    if (node->output(0) == name) {
+      for (auto i = 0; i < node->attribute_size(); i++) {
+        auto attr = node->attribute(i);
+        if (attr.name() == "value") {
+          auto tensor = attr.mutable_t();
+          auto dtype = tensor->data_type();
+          std::vector<int64_t> shape;
+          for (int64_t i = 0; i < tensor->dims_size(); i++) {
+            shape.push_back(tensor->dims(i));
+          }
+          int64_t nums = 1;
+          for (auto& i : shape) nums *= i;
+          value->resize(nums);
+          if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+            std::vector<int64_t> val(nums, 0);
+            memcpy(val.data(), tensor->raw_data().data(),
+                   nums * sizeof(int64_t));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+            std::vector<int32_t> val(nums, 0);
+            memcpy(val.data(), tensor->raw_data().data(),
+                   nums * sizeof(int32_t));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+            std::vector<int32_t> val(nums, 0);
+            memcpy(val.data(), tensor->raw_data().data(), nums * sizeof(float));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+            std::vector<int32_t> val(nums, 0);
+            memcpy(val.data(), tensor->raw_data().data(),
+                   nums * sizeof(double));
+            value->assign(val.begin(), val.end());
+            return true;
+          } else {
+            P2OLogger() << "[WARNING] OnnxHelper function TryGetTensorValue "
+                           "only support get int64_t/int32_t/float/double "
+                           "value from Constant now."
+                        << std::endl;
+            return false;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace paddle2onnx

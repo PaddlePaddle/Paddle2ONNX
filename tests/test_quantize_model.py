@@ -276,7 +276,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
                                  model_path,
                                  quantizable_op_type,
                                  algo="mse",
-                                 round_type="round",
                                  is_full_quantize=False,
                                  is_use_cache_file=False,
                                  is_optimize_model=False,
@@ -303,7 +302,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
             params_filename=params_filename,
             algo=algo,
             quantizable_op_type=quantizable_op_type,
-            round_type=round_type,
             is_full_quantize=is_full_quantize,
             optimize_model=is_optimize_model,
             onnx_format=onnx_format,
@@ -317,7 +315,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
     def run_test(self,
                  model,
                  algo,
-                 round_type,
                  data_urls,
                  data_md5s,
                  quantizable_op_type,
@@ -341,8 +338,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         print("Start INT8 post training quantization for {0} on {1} images ...".
               format(model, sample_iterations * batch_size))
         self.generate_quantized_model(
-            model_cache_folder, quantizable_op_type, algo, round_type,
-            is_full_quantize, is_use_cache_file, is_optimize_model, onnx_format,
+            model_cache_folder, quantizable_op_type, algo, is_full_quantize,
+            is_use_cache_file, is_optimize_model, onnx_format,
             "inference.pdmodel", "inference.pdiparams")
 
         print("Start INT8 inference for {0} on {1} images ...".format(
@@ -381,11 +378,10 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.assertLess(delta_value, diff_threshold)
 
 
-class TestPostTrainingAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
-    def test_post_training_onnx_format_mobilenetv1(self):
+class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
+    def test_post_training_mse_onnx_format_mobilenetv1(self):
         model = "MobileNetV1_infer"
         algo = "mse"
-        round_type = "round"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
         ]
@@ -399,11 +395,10 @@ class TestPostTrainingAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
         is_use_cache_file = False
         is_optimize_model = False
         onnx_format = True
-        diff_threshold = 5.0  #TODO(yeliang) Can be set to 0.5 after the quantize method of paddle updated
+        diff_threshold = 0.09
         self.run_test(
             model,
             algo,
-            round_type,
             data_urls,
             data_md5s,
             quantizable_op_type,
@@ -414,11 +409,43 @@ class TestPostTrainingAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
             onnx_format=onnx_format)
 
 
-class TestPostTrainingForResnet50ONNXFormat(TestPostTrainingQuantization):
-    def test_post_training_resnet50(self):
+class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
+        TestPostTrainingQuantization):
+    def test_post_training_hist_kl_avg_onnx_format_mobilenetv1(self):
+        model = "MobileNetV1_infer"
+        algos = ["hist", "KL", "avg"]
+        algo = np.random.choice(algos)
+        data_urls = [
+            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
+        ]
+        data_md5s = ['5ee2b1775b11dc233079236cdc216c2e']
+        quantizable_op_type = [
+            "conv2d",
+            "depthwise_conv2d",
+            "mul",
+        ]
+        is_full_quantize = True
+        is_use_cache_file = False
+        is_optimize_model = False
+        onnx_format = True
+        diff_threshold = 0.09
+        self.run_test(
+            model,
+            algo,
+            data_urls,
+            data_md5s,
+            quantizable_op_type,
+            is_full_quantize,
+            is_use_cache_file,
+            is_optimize_model,
+            diff_threshold,
+            onnx_format=onnx_format)
+
+
+class TestPostTrainingMseONNXFormatForResnet50(TestPostTrainingQuantization):
+    def test_post_training_mse_onnx_format_resnet50(self):
         model = "ResNet50_infer"
         algo = "mse"
-        round_type = "round"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
         ]
@@ -427,12 +454,40 @@ class TestPostTrainingForResnet50ONNXFormat(TestPostTrainingQuantization):
         is_full_quantize = True
         is_use_cache_file = False
         is_optimize_model = False
-        diff_threshold = 5.0  #TODO(yeliang) Can be set to 0.5 after the quantize method of paddle updated
+        diff_threshold = 0.05
         onnx_format = True
         self.run_test(
             model,
             algo,
-            round_type,
+            data_urls,
+            data_md5s,
+            quantizable_op_type,
+            is_full_quantize,
+            is_use_cache_file,
+            is_optimize_model,
+            diff_threshold,
+            onnx_format=onnx_format)
+
+
+class TestPostTrainingHistKlAvgONNXFormatForResnet50(
+        TestPostTrainingQuantization):
+    def test_post_training_hist_kl_avg_onnx_format_resnet50(self):
+        model = "ResNet50_infer"
+        algos = ["hist", "KL", "avg"]
+        algo = np.random.choice(algos)
+        data_urls = [
+            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
+        ]
+        data_md5s = ['8b5e4dc0c1b12635e7f299c24038a451']
+        quantizable_op_type = ["conv2d", "mul"]
+        is_full_quantize = True
+        is_use_cache_file = False
+        is_optimize_model = False
+        diff_threshold = 0.05
+        onnx_format = True
+        self.run_test(
+            model,
+            algo,
             data_urls,
             data_md5s,
             quantizable_op_type,

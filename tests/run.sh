@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz
+tar xf ~/.cache/paddle/dataset/int8/download/mnist_model.tar.gz -C ~/.cache/paddle/dataset/int8/download/mnist_model
 wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar
 tar xf ~/.cache/paddle/dataset/int8/download/MobileNetV1_infer.tar -C ~/.cache/paddle/dataset/int8/download/
 wget -P ~/.cache/paddle/dataset/int8/download/ https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar
 tar xf ~/.cache/paddle/dataset/int8/download/ResNet50_infer.tar -C ~/.cache/paddle/dataset/int8/download/
 wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.bcebos.com/int8/calibration_test_data.tar.gz
 mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddle/dataset/int8/download/calibration_test_data.tar.gz -C ~/.cache/paddle/dataset/int8/download/small_data/
+wget https://bj.bcebos.com/paddle2onnx/tests/quantized_models.tar.gz
+tar xf quantized_models.tar.gz
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
@@ -35,7 +38,6 @@ ignore="test_expand_as.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_pixel_shuffle.py \
         test_auto_scan_roll.py \
-        test_auto_scan_scatter.py \
         test_auto_scan_set_value.py \
         test_auto_scan_top_k.py \
         test_auto_scan_unfold.py \
@@ -64,13 +66,13 @@ ignore="test_expand_as.py \
         test_nn_Upsample.py \
         test_normalize.py \
         test_scatter_nd_add.py \
-        test_scatter.py \
         test_unique.py \
         test_unsqueeze.py"
 bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
-
+$PY_CMD -m pip uninstall onnxruntime
+$PY_CMD -m pip install onnxruntime==1.11.1
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}

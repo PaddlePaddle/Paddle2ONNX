@@ -13,33 +13,25 @@
 // limitations under the License.
 
 #pragma once
+#include <string>
+#include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-class QuantizeLinearMapper : public Mapper {
+class ScatterMapper : public Mapper {
  public:
-  QuantizeLinearMapper(const PaddleParser& p, OnnxHelper* helper,
-                       int64_t block_id, int64_t op_id)
+  ScatterMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    GetAttr("quant_axis", &quant_axis_);
-    GetAttr("bit_length", &bit_length_);
-    if (quant_axis_ == -1) {
-      quant_axis_ = 1;
-    }
-    if (HasAttr("round_type")) {
-      GetAttr("round_type", &round_type_);
-    }
+    GetAttr("overwrite", &overwrite_);
   }
-
   int32_t GetMinOpset(bool verbose = false);
-  void Opset10();
+  void Opset11();
 
  private:
-  int64_t round_type_ = 0;  // 0: rounding to nearest ties to even. 1: rounding
-                            // to nearest ties away from zero.
-  int64_t quant_axis_ = 1;
-  int64_t bit_length_ = 8;
+  bool overwrite_;
 };
 
 }  // namespace paddle2onnx

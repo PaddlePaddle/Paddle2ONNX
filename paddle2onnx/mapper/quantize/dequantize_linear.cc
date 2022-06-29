@@ -132,13 +132,19 @@ void DequantizeLinearMapper::Opset10() {
   for (auto &i : scales) {
     onnx_scales.push_back(i / 127);
   }
-
-  auto scale_node =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
-
   std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
-  auto zero_node =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
+  std::string scale_node, zero_node;
+  if (onnx_zeros.size() == 1) {
+    scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
+                                   onnx_scales[0]);
+    zero_node =
+        helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros[0]);
+  } else {
+    scale_node =
+        helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
+    zero_node =
+        helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
+  }
 
   std::vector<float> weight;
   TryGetInputValue("X", &weight);
