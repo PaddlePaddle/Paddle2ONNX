@@ -276,7 +276,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
                                  model_path,
                                  quantizable_op_type,
                                  algo="mse",
-                                 round_type="TiesToEven",
                                  is_full_quantize=False,
                                  is_use_cache_file=False,
                                  is_optimize_model=False,
@@ -303,7 +302,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
             params_filename=params_filename,
             algo=algo,
             quantizable_op_type=quantizable_op_type,
-            round_type=round_type,
             is_full_quantize=is_full_quantize,
             optimize_model=is_optimize_model,
             onnx_format=onnx_format,
@@ -317,7 +315,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
     def run_test(self,
                  model,
                  algo,
-                 round_type,
                  data_urls,
                  data_md5s,
                  quantizable_op_type,
@@ -341,8 +338,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         print("Start INT8 post training quantization for {0} on {1} images ...".
               format(model, sample_iterations * batch_size))
         self.generate_quantized_model(
-            model_cache_folder, quantizable_op_type, algo, round_type,
-            is_full_quantize, is_use_cache_file, is_optimize_model, onnx_format,
+            model_cache_folder, quantizable_op_type, algo, is_full_quantize,
+            is_use_cache_file, is_optimize_model, onnx_format,
             "inference.pdmodel", "inference.pdiparams")
 
         print("Start INT8 inference for {0} on {1} images ...".format(
@@ -385,7 +382,6 @@ class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
     def test_post_training_mse_onnx_format_mobilenetv1(self):
         model = "MobileNetV1_infer"
         algo = "mse"
-        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
         ]
@@ -403,7 +399,6 @@ class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
         self.run_test(
             model,
             algo,
-            round_type,
             data_urls,
             data_md5s,
             quantizable_op_type,
@@ -420,7 +415,6 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         model = "MobileNetV1_infer"
         algos = ["hist", "KL", "avg"]
         algo = np.random.choice(algos)
-        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
         ]
@@ -438,7 +432,6 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         self.run_test(
             model,
             algo,
-            round_type,
             data_urls,
             data_md5s,
             quantizable_op_type,
@@ -453,7 +446,6 @@ class TestPostTrainingMseONNXFormatForResnet50(TestPostTrainingQuantization):
     def test_post_training_mse_onnx_format_resnet50(self):
         model = "ResNet50_infer"
         algo = "mse"
-        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
         ]
@@ -467,7 +459,6 @@ class TestPostTrainingMseONNXFormatForResnet50(TestPostTrainingQuantization):
         self.run_test(
             model,
             algo,
-            round_type,
             data_urls,
             data_md5s,
             quantizable_op_type,
@@ -484,7 +475,6 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         model = "ResNet50_infer"
         algos = ["hist", "KL", "avg"]
         algo = np.random.choice(algos)
-        round_type = "TiesToEven"
         data_urls = [
             'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
         ]
@@ -498,7 +488,6 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         self.run_test(
             model,
             algo,
-            round_type,
             data_urls,
             data_md5s,
             quantizable_op_type,
