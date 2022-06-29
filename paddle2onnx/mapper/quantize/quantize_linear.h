@@ -36,8 +36,8 @@ class QuantizeLinearMapper : public Mapper {
   void Opset10();
 
  private:
-  int64_t round_type_ = -1;  // 0: rounding to nearest ties to even. 1: rounding
-                             // to nearest ties away from zero.
+  int64_t round_type_ = 0;  // 0: rounding to nearest ties to even. 1: rounding
+                            // to nearest ties away from zero.
   int64_t quant_axis_ = 1;
   int64_t bit_length_ = 8;
 };
