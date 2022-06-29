@@ -65,6 +65,8 @@ struct QuantizeModelProcessor {
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
   void AddQDQ();
 
+  void QuantizeInfoBroadcast();
+
   // merge conv + add
   void MergeConvAdd();
 
@@ -77,7 +79,7 @@ struct QuantizeModelProcessor {
   // destroy the topo sorting of nodes, this function will sort the nodes again
   void SortNodes();
 
-  void GetTensorShape(const std::string& name, std::vector<int64_t>* shape);
+  bool GetTensorShape(const std::string& name, std::vector<int64_t>* shape);
 
   // return the value of tensor by name
   template <typename T>
