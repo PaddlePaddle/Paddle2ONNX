@@ -19,6 +19,10 @@ import numpy as np
 import unittest
 import paddle
 
+name2fun_dict = {}
+name2fun_dict["partial_sum"] = paddle.fluid.contrib.layers.partial_sum
+name2fun_dict["partial_concat"] = paddle.fluid.contrib.layers.partial_concat
+
 
 class Net(BaseNet):
     """
@@ -32,7 +36,7 @@ class Net(BaseNet):
         inputs_list = [inputs1]
         for i in range(self.config["repeat_times"]):
             inputs_list.append(inputs2)
-        x = paddle.fluid.contrib.layers.partial_sum(
+        x = name2fun_dict[self.config["op_names"][0]](
             inputs_list,
             start_index=self.config["start_index"],
             length=self.config["length"])
@@ -41,7 +45,7 @@ class Net(BaseNet):
 
 class TestConcatConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.contrib.layers.partial_sum
+    api: paddle.fluid.contrib.layers.partial_*
     OPset version: 7, 9, 15
     """
 
@@ -65,8 +69,10 @@ class TestConcatConvert(OPConvertAutoScanTest):
 
         repeat_times = draw(st.integers(min_value=1, max_value=3))
 
+        op_name = draw(st.sampled_from(["partial_sum", "partial_concat"]))
+
         config = {
-            "op_names": ["partial_sum"],
+            "op_names": [op_name],
             "test_data_shapes": [input_shape, input_shape],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
@@ -82,7 +88,7 @@ class TestConcatConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=60)
 
 
 if __name__ == "__main__":

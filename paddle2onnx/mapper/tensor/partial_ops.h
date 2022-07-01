@@ -20,18 +20,25 @@
 
 namespace paddle2onnx {
 
-class PartialSumMapper : public Mapper {
+class PartialOpsMapper : public Mapper {
  public:
-  PartialSumMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  PartialOpsMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("start_index", &start_index_);
+    auto input_info = GetInput("X");
+    if (start_index_ < 0) {
+      start_index_ = start_index_ + input_info[0].shape[1];
+    }
     GetAttr("length", &length_);
+    op_mapper_["partial_sum"] = "Sum";
+    op_mapper_["partial_concat"] = "Concat";
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 
  private:
+  std::map<std::string, std::string> op_mapper_;
   int64_t start_index_;
   int64_t length_;
 };

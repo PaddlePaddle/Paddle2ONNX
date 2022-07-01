@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/partial_sum.h"
+#include "paddle2onnx/mapper/tensor/partial_ops.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(partial_sum, PartialSumMapper)
+REGISTER_MAPPER(partial_sum, PartialOpsMapper)
+REGISTER_MAPPER(partial_concat, PartialOpsMapper)
 
-int32_t PartialSumMapper::GetMinOpset(bool verbose) {
+int32_t PartialOpsMapper::GetMinOpset(bool verbose) {
   auto input_info = GetInput("X");
   for (auto in : input_info) {
     if (in.Rank() != 2) {
@@ -29,31 +30,38 @@ int32_t PartialSumMapper::GetMinOpset(bool verbose) {
   int64_t max_length = input_info[0].shape[1];
   for (auto in : input_info) {
     if (in.shape[0] != batch_size || in.shape[1] != max_length) {
-      Error() << "The batch_size and max_length of all inputs must be same in "
-                 "partial_sum OP."
-              << std::endl;
+      Error()
+          << "The batch_size and max_length of all inputs must be same in " +
+                 OpType() + " OP."
+          << std::endl;
       return -1;
     }
   }
   if (max_length < start_index_) {
-    Error() << "start_index must be less than input len in partial_sum OP."
+    Error() << "start_index must be less than input len in " + OpType() + " OP."
             << std::endl;
     return -1;
   }
   if (length_ > 0 && start_index_ + length_ > max_length) {
-    Error()
-        << "start_index + length is larger than input length in partial_sum OP."
-        << std::endl;
+    Error() << "start_index + length is larger than input length in " +
+                   OpType() + " OP."
+            << std::endl;
+    return -1;
+  }
+  auto iter = op_mapper_.find(OpType());
+  if (op_mapper_.end() == iter) {
+    Error() << "Cannot find " + OpType() + " in partial op_mapper."
+            << std::endl;
     return -1;
   }
   return 7;
 }
 
-void PartialSumMapper::Opset7() {
+void PartialOpsMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   int64_t end;
-  if (length_ == -1) {
+  if (length_ < 0) {
     end = input_info[0].shape[1];
   } else {
     end = start_index_ + length_;
@@ -65,7 +73,11 @@ void PartialSumMapper::Opset7() {
         helper_->AutoCast(out, in.dtype, P2ODataType::FP32);
     slice_outputs.push_back(casted_node);
   }
-  auto node = helper_->MakeNode("Sum", slice_outputs);
+  auto iter = op_mapper_.find(OpType());
+  auto node = helper_->MakeNode(iter->second, slice_outputs);
+  if (iter->second == "Concat") {
+    AddAttribute(node, "axis", static_cast<int64_t>(1));
+  }
   helper_->AutoCast(node->output(0), {output_info[0].name}, P2ODataType::FP32,
                     output_info[0].dtype);
 }
