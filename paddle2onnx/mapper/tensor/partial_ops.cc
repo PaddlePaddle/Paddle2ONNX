@@ -20,15 +20,18 @@ REGISTER_MAPPER(partial_concat, PartialOpsMapper)
 
 int32_t PartialOpsMapper::GetMinOpset(bool verbose) {
   auto input_info = GetInput("X");
-  for (auto in : input_info) {
+  for (auto &in : input_info) {
     if (in.Rank() != 2) {
       Error() << "The input dim of partial_sum OP must be 2." << std::endl;
       return -1;
     }
   }
+  if (start_index_ < 0) {
+    start_index_ = start_index_ + input_info[0].shape[1];
+  }
   int64_t batch_size = input_info[0].shape[0];
   int64_t max_length = input_info[0].shape[1];
-  for (auto in : input_info) {
+  for (auto &in : input_info) {
     if (in.shape[0] != batch_size || in.shape[1] != max_length) {
       Error()
           << "The batch_size and max_length of all inputs must be same in " +
@@ -67,7 +70,7 @@ void PartialOpsMapper::Opset7() {
     end = start_index_ + length_;
   }
   std::vector<std::string> slice_outputs;
-  for (auto in : input_info) {
+  for (auto &in : input_info) {
     auto out = helper_->Slice(in.name, {1}, {start_index_}, {end});
     std::string casted_node =
         helper_->AutoCast(out, in.dtype, P2ODataType::FP32);
