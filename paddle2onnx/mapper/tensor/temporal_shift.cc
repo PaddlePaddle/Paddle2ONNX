@@ -19,12 +19,14 @@ REGISTER_MAPPER(temporal_shift, TemporalShiftMapper)
 
 int32_t TemporalShiftMapper::GetMinOpset(bool verbose) {
   if (data_format_ == "NHWC") {
-    Error() << "Only support data_format NCHW." << std::endl;
+    Error() << "Only support data_format of NCHW, but now the data format is "
+            << data_format_ << "." << std::endl;
     return -1;
   }
   auto input_info = GetOutput("Out");
   if (input_info[0].Rank() != 4) {
-    Error() << "The dims of Input must be 4." << std::endl;
+    Error() << "The input dims must be 4, but now the input dims is "
+            << std::to_string(input_info[0].Rank()) << "." << std::endl;
     return -1;
   }
   return 7;
