@@ -55,7 +55,7 @@ class TestTemporal_shiftConvert(OPConvertAutoScanTest):
 
         input_shape[0] = batch * seg_num
 
-        shift_ratio = draw(st.floats(min_value=0.01, max_value=0.5))
+        shift_ratio = draw(st.floats(min_value=0.01, max_value=0.49))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
