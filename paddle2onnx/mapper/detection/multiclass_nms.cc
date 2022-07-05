@@ -149,10 +149,10 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
     AddAttribute(topk_scores, "axis", int64_t(0));
     auto topk_classes =
         helper_->MakeNode("Gather", {filtered_class_id, topk_node->output(1)});
-    AddAttribute(topk_classes, "axis", int64_t(1));
+    AddAttribute(topk_classes, "axis", int64_t(0));
     auto topk_boxes_id =
         helper_->MakeNode("Gather", {filtered_box_id, topk_node->output(1)});
-    AddAttribute(topk_boxes_id, "axis", int64_t(1));
+    AddAttribute(topk_boxes_id, "axis", int64_t(0));
 
     final_boxes_id = topk_boxes_id->output(0);
     final_scores = topk_scores->output(0);
