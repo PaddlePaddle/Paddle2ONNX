@@ -170,8 +170,10 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
   std::vector<int64_t> shape{1, -1, 1};
   auto unsqueezed_scores = helper_->Reshape({final_scores}, shape);
 
+  auto unsqueezed_class = helper_->Reshape({float_classes->output(0)}, shape);
+
   auto box_result =
-      helper_->MakeNode("Concat", {float_classes->output(0), unsqueezed_scores,
+      helper_->MakeNode("Concat", {unsqueezed_class, unsqueezed_scores,
                                    gathered_selected_boxes->output(0)});
   AddAttribute(box_result, "axis", int64_t(2));
   helper_->Squeeze({box_result->output(0)}, {out_info[0].name},
