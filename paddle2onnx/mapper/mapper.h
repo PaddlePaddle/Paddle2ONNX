@@ -87,7 +87,9 @@ class Mapper {
     Assert(opset_version >= 7 && opset_version <= MAX_ONNX_OPSET_VERSION,
            "[Paddle2ONNX] Only support opset_version in range of [7, " +
                std::to_string(MAX_ONNX_OPSET_VERSION) + "].");
-    if (opset_version == 15) {
+    if (opset_version == 16) {
+      Opset16();
+    } else if (opset_version == 15) {
       Opset15();
     } else if (opset_version == 14) {
       Opset14();
@@ -107,6 +109,7 @@ class Mapper {
       Opset7();
     }
   }
+  virtual void Opset16() { Opset15(); }
 
   virtual void Opset15() { Opset14(); }
 
