@@ -55,7 +55,7 @@ struct ModelExporter {
 
  public:
   QuantizeModelProcessor quantize_model_processer;
-  // Get a proper opset version in range of [7, 15]
+  // Get a proper opset version in range of [7, 16]
   // Also will check the model is convertable, this will include 2 parts
   //    1. is the op convert function implemented
   //    2. is the op convertable(some cases may not be able to convert)
