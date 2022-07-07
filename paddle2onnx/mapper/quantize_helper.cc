@@ -168,6 +168,15 @@ void QuantizeModelProcessor::AddQDQ() {
         AppendQuantizeTensor(name);
       }
     }
+    if (node->op_type() == "LeakyRelu") {
+      std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
+      if (!CanBeQuantize(tensor_names)) {
+        continue;
+      }
+      for (auto& name : tensor_names) {
+        AppendQuantizeTensor(name);
+      }
+    }
     if (node->op_type() == "Conv") {
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
