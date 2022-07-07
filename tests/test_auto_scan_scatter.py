@@ -54,7 +54,11 @@ class TestScatterConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         index_dtype = draw(st.sampled_from(["int32", "int64"]))
-        overwrite = True  # overwrite = False is not support
+        overwrite = draw(st.booleans())
+
+        opset_version = [16]
+        if overwrite:
+            opset_version = [11, 15]
 
         def generator_index():
             index_list = randtool("int", 0, input_shape[0], index_shape)
@@ -64,7 +68,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
             "op_names": ["scatter"],
             "test_data_shapes": [input_shape, generator_index, update_shape],
             "test_data_types": [[dtype], [index_dtype], [dtype]],
-            "opset_version": [11, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "overwrite": overwrite,
             "use_gpu": False,
