@@ -30,43 +30,47 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.scatter(
-            inputs, index, updates, overwrite=self.config['overwrite'])
+        x = paddle.scatter_nd_add(inputs, index, updates)
         return x
 
 
-class TestScatterConvert(OPConvertAutoScanTest):
+class TestScatterNdAddConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scatter
-    OPset version: 11, 12, 15
+    api: paddle.scatter_nd_add
+    OPset version: 16
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=5))
+                    min_value=5, max_value=15), min_size=2, max_size=4))
 
-        index_shape = draw(st.integers(min_value=1, max_value=input_shape[0]))
+        index_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=4, max_value=10), min_size=2, max_size=4))
 
-        update_shape = input_shape
-        update_shape[0] = index_shape
+        index_shape[-1] = draw(
+            st.integers(
+                min_value=1, max_value=len(input_shape)))
+
+        update_shape = index_shape[:-1] + input_shape[index_shape[-1]:]
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         index_dtype = draw(st.sampled_from(["int32", "int64"]))
-        overwrite = True  # overwrite = False is not support
 
         def generator_index():
-            index_list = randtool("int", 0, input_shape[0], index_shape)
+            min_val = np.min(input_shape)
+            index_list = randtool("int", 0, min_val, index_shape)
             return index_list
 
         config = {
-            "op_names": ["scatter"],
+            "op_names": ["scatter_nd_add"],
             "test_data_shapes": [input_shape, generator_index, update_shape],
             "test_data_types": [[dtype], [index_dtype], [dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [16],
             "input_spec_shape": [],
-            "overwrite": overwrite,
             "use_gpu": False,
         }
 
