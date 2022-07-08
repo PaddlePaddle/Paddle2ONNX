@@ -711,8 +711,8 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
     std::vector<int64_t>* zero) {
   float max_val = -1;
   for (int64_t i = 0; i < tensor.size(); i++) {
-    if (abs(tensor[i]) > max_val) {
-      max_val = abs(tensor[i]);
+    if (fabs(tensor[i]) > max_val) {
+      max_val = fabs(tensor[i]);
     }
   }
   Assert(max_val > 0,
@@ -738,8 +738,8 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
       inner_offset /= channel_count;
       int64_t index = i * inner_offset;
       for (int64_t j = 0; j < inner_offset; j++) {
-        if (abs(tensor[index + j]) > max_val) {
-          max_val = abs(tensor[index + j]);
+        if (fabs(tensor[index + j]) > max_val) {
+          max_val = fabs(tensor[index + j]);
         }
       }
       Assert(
@@ -755,8 +755,8 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
         int64_t index = outter * channel_count * inner_offset;
         for (int64_t inner = 0; inner < inner_offset; inner++) {
           int64_t final_index = index + i * inner_offset + inner;
-          if (abs(tensor[final_index]) > max_val) {
-            max_val = abs(tensor[final_index]);
+          if (fabs(tensor[final_index]) > max_val) {
+            max_val = fabs(tensor[final_index]);
           }
         }
       }
