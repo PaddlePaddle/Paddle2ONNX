@@ -44,7 +44,7 @@ pred_onnx = sess.run(None, input_dict) # 进行推理
 (3) 量化模型对计算量大的Conv或MatMul等OP加速明显，如果模型中Conv或MatMul的计算量本身很小，那么量化可能并不会带来推理加速  
 (4) 使用如下命令获得ONNXRuntime优化后的模型optimize_model.onnx，然后使用VisualDl或netron等可视化工具可视化模型，检查以下两项：  
 1). 检查原模型中的Conv、MatMul和Mul等OP是否已经优化为QLinearConv、QLinearMatMul和QLinearMul等量化相关OP  
-2). 观察优化后的模型中量化OP是否被非量化OP分开得很散，多个量化OP链接在一起，不需量化和反量化获得的加速效果最明显，如果是激活函数导致的QLinearConv等量化OP被分开，推荐将激活函数替换为Relu或LeakyRelu再进行测试  
+2). 检查优化后的模型中QLinearConv或QLinearMatMul等量化OP是否被sigmod或Mean非量化OP分开得很散，多个量化OP链接在一起，不需量化和反量化获得的加速效果最明显，如果是激活函数导致的QLinearConv等量化OP被分开，推荐将激活函数替换为Relu或LeakyRelu再进行测试  
 ```
 import onnxruntime as ort
 providers = ['CPUExecutionProvider'] # 指定用CPU进行推理
