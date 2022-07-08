@@ -1,5 +1,5 @@
-# PaddleSlim量化模型转为ONNX格式
-目前PaddleSlim有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT)，Paddle2ONNX只支持离线量化模型导出为ONNX格式，并用ONNXRuntime在CPU上进行加速推理，量化训练模型的导出暂未支持。  
+# PaddleSlim量化模型导出ONNX
+PaddleSlim有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT)，目前Paddle2ONNX只支持离线量化模型导出为ONNX格式，并用ONNXRuntime在CPU上进行加速推理，量化训练模型的导出暂未支持。  
 在PaddleSlim中进行离线量化时请开启onnx_format和is_full_quantize开关，使用Paddle2ONNX转换时和非量化模型的导出方式一致，不用特殊配置。PaddleSlim量化demo和接口请查阅：[PaddleSlim离线量化demo](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/quant_post)  
 一个简单的量化配置说明如下：  
 ```
