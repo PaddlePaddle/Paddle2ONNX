@@ -50,28 +50,7 @@ python -m paddle2onnx.optimize --input_model model.onnx \
                                --output_model new_model.onnx \
                                --input_shape_dict "{'x':[1,3,224,224]}"
 ```
-如需转换PaddleSlim的量化模型，量化模型时请开启onnx_format和is_full_quantize开关，转换时和非量化模型的导出方式一致，不用特殊配置。PaddleSlim量化demo和接口请查阅：[PaddleSlim离线量化demo](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/quant_post)，一个简单的量化配置说明如下：
-```
-from paddle.fluid.contrib.slim.quantization import PostTrainingQuantization
-from paddle import fluid
-place = fluid.CPUPlace()
-exe = fluid.Executor(place)
-ptq = PostTrainingQuantization(
-    executor=exe,
-    model_dir=model_path, # 待量化模型的存储路径
-    sample_generator=val_reader, # 输入数据reader
-    batch_size=batch_size,
-    batch_nums=batch_nums,
-    algo=algo, # 量化算法支持hist，KL，mse等多种算法
-    quantizable_op_type=quantizable_op_type,
-    is_full_quantize=True, # 是否开启全量化，如需导出为ONNX格式，请将此配置打开
-    optimize_model=False, # 量化前是否先对模型进行优化，如需导出为ONNX格式，请关闭此配置
-    onnx_format=True, # 量化OP是否为ONNX格式，如需导出为ONNX格式，请将此配置打开
-    skip_tensor_list=skip_tensor_list,
-    is_use_cache_file=is_use_cache_file)
-ptq.quantize() # 对模型进行量化
-ptq.save_quantized_model(int8_model_path) # 保存量化后的模型，int8_model_path为量化模型的保存路径
-```
+PaddleSlim量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quantize.md)
 
 #### 参数选项
 | 参数 |参数说明 |
