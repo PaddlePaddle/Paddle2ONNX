@@ -34,6 +34,10 @@ void TileMapper::Opset7() {
   } else {
     std::vector<int64_t> values;
     GetAttr("repeat_times", &values);
+    int64_t nums = values.size();
+    for (int64_t i = 0; i < x_info[0].Rank() - nums; i++) {
+      values.insert(values.begin(), 1);
+    }
     repeats = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, values);
   }
   helper_->MakeNode("Tile", {x_info[0].name, repeats}, {out_info[0].name});

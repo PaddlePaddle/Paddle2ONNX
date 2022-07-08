@@ -58,12 +58,9 @@ ignore="test_expand_as.py \
         test_mask_select.py \
         test_median.py \
         test_mv.py \
-        test_nn_AdaptiveAvgPool3D.py \
-        test_nn_Conv3D.py \
         test_nn_Conv3DTranspose.py \
         test_nn_GroupNorm.py \
         test_nn_InstanceNorm3D.py \
-        test_nn_MaxPool3D.py \
         test_nn_PixelShuffle.py \
         test_nn_Upsample.py \
         test_normalize.py \
