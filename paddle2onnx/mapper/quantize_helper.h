@@ -102,7 +102,9 @@ struct QuantizeModelProcessor {
 
   void RemoveNodeByName(const std::string& name, const bool& update_io = true);
 
-  void ReplaceInputOfAllNodes(const std::string& old_name,
-                              const std::string& new_name);
+  void ReplaceInputOfAllNodes(
+      const std::string& old_name, const std::string& new_name,
+      const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>&
+          except_nodes = {});
 };
 }  // namespace paddle2onnx
