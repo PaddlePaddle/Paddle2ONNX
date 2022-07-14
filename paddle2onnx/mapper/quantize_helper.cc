@@ -567,7 +567,7 @@ void QuantizeModelProcessor::MergeConvAdd() {
 
     QuantizeInfo quantize_info(bias_scale, onnx_zeros, scale_node, zero_node,
                                0);
-    std::cout << "bias quantize info: " << bias_node << std::endl;
+
     helper_->quantize_info[bias_node] = quantize_info;
     AppendQuantizeTensor(bias_node, true);
     node->add_input(bias_node);
