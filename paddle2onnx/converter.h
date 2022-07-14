@@ -55,4 +55,18 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
     bool enable_optimize = true);
 
+struct PADDLE2ONNX_DECL OnnxReader {
+  OnnxReader(const char* model_buffer, int buffer_size);
+  int NumInputs() const;
+  int NumOutputs() const;
+  int GetInputIndex(const char* name) const;
+  int GetOutputIndex(const char* name) const;
+  // suppose the maximum number of inputs/outputs is 100
+  // suppose the longest string of inputs/outputs is 200
+  char input_names[100][200] = {""};
+  char output_names[100][200] = {""};
+  int num_inputs;
+  int num_outputs;
+};
+
 }  // namespace paddle2onnx
