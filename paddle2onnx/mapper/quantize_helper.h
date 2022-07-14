@@ -31,6 +31,8 @@ struct QuantizeModelProcessor {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs_;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs_;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes_;
+  // All types that support quantization
+  std::vector<std::string> supported_quantize_type_;
 
   std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
       name2node_dict_;
@@ -53,9 +55,11 @@ struct QuantizeModelProcessor {
   // Remove all Quantize and Dequantize ops
   void RemoveAllQuantizeOps();
 
-  // If all tensors in tensor_names have quantize info, return True, otherwise
+  // If all tensors in tensor_names have quantize info and all the next nodes
+  // can be quantized, return True, otherwise
   // return false
-  bool CanBeQuantize(const std::vector<std::string>& tensor_names);
+  bool CanBeQuantize(const std::vector<std::string>& tensor_names,
+                     const std::vector<int64_t>& output_index = {-1});
   // only_dequantize records those tensors that only need to add the dequantize
   // op
   void AppendQuantizeTensor(const std::string& tensor,

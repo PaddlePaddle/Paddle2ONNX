@@ -158,15 +158,12 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
 void QuantizeModelProcessor::AddQDQ() {
   UpdateInputNameToNodes();
-  // All models that support quantization
-  std::vector<std::string> supported_quantize_type;
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
-
     // Here we only add Relu, Conv, mul and matmul, all tensors should add Q and
     // DQ will be saved in tensors_to_be_quantize
     if (node->op_type() == "Relu") {
-      supported_quantize_type.push_back(node->op_type());
+      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
         continue;
@@ -178,7 +175,7 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "LeakyRelu") {
-      supported_quantize_type.push_back(node->op_type());
+      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
         continue;
@@ -188,7 +185,7 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "Add") {
-      supported_quantize_type.push_back(node->op_type());
+      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
@@ -199,13 +196,13 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "Conv") {
-      supported_quantize_type.push_back(node->op_type());
+      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       if (node->input_size() == 3) {
         tensor_names.push_back(node->input(2));
       }
-      if (!CanBeQuantize(tensor_names)) {
+      if (!CanBeQuantize(tensor_names, {2})) {
         continue;
       }
       for (auto& name : tensor_names) {
@@ -213,7 +210,7 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "MatMul") {
-      supported_quantize_type.push_back(node->op_type());
+      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       for (auto& name : tensor_names) {
@@ -252,7 +249,7 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "Mul") {
-      supported_quantize_type.push_back(node->op_type());
+      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
@@ -303,13 +300,20 @@ void QuantizeModelProcessor::AddQDQ() {
       }
       ReplaceInputOfAllNodes(name, dq_node->output(0));
     } else {
+      // Handle the following situations
+      //           conv                   conv
+      //         /  |  \         ->     /    \ 
+      //      conv conv scale         DQD   scale
+      //                             /   \       
+      //                           conv conv
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> except_nodes;
       auto next_nodes = name2node_dict_[name];
       if (next_nodes.size() > 1) {
         for (auto& node : next_nodes) {
-          auto iter = std::find(supported_quantize_type.begin(),
-                                supported_quantize_type.end(), node->op_type());
-          if (iter == supported_quantize_type.end()) {
+          auto iter =
+              std::find(supported_quantize_type_.begin(),
+                        supported_quantize_type_.end(), node->op_type());
+          if (iter == supported_quantize_type_.end()) {
             except_nodes.push_back(node);
           }
         }
@@ -839,11 +843,31 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
 }
 
 bool QuantizeModelProcessor::CanBeQuantize(
-    const std::vector<std::string>& tensor_names) {
+    const std::vector<std::string>& tensor_names,
+    const std::vector<int64_t>& output_index) {
   for (auto& tensor : tensor_names) {
     if (IsGraphOutput(tensor) ||
         helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
       return false;
+    }
+  }
+  // When there is an unsupported quantized op in the next nodes of the output,
+  // the current op is not quantized.
+  for (auto i = 0; i < output_index.size(); i++) {
+    int64_t index = output_index[i];
+    if (index == -1) {
+      index = tensor_names.size() - 1;
+    }
+    std::string output_name = tensor_names[index];
+    auto next_nodes = name2node_dict_[output_name];
+    if (next_nodes.size() > 1) {
+      for (auto& node : next_nodes) {
+        auto iter = std::find(supported_quantize_type_.begin(),
+                              supported_quantize_type_.end(), node->op_type());
+        if (iter == supported_quantize_type_.end()) {
+          return false;
+        }
+      }
     }
   }
   return true;
