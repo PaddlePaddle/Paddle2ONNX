@@ -35,6 +35,8 @@ class Net(BaseNet):
         elif self.config['repeat_times_dtype'] == "Tensor":
             repeat_times = paddle.to_tensor(
                 np.array(repeat_times).astype(self.config['shape_dtype']))
+        elif self.config['repeat_times_dtype'] == "int":
+            repeat_times = [repeat_times[0]]
         x = paddle.tile(inputs, repeat_times=repeat_times)
         return x
 
@@ -53,7 +55,7 @@ class TestTileConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         # when repeat_times_dtype is tensor has a bug
-        repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
+        repeat_times_dtype = draw(st.sampled_from(["list", "Tensor", "int"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
         config = {

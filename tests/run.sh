@@ -24,6 +24,8 @@ tar xf quantized_models.tar.gz
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
+        test_auto_scan_quantize_linear.py \
+        test_auto_scan_dequantize_linear.py \
         test_split.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
@@ -56,12 +58,9 @@ ignore="test_expand_as.py \
         test_mask_select.py \
         test_median.py \
         test_mv.py \
-        test_nn_AdaptiveAvgPool3D.py \
-        test_nn_Conv3D.py \
         test_nn_Conv3DTranspose.py \
         test_nn_GroupNorm.py \
         test_nn_InstanceNorm3D.py \
-        test_nn_MaxPool3D.py \
         test_nn_PixelShuffle.py \
         test_nn_Upsample.py \
         test_normalize.py \

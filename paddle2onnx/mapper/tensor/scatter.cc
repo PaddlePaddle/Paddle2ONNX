@@ -19,9 +19,9 @@ REGISTER_MAPPER(scatter, ScatterMapper)
 
 int32_t ScatterMapper::GetMinOpset(bool verbose) {
   if (!overwrite_) {
-    Error() << "overwrite = False not support yet." << std::endl;
-    return -1;  // TODO(yeliang): overwrite can be False when opset version is
-                // 16
+    Logger(verbose, 16) << "When overwrite is False, " << RequireOpset(16)
+                        << std::endl;
+    return 16;
   }
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
@@ -43,10 +43,35 @@ void ScatterMapper::Opset11() {
   auto reshape_index_node =
       helper_->MakeNode("Reshape", {ids_node, shape_node});
 
-  auto node = helper_->MakeNode(
-      "ScatterND", {input_x_info[0].name, reshape_index_node->output(0),
-                    input_updates_info[0].name},
-      {output_info[0].name});
+  if (!overwrite_) {
+    auto shape_node = helper_->MakeNode("Shape", {input_x_info[0].name});
+    std::string zeros_like_node = helper_->ConstOfShape(
+        shape_node->output(0), GetOnnxDtype(input_x_info[0].dtype),
+        static_cast<float>(0));
+    auto scatter_nd_node = helper_->MakeNode(
+        "ScatterND", {zeros_like_node, reshape_index_node->output(0),
+                      input_updates_info[0].name});
+    AddAttribute(scatter_nd_node, "reduction", "add");
+
+    std::string zero_node = helper_->Constant(
+        {1}, GetOnnxDtype(input_x_info[0].dtype), static_cast<float>(0));
+
+    auto equal_node =
+        helper_->MakeNode("Equal", {scatter_nd_node->output(0), zero_node});
+
+    std::string condition_node = helper_->AutoCast(
+        equal_node->output(0), P2ODataType::INT64, P2ODataType::BOOL);
+
+    helper_->MakeNode("Where", {condition_node, input_x_info[0].name,
+                                scatter_nd_node->output(0)},
+                      {output_info[0].name});
+
+  } else {
+    auto node = helper_->MakeNode(
+        "ScatterND", {input_x_info[0].name, reshape_index_node->output(0),
+                      input_updates_info[0].name},
+        {output_info[0].name});
+  }
 }
 
 }  // namespace paddle2onnx

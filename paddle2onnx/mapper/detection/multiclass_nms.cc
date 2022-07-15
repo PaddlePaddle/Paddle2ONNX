@@ -147,12 +147,16 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
     auto topk_scores =
         helper_->MakeNode("Gather", {final_scores, topk_node->output(1)});
     AddAttribute(topk_scores, "axis", int64_t(0));
+    filtered_class_id =
+        helper_->MakeNode("Squeeze", {filtered_class_id})->output(0);
     auto topk_classes =
         helper_->MakeNode("Gather", {filtered_class_id, topk_node->output(1)});
-    AddAttribute(topk_classes, "axis", int64_t(1));
+    AddAttribute(topk_classes, "axis", int64_t(0));
+    filtered_box_id =
+        helper_->MakeNode("Squeeze", {filtered_box_id})->output(0);
     auto topk_boxes_id =
         helper_->MakeNode("Gather", {filtered_box_id, topk_node->output(1)});
-    AddAttribute(topk_boxes_id, "axis", int64_t(1));
+    AddAttribute(topk_boxes_id, "axis", int64_t(0));
 
     final_boxes_id = topk_boxes_id->output(0);
     final_scores = topk_scores->output(0);
@@ -170,8 +174,10 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
   std::vector<int64_t> shape{1, -1, 1};
   auto unsqueezed_scores = helper_->Reshape({final_scores}, shape);
 
+  auto unsqueezed_class = helper_->Reshape({float_classes->output(0)}, shape);
+
   auto box_result =
-      helper_->MakeNode("Concat", {float_classes->output(0), unsqueezed_scores,
+      helper_->MakeNode("Concat", {unsqueezed_class, unsqueezed_scores,
                                    gathered_selected_boxes->output(0)});
   AddAttribute(box_result, "axis", int64_t(2));
   helper_->Squeeze({box_result->output(0)}, {out_info[0].name},

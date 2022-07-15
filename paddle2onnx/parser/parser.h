@@ -63,6 +63,13 @@ struct TensorInfo {
     shape.assign(_shape.begin(), _shape.end());
     dtype = _dtype;
   }
+
+  TensorInfo(const TensorInfo& info) {
+    name = info.name;
+    shape.assign(info.shape.begin(), info.shape.end());
+    dtype = info.dtype;
+    is_tensor_array = info.is_tensor_array;
+  }
 };
 
 struct Weight {
