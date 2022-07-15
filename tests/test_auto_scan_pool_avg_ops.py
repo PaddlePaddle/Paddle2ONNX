@@ -258,157 +258,157 @@ class TestAvgpool2dConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
-# TODO pool3d is not supported yet
-#class NetAvgpool3d(BaseNet):
-#    """
-#    simple Net
-#    """
-#
-#    def forward(self, inputs):
-#        """
-#        forward
-#        """
-#        kernel_size = self.config['kernel_size']
-#        stride = self.config['stride']
-#        padding = self.config['padding']
-#        ceil_mode = self.config['ceil_mode']
-#        data_format = self.config['data_format']
-#        x = paddle.nn.functional.avg_pool3d(
-#            inputs,
-#            kernel_size,
-#            stride=stride,
-#            padding=padding,
-#            ceil_mode=ceil_mode,
-#            exclusive=True,
-#            divisor_override=None,
-#            data_format=data_format)
-#        return x
-#
-#
-#class TestAvgpool3dConvert(OPConvertAutoScanTest):
-#    """
-#    api: paddle.nn.functional.max_pool3d
-#    OPset version: 7, 9, 15
-#    """
-#
-#    def sample_convert_config(self, draw):
-#        input_shape = draw(
-#            st.lists(
-#                st.integers(
-#                    min_value=10, max_value=20), min_size=5, max_size=5))
-#
-#        dtype = draw(st.sampled_from(["float32", "float64"]))
-#        data_format = draw(st.sampled_from(["NCDHW"]))
-#
-#        ceil_mode = draw(st.booleans())
-#
-#        kernel_type = draw(st.sampled_from(["int", "list"]))
-#        if kernel_type == "int":
-#            kernel_size = draw(st.integers(min_value=7, max_value=10))
-#        elif kernel_type == "list":
-#            kernel_size = draw(
-#                st.lists(
-#                    st.integers(
-#                        min_value=7, max_value=10),
-#                    min_size=3,
-#                    max_size=3))
-#
-#        stride_type = draw(st.sampled_from(["None", "int", "list"]))
-#        if stride_type == "int":
-#            stride = draw(st.integers(min_value=1, max_value=5))
-#        elif stride_type == "list":
-#            stride = draw(
-#                st.lists(
-#                    st.integers(
-#                        min_value=1, max_value=5),
-#                    min_size=3,
-#                    max_size=3))
-#        else:
-#            stride = None
-#
-#        padding_type = draw(
-#            st.sampled_from(["None", "str", "int", "list3", "list6", "list10"]))
-#        if padding_type == "str":
-#            padding = draw(st.sampled_from(["SAME", "VALID"]))
-#        elif padding_type == "int":
-#            padding = draw(st.integers(min_value=1, max_value=5))
-#        elif padding_type == "list3":
-#            padding = draw(
-#                st.lists(
-#                    st.integers(
-#                        min_value=1, max_value=5),
-#                    min_size=3,
-#                    max_size=3))
-#        elif padding_type == "list6":
-#            padding = draw(
-#                st.lists(
-#                    st.integers(
-#                        min_value=1, max_value=5),
-#                    min_size=6,
-#                    max_size=6))
-#        elif padding_type == "list10":
-#            padding1 = np.expand_dims(
-#                np.array(
-#                    draw(
-#                        st.lists(
-#                            st.integers(
-#                                min_value=1, max_value=5),
-#                            min_size=2,
-#                            max_size=2))),
-#                axis=0).tolist()
-#            padding2 = np.expand_dims(
-#                np.array(
-#                    draw(
-#                        st.lists(
-#                            st.integers(
-#                                min_value=1, max_value=5),
-#                            min_size=2,
-#                            max_size=2))),
-#                axis=0).tolist()
-#            padding3 = np.expand_dims(
-#                np.array(
-#                    draw(
-#                        st.lists(
-#                            st.integers(
-#                                min_value=1, max_value=5),
-#                            min_size=2,
-#                            max_size=2))),
-#                axis=0).tolist()
-#            if data_format == "NCDHW":
-#                padding = [[0, 0]] + [[0, 0]] + padding1 + padding2 + padding3
-#            else:
-#                padding = [[0, 0]] + padding1 + padding2 + padding3 + [[0, 0]]
-#        else:
-#            padding = 0
-#
-#        opset_version = [[7, 9, 15]]
-#        if ceil_mode:
-#            opset_version = [10, 15]
-#
-#        if padding == "VALID":
-#            ceil_mode = False
-#
-#        op_names = 'pool3d'
-#
-#        config = {
-#            "op_names": [op_names],
-#            "test_data_shapes": [input_shape],
-#            "test_data_types": [[dtype]],
-#            "opset_version": opset_version,
-#            "input_spec_shape": [],
-#            "kernel_size": kernel_size,
-#            "stride": stride,
-#            "padding": padding,
-#            "ceil_mode": ceil_mode,
-#            "data_format": data_format,
-#        }
-#
-#        models = NetAvgpool3d(config)
-#
-#        return (config, models)
-#
-#    def test(self):
-#        self.run_and_statis(max_examples=30)
+class NetAvgpool3d(BaseNet):
+    """
+   simple Net
+   """
+
+    def forward(self, inputs):
+        """
+       forward
+       """
+        kernel_size = self.config['kernel_size']
+        stride = self.config['stride']
+        padding = self.config['padding']
+        ceil_mode = self.config['ceil_mode']
+        data_format = self.config['data_format']
+        x = paddle.nn.functional.avg_pool3d(
+            inputs,
+            kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=ceil_mode,
+            exclusive=True,
+            divisor_override=None,
+            data_format=data_format)
+        return x
+
+
+class TestAvgpool3dConvert(OPConvertAutoScanTest):
+    """
+   api: paddle.nn.functional.max_pool3d
+   OPset version: 7, 9, 15
+   """
+
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=10, max_value=20), min_size=5, max_size=5))
+
+        dtype = draw(st.sampled_from(["float32", "float64"]))
+        data_format = draw(st.sampled_from(["NCDHW"]))
+
+        ceil_mode = draw(st.booleans())
+
+        kernel_type = draw(st.sampled_from(["int", "list"]))
+        if kernel_type == "int":
+            kernel_size = draw(st.integers(min_value=7, max_value=10))
+        elif kernel_type == "list":
+            kernel_size = draw(
+                st.lists(
+                    st.integers(
+                        min_value=7, max_value=10),
+                    min_size=3,
+                    max_size=3))
+
+        stride_type = draw(st.sampled_from(["None", "int", "list"]))
+        if stride_type == "int":
+            stride = draw(st.integers(min_value=1, max_value=5))
+        elif stride_type == "list":
+            stride = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=3,
+                    max_size=3))
+        else:
+            stride = None
+
+        padding_type = draw(
+            st.sampled_from(["None", "str", "int", "list3", "list6", "list10"]))
+        if padding_type == "str":
+            padding = draw(st.sampled_from(["SAME", "VALID"]))
+        elif padding_type == "int":
+            padding = draw(st.integers(min_value=1, max_value=5))
+        elif padding_type == "list3":
+            padding = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=3,
+                    max_size=3))
+        elif padding_type == "list6":
+            padding = draw(
+                st.lists(
+                    st.integers(
+                        min_value=1, max_value=5),
+                    min_size=6,
+                    max_size=6))
+        elif padding_type == "list10":
+            padding1 = np.expand_dims(
+                np.array(
+                    draw(
+                        st.lists(
+                            st.integers(
+                                min_value=1, max_value=5),
+                            min_size=2,
+                            max_size=2))),
+                axis=0).tolist()
+            padding2 = np.expand_dims(
+                np.array(
+                    draw(
+                        st.lists(
+                            st.integers(
+                                min_value=1, max_value=5),
+                            min_size=2,
+                            max_size=2))),
+                axis=0).tolist()
+            padding3 = np.expand_dims(
+                np.array(
+                    draw(
+                        st.lists(
+                            st.integers(
+                                min_value=1, max_value=5),
+                            min_size=2,
+                            max_size=2))),
+                axis=0).tolist()
+            if data_format == "NCDHW":
+                padding = [[0, 0]] + [[0, 0]] + padding1 + padding2 + padding3
+            else:
+                padding = [[0, 0]] + padding1 + padding2 + padding3 + [[0, 0]]
+        else:
+            padding = 0
+
+        opset_version = [[7, 9, 15]]
+        if ceil_mode:
+            opset_version = [10, 15]
+
+        if padding == "VALID":
+            ceil_mode = False
+
+        op_names = 'pool3d'
+
+        config = {
+            "op_names": [op_names],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": opset_version,
+            "input_spec_shape": [],
+            "kernel_size": kernel_size,
+            "stride": stride,
+            "padding": padding,
+            "ceil_mode": ceil_mode,
+            "data_format": data_format,
+        }
+
+        models = NetAvgpool3d(config)
+
+        return (config, models)
+
+    def test(self):
+        self.run_and_statis(max_examples=30)
+
 
 if __name__ == "__main__":
     unittest.main()

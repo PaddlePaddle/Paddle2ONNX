@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
+from onnxbase import randtool
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-from onnxbase import randtool
 
 
 class Net(BaseNet):
@@ -26,52 +26,47 @@ class Net(BaseNet):
     simple Net
     """
 
-    def forward(self, inputs, index, updates):
+    def forward(self, inputs):
         """
         forward
         """
-        x = paddle.scatter(
-            inputs, index, updates, overwrite=self.config['overwrite'])
+        x = paddle.nn.functional.temporal_shift(
+            inputs,
+            seg_num=self.config["seg_num"],
+            shift_ratio=self.config["shift_ratio"])
         return x
 
 
-class TestScatterConvert(OPConvertAutoScanTest):
+class TestTemporal_shiftConvert(OPConvertAutoScanTest):
     """
-    api: paddle.scatter
-    OPset version: 11, 12, 15
+    api: paddle.nn.functional.temporal_shift
+    OPset version: 7, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=5))
+                    min_value=10, max_value=30), min_size=4, max_size=4))
 
-        index_shape = draw(st.integers(min_value=1, max_value=input_shape[0]))
+        seg_num = draw(st.integers(min_value=1, max_value=10))
 
-        update_shape = input_shape
-        update_shape[0] = index_shape
+        batch = draw(st.integers(min_value=1, max_value=5))
+
+        input_shape[0] = batch * seg_num
+
+        shift_ratio = draw(st.floats(min_value=0.01, max_value=0.49))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
-        index_dtype = draw(st.sampled_from(["int32", "int64"]))
-        overwrite = draw(st.booleans())
-
-        opset_version = [16]
-        if overwrite:
-            opset_version = [11, 15]
-
-        def generator_index():
-            index_list = randtool("int", 0, input_shape[0], index_shape)
-            return index_list
 
         config = {
-            "op_names": ["scatter"],
-            "test_data_shapes": [input_shape, generator_index, update_shape],
-            "test_data_types": [[dtype], [index_dtype], [dtype]],
-            "opset_version": opset_version,
+            "op_names": ["temporal_shift"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[dtype]],
+            "opset_version": [7, 15],
             "input_spec_shape": [],
-            "overwrite": overwrite,
-            "use_gpu": False,
+            "seg_num": seg_num,
+            "shift_ratio": shift_ratio
         }
 
         models = Net(config)
@@ -79,7 +74,7 @@ class TestScatterConvert(OPConvertAutoScanTest):
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=50)
 
 
 if __name__ == "__main__":

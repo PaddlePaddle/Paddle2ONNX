@@ -50,6 +50,7 @@ python -m paddle2onnx.optimize --input_model model.onnx \
                                --output_model new_model.onnx \
                                --input_shape_dict "{'x':[1,3,224,224]}"
 ```
+PaddleSlim量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quantize.md)
 
 #### 参数选项
 | 参数 |参数说明 |
