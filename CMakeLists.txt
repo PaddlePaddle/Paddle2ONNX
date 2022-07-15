@@ -20,7 +20,7 @@ endif(NOT MSVC)
 # if you build from other version of onnx
 # this should be modified
 # refer to https://github.com/onnx/onnx/blob/main/docs/Versioning.md#released-versions
-add_definitions(-DMAX_ONNX_OPSET_VERSION=15)
+add_definitions(-DMAX_ONNX_OPSET_VERSION=16)
 add_definitions(-DPADDLE2ONNX_LIB)
 
 # Third dependency: onnx
@@ -106,7 +106,7 @@ endif()
 #)
 install(
     TARGETS paddle2onnx
-    LIBRARY DESTINATION lib 
+    LIBRARY DESTINATION lib
 )
 install(
     FILES paddle2onnx/converter.h
