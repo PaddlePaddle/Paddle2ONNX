@@ -8,7 +8,6 @@ find_library(paddle2onnx_lib
     NAMES paddle2onnx
     PATHS ${paddle2onnx_install_path}/lib/
     )
-LINK_DIRECTORIES(${paddle2onnx_install_path})
 add_executable(${PROJECT_NAME} cpp_export.cpp )
 include_directories(${paddle2onnx_install_path}/include)
 
