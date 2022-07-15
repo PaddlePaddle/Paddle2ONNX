@@ -35,6 +35,7 @@ struct OptimizerOption {
     passes.push_back("fuse_matmul_add_bias_into_gemm");
     passes.push_back("eliminate_identity");
     passes.push_back("eliminate_deadend");
+    passes.push_back("fuse_attention");
   }
 };
 
