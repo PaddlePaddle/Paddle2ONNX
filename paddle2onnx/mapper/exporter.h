@@ -51,7 +51,8 @@ struct ModelExporter {
                   int32_t opset_version, int64_t block_id, int64_t op_id,
                   bool verbose);
 
-  ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
+  ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model,
+                                      bool enable_extra_ort_opt = false);
 
  public:
   QuantizeModelProcessor quantize_model_processer;
@@ -83,7 +84,8 @@ struct ModelExporter {
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
                   bool enable_experimental_op = false,
-                  bool enable_optimize = true);
+                  bool enable_optimize = true,
+                  bool enable_extra_ort_opt = false);
 };
 
 }  // namespace paddle2onnx

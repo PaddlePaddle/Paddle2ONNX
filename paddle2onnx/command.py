@@ -28,6 +28,7 @@ def str2list(v):
     v = eval(v)
     return v
 
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -82,6 +83,11 @@ def arg_parser():
         default=True,
         help="whether check onnx model validity, default True")
     parser.add_argument(
+        "--enable_extra_ort_opt",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether to enable extra onnxruntime optimization, default False")
+    parser.add_argument(
         "--enable_paddle_fallback",
         type=ast.literal_eval,
         default=False,
@@ -116,11 +122,13 @@ def c_paddle_to_onnx(model_file,
                      verbose=True,
                      enable_onnx_checker=True,
                      enable_experimental_op=True,
-                     enable_optimize=True):
+                     enable_optimize=True,
+                     enable_extra_ort_opt=False):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-    onnx_model_str = c_p2o.export(
-        model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-        enable_onnx_checker, enable_experimental_op, enable_optimize)
+    onnx_model_str = c_p2o.export(model_file, params_file, opset_version,
+                                  auto_upgrade_opset, verbose,
+                                  enable_onnx_checker, enable_experimental_op,
+                                  enable_optimize, enable_extra_ort_opt)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
@@ -206,7 +214,8 @@ def main():
             verbose=True,
             enable_onnx_checker=args.enable_onnx_checker,
             enable_experimental_op=True,
-            enable_optimize=True)
+            enable_optimize=True,
+            enable_extra_ort_opt=args.enable_extra_ort_opt)
         logging.info("===============Make PaddlePaddle Better!================")
         logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
         return
@@ -224,6 +233,7 @@ def main():
         auto_update_opset=args.enable_auto_update_opset)
     logging.info("===============Make PaddlePaddle Better!================")
     logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
+
 
 if __name__ == "__main__":
     main()
