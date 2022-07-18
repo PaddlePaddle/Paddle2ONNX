@@ -26,11 +26,11 @@
 #include "paddle2onnx/optimizer/fuse_unsqueeze_conv2d_squeeze.h"
 
 namespace paddle2onnx {
-MapperHelper *MapperHelper::helper = nullptr;
+MapperHelper* MapperHelper::helper = nullptr;
 
 void ModelExporter::ExportParameters(
-    const std::map<std::string, Weight> &params, bool use_initializer) {
-  for (auto &item : params) {
+    const std::map<std::string, Weight>& params, bool use_initializer) {
+  for (auto& item : params) {
     // TODO(jiangjiajun) I'm not handling use_initializer now, but some day I
     // will
     auto node = MakeConstant(item.first, item.second);
@@ -39,8 +39,8 @@ void ModelExporter::ExportParameters(
 }
 
 void ModelExporter::UpdateParameters(
-    const std::map<std::string, Weight> &params) {
-  for (auto &item : params) {
+    const std::map<std::string, Weight>& params) {
+  for (auto& item : params) {
     auto node = MakeConstant(item.first, item.second);
     bool updated = false;
     for (int i = 0; i < parameters.size(); ++i) {
@@ -59,19 +59,19 @@ void ModelExporter::UpdateParameters(
 }
 
 void ModelExporter::ExportInputOutputs(
-    const std::vector<TensorInfo> &input_infos,
-    const std::vector<TensorInfo> &output_infos) {
-  for (auto &item : input_infos) {
+    const std::vector<TensorInfo>& input_infos,
+    const std::vector<TensorInfo>& output_infos) {
+  for (auto& item : input_infos) {
     auto value_info = MakeValueInfo(item);
     inputs.push_back(std::move(value_info));
   }
-  for (auto &item : output_infos) {
+  for (auto& item : output_infos) {
     auto value_info = MakeValueInfo(item);
     outputs.push_back(std::move(value_info));
   }
 }
 
-void ModelExporter::ExportOp(const PaddleParser &parser, OnnxHelper *helper,
+void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
                              int32_t opset_version, int64_t block_id,
                              int64_t op_id, bool verbose) {
   _current_exported_num += 1;
@@ -144,14 +144,14 @@ void ModelExporter::ExportOp(const PaddleParser &parser, OnnxHelper *helper,
 // }
 
 void ModelExporter::ProcessGraphDumplicateNames(
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *parameters,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes) {
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
   // process dumplicate tensor names
   std::map<std::string, std::string> renamer;
   std::set<std::string> tensor_names;
-  for (auto &item : *parameters) {
+  for (auto& item : *parameters) {
     for (size_t i = 0; i < item->output_size(); ++i) {
       if (tensor_names.find(item->output(i)) != tensor_names.end()) {
         Assert(false, "There's dumplicate names in exported parameters.");
@@ -159,14 +159,14 @@ void ModelExporter::ProcessGraphDumplicateNames(
       tensor_names.insert(item->output(i));
     }
   }
-  for (auto &item : *inputs) {
+  for (auto& item : *inputs) {
     if (tensor_names.find(item->name()) != tensor_names.end()) {
       Assert(false,
              "There's dumplicate names in exported parameters and inputs.");
     }
     tensor_names.insert(item->name());
   }
-  for (auto &item : *nodes) {
+  for (auto& item : *nodes) {
     // update node inputs
     for (size_t i = 0; i < item->input_size(); ++i) {
       if (renamer.find(item->input(i)) != renamer.end()) {
@@ -197,7 +197,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
     }
   }
 
-  for (auto &item : *outputs) {
+  for (auto& item : *outputs) {
     if (renamer.find(item->name()) != renamer.end()) {
       auto updated_name = renamer[item->name()];
       while (renamer.find(updated_name) != renamer.end()) {
@@ -208,7 +208,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
   }
 }
 
-std::string ModelExporter::Run(const PaddleParser &parser, int opset_version,
+std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
                                bool auto_upgrade_opset, bool verbose,
                                bool enable_onnx_checker,
                                bool enable_experimental_op,
@@ -239,7 +239,7 @@ std::string ModelExporter::Run(const PaddleParser &parser, int opset_version,
   if (!CheckIfOpSupported(parser, &unsupported_ops, enable_experimental_op)) {
     auto logger = P2OLogger();
     logger << "Oops, there are some operators not supported yet, including ";
-    for (auto &item : unsupported_ops) {
+    for (auto& item : unsupported_ops) {
       logger << item << ",";
     }
     logger << std::endl;
@@ -310,19 +310,19 @@ std::string ModelExporter::Run(const PaddleParser &parser, int opset_version,
   }
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
-  for (auto &item : parameters) {
+  for (auto& item : parameters) {
     *(graph->add_node()) = *(item.get());
   }
-  for (auto &item : inputs) {
+  for (auto& item : inputs) {
     *(graph->add_input()) = *(item.get());
   }
-  for (auto &item : _helper.nodes) {
+  for (auto& item : _helper.nodes) {
     *(graph->add_node()) = (*item.get());
   }
-  for (auto &item : outputs) {
+  for (auto& item : outputs) {
     *(graph->add_output()) = (*item.get());
   }
-  for (auto &item : _helper.value_infos) {
+  for (auto& item : _helper.value_infos) {
     *(graph->add_value_info()) = (*item.get());
   }
 
@@ -362,8 +362,8 @@ std::string ModelExporter::Run(const PaddleParser &parser, int opset_version,
   return out;
 }
 
-bool ModelExporter::CheckIfOpSupported(const PaddleParser &parser,
-                                       std::set<std::string> *unsupported_ops,
+bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
+                                       std::set<std::string>* unsupported_ops,
                                        bool enable_experimental_op) {
   unsupported_ops->clear();
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
@@ -393,7 +393,7 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser &parser,
   return (unsupported_ops->size() == 0);
 }
 
-int32_t ModelExporter::GetMinOpset(const PaddleParser &parser, bool verbose) {
+int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   int32_t opset_version = _helper.GetOpsetVersion();
   int32_t max_opset = -1;
   bool exportable = true;
@@ -463,7 +463,7 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser &parser, bool verbose) {
 }
 
 ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
-    const ONNX_NAMESPACE::ModelProto &model, bool enable_extra_ort_opt) {
+    const ONNX_NAMESPACE::ModelProto& model, bool enable_extra_ort_opt) {
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantReshape>();
   ONNX_NAMESPACE::optimization::Optimizer::passes

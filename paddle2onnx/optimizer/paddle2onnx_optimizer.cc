@@ -17,7 +17,6 @@
 #include <fstream>
 #include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
-#include "paddle2onnx/optimizer/fuse_attention.h"
 #include "paddle2onnx/optimizer/fuse_constant_cast.h"
 #include "paddle2onnx/optimizer/fuse_constant_reshape.h"
 #include "paddle2onnx/optimizer/fuse_constant_unsqueeze.h"
@@ -70,8 +69,6 @@ bool OptimizePaddle2ONNX(const std::string& model_path,
       .registerPass<ONNX_NAMESPACE::optimization::ReplaceMulToIdentity>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::ReplaceAddToIdentity>();
-  ONNX_NAMESPACE::optimization::Optimizer::passes
-      .registerPass<ONNX_NAMESPACE::optimization::FuseAttention>();
 
   auto optimized_model_proto = ONNX_NAMESPACE::optimization::Optimize(
       *(model_proto.get()), option.passes);
@@ -169,8 +166,6 @@ bool OptimizePaddle2ONNX(
       .registerPass<ONNX_NAMESPACE::optimization::ReplaceMulToIdentity>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::ReplaceAddToIdentity>();
-  ONNX_NAMESPACE::optimization::Optimizer::passes
-      .registerPass<ONNX_NAMESPACE::optimization::FuseAttention>();
 
   auto optimized_model_proto = ONNX_NAMESPACE::optimization::Optimize(
       *(model_proto.get()), option.passes);
