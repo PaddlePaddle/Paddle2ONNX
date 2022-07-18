@@ -26,7 +26,8 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
                                    bool auto_upgrade_opset, bool verbose,
                                    bool enable_onnx_checker,
                                    bool enable_experimental_op,
-                                   bool enable_optimize) {
+                                   bool enable_optimize,
+                                   bool enable_extra_ort_opt) {
   auto parser = PaddleParser();
   if (!parser.Init(model, params)) {
     return false;
@@ -40,9 +41,9 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
   if (me.GetMinOpset(parser, false) < 0) {
     return false;
   }
-  std::string onnx_model =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  std::string onnx_model = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, enable_extra_ort_opt);
   if (onnx_model.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -50,13 +51,11 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
   return true;
 }
 
-PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
-                                   const void* params_buffer, int params_size,
-                                   int32_t opset_version,
-                                   bool auto_upgrade_opset, bool verbose,
-                                   bool enable_onnx_checker,
-                                   bool enable_experimental_op,
-                                   bool enable_optimize) {
+PADDLE2ONNX_DECL bool IsExportable(
+    const void* model_buffer, int model_size, const void* params_buffer,
+    int params_size, int32_t opset_version, bool auto_upgrade_opset,
+    bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
+    bool enable_optimize, bool enable_extra_ort_opt) {
   auto parser = PaddleParser();
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
     return false;
@@ -70,9 +69,9 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
   if (me.GetMinOpset(parser, false) < 0) {
     return false;
   }
-  std::string onnx_model =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  std::string onnx_model = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, enable_extra_ort_opt);
   if (onnx_model.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -84,8 +83,8 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              int* out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
-                             bool enable_experimental_op,
-                             bool enable_optimize) {
+                             bool enable_experimental_op, bool enable_optimize,
+                             bool enable_extra_ort_opt) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model, params)) {
@@ -93,9 +92,9 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
     return false;
   }
   paddle2onnx::ModelExporter me;
-  std::string result =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  std::string result = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, enable_extra_ort_opt);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -111,8 +110,8 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
                              char** out, int* out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
-                             bool enable_experimental_op,
-                             bool enable_optimize) {
+                             bool enable_experimental_op, bool enable_optimize,
+                             bool enable_extra_ort_opt) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
@@ -120,9 +119,9 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
     return false;
   }
   paddle2onnx::ModelExporter me;
-  std::string result =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  std::string result = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, enable_extra_ort_opt);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -133,34 +132,34 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
   return true;
 }
 
-
-PADDLE2ONNX_DECL OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
+PADDLE2ONNX_DECL OnnxReader::OnnxReader(const char* model_buffer,
+                                        int buffer_size) {
   ONNX_NAMESPACE::ModelProto model;
   std::string content(model_buffer, model_buffer + buffer_size);
   model.ParseFromString(content);
   num_inputs = model.graph().input_size();
   num_outputs = model.graph().output_size();
-  Assert(num_inputs <= 100, "The number of inputs is exceed 100, unexpected situation."); 
-  Assert(num_outputs <= 100, "The number of outputs is exceed 100, unexpected situation."); 
+  Assert(num_inputs <= 100,
+         "The number of inputs is exceed 100, unexpected situation.");
+  Assert(num_outputs <= 100,
+         "The number of outputs is exceed 100, unexpected situation.");
   for (int i = 0; i < num_inputs; ++i) {
-    memcpy(input_names[i], model.graph().input(i).name().c_str(), model.graph().input(i).name().size());
+    memcpy(input_names[i], model.graph().input(i).name().c_str(),
+           model.graph().input(i).name().size());
   }
   for (int i = 0; i < num_outputs; ++i) {
-    memcpy(output_names[i], model.graph().output(i).name().c_str(), model.graph().output(i).name().size());
-  } 
+    memcpy(output_names[i], model.graph().output(i).name().c_str(),
+           model.graph().output(i).name().size());
+  }
 }
 
-PADDLE2ONNX_DECL int OnnxReader::NumInputs() const {
-  return num_inputs;
-}
+PADDLE2ONNX_DECL int OnnxReader::NumInputs() const { return num_inputs; }
 
-PADDLE2ONNX_DECL int OnnxReader::NumOutputs() const {
-  return num_outputs;
-}
+PADDLE2ONNX_DECL int OnnxReader::NumOutputs() const { return num_outputs; }
 
 PADDLE2ONNX_DECL int OnnxReader::GetInputIndex(const char* name) const {
   for (int i = 0; i < num_inputs; ++i) {
-    if(strcmp(name, input_names[i]) == 0) {
+    if (strcmp(name, input_names[i]) == 0) {
       return i;
     }
   }
@@ -169,7 +168,7 @@ PADDLE2ONNX_DECL int OnnxReader::GetInputIndex(const char* name) const {
 
 PADDLE2ONNX_DECL int OnnxReader::GetOutputIndex(const char* name) const {
   for (int i = 0; i < num_outputs; ++i) {
-    if(strcmp(name, output_names[i]) == 0) {
+    if (strcmp(name, output_names[i]) == 0) {
       return i;
     }
   }

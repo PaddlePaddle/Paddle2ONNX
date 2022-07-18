@@ -212,7 +212,8 @@ std::string ModelExporter::Run(const PaddleParser &parser, int opset_version,
                                bool auto_upgrade_opset, bool verbose,
                                bool enable_onnx_checker,
                                bool enable_experimental_op,
-                               bool enable_optimize) {
+                               bool enable_optimize,
+                               bool enable_extra_ort_opt) {
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
   _current_exported_num = 0;
@@ -343,7 +344,7 @@ std::string ModelExporter::Run(const PaddleParser &parser, int opset_version,
 
   std::string out;
   if (enable_optimize) {
-    auto const opt_model = Optimize(*(model.get()));
+    auto const opt_model = Optimize(*(model.get()), enable_extra_ort_opt);
     if (!opt_model.SerializeToString(&out)) {
       P2OLogger(verbose)
           << "Error happenedd while optimizing the exported ONNX model."
@@ -462,7 +463,7 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser &parser, bool verbose) {
 }
 
 ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
-    const ONNX_NAMESPACE::ModelProto &model) {
+    const ONNX_NAMESPACE::ModelProto &model, bool enable_extra_ort_opt) {
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantReshape>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
@@ -475,16 +476,23 @@ ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
       .registerPass<ONNX_NAMESPACE::optimization::EliminateNonTranspose>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantCast>();
-  ONNX_NAMESPACE::optimization::Optimizer::passes
-      .registerPass<ONNX_NAMESPACE::optimization::FuseAttention>();
-  std::vector<std::string> passes = {
-      "eliminate_identity",          "eliminate_deadend",
-      "eliminate_deadend",           "fuse_constant_reshape",
-      "fuse_constant_unsqueeze",     "fuse_paddle_conv_bias",
-      "fuse_consecutive_transposes", "fuse_attention",
-      "eliminate_non_transpose",     "fuse_matmul_add_bias_into_gemm",
-      "eliminate_identity",          "eliminate_deadend",
-      "eliminate_unused_initializer"};
+  std::vector<std::string> passes = {"eliminate_identity",
+                                     "eliminate_deadend",
+                                     "eliminate_deadend",
+                                     "fuse_constant_reshape",
+                                     "fuse_constant_unsqueeze",
+                                     "fuse_paddle_conv_bias",
+                                     "fuse_consecutive_transposes",
+                                     "eliminate_non_transpose",
+                                     "fuse_matmul_add_bias_into_gemm",
+                                     "eliminate_identity",
+                                     "eliminate_deadend",
+                                     "eliminate_unused_initializer"};
+  if (enable_extra_ort_opt) {
+    ONNX_NAMESPACE::optimization::Optimizer::passes
+        .registerPass<ONNX_NAMESPACE::optimization::FuseAttention>();
+    passes.insert(passes.begin() + 7, "fuse_attention");
+  }
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 

@@ -29,15 +29,18 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      bool auto_upgrade_opset = true, bool verbose = true,
                      bool enable_onnx_checker = true,
                      bool enable_experimental_op = true,
-                     bool enable_optimize = true) {
+                     bool enable_optimize = true,
+                     bool enable_extra_ort_opt = false) {
     P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
     P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
-    P2OLogger(verbose) << "Paramters file path: " << params_filename << std::endl;
+    P2OLogger(verbose) << "Paramters file path: " << params_filename
+                       << std::endl;
     char* out = nullptr;
     int size = 0;
     if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
-                enable_experimental_op, enable_optimize)) {
+                enable_experimental_op, enable_optimize,
+                enable_extra_ort_opt)) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
       return pybind11::bytes("");
     }

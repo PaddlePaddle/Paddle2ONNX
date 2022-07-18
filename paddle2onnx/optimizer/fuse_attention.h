@@ -98,7 +98,7 @@ struct FuseAttention final : public PredicateBasedPass {
     } else {
       return false;
     }
-    // v path
+    // Find v path nodes: v_transpose -> v_reshape -> v_add -> v_matmul
     if (qkv_matmul->inputs()[1]->node()->kind() == kTranspose &&
         qkv_matmul->inputs()[1]->node()->inputs()[0]->node()->kind() ==
             kReshape &&
@@ -122,7 +122,7 @@ struct FuseAttention final : public PredicateBasedPass {
     } else {
       return false;
     }
-    // qk_matmul -> softmax path
+    // Find mask_Add path nodes: softmax -> mask_Add ->  -> qk_mul -> qk_matmul
     if (qkv_matmul->inputs()[0]->node()->kind() == kSoftmax &&
         qkv_matmul->inputs()[0]->node()->inputs()[0]->node()->kind() == kAdd &&
         qkv_matmul->inputs()[0]
@@ -152,7 +152,7 @@ struct FuseAttention final : public PredicateBasedPass {
     } else {
       return false;
     }
-    // q path
+    // Find q path nodes: q_transpose -> q_reshape -> q_add -> q_matmul
     if (qk_matmul->inputs()[0]->node()->kind() == kTranspose &&
         qk_matmul->inputs()[0]->node()->inputs()[0]->node()->kind() ==
             kReshape &&
@@ -176,7 +176,7 @@ struct FuseAttention final : public PredicateBasedPass {
     } else {
       return false;
     }
-    // k path
+    // Find k path nodes: k_transpose -> k_reshape -> k_add -> k_matmul
     if (qk_matmul->inputs()[1]->node()->kind() == kTranspose &&
         qk_matmul->inputs()[1]->node()->inputs()[0]->node()->kind() ==
             kReshape &&
@@ -279,7 +279,7 @@ struct FuseAttention final : public PredicateBasedPass {
     if (v_bias.sizes().size() != 1) {
       return false;
     }
-    // Construct qkv_weights and qkv_bias
+    // Merge Q, K and V weights and bias
     std::vector<float> qkv_weights(q_weight.sizes()[0] * q_weight.sizes()[1] *
                                    3);
     std::vector<float> qkv_bias(q_bias.sizes()[0] * 3);
@@ -291,7 +291,7 @@ struct FuseAttention final : public PredicateBasedPass {
                                              ParseData<float>(&v_bias)};
     int64_t dims_h = q_weight.sizes()[0];
     int64_t dims_w = q_weight.sizes()[1];
-    // Combine the three fc weights together.
+    // combine Q, K and V weights into qkv_weights
     for (int i = 0; i < dims_h; i++) {
       for (int j = 0; j < 3; j++) {
         for (int k = 0; k < dims_w; k++) {
@@ -301,7 +301,7 @@ struct FuseAttention final : public PredicateBasedPass {
         }
       }
     }
-    // Combine the three fc bias together.
+    // combine Q, K and V bias into qkv_bias
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < dims_w; j++) {
         qkv_bias[i * dims_w + j] = v_vec[i][j];
