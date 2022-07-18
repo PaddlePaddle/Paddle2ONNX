@@ -84,12 +84,12 @@ struct FuseAttention final : public PredicateBasedPass {
 
   std::string getPassName() const override { return "fuse_attention"; }
 
-  bool patternMatchPredicate(Node *node) override {
+  bool patternMatchPredicate(Node* node) override {
     bool q_sucess = false;
     bool k_sucess = false;
     bool v_sucess = false;
-    Node *qkv_matmul;
-    Node *qk_matmul;
+    Node* qkv_matmul;
+    Node* qk_matmul;
     // find qkv matmul
     if (node->kind() == kReshape &&
         node->inputs()[0]->node()->kind() == kTranspose &&
@@ -204,34 +204,34 @@ struct FuseAttention final : public PredicateBasedPass {
     return q_sucess && k_sucess && v_sucess;
   }
 
-  bool runTransform(Node *n, Graph &graph,
-                    NodeDestroyType &destroy_current) override {
-    Node *transpose = n->inputs()[0]->node();
-    Node *qkv_matmul = transpose->inputs()[0]->node();
-    Node *softmax = qkv_matmul->inputs()[0]->node();
-    Node *mask_add = softmax->inputs()[0]->node();
-    Node *mul = mask_add->inputs()[0]->node();
-    Node *qk_matmul = mul->inputs()[0]->node();
+  bool runTransform(Node* n, Graph& graph,
+                    NodeDestroyType& destroy_current) override {
+    Node* transpose = n->inputs()[0]->node();
+    Node* qkv_matmul = transpose->inputs()[0]->node();
+    Node* softmax = qkv_matmul->inputs()[0]->node();
+    Node* mask_add = softmax->inputs()[0]->node();
+    Node* mul = mask_add->inputs()[0]->node();
+    Node* qk_matmul = mul->inputs()[0]->node();
     // q path
-    Node *q_transpose = qk_matmul->inputs()[0]->node();
-    Node *q_reshape = q_transpose->inputs()[0]->node();
-    Node *q_add = q_reshape->inputs()[0]->node();
-    Node *q_matmul = q_add->inputs()[0]->node();
+    Node* q_transpose = qk_matmul->inputs()[0]->node();
+    Node* q_reshape = q_transpose->inputs()[0]->node();
+    Node* q_add = q_reshape->inputs()[0]->node();
+    Node* q_matmul = q_add->inputs()[0]->node();
     // k path
-    Node *k_transpose = qk_matmul->inputs()[1]->node();
-    Node *k_reshape = k_transpose->inputs()[0]->node();
-    Node *k_add = k_reshape->inputs()[0]->node();
-    Node *k_matmul = k_add->inputs()[0]->node();
+    Node* k_transpose = qk_matmul->inputs()[1]->node();
+    Node* k_reshape = k_transpose->inputs()[0]->node();
+    Node* k_add = k_reshape->inputs()[0]->node();
+    Node* k_matmul = k_add->inputs()[0]->node();
     // v path
-    Node *v_transpose = qkv_matmul->inputs()[1]->node();
-    Node *v_reshape = v_transpose->inputs()[0]->node();
-    Node *v_add = v_reshape->inputs()[0]->node();
-    Node *v_matmul = v_add->inputs()[0]->node();
+    Node* v_transpose = qkv_matmul->inputs()[1]->node();
+    Node* v_reshape = v_transpose->inputs()[0]->node();
+    Node* v_add = v_reshape->inputs()[0]->node();
+    Node* v_matmul = v_add->inputs()[0]->node();
     // input node
-    Node *source_node = q_matmul->inputs()[0]->node();
+    Node* source_node = q_matmul->inputs()[0]->node();
 
     // Obtain Q, K ,V weights and bias
-    Node *q_weight_node = q_matmul->inputs()[1]->node();
+    Node* q_weight_node = q_matmul->inputs()[1]->node();
     if (q_weight_node->kind() != kConstant) {
       return false;
     }
@@ -239,7 +239,7 @@ struct FuseAttention final : public PredicateBasedPass {
     if (q_weight.sizes().size() != 2) {
       return false;
     }
-    Node *q_bias_node = q_add->inputs()[1]->node();
+    Node* q_bias_node = q_add->inputs()[1]->node();
     if (q_bias_node->kind() != kConstant) {
       return false;
     }
@@ -247,7 +247,7 @@ struct FuseAttention final : public PredicateBasedPass {
     if (q_bias.sizes().size() != 1) {
       return false;
     }
-    Node *k_weight_node = k_matmul->inputs()[1]->node();
+    Node* k_weight_node = k_matmul->inputs()[1]->node();
     if (k_weight_node->kind() != kConstant) {
       return false;
     }
@@ -255,7 +255,7 @@ struct FuseAttention final : public PredicateBasedPass {
     if (k_weight.sizes().size() != 2) {
       return false;
     }
-    Node *k_bias_node = k_add->inputs()[1]->node();
+    Node* k_bias_node = k_add->inputs()[1]->node();
     if (k_bias_node->kind() != kConstant) {
       return false;
     }
@@ -263,7 +263,7 @@ struct FuseAttention final : public PredicateBasedPass {
     if (k_bias.sizes().size() != 1) {
       return false;
     }
-    Node *v_weight_node = v_matmul->inputs()[1]->node();
+    Node* v_weight_node = v_matmul->inputs()[1]->node();
     if (v_weight_node->kind() != kConstant) {
       return false;
     }
@@ -271,7 +271,7 @@ struct FuseAttention final : public PredicateBasedPass {
     if (v_weight.sizes().size() != 2) {
       return false;
     }
-    Node *v_bias_node = v_add->inputs()[1]->node();
+    Node* v_bias_node = v_add->inputs()[1]->node();
     if (v_bias_node->kind() != kConstant) {
       return false;
     }
@@ -308,7 +308,7 @@ struct FuseAttention final : public PredicateBasedPass {
       }
     }
     // Create Attention Node
-    Node *attention_node = graph.create(Symbol("Attention"), 1);
+    Node* attention_node = graph.create(Symbol("Attention"), 1);
     Tensor attention_qkv_weights, attention_qkv_bias;
     attention_qkv_weights.sizes().push_back(q_weight.sizes()[0]);
     attention_qkv_weights.sizes().push_back(q_weight.sizes()[1] * 3);
@@ -318,7 +318,7 @@ struct FuseAttention final : public PredicateBasedPass {
     attention_qkv_bias.floats() = qkv_bias;
     attention_qkv_bias.elem_type() = TensorProto_DataType_FLOAT;
     // Construct qkv_weight constant input node
-    Node *attention_inputs_qkv_weight = graph.create(kConstant, 1);
+    Node* attention_inputs_qkv_weight = graph.create(kConstant, 1);
     attention_inputs_qkv_weight->t_(Symbol("value"), attention_qkv_weights);
     std::vector<Dimension> s_qkv_weight = {q_weight.sizes()[0],
                                            q_weight.sizes()[1] * 3};
@@ -327,7 +327,7 @@ struct FuseAttention final : public PredicateBasedPass {
         TensorProto_DataType_FLOAT);
     attention_inputs_qkv_weight->insertAfter(source_node);
     // Construct qkv_bias constant input node
-    Node *attention_inputs_qkv_bias = graph.create(kConstant, 1);
+    Node* attention_inputs_qkv_bias = graph.create(kConstant, 1);
     attention_inputs_qkv_bias->t_(Symbol("value"), attention_qkv_bias);
     std::vector<Dimension> s_qkv_bias = {q_weight.sizes()[1] * 3};
     attention_inputs_qkv_bias->output()->setSizes(s_qkv_bias);
@@ -336,17 +336,17 @@ struct FuseAttention final : public PredicateBasedPass {
     attention_inputs_qkv_bias->insertAfter(source_node);
     // Construct Attention inputs
     int num_heads = q_weight.sizes()[1] / 64;
-    Value *attention_output = n->output();
+    Value* attention_output = n->output();
     attention_node->i_(Symbol("num_heads"), num_heads);
     attention_node->i_(Symbol("unidirectional"), 0);
     attention_node->addInput(source_node->output());
     attention_node->addInput(attention_inputs_qkv_weight->output());
     attention_node->addInput(attention_inputs_qkv_bias->output());
     // Add two optional Node for extra_add_qk
-    auto *attention_inputs_mask_index = graph.create(kUndefined, 1);
+    auto* attention_inputs_mask_index = graph.create(kUndefined, 1);
     graph.appendNode(attention_inputs_mask_index);
     attention_inputs_mask_index->outputs()[0]->setUniqueName("");
-    auto *attention_inputs_past = graph.create(kUndefined, 1);
+    auto* attention_inputs_past = graph.create(kUndefined, 1);
     graph.appendNode(attention_inputs_past);
     attention_inputs_past->outputs()[0]->setUniqueName("");
 
@@ -355,12 +355,12 @@ struct FuseAttention final : public PredicateBasedPass {
 
     // Add tile node to solve the problem of unable to broadcast automatically
     // Get the sequence length dimension
-    Node *shape = graph.create(Symbol("Shape"), 1);
+    Node* shape = graph.create(Symbol("Shape"), 1);
     shape->addInput(source_node->output());
     shape->insertAfter(source_node);
-    Node *gather = graph.create(Symbol("Gather"), 1);
+    Node* gather = graph.create(Symbol("Gather"), 1);
     // add indices for gather
-    Node *indices = graph.create(kConstant, 1);
+    Node* indices = graph.create(kConstant, 1);
     Tensor indice_value;
     indice_value.sizes().push_back(static_cast<int64_t>(1));
     std::vector<int64_t> value = {1};
@@ -375,7 +375,7 @@ struct FuseAttention final : public PredicateBasedPass {
     gather->addInput(indices->output());
     gather->insertAfter(shape);
     // Construct the Shape of the Tile by Concat
-    Node *constant0 = graph.create(kConstant, 1);
+    Node* constant0 = graph.create(kConstant, 1);
     Tensor t0;
     t0.sizes().push_back(static_cast<int64_t>(1));
     std::vector<int64_t> shape_value0 = {1};
@@ -387,7 +387,7 @@ struct FuseAttention final : public PredicateBasedPass {
     constant0->output()->setElemType(TensorProto_DataType_INT64);
     constant0->insertAfter(gather);
 
-    Node *constant1 = graph.create(kConstant, 1);
+    Node* constant1 = graph.create(kConstant, 1);
     Tensor t1;
     t1.sizes().push_back(static_cast<int64_t>(1));
     std::vector<int64_t> shape_value1 = {num_heads};
@@ -399,7 +399,7 @@ struct FuseAttention final : public PredicateBasedPass {
     constant1->output()->setElemType(TensorProto_DataType_INT64);
     constant1->insertAfter(gather);
 
-    Node *constant2 = graph.create(kConstant, 1);
+    Node* constant2 = graph.create(kConstant, 1);
     Tensor t2;
     t2.sizes().push_back(static_cast<int64_t>(1));
     std::vector<int64_t> shape_value2 = {1};
@@ -411,7 +411,7 @@ struct FuseAttention final : public PredicateBasedPass {
     constant2->output()->setElemType(TensorProto_DataType_INT64);
     constant2->insertAfter(gather);
 
-    Node *concat = graph.create(kConcat, 1);
+    Node* concat = graph.create(kConcat, 1);
     concat->i_(kaxis, 0);
     concat->addInput(constant0->output());
     concat->addInput(constant1->output());
@@ -419,7 +419,7 @@ struct FuseAttention final : public PredicateBasedPass {
     concat->addInput(constant2->output());
     concat->insertAfter(gather);
     // Add Tile before mask_add
-    Node *tile = graph.create(kTile, 1);
+    Node* tile = graph.create(kTile, 1);
     tile->addInput(mask_add->inputs()[1]);
     tile->addInput(concat->output());
     tile->insertBefore(mask_add);
