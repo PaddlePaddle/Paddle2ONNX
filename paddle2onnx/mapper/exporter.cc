@@ -255,12 +255,11 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   auto graph = model->mutable_graph();
   graph->set_name("Model from PaddlePaddle.");
   auto opset_id = model->add_opset_import();
-  // TODO(jiangjiajun) custom op is not considered
   opset_id->set_domain("");
   opset_id->set_version(opset_version);
-  auto opset_id1 = model->add_opset_import();
-  opset_id1->set_domain("Paddle");
-  opset_id1->set_version(1);
+  auto opset_paddle_id = model->add_opset_import();
+  opset_paddle_id->set_domain("Paddle");
+  opset_paddle_id->set_version(1);
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
   if (parser.is_quantized_model) {
