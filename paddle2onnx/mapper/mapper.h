@@ -33,6 +33,13 @@ class Mapper {
     name_ = name;
   }
 
+  // The flag will control if the op is exported as a custom operator
+  // if export_as_custom_op = true, will exported as description in
+  // custom_op_info
+  bool export_as_custom_op = false;
+  // [exported_op_name, domain]
+  std::string custom_op_name;
+
   P2OLogger Logger(const bool& verbose, const int32_t& opset_version = 100) {
     bool v = verbose;
     if (opset_version <= helper_->GetOpsetVersion()) {
@@ -87,6 +94,9 @@ class Mapper {
     Assert(opset_version >= 7 && opset_version <= MAX_ONNX_OPSET_VERSION,
            "[Paddle2ONNX] Only support opset_version in range of [7, " +
                std::to_string(MAX_ONNX_OPSET_VERSION) + "].");
+    if (export_as_custom_op) {
+      return ExportAsCustomOp();
+    }
     if (opset_version == 16) {
       Opset16();
     } else if (opset_version == 15) {
@@ -109,6 +119,12 @@ class Mapper {
       Opset7();
     }
   }
+
+  virtual void ExportAsCustomOp() {
+    Assert(false,
+           "Operator " + name_ + "doesn't support export as custom operator.");
+  }
+
   virtual void Opset16() { Opset15(); }
 
   virtual void Opset15() { Opset14(); }
