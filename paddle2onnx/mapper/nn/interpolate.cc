@@ -115,8 +115,14 @@ void InterpolateMapper::Opset11() {
     auto nc = helper_->Slice(ipt_shape, {0}, {0}, {2});
     size = helper_->Concat({nc, size}, 0);
   }
-  auto node = helper_->MakeNode("Resize", {x_info[0].name, roi, scale, size},
-                                {out_info[0].name});
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> node;
+  if (size != "") {
+    node = helper_->MakeNode("Resize", {x_info[0].name, roi, scale, size},
+                             {out_info[0].name});
+  } else {
+    node = helper_->MakeNode("Resize", {x_info[0].name, roi, scale},
+                             {out_info[0].name});
+  }
   Assert(resize_mapper_.find(OpType()) != resize_mapper_.end(),
          "Cannot find " + OpType() + " in resize_mapper.");
   AddAttribute(node, "mode", resize_mapper_[OpType()]);
