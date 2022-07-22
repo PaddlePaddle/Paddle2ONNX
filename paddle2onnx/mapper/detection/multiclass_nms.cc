@@ -256,15 +256,9 @@ void NMSMapper::ExportAsCustomOp() {
       custom_op_name, {boxes_info[0].name, score_info[0].name},
       {out_info[0].name, index_info[0].name, num_rois_info[0].name});
   node->set_domain("Paddle");
-  bool normalized_;
-  float nms_threshold_;
-  float score_threshold_;
-  float nms_eta_;
-  int64_t nms_top_k_;
-  int64_t background_label_;
-  int64_t keep_top_k_;
   int64_t normalized = normalized_ ? 1 : 0;
   AddAttribute(node, "normalized", normalized);
+  AddAttribute(node, "nms_threshold", nms_threshold_);
   AddAttribute(node, "score_threshold", score_threshold_);
   AddAttribute(node, "nms_eta", nms_eta_);
   AddAttribute(node, "nms_top_k", nms_top_k_);
