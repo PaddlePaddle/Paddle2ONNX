@@ -163,7 +163,8 @@ def test_generate_proposals():
             opset_version=12,
             enable_onnx_checker=True)
 
-        sess = rt.InferenceSession(onnx_path)
+        sess = rt.InferenceSession(
+            onnx_path, providers=['CPUExecutionProvider'])
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
         input_name3 = sess.get_inputs()[2].name
