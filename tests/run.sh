@@ -47,6 +47,8 @@ ignore="test_expand_as.py \
         test_auto_scan_uniform_random.py \
         test_auto_scan_unique.py \
         test_auto_scan_dist.py \
+        test_auto_scan_distribute_fpn_proposals1.py \
+        ./test_auto_scan_generate_proposals.py \
         test_uniform.py \
         test_ceil.py \
         test_floor_divide.py \
