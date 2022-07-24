@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/exporter.h"
-
 #include <onnx/checker.h>
+#include <array>
 
 #include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
@@ -88,6 +88,12 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
 #ifdef PADDLE2ONNX_DEBUG
   P2OLogger(true) << "Mapper Name: " << mapper->Name() << std::endl;
 #endif
+  // Some operators will export as custom operator
+  auto iter = custom_ops.find(op.type());
+  if (iter != custom_ops.end()) {
+    mapper->export_as_custom_op = true;
+    mapper->custom_op_name = iter->second;
+  }
   mapper->Run();
   delete mapper;
 
@@ -96,51 +102,6 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
                   << std::endl;
 #endif
 }
-
-// void
-// ModelExporter::RemoveIsolatedNodes(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>*
-// parameters, std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>*
-// inputs, std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>*
-// outputs, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
-//   std::set<std::string> input_names;
-//   for (auto& item : *nodes) {
-//     for (size_t i = 0; i < item->input_size(); ++i) {
-//       input_names.insert(item->input(i));
-//     }
-//   }
-//   std::vector<int> remove_idx;
-//   for (size_t i = 0; i < parameters->size(); ++i) {
-//     bool isolated = true;
-//     for (size_t j = 0; j < (*parameters)[i]->output_size(); ++j) {
-//       if (input_names.find((*parameters)[i]->output(j)) != input_names.end())
-//       {
-//         isolated = false;
-//       }
-//     }
-//     if (isolated) {
-//       remove_idx.push_back(i);
-//     }
-//   }
-//   for (int i = remove_idx.size(); i > 1; --i) {
-//     parameters->erase(parameters->begin() + remove_idx[i - 1]);
-//   }
-//
-//   remove_idx.clear();
-//   for (size_t i = 0; i < nodes->size(); ++i) {
-//     bool isolated = true;
-//     for (size_t j = 0; j < (*nodes)[i]->output_size(); ++j) {
-//       if (input_names.find((*nodes)[i]->output(j)) != input_names.end()) {
-//         isolated = false;
-//       }
-//     }
-//     if (isolated) {
-//       remove_idx.push_back(i);
-//     }
-//   }
-//   for (int i = remove_idx.size(); i > 1; --i) {
-//     nodes->erase(nodes->begin() + remove_idx[i - 1]);
-//   }
-// }
 
 void ModelExporter::ProcessGraphDumplicateNames(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
@@ -294,9 +255,11 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   auto graph = model->mutable_graph();
   graph->set_name("Model from PaddlePaddle.");
   auto opset_id = model->add_opset_import();
-  // TODO(jiangjiajun) custom op is not considered
   opset_id->set_domain("");
   opset_id->set_version(opset_version);
+  auto opset_paddle_id = model->add_opset_import();
+  opset_paddle_id->set_domain("Paddle");
+  opset_paddle_id->set_version(1);
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
   if (parser.is_quantized_model) {
@@ -393,7 +356,7 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
 
 int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   int32_t opset_version = _helper.GetOpsetVersion();
-  int32_t max_opset = -1;
+  int32_t max_opset = 7;
   bool exportable = true;
   // Record the number of ops that need to be converted
   int converted_op_num = 0;
@@ -401,6 +364,9 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
       auto op = parser.GetOpDesc(i, j);
+      if (custom_ops.find(op.type()) != custom_ops.end()) {
+        continue;
+      }
       if (op.type() == "feed" || op.type() == "fetch") {
         continue;
       }
@@ -436,10 +402,6 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
     for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter) {
       P2OLogger() << *iter << std::endl;
     }
-  }
-  // If there are only feed and fetch op in Paddle model
-  if (!converted_op_num) {
-    return 7;
   }
 
   // Here we put some checks to make sure

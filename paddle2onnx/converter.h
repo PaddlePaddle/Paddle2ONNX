@@ -26,19 +26,25 @@
 
 namespace paddle2onnx {
 
-PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
-                                   int32_t opset_version = 11,
-                                   bool auto_upgrade_opset = true,
-                                   bool verbose = false,
-                                   bool enable_onnx_checker = true,
-                                   bool enable_experimental_op = false,
-                                   bool enable_optimize = true);
+struct PADDLE2ONNX_DECL CustomOp {
+  char op_name[100] = "null";
+  // if export_op_name set as "paddle2onnx_null"
+  // it will automaticly change to `op_name`
+  char export_op_name[100] = "paddle2onnx_null";
+};
+
+PADDLE2ONNX_DECL bool IsExportable(
+    const char* model, const char* params, int32_t opset_version = 11,
+    bool auto_upgrade_opset = true, bool verbose = false,
+    bool enable_onnx_checker = true, bool enable_experimental_op = false,
+    bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0);
 
 PADDLE2ONNX_DECL bool IsExportable(
     const void* model_buffer, int model_size, const void* params_buffer,
     int params_size, int32_t opset_version = 11, bool auto_upgrade_opset = true,
     bool verbose = false, bool enable_onnx_checker = true,
-    bool enable_experimental_op = false, bool enable_optimize = true);
+    bool enable_experimental_op = false, bool enable_optimize = true,
+    CustomOp* ops = nullptr, int op_count = 0);
 
 PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              int* out_size, int32_t opset_version = 11,
@@ -46,14 +52,15 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              bool verbose = false,
                              bool enable_onnx_checker = true,
                              bool enable_experimental_op = false,
-                             bool enable_optimize = true);
+                             bool enable_optimize = true,
+                             CustomOp* ops = nullptr, int op_count = 0);
 
 PADDLE2ONNX_DECL bool Export(
     const void* model_buffer, int model_size, const void* params_buffer,
     int params_size, char** out, int* out_size, int32_t opset_version = 11,
     bool auto_upgrade_opset = true, bool verbose = false,
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
-    bool enable_optimize = true);
+    bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0);
 
 struct PADDLE2ONNX_DECL OnnxReader {
   OnnxReader(const char* model_buffer, int buffer_size);
