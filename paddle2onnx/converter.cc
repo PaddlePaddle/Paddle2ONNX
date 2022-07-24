@@ -188,4 +188,11 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
   return true;
 }
 
+ModelTensorInfo::~ModelTensorInfo() {
+  if (shape != nullptr) {
+    delete[] shape;
+    shape = nullptr;
+    rank = 0;
+  }
+}
 }  // namespace paddle2onnx
