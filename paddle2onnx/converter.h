@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include <stdint.h>
+#include <string>
 
 #if defined(_WIN32)
 #ifdef PADDLE2ONNX_LIB
@@ -37,14 +38,16 @@ PADDLE2ONNX_DECL bool IsExportable(
     const char* model, const char* params, int32_t opset_version = 11,
     bool auto_upgrade_opset = true, bool verbose = false,
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
-    bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0);
+    bool enable_optimize = true, std::string deploy_backend = "onnxruntime",
+    CustomOp* ops = nullptr, int op_count = 0);
 
 PADDLE2ONNX_DECL bool IsExportable(
     const void* model_buffer, int model_size, const void* params_buffer,
     int params_size, int32_t opset_version = 11, bool auto_upgrade_opset = true,
     bool verbose = false, bool enable_onnx_checker = true,
     bool enable_experimental_op = false, bool enable_optimize = true,
-    CustomOp* ops = nullptr, int op_count = 0);
+    std::string deploy_backend = "onnxruntime", CustomOp* ops = nullptr,
+    int op_count = 0);
 
 PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              int* out_size, int32_t opset_version = 11,
@@ -53,6 +56,7 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              bool enable_onnx_checker = true,
                              bool enable_experimental_op = false,
                              bool enable_optimize = true,
+                             std::string deploy_backend = "onnxruntime",
                              CustomOp* ops = nullptr, int op_count = 0);
 
 PADDLE2ONNX_DECL bool Export(
@@ -60,7 +64,8 @@ PADDLE2ONNX_DECL bool Export(
     int params_size, char** out, int* out_size, int32_t opset_version = 11,
     bool auto_upgrade_opset = true, bool verbose = false,
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
-    bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0);
+    bool enable_optimize = true, std::string deploy_backend = "onnxruntime",
+    CustomOp* ops = nullptr, int op_count = 0);
 
 struct PADDLE2ONNX_DECL ModelTensorInfo {
   char name[100];

@@ -40,17 +40,19 @@ def export(model_file,
            enable_onnx_checker=True,
            enable_experimental_op=True,
            enable_optimize=True,
+           deploy_backend="onnxruntime",
            custom_op_info=None):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     if custom_op_info is None:
         onnx_model_str = c_p2o.export(
             model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-            enable_onnx_checker, enable_experimental_op, enable_optimize, {})
+            enable_onnx_checker, enable_experimental_op, enable_optimize,
+            deploy_backend, {})
     else:
         onnx_model_str = c_p2o.export(
             model_file, params_file, opset_version, auto_upgrade_opset, verbose,
             enable_onnx_checker, enable_experimental_op, enable_optimize,
-            custom_op_info)
+            deploy_backend, custom_op_info)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
