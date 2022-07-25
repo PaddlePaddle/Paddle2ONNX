@@ -40,7 +40,7 @@ PADDLE2ONNX_DECL PaddleReader::PaddleReader(const char* model_buffer,
       std::string name = prog->blocks(0).ops(i).inputs(0).arguments(0);
       int64_t order = -1;
       GetOpAttr(prog->blocks(0).ops(i), "col", &order);
-      Assert(order > 0, "Find invalid order less than 0 in fetch op.");
+      Assert(order >= 0, "Find invalid order less than 0 in fetch op.");
       Assert(order < 100,
              "Find invalid order which bigger than 99 in fetch op.");
       num_outputs += 1;
@@ -49,13 +49,15 @@ PADDLE2ONNX_DECL PaddleReader::PaddleReader(const char* model_buffer,
       std::string name = prog->blocks(0).ops(i).outputs(0).arguments(0);
       int64_t order = -1;
       GetOpAttr(prog->blocks(0).ops(i), "col", &order);
-      Assert(order > 0, "Find invalid order less than 0 in feed op.");
+      Assert(order >= 0, "Find invalid order less than 0 in feed op.");
       Assert(order < 100,
              "Find invalid order which bigger than 99 in feed op.");
       num_inputs += 1;
       memcpy(input_names[order], name.c_str(), name.size());
     }
-    has_nms = !(prog->blocks(0).ops(i).type().find("nms") == std::string::npos);
+    if (!has_nms) {
+      has_nms = !(prog->blocks(0).ops(i).type().find("nms") == std::string::npos);
+    }
   }
 }
 
