@@ -173,10 +173,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
                                bool enable_onnx_checker,
                                bool enable_experimental_op,
                                bool enable_optimize,
-                               std::string deploy_backend) {
-  std::transform(deploy_backend.begin(), deploy_backend.end(),
-                 deploy_backend.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
+                               const std::string& deploy_backend) {
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
   _current_exported_num = 0;
