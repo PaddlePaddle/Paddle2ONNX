@@ -4,6 +4,7 @@
 #include <string>
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/mapper/exporter.h"
+#include "paddle2onnx/optimizer/paddle2onnx_optimizer.h"
 
 namespace paddle2onnx {
 
@@ -88,6 +89,42 @@ PADDLE2ONNX_DECL int OnnxReader::GetOutputIndex(const char* name) const {
     }
   }
   return -1;
+}
+
+bool RemoveMultiClassNMS(const char* model_buffer, int buffer_size,
+                         char** out_model, int* out_model_size) {
+  ONNX_NAMESPACE::ModelProto model;
+  std::string content(model_buffer, model_buffer + buffer_size);
+  model.ParseFromString(content);
+  auto* graph = model.mutable_graph();
+  int nms_index = -1;
+  std::vector<std::string> inputs;
+  for (int i = 0; i < graph->node_size(); ++i) {
+    if (graph->node(i).op_type() == "MultiClassNMS") {
+      nms_index = -1;
+      for (int j = 0; j < graph->node(i).input_size(); ++j) {
+        inputs.push_back(graph->node(i).input(j));
+      }
+      break;
+    }
+  }
+  graph->clear_output();
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    auto output = graph->add_output();
+    output->set_name(inputs[i]);
+    auto type_proto = output->mutable_type();
+    auto tensor_type_proto = type_proto->mutable_tensor_type();
+    tensor_type_proto->set_elem_type(ONNX_NAMESPACE::TensorProto::FLOAT);
+    auto shape = tensor_type_proto->mutable_shape();
+    shape->add_dim()->set_dim_value(-1);
+    shape->add_dim()->set_dim_value(-1);
+    shape->add_dim()->set_dim_value(-1);
+  }
+  auto optimized_model = ONNX_NAMESPACE::optimization::OptimizeOnnxModel(model);
+  *out_model_size = optimized_model.ByteSizeLong();
+  *out_model = new char[*out_model_size];
+  optimized_model.SerializeToArray(*out_model, *out_model_size);
+  return true;
 }
 
 }  // namespace paddle2onnx
