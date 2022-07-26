@@ -90,6 +90,10 @@ struct PADDLE2ONNX_DECL OnnxReader {
   int num_outputs;
 };
 
+PADDLE2ONNX_DECL bool RemoveMultiClassNMS(const char* onnx_model,
+                                          int model_size, char** out_model,
+                                          int* out_model_size);
+
 struct PADDLE2ONNX_DECL PaddleReader {
   PaddleReader(const char* model_buffer, int buffer_size);
   int NumInputs() const;
