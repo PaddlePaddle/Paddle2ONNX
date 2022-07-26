@@ -21,11 +21,13 @@
 
 namespace paddle2onnx {
 
-PADDLE2ONNX_DECL bool IsExportable(
-    const char* model, const char* params, int32_t opset_version,
-    bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
-    bool enable_experimental_op, bool enable_optimize, CustomOp* ops,
-    int op_count, const std::string& deploy_backend) {
+PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
+                                   int32_t opset_version,
+                                   bool auto_upgrade_opset, bool verbose,
+                                   bool enable_onnx_checker,
+                                   bool enable_experimental_op,
+                                   bool enable_optimize, CustomOp* ops,
+                                   int op_count, const char* deploy_backend) {
   auto parser = PaddleParser();
   if (!parser.Init(model, params)) {
     return false;
@@ -63,12 +65,14 @@ PADDLE2ONNX_DECL bool IsExportable(
   return true;
 }
 
-PADDLE2ONNX_DECL bool IsExportable(
-    const void* model_buffer, int model_size, const void* params_buffer,
-    int params_size, int32_t opset_version, bool auto_upgrade_opset,
-    bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
-    bool enable_optimize, CustomOp* ops, int op_count,
-    const std::string& deploy_backend) {
+PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
+                                   const void* params_buffer, int params_size,
+                                   int32_t opset_version,
+                                   bool auto_upgrade_opset, bool verbose,
+                                   bool enable_onnx_checker,
+                                   bool enable_experimental_op,
+                                   bool enable_optimize, CustomOp* ops,
+                                   int op_count, const char* deploy_backend) {
   auto parser = PaddleParser();
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
     return false;
@@ -112,7 +116,7 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              bool enable_onnx_checker,
                              bool enable_experimental_op, bool enable_optimize,
                              CustomOp* ops, int op_count,
-                             const std::string& deploy_backend) {
+                             const char* deploy_backend) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model, params)) {
@@ -154,7 +158,7 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
                              bool enable_onnx_checker,
                              bool enable_experimental_op, bool enable_optimize,
                              CustomOp* ops, int op_count,
-                             const std::string& deploy_backend) {
+                             const char* deploy_backend) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {

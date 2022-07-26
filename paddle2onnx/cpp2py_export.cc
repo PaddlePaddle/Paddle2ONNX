@@ -49,7 +49,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize, ops, info.size(),
-                deploy_backend)) {
+                deploy_backend.c_str())) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
       return pybind11::bytes("");
     }
