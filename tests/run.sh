@@ -89,7 +89,7 @@ do
         fi
     fi
 done
-
+echo "finished"
 echo "total bugs: "${bug} >> result.txt
 cat result.txt
 exit ${bug}
