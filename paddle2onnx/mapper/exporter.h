@@ -87,7 +87,8 @@ struct ModelExporter {
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
                   bool enable_experimental_op = false,
-                  bool enable_optimize = true);
+                  bool enable_optimize = true,
+                  const std::string& deploy_backend = "onnxruntime");
 };
 
 }  // namespace paddle2onnx

@@ -172,7 +172,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
                                bool auto_upgrade_opset, bool verbose,
                                bool enable_onnx_checker,
                                bool enable_experimental_op,
-                               bool enable_optimize) {
+                               bool enable_optimize,
+                               const std::string& deploy_backend) {
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
   _current_exported_num = 0;
@@ -264,8 +265,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
   if (parser.is_quantized_model) {
     quantize_model_processer.ProcessQuantizeModel(
-        &parameters, &inputs, &outputs, &_helper.nodes, &_helper, "onnxruntime",
-        parser);
+        &parameters, &inputs, &outputs, &_helper.nodes, &_helper,
+        deploy_backend, parser);
     // Update int8 weights in quantized OP to float32
     UpdateParameters(_helper.updated_params);
   }
