@@ -134,11 +134,15 @@ void DequantizeLinearMapper::Opset10() {
     if (i <= 1e-10) all_positive = false;
     onnx_scales.push_back(i / 127);
   }
-  auto scale_info = GetInput("Scale");
-  Assert(all_positive,
-         "All scale values should be integers, but a negative scale was found "
-         "in the tensor: " +
-             scale_info[0].name + ".");
+  if (!all_positive) {
+    Warn() << "Dequantize OP contains negative scale, so this scale info will "
+              "be discarded."
+           << std::endl;
+    auto out_info = GetOutput("Y");
+    helper_->AutoCast(x_info[0].name, out_info[0].name, x_info[0].dtype,
+                      out_info[0].dtype);
+    return;
+  }
   std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
   std::string scale_node, zero_node;
   if (onnx_zeros.size() == 1) {
