@@ -57,9 +57,16 @@ void QuantizeLinearMapper::Opset10() {
          "Failed to read tensor value of `Scale`.");
   std::vector<float> onnx_scales;
   onnx_scales.reserve(scales.size());
+  bool all_positive = true;
   for (auto i : scales) {
+    if (i <= 1e-10) all_positive = false;
     onnx_scales.push_back(i / 127);
   }
+  auto scale_info = GetInput("Scale");
+  Assert(all_positive,
+         "All scale values should be integers, but a negative scale was found "
+         "in the tensor: " +
+             scale_info[0].name + ".");
   std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
 
   std::string scale_node, zero_node;

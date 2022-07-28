@@ -245,7 +245,11 @@ void QuantizeModelProcessor::AddTrtQDQ() {
       if (helper_->GetOpsetVersion() >= 13) {
         AddAttribute(dq_node, "axis", quantize_axis);
       }
-      ReplaceInputOfAllNodes(name, dq_node->output(0));
+      for (size_t i = 0; i < node->input_size(); ++i) {
+        if (node->input(i) == name) {
+          node->set_input(i, dq_node->output(0));
+        }
+      }
     }
   }
 }
@@ -984,4 +988,4 @@ void QuantizeModelProcessor::AppendQuantizeTensor(const std::string& tensor,
     }
   }
 }
-}
+}  // namespace paddle2onnx
