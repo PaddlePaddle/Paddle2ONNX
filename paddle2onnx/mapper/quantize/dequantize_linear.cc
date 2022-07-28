@@ -129,19 +129,8 @@ void DequantizeLinearMapper::Opset10() {
          "Failed to read tensor value of `Scale`.");
   std::vector<float> onnx_scales;
   onnx_scales.reserve(scales.size());
-  bool all_positive = true;
   for (auto &i : scales) {
-    if (i <= 1e-10) all_positive = false;
     onnx_scales.push_back(i / 127);
-  }
-  if (!all_positive) {
-    Warn() << "Dequantize OP contains negative scale, so this scale info will "
-              "be discarded."
-           << std::endl;
-    auto out_info = GetOutput("Y");
-    helper_->AutoCast(x_info[0].name, out_info[0].name, x_info[0].dtype,
-                      out_info[0].dtype);
-    return;
   }
   std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
   std::string scale_node, zero_node;
