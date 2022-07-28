@@ -231,7 +231,7 @@ void QuantizeModelProcessor::AddTrtQDQ() {
               name);
       QuantizeInfo quantize_info = helper_->quantize_info[name];
       std::vector<float> scales = quantize_info.scale_;
-      for (auto i : scales) {
+      for (auto& i : scales) {
         if (i <= 1e-10) {
           negative_scale_tensor = negative_scale_tensor + " " + name;
         }
