@@ -29,7 +29,6 @@ class TakeAlongAxisMapper : public Mapper {
   }
 
   int32_t GetMinOpset(bool verbose = false);
-  // void Opset7();
   void Opset11();
 
  private:

@@ -19,11 +19,6 @@ REGISTER_MAPPER(take_along_axis, TakeAlongAxisMapper)
 
 int32_t TakeAlongAxisMapper::GetMinOpset(bool verbose) {
   auto index_info = GetInput("Index");
-  // if (index_info[0].shape.size() > 1) {
-  //   Logger(verbose, 11) << "While rank of index > 1, " << RequireOpset(11)
-  //                       << std::endl;
-  //   return 11;
-  // }
   return 11;
 }
 
@@ -38,17 +33,6 @@ void TakeAlongAxisMapper::Opset11() {
       helper_->MakeNode("GatherElements", {x_info[0].name, index_info[0].name},
                         {out_info[0].name});
   AddAttribute(node, "axis", axis);
-
-  // if (index_info[0].shape.size() == 1) {
-  //   auto node = helper_->MakeNode(
-  //       "Gather", {x_info[0].name, index_info[0].name}, {out_info[0].name});
-  //   AddAttribute(node, "axis", axis);
-  // } else {
-  //   auto index = helper_->AutoCast(index_info[0].name, index_info[0].dtype,
-  //                                  P2ODataType::INT64);
-  //   helper_->MakeNode("GatherND", {x_info[0].name, index_info[0].name},
-  //                     {out_info[0].name});
-  // }
 }
 
 }  // namespace paddle2onnx
