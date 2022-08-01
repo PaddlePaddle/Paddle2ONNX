@@ -106,14 +106,14 @@ endif()
 #)
 if(WIN32)
   install(
-    TARGETS ${LIBRARY_NAME}
+    TARGETS paddle2onnx
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION lib
   )
 else()
   install(
-    TARGETS ${LIBRARY_NAME}
+    TARGETS paddle2onnx
     LIBRARY DESTINATION lib
   )
 endif()
