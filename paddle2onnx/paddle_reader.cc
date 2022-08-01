@@ -27,8 +27,52 @@ void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
 }
 
-PADDLE2ONNX_DECL PaddleReader::PaddleReader(const char* model_buffer,
-                                            int buffer_size) {
+void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+               const std::string& name, float* res) {
+  bool found = false;
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      found = true;
+      Assert(op.attrs(i).has_f(), "Cannot find float data from attr: " + name +
+                                      " in op: " + op.type());
+      *res = op.attrs(i).f();
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
+
+void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+               const std::string& name, bool* res) {
+  bool found = false;
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      found = true;
+      Assert(op.attrs(i).has_b(), "Cannot find bool data from attr: " + name +
+                                      " in op: " + op.type());
+      *res = op.attrs(i).b();
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
+
+void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+               const std::string& name, std::string* res) {
+  bool found = false;
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      found = true;
+      Assert(op.attrs(i).has_s(), "Cannot find string data from attr: " + name +
+                                      " in op: " + op.type());
+      *res = op.attrs(i).s();
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
+
+PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
   auto prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
   std::string content(model_buffer, model_buffer + buffer_size);
   Assert(prog->ParseFromString(content), "Failed to parse PaddlePaddle model.");
@@ -56,16 +100,29 @@ PADDLE2ONNX_DECL PaddleReader::PaddleReader(const char* model_buffer,
       memcpy(input_names[order], name.c_str(), name.size());
     }
     if (!has_nms) {
-      has_nms = !(prog->blocks(0).ops(i).type().find("nms") == std::string::npos);
+      has_nms =
+          !(prog->blocks(0).ops(i).type().find("nms") == std::string::npos);
+      if (has_nms) {
+        GetOpAttr(prog->blocks(0).ops(i), "background_label",
+                  &nms_params.background_label);
+        GetOpAttr(prog->blocks(0).ops(i), "keep_top_k", &nms_params.keep_top_k);
+        GetOpAttr(prog->blocks(0).ops(i), "nms_eta", &nms_params.nms_eta);
+        GetOpAttr(prog->blocks(0).ops(i), "nms_threshold",
+                  &nms_params.nms_threshold);
+        GetOpAttr(prog->blocks(0).ops(i), "score_threshold",
+                  &nms_params.score_threshold);
+        GetOpAttr(prog->blocks(0).ops(i), "nms_top_k", &nms_params.nms_top_k);
+        GetOpAttr(prog->blocks(0).ops(i), "normalized", &nms_params.normalized);
+      }
     }
   }
 }
 
-PADDLE2ONNX_DECL int PaddleReader::NumInputs() const { return num_inputs; }
+int PaddleReader::NumInputs() const { return num_inputs; }
 
-PADDLE2ONNX_DECL int PaddleReader::NumOutputs() const { return num_outputs; }
+int PaddleReader::NumOutputs() const { return num_outputs; }
 
-PADDLE2ONNX_DECL int PaddleReader::GetInputIndex(const char* name) const {
+int PaddleReader::GetInputIndex(const char* name) const {
   for (int i = 0; i < num_inputs; ++i) {
     if (strcmp(name, input_names[i]) == 0) {
       return i;
@@ -74,7 +131,7 @@ PADDLE2ONNX_DECL int PaddleReader::GetInputIndex(const char* name) const {
   return -1;
 }
 
-PADDLE2ONNX_DECL int PaddleReader::GetOutputIndex(const char* name) const {
+int PaddleReader::GetOutputIndex(const char* name) const {
   for (int i = 0; i < num_outputs; ++i) {
     if (strcmp(name, output_names[i]) == 0) {
       return i;

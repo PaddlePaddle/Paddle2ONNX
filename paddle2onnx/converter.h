@@ -66,11 +66,22 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0,
     const char* deploy_backend = "onnxruntime");
 
+// Following are inside usage, will remove it maybe
 struct PADDLE2ONNX_DECL ModelTensorInfo {
   char name[100];
   int32_t* shape = nullptr;
   int32_t rank = 0;
   ~ModelTensorInfo();
+};
+
+struct PADDLE2ONNX_DECL NMSParameters {
+  int64_t background_label = -1;
+  int64_t keep_top_k = 300;
+  float nms_eta = 1.0;
+  float nms_threshold = 0.7;
+  float score_threshold = 0.01;
+  int64_t nms_top_k = 10000;
+  bool normalized = true;
 };
 
 struct PADDLE2ONNX_DECL OnnxReader {
@@ -111,6 +122,7 @@ struct PADDLE2ONNX_DECL PaddleReader {
   int num_inputs;
   int num_outputs;
   bool has_nms = false;
+  NMSParameters nms_params;
 };
 
 }  // namespace paddle2onnx
