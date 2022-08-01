@@ -104,10 +104,19 @@ endif()
 #    FILES_MATCHING
 #    PATTERN "converter.h"
 #)
-install(
-    TARGETS paddle2onnx
+if(WIN32)
+  install(
+    TARGETS ${LIBRARY_NAME}
     LIBRARY DESTINATION lib
-)
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION lib
+  )
+else()
+  install(
+    TARGETS ${LIBRARY_NAME}
+    LIBRARY DESTINATION lib
+  )
+endif()
 install(
     FILES paddle2onnx/converter.h
     ${PROJECT_SOURCE_DIR}/paddle2onnx/converter.h
