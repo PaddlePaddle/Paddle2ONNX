@@ -222,15 +222,33 @@ void QuantizeModelProcessor::AddTrtQDQ() {
       }
       quantize_tensors = tensor_names;
     }
+
+    std::string negative_scale_tensor = "";
+    for (std::string& name : quantize_tensors) {
+      Assert(
+          helper_->quantize_info.find(name) != helper_->quantize_info.end(),
+          "[QuantizeModelProcessor] Can not find quantize info for tensor: " +
+              name);
+      QuantizeInfo quantize_info = helper_->quantize_info[name];
+      std::vector<float> scales = quantize_info.scale_;
+      for (auto& i : scales) {
+        if (i <= 1e-10) {
+          negative_scale_tensor = negative_scale_tensor + " " + name;
+        }
+      }
+    }
+    if (negative_scale_tensor.size() > 0) {
+      P2OLogger()
+          << "[Warning] The scale of tensors: [ " + negative_scale_tensor +
+                 " ] contains negative scale, so this OP will not be quantized."
+          << std::endl;
+      continue;
+    }
     // An OP requires a separate quantize op
     for (std::string& name : quantize_tensors) {
       if (IsGraphOutput(name)) {
         continue;
       }
-      Assert(
-          helper_->quantize_info.find(name) != helper_->quantize_info.end(),
-          "[QuantizeModelProcessor] Can not find quantize info for tensor: " +
-              name);
       QuantizeInfo quantize_info = helper_->quantize_info[name];
       std::string scale_node = quantize_info.scale_node_;
       std::string zeros_node = quantize_info.zeros_node_;
@@ -245,7 +263,11 @@ void QuantizeModelProcessor::AddTrtQDQ() {
       if (helper_->GetOpsetVersion() >= 13) {
         AddAttribute(dq_node, "axis", quantize_axis);
       }
-      ReplaceInputOfAllNodes(name, dq_node->output(0));
+      for (size_t i = 0; i < node->input_size(); ++i) {
+        if (node->input(i) == name) {
+          node->set_input(i, dq_node->output(0));
+        }
+      }
     }
   }
 }
@@ -984,4 +1006,4 @@ void QuantizeModelProcessor::AppendQuantizeTensor(const std::string& tensor,
     }
   }
 }
-}
+}  // namespace paddle2onnx
