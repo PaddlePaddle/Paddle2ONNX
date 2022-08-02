@@ -322,6 +322,7 @@ class APIOnnx(object):
         clipped_program_bytes = static.io._serialize_program(clipped_program)
         static.io.save_to_file(clipped_program_path, clipped_program_bytes)
         paddle.disable_static()
+        paddle.set_device("cpu")
 
     def run(self):
         """
