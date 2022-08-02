@@ -75,7 +75,7 @@ def arg_parser():
         "--enable_dev_version",
         type=ast.literal_eval,
         default=True,
-        help="whether to use new version of Paddle2ONNX which is under developing, default False"
+        help="whether to use new version of Paddle2ONNX which is under developing, default True"
     )
     parser.add_argument(
         "--deploy_backend",
