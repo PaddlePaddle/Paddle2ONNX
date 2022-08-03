@@ -169,8 +169,7 @@ class PicodetPreProcess:
         im = im.transpose((2, 0, 1))  # chw
         # if FLAGS.model_type == "picodet":
         im = self.padStride(im)
-        im = im.transpose((1, 2, 0))  # hwc
-        im = np.array((im,)).astype('float32')
+        # im = im.transpose((1, 2, 0))  # hwc
 
         return im, src_image
 
@@ -276,10 +275,8 @@ def warp_boxes(boxes, ori_shape):
 def draw_box(img, results, class_label, scale_x, scale_y):
     label_list = list(
         # 改动点
-        # map(lambda x: x.strip(), open(class_label, 'r').readlines()))
         map(lambda x: x.strip(), class_label))
     for i in range(len(results)):
-        # print(label_list[int(results[i][0])], ':', results[i][1])
         bbox = results[i, 2:]
         label_id = int(results[i, 0])
         score = results[i, 1]
@@ -288,12 +285,16 @@ def draw_box(img, results, class_label, scale_x, scale_y):
                 int(bbox[0] * scale_x), int(bbox[1] * scale_y),
                 int(bbox[2] * scale_x), int(bbox[3] * scale_y)
             ]
-            cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+            cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0, 255, 0), 1)
+            # cv2.imshow("name", img)
+            # cv2.waitKey(0)
             font = cv2.FONT_HERSHEY_SIMPLEX
             label_text = label_list[label_id]
-            print("label: {} ,pred:{}".format(label_text,str(round(score, 3))))
-            cv2.putText(img, label_text + "  " + str(round(score, 3)), (xmin, ymin - 10), font, 0.55,
-                        (255, 255, 255), 2, cv2.LINE_AA)
+            print("label: {} ,pred:{}, loc:(min:{},max:{})".format(label_text, str(round(score, 3)), (xmin, ymin), (xmax, ymax)))
+            img = cv2.putText(img, (label_text), (xmin, ymin - 10), font, 0.4,
+                              (0, 0, 0), 1, cv2.LINE_AA)
+            img = cv2.putText(img, str(round(score, 3)), (xmin, ymin), font, 0.3,
+                              (0, 0, 0), 1, cv2.LINE_AA)
     return img
 
 
