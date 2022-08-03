@@ -2,6 +2,7 @@ import argparse
 from utils.picodet_tool import PicodetPreProcess, hard_nms, softmax, warp_boxes, draw_box, label_list, sigmoid
 import numpy as np
 import cv2
+import os
 
 
 def parse_args():
@@ -102,7 +103,7 @@ class Picodet:
         model = RKNNConfigBoard(self.model_path, self.target).create_rknn(verbose=verbose)
         result = model.inference([new_inputs])
         for i in range(len(result)):
-            result[i] = np.resize(result[i],(result[i].shape[0:3]))
+            result[i] = np.resize(result[i], (result[i].shape[0:3]))
         return result, inputs, src_image
 
     def detect(self, scores, raw_boxes, input_shape):
@@ -215,8 +216,8 @@ class Picodet:
             result, image, src_image = self.infer_by_rknn_pc(img, verbose=False)
         elif self.backend_type == "rk_board":
             result, image, src_image = self.infer_by_rknn_board(img, verbose=False)
-        for i in result:
-            print(i.shape)
+        # for i in result:
+        #     print(i.shape)
         np_score_list = []
         np_boxes_list = []
         num_outs = int(len(result) / 2)
@@ -232,8 +233,9 @@ class Picodet:
         # print("image.shape:{}".format(image.shape))
         # print("scale_x:{},scale_y:{}".format(scale_x,scale_y))
         res_image = draw_box(src_image, out_boxes_list, label_list, scale_x, scale_y)
-        t_ls = FLAGS.save_path.split(".")
-        cv2.imwrite("." + t_ls[-2] + "_" + self.backend_type + "." + t_ls[-1], res_image)
+        t_ls = os.path.basename(FLAGS.save_path).split(".")
+        save_path = os.path.dirname(FLAGS.save_path) + "/" + t_ls[0] + "_" + self.backend_type + "." + t_ls[-1]
+        cv2.imwrite(save_path, res_image)
 
 
 if __name__ == "__main__":
