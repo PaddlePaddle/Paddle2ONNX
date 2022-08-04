@@ -34,20 +34,20 @@ python picodet_infer.py -h
 ### ONNX
 推理执行以下命令
 ```text
-python humanseg_infer_onnx.py
+python humanseg_infer.py
 ```
 
 ### RKNN for PC
 推理执行以下命令
 ```text
- python humanseg_infer_onnx.py --backend_type rk_pc
+ python humanseg_infer.py --backend_type rk_pc
 ```
 
 ### RKNN for Board
 推理执行以下命令
 ```text
-sudo -E python3 humanseg_infer_onnx.py --backend_type rk_board \
-                                        --model_path ./weights/rknn/ppseg_lite_portrait_192x192_with_softmax.rknn 
+sudo -E python3 humanseg_infer.py --backend_type rk_board \
+                                  --model_path ./weights/rknn/ppseg_lite_portrait_192x192_with_softmax.rknn 
 ```
 
 ## 踩坑

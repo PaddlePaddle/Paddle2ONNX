@@ -24,9 +24,11 @@ class ONNXConfig:
         # 获取模型的输入和输出
         self.sess = rt.InferenceSession(onnx_model_path)
         self.input_name = [input_name.name for input_name in self.sess.get_inputs()]
+        self.input_shape = [input_name.shape for input_name in self.sess.get_inputs()]
         self.output_name = [output_name.name for output_name in self.sess.get_outputs()]
         print("-> onnx path is", self.onnx_model_path)
         print("-> onnx input_name is", self.input_name)
+        print("-> onnx input_shape is", self.input_shape)
         print("-> onnx output_name is", self.output_name)
         print("****************************** ONNXConfig ******************************")
 
