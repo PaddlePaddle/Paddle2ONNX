@@ -14,8 +14,10 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include <string>
 #include <vector>
+
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/optimizer/paddle2onnx_optimizer.h"
@@ -53,7 +55,8 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
       return pybind11::bytes(onnx_proto);
     }
 
-    CustomOp ops[info.size()];
+    std::vector<CustomOp> ops;
+    ops.resize(info.size());
     int index = 0;
     for (auto& item : info) {
       strcpy(ops[index].op_name, item.first.c_str());
@@ -64,8 +67,8 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     int size = 0;
     if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
-                enable_experimental_op, enable_optimize, ops, info.size(),
-                deploy_backend.c_str())) {
+                enable_experimental_op, enable_optimize, ops.data(),
+                info.size(), deploy_backend.c_str())) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
       return pybind11::bytes("");
     }
