@@ -50,7 +50,8 @@ python PP_OCR_infer.py --backend_type rk_pc
 推理执行以下命令
 ```text
 sudo -E python3 PP_OCR_infer.py --backend_type rk_board \
-                                  --det_model_dir ./weights/rknn/PP_OCR_v2_det.rknn 
+                                  --det_model_dir ./weights/rknn/PP_OCR_v2_det.rknn \
+                                  --cls_model_dir ./weights/rknn/PP_OCR_v2_cls.rknn 
 ```
 
 ## 踩坑

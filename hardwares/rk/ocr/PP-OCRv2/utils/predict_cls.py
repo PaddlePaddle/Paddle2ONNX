@@ -48,12 +48,15 @@ class TextClassifier(object):
         self.postprocess_op = ClsPostProcess(args.label_list)
         self.args = args
 
-        model_dir = args.cls_model_dir
         if args.backend_type == "onnx":
             from utils.ONNXConfig import ONNXConfig
-            model_file_path = model_dir
-            sess = ONNXConfig(model_file_path)
-            self.predictor = sess
+            self.predictor = ONNXConfig(args.cls_model_dir)
+        elif args.backend_type == "rk_pc":
+            from utils.RKNNConfig import RKNNConfigPC
+            self.predictor = RKNNConfigPC(args.cls_model_dir).create_rknn(verbose=False)
+        elif args.backend_type == "rk_board":
+            from utils.RKNNConfig import RKNNConfigBoard
+            self.predictor = RKNNConfigBoard(args.cls_model_dir).create_rknn(verbose=False)
 
     def resize_norm_img(self, img):
         imgC, imgH, imgW = self.cls_image_shape
@@ -112,7 +115,15 @@ class TextClassifier(object):
             norm_img_batch = np.concatenate(norm_img_batch)
             norm_img_batch = norm_img_batch.copy()
 
-            outputs = self.predictor.infer(norm_img_batch)
+            if self.args.backend_type == "onnx":
+                outputs = self.predictor.infer(norm_img_batch)
+            elif self.args.backend_type == "rk_pc":
+                norm_img_batch = np.transpose(norm_img_batch, (0, 2, 3, 1))  # nchw nhwc
+                outputs = self.predictor.inference(norm_img_batch)
+            elif self.args.backend_type == "rk_board":
+                norm_img_batch = np.transpose(norm_img_batch, (0, 2, 3, 1))  # nchw nhwc
+                outputs = self.predictor.inference(norm_img_batch)
+            print(np.array(outputs).shape)
             prob_out = outputs[0][0:end_img_no - beg_img_no,:]
             cls_result = self.postprocess_op(prob_out)
             for rno in range(len(cls_result)):
@@ -121,4 +132,6 @@ class TextClassifier(object):
                 if '180' in label and score > self.cls_thresh:
                     img_list[indices[beg_img_no + rno]] = cv2.rotate(
                         img_list[indices[beg_img_no + rno]], 1)
+        if self.args.backend_type != "onnx":
+            self.predictor.release()
         return img_list, cls_res

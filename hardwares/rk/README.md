@@ -86,7 +86,7 @@ pip3 install rknn_toolkit_lite2-1.3.0-cp37-cp37m-linux_aarch64.whl
 安装完RKNN Toolkit Lite2，我们还需要安装RKNPU2驱动
 
 ```text
-cd ~/Downloads/rknpu2-master/runtime/RK356X/Linux/librknn_api/aarch64/
+cd ~/Downloads/rknpu2-master/runtime/RK3588/Linux/librknn_api/aarch64/
 sudo cp ./* /usr/lib
 
 ```

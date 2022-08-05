@@ -255,16 +255,15 @@ class TextDetector(object):
             use_dilation=args.use_dilation,
             score_mode=args.det_db_score_mode)
 
-        model_dir = args.det_model_dir
         if args.backend_type == "onnx":
             from utils.ONNXConfig import ONNXConfig
-            self.predictor = ONNXConfig(model_dir)
+            self.predictor = ONNXConfig(args.det_model_dir)
         elif args.backend_type == "rk_pc":
             from utils.RKNNConfig import RKNNConfigPC
-            self.predictor = RKNNConfigPC(model_dir).create_rknn(verbose=False)
+            self.predictor = RKNNConfigPC(args.det_model_dir).create_rknn(verbose=False)
         elif args.backend_type == "rk_board":
             from utils.RKNNConfig import RKNNConfigBoard
-            self.predictor = RKNNConfigBoard(model_dir).create_rknn(verbose=False)
+            self.predictor = RKNNConfigBoard(args.det_model_dir).create_rknn(verbose=False)
     def order_points_clockwise(self, pts):
         """
         reference from: https://github.com/jrosebr1/imutils/blob/master/imutils/perspective.py
@@ -326,9 +325,11 @@ class TextDetector(object):
         elif self.args.backend_type == "rk_pc":
             img = np.transpose(img, (0, 2, 3, 1))  # nchw nhwc
             outputs = self.predictor.inference(img)
+            self.predictor.release()
         elif self.args.backend_type == "rk_board":
             img = np.transpose(img, (0, 2, 3, 1))  # nchw nhwc
             outputs = self.predictor.inference(img)
+            self.predictor.release()
         preds = {}
         preds['maps'] = outputs[0]
         post_result = self.postprocess_op(preds, shape_list)

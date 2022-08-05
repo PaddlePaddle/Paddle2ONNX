@@ -55,7 +55,7 @@ def parse_args():
         help='The type for reading the model.',
         type=str,
         choices=["rk_board", "rk_pc", "onnx"],
-        default='onnx')
+        default='rk_pc')
     parser.add_argument(
         '--target',
         dest='target',
@@ -93,10 +93,11 @@ class PPOCR:
         cv2.imwrite("./images/after/temp.jpg",tmp)
 
         # text classifier
-        # if FLAGS.use_angle_cls:
-        #     text_classifier = predict_cls.TextClassifier(FLAGS)
-        #     img_crop_list, angle_list = text_classifier(img_crop_list)
-        # # # text recognize
+        if FLAGS.use_angle_cls:
+            text_classifier = predict_cls.TextClassifier(FLAGS)
+            img_crop_list, angle_list = text_classifier(img_crop_list)
+        print(angle_list)
+        # text recognize
         # text_recognizer = predict_rec.TextRecognizer(FLAGS)
         # rec_res = text_recognizer(img_crop_list)
         # _, filter_rec_res = postprocess(dt_boxes, rec_res)
