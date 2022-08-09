@@ -3,8 +3,7 @@ import onnxruntime as rt
 
 
 class ONNXConfig:
-    def __init__(self, onnx_model_path=None, need_simplify=False):
-        print("****************************** ONNXConfig ******************************")
+    def __init__(self, onnx_model_path=None, need_simplify=False,need_show=False):
         # 判断基本条件是否被满足
         assert (onnx_model_path is not None), "onnx_model_path is empty"
 
@@ -26,11 +25,13 @@ class ONNXConfig:
         self.input_name = [input_name.name for input_name in self.sess.get_inputs()]
         self.input_shape = [input_name.shape for input_name in self.sess.get_inputs()]
         self.output_name = [output_name.name for output_name in self.sess.get_outputs()]
-        print("-> onnx path is", self.onnx_model_path)
-        print("-> onnx input_name is", self.input_name)
-        print("-> onnx input_shape is", self.input_shape)
-        print("-> onnx output_name is", self.output_name)
-        print("****************************** ONNXConfig ******************************")
+        if need_show:
+            print("****************************** ONNXConfig ******************************")
+            print("-> onnx path is", self.onnx_model_path)
+            print("-> onnx input_name is", self.input_name)
+            print("-> onnx input_shape is", self.input_shape)
+            print("-> onnx output_name is", self.output_name)
+            print("****************************** ONNXConfig ******************************")
 
     def infer(self, data):
         # 推理

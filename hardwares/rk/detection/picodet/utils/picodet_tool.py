@@ -5,8 +5,8 @@ label_list = [
     "person",
     "bicycle",
     "car",
-    "motorcycle",
-    "airplane",
+    "motorbike",
+    "aeroplane",
     "bus",
     "train",
     "truck",
@@ -59,12 +59,12 @@ label_list = [
     "donut",
     "cake",
     "chair",
-    "couch",
+    "sofa",
     "potted plant",
     "bed",
     "dining table",
     "toilet",
-    "tv",
+    "tv monitor",
     "laptop",
     "mouse",
     "remote",
@@ -83,6 +83,17 @@ label_list = [
     "hair drier",
     "toothbrush",
 ]
+
+coco_label_id = {}
+
+
+def get_coco_label_id():
+    with open("./utils/label.txt", "r") as f:
+        for line in f.readlines():
+            ls = line.replace("\n", "").split(":")
+            # print(ls)
+            num, label = int(ls[0]), ls[1]
+            coco_label_id[label] = num
 
 
 class PicodetPreProcess:
@@ -290,10 +301,11 @@ def draw_box(img, results, class_label, scale_x, scale_y):
             # cv2.waitKey(0)
             font = cv2.FONT_HERSHEY_SIMPLEX
             label_text = label_list[label_id]
-            print("label: {} ,pred:{}, loc:(min:{},max:{})".format(label_text, str(round(score, 3)), (xmin, ymin), (xmax, ymax)))
-            img = cv2.putText(img, (label_text), (xmin, ymin - 10), font, 0.4,
+            print("label: {} ,pred:{}, loc:(min:{},max:{})".format(label_text, str(round(score, 3)), (xmin, ymin),
+                                                                   (xmax, ymax)))
+            img = cv2.putText(img, (label_text), (xmin, ymin - 40), font, 1,
                               (0, 0, 0), 1, cv2.LINE_AA)
-            img = cv2.putText(img, str(round(score, 3)), (xmin, ymin), font, 0.3,
+            img = cv2.putText(img, str(round(score, 3)), (xmin, ymin), font, 1,
                               (0, 0, 0), 1, cv2.LINE_AA)
     return img
 

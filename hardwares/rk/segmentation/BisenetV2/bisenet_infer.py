@@ -68,7 +68,7 @@ class Bisenet:
         result = model.inference([img])
         return result
 
-    def infer_by_rknn_board(self, img, verbose=True):
+    def infer_by_rknn_board(self, img, verbose=False):
         from utils.RKNNConfig import RKNNConfigBoard
         model = RKNNConfigBoard(self.model_path, self.target).create_rknn(verbose=verbose)
         result = model.inference([img])
@@ -95,11 +95,11 @@ class Bisenet:
             data = preprocess(img, self.target_size)
             data = data.transpose((1, 2, 0))
             data = np.expand_dims(data, axis=0)
-            pred = self.infer_by_rknn_board(data, verbose=True)
+            pred = self.infer_by_rknn_board(data, verbose=False)
             pred = pred[0]
             # pred = np.argmax(pred, axis=1)
             print(pred)
-        # save_imgs(pred, FLAGS.backend_type, FLAGS.save_path)
+        save_imgs(pred, FLAGS.backend_type, FLAGS.save_path)
 
 
 if __name__ == '__main__':
