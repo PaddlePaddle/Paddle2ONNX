@@ -15,6 +15,7 @@
 #include "paddle2onnx/mapper/nn/interpolate.h"
 
 namespace paddle2onnx {
+REGISTER_MAPPER(bilinear_interp, InterpolateMapper)
 REGISTER_MAPPER(bilinear_interp_v2, InterpolateMapper)
 REGISTER_MAPPER(nearest_interp_v2, InterpolateMapper)
 REGISTER_MAPPER(bicubic_interp_v2, InterpolateMapper)

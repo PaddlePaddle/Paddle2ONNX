@@ -30,6 +30,7 @@ class InterpolateMapper : public Mapper {
     GetAttr("out_w", &out_w_);
     method_ = OpType();
 
+    resize_mapper_["bilinear_interp"] = "linear";
     resize_mapper_["bilinear_interp_v2"] = "linear";
     resize_mapper_["nearest_interp_v2"] = "nearest";
     resize_mapper_["bicubic_interp_v2"] = "cubic";

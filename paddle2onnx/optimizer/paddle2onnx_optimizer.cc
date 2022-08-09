@@ -29,6 +29,34 @@
 namespace ONNX_NAMESPACE {
 namespace optimization {
 
+ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
+    const ONNX_NAMESPACE::ModelProto& model_proto) {
+  OptimizerOption option;
+  option.passes.clear();
+  option.passes.push_back("eliminate_identity");
+  option.passes.push_back("eliminate_deadend");
+
+  auto optimized_model_proto =
+      ONNX_NAMESPACE::optimization::Optimize(model_proto, option.passes);
+
+  // reinfer shape for this onnx model
+  auto graph = optimized_model_proto.mutable_graph();
+  // clear all the type info of outputs
+  auto output_size = graph->output_size();
+  for (size_t i = 0; i < output_size; ++i) {
+    graph->mutable_output(i)->clear_type();
+  }
+
+  try {
+    shape_inference::InferShapes(optimized_model_proto);
+  } catch (const std::exception& e) {
+    P2OLogger(true) << "[ERROR] Failed to reinfer shape for this model."
+                    << std::endl;
+    P2OLogger(true) << e.what() << std::endl;
+  }
+  return optimized_model_proto;
+}
+
 bool OptimizePaddle2ONNX(const std::string& model_path,
                          const std::string& optimized_model_path,
                          const OptimizerOption& option) {
@@ -186,5 +214,5 @@ bool OptimizePaddle2ONNX(
   out.close();
   return true;
 }
-}
-}  // namespace paddle2onnx
+}  // namespace optimization
+}  // namespace ONNX_NAMESPACE
