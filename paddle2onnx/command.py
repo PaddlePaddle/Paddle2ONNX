@@ -28,6 +28,7 @@ def str2list(v):
     v = eval(v)
     return v
 
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -73,9 +74,16 @@ def arg_parser():
     parser.add_argument(
         "--enable_dev_version",
         type=ast.literal_eval,
-        default=False,
-        help="whether to use new version of Paddle2ONNX which is under developing, default False"
+        default=True,
+        help="whether to use new version of Paddle2ONNX which is under developing, default True"
     )
+    parser.add_argument(
+        "--deploy_backend",
+        "-d",
+        type=_text_type,
+        default="onnxruntime",
+        choices=["onnxruntime", "tensorrt", "others"],
+        help="Quantize model deploy backend, default onnxruntime.")
     parser.add_argument(
         "--enable_onnx_checker",
         type=ast.literal_eval,
@@ -116,11 +124,13 @@ def c_paddle_to_onnx(model_file,
                      verbose=True,
                      enable_onnx_checker=True,
                      enable_experimental_op=True,
-                     enable_optimize=True):
+                     enable_optimize=True,
+                     deploy_backend="onnxruntime"):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-    onnx_model_str = c_p2o.export(
-        model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-        enable_onnx_checker, enable_experimental_op, enable_optimize)
+    onnx_model_str = c_p2o.export(model_file, params_file, opset_version,
+                                  auto_upgrade_opset, verbose,
+                                  enable_onnx_checker, enable_experimental_op,
+                                  enable_optimize, {}, deploy_backend)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
@@ -206,7 +216,8 @@ def main():
             verbose=True,
             enable_onnx_checker=args.enable_onnx_checker,
             enable_experimental_op=True,
-            enable_optimize=True)
+            enable_optimize=True,
+            deploy_backend=args.deploy_backend)
         logging.info("===============Make PaddlePaddle Better!================")
         logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
         return
@@ -224,6 +235,7 @@ def main():
         auto_update_opset=args.enable_auto_update_opset)
     logging.info("===============Make PaddlePaddle Better!================")
     logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
+
 
 if __name__ == "__main__":
     main()

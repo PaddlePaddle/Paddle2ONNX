@@ -40,7 +40,6 @@ bool PaddleParser::LoadProgram(const std::string& model) {
   fin.read(&(contents.at(0)), contents.size());
   fin.close();
 
-  prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
   if (!prog->ParseFromString(contents)) {
     P2OLogger() << "Failed to parse paddlepaddle model from read content."
                 << std::endl;
@@ -592,8 +591,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
     if (op.attrs(i).name() == name) {
       found = true;
       Assert(op.attrs(i).has_i() || op.attrs(i).has_l(),
-             "Cannot find int32/int64 data from attr: " + name + " in op:" +
-                 op.type());
+             "Cannot find int32/int64 data from attr: " + name +
+                 " in op:" + op.type());
       if (op.attrs(i).has_i()) {
         *res = (int64_t)(op.attrs(i).i());
       } else {
@@ -684,8 +683,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
       Assert(op.attrs(i).floats_size() >= 0,
-             "Cannot find list of float data from attr: " + name + " in op: " +
-                 op.type());
+             "Cannot find list of float data from attr: " + name +
+                 " in op: " + op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
         res->push_back(static_cast<float>(op.attrs(i).floats(j)));
@@ -704,8 +703,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
       Assert(op.attrs(i).float64s_size() >= 0,
-             "Cannot find list of double data from attr: " + name + " in op: " +
-                 op.type());
+             "Cannot find list of double data from attr: " + name +
+                 " in op: " + op.type());
       found = true;
       for (auto j = 0; j < op.attrs(i).float64s_size(); ++j) {
         res->push_back(static_cast<double>(op.attrs(i).float64s(j)));

@@ -305,6 +305,25 @@ class APIOnnx(object):
                     find = True
         return find
 
+    def clip_extra_program_only(self, orig_program_path, clipped_program_path):
+        """
+        load inference model(program only) and clip extra op
+        Args:
+            orig_program_path(str): input model path
+            clipped_program_path(str): output model path
+        Returns:
+            None
+        """
+        import paddle.static as static
+        paddle.enable_static()
+        origin_program_bytes = static.io.load_from_file(orig_program_path)
+        origin_program = static.io.deserialize_program(origin_program_bytes)
+        clipped_program = origin_program._remove_training_info(clip_extra=True)
+        clipped_program_bytes = static.io._serialize_program(clipped_program)
+        static.io.save_to_file(clipped_program_path, clipped_program_bytes)
+        paddle.disable_static()
+        paddle.set_device("cpu")
+
     def run(self):
         """
         1. use dygraph layer to make exp
@@ -347,16 +366,21 @@ class APIOnnx(object):
                     self.dev_check_ops(self.ops[0],
                                        os.path.join(self.name, "model.pdmodel"))
                 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-                model_file = os.path.join(self.name, "model.pdmodel")
+                original_model_file = os.path.join(self.name, "model.pdmodel")
                 params_file = os.path.join(self.name, "model.pdiparams")
                 if not os.path.exists(params_file):
                     params_file = ""
+
+                # clip extra
+                model_file = os.path.join(self.name, "cliped_model.pdmodel")
+                self.clip_extra_program_only(original_model_file, model_file)
 
                 min_opset_version = min(self._version)
                 self._version = list(range(min_opset_version, 17))
                 for v in self._version:
                     onnx_model_str = c_p2o.export(model_file, params_file, v,
-                                                  False, True, True, True, True)
+                                                  False, True, True, True, True,
+                                                  {}, "onnxruntime")
                     with open(
                             os.path.join(self.name,
                                          self.name + '_' + str(v) + ".onnx"),

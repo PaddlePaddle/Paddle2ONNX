@@ -22,6 +22,7 @@ from .version import git_version
 __version__ = version
 __commit_id__ = git_version
 
+
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
     logging.warning(
         "[Deprecated] `paddle2onnx.run_convert` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
@@ -38,11 +39,21 @@ def export(model_file,
            verbose=True,
            enable_onnx_checker=True,
            enable_experimental_op=True,
-           enable_optimize=True):
+           enable_optimize=True,
+           custom_op_info=None,
+           deploy_backend="onnxruntime"):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-    onnx_model_str = c_p2o.export(
-        model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-        enable_onnx_checker, enable_experimental_op, enable_optimize)
+    deploy_backend = deploy_backend.lower()
+    if custom_op_info is None:
+        onnx_model_str = c_p2o.export(
+            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize, {},
+            deploy_backend)
+    else:
+        onnx_model_str = c_p2o.export(
+            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize,
+            custom_op_info, deploy_backend)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)

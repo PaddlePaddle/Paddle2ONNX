@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #pragma once
+#include <onnx/onnx_pb.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -38,9 +39,13 @@ struct OptimizerOption {
   }
 };
 
+ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
+    const ONNX_NAMESPACE::ModelProto& model);
+
 bool OptimizePaddle2ONNX(const std::string& model_path,
                          const std::string& optimized_model_path,
                          const OptimizerOption& option = OptimizerOption());
+
 bool OptimizePaddle2ONNX(
     const std::string& model_path, const std::string& optimized_model_path,
     const std::map<std::string, std::vector<int>>& shape_infos,
