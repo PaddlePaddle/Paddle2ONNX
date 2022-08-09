@@ -50,6 +50,7 @@ op_api_map = {
     "sqrt": paddle.sqrt,
     "square": paddle.square,
     "swish": paddle.nn.functional.swish,
+    "silu": paddle.nn.functional.silu,
     "tanh": paddle.tanh,
     "tan": paddle.tan,
 }
@@ -88,11 +89,14 @@ opset_version_map = {
     "swish": [7, 13, 14, 15],
     "tanh": [7, 13, 15],
     "tan": [7, 15],
+    "silu": [7, 15],
 }
 
 
 class Net(BaseNet):
     def forward(self, inputs):
+        if self.config["op_names"].count("log") > 0:
+            inputs = paddle.abs(inputs) + 0.01
         return op_api_map[self.config["op_names"]](inputs)
 
 

@@ -80,7 +80,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
                        reproduce=None,
                        min_success_num=25,
                        max_duration=-1):
-        if os.getenv('HYPOTHESIS_TEST_PROFILE', 'ci') == "dev":
+        if os.getenv("CE_STAGE", "OFF") == "ON":
             max_examples *= 10
             min_success_num *= 10
             # while at ce phase, there's no limit on time

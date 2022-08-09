@@ -18,7 +18,6 @@ import argparse
 import ast
 import sys
 import os
-import paddle.fluid as fluid
 from paddle2onnx.utils import logging
 
 
@@ -73,11 +72,23 @@ def arg_parser():
        help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
        "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
     parser.add_argument(
+        "--enable_dev_version",
+        type=ast.literal_eval,
+        default=True,
+        help="whether to use new version of Paddle2ONNX which is under developing, default True"
+    )
+    parser.add_argument(
+        "--deploy_backend",
+        "-d",
+        type=_text_type,
+        default="onnxruntime",
+        choices=["onnxruntime", "tensorrt", "others"],
+        help="Quantize model deploy backend, default onnxruntime.")
+    parser.add_argument(
         "--enable_onnx_checker",
         type=ast.literal_eval,
         default=True,
-        help="whether check onnx model validity, if True, please 'pip install onnx'"
-    )
+        help="whether check onnx model validity, default True")
     parser.add_argument(
         "--enable_paddle_fallback",
         type=ast.literal_eval,
@@ -105,6 +116,28 @@ def arg_parser():
     return parser
 
 
+def c_paddle_to_onnx(model_file,
+                     params_file="",
+                     save_file=None,
+                     opset_version=7,
+                     auto_upgrade_opset=True,
+                     verbose=True,
+                     enable_onnx_checker=True,
+                     enable_experimental_op=True,
+                     enable_optimize=True,
+                     deploy_backend="onnxruntime"):
+    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+    onnx_model_str = c_p2o.export(model_file, params_file, opset_version,
+                                  auto_upgrade_opset, verbose,
+                                  enable_onnx_checker, enable_experimental_op,
+                                  enable_optimize, {}, deploy_backend)
+    if save_file is not None:
+        with open(save_file, "wb") as f:
+            f.write(onnx_model_str)
+    else:
+        return onnx_model_str
+
+
 def program2onnx(model_dir,
                  save_file,
                  model_filename=None,
@@ -115,72 +148,14 @@ def program2onnx(model_dir,
                  input_shape_dict=None,
                  output_names=None,
                  auto_update_opset=True):
-    try:
-        import paddle
-    except:
-        logging.error(
-            "paddlepaddle not installed, use \"pip install paddlepaddle\"")
-
-    v0, v1, v2 = paddle.__version__.split('.')
-    if v0 == '0' and v1 == '0' and v2 == '0':
-        logging.warning("You are use develop version of paddlepaddle")
-    elif int(v0) <= 1 and int(v1) < 8:
-        raise ImportError("paddlepaddle>=1.8.0 is required")
-
-    import paddle2onnx as p2o
-    # convert model save with 'paddle.fluid.io.save_inference_model'
-    if hasattr(paddle, 'enable_static'):
-        paddle.enable_static()
-    exe = fluid.Executor(fluid.CPUPlace())
-    if model_filename is None and params_filename is None:
-        [program, feed_var_names, fetch_vars] = fluid.io.load_inference_model(
-            model_dir, exe)
-    else:
-        [program, feed_var_names, fetch_vars] = fluid.io.load_inference_model(
-            model_dir,
-            exe,
-            model_filename=model_filename,
-            params_filename=params_filename)
-
-    OP_WITHOUT_KERNEL_SET = {
-        'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
-        'conditional_block', 'while', 'send', 'recv', 'listen_and_serv',
-        'fl_listen_and_serv', 'ncclInit', 'select', 'checkpoint_notify',
-        'gen_bkcl_id', 'c_gen_bkcl_id', 'gen_nccl_id', 'c_gen_nccl_id',
-        'c_comm_init', 'c_sync_calc_stream', 'c_sync_comm_stream',
-        'queue_generator', 'dequeue', 'enqueue', 'heter_listen_and_serv',
-        'c_wait_comm', 'c_wait_compute', 'c_gen_hccl_id', 'c_comm_init_hccl',
-        'copy_cross_scope'
-    }
-    if input_shape_dict is not None:
-        paddle_version = paddle.__version__
-        model_version = program.desc._version()
-        major_ver = model_version // 1000000
-        minor_ver = (model_version - major_ver * 1000000) // 1000
-        patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
-        model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
-        if model_version != paddle_version:
-            logging.warning(
-                "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
-                format(model_version, paddle_version))
-
-        for k, v in input_shape_dict.items():
-            program.blocks[0].var(k).desc.set_shape(v)
-        for i in range(len(program.blocks[0].ops)):
-            if program.blocks[0].ops[i].type in OP_WITHOUT_KERNEL_SET:
-                continue
-            program.blocks[0].ops[i].desc.infer_shape(program.blocks[0].desc)
-    p2o.program2onnx(
-        program,
-        fluid.global_scope(),
-        save_file,
-        feed_var_names=feed_var_names,
-        target_vars=fetch_vars,
-        opset_version=opset_version,
-        enable_onnx_checker=enable_onnx_checker,
-        operator_export_type=operator_export_type,
-        auto_update_opset=auto_update_opset,
-        output_names=output_names)
+    logging.warning(
+        "[Deprecated] `paddle2onnx.command.program2onnx` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
+    )
+    from paddle2onnx.legacy.command import program2onnx
+    return program2onnx(model_dir, save_file, model_filename, params_filename,
+                        opset_version, enable_onnx_checker,
+                        operator_export_type, input_shape_dict, output_names,
+                        auto_update_opset)
 
 
 def main():
@@ -196,7 +171,7 @@ def main():
 
     if args.version:
         import paddle2onnx
-        logging.info("paddle2onnx-{} with python>=2.7, paddlepaddle>=1.8.0".
+        logging.info("paddle2onnx-{} with python>=3.6, paddlepaddle>=2.0.0".
                      format(paddle2onnx.__version__))
         return
 
@@ -207,13 +182,45 @@ def main():
 
     operator_export_type = "ONNX"
     if args.enable_paddle_fallback:
+        logging.warning(
+            "[Deprecated] The flag `--enable_paddle_fallback` will be deprecated, and only works while `--enable_dev_version False` now."
+        )
         operator_export_type = "PaddleFallback"
 
-    if args.output_names is not None:
+    if args.output_names is not None and args.enable_dev_version:
+        logging.warning(
+            "[Deprecated] The flag `--output_names` is deprecated, if you need to modify the output name, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx "
+        )
         if not isinstance(args.output_names, (list, dict)):
             raise TypeError(
                 "The output_names should be 'list' or 'dict', but received type is %s."
                 % type(args.output_names))
+
+    if input_shape_dict is not None and args.enable_dev_version:
+        logging.warning(
+            "[Deprecated] The flag `--input_shape_dict` is deprecated, if you need to modify the input shape of PaddlePaddle model, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle "
+        )
+
+    if args.enable_dev_version:
+        model_file = os.path.join(args.model_dir, args.model_filename)
+        if args.params_filename is None:
+            params_file = ""
+        else:
+            params_file = os.path.join(args.model_dir, args.params_filename)
+        c_paddle_to_onnx(
+            model_file=model_file,
+            params_file=params_file,
+            save_file=args.save_file,
+            opset_version=args.opset_version,
+            auto_upgrade_opset=args.enable_auto_update_opset,
+            verbose=True,
+            enable_onnx_checker=args.enable_onnx_checker,
+            enable_experimental_op=True,
+            enable_optimize=True,
+            deploy_backend=args.deploy_backend)
+        logging.info("===============Make PaddlePaddle Better!================")
+        logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
+        return
 
     program2onnx(
         args.model_dir,
@@ -226,6 +233,8 @@ def main():
         input_shape_dict=input_shape_dict,
         output_names=args.output_names,
         auto_update_opset=args.enable_auto_update_opset)
+    logging.info("===============Make PaddlePaddle Better!================")
+    logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -11,87 +11,51 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
 
-__version__ = "0.9.2"
-
-import paddle
-from .convert import dygraph2onnx, program2onnx
-from .op_mapper import register_op_mapper
-from typing import TypeVar
 from paddle2onnx.utils import logging
+from . import command
+from .convert import dygraph2onnx
+from .convert import program2onnx
+from .version import version
+from .version import git_version
 
-OP_WITHOUT_KERNEL_SET = {
-    'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
-    'conditional_block', 'while', 'send', 'recv', 'listen_and_serv',
-    'fl_listen_and_serv', 'ncclInit', 'select', 'checkpoint_notify',
-    'gen_bkcl_id', 'c_gen_bkcl_id', 'gen_nccl_id', 'c_gen_nccl_id',
-    'c_comm_init', 'c_sync_calc_stream', 'c_sync_comm_stream',
-    'queue_generator', 'dequeue', 'enqueue', 'heter_listen_and_serv',
-    'c_wait_comm', 'c_wait_compute', 'c_gen_hccl_id', 'c_comm_init_hccl',
-    'copy_cross_scope'
-}
+__version__ = version
+__commit_id__ = git_version
 
 
 def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
-    paddle_version = paddle.__version__
-    if isinstance(model, paddle.static.Program):
-        if input_shape_dict is not None:
-            model_version = model.desc._version()
-            major_ver = model_version // 1000000
-            minor_ver = (model_version - major_ver * 1000000) // 1000
-            patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
-            model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
-            if model_version != paddle_version:
-                logging.warning(
-                    "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
-                    format(model_version, paddle_version))
-            for k, v in input_shape_dict.items():
-                model.blocks[0].var(k).desc.set_shape(v)
-            for i in range(len(model.blocks[0].ops)):
-                if model.blocks[0].ops[i].type in OP_WITHOUT_KERNEL_SET:
-                    continue
-                model.blocks[0].ops[i].desc.infer_shape(model.blocks[0].desc)
-        if scope is None:
-            scope = paddle.static.global_scope()
-        input_names = list()
-        output_vars = list()
-        for i in range(len(model.blocks[0].ops)):
-            if model.blocks[0].ops[i].type == "feed":
-                input_names.append(model.blocks[0].ops[i].output("Out")[0])
-            if model.blocks[0].ops[i].type == "fetch":
-                output_vars.append(model.blocks[0].var(model.blocks[0].ops[i]
-                                                       .input("X")[0]))
-        return program2onnx(
-            model,
-            scope,
-            save_file=None,
-            feed_var_names=input_names,
-            target_vars=output_vars,
-            opset_version=opset_version,
-            enable_onnx_checker=True)
-    elif isinstance(model, paddle.jit.TranslatedLayer):
-        model_version = model.program().desc._version()
-        major_ver = model_version // 1000000
-        minor_ver = (model_version - major_ver * 1000000) // 1000
-        patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
-        model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
-        if model_version != paddle_version:
-            logging.warning(
-                "The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".
-                format(model_version, paddle_version))
+    logging.warning(
+        "[Deprecated] `paddle2onnx.run_convert` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
+    )
+    from paddle2onnx.legacy import run_convert
+    return run_convert(model, input_shape_dict, scope, opset_version)
 
-        if input_shape_dict is not None:
-            for k, v in input_shape_dict.items():
-                model.program().blocks[0].var(k).desc.set_shape(v)
-            for i in range(len(model.program().blocks[0].ops)):
-                if model.program().blocks[0].ops[
-                        i].type in OP_WITHOUT_KERNEL_SET:
-                    continue
-                model.program().blocks[0].ops[i].desc.infer_shape(model.program(
-                ).blocks[0].desc)
-        return dygraph2onnx(model, save_file=None, opset_version=opset_version)
+
+def export(model_file,
+           params_file="",
+           save_file=None,
+           opset_version=11,
+           auto_upgrade_opset=True,
+           verbose=True,
+           enable_onnx_checker=True,
+           enable_experimental_op=True,
+           enable_optimize=True,
+           custom_op_info=None,
+           deploy_backend="onnxruntime"):
+    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+    deploy_backend = deploy_backend.lower()
+    if custom_op_info is None:
+        onnx_model_str = c_p2o.export(
+            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize, {},
+            deploy_backend)
     else:
-        raise Exception(
-            "Only support model loaded from paddle.static.load_inference_model() or paddle.jit.load()"
-        )
+        onnx_model_str = c_p2o.export(
+            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize,
+            custom_op_info, deploy_backend)
+    if save_file is not None:
+        with open(save_file, "wb") as f:
+            f.write(onnx_model_str)
+    else:
+        return onnx_model_str
