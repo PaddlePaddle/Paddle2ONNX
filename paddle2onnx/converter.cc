@@ -26,7 +26,8 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
                                    bool auto_upgrade_opset, bool verbose,
                                    bool enable_onnx_checker,
                                    bool enable_experimental_op,
-                                   bool enable_optimize) {
+                                   bool enable_optimize, CustomOp* ops,
+                                   int op_count, const char* deploy_backend) {
   auto parser = PaddleParser();
   if (!parser.Init(model, params)) {
     return false;
@@ -37,12 +38,26 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
                              enable_experimental_op)) {
     return false;
   }
+
+  // Add custom operator information
+  if (ops != nullptr && op_count > 0) {
+    for (int i = 0; i < op_count; ++i) {
+      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
+      std::string export_op_name(ops[i].export_op_name,
+                                 strlen(ops[i].export_op_name));
+      if (export_op_name == "paddle2onnx_null") {
+        export_op_name = op_name;
+      }
+      me.custom_ops[op_name] = export_op_name;
+    }
+  }
+
   if (me.GetMinOpset(parser, false) < 0) {
     return false;
   }
-  std::string onnx_model =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  std::string onnx_model = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, deploy_backend);
   if (onnx_model.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -56,7 +71,8 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
                                    bool auto_upgrade_opset, bool verbose,
                                    bool enable_onnx_checker,
                                    bool enable_experimental_op,
-                                   bool enable_optimize) {
+                                   bool enable_optimize, CustomOp* ops,
+                                   int op_count, const char* deploy_backend) {
   auto parser = PaddleParser();
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
     return false;
@@ -67,12 +83,26 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
                              enable_experimental_op)) {
     return false;
   }
+
+  // Add custom operator information
+  if (ops != nullptr && op_count > 0) {
+    for (int i = 0; i < op_count; ++i) {
+      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
+      std::string export_op_name(ops[i].export_op_name,
+                                 strlen(ops[i].export_op_name));
+      if (export_op_name == "paddle2onnx_null") {
+        export_op_name = op_name;
+      }
+      me.custom_ops[op_name] = export_op_name;
+    }
+  }
+
   if (me.GetMinOpset(parser, false) < 0) {
     return false;
   }
-  std::string onnx_model =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+  std::string onnx_model = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, deploy_backend);
   if (onnx_model.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -84,8 +114,9 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              int* out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
-                             bool enable_experimental_op,
-                             bool enable_optimize) {
+                             bool enable_experimental_op, bool enable_optimize,
+                             CustomOp* ops, int op_count,
+                             const char* deploy_backend) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model, params)) {
@@ -93,9 +124,23 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
     return false;
   }
   paddle2onnx::ModelExporter me;
-  std::string result =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+
+  // Add custom operator information
+  if (ops != nullptr && op_count > 0) {
+    for (int i = 0; i < op_count; ++i) {
+      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
+      std::string export_op_name(ops[i].export_op_name,
+                                 strlen(ops[i].export_op_name));
+      if (export_op_name == "paddle2onnx_null") {
+        export_op_name = op_name;
+      }
+      me.custom_ops[op_name] = export_op_name;
+    }
+  }
+
+  std::string result = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, deploy_backend);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -111,8 +156,9 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
                              char** out, int* out_size, int32_t opset_version,
                              bool auto_upgrade_opset, bool verbose,
                              bool enable_onnx_checker,
-                             bool enable_experimental_op,
-                             bool enable_optimize) {
+                             bool enable_experimental_op, bool enable_optimize,
+                             CustomOp* ops, int op_count,
+                             const char* deploy_backend) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
@@ -120,9 +166,23 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
     return false;
   }
   paddle2onnx::ModelExporter me;
-  std::string result =
-      me.Run(parser, opset_version, auto_upgrade_opset, verbose,
-             enable_onnx_checker, enable_experimental_op, enable_optimize);
+
+  // Add custom operator information
+  if (ops != nullptr && op_count > 0) {
+    for (int i = 0; i < op_count; ++i) {
+      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
+      std::string export_op_name(ops[i].export_op_name,
+                                 strlen(ops[i].export_op_name));
+      if (export_op_name == "paddle2onnx_null") {
+        export_op_name = op_name;
+      }
+      me.custom_ops[op_name] = export_op_name;
+    }
+  }
+
+  std::string result = me.Run(
+      parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
+      enable_experimental_op, enable_optimize, deploy_backend);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -133,47 +193,11 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
   return true;
 }
 
-
-PADDLE2ONNX_DECL OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
-  ONNX_NAMESPACE::ModelProto model;
-  std::string content(model_buffer, model_buffer + buffer_size);
-  model.ParseFromString(content);
-  num_inputs = model.graph().input_size();
-  num_outputs = model.graph().output_size();
-  Assert(num_inputs <= 100, "The number of inputs is exceed 100, unexpected situation."); 
-  Assert(num_outputs <= 100, "The number of outputs is exceed 100, unexpected situation."); 
-  for (int i = 0; i < num_inputs; ++i) {
-    memcpy(input_names[i], model.graph().input(i).name().c_str(), model.graph().input(i).name().size());
+ModelTensorInfo::~ModelTensorInfo() {
+  if (shape != nullptr) {
+    delete[] shape;
+    shape = nullptr;
+    rank = 0;
   }
-  for (int i = 0; i < num_outputs; ++i) {
-    memcpy(output_names[i], model.graph().output(i).name().c_str(), model.graph().output(i).name().size());
-  } 
 }
-
-PADDLE2ONNX_DECL int OnnxReader::NumInputs() const {
-  return num_inputs;
-}
-
-PADDLE2ONNX_DECL int OnnxReader::NumOutputs() const {
-  return num_outputs;
-}
-
-PADDLE2ONNX_DECL int OnnxReader::GetInputIndex(const char* name) const {
-  for (int i = 0; i < num_inputs; ++i) {
-    if(strcmp(name, input_names[i]) == 0) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-PADDLE2ONNX_DECL int OnnxReader::GetOutputIndex(const char* name) const {
-  for (int i = 0; i < num_outputs; ++i) {
-    if(strcmp(name, output_names[i]) == 0) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 }  // namespace paddle2onnx

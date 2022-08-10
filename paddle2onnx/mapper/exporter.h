@@ -54,6 +54,10 @@ struct ModelExporter {
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
  public:
+  // custom operators for export
+  // <key: op_name, value:[exported_op_name, domain]>
+  std::map<std::string, std::string> custom_ops;
+
   QuantizeModelProcessor quantize_model_processer;
   // Get a proper opset version in range of [7, 16]
   // Also will check the model is convertable, this will include 2 parts
@@ -83,7 +87,8 @@ struct ModelExporter {
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
                   bool enable_experimental_op = false,
-                  bool enable_optimize = true);
+                  bool enable_optimize = true,
+                  const std::string& deploy_backend = "onnxruntime");
 };
 
 }  // namespace paddle2onnx
