@@ -25,6 +25,23 @@ EXPLICIT_PRECISION = 1 << (
     int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_PRECISION)
 
 
+class LoadCalibrator(trt.IInt8EntropyCalibrator2):
+    def __init__(self, cache_file="calibration.cache"):
+        super().__init__()
+        self.cache_file = cache_file
+
+    def get_batch_size(self):
+        return 1
+
+    def read_calibration_cache(self):
+        # If there is a cache, use it instead of calibrating again. Otherwise, implicitly return None.
+        if os.path.exists(self.cache_file):
+            with open(self.cache_file, "rb") as f:
+                print("Using calibration cache to save time: {:}".format(
+                    self.cache_file))
+                return f.read()
+
+
 def remove_initializer_from_input(ori_model):
     model = copy.deepcopy(ori_model)
     if model.ir_version < 4:
@@ -62,13 +79,22 @@ class HostDeviceMem(object):
 
 
 class TrtEngine:
-    def __init__(self,
-                 onnx_model_file,
-                 shape_info=None,
-                 max_batch_size=None,
-                 use_int8=False,
-                 engine_file_path=None):
+    def __init__(
+            self,
+            onnx_model_file,
+            shape_info=None,
+            max_batch_size=None,
+            precision_mode="fp32",  # fp32, fp16, int8
+            engine_file_path=None,
+            calibration_cache_file="calibration.cache"):
         self.max_batch_size = 1 if max_batch_size is None else max_batch_size
+        precision_mode = precision_mode.lower()
+        assert precision_mode in [
+            "fp32", "fp16", "int8"
+        ], "precision_mode must be fp32, fp16 or int8, but your precision_mode is: {}".format(
+            precision_mode)
+        use_int8 = precision_mode == "int8"
+        use_fp16 = precision_mode == "fp16"
         TRT_LOGGER = trt.Logger()
         if engine_file_path is not None and os.path.exists(engine_file_path):
             # If a serialized engine exists, use it instead of building an engine.
@@ -80,16 +106,22 @@ class TrtEngine:
             builder = trt.Builder(TRT_LOGGER)
             config = builder.create_builder_config()
             network = None
-            if use_int8:
+            if use_int8 and builder.platform_has_fast_int8:
+                print("[TRT Backend]: Use INT8.")
                 network = builder.create_network(EXPLICIT_BATCH |
                                                  EXPLICIT_PRECISION)
+                config.int8_calibrator = LoadCalibrator(calibration_cache_file)
+                config.set_flag(trt.BuilderFlag.INT8)
+            elif use_fp16 and builder.platform_has_fast_fp16:
+                print("[TRT Backend]: Use FP16.")
+                network = builder.create_network(EXPLICIT_BATCH)
+                config.set_flag(trt.BuilderFlag.FP16)
             else:
+                print("[TRT Backend]: Use FP32.")
                 network = builder.create_network(EXPLICIT_BATCH)
             parser = trt.OnnxParser(network, TRT_LOGGER)
             runtime = trt.Runtime(TRT_LOGGER)
             config.max_workspace_size = 1 << 28
-            if use_int8:
-                config.set_flag(trt.BuilderFlag.INT8)
 
             import onnx
             print('Loading ONNX model...')
@@ -220,34 +252,3 @@ class TrtEngine:
                         self.outputs[output_idx].host.nbytes)
                     self.bindings[idx] = int(self.outputs[output_idx].device)
                 output_idx += 1
-
-
-#
-#def main():
-#    import numpy as np
-#    import onnxruntime as rt
-#    onnx_model = 'resnet50.onnx' 
-#
-#    # ONNXRuntime
-#    sess = rt.InferenceSession(onnx_model)
-#    input_name = sess.get_inputs()[0].name
-#    label_name = sess.get_outputs()[0].name
-#
-#    trt_engine = TrtEngine(onnx_model_file=onnx_model, shape_info={0:[[1, 3, 224, 224], [5, 3, 224, 224], [10, 3, 224, 224]]}, engine_file_path='model.trt')
-#    
-#    for i in range(10, 1, -1):
-#        batch_size = i
-#        data = np.array(np.random.randn(batch_size,3,224,224)).astype('float32')
-#        trt_outputs = trt_engine.infer([data])
-#
-#        input_dict = {}
-#        input_dict[sess.get_inputs()[0].name] = data
-#        onnx_pred = sess.run(None, input_dict)[0]
-#
-#        diff = np.array(onnx_pred) - trt_outputs[0][0:batch_size * 1000].reshape(onnx_pred.shape)
-#        diff = abs(diff)
-#        print("Input index:",i,  ", max diff: ", np.amax(diff))
-#
-#
-#if __name__ == "__main__":
-#    main()

@@ -41,7 +41,7 @@ if not optimized:
 trt_engine = trt_backend.TrtEngine(onnx_model, max_batch_size=16, static_shape=True)
 
 # 动态shape. 需要配置shape_info(字典结构)，key为输入名， value为[该输入在推理中的最小形状(min_shape)、最常用的形状(opt_shape)、最大形状(max_shape)]
-trt_engine = trt_backend.TrtEngine(onnx_model, shape_info={"input" :[[1, 80], [10, 80], [16, 80]]}, max_batch_size=16, static_shape=False)
+trt_engine = trt_backend.TrtEngine(onnx_model, shape_info={"input" :[[1, 80], [10, 80], [16, 80]]}, max_batch_size=16)
 
 #准备数据
 data = np.random.rand(8, 80).astype("float32")
@@ -49,7 +49,7 @@ data = np.random.rand(8, 80).astype("float32")
 # 进行推理.输入为list，如有多输入需要都放在list中(如trt_engine.infer([data1,data2]))
 result = trt_engine.infer([data])
 
-# 结果result为[output1, output2, ... outputn]. 
+# 结果result为[output1, output2, ... outputn].
 # 每一个输出节点对应list中一位numpy格式的结果
 print(result[0])
 ```
