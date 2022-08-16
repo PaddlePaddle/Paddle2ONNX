@@ -54,7 +54,7 @@ void ConcatMapper::Opset7() {
   };
 
   bool has_axis_tensor_input = HasInput("AxisTensor");
-  std::cout << has_axis_tensor_input << std::endl;
+
   int64_t axis = axis_;
   // NOTE(Aurelius84): we need to deprecate this branch in the future.
   if (has_axis_tensor_input) {

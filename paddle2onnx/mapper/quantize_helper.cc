@@ -83,7 +83,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
     OnnxHelper* helper, const std::string& deploy_backend,
-    const PaddleParser& parser) {
+    const PaddleParser& parser, const std::string& scale_file) {
   // Determine whether the model contains quantization related OPs, if not, exit
   // directly
   bool quantized_model = false;
@@ -105,6 +105,31 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
   nodes_ = nodes;
   P2OLogger() << "[Info] Quantize model deploy backend is: " << deploy_backend
               << std::endl;
+
+  // read out_scale.txt for all the tensors
+  std::cout << "scale file: " << scale_file << std::endl;
+  std::ifstream out_scale_file(scale_file);
+  std::string one_line;
+  while (getline(out_scale_file, one_line)) {
+    if (one_line.find(" ") != one_line.npos) {
+      auto pos = one_line.find(" ");
+      std::string pre_str = one_line.substr(0, pos);
+      std::string pos_str = one_line.substr(pos);
+      if (pre_str.size() && pos_str.size()) {
+        std::string tensor_name = pre_str;
+        float scale = std::stod(pos_str);
+        std::vector<float> scales = {scale / 127};
+        auto scale_node =
+            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scales);
+        std::vector<int64_t> zeros = {0};
+        auto zero_node =
+            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+
+        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 0);
+        helper_->quantize_info[tensor_name] = quantize_info;
+      }
+    }
+  }
   // Determine the format of the exported ONNX quantization model according to
   // the deploy_backend
   if (deploy_backend == "others") {
@@ -153,10 +178,8 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 
     // For Implicit Quantization
     // 1. remove all quantize ops
-    // 2. read all out scale tensor from out_scale.txt
-    // 3. broadcast quantize info
-    // 4. save float onnx model and alibration.cache
-
+    // 2. broadcast quantize info
+    // 3. save float onnx model and alibration.cache
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
     // Add qdq for Explicit Quantization
@@ -164,26 +187,6 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // SortNodes();
 
     // Genarate calibration.cache for Implicit Quantization
-    // read out_scale.txt for all the tensors
-    std::ifstream out_scale_file("out_scale.txt");
-    std::string one_line;
-    while (getline(out_scale_file, one_line)) {
-      if (one_line.find(" ") != one_line.npos) {
-        auto pos = one_line.find(" ");
-        std::string pre_str = one_line.substr(0, pos);
-        std::string pos_str = one_line.substr(pos);
-        if (pre_str.size() && pos_str.size()) {
-          std::string tensor_name = pre_str;
-          float scale = std::stod(pos_str);
-          QuantizeInfo quantize_info;
-          quantize_info.scale_ = {scale / 127};
-          helper_->quantize_info[tensor_name] = quantize_info;
-        }
-      }
-    }
-
-    QuantizeInfoBroadcast();
-
     // convert float to hex
     union {
       float f;
