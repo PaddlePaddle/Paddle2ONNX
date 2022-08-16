@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 
 #include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"

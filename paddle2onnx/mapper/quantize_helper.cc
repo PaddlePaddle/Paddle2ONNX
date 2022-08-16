@@ -14,8 +14,6 @@
 
 #include "paddle2onnx/mapper/quantize_helper.h"
 
-#include <iomanip>
-
 namespace paddle2onnx {
 
 void QuantizeModelProcessor::RemoveNodeByName(const std::string& name,
