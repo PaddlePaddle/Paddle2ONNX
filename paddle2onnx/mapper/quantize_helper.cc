@@ -147,26 +147,33 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     SortNodes();
   } else if (deploy_backend == "tensorrt") {
     // When deploy_backend is TensorRT, use the follow four steps to process:
+    // For Explicit Quantization
     // 1. broadcast quantize info
     // 2. remove all quantize ops
     // 3. add Q and DQ before conv and matmul.
     // 4. use topo sort in nodes
+
+    // For Implicit Quantization
+    // 1. remove all quantize ops
+    // 2. read all out scale tensor from out_scale.txt
+    // 3. broadcast quantize info
+    // 4. save float onnx model and alibration.cache
+
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
-    // add qdq
+    // Add qdq for Explicit Quantization
     // AddTrtQDQ();
     // SortNodes();
-    // calibrat.cache
-    // helper_->quantize_info.clear();
+
+    // Genarate calibration.cache for Implicit Quantization
+    // read out_scale.txt for all the tensors
     std::ifstream out_scale_file("out_scale.txt");
     std::string one_line;
     while (getline(out_scale_file, one_line)) {
-      // std::cout<<"orginal: "<<one_line<<std::endl;
       if (one_line.find(" ") != one_line.npos) {
         auto pos = one_line.find(" ");
         std::string pre_str = one_line.substr(0, pos);
         std::string pos_str = one_line.substr(pos);
-        // std::cout<<"pre: "<<pre_str<<" pos: "<<pos_str<<std::endl;
         if (pre_str.size() && pos_str.size()) {
           std::string tensor_name = pre_str;
           float scale = std::stod(pos_str);
@@ -176,15 +183,15 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
         }
       }
     }
+
     QuantizeInfoBroadcast();
 
+    // convert float to hex
     union {
-      float fa;
+      float f;
       unsigned char farray[4];
     } un;
 
-    std::ofstream float_file;
-    float_file.open("calibration_float.txt", std::ios::out);
     std::ofstream cache_file;
     cache_file.open("calibration.cache", std::ios::out);
     cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
@@ -194,8 +201,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
       QuantizeInfo quantize_info = iter->second;
       if (quantize_info.scale_.size() == 1) {
         float val = quantize_info.scale_[0];
-        float_file << tensor_name << ": " << val << std::endl;
-        un.fa = val;
+        un.f = val;
         cache_file << tensor_name << ": ";
         for (int64_t i = 3; i >= 0; i--) {
           cache_file << std::setw(2) << std::setfill('0') << std::hex
@@ -211,16 +217,6 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
            "backend now, but now the backend is: " +
                deploy_backend + ".");
   }
-}
-
-std::string QuantizeModelProcessor::StringToHex(const std::string& data) {
-  const std::string hex = "0123456789ABCDEF";
-  std::stringstream ss;
-
-  for (std::string::size_type i = 0; i < data.size(); ++i)
-    ss << hex[(unsigned char)data[i] >> 4] << hex[(unsigned char)data[i] & 0xf];
-  std::cout << ss.str() << std::endl;
-  return ss.str();
 }
 
 // In TensorRT, all quantized op: Conv, ConvTranspose, liner(MatMul), MaxPool,
