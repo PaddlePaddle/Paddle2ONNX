@@ -107,7 +107,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
               << std::endl;
 
   // read out_scale.txt for all the tensors
-  std::cout << "scale file: " << scale_file << std::endl;
+  P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
   std::ifstream out_scale_file(scale_file);
   std::string one_line;
   while (getline(out_scale_file, one_line)) {
@@ -119,11 +119,11 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
         std::string tensor_name = pre_str;
         float scale = std::stod(pos_str);
         std::vector<float> scales = {scale / 127};
-        auto scale_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scales);
+        auto scale_node = helper_->Constant(
+            {}, ONNX_NAMESPACE::TensorProto::FLOAT, scales[0]);
         std::vector<int64_t> zeros = {0};
         auto zero_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
 
         QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 0);
         helper_->quantize_info[tensor_name] = quantize_info;
@@ -338,8 +338,9 @@ void QuantizeModelProcessor::AddQDQ() {
     auto node = *iter;
     // Here we only add Relu, Conv, mul and matmul, all tensors should add Q and
     // DQ will be saved in tensors_to_be_quantize
+    supported_quantize_type_ = {"Relu", "LeakyRelu", "Add", "Sigmoid",
+                                "Conv", "MatMul",    "Mul"};
     if (node->op_type() == "Relu") {
-      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
         continue;
@@ -351,7 +352,6 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "LeakyRelu") {
-      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
         continue;
@@ -361,7 +361,6 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "Add") {
-      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
@@ -371,8 +370,16 @@ void QuantizeModelProcessor::AddQDQ() {
         AppendQuantizeTensor(name);
       }
     }
+    if (node->op_type() == "Sigmoid") {
+      std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
+      if (!CanBeQuantize(tensor_names)) {
+        continue;
+      }
+      for (auto& name : tensor_names) {
+        AppendQuantizeTensor(name);
+      }
+    }
     if (node->op_type() == "Conv") {
-      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       if (node->input_size() == 3) {
@@ -386,7 +393,6 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "MatMul") {
-      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       for (auto& name : tensor_names) {
@@ -425,7 +431,6 @@ void QuantizeModelProcessor::AddQDQ() {
       }
     }
     if (node->op_type() == "Mul") {
-      supported_quantize_type_.push_back(node->op_type());
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
