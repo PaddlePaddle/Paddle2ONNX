@@ -39,16 +39,25 @@ void ConcatMapper::Opset7() {
   int32_t casted_dtype;
   std::vector<std::string> casted_names =
       helper_->DtypeAlignment(input_info, &casted_dtype);
-  bool has_axis_tensor_input = HasInput("AxisTensor");
 
-  int64_t axis = axis_;
-  if (HasInput("AxisTensor")) {
-    auto info = GetInput("AxisTensor");
+  auto parse_axis_value = [&](const TensorInfo& tensor_info, int64_t& axis) {
     std::vector<int64_t> value;
-    Assert(TryGetInputValue("AxisTensor", &value),
+    Assert(TryGetValue(tensor_info, &value),
            "While concat has input AxisTensor, and it's not a constant tensor, "
            "the model cannot be converted.");
     axis = value[0];
+  };
+
+  bool has_axis_tensor_input = HasInput("AxisTensor");
+  std::cout << has_axis_tensor_input << std::endl;
+  int64_t axis = axis_;
+  // NOTE(Aurelius84): we need to deprecate this branch in the future.
+  if (has_axis_tensor_input) {
+    auto info = GetInput("AxisTensor");
+    parse_axis_value(info[0], axis);
+  } else if (IsAttrVar("axis")) {
+    auto info = GetAttrVar("axis");
+    parse_axis_value(info[0], axis);
   }
   if (axis < 0) {
     axis = axis + input_info[0].Rank();

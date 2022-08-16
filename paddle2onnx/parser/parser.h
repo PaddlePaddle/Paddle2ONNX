@@ -156,6 +156,12 @@ class PaddleParser {
   std::vector<TensorInfo> GetOpOutput(int64_t block_id, int64_t op_id,
                                       const std::string& name) const;
 
+  bool OpIsAttrVar(int64_t block_id, int64_t op_id,
+                   const std::string& name) const;
+
+  std::vector<TensorInfo> GetOpAttrVar(int64_t block_id, int64_t op_id,
+                                       const std::string& name) const;
+
   bool OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name) const;
 
@@ -184,6 +190,8 @@ class PaddleParser {
  private:
   // If the model has same output name in difference operators
   // will fail to convert
+  bool IsAttrVar(const paddle2onnx::framework::proto::OpDesc& op,
+                 const int64_t& attr_id) const;
   bool ExistsDumplicateTensorName() const;
   void GetBlocksVarName2Id();
   void GetBlocksOps();
