@@ -28,6 +28,13 @@ int32_t ConcatMapper::GetMinOpset(bool verbose) {
               << std::endl;
       return -1;
     }
+  } else if (IsAttrVar("axis")) {
+    if (!IsConstant(GetAttrVar("axis")[0])) {
+      Error() << "While Attribute(axis)'s type is Tensor, it's not supported "
+                 "unless it's a constant tensor."
+              << std::endl;
+      return -1;
+    }
   }
   return 7;
 }
@@ -42,9 +49,7 @@ void ConcatMapper::Opset7() {
 
   auto parse_axis_value = [&](const TensorInfo& tensor_info, int64_t& axis) {
     std::vector<int64_t> value;
-    Assert(TryGetValue(tensor_info, &value),
-           "While concat has input AxisTensor, and it's not a constant tensor, "
-           "the model cannot be converted.");
+    TryGetValue(tensor_info, &value);
     axis = value[0];
   };
 

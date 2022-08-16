@@ -224,6 +224,10 @@ class Mapper {
     return parser_->IsConstantTensor(block_idx_, input_info[0].name);
   }
 
+  bool IsConstant(const TensorInfo& info) const {
+    return parser_->IsConstantTensor(block_idx_, info.name);
+  }
+
   template <typename T>
   bool TryGetInputValue(const std::string& input_key, std::vector<T>* data) {
     auto input_info = GetInput(input_key);
