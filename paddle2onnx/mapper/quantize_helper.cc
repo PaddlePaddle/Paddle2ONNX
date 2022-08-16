@@ -14,6 +14,8 @@
 
 #include "paddle2onnx/mapper/quantize_helper.h"
 
+#include <iomanip>
+
 namespace paddle2onnx {
 
 void QuantizeModelProcessor::RemoveNodeByName(const std::string& name,
@@ -151,8 +153,57 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // 4. use topo sort in nodes
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
-    AddTrtQDQ();
-    SortNodes();
+    // add qdq
+    // AddTrtQDQ();
+    // SortNodes();
+    // calibrat.cache
+    // helper_->quantize_info.clear();
+    std::ifstream out_scale_file("out_scale.txt");
+    std::string one_line;
+    while (getline(out_scale_file, one_line)) {
+      // std::cout<<"orginal: "<<one_line<<std::endl;
+      if (one_line.find(" ") != one_line.npos) {
+        auto pos = one_line.find(" ");
+        std::string pre_str = one_line.substr(0, pos);
+        std::string pos_str = one_line.substr(pos);
+        // std::cout<<"pre: "<<pre_str<<" pos: "<<pos_str<<std::endl;
+        if (pre_str.size() && pos_str.size()) {
+          std::string tensor_name = pre_str;
+          float scale = std::stod(pos_str);
+          QuantizeInfo quantize_info;
+          quantize_info.scale_ = {scale / 127};
+          helper_->quantize_info[tensor_name] = quantize_info;
+        }
+      }
+    }
+    QuantizeInfoBroadcast();
+
+    union {
+      float fa;
+      unsigned char farray[4];
+    } un;
+
+    std::ofstream float_file;
+    float_file.open("calibration_float.txt", std::ios::out);
+    std::ofstream cache_file;
+    cache_file.open("calibration.cache", std::ios::out);
+    cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
+    for (auto iter = helper_->quantize_info.rbegin();
+         iter != helper_->quantize_info.rend(); iter++) {
+      std::string tensor_name = iter->first;
+      QuantizeInfo quantize_info = iter->second;
+      if (quantize_info.scale_.size() == 1) {
+        float val = quantize_info.scale_[0];
+        float_file << tensor_name << ": " << val << std::endl;
+        un.fa = val;
+        cache_file << tensor_name << ": ";
+        for (int64_t i = 3; i >= 0; i--) {
+          cache_file << std::setw(2) << std::setfill('0') << std::hex
+                     << (int)(un.farray[i]);
+        }
+        cache_file << std::endl;
+      }
+    }
   } else {
     Assert(false,
            "[QuantizeModelProcessor] Only support 'onnxruntime'  / 'tensorrt' "
@@ -160,6 +211,16 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
            "backend now, but now the backend is: " +
                deploy_backend + ".");
   }
+}
+
+std::string QuantizeModelProcessor::StringToHex(const std::string& data) {
+  const std::string hex = "0123456789ABCDEF";
+  std::stringstream ss;
+
+  for (std::string::size_type i = 0; i < data.size(); ++i)
+    ss << hex[(unsigned char)data[i] >> 4] << hex[(unsigned char)data[i] & 0xf];
+  std::cout << ss.str() << std::endl;
+  return ss.str();
 }
 
 // In TensorRT, all quantized op: Conv, ConvTranspose, liner(MatMul), MaxPool,

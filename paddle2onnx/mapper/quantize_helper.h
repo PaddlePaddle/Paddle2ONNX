@@ -14,6 +14,7 @@
 
 #pragma once
 #include <onnx/onnx_pb.h>
+
 #include <cmath>
 #include <fstream>
 
@@ -54,6 +55,8 @@ struct QuantizeModelProcessor {
 
   // Remove all Quantize and Dequantize ops
   void RemoveAllQuantizeOps();
+
+  std::string StringToHex(const std::string& data);
 
   // If all tensors in tensor_names have quantize info and all the next nodes
   // can be quantized, return True, otherwise

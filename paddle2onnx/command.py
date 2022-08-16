@@ -218,6 +218,23 @@ def main():
             enable_experimental_op=True,
             enable_optimize=True,
             deploy_backend=args.deploy_backend)
+        # if args.deploy_backend == "tensorrt":
+        #     import struct
+        #     def float_to_hex(f):
+        #         return hex(struct.unpack('<I', struct.pack('<f', f))[0])[2:]
+
+        #     with open("calibration_float.txt", "r") as calib_fp:
+        #         calibrator_cache = open("calibration.cache", "w")
+        #         calibrator_cache.write("TRT-8001-EntropyCalibration2\n")
+        #         lines = calib_fp.readlines()
+        #         for line in lines:
+        #             if not line.count(":"):
+        #                 continue
+        #             name, float_val = line.strip().split(":")
+        #             hex_val = float_to_hex(float(float_val))
+        #             print(name, float_val, hex_val)
+        #             calibrator_cache.write("{:s}: {}\n".format(name, hex_val))
+
         logging.info("===============Make PaddlePaddle Better!================")
         logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
         return
