@@ -334,12 +334,12 @@ void QuantizeModelProcessor::AddTrtQDQ() {
 // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
 void QuantizeModelProcessor::AddQDQ() {
   UpdateInputNameToNodes();
+  supported_quantize_type_ = {"Relu", "LeakyRelu", "Add", "Sigmoid",
+                              "Conv", "MatMul",    "Mul"};
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
     // Here we only add Relu, Conv, mul and matmul, all tensors should add Q and
     // DQ will be saved in tensors_to_be_quantize
-    supported_quantize_type_ = {"Relu", "LeakyRelu", "Add", "Sigmoid",
-                                "Conv", "MatMul",    "Mul"};
     if (node->op_type() == "Relu") {
       std::vector<std::string> tensor_names = {node->input(0), node->output(0)};
       if (!CanBeQuantize(tensor_names)) {
