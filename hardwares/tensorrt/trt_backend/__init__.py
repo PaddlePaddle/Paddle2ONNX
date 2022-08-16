@@ -86,7 +86,8 @@ class TrtEngine:
             max_batch_size=None,
             precision_mode="fp32",  # fp32, fp16, int8
             engine_file_path=None,
-            calibration_cache_file="calibration.cache"):
+            calibration_cache_file="calibration.cache",
+            verbose=False):
         self.max_batch_size = 1 if max_batch_size is None else max_batch_size
         precision_mode = precision_mode.lower()
         assert precision_mode in [
@@ -96,9 +97,12 @@ class TrtEngine:
         use_int8 = precision_mode == "int8"
         use_fp16 = precision_mode == "fp16"
         TRT_LOGGER = trt.Logger()
+        if verbose:
+            TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE)
         if engine_file_path is not None and os.path.exists(engine_file_path):
             # If a serialized engine exists, use it instead of building an engine.
-            print("Reading engine from file {}".format(engine_file_path))
+            print("[TRT Backend] Reading engine from file {}".format(
+                engine_file_path))
             with open(engine_file_path,
                       "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
                 self.engine = runtime.deserialize_cuda_engine(f.read())
@@ -106,27 +110,32 @@ class TrtEngine:
             builder = trt.Builder(TRT_LOGGER)
             config = builder.create_builder_config()
             network = None
+
+            if use_int8 and not builder.platform_has_fast_int8:
+                print("[TRT Backend] INT8 not supported on this platform.")
+            if use_fp16 and not builder.platform_has_fast_fp16:
+                print("[TRT Backend] FP16 not supported on this platform.")
+
             if use_int8 and builder.platform_has_fast_int8:
-                print("[TRT Backend]: Use INT8.")
+                print("[TRT Backend] Use INT8.")
                 network = builder.create_network(EXPLICIT_BATCH |
                                                  EXPLICIT_PRECISION)
                 config.int8_calibrator = LoadCalibrator(calibration_cache_file)
                 config.set_flag(trt.BuilderFlag.INT8)
             elif use_fp16 and builder.platform_has_fast_fp16:
-                print("[TRT Backend]: Use FP16.")
+                print("[TRT Backend] Use FP16.")
                 network = builder.create_network(EXPLICIT_BATCH)
                 config.set_flag(trt.BuilderFlag.FP16)
             else:
-                print("[TRT Backend]: Use FP32.")
+                print("[TRT Backend] Use FP32.")
                 network = builder.create_network(EXPLICIT_BATCH)
             parser = trt.OnnxParser(network, TRT_LOGGER)
             runtime = trt.Runtime(TRT_LOGGER)
             config.max_workspace_size = 1 << 28
 
             import onnx
-            print('Loading ONNX model...')
+            print("[TRT Backend] Loading ONNX model ...")
             onnx_model = onnx_model_file
-            print("=========type", type(onnx_model))
             if not isinstance(onnx_model_file, onnx.ModelProto):
                 onnx_model = onnx.load(onnx_model_file)
             onnx_model = remove_initializer_from_input(onnx_model)
@@ -158,19 +167,22 @@ class TrtEngine:
                     for k, v in shape_info.items():
                         if v[2][0] > max_batch_size:
                             max_batch_size = v[2][0]
-                        print("optimize shape", k, v[0], v[1], v[2])
+                        print("[TRT Backend] optimize shape: ", k, v[0], v[1],
+                              v[2])
                         profile.set_shape(k, v[0], v[1], v[2])
                     config.add_optimization_profile(profile)
                 if max_batch_size > self.max_batch_size:
                     self.max_batch_size = max_batch_size
                 builder.max_batch_size = self.max_batch_size
 
-            print('Completed parsing of ONNX file')
-            print('Building an engine from onnx model may take a while...')
+            print("[TRT Backend] Completed parsing of ONNX file.")
+            print(
+                "[TRT Backend] Building an engine from onnx model may take a while..."
+            )
             plan = builder.build_serialized_network(network, config)
-            print("Engine!")
+            print("[TRT Backend] Start Creating Engine.")
             self.engine = runtime.deserialize_cuda_engine(plan)
-            print("Completed creating Engine")
+            print("[TRT Backend] Completed Creating Engine.")
             if engine_file_path is not None:
                 with open(engine_file_path, "wb") as f:
                     f.write(self.engine.serialize())
@@ -189,7 +201,7 @@ class TrtEngine:
             else:
                 self.outputs.append(HostDeviceMem(None, None))
 
-        print("Completed TrtEngine init ...")
+        print("[TRT Backend] Completed TrtEngine init ...")
 
     def infer(self, input_data):
         assert len(self.inputs) == len(
