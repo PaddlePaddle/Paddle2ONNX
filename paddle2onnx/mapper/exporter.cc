@@ -232,7 +232,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
   }
   _helper.SetOpsetVersion(opset_version);
-  P2OLogger() << "Use opset_version = " << _helper.GetOpsetVersion()
+  P2OLogger(verbose) << "Use opset_version = " << _helper.GetOpsetVersion()
               << " for ONNX export." << std::endl;
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
@@ -300,7 +300,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
       return "";
     }
-    P2OLogger() << "PaddlePaddle model is exported as ONNX format now."
+    P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
                 << std::endl;
   }
 

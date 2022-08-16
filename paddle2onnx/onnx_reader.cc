@@ -13,13 +13,25 @@ PADDLE2ONNX_DECL OnnxReader::OnnxReader(const char* model_buffer,
   ONNX_NAMESPACE::ModelProto model;
   std::string content(model_buffer, model_buffer + buffer_size);
   model.ParseFromString(content);
-  num_inputs = model.graph().input_size();
+
+  std::set<std::string> initializer_names;
+  for (auto i = 0; i < model.graph().initializer_size(); ++i) {
+    initializer_names.insert(model.graph().initializer(i).name());
+  }
+
   num_outputs = model.graph().output_size();
-  Assert(num_inputs <= 100,
-         "The number of inputs is exceed 100, unexpected situation.");
   Assert(num_outputs <= 100,
          "The number of outputs is exceed 100, unexpected situation.");
-  for (int i = 0; i < num_inputs; ++i) {
+
+  num_inputs = 0;
+  for (int i = 0; i < model.graph().input_size(); ++i) {
+    if (initializer_names.find(model.graph().input(i).name()) != initializer_names.end()) {
+      continue;
+    }
+    num_inputs += 1;
+    Assert(num_inputs <= 100,
+           "The number of inputs is exceed 100, unexpected situation.");
+
     memcpy(input_names[i], model.graph().input(i).name().c_str(),
            model.graph().input(i).name().size());
 
