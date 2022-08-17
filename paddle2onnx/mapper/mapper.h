@@ -176,6 +176,16 @@ class Mapper {
   std::vector<TensorInfo> GetOutput(const std::string& name) const {
     return parser_->GetOpOutput(block_idx_, op_idx_, name);
   }
+  // Judge whether Attribute(name)'s type is Var or Vars.
+  bool IsAttrVar(const std::string& name) const {
+    return parser_->OpIsAttrVar(block_idx_, op_idx_, name);
+  }
+
+  // Get TensorInfo(s) from Attribute Var or Vars.
+  std::vector<TensorInfo> GetAttrVar(const std::string& name) const {
+    return parser_->GetOpAttrVar(block_idx_, op_idx_, name);
+  }
+
   bool HasAttr(const std::string& name) const {
     auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
     return parser_->OpHasAttr(op, name);
@@ -214,10 +224,19 @@ class Mapper {
     return parser_->IsConstantTensor(block_idx_, input_info[0].name);
   }
 
+  bool IsConstant(const TensorInfo& info) const {
+    return parser_->IsConstantTensor(block_idx_, info.name);
+  }
+
   template <typename T>
   bool TryGetInputValue(const std::string& input_key, std::vector<T>* data) {
     auto input_info = GetInput(input_key);
     return parser_->TryGetTensorValue(block_idx_, input_info[0].name, data);
+  }
+
+  template <typename T>
+  bool TryGetValue(const TensorInfo& info, std::vector<T>* data) {
+    return parser_->TryGetTensorValue(block_idx_, info.name, data);
   }
 };
 
