@@ -125,7 +125,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
         auto zero_node =
             helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
 
-        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 0);
+        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 1);
         helper_->quantize_info[tensor_name] = quantize_info;
       }
     }
