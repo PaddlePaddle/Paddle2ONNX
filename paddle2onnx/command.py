@@ -87,7 +87,7 @@ def arg_parser():
     parser.add_argument(
         "--scale_filename",
         type=_text_type,
-        default="out_scale.txt",
+        default="calibration_table.txt",
         help="The out scale file for Quantize model, default out_scale.txt.")
     parser.add_argument(
         "--enable_onnx_checker",
