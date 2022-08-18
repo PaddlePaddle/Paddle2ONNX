@@ -188,29 +188,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 
     // Genarate calibration.cache for Implicit Quantization
     // convert float to hex
-    union {
-      float f;
-      unsigned char farray[4];
-    } un;
-
-    std::ofstream cache_file;
-    cache_file.open("calibration.cache", std::ios::out);
-    cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
-    for (auto iter = helper_->quantize_info.rbegin();
-         iter != helper_->quantize_info.rend(); iter++) {
-      std::string tensor_name = iter->first;
-      QuantizeInfo quantize_info = iter->second;
-      if (quantize_info.scale_.size() == 1) {
-        float val = quantize_info.scale_[0];
-        un.f = val;
-        cache_file << tensor_name << ": ";
-        for (int64_t i = 3; i >= 0; i--) {
-          cache_file << std::setw(2) << std::setfill('0') << std::hex
-                     << (int)(un.farray[i]);
-        }
-        cache_file << std::endl;
-      }
-    }
+    SaveCache();
   } else {
     Assert(false,
            "[QuantizeModelProcessor] Only support 'onnxruntime'  / 'tensorrt' "
@@ -219,7 +197,31 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
                deploy_backend + ".");
   }
 }
+void QuantizeModelProcessor::SaveCache() {
+  union {
+    float f;
+    unsigned char farray[4];
+  } un;
 
+  std::ofstream cache_file;
+  cache_file.open("calibration.cache", std::ios::out);
+  cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
+  for (auto iter = helper_->quantize_info.rbegin();
+       iter != helper_->quantize_info.rend(); iter++) {
+    std::string tensor_name = iter->first;
+    QuantizeInfo quantize_info = iter->second;
+    if (quantize_info.scale_.size() == 1) {
+      float val = quantize_info.scale_[0];
+      un.f = val;
+      cache_file << tensor_name << ": ";
+      for (int64_t i = 3; i >= 0; i--) {
+        cache_file << std::setw(2) << std::setfill('0') << std::hex
+                   << (int)(un.farray[i]);
+      }
+      cache_file << std::endl;
+    }
+  }
+}
 // In TensorRT, all quantized op: Conv, ConvTranspose, liner(MatMul), MaxPool,
 // AvgPool, AdaptiveAvgPool, rnn(not support now)
 // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
@@ -657,7 +659,7 @@ void QuantizeModelProcessor::MergeConvBN() {
     if (conv_node->input_size() == 2) {
       conv_node->add_input(conv_bias_node);
     }
-    // rename BN op
+    // remove BN op
     RemoveNodeByName(bn_node->name());
   }
 }
@@ -729,7 +731,7 @@ void QuantizeModelProcessor::MergeConvAdd() {
     if (target != shape_val) {
       continue;
     }
-    // rename Reshape op
+    // remove Reshape op
     RemoveNodeByName(before_nodes[0]->name());
     // add scale for bias
     std::vector<float> weight_scale =
@@ -752,7 +754,6 @@ void QuantizeModelProcessor::MergeConvAdd() {
     helper_->quantize_info[bias_node] = quantize_info;
     AppendQuantizeTensor(bias_node, true);
     node->add_input(bias_node);
-    // rename Reshape op
     RemoveNodeByName(next_node->name());
   }
 }

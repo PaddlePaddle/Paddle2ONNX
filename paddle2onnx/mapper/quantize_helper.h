@@ -71,6 +71,8 @@ struct QuantizeModelProcessor {
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
   void AddQDQ();
 
+  void SaveCache();
+
   // According to:
   // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
   void AddTrtQDQ();
