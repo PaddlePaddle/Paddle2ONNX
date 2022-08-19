@@ -59,12 +59,14 @@ class TestSliceConvert(OPConvertAutoScanTest):
         starts = [1, 0]
         ends = [4, 7]
         axes = [0, 1]
-
+        opset_version = [7, 9, 15]
+        if isStartsTensor or isEndsTensor:
+            opset_version = [10, 15]
         config = {
             "op_names": ["slice"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "isStartsTensor": isStartsTensor,
             "isEndsTensor": isEndsTensor,
@@ -127,12 +129,14 @@ class TestSliceConvert1(OPConvertAutoScanTest):
             starts = [1, 0]
             ends = [input_shape[0], input_shape[2]]
             axes = [0, 3]
-
+        opset_version = [7, 9, 15]
+        if isStartsTensor or isEndsTensor:
+            opset_version = [10, 15]
         config = {
             "op_names": ["slice"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": opset_version,
             "input_spec_shape": [],
             "isStartsTensor": isStartsTensor,
             "isEndsTensor": isEndsTensor,
