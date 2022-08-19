@@ -51,8 +51,7 @@ class TestSplitConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=8), min_size=2, max_size=5))
         # float64 not supported
         dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
-
-        axis_dtype = draw(st.sampled_from(["int32", "int64"]))
+        axis_dtype = "int64"  # 只能设置为INT64，设置为INT32时会在axis_tensor后增加cast导致取不到constant数值
         isAxisTensor = draw(st.booleans())
         # when axis is negtive, paddle has bug
         axis = draw(st.integers(min_value=0, max_value=len(input_shape) - 1))
