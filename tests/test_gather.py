@@ -29,7 +29,9 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = paddle.gather(inputs, index=paddle.to_tensor([1, 2]), axis=0)
+        x = paddle.gather(
+            inputs, index=paddle.to_tensor(
+                [1, 2], dtype="int64"), axis=0)
         return x
 
 
