@@ -74,6 +74,8 @@ struct QuantizeModelProcessor {
 
   void SaveCache();
 
+  void ReadScaleFile(const std::string& scale_file = "calibration_table.txt");
+
   // According to:
   // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
   void AddTrtQDQ();

@@ -12,10 +12,10 @@ PaddleSlim 有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT
 2. 使用 Paddle2ONNX 导出 Paddle 量化模型为 ONNX 时，请根据部署的 backend 设置对应的deploy_backend，示例如下：
 
 ```
-# 使用 ONNXRuntime 在 CPU 上部署
-paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename model.pdiparams --save_file float_model.onnx --opset_version 13 --enable_dev_version True --deploy_backend onnxruntime --enable_onnx_checker True
+# 使用 ONNXRuntime 在 CPU 上部署，导出成功后会生成量化模型 quant_model.onnx
+paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename model.pdiparams --save_file quant_model.onnx --opset_version 13 --enable_dev_version True --deploy_backend onnxruntime --enable_onnx_checker True
 
-# 使用 TensorRT 在 GPU 上部署
+# 使用 TensorRT 在 GPU 上部署，导出成功后会生成 float_model.onnx 和 TensorRT 加载用的量化表 calibration.cache 文件
 paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename model.pdiparams --save_file float_model.onnx --opset_version 13 --enable_dev_version True --deploy_backend tensorrt --enable_onnx_checker True
 ```
 
@@ -71,7 +71,7 @@ pred_onnx = sess.run(None, input_dict) # 进行推理
 
 答：模型量化相比非量化模型变慢了可以从以下几个原因分析：  
 
-(1) 检查机器是否支持 avx512_vnni 指令，在支持 avx512_vnni 的 CPU 上精度和加速效果最好  
+(1) 检查机器是否支持 avx2， avx512 或 avx512_vnni 指令，在支持 avx512_vnni 的 CPU 上精度和加速效果最好  
 
 (2) 检查是否在 CPU 推理，当前导出的ONNX模型仅支持使用 ONNXRuntime 在 CPU 上进行推理加速  
 

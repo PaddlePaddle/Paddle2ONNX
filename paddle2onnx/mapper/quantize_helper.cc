@@ -105,31 +105,8 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
   nodes_ = nodes;
   P2OLogger() << "[Info] Quantize model deploy backend is: " << deploy_backend
               << std::endl;
-
-  // read out_scale.txt for all the tensors
-  P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
-  std::ifstream out_scale_file(scale_file);
-  std::string one_line;
-  while (getline(out_scale_file, one_line)) {
-    if (one_line.find(" ") != one_line.npos) {
-      auto pos = one_line.find(" ");
-      std::string pre_str = one_line.substr(0, pos);
-      std::string pos_str = one_line.substr(pos);
-      if (pre_str.size() && pos_str.size()) {
-        std::string tensor_name = pre_str;
-        float scale = std::stod(pos_str);
-        std::vector<float> scales = {scale / 127};
-        auto scale_node = helper_->Constant(
-            {}, ONNX_NAMESPACE::TensorProto::FLOAT, scales[0]);
-        std::vector<int64_t> zeros = {0};
-        auto zero_node =
-            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
-
-        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 1);
-        helper_->quantize_info[tensor_name] = quantize_info;
-      }
-    }
-  }
+  // read calibration_table.txt for all the tensors
+  ReadScaleFile(scale_file);
   // Determine the format of the exported ONNX quantization model according to
   // the deploy_backend
   if (deploy_backend == "others") {
@@ -197,6 +174,39 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
                deploy_backend + ".");
   }
 }
+void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
+  // read calibration_table.txt for all the tensors
+  P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
+  std::ifstream out_scale_file(scale_file);
+  if (!out_scale_file) {
+    P2OLogger() << " The PaddlePaddle model is a quantized model, it requires "
+                   "a scale_file e.g calibration_table.txt while exporting to "
+                   "ONNX, please refer to "
+                   "https://github.com/PaddlePaddle/Paddle2ONNX/quantize.md. "
+                << std::endl;
+  }
+  std::string one_line;
+  while (getline(out_scale_file, one_line)) {
+    if (one_line.find(" ") != one_line.npos) {
+      auto pos = one_line.find(" ");
+      std::string pre_str = one_line.substr(0, pos);
+      std::string pos_str = one_line.substr(pos);
+      if (pre_str.size() && pos_str.size()) {
+        std::string tensor_name = pre_str;
+        float scale = std::stod(pos_str);
+        std::vector<float> scales = {scale / 127};
+        auto scale_node = helper_->Constant(
+            {}, ONNX_NAMESPACE::TensorProto::FLOAT, scales[0]);
+        std::vector<int64_t> zeros = {0};
+        auto zero_node =
+            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
+
+        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 1);
+        helper_->quantize_info[tensor_name] = quantize_info;
+      }
+    }
+  }
+}
 void QuantizeModelProcessor::SaveCache() {
   union {
     float f;
@@ -205,7 +215,7 @@ void QuantizeModelProcessor::SaveCache() {
 
   std::ofstream cache_file;
   cache_file.open("calibration.cache", std::ios::out);
-  cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
+  cache_file << "TRT-XXXX-EntropyCalibration2" << std::endl;
   for (auto iter = helper_->quantize_info.rbegin();
        iter != helper_->quantize_info.rend(); iter++) {
     std::string tensor_name = iter->first;
