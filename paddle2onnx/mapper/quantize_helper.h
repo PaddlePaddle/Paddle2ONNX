@@ -53,7 +53,8 @@ struct QuantizeModelProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       OnnxHelper* helper, const std::string& deploy_backend,
       const PaddleParser& parser,
-      const std::string& scale_file = "calibration_table.txt");
+      const std::string& scale_file = "calibration_table.txt",
+      const std::string& calibration_file = "calibration.cache");
 
   // Remove all Quantize and Dequantize ops
   void RemoveAllQuantizeOps();
@@ -72,7 +73,7 @@ struct QuantizeModelProcessor {
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
   void AddQDQ();
 
-  void SaveCache();
+  void SaveCache(const std::string& calibration_file = "calibration.cache");
 
   void ReadScaleFile(const std::string& scale_file = "calibration_table.txt");
 

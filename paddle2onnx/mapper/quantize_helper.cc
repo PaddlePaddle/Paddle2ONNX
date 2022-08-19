@@ -83,7 +83,8 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
     OnnxHelper* helper, const std::string& deploy_backend,
-    const PaddleParser& parser, const std::string& scale_file) {
+    const PaddleParser& parser, const std::string& scale_file,
+    const std::string& calibration_file) {
   // Determine whether the model contains quantization related OPs, if not, exit
   // directly
   bool quantized_model = false;
@@ -165,7 +166,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 
     // Genarate calibration.cache for Implicit Quantization
     // convert float to hex
-    SaveCache();
+    SaveCache(calibration_file);
   } else {
     Assert(false,
            "[QuantizeModelProcessor] Only support 'onnxruntime'  / 'tensorrt' "
@@ -207,14 +208,15 @@ void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
     }
   }
 }
-void QuantizeModelProcessor::SaveCache() {
+void QuantizeModelProcessor::SaveCache(const std::string& calibration_file) {
   union {
     float f;
     unsigned char farray[4];
   } un;
-
+  P2OLogger() << "[Info] Write cache file for TensorRT deploy in: "
+              << calibration_file << std::endl;
   std::ofstream cache_file;
-  cache_file.open("calibration.cache", std::ios::out);
+  cache_file.open(calibration_file, std::ios::out);
   cache_file << "TRT-XXXX-EntropyCalibration2" << std::endl;
   for (auto iter = helper_->quantize_info.rbegin();
        iter != helper_->quantize_info.rend(); iter++) {
