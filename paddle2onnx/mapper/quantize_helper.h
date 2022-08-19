@@ -52,7 +52,8 @@ struct QuantizeModelProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       OnnxHelper* helper, const std::string& deploy_backend,
-      const PaddleParser& parser, const std::string& scale_file = "");
+      const PaddleParser& parser,
+      const std::string& scale_file = "calibration_table.txt");
 
   // Remove all Quantize and Dequantize ops
   void RemoveAllQuantizeOps();

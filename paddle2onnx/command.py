@@ -131,7 +131,7 @@ def c_paddle_to_onnx(model_file,
                      enable_experimental_op=True,
                      enable_optimize=True,
                      deploy_backend="onnxruntime",
-                     scale_file=""):
+                     scale_file="calibration_table.txt"):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     onnx_model_str = c_p2o.export(
         model_file, params_file, opset_version, auto_upgrade_opset, verbose,

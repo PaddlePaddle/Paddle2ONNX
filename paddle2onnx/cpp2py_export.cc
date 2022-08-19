@@ -35,7 +35,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      bool enable_optimize = true,
                      const CustomOpInfo& info = CustomOpInfo(),
                      const std::string& deploy_backend = "onnxruntime",
-                     const std::string& scale_file = "") {
+                     const std::string& scale_file = "calibration_table.txt") {
     P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
     P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
     P2OLogger(verbose) << "Paramters file path: " << params_filename
