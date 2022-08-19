@@ -122,7 +122,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
   for (auto& item : *inputs) {
     if (tensor_names.find(item->name()) != tensor_names.end()) {
       Assert(false,
-             "There's dumplicate names in exported parameters and inputs.");
+             "There's dumplicate names:" + item->name() + " in exported parameters and inputs.");
     }
     tensor_names.insert(item->name());
   }

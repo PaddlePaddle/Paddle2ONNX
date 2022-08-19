@@ -21,11 +21,19 @@ bool ModelExporter::IsLoopSupported(const PaddleParser& parser,
                                     const int64_t& op_id) {
   auto x_info = parser.GetOpInput(block_id, op_id, "X");
   auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
-  if (x_info.size() + 1 != out_info.size()) {
-    P2OLogger() << "Only support number of inputs equals to number of outputs "
-                   "for operator 'while'."
-                << std::endl;
-    return false;
+  auto cond_info = parser.GetOpInput(block_id, op_id, "Condition");
+  std::set<std::string> input_names;
+  for (size_t i = 0; i < x_info.size(); ++i) {
+    input_names.insert(x_info[i].name);
+  }
+  input_names.insert(cond_info[0].name);
+
+  for (size_t i = 0; i < out_info.size(); ++i) {
+    auto iter = input_names.find(out_info[i].name);
+    if (iter == input_names.end()) {
+      P2OLogger() << "Cannot find output:" << out_info[i].name << " in input tensors while converting operator 'while', Paddle2ONNX doesn't support this situation now." << std::endl;
+      return false;
+    }
   }
   for (size_t i = 0; i < x_info.size(); ++i) {
     if (x_info[i].is_tensor_array) {
@@ -50,11 +58,6 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
   Assert(sub_block_idx > 0, "Cannot find sub_block in while operator.");
   auto x_info = parser.GetOpInput(block_id, op_id, "X");
   auto cond_info = parser.GetOpInput(block_id, op_id, "Condition");
-  auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
-  Assert(x_info.size() + 1 == out_info.size(),
-         "Requires the length of inputs(" + std::to_string(x_info.size()) +
-             ")/outputs(" + std::to_string(out_info.size()) +
-             ") be same for while operator.");
 
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
@@ -64,19 +67,30 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
   TensorInfo iter_info(iter_name, std::vector<int64_t>(1, 1),
                        P2ODataType::INT64);
   inputs.push_back(std::move(MakeValueInfo(iter_info)));
+
+  std::set<std::string> input_names;
   // make cond
   inputs.push_back(std::move(MakeValueInfo(cond_info[0])));
+  input_names.insert(cond_info[0].name);
   // other inputs
   outputs.push_back(std::move(std::move(MakeValueInfo(cond_info[0]))));
   for (size_t i = 0; i < x_info.size(); ++i) {
     if (x_info[i].is_tensor_array) {
       continue;
     }
+    if (input_names.find(x_info[i].name) != input_names.end()) {
+      continue;
+    }
+    input_names.insert(x_info[i].name);
     inputs.push_back(std::move(MakeValueInfo(x_info[i])));
     outputs.push_back(std::move(MakeValueInfo(x_info[i])));
   }
   for (size_t i = 0; i < x_info.size(); ++i) {
     if (x_info[i].is_tensor_array) {
+      if (input_names.find(x_info[i].name) != input_names.end()) {
+        continue;
+      }
+      input_names.insert(x_info[i].name);
       outputs.push_back(std::move(MakeValueInfo(x_info[i])));
     }
   }
@@ -156,11 +170,17 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
     if (x_info[i].is_tensor_array) {
       continue;
     }
+    if (std::find(x_names.begin(), x_names.end(), x_info[i].name) != x_names.end()) {
+      continue;
+    }
     x_names.push_back(x_info[i].name);
     out_names.push_back(x_info[i].name);
   }
   for (size_t i = 0; i < x_info.size(); ++i) {
     if (x_info[i].is_tensor_array) {
+      if (std::find(x_names.begin(), x_names.end(), x_info[i].name) != x_names.end()) {
+        continue;
+      }
       out_names.push_back(x_info[i].name);
     }
   }
