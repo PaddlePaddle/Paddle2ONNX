@@ -22,7 +22,7 @@ mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddl
 wget https://bj.bcebos.com/paddle2onnx/tests/quantized_models.tar.gz
 tar xf quantized_models.tar.gz
 python -m pip uninstall paddlepaddle-gpu
-python -m pip install paddlepaddle-gpu==2.3.2
+python -m pip install paddlepaddle-gpu==2.3.1
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
         test_auto_scan_quantize_linear.py \
