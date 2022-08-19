@@ -71,10 +71,8 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
                     axis = [1, 3]
         isTensor13 = draw(st.booleans())
         opset_version = [7, 9, 10, 11, 12, 13, 14, 15]
-        if isTensor13:
-            opset_version = [13, 14, 15]
         if isTensor13 or isTensor:
-            opset_version = opset_version[:-1]
+            opset_version = [13, 14, 15]
         config = {
             "op_names": ["unsqueeze2"],
             "test_data_shapes": [input_shape],
