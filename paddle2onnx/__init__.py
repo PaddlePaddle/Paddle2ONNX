@@ -42,8 +42,8 @@ def export(model_file,
            enable_optimize=True,
            custom_op_info=None,
            deploy_backend="onnxruntime",
-           scale_file="calibration_table.txt",
-           calibration_file="calibration.cache"):
+           scale_file="",
+           calibration_file=""):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     deploy_backend = deploy_backend.lower()
     if custom_op_info is None:

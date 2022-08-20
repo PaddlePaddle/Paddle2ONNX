@@ -1,5 +1,5 @@
 # PaddleSlim 量化模型导出 ONNX
-PaddleSlim 有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT)，目前 Paddle2ONNX 已经支持将两种量化方法量化后的模型导出为ONNX，并使用 ONNXRuntime 在 CPU 上或使用 TensorRT 在 GPU 上进行加速推理。
+PaddleSlim 有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT)，目前 Paddle2ONNX 已经支持将两种量化方法量化后的模型导出为ONNX，并使用 ONNXRuntime 在 CPU 上或使用 TensorRT 8.X 版本在 GPU 上进行加速推理。
 
 ## 量化环境需求
 1. PaddlePaddle > 2.3.2

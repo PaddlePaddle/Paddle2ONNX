@@ -177,14 +177,17 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 }
 void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
   // read calibration_table.txt for all the tensors
+  Assert(scale_file != "",
+         "[QuantizeModelProcessor] A scale file is need when export quantize "
+         "model, please use --scale_filename to specify. please refer to "
+         "https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/"
+         "quantize.md "
+         "for more information");
   P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
   std::ifstream out_scale_file(scale_file);
   if (!out_scale_file) {
-    P2OLogger() << " The PaddlePaddle model is a quantized model, it requires "
-                   "a scale_file e.g calibration_table.txt while exporting to "
-                   "ONNX, please refer to "
-                   "https://github.com/PaddlePaddle/Paddle2ONNX/quantize.md. "
-                << std::endl;
+    P2OLogger() << "Cannot read scale file: " << scale_file
+                << ", please check if the file exist." << std::endl;
   }
   std::string one_line;
   while (getline(out_scale_file, one_line)) {
@@ -213,11 +216,15 @@ void QuantizeModelProcessor::SaveCache(const std::string& calibration_file) {
     float f;
     unsigned char farray[4];
   } un;
+  Assert(
+      calibration_file != "",
+      "[QuantizeModelProcessor] The calibration cache file name for TensorRT "
+      "deploy is need, please use --calibration_filename to specify.");
   P2OLogger() << "[Info] Write cache file for TensorRT deploy in: "
               << calibration_file << std::endl;
   std::ofstream cache_file;
   cache_file.open(calibration_file, std::ios::out);
-  cache_file << "TRT-XXXX-EntropyCalibration2" << std::endl;
+  cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
   for (auto iter = helper_->quantize_info.rbegin();
        iter != helper_->quantize_info.rend(); iter++) {
     std::string tensor_name = iter->first;

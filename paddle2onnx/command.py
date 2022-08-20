@@ -138,8 +138,8 @@ def c_paddle_to_onnx(model_file,
                      enable_experimental_op=True,
                      enable_optimize=True,
                      deploy_backend="onnxruntime",
-                     scale_file="calibration_table.txt",
-                     calibration_file="calibration.cache"):
+                     scale_file="",
+                     calibration_file=""):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     onnx_model_str = c_p2o.export(
         model_file, params_file, opset_version, auto_upgrade_opset, verbose,
@@ -222,8 +222,7 @@ def main():
         else:
             params_file = os.path.join(args.model_dir, args.params_filename)
         scale_file = os.path.join(args.model_dir, args.scale_filename)
-        calibration_file = os.path.join(args.model_dir,
-                                        args.calibration_filename)
+        calibration_file = args.calibration_filename
         c_paddle_to_onnx(
             model_file=model_file,
             params_file=params_file,
