@@ -380,8 +380,7 @@ class APIOnnx(object):
                 for v in self._version:
                     onnx_model_str = c_p2o.export(
                         model_file, params_file, v, False, True, True, True,
-                        True, {}, "onnxruntime", "calibration_table.txt",
-                        "calibration.cache")
+                        True, {}, "onnxruntime", "calibration_table.txt", "")
                     with open(
                             os.path.join(self.name,
                                          self.name + '_' + str(v) + ".onnx"),

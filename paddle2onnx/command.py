@@ -91,7 +91,7 @@ def arg_parser():
         help="The out scale file for Quantize model, default calibration_table.txt."
     )
     parser.add_argument(
-        "--calibration_filename",
+        "--save_calibration_file",
         type=_text_type,
         default="calibration.cache",
         help="The calibration cache for TensorRT deploy, default calibration.cache."
@@ -222,7 +222,7 @@ def main():
         else:
             params_file = os.path.join(args.model_dir, args.params_filename)
         scale_file = os.path.join(args.model_dir, args.scale_filename)
-        calibration_file = args.calibration_filename
+        calibration_file = args.save_calibration_file
         c_paddle_to_onnx(
             model_file=model_file,
             params_file=params_file,

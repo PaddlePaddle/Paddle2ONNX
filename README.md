@@ -65,7 +65,7 @@ PaddleSlim 量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quan
 |--enable_auto_update_opset| **[可选]**  是否开启 opset version 自动升级功能，当低版本 opset 无法转换时，自动选择更高版本的 opset进行转换， 默认为 True|
 |--deploy_backend |**[可选]** 量化模型部署的推理引擎，支持 onnxruntime、tensorrt 或 others，当选择 others 时，所有的量化信息存储于 max_range.txt 文件中，默认为 onnxruntime |
 |--scale_filename |**[可选]** 量化模型量化信息存储的文件名，默认为 calibration_table.txt |
-|--calibration_filename |**[可选]** TensorRT 8.X版本部署量化模型需要读取的cache文件，默认为 calibration.cache |
+|--save_calibration_file |**[可选]** TensorRT 8.X版本部署量化模型需要读取的 cache 文件的保存路径，默认为 calibration.cache |
 |--version |**[可选]** 查看 paddle2onnx 版本 |
 
 - 使用 onnxruntime 验证转换模型, 请注意安装最新版本（最低要求 1.10.0）
