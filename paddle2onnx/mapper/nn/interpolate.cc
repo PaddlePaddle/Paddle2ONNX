@@ -103,9 +103,7 @@ void InterpolateMapper::Opset11() {
       scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale_);
     }
   }
-  std::string roi =
-      helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
-                        std::vector<float>(x_info[0].Rank() * 2, 1.0));
+  std::string roi = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, std::vector<float>());
   if (scale == "") {
     // has to generate a empty tensor for resize
     scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
