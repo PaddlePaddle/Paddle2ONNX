@@ -177,17 +177,18 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 }
 void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
   // read calibration_table.txt for all the tensors
-  Assert(scale_file != "",
+  Assert(scale_file.find(".txt") != scale_file.npos,
          "[QuantizeModelProcessor] A scale file is need when export quantize "
-         "model, please use --scale_filename to specify. please refer to "
+         "model, please use --scale_filename to specify, such as "
+         "--scale_filename calibration_table.txt. please refer to "
          "https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/"
          "quantize.md "
          "for more information");
   P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
   std::ifstream out_scale_file(scale_file);
   if (!out_scale_file) {
-    P2OLogger() << "Cannot read scale file: " << scale_file
-                << ", please check if the file exist." << std::endl;
+    Assert(false, "Cannot read scale file: " + scale_file +
+                      ", please check if the file exist.");
   }
   std::string one_line;
   while (getline(out_scale_file, one_line)) {
@@ -217,9 +218,10 @@ void QuantizeModelProcessor::SaveCache(const std::string& calibration_file) {
     unsigned char farray[4];
   } un;
   Assert(
-      calibration_file != "",
+      calibration_file.find(".cache") != calibration_file.npos,
       "[QuantizeModelProcessor] The calibration cache file name for TensorRT "
-      "deploy is need, please use --calibration_filename to specify.");
+      "deploy is need, please use --calibration_filename to specify, such as "
+      "--calibration_filename calibration.cache.");
   P2OLogger() << "[Info] Write cache file for TensorRT deploy in: "
               << calibration_file << std::endl;
   std::ofstream cache_file;
