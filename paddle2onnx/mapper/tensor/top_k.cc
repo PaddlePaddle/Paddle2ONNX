@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/top_k_v2.h"
+#include "paddle2onnx/mapper/tensor/top_k.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(top_k_v2, TopKV2Mapper)
+REGISTER_MAPPER(top_k, TopKMapper)
 
-void TopKV2Mapper::Opset11() {
+void TopKMapper::Opset11() {
   auto x_info = GetInput("X");
   auto output_info = GetOutput("Out");
   auto indices_info = GetOutput("Indices");
@@ -35,9 +35,6 @@ void TopKV2Mapper::Opset11() {
     k = helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, k_value);
   }
   auto out_node = helper_->MakeNode("TopK", {x_info[0].name, k}, 2);
-  AddAttribute(out_node, "largest", static_cast<int64_t>(largest_));
-  AddAttribute(out_node, "sorted", static_cast<int64_t>(sorted_));
-  AddAttribute(out_node, "axis", axis_);
   helper_->AutoCast(out_node->output(0), output_info[0].name, x_info[0].dtype,
                     output_info[0].dtype);
   helper_->AutoCast(out_node->output(1), indices_info[0].name,
