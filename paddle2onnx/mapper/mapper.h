@@ -51,7 +51,7 @@ class Mapper {
       output_name = op.outputs(0).arguments(0);
     }
     std::string op_type = op.type();
-    std::string prefix = "[Paddle2ONNX][" + op_type + ": " + output_name + "]";
+    std::string prefix = "[Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(v, prefix);
   }
 
@@ -63,7 +63,7 @@ class Mapper {
     }
     std::string op_type = op.type();
     std::string prefix =
-        "[ERROR][Paddle2ONNX][" + op_type + ": " + output_name + "]";
+        "[ERROR][Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(true, prefix);
   }
 
@@ -75,7 +75,7 @@ class Mapper {
     }
     std::string op_type = op.type();
     std::string prefix =
-        "[WARN][Paddle2ONNX][" + op_type + ": " + output_name + "]";
+        "[WARN][Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(true, prefix);
   }
 
