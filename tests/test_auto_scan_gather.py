@@ -45,7 +45,7 @@ class Net1(BaseNet):
         forward
         """
         axis = self.config["axis"]
-        axis = paddle.to_tensor(axis)
+        axis = paddle.to_tensor(axis, dtype="int64")
         x = paddle.gather(x, index, axis=axis)
         shape = paddle.shape(x)
         x = paddle.reshape(x, shape)
