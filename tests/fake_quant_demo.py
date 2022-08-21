@@ -1,6 +1,7 @@
 import paddle
 from paddle.fluid.framework import IrGraph
 from paddle.fluid import core
+import os
 from paddle.fluid.contrib.slim.quantization import QuantizationTransformPass, QuantizationTransformPassV2, AddQuantDequantPass, AddQuantDequantPassV2, QuantizationFreezePass, QuantWeightPass
 
 try:
@@ -144,7 +145,7 @@ def post_quant_fake(executor,
     save_quant_table_path = os.path.join(save_model_path,
                                          'calibration_table.txt')
     with open(save_quant_table_path, 'w') as txt_file:
-        txt_file.write("fake quantize demo.")
+        txt_file.write("Fake_Quantize_Demo.")
     print("The quantized model is saved in: " + save_model_path)
 
 
