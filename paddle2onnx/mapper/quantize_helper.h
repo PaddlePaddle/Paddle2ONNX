@@ -14,8 +14,10 @@
 
 #pragma once
 #include <onnx/onnx_pb.h>
+
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 
 #include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"
@@ -50,7 +52,8 @@ struct QuantizeModelProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       OnnxHelper* helper, const std::string& deploy_backend,
-      const PaddleParser& parser);
+      const PaddleParser& parser, const std::string& scale_file = "",
+      const std::string& calibration_file = "");
 
   // Remove all Quantize and Dequantize ops
   void RemoveAllQuantizeOps();
@@ -68,6 +71,12 @@ struct QuantizeModelProcessor {
   // According to:
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
   void AddQDQ();
+
+  // Save cache file for TensorRT8.X int8 deploy
+  void SaveCache(const std::string& calibration_file);
+
+  // Read scale file
+  void ReadScaleFile(const std::string& scale_file);
 
   // According to:
   // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
