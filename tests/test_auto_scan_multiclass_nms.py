@@ -118,7 +118,8 @@ def gen_onnx_export(q):
             auto_upgrade_opset=False,
             verbose=True,
             enable_onnx_checker=True,
-            enable_experimental_op=True)
+            enable_experimental_op=True,
+            scale_file="calibration_table.txt")
         import onnxruntime as ort
         sess = ort.InferenceSession(onnx_file_path)
         result1 = sess.run(None, {"x0": data[0], "x1": data[1]})

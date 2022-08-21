@@ -108,7 +108,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
                 model_file=new_model_path + "/__model__",
                 params_file=new_model_path + "/__params__",
                 opset_version=13,
-                enable_onnx_checker=True)
+                enable_onnx_checker=True,
+                scale_file=model_path + "/calibration_table.txt")
             sess_options = rt.SessionOptions()
             sess_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_DISABLE_ALL
             sess = rt.InferenceSession(
@@ -186,6 +187,16 @@ class TestPostTrainingQuantization(unittest.TestCase):
             is_use_cache_file=is_use_cache_file)
         ptq.quantize()
         ptq.save_quantized_model(self.int8_model_path)
+        collect_dict = ptq._calibration_scales
+        save_quant_table_path = os.path.join(self.int8_model_path,
+                                             'calibration_table.txt')
+        print("11111: ", save_quant_table_path)
+        with open(save_quant_table_path, 'w') as txt_file:
+            txt_file.write("scale_info:")
+            for tensor_name in collect_dict.keys():
+                write_line = '{} {}'.format(
+                    tensor_name, collect_dict[tensor_name]['scale']) + '\n'
+                txt_file.write(write_line)
 
     def run_test(self,
                  model_name,
