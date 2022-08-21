@@ -187,6 +187,14 @@ class TestPostTrainingQuantization(unittest.TestCase):
             is_use_cache_file=is_use_cache_file)
         ptq.quantize()
         ptq.save_quantized_model(self.int8_model_path)
+        collect_dict = ptq._calibration_scales
+        save_quant_table_path = os.path.join(self.int8_model_path,
+                                             'calibration_table.txt')
+        with open(save_quant_table_path, 'w') as txt_file:
+            for tensor_name in collect_dict.keys():
+                write_line = '{} {}'.format(
+                    tensor_name, collect_dict[tensor_name]['scale']) + '\n'
+                txt_file.write(write_line)
 
     def run_test(self,
                  model_name,
