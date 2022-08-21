@@ -72,8 +72,10 @@ struct QuantizeModelProcessor {
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
   void AddQDQ();
 
+  // Save cache file for TensorRT8.X int8 deploy
   void SaveCache(const std::string& calibration_file);
 
+  // Read scale file
   void ReadScaleFile(const std::string& scale_file);
 
   // According to:
