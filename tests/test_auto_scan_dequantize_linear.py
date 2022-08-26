@@ -118,6 +118,10 @@ class TestDequantizeLinearConvert(OPConvertAutoScanTest):
 
         models = Net(config)
 
+        if not os.path.exists("calibration_table.txt"):
+            with open("calibration_table.txt", 'w') as txt_file:
+                txt_file.write("Fake_Quantize_Demo.")
+
         return (config, models)
 
     def test(self):
