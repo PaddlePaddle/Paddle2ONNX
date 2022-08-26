@@ -267,6 +267,10 @@ std::string OnnxHelper::Constant(const std::string& output,
   int numel = value.size();
   tensor->add_dims(numel);
   tensor->set_data_type(dtype);
+  if (value.size() == 0) {
+    nodes.push_back(node);
+    return output;
+  }
   if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
     std::vector<float> data;
     for (auto& item : value) {

@@ -27,12 +27,8 @@ ignore="test_expand_as.py \
         test_split.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
-        test_auto_scan_top_k.py \
-        test_auto_scan_group_norm.py \
-        test_auto_scan_index_select.py \
         test_auto_scan_interpolate_v1_ops.py \
         test_auto_scan_isx_ops.py \
-        test_auto_scan_linspace.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_mv.py \
         test_auto_scan_pad2d.py \
@@ -51,7 +47,6 @@ ignore="test_expand_as.py \
         test_ceil.py \
         test_floor_divide.py \
         test_has_nan.py \
-        test_index_select.py \
         test_isfinite.py \
         test_isinf.py \
         test_isnan.py \

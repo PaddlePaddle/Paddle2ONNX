@@ -13,29 +13,28 @@
 // limitations under the License.
 
 #pragma once
+#include <string>
+#include <vector>
+
 #include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
 
-class TopKV2Mapper : public Mapper {
+class GroupNormMapper : public Mapper {
  public:
-  TopKV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
+  GroupNormMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    GetAttr("largest", &largest_);
-    GetAttr("sorted", &sorted_);
-    GetAttr("axis", &axis_);
+    GetAttr("groups", &groups_);
+    GetAttr("epsilon", &epsilon_);
   }
-  int32_t GetMinOpset(bool verbose) {
-    Logger(verbose, 11) << RequireOpset(11) << std::endl;
-    return 11;
-  }
-  void Opset11();
+
+  int32_t GetMinOpset(bool verbose = false);
+  void Opset7();
 
  private:
-  bool largest_;
-  bool sorted_;
-  int64_t axis_;
+  int64_t groups_;
+  float epsilon_;
 };
 
 }  // namespace paddle2onnx

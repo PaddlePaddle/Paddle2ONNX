@@ -12,30 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-#include "paddle2onnx/mapper/mapper.h"
+#include "paddle2onnx/mapper/tensor/index_select.h"
 
 namespace paddle2onnx {
+REGISTER_MAPPER(index_select, IndexSelectMapper)
 
-class TopKV2Mapper : public Mapper {
- public:
-  TopKV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("largest", &largest_);
-    GetAttr("sorted", &sorted_);
-    GetAttr("axis", &axis_);
-  }
-  int32_t GetMinOpset(bool verbose) {
-    Logger(verbose, 11) << RequireOpset(11) << std::endl;
-    return 11;
-  }
-  void Opset11();
-
- private:
-  bool largest_;
-  bool sorted_;
-  int64_t axis_;
-};
+void IndexSelectMapper::Opset7() {
+  auto x_info = GetInput("X");
+  auto index_info = GetInput("Index");
+  auto out_info = GetOutput("Out");
+  auto node = helper_->MakeNode("Gather", {x_info[0].name, index_info[0].name},
+                                {out_info[0].name});
+  AddAttribute(node, "axis", axis_);
+}
 
 }  // namespace paddle2onnx

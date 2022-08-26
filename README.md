@@ -63,11 +63,17 @@ PaddleSlim 量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quan
 |--enable_dev_version | **[可选]** 是否使用新版本 Paddle2ONNX（推荐使用），默认为 True |
 |--enable_onnx_checker| **[可选]**  配置是否检查导出为 ONNX 模型的正确性, 建议打开此开关， 默认为 False|
 |--enable_auto_update_opset| **[可选]**  是否开启 opset version 自动升级功能，当低版本 opset 无法转换时，自动选择更高版本的 opset进行转换， 默认为 True|
-|--input_shape_dict| **[可选]**  配置输入的 shape, 默认为空; 此参数即将移除，如需要固定Paddle模型输入Shape，请使用[此工具](https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle)处理|
 |--deploy_backend |**[可选]** 量化模型部署的推理引擎，支持 onnxruntime、tensorrt 或 others，当选择 others 时，所有的量化信息存储于 max_range.txt 文件中，默认为 onnxruntime |
+|--scale_filename |**[可选]** 量化模型量化信息存储的文件名，默认为 calibration_table.txt |
+|--save_calibration_file |**[可选]** TensorRT 8.X版本部署量化模型需要读取的 cache 文件的保存路径，默认为 calibration.cache |
 |--version |**[可选]** 查看 paddle2onnx 版本 |
 
 - 使用 onnxruntime 验证转换模型, 请注意安装最新版本（最低要求 1.10.0）
+
+## 其它工具
+
+- [裁剪ONNX模型/修改ONNX模型节点名称](https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx)
+- [裁剪Paddle模型/固化或修改Paddle模型输入Shape](https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle)
 
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).

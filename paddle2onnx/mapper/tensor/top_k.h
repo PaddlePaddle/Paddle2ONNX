@@ -17,25 +17,16 @@
 
 namespace paddle2onnx {
 
-class TopKV2Mapper : public Mapper {
+class TopKMapper : public Mapper {
  public:
-  TopKV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("largest", &largest_);
-    GetAttr("sorted", &sorted_);
-    GetAttr("axis", &axis_);
-  }
+  TopKMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+             int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpset(bool verbose) {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
   void Opset11();
-
- private:
-  bool largest_;
-  bool sorted_;
-  int64_t axis_;
 };
 
 }  // namespace paddle2onnx

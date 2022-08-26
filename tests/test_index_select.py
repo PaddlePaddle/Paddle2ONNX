@@ -31,7 +31,10 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.index_select(
-            inputs, index=paddle.to_tensor([1, 2]), axis=self.axis)
+            inputs,
+            index=paddle.to_tensor(
+                [1, 2], dtype="int64"),
+            axis=self.axis)
         return x
 
 

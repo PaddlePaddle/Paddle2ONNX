@@ -13,7 +13,9 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/exporter.h"
+
 #include <onnx/checker.h>
+
 #include <array>
 
 #include "onnxoptimizer/optimize.h"
@@ -122,7 +124,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
   for (auto& item : *inputs) {
     if (tensor_names.find(item->name()) != tensor_names.end()) {
       Assert(false,
-             "There's dumplicate names in exported parameters and inputs.");
+             "There's dumplicate names:" + item->name() + " in exported parameters and inputs.");
     }
     tensor_names.insert(item->name());
   }
@@ -168,12 +170,11 @@ void ModelExporter::ProcessGraphDumplicateNames(
   }
 }
 
-std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
-                               bool auto_upgrade_opset, bool verbose,
-                               bool enable_onnx_checker,
-                               bool enable_experimental_op,
-                               bool enable_optimize,
-                               const std::string& deploy_backend) {
+std::string ModelExporter::Run(
+    const PaddleParser& parser, int opset_version, bool auto_upgrade_opset,
+    bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
+    bool enable_optimize, const std::string& deploy_backend,
+    const std::string& scale_file, const std::string& calibration_file) {
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
   _current_exported_num = 0;
@@ -232,8 +233,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     }
   }
   _helper.SetOpsetVersion(opset_version);
-  P2OLogger() << "Use opset_version = " << _helper.GetOpsetVersion()
-              << " for ONNX export." << std::endl;
+  P2OLogger(verbose) << "Use opset_version = " << _helper.GetOpsetVersion()
+                     << " for ONNX export." << std::endl;
   ExportParameters(parser.params);
   ExportInputOutputs(parser.inputs, parser.outputs);
 
@@ -266,7 +267,7 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
   if (parser.is_quantized_model) {
     quantize_model_processer.ProcessQuantizeModel(
         &parameters, &inputs, &outputs, &_helper.nodes, &_helper,
-        deploy_backend, parser);
+        deploy_backend, parser, scale_file, calibration_file);
     // Update int8 weights in quantized OP to float32
     UpdateParameters(_helper.updated_params);
   }
@@ -300,8 +301,8 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
       return "";
     }
-    P2OLogger() << "PaddlePaddle model is exported as ONNX format now."
-                << std::endl;
+    P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
+                       << std::endl;
   }
 
   std::string out;
