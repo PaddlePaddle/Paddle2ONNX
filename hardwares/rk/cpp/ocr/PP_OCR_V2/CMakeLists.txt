@@ -47,6 +47,10 @@ add_executable(PP_OCR_demo
         src/clipper.cpp
         src/utility.cpp
         src/postprocess_op.cpp
+        src/rknn_config.cpp
+        src/cls.cpp
+        src/rec.cpp
+        src/preprocess_op.cpp
         )
 include_directories(
         ../../lib

@@ -19,8 +19,9 @@
 class Det {
 public:
     Det();
-
+    ~Det();
     void predict(std::vector<float> results, cv::Mat src_img, std::string save_path);
+    std::vector<std::vector<std::vector<int>>> boxes;
 
 private:
     std::vector<int> target_size = {960, 960};

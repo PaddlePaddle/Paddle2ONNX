@@ -5,6 +5,7 @@ GCC_COMPILER=~/opt/gcc-buildroot-9.3.0-2020.03-x86_64_aarch64-rockchip-linux-gnu
 ROOT_PWD=$( cd "$( dirname $0 )" && cd -P "$( dirname "$SOURCE" )" && pwd )
 
 # create build
+rm -rf ${ROOT_PWD}/build
 BUILD_DIR=${ROOT_PWD}/build/build_linux_aarch64
 mkdir -p ${BUILD_DIR}
 
