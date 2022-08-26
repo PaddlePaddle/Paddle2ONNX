@@ -1,5 +1,6 @@
 from quantize_ops import dequantize_linear, quantize_linear
 import paddle
+import os
 import numpy as np
 from onnxbase import APIOnnx
 from onnxbase import randtool
