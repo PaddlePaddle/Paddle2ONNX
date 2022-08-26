@@ -263,7 +263,7 @@ class Det:
         dt_boxes, img_crop_list = preprocess_boxes(dt_boxes, src_image)
         tmp = draw_det(src_image, dt_boxes)
         cv2.imwrite(save_path, tmp)
-
+        return dt_boxes, img_crop_list
     def filter_tag_det_res(self, dt_boxes):
         img_height, img_width = self.target_size[0],self.target_size[1]
         dt_boxes_new = []
