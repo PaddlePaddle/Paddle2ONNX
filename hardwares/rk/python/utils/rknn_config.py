@@ -10,8 +10,8 @@ class RKNNConfigPC:
                  target='RK3588',
                  verbose=False,
                  export_path=None,
-                 do_quantization=False
-                 ):
+                 do_quantization=False,
+                 outputs=None):
         from rknn.api import RKNN
         self.model_path = model_path
         self.target = target
@@ -33,7 +33,10 @@ class RKNNConfigPC:
                          target_platform=self.target)
 
         # Load ONNX model
-        ret = self.rknn.load_onnx(model=self.model_path)
+        if outputs is None:
+            ret = self.rknn.load_onnx(model=self.model_path)
+        else:
+            ret = self.rknn.load_onnx(model=self.model_path,outputs=outputs)
         if ret != 0:
             print('【RKNNConfig】error :Load model failed!')
             exit(ret)
@@ -109,3 +112,6 @@ class RKNNConfigBoard:
         results = self.rknn.inference([data])
         end_time = time.time()
         return results, end_time - start_time
+
+    def release(self):
+        self.rknn.release()

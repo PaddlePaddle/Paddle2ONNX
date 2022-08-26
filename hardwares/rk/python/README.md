@@ -9,7 +9,7 @@ OS：Ubuntu18.04
 Python版本：Python3.8
 Paddle2ONNX版本：paddle2onnx-0.9.8
 PaddlePaddle：PaddlePaddle-gpu develop版  
-rknn-toolkit2：version 1.3.0  
+rknn-toolkit2：version 1.3.4b19   链接：https://eyun.baidu.com/s/3eTDMk6Y 密码：rknn
 ## 安装步骤
 ### 模型转换相关
 ```
