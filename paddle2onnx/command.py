@@ -125,6 +125,12 @@ def arg_parser():
         type=ast.literal_eval,
         default=True,
         help="whether enable auto_update_opset, default is True")
+    parser.add_argument(
+        "--quantized_op_types",
+        nargs='+',
+        default=[],
+        help="Quantized op types for onnxruntime depoly backend when export quantized model, e.g --quantized_op_types=Conv Relu LeakyRelu, Can be any combination of the following op types: Conv, MatMul, Mul, Relu, LeakyRelu, Add, Sigmoid, default is None indicates that quantize all onnxruntime supported quantize OPs."
+    )
     return parser
 
 
@@ -139,12 +145,13 @@ def c_paddle_to_onnx(model_file,
                      enable_optimize=True,
                      deploy_backend="onnxruntime",
                      scale_file="",
-                     calibration_file=""):
+                     calibration_file="",
+                     quantized_op_types=[]):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     onnx_model_str = c_p2o.export(
         model_file, params_file, opset_version, auto_upgrade_opset, verbose,
         enable_onnx_checker, enable_experimental_op, enable_optimize, {},
-        deploy_backend, scale_file, calibration_file)
+        deploy_backend, scale_file, calibration_file, quantized_op_types)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
@@ -235,7 +242,8 @@ def main():
             enable_optimize=True,
             deploy_backend=args.deploy_backend,
             scale_file=scale_file,
-            calibration_file=calibration_file)
+            calibration_file=calibration_file,
+            quantized_op_types=args.quantized_op_types)
         logging.info("===============Make PaddlePaddle Better!================")
         logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
         return

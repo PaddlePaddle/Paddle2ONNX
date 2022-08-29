@@ -90,7 +90,8 @@ struct ModelExporter {
                   bool enable_optimize = true,
                   const std::string& deploy_backend = "onnxruntime",
                   const std::string& scale_file = "",
-                  const std::string& calibration_file = "");
+                  const std::string& calibration_file = "",
+                  const std::string& quantized_op_types = "");
 };
 
 }  // namespace paddle2onnx

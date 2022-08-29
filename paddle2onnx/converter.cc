@@ -28,7 +28,7 @@ PADDLE2ONNX_DECL bool IsExportable(
     bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
     bool enable_experimental_op, bool enable_optimize, CustomOp* ops,
     int op_count, const char* deploy_backend, const char* scale_file,
-    const char* calibration_file) {
+    const char* calibration_file, const char* quantized_op_types) {
   auto parser = PaddleParser();
   if (!parser.Init(model, params)) {
     return false;
@@ -59,7 +59,7 @@ PADDLE2ONNX_DECL bool IsExportable(
   std::string onnx_model =
       me.Run(parser, opset_version, auto_upgrade_opset, verbose,
              enable_onnx_checker, enable_experimental_op, enable_optimize,
-             deploy_backend, scale_file, calibration_file);
+             deploy_backend, scale_file, calibration_file, quantized_op_types);
   if (onnx_model.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -73,7 +73,7 @@ PADDLE2ONNX_DECL bool IsExportable(
     bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
     bool enable_optimize, CustomOp* ops, int op_count,
     const char* deploy_backend, const char* scale_file,
-    const char* calibration_file) {
+    const char* calibration_file, const char* quantized_op_types) {
   auto parser = PaddleParser();
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
     return false;
@@ -104,7 +104,7 @@ PADDLE2ONNX_DECL bool IsExportable(
   std::string onnx_model =
       me.Run(parser, opset_version, auto_upgrade_opset, verbose,
              enable_onnx_checker, enable_experimental_op, enable_optimize,
-             deploy_backend, scale_file, calibration_file);
+             deploy_backend, scale_file, calibration_file, quantized_op_types);
   if (onnx_model.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -119,7 +119,8 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              bool enable_experimental_op, bool enable_optimize,
                              CustomOp* ops, int op_count,
                              const char* deploy_backend, const char* scale_file,
-                             const char* calibration_file) {
+                             const char* calibration_file,
+                             const char* quantized_op_types) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model, params)) {
@@ -144,7 +145,7 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
   std::string result =
       me.Run(parser, opset_version, auto_upgrade_opset, verbose,
              enable_onnx_checker, enable_experimental_op, enable_optimize,
-             deploy_backend, scale_file, calibration_file);
+             deploy_backend, scale_file, calibration_file, quantized_op_types);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -155,15 +156,13 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
   return true;
 }
 
-PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
-                             const void* params_buffer, int params_size,
-                             char** out, int* out_size, int32_t opset_version,
-                             bool auto_upgrade_opset, bool verbose,
-                             bool enable_onnx_checker,
-                             bool enable_experimental_op, bool enable_optimize,
-                             CustomOp* ops, int op_count,
-                             const char* deploy_backend, const char* scale_file,
-                             const char* calibration_file) {
+PADDLE2ONNX_DECL bool Export(
+    const void* model_buffer, int model_size, const void* params_buffer,
+    int params_size, char** out, int* out_size, int32_t opset_version,
+    bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
+    bool enable_experimental_op, bool enable_optimize, CustomOp* ops,
+    int op_count, const char* deploy_backend, const char* scale_file,
+    const char* calibration_file, const char* quantized_op_types) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
@@ -188,7 +187,7 @@ PADDLE2ONNX_DECL bool Export(const void* model_buffer, int model_size,
   std::string result =
       me.Run(parser, opset_version, auto_upgrade_opset, verbose,
              enable_onnx_checker, enable_experimental_op, enable_optimize,
-             deploy_backend, scale_file, calibration_file);
+             deploy_backend, scale_file, calibration_file, quantized_op_types);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;

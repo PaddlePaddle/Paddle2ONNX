@@ -36,11 +36,16 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      const CustomOpInfo& info = CustomOpInfo(),
                      const std::string& deploy_backend = "onnxruntime",
                      const std::string& scale_file = "",
-                     const std::string& calibration_file = "") {
+                     const std::string& calibration_file = "",
+                     const std::vector<std::string> quantized_op_types = {}) {
     P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
     P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
     P2OLogger(verbose) << "Paramters file path: " << params_filename
                        << std::endl;
+    std::string quantized_op_types_str = "";
+    for (auto& op_types : quantized_op_types) {
+      quantized_op_types_str = quantized_op_types_str + op_types + " ";
+    }
     if (info.size() == 0) {
       char* out = nullptr;
       int size = 0;
@@ -48,7 +53,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                   opset_version, auto_upgrade_opset, verbose,
                   enable_onnx_checker, enable_experimental_op, enable_optimize,
                   nullptr, 0, deploy_backend.c_str(), scale_file.c_str(),
-                  calibration_file.c_str())) {
+                  calibration_file.c_str(), quantized_op_types_str.c_str())) {
         P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
         return pybind11::bytes("");
       }
@@ -72,7 +77,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize, ops.data(),
                 info.size(), deploy_backend.c_str(), scale_file.c_str(),
-                calibration_file.c_str())) {
+                calibration_file.c_str(), quantized_op_types_str.c_str())) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
       return pybind11::bytes("");
     }

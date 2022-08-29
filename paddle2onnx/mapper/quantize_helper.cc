@@ -84,7 +84,8 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
     OnnxHelper* helper, const std::string& deploy_backend,
     const PaddleParser& parser, const std::string& scale_file,
-    const std::string& calibration_file) {
+    const std::string& calibration_file,
+    const std::string& quantized_op_types) {
   // Determine whether the model contains quantization related OPs, if not, exit
   // directly
   bool quantized_model = false;
@@ -138,12 +139,14 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // 2. remove all quantize ops
     // 3. merge conv and add
     // 4. merge conv and bn
-    // 5. add Q and DQ according ONNXRuntime quantize OP fuse patten.
-    // 6. use topo sort in nodes
+    // 5. get supported op type
+    // 6. add Q and DQ according ONNXRuntime quantize OP fuse patten.
+    // 7. use topo sort in nodes
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
     MergeConvAdd();
     MergeConvBN();
+    GetSupportedOpTypes(quantized_op_types);
     AddQDQ();
     SortNodes();
   } else if (deploy_backend == "tensorrt") {
@@ -175,6 +178,50 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
                deploy_backend + ".");
   }
 }
+
+void QuantizeModelProcessor::GetSupportedOpTypes(
+    const std::string& quantized_op_types) {
+  std::vector<std::string> default_op_types = {
+      "Conv", "MatMul", "Mul", "Sigmoid", "Add", "LeakyRelu", "Relu"};
+  if (quantized_op_types.size()) {
+    std::string types_tmp;
+    std::transform(quantized_op_types.begin(), quantized_op_types.end(),
+                   std::back_inserter(types_tmp), ::tolower);
+    supported_quantize_type_.clear();
+    for (auto& ori_type : default_op_types) {
+      std::string type_lower;
+      std::transform(ori_type.begin(), ori_type.end(),
+                     std::back_inserter(type_lower), ::tolower);
+      if (types_tmp.find(type_lower) != types_tmp.npos) {
+        supported_quantize_type_.push_back(ori_type);
+      }
+    }
+  }
+
+  if (quantized_op_types.size()) {
+    std::string type_info = "";
+    for (auto& type : default_op_types) {
+      type_info = type_info + type + " ";
+    }
+    std::string info =
+        "All the OP types you specified do not support quantization, please "
+        "select the following supported OPs: " +
+        type_info;
+    Assert(supported_quantize_type_.size(), info);
+  }
+
+  if (supported_quantize_type_.empty()) {
+    supported_quantize_type_ = default_op_types;
+  }
+
+  std::string type_info = "";
+  for (auto& type : supported_quantize_type_) {
+    type_info = type_info + type + " ";
+  }
+
+  P2OLogger() << "[Info] ONNRuntime quantized type: " << type_info << std::endl;
+}
+
 void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
   // read calibration_table.txt for all the tensors
   P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
@@ -355,10 +402,14 @@ void QuantizeModelProcessor::AddTrtQDQ() {
 // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
 void QuantizeModelProcessor::AddQDQ() {
   UpdateInputNameToNodes();
-  supported_quantize_type_ = {"Relu", "LeakyRelu", "Add", "Sigmoid",
-                              "Conv", "MatMul",    "Mul"};
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
+    auto type_iter = std::find(supported_quantize_type_.begin(),
+                               supported_quantize_type_.end(), node->op_type());
+    if (!supported_quantize_type_.empty() &&
+        type_iter == supported_quantize_type_.end()) {
+      continue;
+    }
     // Here we only add Relu, Conv, mul and matmul, all tensors should add Q and
     // DQ will be saved in tensors_to_be_quantize
     if (node->op_type() == "Relu") {
@@ -858,7 +909,7 @@ void QuantizeModelProcessor::SortNodes() {
     }
     index++;
   }
-  // for(auto node : new_nodes)std::cout<< node->op_type()<<std::endl;
+
   for (auto& node : constant_nodes) {
     new_nodes.push_back(node);
   }
@@ -1043,33 +1094,58 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
   return helper_->TryGetTensorValue(name, value);
 }
 
+bool QuantizeModelProcessor::ConnetToOutput(const std::string& output_name) {
+  std::vector<std::string> names = {output_name};
+  while (!names.empty()) {
+    std::string name = names[names.size() - 1];
+    names.pop_back();
+    if (IsGraphOutput(name)) {
+      return true;
+    }
+    auto next_nodes = name2node_dict_[name];
+    for (auto& next : next_nodes) {
+      if (next->op_type() == "Identity") {
+        names.push_back(next->output(0));
+      }
+    }
+  }
+  return false;
+}
+
 bool QuantizeModelProcessor::CanBeQuantize(
     const std::vector<std::string>& tensor_names,
     const std::vector<int64_t>& output_index) {
   for (auto& tensor : tensor_names) {
-    if (IsGraphOutput(tensor) ||
-        helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
+    if (helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
       return false;
     }
   }
-  // When there is an unsupported quantized op in the next nodes of the output,
-  // the current op is not quantized.
+  // If there is an OP linked to the output by identity, it needs to be skipped,
+  // do not quantize the OP
   for (auto i = 0; i < output_index.size(); i++) {
     int64_t index = output_index[i];
     if (index == -1) {
       index = tensor_names.size() - 1;
     }
+
     std::string output_name = tensor_names[index];
-    auto next_nodes = name2node_dict_[output_name];
-    if (next_nodes.size() > 1) {
-      for (auto& node : next_nodes) {
-        auto iter = std::find(supported_quantize_type_.begin(),
-                              supported_quantize_type_.end(), node->op_type());
-        if (iter == supported_quantize_type_.end()) {
-          return false;
-        }
-      }
+    if (ConnetToOutput(output_name)) {
+      return false;
     }
+    // std::vector<std::string> names = {output_name};
+    // while(!names.empty()){
+    //   std::string name = names[names.size() -1];
+    //   names.pop_back();
+    //   if (IsGraphOutput(name)) {
+    //     return false;
+    //   }
+    //   auto next_nodes = name2node_dict_[name];
+    //   for(auto &next : next_nodes) {
+    //     if(next->op_type() == "Identity") {
+    //       names.push_back(next->output(0));
+    //     }
+    //   }
+    // }
   }
   return true;
 }
