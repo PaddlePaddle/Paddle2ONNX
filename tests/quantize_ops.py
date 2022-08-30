@@ -9,7 +9,7 @@ from paddle.fluid import core
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
 from paddle.fluid.framework import _in_legacy_dygraph, in_dygraph_mode
-from paddle import _C_ops, in_dynamic_mode
+from paddle import _C_ops, in_dynamic_mode, _legacy_C_ops
 
 
 @paddle.jit.not_to_static
@@ -26,7 +26,7 @@ def quantize_linear(x,
         output = core.ops.quantize_linear(x, scale, zero_point, *attrs)
         return output
     elif in_dygraph_mode():
-        return _C_ops.quantize_linear(x, scale, zero_point, *attrs)
+        return _legacy_C_ops.quantize_linear(x, scale, zero_point, *attrs)
 
     else:
         output = helper.create_variable_for_type_inference(dtype=x.dtype)
@@ -58,7 +58,7 @@ def dequantize_linear(x,
         output = core.ops.dequantize_linear(x, scale, zero_point, *attrs)
         return output
     elif in_dygraph_mode():
-        return _C_ops.dequantize_linear(x, scale, zero_point, *attrs)
+        return _legacy_C_ops.dequantize_linear(x, scale, zero_point, *attrs)
     else:
         output = helper.create_variable_for_type_inference(dtype=x.dtype)
 
