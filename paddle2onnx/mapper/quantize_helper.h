@@ -72,7 +72,7 @@ struct QuantizeModelProcessor {
 
   // According to:
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-  void AddQDQ();
+  void AddQDQForORT();
 
   // Get supported quantize op for onnxruntime deploy backend.
   void GetSupportedOpTypes(const std::string& quantized_op_types = "");
@@ -96,6 +96,13 @@ struct QuantizeModelProcessor {
 
   // merge conv + BN
   void MergeConvBN();
+
+  void QuantizeInfoReviseForRKNN();
+
+  void AddQDQForRKNN();
+
+  // Add quantize related op in model according to tensor names
+  void AddQDQInModel(const std::vector<std::string>& tensors_to_be_quantize);
 
   bool IsGraphOutput(const std::string& name);
 

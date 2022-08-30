@@ -147,7 +147,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     MergeConvAdd();
     MergeConvBN();
     GetSupportedOpTypes(quantized_op_types);
-    AddQDQ();
+    AddQDQForORT();
     SortNodes();
   } else if (deploy_backend == "tensorrt") {
     // When deploy_backend is TensorRT, use the follow four steps to process:
@@ -170,6 +170,12 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // Genarate calibration.cache for Implicit Quantization
     // convert float to hex
     SaveCache(calibration_file);
+  } else if (deploy_backend == "rknn") {
+    QuantizeInfoBroadcast();
+    RemoveAllQuantizeOps();
+    QuantizeInfoReviseForRKNN();
+    AddQDQForRKNN();
+    SortNodes();
   } else {
     Assert(false,
            "[QuantizeModelProcessor] Only support 'onnxruntime'  / 'tensorrt' "
@@ -177,6 +183,95 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
            "backend now, but now the backend is: " +
                deploy_backend + ".");
   }
+}
+
+void QuantizeModelProcessor::QuantizeInfoReviseForRKNN() {
+  UpdateInputNameToNodes();
+  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
+    auto node = *iter;
+    if (node->op_type() == "Relu") {
+      std::string input_name = node->input(0);
+      std::string output_name = node->output(0);
+      auto input_quantize_info_iter = helper_->quantize_info.find(input_name);
+      auto output_quantize_info_iter = helper_->quantize_info.find(output_name);
+      if (output_quantize_info_iter == helper_->quantize_info.end()) {
+        continue;
+      }
+      helper_->quantize_info[input_name] = helper_->quantize_info[output_name];
+    }
+  }
+}
+
+void QuantizeModelProcessor::AddQDQForRKNN() {
+  UpdateInputNameToNodes();
+  supported_quantize_type_ = {"Abs",
+                              "Acos",
+                              "Add",
+                              "Asin",
+                              "Atan",
+                              "AveragePool",
+                              "BatchNormalization",
+                              "Ceil",
+                              "Clip",
+                              "Conv",
+                              "ConvTranspose",
+                              "Cos",
+                              "Cosh",
+                              "Concat",
+                              "Elu",
+                              "Erf",
+                              "Exp",
+                              "Floor",
+                              "Gemm",
+                              "HardSigmoid",
+                              "InstanceNormalization",
+                              "IsInf",
+                              "IsNaN",
+                              "Log",
+                              "MaxPool",
+                              "Mul",
+                              "Neg",
+                              "ReduceMean",
+                              "Relu",
+                              "Resize",
+                              "Round",
+                              "Sigmoid",
+                              "Sin",
+                              "Sinh",
+                              "Split",
+                              "Sqrt",
+                              "Tan",
+                              "Tanh"};
+  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
+    auto node = *iter;
+    auto type_iter = std::find(supported_quantize_type_.begin(),
+                               supported_quantize_type_.end(), node->op_type());
+    if (!supported_quantize_type_.empty() &&
+        type_iter == supported_quantize_type_.end()) {
+      continue;
+    }
+
+    std::vector<std::string> tensor_names;
+    for (size_t i = 0; i < node->input_size(); ++i) {
+      std::string node_input = node->input(i);
+      tensor_names.push_back(node_input);
+    }
+    for (size_t i = 0; i < node->output_size(); ++i) {
+      std::string node_output = node->output(i);
+      tensor_names.push_back(node_output);
+    }
+    if (!CanBeQuantize(tensor_names)) {
+      continue;
+    }
+    for (auto& name : tensor_names) {
+      AppendQuantizeTensor(name);
+    }
+  }
+
+  // update name2node_dict for the change of Relu op.
+  UpdateInputNameToNodes();
+  // Add QDQ in model
+  AddQDQInModel(tensors_to_be_quantize);
 }
 
 void QuantizeModelProcessor::GetSupportedOpTypes(
@@ -400,7 +495,7 @@ void QuantizeModelProcessor::AddTrtQDQ() {
 
 // According to:
 // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-void QuantizeModelProcessor::AddQDQ() {
+void QuantizeModelProcessor::AddQDQForORT() {
   UpdateInputNameToNodes();
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
@@ -515,7 +610,12 @@ void QuantizeModelProcessor::AddQDQ() {
   }
   // update name2node_dict for the change of Relu op.
   UpdateInputNameToNodes();
+  // Add QDQ in model
+  AddQDQInModel(tensors_to_be_quantize);
+}
 
+void QuantizeModelProcessor::AddQDQInModel(
+    const std::vector<std::string>& tensors_to_be_quantize) {
   // add Q and DQ according to tensors_to_be_quantize
   for (auto& name : tensors_to_be_quantize) {
     if (IsGraphOutput(name)) {
