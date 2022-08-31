@@ -1,4 +1,4 @@
-# [Contrib] Paddle2Caffe
+# Paddle2Caffe
 
 ## 简介
 
