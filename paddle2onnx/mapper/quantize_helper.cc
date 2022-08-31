@@ -549,6 +549,8 @@ void QuantizeModelProcessor::AddQDQForORT() {
     if (node->op_type() == "Conv") {
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
+      // std::vector<std::string> tensor_names = {node->input(1),
+      // node->output(0)};
       if (node->input_size() == 3) {
         tensor_names.push_back(node->input(2));
       }
@@ -1232,20 +1234,6 @@ bool QuantizeModelProcessor::CanBeQuantize(
     if (ConnetToOutput(output_name)) {
       return false;
     }
-    // std::vector<std::string> names = {output_name};
-    // while(!names.empty()){
-    //   std::string name = names[names.size() -1];
-    //   names.pop_back();
-    //   if (IsGraphOutput(name)) {
-    //     return false;
-    //   }
-    //   auto next_nodes = name2node_dict_[name];
-    //   for(auto &next : next_nodes) {
-    //     if(next->op_type() == "Identity") {
-    //       names.push_back(next->output(0));
-    //     }
-    //   }
-    // }
   }
   return true;
 }
@@ -1261,7 +1249,12 @@ void QuantizeModelProcessor::AppendQuantizeTensor(const std::string& tensor,
   } else {
     if (std::find(tensors_to_be_quantize.begin(), tensors_to_be_quantize.end(),
                   tensor) == tensors_to_be_quantize.end()) {
-      tensors_to_be_quantize.push_back(tensor);
+      auto next_nodes = name2node_dict_[tensor];
+      if (next_nodes.size() == 1 && next_nodes[0]->op_type() == "Identity") {
+        tensors_to_be_quantize.push_back(next_nodes[0]->output(0));
+      } else {
+        tensors_to_be_quantize.push_back(tensor);
+      }
     }
   }
 }
