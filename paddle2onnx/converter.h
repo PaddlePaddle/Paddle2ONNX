@@ -71,8 +71,15 @@ PADDLE2ONNX_DECL bool Export(
 // Following are inside usage, will remove it maybe
 struct PADDLE2ONNX_DECL ModelTensorInfo {
   char name[100];
-  int32_t* shape = nullptr;
+  int64_t* shape = nullptr;
   int32_t rank = 0;
+  // 0: float32
+  // 1: double
+  // 2: uint8
+  // 3: int8
+  // 4: int32
+  // 5: int64
+  int32_t dtype = 0;
   ~ModelTensorInfo();
 };
 
@@ -88,21 +95,11 @@ struct PADDLE2ONNX_DECL NMSParameters {
 
 struct PADDLE2ONNX_DECL OnnxReader {
   OnnxReader(const char* model_buffer, int buffer_size);
-  int NumInputs() const;
-  int NumOutputs() const;
-  int GetInputIndex(const char* name) const;
-  int GetOutputIndex(const char* name) const;
-  void GetInputInfo(int index, ModelTensorInfo* info) const;
-  void GetOutputInfo(int index, ModelTensorInfo* info) const;
   // suppose the maximum number of inputs/outputs is 100
   // suppose the longest string of inputs/outputs is 200
   // suppose the biggest rank will be less than 10
-  char input_names[100][200] = {""};
-  char output_names[100][200] = {""};
-  int32_t input_shapes[100][10];
-  int32_t output_shapes[100][10];
-  int32_t input_ranks[100];
-  int32_t output_ranks[100];
+  ModelTensorInfo inputs[100];
+  ModelTensorInfo outputs[100];
   int num_inputs;
   int num_outputs;
 };
