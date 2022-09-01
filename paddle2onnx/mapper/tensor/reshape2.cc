@@ -44,8 +44,11 @@ void Reshape2Mapper::Opset7() {
     GetAttr("shape", &value);
     new_shape = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, value);
   }
-  helper_->MakeNode("Reshape", {input_info[0].name, new_shape},
+  auto node = helper_->MakeNode("Reshape", {input_info[0].name, new_shape},
                     {output_info[0].name});
+  if (helper_->GetOpsetVersion()>= 14) {
+    AddAttribute(node, "allowzero", int64_t(0));
+  }
 }
 
 }  // namespace paddle2onnx
