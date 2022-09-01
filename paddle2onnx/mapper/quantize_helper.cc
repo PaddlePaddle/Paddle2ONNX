@@ -174,6 +174,8 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
     QuantizeInfoReviseForRKNN();
+    MergeConvAdd();
+    MergeConvBN();
     AddQDQForRKNN();
     SortNodes();
   } else {
@@ -1071,6 +1073,11 @@ void QuantizeModelProcessor::QuantizeInfoBroadcast() {
     } else if (output_quantize_info_iter != helper_->quantize_info.end()) {
       helper_->quantize_info[input_name] = helper_->quantize_info[output_name];
     }
+    if (ConnetToOutput(output_name)) {
+      continue;
+    }
+    RemoveNodeByName(node->name());
+    iter--;
   }
 }
 
@@ -1217,7 +1224,15 @@ bool QuantizeModelProcessor::ConnetToOutput(const std::string& output_name) {
 bool QuantizeModelProcessor::CanBeQuantize(
     const std::vector<std::string>& tensor_names,
     const std::vector<int64_t>& output_index) {
+  // std::vector<std::string> no_quantize_tensor = {"conv2d_183.tmp_0",
+  // "conv2d_174.tmp_0",  "conv2d_162.tmp_0"}; //"conv2d_152.tmp_0",
+  // std::vector<std::string> no_quantize_tensor = {"conv2d_106.tmp_0",
+  // "conv2d_119.tmp_0", "conv2d_113.tmp_0"};
   for (auto& tensor : tensor_names) {
+    // if(std::find(no_quantize_tensor.begin(),no_quantize_tensor.end(),tensor)
+    // != no_quantize_tensor.end()){
+    //   return false;
+    // }
     if (helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
       return false;
     }
