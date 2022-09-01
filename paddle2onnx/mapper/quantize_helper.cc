@@ -168,6 +168,14 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // convert float to hex
     SaveCache(calibration_file);
   } else if (deploy_backend == "rknn") {
+    // When deploy_backend is RKNN, use the follow four steps to process:
+    // 1. broadcast quantize info
+    // 2. remove all quantize ops
+    // 3. revise quantize info for RKNN
+    // 4. merge conv and add
+    // 5. merge conv and bn
+    // 6. add Q and DQ
+    // 7. use topo sort in nodes
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
     QuantizeInfoReviseForRKNN();
