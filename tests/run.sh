@@ -24,8 +24,6 @@ tar xf quantized_models.tar.gz
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_expand_as.py \
-        test_auto_scan_quantize_linear.py \
-        test_auto_scan_dequantize_linear.py \
         test_split.py \
         test_auto_scan_softmax_with_cross_entropy.py \
         test_auto_scan_pool_adaptive_max_ops.py \
