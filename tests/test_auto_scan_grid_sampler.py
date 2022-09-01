@@ -19,7 +19,7 @@ import numpy as np
 import unittest
 import paddle
 import paddle.fluid as fluid
-from paddle2onnx.command import program2onnx
+from paddle2onnx.command import c_paddle_to_onnx
 import logging
 from onnxbase import randtool, compare
 import onnxruntime as rt
@@ -28,10 +28,9 @@ paddle.enable_static()
 np.random.seed(33)
 
 
-def test_grid_sample_align_corners():
+def test_grid_sample_align_corners_fp32():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
-    # onnxruntime 中的Floor不支持float64
     dtype = 'float32'
     align_corners = True
     N = 5
@@ -57,11 +56,54 @@ def test_grid_sample_align_corners():
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
         onnx_path = path_prefix + "/model.onnx"
-        program2onnx(
-            model_dir=path_prefix,
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
             save_file=onnx_path,
-            opset_version=11,
-            enable_onnx_checker=True)
+            opset_version=16)
+
+        sess = rt.InferenceSession(onnx_path)
+        input_name1 = sess.get_inputs()[0].name
+        input_name2 = sess.get_inputs()[1].name
+        label_name = sess.get_outputs()[0].name
+        pred_onnx = sess.run([label_name],
+                             {input_name1: x_data,
+                              input_name2: grid_data})[0]
+        pred_onnx = np.array(pred_onnx)
+        compare(pred_onnx, result, 1e-5, 1e-5)
+
+
+def test_grid_sample_align_corners_fp64():
+    main_program = paddle.static.Program()
+    startup_program = paddle.static.Program()
+    dtype = 'float64'
+    align_corners = True
+    N = 5
+    with paddle.static.program_guard(main_program, startup_program):
+        x = fluid.data(
+            name='x', shape=[-1, 6, -1, -1], dtype=dtype, lod_level=1)
+        grid = fluid.data(
+            name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
+        out = paddle.nn.functional.grid_sample(
+            x, grid, align_corners=align_corners)
+
+        exe = paddle.static.Executor(paddle.CPUPlace())
+        exe.run(paddle.static.default_startup_program())
+        x_data = randtool("int", 1, 10, [N, 6, 3, 3]).astype(dtype)
+        grid_data = randtool("float", 1, 10, [N, 3, 4, 2]).astype(dtype)
+        x_val = fluid.create_lod_tensor(x_data, [[N]], fluid.CPUPlace())
+        grid_val = fluid.create_lod_tensor(grid_data, [[N]], fluid.CPUPlace())
+        result, = exe.run(feed={"x": x_val,
+                                "grid": grid_val},
+                          fetch_list=[out],
+                          return_numpy=False)
+        result = np.array(result)
+        path_prefix = "./grid_sampler"
+        fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
+        onnx_path = path_prefix + "/model.onnx"
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
+            save_file=onnx_path,
+            opset_version=16)
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
@@ -77,7 +119,6 @@ def test_grid_sample_align_corners():
 def test_grid_sample_align_corners_False():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
-    # onnxruntime 中的Floor不支持float64
     dtype = 'float32'
     align_corners = False
     N = 5
@@ -103,11 +144,10 @@ def test_grid_sample_align_corners_False():
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
         onnx_path = path_prefix + "/model.onnx"
-        program2onnx(
-            model_dir=path_prefix,
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
             save_file=onnx_path,
-            opset_version=11,
-            enable_onnx_checker=True)
+            opset_version=16)
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
@@ -120,12 +160,11 @@ def test_grid_sample_align_corners_False():
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
-def test_grid_sample_align_corners_Opset12():
+def test_grid_sample_align_corners_reflection():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
-    # onnxruntime 中的Floor不支持float64
     dtype = 'float32'
-    align_corners = False
+    padding_mode = "reflection"
     N = 5
     with paddle.static.program_guard(main_program, startup_program):
         x = fluid.data(
@@ -133,7 +172,7 @@ def test_grid_sample_align_corners_Opset12():
         grid = fluid.data(
             name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
         out = paddle.nn.functional.grid_sample(
-            x, grid, align_corners=align_corners)
+            x, grid, padding_mode=padding_mode)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
@@ -149,11 +188,10 @@ def test_grid_sample_align_corners_Opset12():
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
         onnx_path = path_prefix + "/model.onnx"
-        program2onnx(
-            model_dir=path_prefix,
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
             save_file=onnx_path,
-            opset_version=12,
-            enable_onnx_checker=True)
+            opset_version=16)
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
@@ -166,12 +204,11 @@ def test_grid_sample_align_corners_Opset12():
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
-def test_grid_sample_align_corners_Opset13():
+def test_grid_sample_align_corners_border():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
-    # onnxruntime 中的Floor不支持float64
     dtype = 'float32'
-    align_corners = False
+    padding_mode = "border"
     N = 5
     with paddle.static.program_guard(main_program, startup_program):
         x = fluid.data(
@@ -179,7 +216,7 @@ def test_grid_sample_align_corners_Opset13():
         grid = fluid.data(
             name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
         out = paddle.nn.functional.grid_sample(
-            x, grid, align_corners=align_corners)
+            x, grid, padding_mode=padding_mode)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
@@ -195,11 +232,10 @@ def test_grid_sample_align_corners_Opset13():
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
         onnx_path = path_prefix + "/model.onnx"
-        program2onnx(
-            model_dir=path_prefix,
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
             save_file=onnx_path,
-            opset_version=13,
-            enable_onnx_checker=True)
+            opset_version=16)
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
@@ -212,12 +248,13 @@ def test_grid_sample_align_corners_Opset13():
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
-def test_grid_sample_align_corners_Opset14():
+def test_grid_sample_align_corners_nearest_border():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
     # onnxruntime 中的Floor不支持float64
     dtype = 'float32'
-    align_corners = False
+    mode = "nearest"
+    padding_mode = "border"
     N = 5
     with paddle.static.program_guard(main_program, startup_program):
         x = fluid.data(
@@ -225,7 +262,7 @@ def test_grid_sample_align_corners_Opset14():
         grid = fluid.data(
             name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
         out = paddle.nn.functional.grid_sample(
-            x, grid, align_corners=align_corners)
+            x, grid, mode=mode, padding_mode=padding_mode)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
@@ -241,11 +278,10 @@ def test_grid_sample_align_corners_Opset14():
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
         onnx_path = path_prefix + "/model.onnx"
-        program2onnx(
-            model_dir=path_prefix,
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
             save_file=onnx_path,
-            opset_version=14,
-            enable_onnx_checker=True)
+            opset_version=16)
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
@@ -258,20 +294,19 @@ def test_grid_sample_align_corners_Opset14():
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
-def test_grid_sample_align_corners_Opset15():
+def test_grid_sample_align_corners_nearest():
     main_program = paddle.static.Program()
     startup_program = paddle.static.Program()
     # onnxruntime 中的Floor不支持float64
     dtype = 'float32'
-    align_corners = False
+    mode = "nearest"
     N = 5
     with paddle.static.program_guard(main_program, startup_program):
         x = fluid.data(
             name='x', shape=[-1, 6, -1, -1], dtype=dtype, lod_level=1)
         grid = fluid.data(
             name='grid', shape=[-1, 3, -1, -1], dtype=dtype, lod_level=1)
-        out = paddle.nn.functional.grid_sample(
-            x, grid, align_corners=align_corners)
+        out = paddle.nn.functional.grid_sample(x, grid, mode=mode)
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
@@ -287,11 +322,10 @@ def test_grid_sample_align_corners_Opset15():
         path_prefix = "./grid_sampler"
         fluid.io.save_inference_model(path_prefix, ["x", "grid"], [out], exe)
         onnx_path = path_prefix + "/model.onnx"
-        program2onnx(
-            model_dir=path_prefix,
+        c_paddle_to_onnx(
+            model_file=path_prefix + "/__model__",
             save_file=onnx_path,
-            opset_version=15,
-            enable_onnx_checker=True)
+            opset_version=16)
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
