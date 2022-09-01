@@ -171,14 +171,12 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // When deploy_backend is RKNN, use the follow four steps to process:
     // 1. broadcast quantize info
     // 2. remove all quantize ops
-    // 3. revise quantize info for RKNN
-    // 4. merge conv and add
-    // 5. merge conv and bn
-    // 6. add Q and DQ
-    // 7. use topo sort in nodes
+    // 3. merge conv and add
+    // 4. merge conv and bn
+    // 5. add Q and DQ
+    // 6. use topo sort in nodes
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
-    QuantizeInfoReviseForRKNN();
     MergeConvAdd();
     MergeConvBN();
     AddQDQForRKNN();
@@ -189,23 +187,6 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
            "/ 'others' as "
            "backend now, but now the backend is: " +
                deploy_backend + ".");
-  }
-}
-
-void QuantizeModelProcessor::QuantizeInfoReviseForRKNN() {
-  UpdateInputNameToNodes();
-  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
-    auto node = *iter;
-    if (node->op_type() == "Relu") {
-      std::string input_name = node->input(0);
-      std::string output_name = node->output(0);
-      auto input_quantize_info_iter = helper_->quantize_info.find(input_name);
-      auto output_quantize_info_iter = helper_->quantize_info.find(output_name);
-      if (output_quantize_info_iter == helper_->quantize_info.end()) {
-        continue;
-      }
-      helper_->quantize_info[input_name] = helper_->quantize_info[output_name];
-    }
   }
 }
 
@@ -1035,7 +1016,7 @@ void QuantizeModelProcessor::QuantizeInfoBroadcast() {
     } else if (output_quantize_info_iter != helper_->quantize_info.end()) {
       helper_->quantize_info[input_name] = helper_->quantize_info[output_name];
     }
-    if (ConnetToOutput(output_name)) {
+    if (ConnectToOutput(output_name)) {
       continue;
     }
     RemoveNodeByName(node->name());
@@ -1165,7 +1146,7 @@ bool QuantizeModelProcessor::GetTensorByName(const std::string& name,
   return helper_->TryGetTensorValue(name, value);
 }
 
-bool QuantizeModelProcessor::ConnetToOutput(const std::string& output_name) {
+bool QuantizeModelProcessor::ConnectToOutput(const std::string& output_name) {
   std::vector<std::string> names = {output_name};
   while (!names.empty()) {
     std::string name = names[names.size() - 1];
@@ -1200,7 +1181,7 @@ bool QuantizeModelProcessor::CanBeQuantize(
     }
 
     std::string output_name = tensor_names[index];
-    if (ConnetToOutput(output_name)) {
+    if (ConnectToOutput(output_name)) {
       return false;
     }
   }

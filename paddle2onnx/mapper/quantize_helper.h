@@ -73,7 +73,7 @@ struct QuantizeModelProcessor {
   void AddQDQForORT();
 
   // Determine if the tensor is directly linked to the output by identity
-  bool ConnetToOutput(const std::string& output_name);
+  bool ConnectToOutput(const std::string& output_name);
 
   // Save cache file for TensorRT8.X int8 deploy
   void SaveCache(const std::string& calibration_file);
@@ -84,8 +84,6 @@ struct QuantizeModelProcessor {
   // Add QDQ for TRT according to:
   // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
   void AddTrtQDQ();
-
-  void QuantizeInfoReviseForRKNN();
 
   // Add QDQ for RKNN
   void AddQDQForRKNN();
