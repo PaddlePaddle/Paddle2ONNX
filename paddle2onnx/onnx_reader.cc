@@ -8,8 +8,25 @@
 
 namespace paddle2onnx {
 
-PADDLE2ONNX_DECL OnnxReader::OnnxReader(const char* model_buffer,
-                                        int buffer_size) {
+int32_t GetDataType(int dtype) {
+  if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+    return 0;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+    return 1;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::UINT8) {
+    return 2;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT8) {
+    return 3;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT32) {
+    return 4;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+    return 5;
+  }
+  Assert(false, "Only support float/double/uint8/int32/int64 in OnnxReader.");
+  return -1;
+}
+
+OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
   ONNX_NAMESPACE::ModelProto model;
   std::string content(model_buffer, model_buffer + buffer_size);
   model.ParseFromString(content);
@@ -25,82 +42,41 @@ PADDLE2ONNX_DECL OnnxReader::OnnxReader(const char* model_buffer,
 
   num_inputs = 0;
   for (int i = 0; i < model.graph().input_size(); ++i) {
-    if (initializer_names.find(model.graph().input(i).name()) != initializer_names.end()) {
+    if (initializer_names.find(model.graph().input(i).name()) !=
+        initializer_names.end()) {
       continue;
     }
     num_inputs += 1;
     Assert(num_inputs <= 100,
            "The number of inputs is exceed 100, unexpected situation.");
 
-    memcpy(input_names[i], model.graph().input(i).name().c_str(),
+    inputs[i].dtype =
+        GetDataType(model.graph().input(i).type().tensor_type().elem_type());
+    memcpy(inputs[i].name, model.graph().input(i).name().c_str(),
            model.graph().input(i).name().size());
-
     auto& shape = model.graph().input(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
-    input_ranks[i] = dim_size;
+    inputs[i].rank = dim_size;
+    inputs[i].shape = new int64_t[dim_size];
     for (int j = 0; j < dim_size; ++j) {
-      input_shapes[i][j] = static_cast<int32_t>(shape.dim(j).dim_value());
+      inputs[i].shape[j] = static_cast<int64_t>(shape.dim(j).dim_value());
     }
   }
+
   for (int i = 0; i < num_outputs; ++i) {
-    memcpy(output_names[i], model.graph().output(i).name().c_str(),
+    memcpy(outputs[i].name, model.graph().output(i).name().c_str(),
            model.graph().output(i).name().size());
 
+    inputs[i].dtype =
+        GetDataType(model.graph().output(i).type().tensor_type().elem_type());
     auto& shape = model.graph().output(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
-    output_ranks[i] = dim_size;
+    outputs[i].rank = dim_size;
+    outputs[i].shape = new int64_t[dim_size];
     for (int j = 0; j < dim_size; ++j) {
-      output_shapes[i][j] = static_cast<int32_t>(shape.dim(j).dim_value());
+      outputs[i].shape[j] = static_cast<int64_t>(shape.dim(j).dim_value());
     }
   }
-}
-
-PADDLE2ONNX_DECL int OnnxReader::NumInputs() const { return num_inputs; }
-
-PADDLE2ONNX_DECL int OnnxReader::NumOutputs() const { return num_outputs; }
-
-PADDLE2ONNX_DECL int OnnxReader::GetInputIndex(const char* name) const {
-  for (int i = 0; i < num_inputs; ++i) {
-    if (strcmp(name, input_names[i]) == 0) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-PADDLE2ONNX_DECL void OnnxReader::GetInputInfo(int index,
-                                               ModelTensorInfo* info) const {
-  Assert(index < NumInputs(), "The index:" + std::to_string(index) +
-                                  " must be less than number of inputs:" +
-                                  std::to_string(NumInputs()) + ".");
-  memcpy(info->name, input_names[index], 100);
-  info->rank = input_ranks[index];
-  info->shape = new int32_t[info->rank];
-  for (int i = 0; i < info->rank; ++i) {
-    info->shape[i] = input_shapes[index][i];
-  }
-}
-
-PADDLE2ONNX_DECL void OnnxReader::GetOutputInfo(int index,
-                                                ModelTensorInfo* info) const {
-  Assert(index < NumOutputs(), "The index:" + std::to_string(index) +
-                                   " must be less than number of outputs:" +
-                                   std::to_string(NumOutputs()) + ".");
-  memcpy(info->name, output_names[index], 100);
-  info->rank = output_ranks[index];
-  info->shape = new int32_t[info->rank];
-  for (int i = 0; i < info->rank; ++i) {
-    info->shape[i] = output_shapes[index][i];
-  }
-}
-
-PADDLE2ONNX_DECL int OnnxReader::GetOutputIndex(const char* name) const {
-  for (int i = 0; i < num_outputs; ++i) {
-    if (strcmp(name, output_names[i]) == 0) {
-      return i;
-    }
-  }
-  return -1;
 }
 
 bool RemoveMultiClassNMS(const char* model_buffer, int buffer_size,
