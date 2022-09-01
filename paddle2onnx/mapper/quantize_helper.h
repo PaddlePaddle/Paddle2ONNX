@@ -68,9 +68,12 @@ struct QuantizeModelProcessor {
   void AppendQuantizeTensor(const std::string& tensor,
                             const bool& only_dequantize = false);
 
-  // According to:
+  // Add QDQ for ORT according to:
   // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-  void AddQDQ();
+  void AddQDQForORT();
+
+  // Determine if the tensor is directly linked to the output by identity
+  bool ConnetToOutput(const std::string& output_name);
 
   // Save cache file for TensorRT8.X int8 deploy
   void SaveCache(const std::string& calibration_file);
@@ -78,9 +81,17 @@ struct QuantizeModelProcessor {
   // Read scale file
   void ReadScaleFile(const std::string& scale_file);
 
-  // According to:
+  // Add QDQ for TRT according to:
   // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
   void AddTrtQDQ();
+
+  void QuantizeInfoReviseForRKNN();
+
+  // Add QDQ for RKNN
+  void AddQDQForRKNN();
+
+  // Add quantize related op in model according to tensor names
+  void AddQDQInModel(const std::vector<std::string>& tensors_to_be_quantize);
 
   void QuantizeInfoBroadcast();
 
@@ -90,6 +101,7 @@ struct QuantizeModelProcessor {
   // merge conv + BN
   void MergeConvBN();
 
+  // Determine whether a tensor is an output
   bool IsGraphOutput(const std::string& name);
 
   // Because processing the quantize model will add new nodes, which will

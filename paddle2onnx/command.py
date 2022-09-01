@@ -82,7 +82,7 @@ def arg_parser():
         "-d",
         type=_text_type,
         default="onnxruntime",
-        choices=["onnxruntime", "tensorrt", "others"],
+        choices=["onnxruntime", "tensorrt", "rknn", "others"],
         help="Quantize model deploy backend, default onnxruntime.")
     parser.add_argument(
         "--scale_filename",
