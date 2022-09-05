@@ -70,7 +70,7 @@ PADDLE2ONNX_DECL bool Export(
 
 // Following are inside usage, will remove it maybe
 struct PADDLE2ONNX_DECL ModelTensorInfo {
-  char name[100];
+  char name[100] = "";
   int64_t* shape = nullptr;
   int32_t rank = 0;
   // 0: float32

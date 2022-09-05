@@ -52,21 +52,21 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
 
     inputs[i].dtype =
         GetDataType(model.graph().input(i).type().tensor_type().elem_type());
-    memcpy(inputs[i].name, model.graph().input(i).name().c_str(),
-           model.graph().input(i).name().size());
+    std::strcpy(inputs[i].name, model.graph().input(i).name().c_str());
     auto& shape = model.graph().input(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
     inputs[i].rank = dim_size;
     inputs[i].shape = new int64_t[dim_size];
     for (int j = 0; j < dim_size; ++j) {
       inputs[i].shape[j] = static_cast<int64_t>(shape.dim(j).dim_value());
+      if (inputs[i].shape[j] <= 0) {
+        inputs[i].shape[j] = -1;
+      }
     }
   }
 
   for (int i = 0; i < num_outputs; ++i) {
-    memcpy(outputs[i].name, model.graph().output(i).name().c_str(),
-           model.graph().output(i).name().size());
-
+    std::strcpy(outputs[i].name, model.graph().output(i).name().c_str());
     inputs[i].dtype =
         GetDataType(model.graph().output(i).type().tensor_type().elem_type());
     auto& shape = model.graph().output(i).type().tensor_type().shape();
@@ -75,6 +75,9 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
     outputs[i].shape = new int64_t[dim_size];
     for (int j = 0; j < dim_size; ++j) {
       outputs[i].shape[j] = static_cast<int64_t>(shape.dim(j).dim_value());
+      if (outputs[i].shape[j] <= 0) {
+        outputs[i].shape[j] = -1;
+      }
     }
   }
 }
