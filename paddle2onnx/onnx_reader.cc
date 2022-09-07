@@ -8,7 +8,7 @@
 
 namespace paddle2onnx {
 
-int32_t GetDataType(int dtype) {
+int32_t GetDataTypeFromOnnx(int dtype) {
   if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
     return 0;
   } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
@@ -51,7 +51,7 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
            "The number of inputs is exceed 100, unexpected situation.");
 
     inputs[i].dtype =
-        GetDataType(model.graph().input(i).type().tensor_type().elem_type());
+        GetDataTypeFromOnnx(model.graph().input(i).type().tensor_type().elem_type());
     std::strcpy(inputs[i].name, model.graph().input(i).name().c_str());
     auto& shape = model.graph().input(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
@@ -68,7 +68,7 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
   for (int i = 0; i < num_outputs; ++i) {
     std::strcpy(outputs[i].name, model.graph().output(i).name().c_str());
     inputs[i].dtype =
-        GetDataType(model.graph().output(i).type().tensor_type().elem_type());
+        GetDataTypeFromOnnx(model.graph().output(i).type().tensor_type().elem_type());
     auto& shape = model.graph().output(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
     outputs[i].rank = dim_size;
