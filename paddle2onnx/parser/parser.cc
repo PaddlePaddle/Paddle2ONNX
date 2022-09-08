@@ -375,10 +375,6 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params) {
                   << std::endl;
       return false;
     }
-  } else {
-    P2OLogger() << "[WARN] You haven't set a parameters file, this is only "
-                   "valid while the model contains no weights."
-                << std::endl;
   }
   InitBlock();
   return true;
