@@ -3,141 +3,69 @@
 #include <set>
 #include <string>
 #include "paddle2onnx/converter.h"
+#include "paddle2onnx/parser/parser.h"
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
 
-void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-               const std::string& name, int64_t* res) {
-  bool found = false;
-  for (auto i = 0; i < op.attrs_size(); ++i) {
-    if (op.attrs(i).name() == name) {
-      found = true;
-      Assert(op.attrs(i).has_i() || op.attrs(i).has_l(),
-             "Cannot find int32/int64 data from attr: " + name +
-                 " in op:" + op.type());
-      if (op.attrs(i).has_i()) {
-        *res = (int64_t)(op.attrs(i).i());
-      } else {
-        *res = op.attrs(i).l();
-      }
-      break;
-    }
+int32_t GetDataTypeFromPaddle(int dtype) {
+  if (dtype == P2ODataType::FP32) {
+    return 0;
+  } else if (dtype == P2ODataType::FP64) {
+    return 1;
+  } else if (dtype == P2ODataType::UINT8) {
+    return 2;
+  } else if (dtype == P2ODataType::INT8) {
+    return 3;
+  } else if (dtype == P2ODataType::INT32) {
+    return 4;
+  } else if (dtype == P2ODataType::INT64) {
+    return 5;
   }
-  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
-}
-
-void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-               const std::string& name, float* res) {
-  bool found = false;
-  for (auto i = 0; i < op.attrs_size(); ++i) {
-    if (op.attrs(i).name() == name) {
-      found = true;
-      Assert(op.attrs(i).has_f(), "Cannot find float data from attr: " + name +
-                                      " in op: " + op.type());
-      *res = op.attrs(i).f();
-      break;
-    }
-  }
-  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
-}
-
-void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-               const std::string& name, bool* res) {
-  bool found = false;
-  for (auto i = 0; i < op.attrs_size(); ++i) {
-    if (op.attrs(i).name() == name) {
-      found = true;
-      Assert(op.attrs(i).has_b(), "Cannot find bool data from attr: " + name +
-                                      " in op: " + op.type());
-      *res = op.attrs(i).b();
-      break;
-    }
-  }
-  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
-}
-
-void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-               const std::string& name, std::string* res) {
-  bool found = false;
-  for (auto i = 0; i < op.attrs_size(); ++i) {
-    if (op.attrs(i).name() == name) {
-      found = true;
-      Assert(op.attrs(i).has_s(), "Cannot find string data from attr: " + name +
-                                      " in op: " + op.type());
-      *res = op.attrs(i).s();
-      break;
-    }
-  }
-  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+  Assert(false, "Only support float/double/uint8/int32/int64 in PaddleReader.");
+  return -1;
 }
 
 PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
-  auto prog = std::make_shared<paddle2onnx::framework::proto::ProgramDesc>();
-  std::string content(model_buffer, model_buffer + buffer_size);
-  Assert(prog->ParseFromString(content), "Failed to parse PaddlePaddle model.");
-
-  num_inputs = 0;
-  num_outputs = 0;
-  for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
-    if (prog->blocks(0).ops(i).type() == "fetch") {
-      std::string name = prog->blocks(0).ops(i).inputs(0).arguments(0);
-      int64_t order = -1;
-      GetOpAttr(prog->blocks(0).ops(i), "col", &order);
-      Assert(order >= 0, "Find invalid order less than 0 in fetch op.");
-      Assert(order < 100,
-             "Find invalid order which bigger than 99 in fetch op.");
-      num_outputs += 1;
-      memcpy(output_names[order], name.c_str(), name.size());
-    } else if (prog->blocks(0).ops(i).type() == "feed") {
-      std::string name = prog->blocks(0).ops(i).outputs(0).arguments(0);
-      int64_t order = -1;
-      GetOpAttr(prog->blocks(0).ops(i), "col", &order);
-      Assert(order >= 0, "Find invalid order less than 0 in feed op.");
-      Assert(order < 100,
-             "Find invalid order which bigger than 99 in feed op.");
-      num_inputs += 1;
-      memcpy(input_names[order], name.c_str(), name.size());
-    }
-    if (!has_nms) {
-      has_nms =
-          !(prog->blocks(0).ops(i).type().find("nms") == std::string::npos);
-      if (has_nms) {
-        GetOpAttr(prog->blocks(0).ops(i), "background_label",
-                  &nms_params.background_label);
-        GetOpAttr(prog->blocks(0).ops(i), "keep_top_k", &nms_params.keep_top_k);
-        GetOpAttr(prog->blocks(0).ops(i), "nms_eta", &nms_params.nms_eta);
-        GetOpAttr(prog->blocks(0).ops(i), "nms_threshold",
-                  &nms_params.nms_threshold);
-        GetOpAttr(prog->blocks(0).ops(i), "score_threshold",
-                  &nms_params.score_threshold);
-        GetOpAttr(prog->blocks(0).ops(i), "nms_top_k", &nms_params.nms_top_k);
-        GetOpAttr(prog->blocks(0).ops(i), "normalized", &nms_params.normalized);
-      }
-    }
-  }
-}
-
-int PaddleReader::NumInputs() const { return num_inputs; }
-
-int PaddleReader::NumOutputs() const { return num_outputs; }
-
-int PaddleReader::GetInputIndex(const char* name) const {
+  PaddleParser parser;
+  Assert(parser.Init(model_buffer, buffer_size), "Failed to parse PaddlePaddle model.");
+  
+  num_inputs = parser.inputs.size();
+  num_outputs = parser.outputs.size();
   for (int i = 0; i < num_inputs; ++i) {
-    if (strcmp(name, input_names[i]) == 0) {
-      return i;
+    std::strcpy(inputs[i].name, parser.inputs[i].name.c_str());
+    inputs[i].rank = parser.inputs[i].Rank();
+    inputs[i].shape = new int64_t[inputs[i].rank];
+    for (int j = 0; j < inputs[i].rank; ++j) {
+      inputs[i].shape[j] = parser.inputs[i].shape[j];
     }
+    inputs[i].dtype = GetDataTypeFromPaddle(parser.inputs[i].dtype);
   }
-  return -1;
-}
 
-int PaddleReader::GetOutputIndex(const char* name) const {
   for (int i = 0; i < num_outputs; ++i) {
-    if (strcmp(name, output_names[i]) == 0) {
-      return i;
+    std::strcpy(outputs[i].name, parser.outputs[i].name.c_str());
+    outputs[i].rank = parser.outputs[i].Rank();
+    outputs[i].shape = new int64_t[outputs[i].rank];
+    for (int j = 0; j < outputs[i].rank; ++j) {
+      outputs[i].shape[j] = parser.outputs[i].shape[j];
+    }
+    outputs[i].dtype = GetDataTypeFromPaddle(parser.outputs[i].dtype);
+  }
+
+  for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
+    if (parser.GetOpDesc(0, i).type().find("nms") != std::string::npos) {
+      has_nms = true;
+      auto& op = parser.GetOpDesc(0, i);
+      parser.GetOpAttr(op, "background_label", &nms_params.background_label);
+      parser.GetOpAttr(op, "keep_top_k", &nms_params.keep_top_k);
+      parser.GetOpAttr(op, "nms_eta", &nms_params.nms_eta);
+      parser.GetOpAttr(op, "nms_threshold", &nms_params.nms_threshold);
+      parser.GetOpAttr(op, "score_threshold", &nms_params.score_threshold);
+      parser.GetOpAttr(op, "nms_top_k", &nms_params.nms_top_k);
+      parser.GetOpAttr(op, "normalized", &nms_params.normalized);
+      break;
     }
   }
-  return -1;
 }
 
 }  // namespace paddle2onnx
