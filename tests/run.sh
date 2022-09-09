@@ -32,7 +32,6 @@ ignore="test_expand_as.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_mv.py \
         test_auto_scan_pad2d.py \
-        test_auto_scan_pixel_shuffle.py \
         test_auto_scan_roll.py \
         test_auto_scan_set_value.py \
         test_auto_scan_top_k.py \
@@ -56,7 +55,6 @@ ignore="test_expand_as.py \
         test_nn_Conv3DTranspose.py \
         test_nn_GroupNorm.py \
         test_nn_InstanceNorm3D.py \
-        test_nn_PixelShuffle.py \
         test_nn_Upsample.py \
         test_normalize.py \
         test_scatter_nd_add.py \
