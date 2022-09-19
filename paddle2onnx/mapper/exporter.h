@@ -89,7 +89,6 @@ struct ModelExporter {
                   bool enable_experimental_op = false,
                   bool enable_optimize = true,
                   const std::string& deploy_backend = "onnxruntime",
-                  const std::string& scale_file = "",
                   std::string* calibration_cache = nullptr);
 };
 

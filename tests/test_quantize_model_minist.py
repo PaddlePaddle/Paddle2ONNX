@@ -108,8 +108,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
                 model_file=new_model_path + "/__model__",
                 params_file=new_model_path + "/__params__",
                 opset_version=13,
-                enable_onnx_checker=True,
-                scale_file=model_path + "/calibration_table.txt")
+                enable_onnx_checker=True)
             sess_options = rt.SessionOptions()
             sess_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_DISABLE_ALL
             sess = rt.InferenceSession(

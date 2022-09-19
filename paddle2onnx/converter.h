@@ -38,7 +38,7 @@ PADDLE2ONNX_DECL bool IsExportable(
     bool auto_upgrade_opset = true, bool verbose = false,
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
     bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0,
-    const char* deploy_backend = "onnxruntime", const char* scale_file = "");
+    const char* deploy_backend = "onnxruntime");
 
 PADDLE2ONNX_DECL bool IsExportable(
     const void* model_buffer, int model_size, const void* params_buffer,
@@ -46,7 +46,7 @@ PADDLE2ONNX_DECL bool IsExportable(
     bool verbose = false, bool enable_onnx_checker = true,
     bool enable_experimental_op = false, bool enable_optimize = true,
     CustomOp* ops = nullptr, int op_count = 0,
-    const char* deploy_backend = "onnxruntime", const char* scale_file = "");
+    const char* deploy_backend = "onnxruntime");
 
 PADDLE2ONNX_DECL bool Export(
     const char* model, const char* params, char** out, int* out_size,
@@ -54,7 +54,7 @@ PADDLE2ONNX_DECL bool Export(
     bool verbose = false, bool enable_onnx_checker = true,
     bool enable_experimental_op = false, bool enable_optimize = true,
     CustomOp* ops = nullptr, int op_count = 0,
-    const char* deploy_backend = "onnxruntime", const char* scale_file = "",
+    const char* deploy_backend = "onnxruntime",
     char** calibration_cache = nullptr, int* calibration_size = 0);
 
 PADDLE2ONNX_DECL bool Export(
@@ -63,7 +63,7 @@ PADDLE2ONNX_DECL bool Export(
     bool auto_upgrade_opset = true, bool verbose = false,
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
     bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0,
-    const char* deploy_backend = "onnxruntime", const char* scale_file = "",
+    const char* deploy_backend = "onnxruntime",
     char** calibration_cache = nullptr, int* calibration_size = 0);
 
 // Following are inside usage, will remove it maybe
@@ -105,6 +105,11 @@ struct PADDLE2ONNX_DECL OnnxReader {
 PADDLE2ONNX_DECL bool RemoveMultiClassNMS(const char* onnx_model,
                                           int model_size, char** out_model,
                                           int* out_model_size);
+
+PADDLE2ONNX_DECL bool IsQuantizedModel(const char* model_path,
+                                       const int& model_path_size,
+                                       const char* params_path,
+                                       const int& params_path_size);
 
 struct PADDLE2ONNX_DECL PaddleReader {
   PaddleReader(const char* model_buffer, int buffer_size);

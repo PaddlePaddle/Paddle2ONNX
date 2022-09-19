@@ -83,8 +83,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
     OnnxHelper* helper, const std::string& deploy_backend,
-    const PaddleParser& parser, const std::string& scale_file,
-    std::string* calibration_cache) {
+    const PaddleParser& parser, std::string* calibration_cache) {
   // Determine whether the model contains quantization related OPs, if not, exit
   // directly
   bool quantized_model = false;
@@ -106,8 +105,6 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
   nodes_ = nodes;
   P2OLogger() << "[Info] Quantize model deploy backend is: " << deploy_backend
               << std::endl;
-  // read calibration_table.txt for all the tensors
-  ReadScaleFile(scale_file);
   // Determine the format of the exported ONNX quantization model according to
   // the deploy_backend
   if (deploy_backend == "others") {
@@ -262,42 +259,6 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
   AddQDQInModel(tensors_to_be_quantize);
 }
 
-void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
-  // read calibration_table.txt for all the tensors
-  P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
-  Assert(scale_file != "",
-         "[QuantizeModelProcessor] A scale file is need when export quantize "
-         "model, please refer to "
-         "https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/"
-         "quantize.md "
-         "for more information");
-  std::ifstream out_scale_file(scale_file);
-  if (!out_scale_file) {
-    Assert(false, "Cannot read scale file: " + scale_file +
-                      ", please check if the file exist.");
-  }
-  std::string one_line;
-  while (getline(out_scale_file, one_line)) {
-    if (one_line.find(" ") != one_line.npos) {
-      auto pos = one_line.find(" ");
-      std::string pre_str = one_line.substr(0, pos);
-      std::string pos_str = one_line.substr(pos);
-      if (pre_str.size() && pos_str.size()) {
-        std::string tensor_name = pre_str;
-        float scale = std::stod(pos_str);
-        std::vector<float> scales = {scale / 127};
-        auto scale_node = helper_->Constant(
-            {}, ONNX_NAMESPACE::TensorProto::FLOAT, scales[0]);
-        std::vector<int64_t> zeros = {0};
-        auto zero_node =
-            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
-
-        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 1);
-        helper_->quantize_info[tensor_name] = quantize_info;
-      }
-    }
-  }
-}
 void QuantizeModelProcessor::GenerateCache(std::string* calibration_cache) {
   union {
     float f;

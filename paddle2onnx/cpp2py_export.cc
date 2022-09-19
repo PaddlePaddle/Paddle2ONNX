@@ -35,7 +35,6 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      bool enable_optimize = true,
                      const CustomOpInfo& info = CustomOpInfo(),
                      const std::string& deploy_backend = "onnxruntime",
-                     const std::string& scale_file = "",
                      const std::string& calibration_file = "") {
     P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
     P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
@@ -49,8 +48,8 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
       if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                   opset_version, auto_upgrade_opset, verbose,
                   enable_onnx_checker, enable_experimental_op, enable_optimize,
-                  nullptr, 0, deploy_backend.c_str(), scale_file.c_str(),
-                  &calibration_cache, &cache_size)) {
+                  nullptr, 0, deploy_backend.c_str(), &calibration_cache,
+                  &cache_size)) {
         P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
         return pybind11::bytes("");
       }
@@ -86,8 +85,8 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize, ops.data(),
-                info.size(), deploy_backend.c_str(), scale_file.c_str(),
-                &calibration_cache, &cache_size)) {
+                info.size(), deploy_backend.c_str(), &calibration_cache,
+                &cache_size)) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
       return pybind11::bytes("");
     }

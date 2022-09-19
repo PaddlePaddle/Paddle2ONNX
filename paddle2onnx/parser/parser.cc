@@ -380,6 +380,30 @@ bool PaddleParser::Init(const std::string& _model, const std::string& _params) {
   return true;
 }
 
+bool PaddleParser::Init(const char* model_path, const int& model_path_size,
+                        const char* params_path, const int& params_path_size) {
+  if (model_path_size == 0) {
+    P2OLogger() << "The model path is not set." << std::endl;
+    return false;
+  }
+  std::string _model(model_path, model_path + model_path_size);
+  std::vector<Weight> weights;
+  if (!LoadProgram(_model)) {
+    P2OLogger() << "Failed to load program of PaddlePaddle model." << std::endl;
+    return false;
+  }
+  if (params_path_size != 0) {
+    std::string _params(params_path, params_path + params_path_size);
+    if (!LoadParams(_params)) {
+      P2OLogger() << "Failed to load parameters of PaddlePaddle model."
+                  << std::endl;
+      return false;
+    }
+  }
+  InitBlock();
+  return true;
+}
+
 bool PaddleParser::Init(const void* model_buffer, int model_size,
                         const void* params_buffer, int params_size) {
   std::vector<Weight> weights;
