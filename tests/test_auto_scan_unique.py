@@ -62,8 +62,7 @@ class TestUniqueConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=0, max_value=len(input_shape) - 1))
         dtype = draw(st.sampled_from(["float32", "int64"]))
-        # onnx is only support int64
-        xdtype = draw(st.sampled_from(["int64"]))
+        xdtype = draw(st.sampled_from(["int64", "int32"]))
         config = {
             "op_names": ["unique"],
             "test_data_shapes": [input_shape],
