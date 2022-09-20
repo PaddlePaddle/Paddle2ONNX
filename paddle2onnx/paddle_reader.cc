@@ -53,7 +53,12 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
     }
     outputs[i].dtype = GetDataTypeFromPaddle(parser.outputs[i].dtype);
   }
-
+  for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
+    if (parser.GetOpDesc(0, i).type().find("quantize") != std::string::npos) {
+      is_quantize_model = true;
+      break;
+    }
+  }
   for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
     if (parser.GetOpDesc(0, i).type().find("nms") != std::string::npos) {
       has_nms = true;
@@ -68,21 +73,6 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
       break;
     }
   }
-}
-
-bool IsQuantizedModel(const char* model_path, const int& model_path_size,
-                      const char* params_path, const int& params_path_size) {
-  PaddleParser parser;
-  Assert(
-      parser.Init(model_path, model_path_size, params_path, params_path_size),
-      "Failed to parse PaddlePaddle model.");
-
-  for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
-    if (parser.GetOpDesc(0, i).type().find("quantize") != std::string::npos) {
-      return true;
-    }
-  }
-  return false;
 }
 
 }  // namespace paddle2onnx

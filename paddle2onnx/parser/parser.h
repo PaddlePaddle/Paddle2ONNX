@@ -136,8 +136,6 @@ class PaddleParser {
                                     // set is_quantized_model to be true
 
   bool Init(const std::string& _model, const std::string& _params = "");
-  bool Init(const char* model_path, const int& model_path_size,
-            const char* params_path = nullptr, const int& params_path_size = 0);
   bool Init(const void* model_buffer, int model_size,
             const void* params_buffer = nullptr, int params_size = 0);
   void InitBlock();

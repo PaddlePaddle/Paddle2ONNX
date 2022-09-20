@@ -106,11 +106,6 @@ PADDLE2ONNX_DECL bool RemoveMultiClassNMS(const char* onnx_model,
                                           int model_size, char** out_model,
                                           int* out_model_size);
 
-PADDLE2ONNX_DECL bool IsQuantizedModel(const char* model_path,
-                                       const int& model_path_size,
-                                       const char* params_path,
-                                       const int& params_path_size);
-
 struct PADDLE2ONNX_DECL PaddleReader {
   PaddleReader(const char* model_buffer, int buffer_size);
   // suppose the maximum number of inputs/outputs is 100
@@ -120,6 +115,7 @@ struct PADDLE2ONNX_DECL PaddleReader {
   int num_inputs;
   int num_outputs;
   bool has_nms = false;
+  bool is_quantize_model = false;
   NMSParameters nms_params;
 };
 
