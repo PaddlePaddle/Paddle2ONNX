@@ -38,7 +38,6 @@ ignore="test_expand_as.py \
         test_auto_scan_unfold.py \
         test_auto_scan_uniform_random_batch_size_like.py \
         test_auto_scan_uniform_random.py \
-        test_auto_scan_unique.py \
         test_auto_scan_dist.py \
         test_auto_scan_distribute_fpn_proposals1.py \
         ./test_auto_scan_generate_proposals.py \
@@ -58,7 +57,6 @@ ignore="test_expand_as.py \
         test_nn_Upsample.py \
         test_normalize.py \
         test_scatter_nd_add.py \
-        test_unique.py \
         test_unsqueeze.py"
 bug=0
 export PY_CMD=$1
