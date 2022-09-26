@@ -24,6 +24,25 @@ REGISTER_MAPPER(logsumexp, ReduceMapper)
 REGISTER_MAPPER(reduce_all, ReduceMapper)
 REGISTER_MAPPER(reduce_any, ReduceMapper)
 
+int32_t ReduceMapper::GetMinOpset(bool verbose) {
+  std::string axis_name;
+  if (OpType() == "logsumexp") {
+    axis_name = "axis";
+  } else {
+    axis_name = "dim";
+  }
+  if (IsAttrVar(axis_name)) {
+    if (!IsConstant(GetAttrVar(axis_name)[0])) {
+      Error() << "While Attribute(" << axis_name
+              << ")'s type is Tensor, it's not supported "
+                 "unless it's a constant tensor."
+              << std::endl;
+      return -1;
+    }
+  }
+  return 7;
+}
+
 void ReduceMapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
@@ -35,6 +54,21 @@ void ReduceMapper::Opset7() {
   op_map["reduce_prod"] = "ReduceProd";
   op_map["logsumexp"] = "ReduceLogSumExp";
   std::string out = "";
+
+  std::string axis_name;
+  if (OpType() == "logsumexp") {
+    axis_name = "axis";
+  } else {
+    axis_name = "dim";
+  }
+
+  if (IsAttrVar(axis_name)) {
+    auto info = GetAttrVar(axis_name);
+    TryGetValue(info[0], &dim_);
+  } else {
+    GetAttr("dim", &dim_);
+  }
+
   bool reduce_all_axes = dim_.size() == x_info[0].Rank();
   if (reduce_all_) {
     reduce_all_axes = true;
@@ -77,7 +111,12 @@ void ReduceMapper::Opset7() {
     out = helper_->AutoCast(reduce_node->output(0), P2ODataType::INT32,
                             P2ODataType::BOOL);
   } else {
-    auto reduce_node = helper_->MakeNode(op_map[OpType()], {x_info[0].name});
+    std::string input_name = x_info[0].name;
+    if (OpType() == "reduce_prod" && x_info[0].dtype == P2ODataType::FP64) {
+      input_name = helper_->AutoCast(x_info[0].name, P2ODataType::FP64,
+                                     P2ODataType::FP32);
+    }
+    auto reduce_node = helper_->MakeNode(op_map[OpType()], {input_name});
     if (!reduce_all_) {
       AddAttribute(reduce_node, "axes", dim_);
     } else {
@@ -85,6 +124,10 @@ void ReduceMapper::Opset7() {
     }
     AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
     out = reduce_node->output(0);
+    if (OpType() == "reduce_prod" && x_info[0].dtype == P2ODataType::FP64) {
+      out = helper_->AutoCast(reduce_node->output(0), P2ODataType::FP32,
+                              P2ODataType::FP64);
+    }
   }
   if (!keep_dim_ && reduce_all_axes) {
     out = helper_->Reshape(out, {-1});
