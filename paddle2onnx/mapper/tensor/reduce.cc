@@ -76,11 +76,15 @@ void ReduceMapper::Opset7() {
 
   if (helper_->GetOpsetVersion() >= 13 && OpType() == "reduce_sum") {
     std::string dims = "";
-    if (!reduce_all_) {
-      dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
+    if (IsAttrVar(axis_name)) {
+      dims = GetAttrVar(axis_name)[0].name;
     } else {
-      dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
-                               Arange(0, x_info[0].Rank()));
+      if (!reduce_all_) {
+        dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
+      } else {
+        dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                                 Arange(0, x_info[0].Rank()));
+      }
     }
     auto reduce_node =
         helper_->MakeNode(op_map[OpType()], {x_info[0].name, dims});
