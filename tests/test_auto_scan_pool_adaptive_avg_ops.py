@@ -80,7 +80,10 @@ class NetAvgPool2d(BaseNet):
         """
         forward
         """
-        output_size = self.config['output_size']
+        if self.config["tensor_attr"]:
+            output_size = [paddle.assign(i) for i in self.config['output_size']]
+        else:
+            output_size = self.config['output_size']
         data_format = self.config['data_format']
         x = paddle.nn.functional.adaptive_avg_pool2d(
             inputs, output_size=output_size, data_format=data_format)
@@ -117,7 +120,8 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
                         min_value=1, max_value=3),
                     min_size=2,
                     max_size=2))
-
+        # tensor_attr True is not supported, because when tensor_attr is True, the output size is unknown
+        tensor_attr = False
         config = {
             "op_names": ["pool2d"],
             "test_data_shapes": [input_shape],
@@ -126,6 +130,7 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "output_size": output_size,
             "data_format": data_format,
+            "tensor_attr": tensor_attr
         }
 
         models = NetAvgPool2d(config)

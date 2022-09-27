@@ -14,9 +14,8 @@
 
 #include "paddle2onnx/mapper/nn/pool2d.h"
 
-#include <cmath>
-
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -156,6 +155,14 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
   }
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
+  if (IsAttrVar("ksize")) {
+    Error() << "While Attribute(ksize)'s type is Tensor, it's not "
+               "supported."
+            << std::endl;
+    return -1;
+  } else {
+    GetAttr("ksize", &k_size_);
+  }
 
   if (global_pooling_ || (k_size_[0] == 1 && k_size_[1] == 1)) {
     if (ceil_mode_) {
@@ -179,7 +186,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     int64_t input_w = input_info[0].shape[3];
     int64_t output_h = output_info[0].shape[2];
     int64_t output_w = output_info[0].shape[3];
-    if (!IsSameSpan(input_h, output_h) || !IsSameSpan(input_w, output_w)) {
+    if (output_h == -1 || output_w == -1 || !IsSameSpan(input_h, output_h) ||
+        !IsSameSpan(input_w, output_w)) {
       Error() << "Cannot convert adaptive pool with input_size: " << input_h
               << " " << input_h << " output_size: " << output_h << " "
               << output_w << std::endl;
@@ -205,6 +213,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
 void Pool2dMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
+
+  GetAttr("ksize", &k_size_);
 
   bool is_1x1_kernel = true;
   for (auto i : k_size_) {
