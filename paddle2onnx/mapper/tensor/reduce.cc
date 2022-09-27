@@ -66,7 +66,7 @@ void ReduceMapper::Opset7() {
     auto info = GetAttrVar(axis_name);
     TryGetValue(info[0], &dim_);
   } else {
-    GetAttr("dim", &dim_);
+    GetAttr(axis_name, &dim_);
   }
 
   bool reduce_all_axes = dim_.size() == x_info[0].Rank();
