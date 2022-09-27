@@ -17,6 +17,17 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(arg_min, ArgMinMapper)
 
+int32_t ArgMinMapper::GetMinOpset(bool verbose) {
+  if (IsAttrVar("axis") && !IsConstant(GetAttrVar("axis")[0])) {
+    Error() << "While Attribute(axis)'s type is Tensor, it's not "
+               "supported "
+               "unless it's a constant tensor."
+            << std::endl;
+    return -1;
+  }
+  return 7;
+}
+
 void ArgMinMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
@@ -32,7 +43,20 @@ void ArgMinMapper::Opset7() {
       need_unsqueeze = true;
     }
   }
-
+  if (IsAttrVar("axis")) {
+    auto axis_info = GetAttrVar("axis");
+    std::vector<int64_t> temp;
+    TryGetValue(axis_info[0], &temp);
+    axis_ = temp[0];
+  } else {
+    GetAttr("axis", &axis_);
+  }
+  if (input_info[0].dtype == P2ODataType::FP64) {
+    input = helper_->AutoCast(input, P2ODataType::FP64, P2ODataType::FP32);
+  }
+  if (input_info[0].dtype == P2ODataType::INT64) {
+    input = helper_->AutoCast(input, P2ODataType::INT64, P2ODataType::INT32);
+  }
   auto arg_node = helper_->MakeNode("ArgMin", {input});
   AddAttribute(arg_node, "axis", axis_);
   AddAttribute(arg_node, "keepdims", static_cast<int64_t>(keepdims_));
