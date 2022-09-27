@@ -378,9 +378,9 @@ class APIOnnx(object):
                 min_opset_version = min(self._version)
                 self._version = list(range(min_opset_version, 17))
                 for v in self._version:
-                    onnx_model_str = c_p2o.export(
-                        model_file, params_file, v, False, True, True, True,
-                        True, {}, "onnxruntime", "calibration_table.txt", "")
+                    onnx_model_str = c_p2o.export(model_file, params_file, v,
+                                                  False, True, True, True, True,
+                                                  {}, "onnxruntime", "")
                     with open(
                             os.path.join(self.name,
                                          self.name + '_' + str(v) + ".onnx"),
