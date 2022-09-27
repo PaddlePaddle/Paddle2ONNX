@@ -17,13 +17,23 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(cumsum, CumsumMapper)
 
-int32_t CumsumMapper::GetMinOpset(bool verbose) { return 11; }
+int32_t CumsumMapper::GetMinOpset(bool verbose) {
+  Logger(verbose, 11) << RequireOpset(11) << std::endl;
+  return 11;
+}
 
 void CumsumMapper::Opset11() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  std::string axis_node =
-      helper_->Constant({1}, GetOnnxDtype(P2ODataType::INT64), axis_);
+  std::string axis_node;
+  if (IsAttrVar("axis")) {
+    auto axis_info = GetAttrVar("axis");
+    axis_node = helper_->AutoCast(axis_info[0].name, axis_info[0].dtype,
+                                  P2ODataType::INT64);
+  } else {
+    GetAttr("axis", &axis_);
+    axis_node = helper_->Constant({1}, GetOnnxDtype(P2ODataType::INT64), axis_);
+  }
   helper_->MakeNode("CumSum", {input_info[0].name, axis_node},
                     {output_info[0].name});
 }
