@@ -18,8 +18,13 @@ namespace paddle2onnx {
 REGISTER_MAPPER(squeeze2, Squeeze2Mapper)
 
 int32_t Squeeze2Mapper::GetMinOpset(bool verbose) {
-  if (IsAttrVar("axes") && !IsConstant(GetAttrVar("axes")[0])) {
-    return 13;
+  if (IsAttrVar("axes")) {
+    auto infos = GetAttrVar("axes");
+    for (auto &info : infos) {
+      if (!IsConstant(info)) {
+        return 13;
+      }
+    }
   }
   return 7;
 }

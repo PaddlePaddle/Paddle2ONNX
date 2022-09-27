@@ -65,9 +65,8 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
                 axis = [0, -1]
             else:
                 axis = [0, axis]
-            if draw(st.booleans()):
-                input_shape[axis[0]] = 1
-                input_shape[axis[1]] = 1
+            input_shape[axis[0]] = 1
+            input_shape[axis[1]] = 1
         elif axis_dtype == "int":
             axis = draw(
                 st.integers(
