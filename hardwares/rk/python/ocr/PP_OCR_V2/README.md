@@ -5,27 +5,23 @@
 
 ## 模型转换
 ```text
-# 进入目录
-cd ./weights/onnx
-
 # 下载PP-OCRv2模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/ch_PP-OCRv2_det_infer.tar
-tar xvf ch_PP-OCRv2_det_infer.tar
+# 下载onnx模型
+# 进入目录
+cd ./weights
+mkdir onnx
+cd onnx
+weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_cls.onnx
+weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_det.onnx
+weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_rec.onnx
 
-pip install onnx==1.7.0
-
-# 转换模型
-paddle2onnx --model_dir ./ch_PP-OCRv2_det_infer \
-            --model_filename inference.pdmodel \
-            --params_filename inference.pdiparams \
-            --save_file PP_OCR_v2_det.onnx \
-            --opset_version 11 \
-            --enable_onnx_checker True \
-            --input_shape_dict "{'x': [1, 3, 960, 960]}"
-            
-# 删除无用文件
-rm -rf ch_PP-OCRv2_det_infer.tar
-rm -rf ch_PP-OCRv2_det_infer
+# 下载RKNN模型
+cd ./weights
+mkdir rknn
+cd rknn
+weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_cls.rknn
+weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_det.rknn
+weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_rec.rknn
 ```
 
 ## 运行
