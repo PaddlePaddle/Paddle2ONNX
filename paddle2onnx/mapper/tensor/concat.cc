@@ -21,20 +21,16 @@ namespace paddle2onnx {
 REGISTER_MAPPER(concat, ConcatMapper)
 
 int32_t ConcatMapper::GetMinOpset(bool verbose) {
-  if (HasInput("AxisTensor")) {
-    if (!IsConstantInput("AxisTensor")) {
-      Error() << "While AxisTensor as input exists, it's not supported unless "
-                 "it's a constant tensor."
-              << std::endl;
-      return -1;
-    }
-  } else if (IsAttrVar("axis")) {
-    if (!IsConstant(GetAttrVar("axis")[0])) {
-      Error() << "While Attribute(axis)'s type is Tensor, it's not supported "
-                 "unless it's a constant tensor."
-              << std::endl;
-      return -1;
-    }
+  if (HasInput("AxisTensor") && !IsConstantInput("AxisTensor")) {
+    Error() << "While AxisTensor as input exists, it's not supported unless "
+               "it's a constant tensor."
+            << std::endl;
+    return -1;
+  } else if (IsAttrVar("axis") && !IsConstant(GetAttrVar("axis")[0])) {
+    Error() << "While Attribute(axis)'s type is Tensor, it's not supported "
+               "unless it's a constant tensor."
+            << std::endl;
+    return -1;
   }
   return 7;
 }

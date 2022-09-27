@@ -24,9 +24,8 @@ class Squeeze2Mapper : public Mapper {
  public:
   Squeeze2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                  int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("axes", &axes_);
-  }
+      : Mapper(p, helper, block_id, op_id) {}
+  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 
  private:
