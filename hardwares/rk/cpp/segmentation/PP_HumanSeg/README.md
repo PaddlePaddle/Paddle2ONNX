@@ -1,6 +1,13 @@
 # PP_HumanSeg c++部署
 部署在c++上之前，请先运行rknpu2/python代码，将onnx模型转换成rknn模型
 
+## 下载权重文件
+```text
+mkdir model
+cd model
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/portrait_pp_humansegv2_lite_256x144_inference_model_with_softmax.rknn
+```
+
 ## 编译代码
 ```text
 sh ./build-linux_RK3588.sh
