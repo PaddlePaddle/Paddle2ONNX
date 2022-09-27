@@ -31,17 +31,15 @@ int32_t ReduceMapper::GetMinOpset(bool verbose) {
   } else {
     axis_name = "dim";
   }
-  if (IsAttrVar(axis_name)) {
-    if (!IsConstant(GetAttrVar(axis_name)[0])) {
-      if (OpType() == "reduce_sum") {
-        return 13;
-      }
-      Error() << "While Attribute(" << axis_name
-              << ")'s type is Tensor, it's not supported "
-                 "unless it's a constant tensor."
-              << std::endl;
-      return -1;
+  if (IsAttrVar(axis_name) && !IsConstant(GetAttrVar(axis_name)[0])) {
+    if (OpType() == "reduce_sum") {
+      return 13;
     }
+    Error() << "While Attribute(" << axis_name
+            << ")'s type is Tensor, it's not supported "
+               "unless it's a constant tensor."
+            << std::endl;
+    return -1;
   }
   return 7;
 }
