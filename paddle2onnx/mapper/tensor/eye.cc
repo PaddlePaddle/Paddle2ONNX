@@ -24,24 +24,31 @@ void EyeMapper::ParseValue(const TensorInfo& tensor_info, int64_t* num_val) {
 }
 
 int32_t EyeMapper::GetMinOpset(bool verbose) {
-  if (IsAttrVar("num_rows") && !IsConstant(GetAttrVar("num_rows")[0])) {
-    Error() << "While Attribute(num_rows)'s type is Tensor, it's not supported "
-               "unless it's a constant tensor."
-            << std::endl;
-    return -1;
-    auto info = GetAttrVar("num_rows");
-    ParseValue(info[0], &num_rows_);
+  if (IsAttrVar("num_rows")) {
+    if (!IsConstant(GetAttrVar("num_rows")[0])) {
+      Error()
+          << "While Attribute(num_rows)'s type is Tensor, it's not supported "
+             "unless it's a constant tensor."
+          << std::endl;
+      return -1;
+    } else {
+      auto info = GetAttrVar("num_rows");
+      ParseValue(info[0], &num_rows_);
+    }
   } else {
     GetAttr("num_rows", &num_rows_);
   }
-  if (IsAttrVar("num_columns") && !IsConstant(GetAttrVar("num_columns")[0])) {
-    Error() << "While Attribute(num_columns)'s type is Tensor, it's not "
-               "supported "
-               "unless it's a constant tensor."
-            << std::endl;
-    return -1;
-    auto info = GetAttrVar("num_columns");
-    ParseValue(info[0], &num_columns_);
+  if (IsAttrVar("num_columns")) {
+    if (!IsConstant(GetAttrVar("num_columns")[0])) {
+      Error() << "While Attribute(num_columns)'s type is Tensor, it's not "
+                 "supported "
+                 "unless it's a constant tensor."
+              << std::endl;
+      return -1;
+    } else {
+      auto info = GetAttrVar("num_columns");
+      ParseValue(info[0], &num_columns_);
+    }
   } else {
     GetAttr("num_columns", &num_columns_);
   }
