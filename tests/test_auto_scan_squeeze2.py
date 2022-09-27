@@ -29,7 +29,14 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.squeeze(inputs, axis=self.config['axis'])
+        if self.config["tensor_attr"] and self.config['axis'] is not None:
+            if isinstance(self.config['axis'], list):
+                axis = [paddle.to_tensor(i) for i in self.config['axis']]
+            else:
+                axis = paddle.to_tensor(self.config['axis'])
+        else:
+            axis = self.config['axis']
+        x = paddle.squeeze(inputs, axis=axis)
         return x
 
 
@@ -48,7 +55,8 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
         dtype = draw(
             st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
         axis = None
-        axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
+        # axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
+        axis_dtype = draw(st.sampled_from(["int", "list"]))
         if axis_dtype == "list":
             axis = draw(
                 st.integers(
@@ -70,6 +78,9 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
         else:
             input_shape[0] = 1
 
+        # tensor_attr = draw(st.booleans())
+        tensor_attr = True
+
         if draw(st.booleans()):
             input_spec_shape = []
         else:
@@ -82,6 +93,7 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": input_spec_shape,
             "axis": axis,
+            "tensor_attr": tensor_attr
         }
 
         models = Net(config)
