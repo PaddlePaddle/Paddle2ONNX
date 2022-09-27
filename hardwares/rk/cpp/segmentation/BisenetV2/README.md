@@ -1,6 +1,13 @@
 # Bisenet c++部署
 部署在c++上之前，请先运行rknpu2/python代码，将onnx模型转换成rknn模型
 
+## 下载模型
+```text
+mkdir weights
+cd weights
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/bisenet.rknn
+```
+
 ## 编译代码
 ```text
 sh ./build-linux_RK3588.sh

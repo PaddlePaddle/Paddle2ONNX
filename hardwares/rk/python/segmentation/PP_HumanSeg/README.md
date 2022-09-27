@@ -8,24 +8,19 @@
 ## 模型转换
 
 ```text
+# 下载ONNX模型
 # 进入目录
-cd ./weights/onnx
+cd ./weights
+mkdir onnx
+cd onnx
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/portrait_pp_humansegv2_lite_256x144_inference_model_with_softmax.onnx
 
-# 下载ppseg模型
-!wget https://paddleseg.bj.bcebos.com/dygraph/pp_humanseg_v2/portrait_pp_humansegv2_lite_256x144_inference_model_with_softmax.zip
-!unzip portrait_pp_humansegv2_lite_256x144_inference_model_with_softmax.zip
-# 转换模型
-paddle2onnx --model_dir ./ppseg_lite_portrait_398x224_with_softmax \
-            --model_filename model.pdmodel \
-            --params_filename model.pdiparams \
-            --save_file ppseg_lite_portrait_192x192_with_softmax.onnx \
-            --opset_version 11 \
-            --enable_onnx_checker True \
-            --input_shape_dict "{'x': [1, 3, 192, 192]}"
-            
-# 删除无用文件
-rm -rf ppseg_lite_portrait_398x224_with_softmax
-rm -rf ppseg_lite_portrait_398x224_with_softmax.tar.gz
+# 下载RKNN模型
+# 进入目录
+cd ./weights
+mkdir rknn
+cd rknn
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/portrait_pp_humansegv2_lite_256x144_inference_model_with_softmax.rknn
 ```
 
 ## 运行

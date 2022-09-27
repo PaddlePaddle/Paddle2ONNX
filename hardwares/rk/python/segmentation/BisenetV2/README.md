@@ -5,27 +5,19 @@
 
 ## 模型转换
 ```text
+# 下载ONNX模型
 # 进入目录
-cd ./weights/onnx
+cd ./weights
+mkdir onnx
+cd onnx
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/bisenet.onnx
 
-# 下载Bisenet模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/bisenet.tar.gz
-tar xvf bisenet.tar.gz
-
-!pip install onnx==1.7.0
-
-# 转换模型
-paddle2onnx --model_dir ./bisenet \
-            --model_filename model.pdmodel \
-            --params_filename model.pdiparams \
-            --save_file bisenet.onnx \
-            --opset_version 11 \
-            --enable_onnx_checker True \
-            --input_shape_dict "{'x': [1, 3, 1024, 1024]}"
-            
-# 删除无用文件
-rm -rf bisenet
-rm -rf bisenet.tar.gz
+# 下载RKNN模型
+# 进入目录
+cd ./weights
+mkdir rknn
+cd rknn
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/bisenet.rknn
 ```
 
 ## 运行

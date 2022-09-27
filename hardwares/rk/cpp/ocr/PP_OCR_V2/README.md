@@ -5,9 +5,9 @@
 ```text
 # 下载RKNN模型
 cd model
-weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_cls.rknn
-weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_det.rknn
-weget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_rec.rknn
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_cls.rknn
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_det.rknn
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/PP_OCR_v2_rec.rknn
 ```
 
 ## 编译代码
