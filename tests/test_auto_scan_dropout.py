@@ -30,11 +30,15 @@ class Net(BaseNet):
         """
         forward
         """
-        # when training is true, has a diff
+        if (self.config["tensor_attr"]):
+            p = paddle.to_tensor(self.config["p"], dtype="float32")
+        else:
+            p = self.config["p"]
+        # when training is true, has diff
         x = paddle.nn.functional.dropout(
             x,
             training=False,
-            p=self.config["p"],
+            p=p,
             axis=self.config["axis"],
             mode=self.config["mode"])
         return x
@@ -63,7 +67,7 @@ class TestDropoutConvert(OPConvertAutoScanTest):
             axis = draw(
                 st.integers(
                     min_value=0, max_value=len(input_shape) - 1))
-
+        tensor_attr = draw(st.booleans())
         config = {
             "op_names": ["dropout"],
             "test_data_shapes": [input_shape],
@@ -72,7 +76,8 @@ class TestDropoutConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "axis": axis,
             "mode": mode,
-            "p": p
+            "p": p,
+            "tensor_attr": tensor_attr
         }
         if axis is not None:
             if mode in ["upscale_in_train"]:
