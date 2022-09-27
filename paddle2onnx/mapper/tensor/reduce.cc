@@ -33,6 +33,9 @@ int32_t ReduceMapper::GetMinOpset(bool verbose) {
   }
   if (IsAttrVar(axis_name)) {
     if (!IsConstant(GetAttrVar(axis_name)[0])) {
+      if (OpType() == "reduce_sum") {
+        return 13;
+      }
       Error() << "While Attribute(" << axis_name
               << ")'s type is Tensor, it's not supported "
                  "unless it's a constant tensor."
@@ -77,7 +80,8 @@ void ReduceMapper::Opset7() {
   if (helper_->GetOpsetVersion() >= 13 && OpType() == "reduce_sum") {
     std::string dims = "";
     if (IsAttrVar(axis_name)) {
-      dims = GetAttrVar(axis_name)[0].name;
+      auto info = GetAttrVar(axis_name);
+      dims = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
     } else {
       if (!reduce_all_) {
         dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
