@@ -10,24 +10,21 @@
 模型版本为: [PaddleDetection 2.3分支](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/picodet)
 
 ```text
+# 下载ONNX模型
 # 进入目录
-cd ./weights/onnx
-
+cd ./weights
+mkdir onnx
+cd onnx
 # 下载picodet模型
-wget https://bj.bcebos.com/paddle2onnx/model_zoo/picodet_s_320_coco.tar.gz
-tar xvf picodet_s_320_coco.tar.gz
-# 将Paddle模型导出为ONNX模型
-paddle2onnx --model_dir ./picodet_s_320_coco \
-            --model_filename model.pdmodel \
-            --params_filename model.pdiparams \
-            --save_file picodet_s_320_coco.onnx \
-            --opset_version 12 \
-            --enable_onnx_checker True \
-            --input_shape_dict "{'image': [1, 3, 320, 320]}"
-            
-# 删除无用文件
-rm -rf picodet_s_320_coco
-rm -rf picodet_s_320_coco.tar.gz
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/picodet_s_320_coco_sim.onnx
+
+# 下载转换好的RKNN模型
+# 进入目录
+cd ./weights
+mkdir rknn
+cd rknn
+# 下载picodet模型
+wget https://paddlelite-demo.bj.bcebos.com/onnx%26rknn2_model/picodet_s_320_coco_sim.rknn
 ```
 
 ## 运行
