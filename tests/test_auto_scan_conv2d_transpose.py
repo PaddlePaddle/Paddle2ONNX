@@ -71,6 +71,11 @@ class TestConv2dTransposeConvert(OPConvertAutoScanTest):
         kernel_size[1] = groups * muti1
         kernel_size[0] = kernel_size[1]
         input_shape[1] = kernel_size[0]
+        if draw(st.booleans()):
+            kernel_size[1] = 1
+            groups = draw(st.integers(min_value=2, max_value=4))
+            input_shape[1] = groups
+            kernel_size[0] = groups
 
         strides = draw(
             st.lists(
