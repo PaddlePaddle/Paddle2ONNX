@@ -29,14 +29,6 @@ int32_t Conv2dTransposeMapper::GetMinOpset(bool verbose) {
             << std::endl;
     return -1;
   }
-  if (IsAttrVar("output_size") && !IsConstant(GetAttrVar("output_size")[0])) {
-    Error() << "While Attribute(output_size)'s type is Tensor, it's not "
-               "supported "
-               "unless it's a constant tensor when dropout_implementation is "
-               "downgrade_in_infer."
-            << std::endl;
-    return -1;
-  }
   return 7;
 }
 
@@ -44,16 +36,6 @@ void Conv2dTransposeMapper::Opset7() {
   auto kernel_info = GetInput("Filter");
   auto input_info = GetInput("Input");
   auto output_info = GetOutput("Output");
-  if (IsAttrVar("output_size")) {
-    auto size_info = GetAttrVar("output_size");
-    TryGetValue(size_info[0], &output_size_);
-  } else {
-    GetAttr("output_size", &output_size_);
-  }
-  if (output_size_.size()) {
-    Warn() << " Op sets the output size, which may cause diff in the results."
-           << std::endl;
-  }
   auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                  P2ODataType::FP32);
   auto kernel = helper_->AutoCast(kernel_info[0].name, kernel_info[0].dtype,

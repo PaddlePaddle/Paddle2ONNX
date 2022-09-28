@@ -53,7 +53,6 @@ class Conv2dTransposeMapper : public Mapper {
   std::string padding_algorithm_;
   std::string data_format_;
   int64_t groups_;
-  std::vector<int64_t> output_size_;
 };
 
 }  // namespace paddle2onnx
