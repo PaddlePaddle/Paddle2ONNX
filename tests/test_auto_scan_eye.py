@@ -31,6 +31,10 @@ class Net(BaseNet):
         """
         num_rows = self.config["num_rows"]
         num_columns = self.config["num_columns"]
+        if self.config["tensor_attr"]:
+            num_rows = paddle.assign(self.config["num_rows"])
+            if self.config["num_columns"] is not None:
+                num_columns = paddle.assign(self.config["num_columns"])
         dtype = self.config["dtype"]
         x = paddle.eye(num_rows, num_columns=num_columns, dtype=dtype)
         return x
@@ -52,6 +56,9 @@ class TestEyeConvert(OPConvertAutoScanTest):
         if draw(st.booleans()):
             dtype = draw(
                 st.sampled_from(["float32", "float64", "int32", "int64"]))
+
+        tensor_attr = draw(st.booleans())
+
         config = {
             "op_names": ["eye"],
             "test_data_shapes": [],
@@ -60,7 +67,8 @@ class TestEyeConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "num_rows": num_rows,
             "num_columns": num_columns,
-            "dtype": dtype
+            "dtype": dtype,
+            "tensor_attr": tensor_attr
         }
 
         models = Net(config)

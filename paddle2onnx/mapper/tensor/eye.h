@@ -24,17 +24,12 @@ class EyeMapper : public Mapper {
  public:
   EyeMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
             int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("num_rows", &num_rows_);
-    GetAttr("num_columns", &num_columns_);
-    if (num_columns_ == -1) {
-      num_columns_ = num_rows_;
-    }
-  }
+      : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpset(bool verbose = false);
   void Opset9();
 
  private:
+  void ParseValue(const TensorInfo& tensor_info, int64_t* num_val);
   int64_t num_rows_;
   int64_t num_columns_;
 };
