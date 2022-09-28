@@ -26,6 +26,17 @@ int32_t DropoutMapper::GetMinOpset(bool verbose) {
             << " is not supported yet." << std::endl;
     return -1;
   }
+  if (dropout_implementation_ == "downgrade_in_infer") {
+    if (IsAttrVar("dropout_prob") &&
+        !IsConstant(GetAttrVar("dropout_prob")[0])) {
+      Error() << "While Attribute(dropout_prob)'s type is Tensor, it's not "
+                 "supported "
+                 "unless it's a constant tensor when dropout_implementation is "
+                 "downgrade_in_infer."
+              << std::endl;
+      return -1;
+    }
+  }
   return 7;
 }
 
@@ -36,6 +47,14 @@ void DropoutMapper::Opset7() {
   if (dropout_implementation_ == "upscale_in_train") {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
+    if (IsAttrVar("dropout_prob")) {
+      auto prob_info = GetAttrVar("dropout_prob");
+      std::vector<float> temp;
+      TryGetValue(prob_info[0], &temp);
+      dropout_prob_ = temp[0];
+    } else {
+      GetAttr("dropout_prob", &dropout_prob_);
+    }
     std::vector<float> value = {1 - dropout_prob_};
     std::string scale_node =
         helper_->Constant(GetOnnxDtype(input_info[0].dtype), value);
