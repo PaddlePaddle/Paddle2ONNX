@@ -79,6 +79,7 @@ struct PADDLE2ONNX_DECL ModelTensorInfo {
   // 3: int8
   // 4: int32
   // 5: int64
+  // 6: float16
   int32_t dtype = 0;
   ~ModelTensorInfo();
 };

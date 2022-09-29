@@ -21,8 +21,10 @@ int32_t GetDataTypeFromOnnx(int dtype) {
     return 4;
   } else if (dtype == ONNX_NAMESPACE::TensorProto::INT64) {
     return 5;
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
+    return 6;
   }
-  Assert(false, "Only support float/double/uint8/int32/int64 in OnnxReader.");
+  Assert(false, "Only support float/double/uint8/int32/int64/float16 in OnnxReader.");
   return -1;
 }
 
