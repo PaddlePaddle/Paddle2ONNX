@@ -2,9 +2,10 @@
 #include <iostream>
 #include <set>
 #include <string>
+
 #include "paddle2onnx/converter.h"
-#include "paddle2onnx/parser/parser.h"
 #include "paddle2onnx/mapper/exporter.h"
+#include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
 
@@ -28,8 +29,9 @@ int32_t GetDataTypeFromPaddle(int dtype) {
 
 PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
   PaddleParser parser;
-  Assert(parser.Init(model_buffer, buffer_size), "Failed to parse PaddlePaddle model.");
-  
+  Assert(parser.Init(model_buffer, buffer_size),
+         "Failed to parse PaddlePaddle model.");
+
   num_inputs = parser.inputs.size();
   num_outputs = parser.outputs.size();
   for (int i = 0; i < num_inputs; ++i) {
@@ -51,7 +53,12 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
     }
     outputs[i].dtype = GetDataTypeFromPaddle(parser.outputs[i].dtype);
   }
-
+  for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
+    if (parser.GetOpDesc(0, i).type().find("quantize") != std::string::npos) {
+      is_quantize_model = true;
+      break;
+    }
+  }
   for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
     if (parser.GetOpDesc(0, i).type().find("nms") != std::string::npos) {
       has_nms = true;

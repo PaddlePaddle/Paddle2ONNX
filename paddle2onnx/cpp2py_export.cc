@@ -35,7 +35,6 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      bool enable_optimize = true,
                      const CustomOpInfo& info = CustomOpInfo(),
                      const std::string& deploy_backend = "onnxruntime",
-                     const std::string& scale_file = "",
                      const std::string& calibration_file = "") {
     P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
     P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
@@ -44,13 +43,26 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     if (info.size() == 0) {
       char* out = nullptr;
       int size = 0;
+      char* calibration_cache = nullptr;
+      int cache_size = 0;
       if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                   opset_version, auto_upgrade_opset, verbose,
                   enable_onnx_checker, enable_experimental_op, enable_optimize,
-                  nullptr, 0, deploy_backend.c_str(), scale_file.c_str(),
-                  calibration_file.c_str())) {
+                  nullptr, 0, deploy_backend.c_str(), &calibration_cache,
+                  &cache_size)) {
         P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
         return pybind11::bytes("");
+      }
+      if (cache_size) {
+        std::string calibration_cache_str(calibration_cache,
+                                          calibration_cache + cache_size);
+        std::ofstream cache_file;
+        cache_file.open(calibration_file, std::ios::out);
+        cache_file << calibration_cache_str;
+        delete calibration_cache;
+        calibration_cache = nullptr;
+        P2OLogger(verbose) << "TensorRT calibration cache path: "
+                           << calibration_file << std::endl;
       }
       std::string onnx_proto(out, out + size);
       delete out;
@@ -68,13 +80,26 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     }
     char* out = nullptr;
     int size = 0;
+    char* calibration_cache = nullptr;
+    int cache_size = 0;
     if (!Export(model_filename.c_str(), params_filename.c_str(), &out, &size,
                 opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
                 enable_experimental_op, enable_optimize, ops.data(),
-                info.size(), deploy_backend.c_str(), scale_file.c_str(),
-                calibration_file.c_str())) {
+                info.size(), deploy_backend.c_str(), &calibration_cache,
+                &cache_size)) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
       return pybind11::bytes("");
+    }
+    if (cache_size) {
+      std::string calibration_cache_str(calibration_cache,
+                                        calibration_cache + cache_size);
+      std::ofstream cache_file;
+      cache_file.open(calibration_file, std::ios::out);
+      cache_file << calibration_cache_str;
+      delete calibration_cache;
+      calibration_cache = nullptr;
+      P2OLogger(verbose) << "TensorRT calibration cache path: "
+                         << calibration_file << std::endl;
     }
     std::string onnx_proto(out, out + size);
     delete out;

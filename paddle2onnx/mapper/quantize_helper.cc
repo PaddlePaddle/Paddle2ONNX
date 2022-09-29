@@ -83,8 +83,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
     OnnxHelper* helper, const std::string& deploy_backend,
-    const PaddleParser& parser, const std::string& scale_file,
-    const std::string& calibration_file) {
+    const PaddleParser& parser, std::string* calibration_cache) {
   // Determine whether the model contains quantization related OPs, if not, exit
   // directly
   bool quantized_model = false;
@@ -106,8 +105,6 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
   nodes_ = nodes;
   P2OLogger() << "[Info] Quantize model deploy backend is: " << deploy_backend
               << std::endl;
-  // read calibration_table.txt for all the tensors
-  ReadScaleFile(scale_file);
   // Determine the format of the exported ONNX quantization model according to
   // the deploy_backend
   if (deploy_backend == "others") {
@@ -166,7 +163,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
 
     // Genarate calibration.cache for Implicit Quantization
     // convert float to hex
-    SaveCache(calibration_file);
+    GenerateCache(calibration_cache);
   } else if (deploy_backend == "rknn") {
     // When deploy_backend is RKNN, use the follow four steps to process:
     // 1. broadcast quantize info
@@ -262,56 +259,12 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
   AddQDQInModel(tensors_to_be_quantize);
 }
 
-void QuantizeModelProcessor::ReadScaleFile(const std::string& scale_file) {
-  // read calibration_table.txt for all the tensors
-  P2OLogger() << "[Info] Load scale info from: " << scale_file << std::endl;
-  Assert(scale_file != "",
-         "[QuantizeModelProcessor] A scale file is need when export quantize "
-         "model, please refer to "
-         "https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/"
-         "quantize.md "
-         "for more information");
-  std::ifstream out_scale_file(scale_file);
-  if (!out_scale_file) {
-    Assert(false, "Cannot read scale file: " + scale_file +
-                      ", please check if the file exist.");
-  }
-  std::string one_line;
-  while (getline(out_scale_file, one_line)) {
-    if (one_line.find(" ") != one_line.npos) {
-      auto pos = one_line.find(" ");
-      std::string pre_str = one_line.substr(0, pos);
-      std::string pos_str = one_line.substr(pos);
-      if (pre_str.size() && pos_str.size()) {
-        std::string tensor_name = pre_str;
-        float scale = std::stod(pos_str);
-        std::vector<float> scales = {scale / 127};
-        auto scale_node = helper_->Constant(
-            {}, ONNX_NAMESPACE::TensorProto::FLOAT, scales[0]);
-        std::vector<int64_t> zeros = {0};
-        auto zero_node =
-            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
-
-        QuantizeInfo quantize_info(scales, zeros, scale_node, zero_node, 1);
-        helper_->quantize_info[tensor_name] = quantize_info;
-      }
-    }
-  }
-}
-void QuantizeModelProcessor::SaveCache(const std::string& calibration_file) {
+void QuantizeModelProcessor::GenerateCache(std::string* calibration_cache) {
   union {
     float f;
     unsigned char farray[4];
   } un;
-  Assert(
-      calibration_file != "",
-      "[QuantizeModelProcessor] The calibration cache file name for TensorRT "
-      "deploy is need.");
-  P2OLogger() << "[Info] Write cache file for TensorRT deploy in: "
-              << calibration_file << std::endl;
-  std::ofstream cache_file;
-  cache_file.open(calibration_file, std::ios::out);
-  cache_file << "TRT-8XXX-EntropyCalibration2" << std::endl;
+  *calibration_cache += "TRT-8XXX-EntropyCalibration2 \n";
   for (auto iter = helper_->quantize_info.rbegin();
        iter != helper_->quantize_info.rend(); iter++) {
     std::string tensor_name = iter->first;
@@ -319,12 +272,13 @@ void QuantizeModelProcessor::SaveCache(const std::string& calibration_file) {
     if (quantize_info.scale_.size() == 1) {
       float val = quantize_info.scale_[0];
       un.f = val;
-      cache_file << tensor_name << ": ";
+      *calibration_cache += (tensor_name + ": ");
+      std::stringstream enc;
       for (int64_t i = 3; i >= 0; i--) {
-        cache_file << std::setw(2) << std::setfill('0') << std::hex
-                   << (int)(un.farray[i]);
+        enc << std::hex << std::setw(2) << std::setfill('0')
+            << (int)(un.farray[i]);
       }
-      cache_file << std::endl;
+      *calibration_cache = *calibration_cache + enc.str() + "\n";
     }
   }
 }

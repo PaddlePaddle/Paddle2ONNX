@@ -52,8 +52,7 @@ struct QuantizeModelProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
       OnnxHelper* helper, const std::string& deploy_backend,
-      const PaddleParser& parser, const std::string& scale_file = "",
-      const std::string& calibration_file = "");
+      const PaddleParser& parser, std::string* calibration_cache = nullptr);
 
   // Remove all Quantize and Dequantize ops
   void RemoveAllQuantizeOps();
@@ -75,11 +74,8 @@ struct QuantizeModelProcessor {
   // Determine if the tensor is directly linked to the output by identity
   bool ConnectToOutput(const std::string& output_name);
 
-  // Save cache file for TensorRT8.X int8 deploy
-  void SaveCache(const std::string& calibration_file);
-
-  // Read scale file
-  void ReadScaleFile(const std::string& scale_file);
+  // Generate cache file for TensorRT8.X int8 deploy
+  void GenerateCache(std::string* calibration_cache);
 
   // Add QDQ for TRT according to:
   // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
