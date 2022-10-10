@@ -29,7 +29,6 @@ class Pool2dMapper : public Mapper {
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
     GetAttr("pooling_type", &pooling_type_);
     GetAttr("data_format", &data_format_);
-    GetAttr("ksize", &k_size_);
     GetAttr("ceil_mode", &ceil_mode_);
     GetAttr("padding_algorithm", &padding_algorithm_);
     GetAttr("global_pooling", &global_pooling_);
