@@ -43,18 +43,6 @@ paddle2onnx --model_dir saved_inference_model \
             --save_file model.onnx \
             --enable_dev_version True
 ```
-如你有ONNX模型优化的需求，推荐使用 `onnx-simplifier`，也可使用如下命令对模型进行优化
-```
-python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model.onnx
-```
-如需要修改导出的模型输入形状，如改为静态 shape
-```
-python -m paddle2onnx.optimize --input_model model.onnx \
-                               --output_model new_model.onnx \
-                               --input_shape_dict "{'x':[1,3,224,224]}"
-```
-PaddleSlim 量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quantize.md)
-
 #### 参数选项
 | 参数 |参数说明 |
 |----------|--------------|
@@ -72,10 +60,25 @@ PaddleSlim 量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quan
 
 - 使用 onnxruntime 验证转换模型, 请注意安装最新版本（最低要求 1.10.0）
 
-## 其它工具
 
-- [裁剪ONNX模型/修改ONNX模型节点名称](https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx)
-- [裁剪Paddle模型/固化或修改Paddle模型输入Shape](https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle)
+### 其他优化工具
+1.  如你对导出的 ONNX 模型有优化的需求，推荐使用 `onnx-simplifier`，也可使用如下命令对模型进行优化
+```
+python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model.onnx
+```
+
+2.  如需要修改导出 ONNX 的模型输入形状，如改为静态 shape
+```
+python -m paddle2onnx.optimize --input_model model.onnx \
+                               --output_model new_model.onnx \
+                               --input_shape_dict "{'x':[1,3,224,224]}"
+```
+
+3. 如果需要裁剪 Paddle 模型，或者需要固化或修改 Paddle 模型输入 Shape，请使用如下工具：[Paddle 相关工具](./tools/paddle/README.md)
+
+4. 如果你需要裁剪 ONNX 模型或者修改 ONNX 模型，请参考如下工具：[ONNX 相关工具](./tools/onnx/README.md)
+
+5. PaddleSlim 量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quantize.md)
 
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
