@@ -29,6 +29,8 @@ struct ModelExporter {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
+  // The _deploy_backend will pass to Mapper to influence the conversion
+  std::string _deploy_backend = "onnxruntime";
   OnnxHelper _helper;
   int32_t _total_ops_num = 0;
   int32_t _current_exported_num = 0;
@@ -37,7 +39,7 @@ struct ModelExporter {
                         bool use_initializer = false);
 
   // Update constant node in parameters. When process quantize model, the weight
-  // dtype may be int8, it should be convet to float32 and use this func to
+  // dtype may be int8, it should be convet to float32 and use this function to
   // update converted params.
   void UpdateParameters(const std::map<std::string, Weight>& params);
   void ExportInputOutputs(const std::vector<TensorInfo>& input_infos,
