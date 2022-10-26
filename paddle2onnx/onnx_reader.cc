@@ -69,7 +69,7 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
 
   for (int i = 0; i < num_outputs; ++i) {
     std::strcpy(outputs[i].name, model.graph().output(i).name().c_str());
-    inputs[i].dtype =
+    outputs[i].dtype =
         GetDataTypeFromOnnx(model.graph().output(i).type().tensor_type().elem_type());
     auto& shape = model.graph().output(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
