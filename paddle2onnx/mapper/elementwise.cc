@@ -72,6 +72,7 @@ void ElementWiseModMapper::Opset10() {
       auto times = helper_->MakeNode("Div", {input_x_info[0].name, input_y_info[0].name})->output(0);
       auto result = helper_->MakeNode("Mul", {input_y_info[0].name, times})->output(0);
       helper_->MakeNode("Sub", {input_x_info[0].name, result}, {output_info[0].name});
+      return;
     }
     auto mod_node =
         helper_->MakeNode("Mod", {input_x_info[0].name, input_y_info[0].name},
