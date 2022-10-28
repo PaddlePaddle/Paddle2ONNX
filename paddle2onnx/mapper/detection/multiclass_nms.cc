@@ -19,7 +19,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(multiclass_nms3, NMSMapper);
 
 int32_t NMSMapper::GetMinOpset(bool verbose) {
-  if (export_as_custom_op) {
+  if (export_as_custom_op || this->deploy_backend == "tensorrt") {
     return 7;
   }
   auto boxes_info = GetInput("BBoxes");
@@ -205,6 +205,9 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
 }
 
 void NMSMapper::Opset10() {
+  if (this->deploy_backend == "tensorrt") {
+    return ExportForTensorRT();
+  }
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   if (boxes_info[0].shape[0] != 1) {
@@ -265,4 +268,34 @@ void NMSMapper::ExportAsCustomOp() {
   AddAttribute(node, "background_label", background_label_);
   AddAttribute(node, "keep_top_k", keep_top_k_);
 }
+
+void NMSMapper::ExportForTensorRT() {
+  auto boxes_info = GetInput("BBoxes");
+  auto score_info = GetInput("Scores");
+  auto out_info = GetOutput("Out");
+  auto index_info = GetOutput("Index");
+  auto num_rois_info = GetOutput("NmsRoisNum");
+
+  std::cout << "00000000" << std::endl;
+  auto score = helper_->Transpose(score_info[0].name, {0, 2, 1});
+  auto nms_node = helper_->MakeNode("EfficientNMS_TRT", {boxes_info[0].name, score}, 4);
+  AddAttribute(nms_node, "plugin_version", "1");
+  AddAttribute(nms_node, "background_class", background_label_);
+  AddAttribute(nms_node, "max_output_boxes", keep_top_k_);
+  AddAttribute(nms_node, "score_threshold", score_threshold_);
+  AddAttribute(nms_node, "iou_threshold", nms_threshold_);
+  AddAttribute(nms_node, "score_activation", int64_t(0));
+  AddAttribute(nms_node, "box_coding", int64_t(0));
+  nms_node->set_domain("Paddle");
+
+  auto num_rois = helper_->Reshape(nms_node->output(0), {-1});
+  helper_->AutoCast(num_rois, num_rois_info[0].name, P2ODataType::INT32, num_rois_info[0].dtype);
+
+  auto out_classes = helper_->Reshape(nms_node->output(3), {-1, 1});
+  auto out_scores = helper_->Reshape(nms_node->output(2), {-1, 1});
+  auto out_boxes = helper_->Reshape(nms_node->output(1), {-1, 4});
+  out_classes = helper_->AutoCast(out_classes, P2ODataType::INT32, P2ODataType::FP32);
+  helper_->Concat({out_classes, out_scores, out_boxes}, {out_info[0].name}, 1);
+}
+
 }  // namespace paddle2onnx
