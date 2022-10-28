@@ -276,7 +276,6 @@ void NMSMapper::ExportForTensorRT() {
   auto index_info = GetOutput("Index");
   auto num_rois_info = GetOutput("NmsRoisNum");
 
-  std::cout << "00000000" << std::endl;
   auto score = helper_->Transpose(score_info[0].name, {0, 2, 1});
   auto nms_node = helper_->MakeNode("EfficientNMS_TRT", {boxes_info[0].name, score}, 4);
   AddAttribute(nms_node, "plugin_version", "1");
