@@ -55,7 +55,8 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_experimental_op = false, bool enable_optimize = true,
     CustomOp* ops = nullptr, int op_count = 0,
     const char* deploy_backend = "onnxruntime",
-    char** calibration_cache = nullptr, int* calibration_size = 0);
+    char** calibration_cache = nullptr, int* calibration_size = 0,
+    const char* external_file = "");
 
 PADDLE2ONNX_DECL bool Export(
     const void* model_buffer, int model_size, const void* params_buffer,
@@ -64,7 +65,8 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_onnx_checker = true, bool enable_experimental_op = false,
     bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0,
     const char* deploy_backend = "onnxruntime",
-    char** calibration_cache = nullptr, int* calibration_size = 0);
+    char** calibration_cache = nullptr, int* calibration_size = 0,
+    const char* external_file = "");
 
 // Following are inside usage, will remove it maybe
 struct PADDLE2ONNX_DECL ModelTensorInfo {

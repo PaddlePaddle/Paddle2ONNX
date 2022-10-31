@@ -83,13 +83,17 @@ struct ModelExporter {
                           std::set<std::string>* unsupported_ops,
                           bool enable_experimental_op);
 
+  void SaveExternalData(::paddle2onnx::GraphProto* graph,
+                        const std::string& external_file_path);
+
   std::string Run(const PaddleParser& parser, int opset_version = 9,
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
                   bool enable_experimental_op = false,
                   bool enable_optimize = true,
                   const std::string& deploy_backend = "onnxruntime",
-                  std::string* calibration_cache = nullptr);
+                  std::string* calibration_cache = nullptr,
+                  const std::string& external_file = "");
 };
 
 }  // namespace paddle2onnx

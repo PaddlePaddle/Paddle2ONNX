@@ -119,6 +119,11 @@ def arg_parser():
         type=ast.literal_eval,
         default=True,
         help="whether enable auto_update_opset, default is True")
+    parser.add_argument(
+        "--external_filename",
+        type=_text_type,
+        default=None,
+        help="The filename of external_data when the model is bigger than 2G.")
     return parser
 
 
@@ -132,12 +137,13 @@ def c_paddle_to_onnx(model_file,
                      enable_experimental_op=True,
                      enable_optimize=True,
                      deploy_backend="onnxruntime",
-                     calibration_file=""):
+                     calibration_file="",
+                     external_file=""):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     onnx_model_str = c_p2o.export(
         model_file, params_file, opset_version, auto_upgrade_opset, verbose,
         enable_onnx_checker, enable_experimental_op, enable_optimize, {},
-        deploy_backend, calibration_file)
+        deploy_backend, calibration_file, external_file)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
@@ -214,6 +220,13 @@ def main():
             params_file = ""
         else:
             params_file = os.path.join(args.model_dir, args.params_filename)
+
+        external_file = ""
+        if args.external_filename is None:
+            external_file = ""
+        else:
+            external_file = os.path.join(args.model_dir, args.external_filename)
+
         calibration_file = args.save_calibration_file
         c_paddle_to_onnx(
             model_file=model_file,
@@ -226,7 +239,8 @@ def main():
             enable_experimental_op=True,
             enable_optimize=True,
             deploy_backend=args.deploy_backend,
-            calibration_file=calibration_file)
+            calibration_file=calibration_file,
+            external_file=external_file)
         logging.info("===============Make PaddlePaddle Better!================")
         logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
         return
