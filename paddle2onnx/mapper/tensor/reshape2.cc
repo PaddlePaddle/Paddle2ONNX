@@ -46,9 +46,7 @@ void Reshape2Mapper::Opset7() {
   }
   auto node = helper_->MakeNode("Reshape", {input_info[0].name, new_shape},
                     {output_info[0].name});
-  if (helper_->GetOpsetVersion()>= 14) {
-    AddAttribute(node, "allowzero", int64_t(0));
-  }
+  AddAttribute(node, "allowzero", int64_t(0));
 }
 
 }  // namespace paddle2onnx
