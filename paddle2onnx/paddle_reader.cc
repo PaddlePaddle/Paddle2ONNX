@@ -2,7 +2,7 @@
 #include <iostream>
 #include <set>
 #include <string>
-
+#include <cstring>
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/parser/parser.h"
