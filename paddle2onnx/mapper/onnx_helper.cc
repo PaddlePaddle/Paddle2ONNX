@@ -152,7 +152,12 @@ std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
   tensor_type_proto->set_elem_type(GetOnnxDtype(info.dtype));
   auto shape = tensor_type_proto->mutable_shape();
   for (auto& dim : info.shape) {
-    shape->add_dim()->set_dim_value(dim);
+    if (dim < 0) {
+      auto dynamic_dim_name = MapperHelper::Get()->GenName("DynamicDimension");
+      shape->add_dim()->set_dim_param(dynamic_dim_name);
+    } else {
+      shape->add_dim()->set_dim_value(dim);
+    }
   }
   return value_info;
 }
