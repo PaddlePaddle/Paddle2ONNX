@@ -67,7 +67,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
             name = input_names[index]
             new_shape = []
             for i in shape:
-                if i is None or i <= 0:
+                if isinstance(i, str) or i is None or i <= 0:
                     i = 1
                 new_shape.append(i)
             input_dict[name] = np.ones(new_shape, dtype="float32")
