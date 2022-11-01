@@ -175,7 +175,7 @@ void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
                                      const std::string& external_file_path) {
   P2OLogger() << "External data will save to " << external_file_path
               << std::endl;
-  std::fstream f(external_file_path, std::ios::app);
+  std::fstream f(external_file_path, std::ios::out);
 
   for (auto index = 0; index < graph->node_size(); index++) {
     auto node = graph->mutable_node(index);
@@ -188,6 +188,11 @@ void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
         continue;
       }
       auto tensor = attr->mutable_t();
+
+      if (tensor->raw_data().size() <= 128) {
+        continue;
+      }
+
       tensor->set_data_location(TensorProto::EXTERNAL);
       auto external_data = tensor->add_external_data();
       external_data->set_key("location");
@@ -208,6 +213,23 @@ void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
     }
   }
   f.close();
+}
+void ModelExporter::ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
+                                const bool& verbose) {
+  // TODO(jiangjiajun)
+  // If we need to integrate with framework
+  // this check will return a information
+  // to let framework know the conversion is
+  // pass or fail
+  try {
+    // ONNX_NAMESPACE::checker::check_model(*(model.get()));
+    ONNX_NAMESPACE::checker::check_model(model);
+  } catch (const std::exception& e) {
+    P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
+    P2OLogger(verbose) << "Model checker error log: " << e.what() << std::endl;
+  }
+  P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
+                     << std::endl;
 }
 
 std::string ModelExporter::Run(
@@ -310,9 +332,6 @@ std::string ModelExporter::Run(
         deploy_backend, parser, calibration_cache);
     // Update int8 weights in quantized OP to float32
     UpdateParameters(_helper.updated_params);
-    // std::ofstream cache_file;
-    // cache_file.open(calibration_file, std::ios::out);
-    // cache_file << calibration_cache;
   }
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
@@ -332,31 +351,15 @@ std::string ModelExporter::Run(
     *(graph->add_value_info()) = (*item.get());
   }
 
-  if (external_file.size()) {
-    SaveExternalData(graph, external_file);
-  }
-
-  // TODO(jiangjiajun)
-  // If we need to integrate with framework
-  // this check will return a information
-  // to let framework know the conversion is
-  // pass or fail
-  if (enable_onnx_checker) {
-    try {
-      ONNX_NAMESPACE::checker::check_model(*(model.get()));
-    } catch (const std::exception& e) {
-      P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
-      P2OLogger(verbose) << "Model checker error log: " << e.what()
-                         << std::endl;
-      return "";
-    }
-    P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
-                       << std::endl;
-  }
-
   std::string out;
   if (enable_optimize) {
-    auto const opt_model = Optimize(*(model.get()));
+    auto opt_model = Optimize(*(model.get()));
+    if (external_file.size()) {
+      SaveExternalData(opt_model.mutable_graph(), external_file);
+    }
+    if (enable_onnx_checker) {
+      ONNXChecker(opt_model, verbose);
+    }
     if (!opt_model.SerializeToString(&out)) {
       P2OLogger(verbose)
           << "Error happenedd while optimizing the exported ONNX model."
@@ -364,6 +367,12 @@ std::string ModelExporter::Run(
       return "";
     }
   } else {
+    if (external_file.size()) {
+      SaveExternalData(graph, external_file);
+    }
+    if (enable_onnx_checker) {
+      ONNXChecker(*(model.get()), verbose);
+    }
     if (!model->SerializeToString(&out)) {
       P2OLogger(verbose)
           << "Error happened while optimizing the exported ONNX model."

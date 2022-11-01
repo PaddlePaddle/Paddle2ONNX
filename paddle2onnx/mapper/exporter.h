@@ -86,6 +86,9 @@ struct ModelExporter {
   void SaveExternalData(::paddle2onnx::GraphProto* graph,
                         const std::string& external_file_path);
 
+  void ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
+                   const bool& verbose);
+
   std::string Run(const PaddleParser& parser, int opset_version = 9,
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
