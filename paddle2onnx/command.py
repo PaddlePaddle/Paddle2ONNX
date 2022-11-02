@@ -225,7 +225,7 @@ def main():
         if args.external_filename is None:
             external_file = ""
         else:
-            external_file = os.path.join(args.model_dir, args.external_filename)
+            external_file = args.external_filename
 
         calibration_file = args.save_calibration_file
         c_paddle_to_onnx(
