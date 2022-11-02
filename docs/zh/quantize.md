@@ -1,5 +1,5 @@
 # PaddleSlim 量化模型导出 ONNX
-PaddleSlim 有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT)，目前 Paddle2ONNX 已经支持将两种量化方法量化后的模型导出为ONNX，并使用 ONNXRuntime 在 CPU 上或使用 TensorRT 8.X 版本在 GPU 上进行加速推理。
+PaddleSlim 有两种常用的量化方法，离线量化 (PTQ) 和量化训练 (QAT)，目前 Paddle2ONNX 已经支持将两种量化方法量化后的模型导出为 ONNX，并使用 ONNXRuntime 在 CPU 上或使用 TensorRT 8.X 版本在 GPU 上进行加速推理。
 
 ## 量化环境需求
 1. PaddlePaddle > 2.3.2
@@ -9,7 +9,7 @@ PaddleSlim 有两种常用的量化方法，离线量化(PTQ)和量化训练(QAT
 ## 模型量化及导出注意事项
 1. 使用 PaddleSlim 量化时请设置 onnx_format=True
 
-2. 使用 Paddle2ONNX 导出 Paddle 量化模型为 ONNX 时，请根据部署的 backend 设置对应的deploy_backend，示例如下：
+2. 使用 Paddle2ONNX 导出 Paddle 量化模型为 ONNX 时，请根据部署的 backend 设置对应的 deploy_backend，示例如下：
 
 ```
 # 使用 ONNXRuntime 在 CPU 上部署，导出成功后会生成量化模型 quant_model.onnx
@@ -19,7 +19,7 @@ paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename mode
 paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename model.pdiparams --save_file float_model.onnx --opset_version 13 --enable_dev_version True --deploy_backend tensorrt --enable_onnx_checker True
 ```
 
-3. 请确保 PaddleSlim 模型量化后，生成3个文件，分别时模型文件、权重文件和scale文件。PaddleSlim 量化 demo 和接口请查阅：[PaddleSlim 离线量化 demo](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/quant_post)  
+3. 请确保 PaddleSlim 模型量化后，生成 3 个文件，分别时模型文件、权重文件和 scale 文件。PaddleSlim 量化 demo 和接口请查阅：[PaddleSlim 离线量化 demo](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/quant_post)  
 一个简单的量化配置说明如下：  
 
 ```
@@ -41,10 +41,10 @@ ptq = PostTrainingQuantization(
     skip_tensor_list=skip_tensor_list,
     is_use_cache_file=is_use_cache_file)
 ptq.quantize() # 对模型进行量化
-ptq.save_quantized_model(int8_model_path) # 保存量化后的模型，int8_model_path为量化模型的保存路径
+ptq.save_quantized_model(int8_model_path) # 保存量化后的模型，int8_model_path 为量化模型的保存路径
 ```
 
-4. ONNXRuntime部署量化模型和float模型的类似，无需特殊设置，TensorRT部署量化模型参考：[TensorRT部署示例](https://github.com/PaddlePaddle/Paddle2ONNX/tree/model_zoo/hardwares/tensorrt)
+4. ONNXRuntime 部署量化模型和 float 模型的类似，无需特殊设置，TensorRT 部署量化模型参考：[TensorRT 部署示例](https://github.com/PaddlePaddle/Paddle2ONNX/tree/model_zoo/hardwares/tensorrt)
 
 ## FAQ
 
@@ -60,10 +60,10 @@ ptq.save_quantized_model(int8_model_path) # 保存量化后的模型，int8_mode
 
 ```
 import onnxruntime as ort
-providers = ['CPUExecutionProvider'] # 指定用CPU进行推理
+providers = ['CPUExecutionProvider'] # 指定用 CPU 进行推理
 sess_options = ort.SessionOptions()
 sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL # 关闭所有的优化
-sess = ort.InferenceSession(model_path, providers=providers, sess_options=sess_options) # model_path为ONNX模型
+sess = ort.InferenceSession(model_path, providers=providers, sess_options=sess_options) # model_path 为 ONNX 模型
 pred_onnx = sess.run(None, input_dict) # 进行推理
 ```
 
@@ -73,13 +73,13 @@ pred_onnx = sess.run(None, input_dict) # 进行推理
 
 (1) 检查机器是否支持 avx2， avx512 或 avx512_vnni 指令，在支持 avx512_vnni 的 CPU 上精度和加速效果最好  
 
-(2) 检查是否在 CPU 推理，当前导出的ONNX模型仅支持使用 ONNXRuntime 在 CPU 上进行推理加速  
+(2) 检查是否在 CPU 推理，当前导出的 ONNX 模型仅支持使用 ONNXRuntime 在 CPU 上进行推理加速  
 
 (3) 量化模型对计算量大的 Conv 或 MatMul 等 OP 加速明显，如果模型中 Conv 或 MatMul 的计算量本身很小，那么量化可能并不会带来推理加速  
 
 (4) 使用如下命令获得 ONNXRuntime 优化后的模型 optimize_model.onnx，然后使用 VisualDl 或 netron 等可视化工具可视化模型，检查以下两项：  
 
-    1). 检查原模型中的 Conv、MatMul 和 Mul 等 OP 是否已经优化为 QLinearConv、QLinearMatMul 和  QLinearMul等量化相关 OP  
+    1). 检查原模型中的 Conv、MatMul 和 Mul 等 OP 是否已经优化为 QLinearConv、QLinearMatMul 和  QLinearMul 等量化相关 OP  
 
     2). 检查优化后的模型中 QLinearConv 或 QLinearMatMul 等量化 OP 是否被 sigmod 或 Mean 非量化 OP 分开得很散，多个量化 OP 链接在一起，不需量化和反量化获得的加速效果最明显，如果是激活函数导致的 QLinearConv 等量化 OP 被分开，推荐将激活函数替换为 Relu 或 LeakyRelu 再进行测试
 
@@ -87,6 +87,6 @@ pred_onnx = sess.run(None, input_dict) # 进行推理
 import onnxruntime as ort
 providers = ['CPUExecutionProvider'] # 指定用 CPU 进行推理
 sess_options = ort.SessionOptions()
-sess_options.optimized_model_filepath = "./optimize_model.onnx" # 生成ONNXRuntime优化后的图，保存为optimize_model.onnx
-sess = ort.InferenceSession(model_path, providers=providers, sess_options=sess_options) # model_path为ONNX模型
+sess_options.optimized_model_filepath = "./optimize_model.onnx" # 生成 ONNXRuntime 优化后的图，保存为 optimize_model.onnx
+sess = ort.InferenceSession(model_path, providers=providers, sess_options=sess_options) # model_path 为 ONNX 模型
 ```
