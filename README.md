@@ -74,7 +74,7 @@ python -m paddle2onnx.optimize --input_model model.onnx \
                                --input_shape_dict "{'x':[1,3,224,224]}"
 ```
 
-3. 如果需要裁剪 Paddle 模型，或者需要固化或修改 Paddle 模型输入 Shape，请使用如下工具：[Paddle 相关工具](./tools/paddle/README.md)
+3. 如果你有裁剪 Paddle 模型，固化或修改 Paddle 模型输入 Shape 或者合并 Paddle 模型的权重文件等需求，请使用如下工具：[Paddle 相关工具](./tools/paddle/README.md)
 
 4. 如果你需要裁剪 ONNX 模型或者修改 ONNX 模型，请参考如下工具：[ONNX 相关工具](./tools/onnx/README.md)
 
