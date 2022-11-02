@@ -19,9 +19,6 @@ namespace paddle2onnx {
 REGISTER_MAPPER(multiclass_nms3, NMSMapper);
 
 int32_t NMSMapper::GetMinOpset(bool verbose) {
-  if (export_as_custom_op) {
-    return 7;
-  }
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   if (score_info[0].Rank() != 3) {
@@ -36,6 +33,15 @@ int32_t NMSMapper::GetMinOpset(bool verbose) {
             << boxes_info[0].Rank() << "." << std::endl;
     return -1;
   }
+  if (score_info[0].shape[1] <= 0) {
+    Error() << "The 2nd-dimension of score should be fixed(means the number of classes), but now it's " << score_info[0].shape[1] << "." << std::endl;
+    return -1;
+  }
+
+  if (export_as_custom_op || this->deploy_backend == "tensorrt") {
+    return 7;
+  }
+
   if (boxes_info[0].shape[1] < 0 || boxes_info[0].shape[2] < 0) {
     Error() << "The 2-nd and 3-rd dimension of input bboxes tensor of "
                "multiclass_nms should be fixed, but now the shape is ["
@@ -205,6 +211,9 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
 }
 
 void NMSMapper::Opset10() {
+  if (this->deploy_backend == "tensorrt") {
+    return ExportForTensorRT();
+  }
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   if (boxes_info[0].shape[0] != 1) {
@@ -265,4 +274,74 @@ void NMSMapper::ExportAsCustomOp() {
   AddAttribute(node, "background_label", background_label_);
   AddAttribute(node, "keep_top_k", keep_top_k_);
 }
+
+void NMSMapper::ExportForTensorRT() {
+  auto boxes_info = GetInput("BBoxes");
+  auto score_info = GetInput("Scores");
+  auto out_info = GetOutput("Out");
+  auto index_info = GetOutput("Index");
+  auto num_rois_info = GetOutput("NmsRoisNum");
+
+  auto scores = helper_->Transpose(score_info[0].name, {0, 2, 1});
+  auto boxes = helper_->Unsqueeze(boxes_info[0].name, {2});
+  int64_t num_classes = score_info[0].shape[1];
+  auto repeats = helper_->Constant(GetOnnxDtype(P2ODataType::INT64), std::vector<int64_t>({1, 1, num_classes, 1}));
+  boxes = helper_->MakeNode("Tile", {boxes, repeats})->output(0);
+  
+  auto nms_node = helper_->MakeNode("BatchedNMSDynamic_TRT", {boxes, scores}, 4);
+  AddAttribute(nms_node, "shareLocation", int64_t(0));
+  AddAttribute(nms_node, "backgroundLabelId", background_label_);
+  AddAttribute(nms_node, "numClasses", num_classes);
+  int64_t nms_top_k = nms_top_k_;
+  int64_t keep_top_k = keep_top_k_;
+  if (nms_top_k > 4096) {
+    Warn() << "Paramter nms_top_k:" << nms_top_k << " is exceed limit in TensorRT BatchedNMS plugin, will force to 4096." << std::endl;
+    nms_top_k = 4096;
+  }
+  if (keep_top_k > 4096) {
+    Warn() << "Parameter keep_top_k:" << keep_top_k << " is exceed limit in TensorRT BatchedNMS plugin, will force to 4096." << std::endl;
+    keep_top_k = 4096;
+  }
+  AddAttribute(nms_node, "topK", nms_top_k);
+  AddAttribute(nms_node, "keepTopK", keep_top_k);
+  AddAttribute(nms_node, "scoreThreshold", score_threshold_);
+  AddAttribute(nms_node, "iouThreshold", nms_threshold_);
+  if (normalized_) {
+    AddAttribute(nms_node, "isNormalized", int64_t(1));
+  } else {
+    AddAttribute(nms_node, "isNormalized", int64_t(0));
+  }
+  AddAttribute(nms_node, "clipBoxes", int64_t(0));
+  nms_node->set_domain("Paddle");
+
+  auto num_rois = helper_->Reshape(nms_node->output(0), {-1});
+  helper_->AutoCast(num_rois, num_rois_info[0].name, P2ODataType::INT32, num_rois_info[0].dtype);
+
+  auto out_classes = helper_->Reshape(nms_node->output(3), {-1, 1});
+  auto out_scores = helper_->Reshape(nms_node->output(2), {-1, 1});
+  auto out_boxes = helper_->Reshape(nms_node->output(1), {-1, 4});
+  out_classes = helper_->AutoCast(out_classes, P2ODataType::INT32, P2ODataType::FP32);
+  helper_->Concat({out_classes, out_scores, out_boxes}, {out_info[0].name}, 1);
+
+//  EfficientNMS_TRT cannot get the same result, so disable now
+//  auto nms_node = helper_->MakeNode("EfficientNMS_TRT", {boxes_info[0].name, score}, 4);
+//  AddAttribute(nms_node, "plugin_version", "1");
+//  AddAttribute(nms_node, "background_class", background_label_);
+//  AddAttribute(nms_node, "max_output_boxes", nms_top_k_);
+//  AddAttribute(nms_node, "score_threshold", score_threshold_);
+//  AddAttribute(nms_node, "iou_threshold", nms_threshold_);
+//  AddAttribute(nms_node, "score_activation", int64_t(0));
+//  AddAttribute(nms_node, "box_coding", int64_t(0));
+//  nms_node->set_domain("Paddle");
+//
+//  auto num_rois = helper_->Reshape(nms_node->output(0), {-1});
+//  helper_->AutoCast(num_rois, num_rois_info[0].name, P2ODataType::INT32, num_rois_info[0].dtype);
+//
+//  auto out_classes = helper_->Reshape(nms_node->output(3), {-1, 1});
+//  auto out_scores = helper_->Reshape(nms_node->output(2), {-1, 1});
+//  auto out_boxes = helper_->Reshape(nms_node->output(1), {-1, 4});
+//  out_classes = helper_->AutoCast(out_classes, P2ODataType::INT32, P2ODataType::FP32);
+//  helper_->Concat({out_classes, out_scores, out_boxes}, {out_info[0].name}, 1);
+}
+
 }  // namespace paddle2onnx

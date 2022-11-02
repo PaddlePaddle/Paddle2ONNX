@@ -67,6 +67,13 @@ void ElementWiseModMapper::Opset10() {
   int64_t fmod = 0;
   if (input_y_info[0].dtype == P2ODataType::INT32 ||
       input_y_info[0].dtype == P2ODataType::INT64) {
+    if (this->deploy_backend == "tensorrt") {
+      auto x = helper_->AutoCast(input_x_info[0].name, input_x_info[0].dtype, input_y_info[0].dtype);
+      auto times = helper_->MakeNode("Div", {input_x_info[0].name, input_y_info[0].name})->output(0);
+      auto result = helper_->MakeNode("Mul", {input_y_info[0].name, times})->output(0);
+      helper_->MakeNode("Sub", {input_x_info[0].name, result}, {output_info[0].name});
+      return;
+    }
     auto mod_node =
         helper_->MakeNode("Mod", {input_x_info[0].name, input_y_info[0].name},
                           {output_info[0].name});
