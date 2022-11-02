@@ -39,6 +39,7 @@ class Mapper {
   bool export_as_custom_op = false;
   // [exported_op_name, domain]
   std::string custom_op_name;
+  std::string deploy_backend;
 
   P2OLogger Logger(const bool& verbose, const int32_t& opset_version = 100) {
     bool v = verbose;

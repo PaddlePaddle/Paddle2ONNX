@@ -343,6 +343,9 @@ std::string OnnxHelper::Reshape(const std::string& input,
   } else {
     auto shape_node = Constant(ONNX_NAMESPACE::TensorProto::INT64, shape);
     auto node = MakeNode("Reshape", {input, shape_node}, {output});
+    if (opset_version >= 14) {
+      AddAttribute(node, "allowzero", int64_t(0));
+    }
   }
   return output;
 }

@@ -88,6 +88,7 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
 
   auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, helper,
                                                   block_id, op_id);
+  mapper->deploy_backend = _deploy_backend;
 #ifdef PADDLE2ONNX_DEBUG
   P2OLogger(true) << "Mapper Name: " << mapper->Name() << std::endl;
 #endif
@@ -237,6 +238,7 @@ std::string ModelExporter::Run(
     bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
     bool enable_optimize, const std::string& deploy_backend,
     std::string* calibration_cache, const std::string& external_file) {
+  _deploy_backend = deploy_backend;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
   _current_exported_num = 0;
