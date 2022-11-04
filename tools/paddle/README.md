@@ -27,3 +27,10 @@ python paddle_infer_shape.py --model_dir ch_PP-OCRv2_det_infer/ \
                              --input_shape_dict="{'x':[-1,3,-1,-1]}"
 ```
 ![image-20220331165925526](imgs/new.png)
+
+## 3. 合并 Paddle 模型的参数
+
+如果你的 Paddle 模型的参数文件是分开的小文件，想将这些分开的参数合并为一个文件，可以使用 merge_params.py 脚本进行处理，合并命令如下：
+```
+python merge_params.py inference_model  new_model_dir
+```
