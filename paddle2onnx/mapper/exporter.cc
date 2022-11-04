@@ -174,7 +174,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
 
 void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
                                      const std::string& external_file_path) {
-  P2OLogger() << "External data will save to " << external_file_path
+  P2OLogger() << "External data will save to file: " << external_file_path
               << std::endl;
   std::fstream f(external_file_path, std::ios::out);
 
@@ -353,11 +353,19 @@ std::string ModelExporter::Run(
     *(graph->add_value_info()) = (*item.get());
   }
 
+  std::string external_data_file = external_file;
+  if (model->ByteSizeLong() > INT_MAX && external_file.empty()) {
+    external_data_file = "external_data";
+    P2OLogger(verbose) << "The exported ONNX model is bigger than 2G, save "
+                          "external data to the file: "
+                       << external_data_file << std::endl;
+  }
+
   std::string out;
   if (enable_optimize) {
     auto opt_model = Optimize(*(model.get()));
-    if (external_file.size()) {
-      SaveExternalData(opt_model.mutable_graph(), external_file);
+    if (external_data_file.size()) {
+      SaveExternalData(opt_model.mutable_graph(), external_data_file);
     }
     if (enable_onnx_checker) {
       ONNXChecker(opt_model, verbose);
@@ -369,8 +377,8 @@ std::string ModelExporter::Run(
       return "";
     }
   } else {
-    if (external_file.size()) {
-      SaveExternalData(graph, external_file);
+    if (external_data_file.size()) {
+      SaveExternalData(graph, external_data_file);
     }
     if (enable_onnx_checker) {
       ONNXChecker(*(model.get()), verbose);
