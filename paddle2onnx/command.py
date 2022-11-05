@@ -224,7 +224,7 @@ def main():
             verbose=True,
             enable_onnx_checker=args.enable_onnx_checker,
             enable_experimental_op=True,
-            enable_optimize=False,
+            enable_optimize=True,
             deploy_backend=args.deploy_backend,
             calibration_file=calibration_file)
         logging.info("===============Make PaddlePaddle Better!================")
