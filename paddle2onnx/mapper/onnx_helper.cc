@@ -20,6 +20,13 @@ namespace paddle2onnx {
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   const std::string& name, const int64_t& value) {
+  for (int i = 0; i < node->attribute_size(); ++i) {
+    if (node->attribute(i).name() == name) {
+      node->mutable_attribute(i)->set_i(value);
+      node->mutable_attribute(i)->set_type(ONNX_NAMESPACE::AttributeProto::INT);
+      return;
+    }
+  }
   auto attr = node->add_attribute();
   attr->set_name(name);
   attr->set_i(value);
@@ -28,6 +35,13 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
                   const std::string& name, const float& value) {
+  for (int i = 0; i < node->attribute_size(); ++i) {
+    if (node->attribute(i).name() == name) {
+      node->mutable_attribute(i)->set_f(value);
+      node->mutable_attribute(i)->set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
+      return;
+    }
+  }
   auto attr = node->add_attribute();
   attr->set_name(name);
   attr->set_f(value);
@@ -180,6 +194,10 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
   for (size_t i = 0; i < outputs.size(); ++i) {
     node->add_output(outputs[i]);
   }
+  if (op_type == "Reshape" && GetOpsetVersion() >= 14) {
+    AddAttribute(node, "allowzero", int64_t(0));
+  }
+
   nodes.push_back(node);
   return node;
 }
@@ -203,6 +221,9 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
   }
   for (size_t i = 0; i < outputs.size(); ++i) {
     node->add_output(outputs[i]);
+  }
+  if (op_type == "Reshape" && GetOpsetVersion() >= 14) {
+    AddAttribute(node, "allowzero", int64_t(0));
   }
   nodes.push_back(node);
   return node;

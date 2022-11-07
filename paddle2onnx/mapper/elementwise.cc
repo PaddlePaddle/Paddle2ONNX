@@ -41,11 +41,18 @@ void ElementwiseMapper::Opset7() {
   Assert(op_mapper_.end() != iter,
          "Cannot find " + OpType() + " in elementwise op_mapper.");
 
+  auto x_name = input_x_info[0].name;
+  auto y_name = input_y_info[0].name;
+  if (input_x_info[0].dtype == P2ODataType::BOOL && input_y_info[0].dtype == P2ODataType::BOOL) {
+    x_name = helper_->AutoCast(x_name, input_x_info[0].dtype, P2ODataType::INT32);
+    y_name = helper_->AutoCast(y_name, input_y_info[0].dtype, P2ODataType::INT32);
+  }
+
+  std::string output_name;
   if (axis_ == -1 || axis_ == (input_x_info[0].Rank() - 1) ||
       input_x_info[0].Rank() == input_y_info[0].Rank()) {
-    helper_->MakeNode(iter->second,
-                      {input_x_info[0].name, input_y_info[0].name},
-                      {output_info[0].name});
+    output_name = helper_->MakeNode(iter->second,
+                      {x_name, y_name})->output(0);
   } else {
     std::vector<int64_t> broadcast_shape(input_x_info[0].Rank(), 1);
     for (int i = axis_; i < axis_ + input_y_info[0].Rank(); ++i) {
@@ -54,9 +61,15 @@ void ElementwiseMapper::Opset7() {
     std::string broadcast_shape_node =
         helper_->Constant(GetOnnxDtype(P2ODataType::INT64), broadcast_shape);
     auto y_node = helper_->MakeNode(
-        "Reshape", {input_y_info[0].name, broadcast_shape_node});
-    helper_->MakeNode(iter->second, {input_x_info[0].name, y_node->output(0)},
-                      {output_info[0].name});
+        "Reshape", {y_name, broadcast_shape_node});
+    output_name = helper_->MakeNode(iter->second, {x_name, y_node->output(0)},
+                      {output_info[0].name})->output(0);
+  }
+
+  if (input_x_info[0].dtype == P2ODataType::BOOL && input_y_info[0].dtype == P2ODataType::BOOL) {
+    helper_->AutoCast(output_name, output_info[0].name, P2ODataType::INT32, P2ODataType::BOOL);
+  } else {
+    helper_->MakeNode("Identity", {output_name}, {output_info[0].name});
   }
 }
 
