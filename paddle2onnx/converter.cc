@@ -136,7 +136,7 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
                              CustomOp* ops, int op_count,
                              const char* deploy_backend,
                              char** calibration_cache, int* calibration_size,
-                             const char* external_file) {
+                             const char* external_file, bool* save_external) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model, params)) {
@@ -162,7 +162,7 @@ PADDLE2ONNX_DECL bool Export(const char* model, const char* params, char** out,
   std::string result =
       me.Run(parser, opset_version, auto_upgrade_opset, verbose,
              enable_onnx_checker, enable_experimental_op, enable_optimize,
-             deploy_backend, &calibration_str, external_file);
+             deploy_backend, &calibration_str, external_file, save_external);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
@@ -190,7 +190,7 @@ PADDLE2ONNX_DECL bool Export(
     bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
     bool enable_experimental_op, bool enable_optimize, CustomOp* ops,
     int op_count, const char* deploy_backend, char** calibration_cache,
-    int* calibration_size, const char* external_file) {
+    int* calibration_size, const char* external_file, bool* save_external) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
@@ -215,7 +215,7 @@ PADDLE2ONNX_DECL bool Export(
   std::string result =
       me.Run(parser, opset_version, auto_upgrade_opset, verbose,
              enable_onnx_checker, enable_experimental_op, enable_optimize,
-             deploy_backend, &calibration_str, external_file);
+             deploy_backend, &calibration_str, external_file, save_external);
   if (result.empty()) {
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;

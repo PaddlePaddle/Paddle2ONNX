@@ -86,7 +86,8 @@ struct ModelExporter {
                           bool enable_experimental_op);
 
   void SaveExternalData(::paddle2onnx::GraphProto* graph,
-                        const std::string& external_file_path);
+                        const std::string& external_file_path,
+                        bool* save_external = nullptr);
 
   void ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
                    const bool& verbose);
@@ -98,7 +99,8 @@ struct ModelExporter {
                   bool enable_optimize = true,
                   const std::string& deploy_backend = "onnxruntime",
                   std::string* calibration_cache = nullptr,
-                  const std::string& external_file = "");
+                  const std::string& external_file = "",
+                  bool* save_external = nullptr);
 };
 
 }  // namespace paddle2onnx

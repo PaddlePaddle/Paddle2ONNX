@@ -173,9 +173,13 @@ void ModelExporter::ProcessGraphDumplicateNames(
 }
 
 void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
-                                     const std::string& external_file_path) {
+                                     const std::string& external_file_path,
+                                     bool* save_external) {
   P2OLogger() << "External data will save to file: " << external_file_path
               << std::endl;
+  if (save_external) {
+    *save_external = true;
+  }
   std::fstream f(external_file_path, std::ios::out);
 
   for (auto index = 0; index < graph->node_size(); index++) {
@@ -237,7 +241,8 @@ std::string ModelExporter::Run(
     const PaddleParser& parser, int opset_version, bool auto_upgrade_opset,
     bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
     bool enable_optimize, const std::string& deploy_backend,
-    std::string* calibration_cache, const std::string& external_file) {
+    std::string* calibration_cache, const std::string& external_file,
+    bool* save_external) {
   _deploy_backend = deploy_backend;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
@@ -365,7 +370,8 @@ std::string ModelExporter::Run(
   if (enable_optimize) {
     auto opt_model = Optimize(*(model.get()));
     if (external_data_file.size()) {
-      SaveExternalData(opt_model.mutable_graph(), external_data_file);
+      SaveExternalData(opt_model.mutable_graph(), external_data_file,
+                       save_external);
     }
     if (enable_onnx_checker) {
       ONNXChecker(opt_model, verbose);
@@ -378,7 +384,7 @@ std::string ModelExporter::Run(
     }
   } else {
     if (external_data_file.size()) {
-      SaveExternalData(graph, external_data_file);
+      SaveExternalData(graph, external_data_file, save_external);
     }
     if (enable_onnx_checker) {
       ONNXChecker(*(model.get()), verbose);
