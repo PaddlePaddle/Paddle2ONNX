@@ -221,11 +221,13 @@ def main():
         else:
             params_file = os.path.join(args.model_dir, args.params_filename)
 
-        external_file = ""
         if args.external_filename is None:
-            external_file = ""
-        else:
-            external_file = args.external_filename
+            args.external_filename = "external_data"
+
+        base_path = os.path.dirname(args.save_file)
+        if (base_path):
+            os.mkdir(base_path)
+        external_file = os.path.join(base_path, args.external_filename)
 
         calibration_file = args.save_calibration_file
         c_paddle_to_onnx(

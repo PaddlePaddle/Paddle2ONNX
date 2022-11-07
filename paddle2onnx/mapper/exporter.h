@@ -22,6 +22,20 @@
 #include "paddle2onnx/mapper/quantize_helper.h"
 #include "paddle2onnx/parser/parser.h"
 
+#ifdef _MSC_VER
+#define PATH_SEP "\\"
+#else
+#define PATH_SEP "/"
+#endif
+
+inline std::string GetFilenameFromPath(const std::string& path) {
+  auto pos = path.find_last_of(PATH_SEP);
+  if (pos == std::string::npos) {
+    return path;
+  }
+  return path.substr(pos + 1);
+}
+
 namespace paddle2onnx {
 
 struct ModelExporter {

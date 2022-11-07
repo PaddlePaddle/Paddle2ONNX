@@ -175,13 +175,16 @@ void ModelExporter::ProcessGraphDumplicateNames(
 void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
                                      const std::string& external_file_path,
                                      bool* save_external) {
-  P2OLogger() << "External data will save to file: " << external_file_path
-              << std::endl;
+  P2OLogger() << "The exported ONNX model is bigger than 2G, external data "
+                 "will save to file: "
+              << external_file_path << std::endl;
+  std::string file_name = GetFilenameFromPath(external_file_path);
   if (save_external) {
     *save_external = true;
   }
   std::fstream f(external_file_path, std::ios::out);
-
+  Assert(f.is_open(), "Failed to open: " + external_file_path +
+                          " file to save external data");
   for (auto index = 0; index < graph->node_size(); index++) {
     auto node = graph->mutable_node(index);
     if (node->op_type() != "Constant") {
@@ -201,7 +204,7 @@ void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
       tensor->set_data_location(TensorProto::EXTERNAL);
       auto external_data = tensor->add_external_data();
       external_data->set_key("location");
-      external_data->set_value(external_file_path);
+      external_data->set_value(file_name);
 
       external_data = tensor->add_external_data();
       external_data->set_key("offset");
@@ -358,12 +361,13 @@ std::string ModelExporter::Run(
     *(graph->add_value_info()) = (*item.get());
   }
 
-  std::string external_data_file = external_file;
-  if (model->ByteSizeLong() > INT_MAX && external_file.empty()) {
-    external_data_file = "external_data";
-    P2OLogger(verbose) << "The exported ONNX model is bigger than 2G, save "
-                          "external data to the file: "
-                       << external_data_file << std::endl;
+  std::string external_data_file;
+  if (model->ByteSizeLong() > INT_MAX) {
+    if (external_file.empty()) {
+      external_data_file = "external_data";
+    } else {
+      external_data_file = external_file;
+    }
   }
 
   std::string out;
