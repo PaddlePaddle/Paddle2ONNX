@@ -22,11 +22,12 @@ def export_onnx(paddle_graph,
                 operator_export_type="ONNX",
                 verbose=False,
                 auto_update_opset=True,
+                deploy_backend=None,
                 output_names=None):
     from paddle2onnx.legacy.convert import export_onnx
     return export_onnx(paddle_graph, save_file, opset_version, opset_version,
                        enable_onnx_checker, operator_export_type, verbose,
-                       auto_update_opset, output_names)
+                       auto_update_opset, deploy_backend, output_names)
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
@@ -73,8 +74,10 @@ def program2onnx(program,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
                  auto_update_opset=True,
+                 deploy_backend=None,
                  **configs):
     from paddle2onnx.legacy.convert import program2onnx
     return program2onnx(program, scope, save_file, feed_var_names, target_vars,
                         opset_version, enable_onnx_checker,
-                        operator_export_type, auto_update_opset, **configs)
+                        operator_export_type, auto_update_opset, deploy_backend,
+                        **configs)

@@ -23,6 +23,7 @@ DTYPE_PADDLE_ONNX_MAP = {
     TensorProto.FLOAT16: core.VarDesc.VarType.FP16,
     TensorProto.FLOAT: core.VarDesc.VarType.FP32,
     TensorProto.DOUBLE: core.VarDesc.VarType.FP64,
+    TensorProto.INT8: core.VarDesc.VarType.INT8,
     TensorProto.INT16: core.VarDesc.VarType.INT16,
     TensorProto.INT32: core.VarDesc.VarType.INT32,
     TensorProto.INT64: core.VarDesc.VarType.INT64,
@@ -36,6 +37,7 @@ DTYPE_PADDLE_ONNX_MAP = {
     core.VarDesc.VarType.INT64: TensorProto.INT64,
     core.VarDesc.VarType.BOOL: TensorProto.BOOL,
     core.VarDesc.VarType.UINT8: TensorProto.UINT8,
+    core.VarDesc.VarType.INT8: TensorProto.INT8,
 }
 
 DTYPE_PADDLE_NUMPY_MAP = {

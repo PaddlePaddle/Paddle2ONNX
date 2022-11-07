@@ -23,6 +23,9 @@ from paddle2onnx.legacy.constant import NodeDomain, PRODUCER, dtypes
 from paddle2onnx.legacy.op_mapper import OpMapper
 from onnx import helper
 from paddle2onnx.utils import check_model, logging
+from onnx import TensorProto
+import paddle
+from paddle2onnx.legacy.graph import graph_helper
 
 
 class ONNXNode(Node):
@@ -75,14 +78,87 @@ class ONNXGraph(Graph):
                  opset_version,
                  operator_export_type="ONNX",
                  block=None,
-                 auto_update_opset=True):
+                 auto_update_opset=True,
+                 deploy_backend=None):
         super(ONNXGraph, self).__init__()
         self.opset_version = opset_version
         self.operator_export_type = operator_export_type
         self.ctx = paddle_graph
+        self.paddle_parameters = paddle_graph.parameters
         self.custom = []
+        self.quantize_model_mode = self.detect_model_type()
+        if self.quantize_model_mode != "float":
+            warning_info = "Export quantize_model_mode: " + self.quantize_model_mode
+            logging.warning(warning_info)
         if auto_update_opset:
             self.update_opset_version()
+        self.static_quantize_pre_convert_dict = dict()
+        self.deploy_backend = deploy_backend
+        if self.deploy_backend is not None:
+            self.deploy_backend = self.deploy_backend.lower()
+        self.quantize_params_dict = dict()
+        self.tensor_to_be_quantize = list()
+        self.only_dequantize = list()
+        self.added_clips = list()
+
+    def is_graph_output(self, output_name):
+        for output in self.output_nodes:
+            if output.name == output_name:
+                return True
+        return False
+
+    def input_name_to_nodes(self):
+        input_name_to_nodes_dict = dict()
+        for name, node in self.node_map.items():
+            for input_name in node.inputs:
+                if input_name not in input_name_to_nodes_dict:
+                    input_name_to_nodes_dict[input_name] = [node]
+                else:
+                    input_name_to_nodes_dict[input_name].append(node)
+        return input_name_to_nodes_dict
+
+    def output_name_from_nodes(self):
+        output_name_from_nodes_dict = dict()
+        for name, node in self.node_map.items():
+            for output_name in node.outputs:
+                if output_name not in output_name_from_nodes_dict:
+                    output_name_from_nodes_dict[output_name] = [node]
+                else:
+                    output_name_from_nodes_dict[output_name].append(node)
+        return output_name_from_nodes_dict
+
+    # this func will detect the model type: float, static, dynamic or new_type
+    def detect_model_type(self):
+        # If not including any quantized OP, return float directly
+        quantize_ops = False
+        for layer_name, node in self.ctx.node_map.items():
+            if node.type.count("quantize"):
+                quantize_ops = True
+                break
+        if not quantize_ops:
+            return "float"
+
+        quantize_ops = False
+        for layer_name, node in self.ctx.node_map.items():
+            # dequantize_linear and quantize_linear only exists in new type
+            if node.type in ["dequantize_linear", "quantize_linear"]:
+                return "new_type"
+            # If the next op of conv or matmul is a dequantize OP, it is a static type
+            if node.type.count("conv") or node.type.count(
+                    "matmul") or node.type.count("mul"):
+                output_node_type = []
+                for key, value in node.outputs.items():
+                    name = value[0]
+                    for _, inner_node in self.ctx.node_map.items():
+                        inputs = inner_node.inputs
+                        for one_input in inputs.values():
+                            if name in one_input:
+                                output_node_type.append(inner_node.type)
+                for ops in output_node_type:
+                    if ops.count("dequantize") and not ops.count(
+                            "quantize_dequantize"):
+                        return "static"
+        return "dynamic"
 
     def __str__(self):
         graph_str = 'graph { \n'
@@ -176,6 +252,9 @@ class ONNXGraph(Graph):
             weight = param['data']
             if weight is not np.ndarray:
                 weight = np.array(weight)
+            if param['dtype'] == paddle.int64 or param[
+                    'dtype'] == paddle.int32 or param['dtype'] == paddle.bool:
+                weight = weight.astype("int32")
             tensor = helper.make_tensor(
                 name=name,
                 dims=param['shape'],
@@ -184,6 +263,23 @@ class ONNXGraph(Graph):
             node = helper.make_node(
                 'Constant', inputs=[], outputs=[name], value=tensor)
             self.parameters[name] = node
+
+    def update_parameters(self, name, param):
+        weight = param['data']
+        if weight is not np.ndarray:
+            weight = np.array(weight)
+
+        tensor = helper.make_tensor(
+            name=name,
+            dims=param['shape'],
+            data_type=dtypes.DTYPE_PADDLE_ONNX_MAP[param['dtype']],
+            vals=weight.flatten().tolist())
+        node = helper.make_node(
+            'Constant', inputs=[], outputs=[name], value=tensor)
+        if name in self.parameters:
+            self.parameters.pop(name)
+        self.parameters[name] = node
+        self.paddle_parameters[name] = param
 
     def build_input_nodes(self, input_nodes):
         # build input nodes
@@ -204,9 +300,13 @@ class ONNXGraph(Graph):
 
     def build_op_nodes(self, node_map):
         OpMapper.check_support_status(node_map, self.opset_version)
+        if self.quantize_model_mode in ["static"]:
+            graph_helper.static_quantize_pre_convert(self)
         # build op nodes
         for name, node in list(node_map.items()):
             OpMapper.mapping(self, node, self.operator_export_type)
+        if self.quantize_model_mode in ["static"]:
+            graph_helper.static_quantize_post_process(self)
 
     def make_value_info(self, name, shape, dtype):
         tensor_info = helper.make_tensor_value_info(
@@ -290,8 +390,7 @@ class ONNXGraph(Graph):
         return onnx_proto
 
     def export_proto(self, enable_onnx_checker=False, output_names=None):
-
-        op_nodes = [node.onnx_node for node in self.node_map.values()]
+        op_nodes = [node.onnx_node for node in self.get_topo_sort_list()]
         weight_nodes = [node for node in self.parameters.values()]
 
         onnx_graph = helper.make_graph(
@@ -319,12 +418,14 @@ class ONNXGraph(Graph):
               opset_version,
               operator_export_type="ONNX",
               verbose=False,
-              auto_update_opset=True):
+              auto_update_opset=True,
+              deploy_backend=None):
         onnx_graph = ONNXGraph(
             paddle_graph,
             opset_version=opset_version,
             operator_export_type=operator_export_type,
-            auto_update_opset=auto_update_opset)
+            auto_update_opset=auto_update_opset,
+            deploy_backend=deploy_backend)
         onnx_graph.build_parameters(paddle_graph.parameters)
         onnx_graph.build_input_nodes(paddle_graph.input_nodes)
         onnx_graph.build_output_nodes(paddle_graph.output_nodes)

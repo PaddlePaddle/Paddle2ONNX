@@ -107,6 +107,13 @@ def arg_parser():
         type=ast.literal_eval,
         default=True,
         help="whether enable auto_update_opset, default is True")
+    parser.add_argument(
+        "--deploy_backend",
+        "-b",
+        type=_text_type,
+        default=None,
+        help="When export quantize model, set your deploy backend, can be set to ONNXRuntime TensorRt or Others"
+    )
     return parser
 
 
@@ -139,6 +146,7 @@ def program2onnx(model_dir,
                  operator_export_type="ONNX",
                  input_shape_dict=None,
                  output_names=None,
+                 deploy_backend=None,
                  auto_update_opset=True):
     try:
         import paddle
@@ -207,6 +215,7 @@ def program2onnx(model_dir,
         enable_onnx_checker=enable_onnx_checker,
         operator_export_type=operator_export_type,
         auto_update_opset=auto_update_opset,
+        deploy_backend=deploy_backend,
         output_names=output_names)
 
 
@@ -280,6 +289,7 @@ def main():
         operator_export_type=operator_export_type,
         input_shape_dict=input_shape_dict,
         output_names=args.output_names,
+        deploy_backend=args.deploy_backend,
         auto_update_opset=args.enable_auto_update_opset)
 
 

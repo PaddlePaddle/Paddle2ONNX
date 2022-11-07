@@ -18,6 +18,7 @@ import copy
 from paddle2onnx.legacy.constant import dtypes
 import paddle
 from onnx import TensorProto
+import numpy as np
 
 
 def is_static_shape(shape):
@@ -84,8 +85,8 @@ def split_helper(graph, input, axis=0, split=None, outputs=None):
         split_node = graph.make_node(
             "Split", inputs=inputs, axis=axis, outputs=outputs)
         return split_node
-    
-    
+
+
 def slice_helper(graph,
                  input,
                  axes,
@@ -430,3 +431,69 @@ def get_node_attr_value(graph,
     else:
         value = node.attr(attr_name)
         return value, False
+
+
+def get_param_from_paddle_graph(graph, name):
+    weight = None
+    param = None
+    if name in graph.paddle_parameters.keys():
+        param = graph.paddle_parameters[name]
+        weight = param['data']
+    return param, weight
+
+
+def compute_scale_zp(rmin, rmax, qmin, qmax, symmetric=False):
+    rmin = min(rmin, 0)
+    rmax = max(rmax, 0)
+
+    if symmetric:
+        absmax = max(abs(rmin), abs(rmax))
+        rmin = -absmax
+        rmax = +absmax
+
+    scale = (rmax - rmin) / float(qmax - qmin) if rmax != rmin else 1.0
+    zero_point = round(qmin - rmin / scale)
+
+    return [zero_point, scale]
+
+
+def quantize_data(data, symmetric):
+    rmin = 0
+    rmax = 0
+    zero_point = 0
+    scale = 1.0
+    if len(data):
+        rmin = min(data)
+        rmax = max(data)
+        if symmetric:
+            (qmin, qmax) = (-127, 127)
+        else:
+            (qmin, qmax) = (-128, 127)
+
+        zero_point, scale = compute_scale_zp(rmin, rmax, qmin, qmax, symmetric)
+
+    return rmin, rmax, zero_point, scale
+
+
+def quantize_weight_per_channel(weights, channel_axis):
+    channel_count = weights.shape[channel_axis]
+    rmin_list = []
+    rmax_list = []
+    zero_point_list = []
+    scale_list = []
+    for i in range(channel_count):
+        per_channel_data = weights.take(i, channel_axis)
+        rmin, rmax, zero_point, scale = quantize_data(
+            per_channel_data.flatten().tolist(), True)
+        rmin_list.append(rmin)
+        rmax_list.append(rmax)
+        zero_point_list.append(zero_point)
+        scale_list.append(scale)
+
+    return scale_list, zero_point_list
+
+
+def quantize_weight(weight):
+    # Update packed weight, zero point, and scale initializers
+    _, _, zero_point, scale = quantize_data(weight.flatten().tolist(), True)
+    return [scale], [zero_point]

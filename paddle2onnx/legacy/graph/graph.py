@@ -234,6 +234,9 @@ class Graph(object):
         if name in self.node_map:
             node = self.node_map.pop(name)
             return node
+        if name in self.parameters:
+            node = self.parameters.pop(name)
+            return node
         raise TypeError('Node with name:{} not in graph'.format(name))
 
     def remove_node(self, node):

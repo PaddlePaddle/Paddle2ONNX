@@ -31,12 +31,15 @@ def export_onnx(paddle_graph,
                 operator_export_type="ONNX",
                 verbose=False,
                 auto_update_opset=True,
+                deploy_backend=None,
                 output_names=None):
     onnx_graph = ONNXGraph.build(paddle_graph, opset_version,
                                  operator_export_type, verbose,
-                                 auto_update_opset)
-    onnx_graph = PassManager.run_pass(
-        onnx_graph, ['dumplicate_names_pass', 'inplace_node_pass'])
+                                 auto_update_opset, deploy_backend)
+    onnx_graph = PassManager.run_pass(onnx_graph, [
+        'dumplicate_names_pass', 'inplace_node_pass',
+        'quantize_model_process_pass', 'remove_isolated_node_pass'
+    ])
     onnx_proto = onnx_graph.export_proto(enable_onnx_checker, output_names)
 
     if save_file is None:
@@ -48,6 +51,16 @@ def export_onnx(paddle_graph,
     with open(save_file, 'wb') as f:
         f.write(onnx_proto.SerializeToString())
     logging.info("ONNX model saved in {}".format(save_file))
+    if onnx_graph.quantize_model_mode == "float":
+        return
+    if onnx_graph.deploy_backend in ["tensorrt", "onnxruntime"]:
+        return
+    max_range_file_path = os.path.join(path, "max_range.txt")
+    with open(max_range_file_path, 'wb') as f:
+        for tensor, val in onnx_graph.quantize_params_dict.items():
+            tensor = tensor + ": " + str(val[0]) + ", " + str(val[1])
+            f.write(tensor.encode())
+    logging.info("Tensor max range saved in {}".format(max_range_file_path))
 
 
 def program2onnx(program,
@@ -59,6 +72,7 @@ def program2onnx(program,
                  enable_onnx_checker=False,
                  operator_export_type="ONNX",
                  auto_update_opset=True,
+                 deploy_backend=None,
                  **configs):
     from paddle import fluid
     if hasattr(paddle, 'enable_static'):
@@ -99,6 +113,7 @@ def program2onnx(program,
             enable_onnx_checker,
             operator_export_type,
             auto_update_opset=auto_update_opset,
+            deploy_backend=deploy_backend,
             output_names=output_names)
     else:
         raise TypeError(
@@ -193,6 +208,15 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
                 "The auto_update_opset should be 'bool', but received type is %s."
                 % type(configs['auto_update_opset']))
 
+    deploy_backend = None
+    if 'deploy_backend' in configs:
+        if isinstance(configs['deploy_backend'], six.string_types):
+            deploy_backend = configs['deploy_backend']
+        else:
+            raise TypeError(
+                "The deploy_backend should be 'str', but received type is %s." %
+                type(configs['deploy_backend']))
+
     output_names = None
     if 'output_names' in configs:
         output_names = configs['output_names']
@@ -203,4 +227,4 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
 
     return export_onnx(paddle_graph, save_file, opset_version,
                        enable_onnx_checker, operator_export_type, verbose,
-                       auto_update_opset, output_names)
+                       auto_update_opset, deploy_backend, output_names)

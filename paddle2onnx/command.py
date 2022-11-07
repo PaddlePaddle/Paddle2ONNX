@@ -119,6 +119,13 @@ def arg_parser():
         type=ast.literal_eval,
         default=True,
         help="whether enable auto_update_opset, default is True")
+    parser.add_argument(
+        "--deploy_backend",
+        "-b",
+        type=_text_type,
+        default=None,
+        help="When export quantize model, set your deploy backend, can be set to ONNXRuntime TensorRT or Others"
+    )
     return parser
 
 
@@ -154,6 +161,7 @@ def program2onnx(model_dir,
                  operator_export_type="ONNX",
                  input_shape_dict=None,
                  output_names=None,
+                 deploy_backend=None,
                  auto_update_opset=True):
     logging.warning(
         "[Deprecated] `paddle2onnx.command.program2onnx` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
@@ -162,7 +170,7 @@ def program2onnx(model_dir,
     return program2onnx(model_dir, save_file, model_filename, params_filename,
                         opset_version, enable_onnx_checker,
                         operator_export_type, input_shape_dict, output_names,
-                        auto_update_opset)
+                        deploy_backend, auto_update_opset)
 
 
 def main():
@@ -241,6 +249,7 @@ def main():
         operator_export_type=operator_export_type,
         input_shape_dict=input_shape_dict,
         output_names=args.output_names,
+        deploy_backend=args.deploy_backend,
         auto_update_opset=args.enable_auto_update_opset)
     logging.info("===============Make PaddlePaddle Better!================")
     logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")

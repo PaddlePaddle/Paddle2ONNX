@@ -465,6 +465,24 @@ class Norm():
             axis=node.attr('axis'))
 
 
+@op_mapper('data_norm')
+class DataNorm():
+    support_opset_version_range = (1, 12)
+
+    @classmethod
+    def opset_1(cls, graph, node, **kw):
+        mean_arr = graph.make_node(
+            'Div', inputs=node.input('BatchSum') + node.input('BatchSize'))
+        scale_arr = graph.make_node(
+            'Div',
+            inputs=node.input('BatchSize') + node.input('BatchSquareSum'))
+        scale_arr = graph.make_node('Sqrt', inputs=[scale_arr])
+        out = graph.make_node('Sub', inputs=node.input('X') + [mean_arr])
+
+        node = graph.make_node(
+            'Mul', inputs=[out, scale_arr], outputs=node.output('Y'))
+
+
 @op_mapper('softshrink')
 class SoftShrink():
     support_opset_version_range = (9, 15)
@@ -561,9 +579,6 @@ class LayerNorm():
         add_eps = graph.make_node("Add", inputs=[variance, epsilon])
         denominator = graph.make_node("Sqrt", inputs=[add_eps])
 
-        ipt_shape = graph.make_node("Shape", inputs=[ipt])
-        weight_shape = mapper_helper.slice_helper(
-            graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
         if 'Bias' in node.inputs and 'Scale' in node.inputs and len(
                 node.input('Scale')) > 0 and len(node.input('Bias')) > 0:
             if normalized_shape == ipt_dims - 1:
@@ -574,6 +589,9 @@ class LayerNorm():
                 bias = graph.make_node(
                     "Reshape", inputs=[node.input('Bias', 0), shape_const])
             else:
+                ipt_shape = graph.make_node("Shape", inputs=[ipt])
+                weight_shape = mapper_helper.slice_helper(
+                    graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
                 scale = graph.make_node(
                     "Reshape", inputs=[node.input('Scale', 0), weight_shape])
                 bias = graph.make_node(
@@ -589,6 +607,9 @@ class LayerNorm():
                 bias = graph.make_node(
                     "Reshape", inputs=[node.input('Bias', 0), shape_const])
             else:
+                ipt_shape = graph.make_node("Shape", inputs=[ipt])
+                weight_shape = mapper_helper.slice_helper(
+                    graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
                 bias = graph.make_node(
                     "Reshape", inputs=[node.input('Bias', 0), weight_shape])
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
@@ -601,6 +622,9 @@ class LayerNorm():
                 scale = graph.make_node(
                     "Reshape", inputs=[node.input('Scale', 0), shape_const])
             else:
+                ipt_shape = graph.make_node("Shape", inputs=[ipt])
+                weight_shape = mapper_helper.slice_helper(
+                    graph, ipt_shape, [0], [ipt_dims - len(axes)], [ipt_dims])
                 scale = graph.make_node(
                     "Reshape", inputs=[node.input('Scale', 0), weight_shape])
             layer_norm = graph.make_node("Div", inputs=[numerator, denominator])
