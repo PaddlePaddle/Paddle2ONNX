@@ -14,6 +14,7 @@
 
 #include "paddle2onnx/mapper/exporter.h"
 
+#include <google/protobuf/message.h>
 #include <onnx/checker.h>
 
 #include <array>
@@ -171,13 +172,80 @@ void ModelExporter::ProcessGraphDumplicateNames(
   }
 }
 
-std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
-                               bool auto_upgrade_opset, bool verbose,
-                               bool enable_onnx_checker,
-                               bool enable_experimental_op,
-                               bool enable_optimize,
-                               const std::string& deploy_backend,
-                               std::string* calibration_cache) {
+void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
+                                     const std::string& external_file_path,
+                                     bool* save_external) {
+  P2OLogger() << "The exported ONNX model is bigger than 2G, external data "
+                 "will save to file: "
+              << external_file_path << std::endl;
+  std::string file_name = GetFilenameFromPath(external_file_path);
+  if (save_external) {
+    *save_external = true;
+  }
+  std::fstream f(external_file_path, std::ios::out);
+  Assert(f.is_open(), "Failed to open: " + external_file_path +
+                          " file to save external data");
+  for (auto index = 0; index < graph->node_size(); index++) {
+    auto node = graph->mutable_node(index);
+    if (node->op_type() != "Constant") {
+      continue;
+    }
+    for (auto i = 0; i < node->attribute_size(); i++) {
+      auto attr = node->mutable_attribute(i);
+      if (attr->name() != "value") {
+        continue;
+      }
+      auto tensor = attr->mutable_t();
+
+      if (tensor->raw_data().size() <= 128) {
+        continue;
+      }
+
+      tensor->set_data_location(TensorProto::EXTERNAL);
+      auto external_data = tensor->add_external_data();
+      external_data->set_key("location");
+      external_data->set_value(file_name);
+
+      external_data = tensor->add_external_data();
+      external_data->set_key("offset");
+      f.seekg(0, std::ios::end);
+      int64_t offset = f.tellg();
+      external_data->set_value(std::to_string(offset));
+      auto raw_data = tensor->raw_data();
+      f << raw_data;
+      external_data = tensor->add_external_data();
+      external_data->set_key("length");
+      int64_t raw_datas_size = raw_data.size();
+      external_data->set_value(std::to_string(raw_datas_size));
+      tensor->clear_raw_data();
+    }
+  }
+  f.close();
+}
+void ModelExporter::ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
+                                const bool& verbose) {
+  // TODO(jiangjiajun)
+  // If we need to integrate with framework
+  // this check will return a information
+  // to let framework know the conversion is
+  // pass or fail
+  try {
+    // ONNX_NAMESPACE::checker::check_model(*(model.get()));
+    ONNX_NAMESPACE::checker::check_model(model);
+  } catch (const std::exception& e) {
+    P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
+    P2OLogger(verbose) << "Model checker error log: " << e.what() << std::endl;
+  }
+  P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
+                     << std::endl;
+}
+
+std::string ModelExporter::Run(
+    const PaddleParser& parser, int opset_version, bool auto_upgrade_opset,
+    bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
+    bool enable_optimize, const std::string& deploy_backend,
+    std::string* calibration_cache, const std::string& external_file,
+    bool* save_external) {
   _deploy_backend = deploy_backend;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
@@ -274,9 +342,6 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
         deploy_backend, parser, calibration_cache);
     // Update int8 weights in quantized OP to float32
     UpdateParameters(_helper.updated_params);
-    // std::ofstream cache_file;
-    // cache_file.open(calibration_file, std::ios::out);
-    // cache_file << calibration_cache;
   }
   // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
@@ -296,25 +361,25 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
     *(graph->add_value_info()) = (*item.get());
   }
 
-  // TODO(jiangjiajun)
-  // If we need to integrate with framework
-  // this check will return a information
-  // to let framework know the conversion is
-  // pass or fail
-  if (enable_onnx_checker) {
-    try {
-      ONNX_NAMESPACE::checker::check_model(*(model.get()));
-    } catch (...) {
-      P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
-      return "";
+  std::string external_data_file;
+  if (model->ByteSizeLong() > INT_MAX) {
+    if (external_file.empty()) {
+      external_data_file = "external_data";
+    } else {
+      external_data_file = external_file;
     }
-    P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
-                       << std::endl;
   }
 
   std::string out;
   if (enable_optimize) {
-    auto const opt_model = Optimize(*(model.get()));
+    auto opt_model = Optimize(*(model.get()));
+    if (external_data_file.size()) {
+      SaveExternalData(opt_model.mutable_graph(), external_data_file,
+                       save_external);
+    }
+    if (enable_onnx_checker) {
+      ONNXChecker(opt_model, verbose);
+    }
     if (!opt_model.SerializeToString(&out)) {
       P2OLogger(verbose)
           << "Error happenedd while optimizing the exported ONNX model."
@@ -322,6 +387,12 @@ std::string ModelExporter::Run(const PaddleParser& parser, int opset_version,
       return "";
     }
   } else {
+    if (external_data_file.size()) {
+      SaveExternalData(graph, external_data_file, save_external);
+    }
+    if (enable_onnx_checker) {
+      ONNXChecker(*(model.get()), verbose);
+    }
     if (!model->SerializeToString(&out)) {
       P2OLogger(verbose)
           << "Error happened while optimizing the exported ONNX model."

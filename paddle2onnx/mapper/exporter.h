@@ -22,6 +22,20 @@
 #include "paddle2onnx/mapper/quantize_helper.h"
 #include "paddle2onnx/parser/parser.h"
 
+#ifdef _MSC_VER
+#define PATH_SEP "\\"
+#else
+#define PATH_SEP "/"
+#endif
+
+inline std::string GetFilenameFromPath(const std::string& path) {
+  auto pos = path.find_last_of(PATH_SEP);
+  if (pos == std::string::npos) {
+    return path;
+  }
+  return path.substr(pos + 1);
+}
+
 namespace paddle2onnx {
 
 struct ModelExporter {
@@ -85,13 +99,22 @@ struct ModelExporter {
                           std::set<std::string>* unsupported_ops,
                           bool enable_experimental_op);
 
+  void SaveExternalData(::paddle2onnx::GraphProto* graph,
+                        const std::string& external_file_path,
+                        bool* save_external = nullptr);
+
+  void ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
+                   const bool& verbose);
+
   std::string Run(const PaddleParser& parser, int opset_version = 9,
                   bool auto_upgrade_opset = true, bool verbose = false,
                   bool enable_onnx_checker = true,
                   bool enable_experimental_op = false,
                   bool enable_optimize = true,
                   const std::string& deploy_backend = "onnxruntime",
-                  std::string* calibration_cache = nullptr);
+                  std::string* calibration_cache = nullptr,
+                  const std::string& external_file = "",
+                  bool* save_external = nullptr);
 };
 
 }  // namespace paddle2onnx

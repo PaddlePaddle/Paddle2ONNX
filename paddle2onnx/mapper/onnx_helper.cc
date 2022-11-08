@@ -14,6 +14,8 @@
 
 #include "paddle2onnx/mapper/onnx_helper.h"
 
+#include <fstream>
+
 namespace paddle2onnx {
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,

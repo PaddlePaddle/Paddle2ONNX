@@ -266,13 +266,12 @@ bool PaddleParser::LoadParams(const std::string& path) {
     return false;
   }
   is.seekg(0, std::ios::end);
-  int total_size = is.tellg();
+  int64_t total_size = is.tellg();
   is.seekg(0, std::ios::beg);
-
   std::vector<std::string> var_names;
   GetParamNames(&var_names);
 
-  int read_size = 0;
+  int64_t read_size = 0;
   while (read_size < total_size) {
     {
       // read version, we don't need this

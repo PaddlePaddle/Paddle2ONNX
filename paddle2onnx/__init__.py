@@ -42,19 +42,20 @@ def export(model_file,
            enable_optimize=True,
            custom_op_info=None,
            deploy_backend="onnxruntime",
-           calibration_file=""):
+           calibration_file="",
+           external_file=""):
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     deploy_backend = deploy_backend.lower()
     if custom_op_info is None:
         onnx_model_str = c_p2o.export(
             model_file, params_file, opset_version, auto_upgrade_opset, verbose,
             enable_onnx_checker, enable_experimental_op, enable_optimize, {},
-            deploy_backend, calibration_file)
+            deploy_backend, calibration_file, external_file)
     else:
         onnx_model_str = c_p2o.export(
             model_file, params_file, opset_version, auto_upgrade_opset, verbose,
             enable_onnx_checker, enable_experimental_op, enable_optimize,
-            custom_op_info, deploy_backend, calibration_file)
+            custom_op_info, deploy_backend, calibration_file, external_file)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
