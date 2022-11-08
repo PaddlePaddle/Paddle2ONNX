@@ -225,7 +225,7 @@ def main():
             args.external_filename = "external_data"
 
         base_path = os.path.dirname(args.save_file)
-        if (base_path):
+        if base_path and not os.path.exists(base_path):
             os.mkdir(base_path)
         external_file = os.path.join(base_path, args.external_filename)
 
