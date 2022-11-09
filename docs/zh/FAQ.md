@@ -9,3 +9,12 @@
 
 ### Q2: 转换出错，提示"Fixed shape is required, refer this doc for more information"
 - 参考Q1的解决方法
+
+### Q3: 转换后的模型，ONNX Runtime加载提示`Unkown model file format version`?
+- Paddle2ONNX使用了最新的ONNX协议，导出的模型在使用低版本ONNX Runtime加载时，会出现此问题，可通过如下代码修改模型IR VERSION解决，重新加载新保存的`new_model.onnx`即可。
+```
+import onnx
+model = onnx.load("model.onnx")
+model.ir_version = 7
+onnx.save(model, "new_model.onnx")
+```
