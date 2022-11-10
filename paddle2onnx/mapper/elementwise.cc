@@ -63,8 +63,8 @@ void ElementwiseMapper::Opset7() {
     std::string broadcast_shape_node =
         helper_->Constant(GetOnnxDtype(P2ODataType::INT64), broadcast_shape);
     auto y_node = helper_->MakeNode("Reshape", {y_name, broadcast_shape_node});
-    output_name = helper_->MakeNode(iter->second, {x_name, y_node->output(0)} p)
-                      ->output(0);
+    output_name =
+        helper_->MakeNode(iter->second, {x_name, y_node->output(0)})->output(0);
   }
 
   if (input_x_info[0].dtype == P2ODataType::BOOL &&
