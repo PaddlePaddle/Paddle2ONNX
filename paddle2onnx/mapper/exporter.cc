@@ -151,7 +151,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
         }
         auto new_tensor_name =
             MapperHelper::Get()->GenName(renamed_tensor_name);
-        P2OLogger() << "Find dumplicate output name '" << renamed_tensor_name
+        P2OLogger(verbose_) << "Find dumplicate output name '" << renamed_tensor_name
                     << "', it will rename to '" << new_tensor_name << "'."
                     << std::endl;
         *(item->mutable_output(i)) = new_tensor_name;
@@ -247,6 +247,7 @@ std::string ModelExporter::Run(
     std::string* calibration_cache, const std::string& external_file,
     bool* save_external) {
   _deploy_backend = deploy_backend;
+  _verbose = verbose;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
   _current_exported_num = 0;
@@ -299,7 +300,7 @@ std::string ModelExporter::Run(
     }
   } else {
     if (min_opset > opset_version) {
-      P2OLogger() << "Opset version will change to " << min_opset << " from "
+      P2OLogger(verbose_) << "Opset version will change to " << min_opset << " from "
                   << opset_version << std::endl;
       opset_version = min_opset;
     }

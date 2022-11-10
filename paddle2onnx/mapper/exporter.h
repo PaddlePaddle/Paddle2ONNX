@@ -45,6 +45,7 @@ struct ModelExporter {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
   // The _deploy_backend will pass to Mapper to influence the conversion
   std::string _deploy_backend = "onnxruntime";
+  bool _verbose = false;
   OnnxHelper _helper;
   int32_t _total_ops_num = 0;
   int32_t _current_exported_num = 0;
