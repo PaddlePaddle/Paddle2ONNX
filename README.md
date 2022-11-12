@@ -10,6 +10,8 @@
 - [使用ONNX Runtime部署Paddle模型 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/runtime)
 - [使用OpenVINO部署Paddle模型 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/runtime)
 - [使用TensorRT部署Paddle模型 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/runtime)
+- [PaddleOCR模型部署 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/ocr)
+- [PaddleDetection模型部署 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/paddledetection)
 
 ## 简介
 
