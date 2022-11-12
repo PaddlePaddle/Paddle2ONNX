@@ -2,9 +2,16 @@
 
 简体中文 | [English](README_en.md)
 
-## 简介
+## 🆕 新开源项目FastDeploy
 
-【更新】如若你转换的目的是用于部署TensorRT、OpenVINO、ONNX Runtime，当前飞桨提供FastDeploy，支持150+模型直接部署到这些引擎上，Paddle2ONNX的转换流程也已经无需用户显式调用，帮助大家解决在转换过程中的各种Trick及对齐问题，欢迎关注star! [https://github.com/PaddlePaddle/FastDeploy](https://github.com/PaddlePaddle/FastDeploy)
+如若你转换的目的是用于部署TensorRT、OpenVINO、ONNX Runtime，当前飞桨提供[FastDeploy](https://github.com/PaddlePaddle/FastDeploy)，支持150+模型直接部署到这些引擎上，Paddle2ONNX的转换流程也已经无需用户显式调用，帮助大家解决在转换过程中的各种Trick及对齐问题。
+
+- 欢迎Star🌟 [https://github.com/PaddlePaddle/FastDeploy](https://github.com/PaddlePaddle/FastDeploy)
+- [使用ONNX Runtime部署Paddle模型 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/runtime)
+- [使用OpenVINO部署Paddle模型 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/runtime)
+- [使用TensorRT部署Paddle模型 C++ & Python](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/runtime)
+
+## 简介
 
 Paddle2ONNX 支持将 **PaddlePaddle** 模型格式转化到 **ONNX** 模型格式。通过 ONNX 可以完成将 Paddle 模型到多种推理引擎的部署，包括 TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持的推理引擎或硬件。
 
