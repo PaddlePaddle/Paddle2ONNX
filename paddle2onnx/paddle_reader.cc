@@ -60,7 +60,7 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
     }
   }
   for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
-    if (parser.GetOpDesc(0, i).type().find("nms") != std::string::npos) {
+    if (parser.GetOpDesc(0, i).type().find("multiclass_nms3") != std::string::npos) {
       has_nms = true;
       auto& op = parser.GetOpDesc(0, i);
       parser.GetOpAttr(op, "background_label", &nms_params.background_label);
