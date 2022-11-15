@@ -34,6 +34,16 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   return spans[0] == spans[spans.size() - 1];
 }
 
+void Pool2dMapper::ExportAsCustomOp() {
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  auto node = helper_->MakeNode(custom_op_name, {input_info[0].name},
+                                {output_info[0].name});
+  node->set_domain("Paddle");
+  AddAttribute(node, "pooling_type", pooling_type_);
+  AddAttribute(node, "output_size", output_info[0].shape);
+}
+
 void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
                                 const std::vector<TensorInfo>& output_info) {
   int64_t input_h = input_info[0].shape[2];
@@ -174,6 +184,9 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
   }
 
   if (adaptive_) {
+    if (this->deploy_backend == "onnxruntime") {
+      return 7;
+    }
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
         if (one_input.shape[i] == -1) {
