@@ -155,6 +155,9 @@ void DequantizeLinearMapper::Opset10() {
     if (helper_->GetOpsetVersion() >= 13) {
       AddAttribute(node, "axis", quant_axis_);
     }
+    QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
+                               quant_axis_);
+    helper_->quantize_info[GetOutput("Y")[0].name] = quantize_info;
     return;
   }
   ConvertInt8ToFp32(onnx_scales, &weight);
