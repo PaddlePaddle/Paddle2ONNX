@@ -34,9 +34,25 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   return spans[0] == spans[spans.size() - 1];
 }
 
-bool Pool2dMapper::GetExportAsCustomOp() {
+bool Pool2dMapper::IsExportAsCustomOp() {
   if (export_as_custom_op && adaptive_) {
-    return true;
+    auto input_info = GetInput("X");
+    auto output_info = GetOutput("Out");
+    for (auto one_input : input_info) {
+      for (auto i = 2; i < one_input.shape.size(); ++i) {
+        if (one_input.shape[i] == -1) {
+          return true;
+        }
+      }
+    }
+    int64_t input_h = input_info[0].shape[2];
+    int64_t input_w = input_info[0].shape[3];
+    int64_t output_h = output_info[0].shape[2];
+    int64_t output_w = output_info[0].shape[3];
+    if (output_h == -1 || output_w == -1 || !IsSameSpan(input_h, output_h) ||
+        !IsSameSpan(input_w, output_w)) {
+      return true;
+    }
   }
   return false;
 }
@@ -48,6 +64,17 @@ void Pool2dMapper::ExportAsCustomOp() {
                                 {output_info[0].name});
   node->set_domain("Paddle");
   AddAttribute(node, "pooling_type", pooling_type_);
+  for (auto i = 1; i < output_info[0].shape.size(); i++) {
+    if (output_info[0].shape[i] == -1) {
+      if (input_info[0].shape[i] == -1) {
+        Assert(false,
+               "Can not convert to AdaptivePool custom OP, because the shapes "
+               "of the input and output are unknown.");
+      } else {
+        output_info[0].shape[i] = input_info[0].shape[i];
+      }
+    }
+  }
   AddAttribute(node, "output_size", output_info[0].shape);
 }
 
@@ -191,7 +218,7 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
   }
 
   if (adaptive_) {
-    if (this->deploy_backend == "onnxruntime") {
+    if (export_as_custom_op) {
       return 7;
     }
     for (auto one_input : input_info) {

@@ -90,14 +90,14 @@ class Mapper {
   // if return value < 0, means the op is not supported.
   virtual int32_t GetMinOpset(bool verbose = false) { return 7; }
 
-  virtual bool GetExportAsCustomOp() { return export_as_custom_op; }
+  virtual bool IsExportAsCustomOp() { return export_as_custom_op; }
 
   void Run() {
     int32_t opset_version = helper_->GetOpsetVersion();
     Assert(opset_version >= 7 && opset_version <= MAX_ONNX_OPSET_VERSION,
            "[Paddle2ONNX] Only support opset_version in range of [7, " +
                std::to_string(MAX_ONNX_OPSET_VERSION) + "].");
-    if (GetExportAsCustomOp()) {
+    if (IsExportAsCustomOp()) {
       return ExportAsCustomOp();
     }
     if (opset_version == 16) {

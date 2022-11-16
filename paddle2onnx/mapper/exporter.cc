@@ -462,6 +462,10 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
       } else {
         auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser,
                                                         &_helper, i, j);
+        auto iter = custom_ops.find(op.type());
+        if (iter != custom_ops.end()) {
+          mapper->export_as_custom_op = true;
+        }
         current_min_opset = mapper->GetMinOpset(verbose);
         delete mapper;
       }
