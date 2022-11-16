@@ -331,9 +331,11 @@ std::string ModelExporter::Run(
   auto opset_id = model->add_opset_import();
   opset_id->set_domain("");
   opset_id->set_version(opset_version);
-  auto opset_paddle_id = model->add_opset_import();
-  opset_paddle_id->set_domain("Paddle");
-  opset_paddle_id->set_version(1);
+  if (custom_ops.size()) {
+    auto opset_paddle_id = model->add_opset_import();
+    opset_paddle_id->set_domain("Paddle");
+    opset_paddle_id->set_version(1);
+  }
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
   if (parser.is_quantized_model) {
