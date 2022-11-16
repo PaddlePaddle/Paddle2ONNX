@@ -34,6 +34,13 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   return spans[0] == spans[spans.size() - 1];
 }
 
+bool Pool2dMapper::GetExportAsCustomOp() {
+  if (export_as_custom_op && adaptive_) {
+    return true;
+  }
+  return false;
+}
+
 void Pool2dMapper::ExportAsCustomOp() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
