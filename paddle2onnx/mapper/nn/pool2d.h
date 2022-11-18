@@ -40,6 +40,8 @@ class Pool2dMapper : public Mapper {
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7();
+  void ExportAsCustomOp();
+  bool IsExportAsCustomOp();
 
  private:
   bool IsSameSpan(const int64_t& in_size, const int64_t& out_size);
