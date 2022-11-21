@@ -42,8 +42,7 @@ class NetMaxpool1d(BaseNet):
             return_mask=return_mask,
             ceil_mode=ceil_mode)
         if return_mask:
-            x1, x2 = x
-            x = x1 + x2
+            return x[0]
         return x
 
 
@@ -63,8 +62,7 @@ class TestMaxpool1dConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         return_mask = draw(st.booleans())
-        # TODO max_pool_with_index is not supported yet
-        return_mask = False
+
         ceil_mode = draw(st.booleans())
 
         kernel_type = draw(st.sampled_from(["int", "list"]))
@@ -152,8 +150,7 @@ class NetMaxpool2d(BaseNet):
             ceil_mode=ceil_mode,
             data_format=data_format)
         if return_mask:
-            x1, x2 = x
-            x = x1 + x2
+            return x[0]
         return x
 
 
@@ -174,8 +171,6 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
 
         # max_pool2d_with_index
         return_mask = draw(st.booleans())
-        # TODO max_pool_with_index is not supported yet
-        return_mask = False
 
         ceil_mode = draw(st.booleans())
 
@@ -311,8 +306,7 @@ class NetMaxpool3d(BaseNet):
             ceil_mode=ceil_mode,
             data_format=data_format)
         if return_mask:
-            x1, x2 = x
-            x = x1 + x2
+            return x[0]
         return x
 
 
@@ -333,8 +327,6 @@ class TestMaxpool3dConvert(OPConvertAutoScanTest):
         data_format = draw(st.sampled_from(["NCDHW"]))
 
         return_mask = draw(st.booleans())
-        # TODO max_pool_with_index is not supported yet
-        return_mask = False
 
         ceil_mode = draw(st.booleans())
 
