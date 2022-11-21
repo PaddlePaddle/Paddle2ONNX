@@ -236,7 +236,8 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
       continue;
     }
     // Add Miss scale for Mul and MatMul
-    if (node->op_type() == "Mul" || node->op_type() == "MatMul") {
+    if (node->op_type() == "Mul" || node->op_type() == "MatMul" ||
+        node->op_type() == "Add") {
       for (size_t i = 0; i < node->input_size(); ++i) {
         std::string node_input = node->input(i);
         if (helper_->quantize_info.find(node_input) !=
@@ -250,18 +251,30 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
         std::vector<int64_t> weight_shape;
         GetTensorShape(node_input, &weight_shape);
         int64_t quantize_axis = 1;
+        if (node->op_type() == "Add") {
+          quantize_axis = 0;
+        }
         std::vector<float> scale;
         std::vector<int64_t> zeros;
+
         if (weight_shape.size() == 1 || weight_shape.empty()) {
           GetTensorWiseQuantizeInfo(weight, &scale, &zeros);
         } else {
           GetChannelWiseQuantizeInfo(weight, weight_shape, quantize_axis,
                                      &scale, &zeros);
         }
-        auto weight_scale_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
-        auto weight_zero_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+        std::string weight_scale_node, weight_zero_node;
+        if (scale.size() == 1) {
+          weight_scale_node = helper_->Constant(
+              {}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
+          weight_zero_node = helper_->Constant(
+              {}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
+        } else {
+          weight_scale_node =
+              helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
+          weight_zero_node =
+              helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+        }
         QuantizeInfo weight_quantize_info(scale, zeros, weight_scale_node,
                                           weight_zero_node, quantize_axis);
         helper_->quantize_info[node_input] = weight_quantize_info;
