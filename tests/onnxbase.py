@@ -251,8 +251,9 @@ class APIOnnx(object):
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
-                         '.onnx'))
+            os.path.join(self.pwd, self.name,
+                         self.name + '_' + str(ver) + '.onnx'),
+            providers=['CPUExecutionProvider'])
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         return ort_outs
 
