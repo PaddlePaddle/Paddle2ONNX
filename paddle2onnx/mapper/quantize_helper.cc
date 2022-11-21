@@ -257,7 +257,8 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
         std::vector<float> scale;
         std::vector<int64_t> zeros;
 
-        if (weight_shape.size() == 1 || weight_shape.empty()) {
+        if (node->op_type() == "Add" || weight_shape.size() == 1 ||
+            weight_shape.empty()) {
           GetTensorWiseQuantizeInfo(weight, &scale, &zeros);
         } else {
           GetChannelWiseQuantizeInfo(weight, weight_shape, quantize_axis,
