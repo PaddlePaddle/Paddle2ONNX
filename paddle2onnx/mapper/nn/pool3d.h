@@ -27,17 +27,19 @@ class Pool3dMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     op_mapper_["max"] = {"MaxPool", "GlobalMaxPool"};
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
-    GetAttr("pooling_type", &pooling_type_);
-    GetAttr("data_format", &data_format_);
-    GetAttr("ksize", &k_size_);
-    GetAttr("ceil_mode", &ceil_mode_);
-    GetAttr("padding_algorithm", &padding_algorithm_);
     GetAttr("global_pooling", &global_pooling_);
     GetAttr("adaptive", &adaptive_);
-    GetAttr("paddings", &pads_);
     GetAttr("strides", &strides_);
-    GetAttr("exclusive", &exclusive_);
-    exclusive_ = !exclusive_;
+    GetAttr("paddings", &pads_);
+    GetAttr("ksize", &k_size_);
+    if (OpType() != "max_pool3d_with_index") {
+      GetAttr("pooling_type", &pooling_type_);
+      GetAttr("data_format", &data_format_);
+      GetAttr("ceil_mode", &ceil_mode_);
+      GetAttr("padding_algorithm", &padding_algorithm_);
+      GetAttr("exclusive", &exclusive_);
+      exclusive_ = !exclusive_;
+    }
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset7();

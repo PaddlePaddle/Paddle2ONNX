@@ -21,6 +21,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(pool2d, Pool2dMapper)
+REGISTER_MAPPER(max_pool2d_with_index, Pool2dMapper)
 
 bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   std::vector<int64_t> spans;
@@ -88,11 +89,18 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
   int64_t stride_w = std::floor(input_w / output_w);
   int64_t kernel_h = input_h - (output_h - 1) * stride_h;
   int64_t kernel_w = input_w - (output_w - 1) * stride_w;
-  auto iter = op_mapper_.find(pooling_type_);
+  std::string onnx_pool_type;
+  if (OpType() == "max_pool2d_with_index") {
+    onnx_pool_type = "MaxPool";
+  } else {
+    auto iter = op_mapper_.find(pooling_type_);
+    onnx_pool_type = iter->second[0];
+  }
+
   std::shared_ptr<ONNX_NAMESPACE::NodeProto>* node_ptr;
   auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                  P2ODataType::FP32);
-  auto node = helper_->MakeNode(iter->second[0], {input});
+  auto node = helper_->MakeNode(onnx_pool_type, {input});
   helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                     output_info[0].dtype);
   std::vector<int64_t> kernel_size = {kernel_h, kernel_w};
@@ -165,9 +173,14 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
     pads_.clear();
     pads_.resize(4, 0);
   }
-
-  auto iter = op_mapper_.find(pooling_type_);
-  auto node = helper_->MakeNode(iter->second[0], {input_x});
+  std::string onnx_pool_type;
+  if (OpType() == "max_pool2d_with_index") {
+    onnx_pool_type = "MaxPool";
+  } else {
+    auto iter = op_mapper_.find(pooling_type_);
+    onnx_pool_type = iter->second[0];
+  }
+  auto node = helper_->MakeNode(onnx_pool_type, {input_x});
   helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                     output_info[0].dtype);
 
@@ -183,10 +196,10 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   } else {
     AddAttribute(node, "pads", pads_);
   }
-  if (helper_->GetOpsetVersion() >= 10) {
+  if (OpType() != "max_pool2d_with_index" && helper_->GetOpsetVersion() >= 10) {
     AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
   }
-  if (pooling_type_ == "avg") {
+  if (OpType() != "max_pool2d_with_index" && pooling_type_ == "avg") {
     AddAttribute(node, "count_include_pad", static_cast<int64_t>(exclusive_));
   }
 }
@@ -241,7 +254,9 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
       return -1;
     }
   }
-
+  if (OpType() == "max_pool2d_with_index") {
+    return 9;
+  }
   auto iter = op_mapper_.find(pooling_type_);
   if (op_mapper_.end() == iter) {
     Error() << "Cannot find " << pooling_type_ << " in pool op_mapper."
@@ -271,10 +286,16 @@ void Pool2dMapper::Opset7() {
   }
 
   if (global_pooling_ || (adaptive_ && is_1x1_kernel)) {
-    auto iter = op_mapper_.find(pooling_type_);
+    std::string onnx_pool_type;
+    if (OpType() == "max_pool2d_with_index") {
+      onnx_pool_type = "GlobalMaxPool";
+    } else {
+      auto iter = op_mapper_.find(pooling_type_);
+      onnx_pool_type = iter->second[1];
+    }
     auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
-    auto output = helper_->MakeNode(iter->second[1], {input})->output(0);
+    auto output = helper_->MakeNode(onnx_pool_type, {input})->output(0);
     helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
                       output_info[0].dtype);
   } else if (adaptive_) {
