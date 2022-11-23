@@ -111,7 +111,8 @@ void ModelExporter::ProcessGraphDumplicateNames(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes) {
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
+    std::map<std::string, QuantizeInfo>* quantize_info) {
   // process dumplicate tensor names
   std::map<std::string, std::string> renamer;
   std::set<std::string> tensor_names;
@@ -154,6 +155,11 @@ void ModelExporter::ProcessGraphDumplicateNames(
         P2OLogger() << "Find dumplicate output name '" << renamed_tensor_name
                     << "', it will rename to '" << new_tensor_name << "'."
                     << std::endl;
+        if (quantize_info &&
+            quantize_info->find(renamed_tensor_name) != quantize_info->end()) {
+          (*quantize_info)[new_tensor_name] =
+              (*quantize_info)[renamed_tensor_name];
+        }
         *(item->mutable_output(i)) = new_tensor_name;
         renamer[renamed_tensor_name] = new_tensor_name;
       }
@@ -337,7 +343,8 @@ std::string ModelExporter::Run(
     opset_paddle_id->set_version(1);
   }
 
-  ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes);
+  ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes,
+                              &_helper.quantize_info);
   if (parser.is_quantized_model) {
     quantize_model_processer.ProcessQuantizeModel(
         &parameters, &inputs, &outputs, &_helper.nodes, &_helper,

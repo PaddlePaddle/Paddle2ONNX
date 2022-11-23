@@ -93,7 +93,8 @@ struct ModelExporter {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
+      std::map<std::string, QuantizeInfo>* quantize_info = nullptr);
 
   bool CheckIfOpSupported(const PaddleParser& parser,
                           std::set<std::string>* unsupported_ops,

@@ -235,7 +235,52 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
         type_iter == supported_quantize_type_.end()) {
       continue;
     }
+    // Add Miss scale for Mul and MatMul
+    if (node->op_type() == "Mul" || node->op_type() == "MatMul" ||
+        node->op_type() == "Add") {
+      for (size_t i = 0; i < node->input_size(); ++i) {
+        std::string node_input = node->input(i);
+        if (helper_->quantize_info.find(node_input) !=
+            helper_->quantize_info.end()) {
+          continue;
+        }
+        std::vector<float> weight;
+        if (!GetTensorByName(node_input, &weight)) {
+          continue;
+        }
+        std::vector<int64_t> weight_shape;
+        GetTensorShape(node_input, &weight_shape);
+        int64_t quantize_axis = 1;
+        if (node->op_type() == "Add") {
+          quantize_axis = 0;
+        }
+        std::vector<float> scale;
+        std::vector<int64_t> zeros;
 
+        if (node->op_type() == "Add" || weight_shape.size() == 1 ||
+            weight_shape.empty()) {
+          GetTensorWiseQuantizeInfo(weight, &scale, &zeros);
+        } else {
+          GetChannelWiseQuantizeInfo(weight, weight_shape, quantize_axis,
+                                     &scale, &zeros);
+        }
+        std::string weight_scale_node, weight_zero_node;
+        if (scale.size() == 1) {
+          weight_scale_node = helper_->Constant(
+              {}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
+          weight_zero_node = helper_->Constant(
+              {}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
+        } else {
+          weight_scale_node =
+              helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
+          weight_zero_node =
+              helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+        }
+        QuantizeInfo weight_quantize_info(scale, zeros, weight_scale_node,
+                                          weight_zero_node, quantize_axis);
+        helper_->quantize_info[node_input] = weight_quantize_info;
+      }
+    }
     std::vector<std::string> tensor_names;
     for (size_t i = 0; i < node->input_size(); ++i) {
       std::string node_input = node->input(i);
@@ -1019,7 +1064,7 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
     }
   }
   Assert(max_val > 0,
-         "[GetChannelWiseQuantizeInfo] Require the scale > 0, but now it's " +
+         "[GetTensorWiseQuantizeInfo] Require the scale > 0, but now it's " +
              std::to_string(max_val) + ".");
   scale->push_back(max_val / 127);
   zero->push_back(0);
