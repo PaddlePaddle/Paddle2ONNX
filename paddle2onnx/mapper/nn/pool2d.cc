@@ -39,6 +39,15 @@ bool Pool2dMapper::IsExportAsCustomOp() {
   if (export_as_custom_op && adaptive_) {
     auto input_info = GetInput("X");
     auto output_info = GetOutput("Out");
+    bool is_1x1_kernel = true;
+    for (auto i : k_size_) {
+      if (i != 1) {
+        is_1x1_kernel = false;
+      }
+    }
+    if (is_1x1_kernel) {
+      return false;
+    }
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
         if (one_input.shape[i] == -1) {
