@@ -291,6 +291,21 @@ void SoftMaxMapper::Opset7() {
   }
 }
 
+void SoftMaxMapper::Opset11() {
+  int64_t axis;
+  GetAttr("axis", &axis);
+  auto input_info = GetInput("X");
+
+  if (axis < 0) {
+    axis += input_info[0].Rank();
+  }
+
+  auto output_info = GetOutput("Out");
+  auto node =
+      helper_->MakeNode("Softmax", {input_info[0].name}, {output_info[0].name});
+  AddAttribute(node, "axis", axis);
+}
+
 void SoftMaxMapper::Opset13() {
   int64_t axis;
   GetAttr("axis", &axis);

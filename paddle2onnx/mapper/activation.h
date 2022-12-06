@@ -184,6 +184,7 @@ class SoftMaxMapper : public Mapper {
   }
 
   void Opset7();
+  void Opset11();
   void Opset13();
 
  private:
