@@ -39,6 +39,7 @@ bool Pool2dMapper::IsExportAsCustomOp() {
   if (export_as_custom_op && adaptive_) {
     auto input_info = GetInput("X");
     auto output_info = GetOutput("Out");
+    GetAttr("ksize", &k_size_);
     bool is_1x1_kernel = true;
     for (auto i : k_size_) {
       if (i != 1) {
