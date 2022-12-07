@@ -36,9 +36,13 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
 }
 
 bool Pool2dMapper::IsExportAsCustomOp() {
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  GetAttr("ksize", &k_size_);
+  if (global_pooling_ || (k_size_[0] == 1 && k_size_[1] == 1)) {
+    return false;
+  }
   if (export_as_custom_op && adaptive_) {
-    auto input_info = GetInput("X");
-    auto output_info = GetOutput("Out");
     bool is_1x1_kernel = true;
     for (auto i : k_size_) {
       if (i != 1) {
@@ -86,6 +90,8 @@ void Pool2dMapper::ExportAsCustomOp() {
     }
   }
   AddAttribute(node, "output_size", output_info[0].shape);
+  Warn() << "Pool2d is exported as custom operator: " << custom_op_name
+         << std::endl;
 }
 
 void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
@@ -240,14 +246,15 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
   }
 
   if (adaptive_) {
-    if (export_as_custom_op) {
-      return 7;
-    }
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
         if (one_input.shape[i] == -1) {
-          Error() << "Adaptive only support static input shape." << std::endl;
-          return -1;
+          if (export_as_custom_op) {
+            return 7;
+          } else {
+            Error() << "Adaptive only support static input shape." << std::endl;
+            return -1;
+          }
         }
       }
     }
@@ -257,10 +264,14 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     int64_t output_w = output_info[0].shape[3];
     if (output_h == -1 || output_w == -1 || !IsSameSpan(input_h, output_h) ||
         !IsSameSpan(input_w, output_w)) {
-      Error() << "Cannot convert adaptive pool with input_size: " << input_h
-              << " " << input_h << " output_size: " << output_h << " "
-              << output_w << std::endl;
-      return -1;
+      if (export_as_custom_op) {
+        return 7;
+      } else {
+        Error() << "Cannot convert adaptive pool with input_size: " << input_h
+                << " " << input_h << " output_size: " << output_h << " "
+                << output_w << std::endl;
+        return -1;
+      }
     }
   }
   if (OpType() == "max_pool2d_with_index") {
