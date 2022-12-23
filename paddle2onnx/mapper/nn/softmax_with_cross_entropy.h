@@ -30,7 +30,6 @@ class SoftmaxCrossEntropyLossMapper : public Mapper {
   }
   int32_t GetMinOpset(bool verbose = false);
   void Opset12();
-  // void Opset13();
 
  private:
   int64_t axis_ = -1;
