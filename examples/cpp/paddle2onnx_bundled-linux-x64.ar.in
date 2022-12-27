@@ -1,0 +1,10 @@
+create paddle2onnx-linux-x64/lib/libpaddle2onnx_bundled.a
+addlib paddle2onnx-linux-x64/lib/libonnx.a
+addlib paddle2onnx-linux-x64/lib/libonnx_proto.a
+addlib paddle2onnx-linux-x64/lib/libonnxifi_loader.a
+addlib paddle2onnx-linux-x64/lib/libprotobuf.a
+addlib paddle2onnx-linux-x64/lib/libprotoc.a
+addlib paddle2onnx-linux-x64/lib/libp2o_paddle_proto.a
+save
+end
+
