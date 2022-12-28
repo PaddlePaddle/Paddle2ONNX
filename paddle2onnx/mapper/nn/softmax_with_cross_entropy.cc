@@ -23,9 +23,9 @@ int32_t SoftmaxCrossEntropyLossMapper::GetMinOpset(bool verbose) {
             << std::endl;
     return -1;
   }
-  auto input_info = GetInput("Logits");
-  std::vector<int64_t> input_shape = input_info[0].shape;
-  if (input_shape.size() < 2) {
+  auto logits = GetInput("Logits");
+  std::vector<int64_t> logits_shape = logits[0].shape;
+  if (logits_shape.size() < 2) {
     Error() << "SoftmaxCrossEntropyLoss in onnx not support 1D logits."
             << std::endl;
     return -1;
@@ -44,13 +44,11 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
   size_t dim = logits_shape.size();
   if (axis_ < 0) {
     axis_ += dim;
-  } else if (axis_ == 1) {
-    auto squeeze_node =
-        // helper_->Squeeze(labels[0].name, std::vector<int64_t>(1, axis_));
-        helper_->Squeeze(labels[0].name, std::vector<int64_t>(1, axis_));
+  }
+  if (axis_ == 1) {
+    auto squeeze_node = helper_->Squeeze(labels[0].name, {axis_});
     auto node = helper_->MakeNode("SoftmaxCrossEntropyLoss",
-                                  {logits[0].name, squeeze_node},
-                                  {loss[0].name, softmax[0].name});
+                                  {logits[0].name, squeeze_node}, 2);
     AddAttribute(node, "ignore_index", ignore_index_);
     AddAttribute(node, "reduction", "none");
     auto loss_node = helper_->Unsqueeze(node->output(0), loss[0].name, {axis_});
@@ -64,22 +62,20 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
     AddAttribute(transpose_logits, "perm", perm);
     auto transpose_labels = helper_->MakeNode("Transpose", {labels[0].name});
     AddAttribute(transpose_labels, "perm", perm);
-    auto squeeze_labels =
-        helper_->Squeeze(transpose_labels->name(), std::vector<int64_t>(1, 1));
-    auto node = helper_->MakeNode("SoftmaxCrossEntropyLoss",
-                                  {transpose_logits->name(), squeeze_labels},
-                                  {loss[0].name, softmax[0].name});
+    auto squeeze_labels = helper_->Squeeze(transpose_labels->output(0), {1});
+    auto node =
+        helper_->MakeNode("SoftmaxCrossEntropyLoss",
+                          {transpose_logits->output(0), squeeze_labels}, 2);
     AddAttribute(node, "ignore_index", ignore_index_);
     AddAttribute(node, "reduction", "none");
-    auto unsqueeze_node =
-        helper_->Unsqueeze(node->output(0), std::vector<int64_t>(1, 1));
+    auto unsqueeze_node = helper_->Unsqueeze(node->output(0), {1});
     auto revert_transpose_logits =
         helper_->MakeNode("Transpose", {unsqueeze_node}, {loss[0].name});
     AddAttribute(revert_transpose_logits, "perm", perm);
     auto softmax_node = helper_->MakeNode("Transpose", {node->output(1)});
     AddAttribute(softmax_node, "perm", perm);
     // onnx output is log(softmax), but paddle output is softmax
-    helper_->MakeNode("Exp", {softmax_node->name()}, {softmax[0].name});
+    helper_->MakeNode("Exp", {softmax_node->output(0)}, {softmax[0].name});
   }
 }
 }  // namespace paddle2onnx
