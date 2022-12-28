@@ -34,7 +34,7 @@ void MultinomialMapper::Opset7() {
 
   auto node = helper_->MakeNode("Multinomial", {input_info[0].name},
                                 {output_info[0].name});
-  AddAttribute(node, "num_samples", num_samples_);
+  AddAttribute(node, "sample_size", num_samples_);
   AddAttribute(node, "dtype", ONNX_NAMESPACE::TensorProto::INT64);
 }
 

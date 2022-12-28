@@ -14,6 +14,7 @@
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from hypothesis import reproduce_failure
+from onnxbase import randtool
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -46,7 +47,7 @@ class TestMultinomialConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=10), min_size=1, max_size=2))
+                    min_value=1, max_value=100), min_size=2, max_size=2))
 
         replacement = draw(st.booleans())
         if replacement:
@@ -56,12 +57,12 @@ class TestMultinomialConvert(OPConvertAutoScanTest):
         else:
             num_samples = 1
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
+        dtype = draw(st.sampled_from(["float32"]))
 
         def generator_data():
             import random
             import numpy as np
-            input_data = np.random.random_sample(input_shape)
+            input_data = randtool("float", 0, 1, input_shape)
             return input_data
 
         config = {
@@ -72,6 +73,9 @@ class TestMultinomialConvert(OPConvertAutoScanTest):
             "num_samples": num_samples,
             "replacement": replacement,
             "input_spec_shape": [],
+            "out_dtype": "int64",
+            "delta": 1e11,
+            "rtol": 1e11
         }
 
         models = Net(config)
