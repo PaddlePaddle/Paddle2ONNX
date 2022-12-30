@@ -30,6 +30,7 @@ cp {PATH-TO-YOUR}/installed_protobuf_lib/lib/libprotobuf.a paddle2onnx-linux-x64
 cp {PATH-TO-YOUR}/installed_protobuf_lib/lib/libprotoc.a paddle2onnx-linux-x64/lib
 ```
 - ar合并依赖库   
+
 首先将库拷贝到，exmaples/cpp目录下： 
 ```bash
 cp -r paddle2onnx-linux-x64 ../examples/cpp
@@ -70,4 +71,12 @@ tar -xf mobilenetv3.tar.gz
 	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007ff958fd8000)
 	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ff958be7000)
 	/lib64/ld-linux-x86-64.so.2 (0x00007ff959916000)
+``` 
+### CMakeLists需要注意的问题  
+编译示例完整的cmake配置，请参考[CMakeLists.txt](./CMakeLists.txt)。在编写CMakeLists时需要注意，由于paddle2onnx当前的op注册逻辑，会导致编译得到的libpaddle2onnx.a静态库在被链接进可执行文件时，无法初始化op注册相关的全局变量，从而无法正常使用。在linux x64下，可以通过'-Wl,--whole-archive'参数来强制链接器加载完整的libpaddle2onnx.a来解决这个问题。具体操作如下。
+```cmake
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${paddle2onnx_lib})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${paddle2onnx_bundled_lib})
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS 
+                      "-Wl,--whole-archive ${paddle2onnx_lib} -Wl,-no-whole-archive") 
 ```
