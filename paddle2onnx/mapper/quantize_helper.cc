@@ -1063,7 +1063,7 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
       max_val = fabs(tensor[i]);
     }
   }
-  Assert(max_val > 0,
+  Assert(max_val >= 0,
          "[GetTensorWiseQuantizeInfo] Require the scale > 0, but now it's " +
              std::to_string(max_val) + ".");
   scale->push_back(max_val / 127);
@@ -1091,7 +1091,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
         }
       }
       Assert(
-          max_val > 0,
+          max_val >= 0,
           "[GetChannelWiseQuantizeInfo] Require the scale > 0, but now it's " +
               std::to_string(max_val) + ".");
       scale->push_back(max_val / 127);
@@ -1109,7 +1109,7 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
         }
       }
       Assert(
-          max_val > 0,
+          max_val >= 0,
           "[GetChannelWiseQuantizeInfo] Require the scale > 0, but now it's " +
               std::to_string(max_val) + ".");
       scale->push_back(max_val / 127);
