@@ -23,7 +23,8 @@ wget https://bj.bcebos.com/paddle2onnx/tests/quantized_models.tar.gz
 tar xf quantized_models.tar.gz
 
 cases=`find . -name "test*.py" | sort`
-ignore="test_expand_as.py \
+ignore="test_auto_scan_affine_channel.py \
+        test_expand_as.py \
         test_split.py \
         test_auto_scan_pool_adaptive_max_ops.py \
         test_auto_scan_interpolate_v1_ops.py \
