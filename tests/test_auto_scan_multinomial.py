@@ -57,7 +57,7 @@ class TestMultinomialConvert(OPConvertAutoScanTest):
         else:
             num_samples = 1
 
-        dtype = draw(st.sampled_from(["float32"]))
+        dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator_data():
             import random

@@ -32,8 +32,9 @@ void MultinomialMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
 
-  auto node = helper_->MakeNode("Multinomial", {input_info[0].name},
-                                {output_info[0].name});
+  auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                 P2ODataType::FP32);
+  auto node = helper_->MakeNode("Multinomial", {input}, {output_info[0].name});
   AddAttribute(node, "sample_size", num_samples_);
   AddAttribute(node, "dtype", ONNX_NAMESPACE::TensorProto::INT64);
 }
