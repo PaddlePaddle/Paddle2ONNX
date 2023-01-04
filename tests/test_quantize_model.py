@@ -395,8 +395,6 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         self.run_test(
             model,
             algo,
-            data_urls,
-            data_md5s,
             quantizable_op_type,
             is_full_quantize,
             is_use_cache_file,
