@@ -170,10 +170,13 @@ class TestPostTrainingQuantization(unittest.TestCase):
         place = fluid.CPUPlace()
         exe = fluid.Executor(place)
         val_reader = paddle.dataset.mnist.train()
-
+        new_model_path = model_path + "_conbined"
+        self.merge_params(model_path, new_model_path)
         ptq = PostTrainingQuantization(
             executor=exe,
-            model_dir=model_path,
+            model_dir=new_model_path,
+            model_filename=new_model_path + "/__model__",
+            params_filename=new_model_path + "/__params__",
             sample_generator=val_reader,
             batch_size=batch_size,
             batch_nums=batch_nums,
@@ -189,7 +192,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
         collect_dict = ptq._calibration_scales
         save_quant_table_path = os.path.join(self.int8_model_path,
                                              'calibration_table.txt')
-        print("11111: ", save_quant_table_path)
         with open(save_quant_table_path, 'w') as txt_file:
             txt_file.write("scale_info:")
             for tensor_name in collect_dict.keys():
