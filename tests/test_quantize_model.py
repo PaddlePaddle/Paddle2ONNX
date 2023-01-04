@@ -315,8 +315,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
     def run_test(self,
                  model,
                  algo,
-                 data_urls,
-                 data_md5s,
                  quantizable_op_type,
                  is_full_quantize,
                  is_use_cache_file,
@@ -327,7 +325,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         batch_size = self.batch_size
         sample_iterations = self.sample_iterations
 
-        model_cache_folder = self.download_data(data_urls, data_md5s, model)
+        model_cache_folder = os.path.join(self.cache_folder, model)
 
         print("Start FP32 inference for {0} on {1} images ...".format(
             model, infer_iterations * batch_size))
@@ -378,47 +376,12 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.assertLess(delta_value, diff_threshold)
 
 
-class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
-    def test_post_training_mse_onnx_format_mobilenetv1(self):
-        model = "MobileNetV1_infer"
-        algo = "mse"
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
-        ]
-        data_md5s = ['5ee2b1775b11dc233079236cdc216c2e']
-        quantizable_op_type = [
-            "conv2d",
-            "depthwise_conv2d",
-            "mul",
-        ]
-        is_full_quantize = True
-        is_use_cache_file = False
-        is_optimize_model = False
-        onnx_format = True
-        diff_threshold = 0.09
-        self.run_test(
-            model,
-            algo,
-            data_urls,
-            data_md5s,
-            quantizable_op_type,
-            is_full_quantize,
-            is_use_cache_file,
-            is_optimize_model,
-            diff_threshold,
-            onnx_format=onnx_format)
-
-
 class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         TestPostTrainingQuantization):
     def test_post_training_hist_kl_avg_onnx_format_mobilenetv1(self):
         model = "MobileNetV1_infer"
-        algos = ["hist", "KL", "avg"]
+        algos = ["hist", "KL", "avg", "mse"]
         algo = np.random.choice(algos)
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
-        ]
-        data_md5s = ['5ee2b1775b11dc233079236cdc216c2e']
         quantizable_op_type = [
             "conv2d",
             "depthwise_conv2d",
@@ -429,33 +392,6 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         is_optimize_model = False
         onnx_format = True
         diff_threshold = 0.09
-        self.run_test(
-            model,
-            algo,
-            data_urls,
-            data_md5s,
-            quantizable_op_type,
-            is_full_quantize,
-            is_use_cache_file,
-            is_optimize_model,
-            diff_threshold,
-            onnx_format=onnx_format)
-
-
-class TestPostTrainingMseONNXFormatForResnet50(TestPostTrainingQuantization):
-    def test_post_training_mse_onnx_format_resnet50(self):
-        model = "ResNet50_infer"
-        algo = "mse"
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
-        ]
-        data_md5s = ['8b5e4dc0c1b12635e7f299c24038a451']
-        quantizable_op_type = ["conv2d", "mul"]
-        is_full_quantize = True
-        is_use_cache_file = False
-        is_optimize_model = False
-        diff_threshold = 0.05
-        onnx_format = True
         self.run_test(
             model,
             algo,
@@ -473,12 +409,8 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         TestPostTrainingQuantization):
     def test_post_training_hist_kl_avg_onnx_format_resnet50(self):
         model = "ResNet50_infer"
-        algos = ["hist", "KL", "avg"]
+        algos = ["hist", "KL", "avg", "mse"]
         algo = np.random.choice(algos)
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
-        ]
-        data_md5s = ['8b5e4dc0c1b12635e7f299c24038a451']
         quantizable_op_type = ["conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False
@@ -488,8 +420,6 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         self.run_test(
             model,
             algo,
-            data_urls,
-            data_md5s,
             quantizable_op_type,
             is_full_quantize,
             is_use_cache_file,

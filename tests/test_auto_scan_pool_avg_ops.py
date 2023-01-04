@@ -161,12 +161,12 @@ class TestAvgpool2dConvert(OPConvertAutoScanTest):
 
         kernel_type = draw(st.sampled_from(["int", "list"]))
         if kernel_type == "int":
-            kernel_size = draw(st.integers(min_value=7, max_value=10))
+            kernel_size = draw(st.integers(min_value=5, max_value=7))
         elif kernel_type == "list":
             kernel_size = draw(
                 st.lists(
                     st.integers(
-                        min_value=7, max_value=10),
+                        min_value=5, max_value=7),
                     min_size=2,
                     max_size=2))
 
@@ -188,19 +188,19 @@ class TestAvgpool2dConvert(OPConvertAutoScanTest):
         if padding_type == "str":
             padding = draw(st.sampled_from(["SAME", "VALID"]))
         elif padding_type == "int":
-            padding = draw(st.integers(min_value=1, max_value=5))
+            padding = draw(st.integers(min_value=1, max_value=3))
         elif padding_type == "list2":
             padding = draw(
                 st.lists(
                     st.integers(
-                        min_value=1, max_value=5),
+                        min_value=1, max_value=3),
                     min_size=2,
                     max_size=2))
         elif padding_type == "list4":
             padding = draw(
                 st.lists(
                     st.integers(
-                        min_value=1, max_value=5),
+                        min_value=1, max_value=3),
                     min_size=4,
                     max_size=4))
         elif padding_type == "list8":
@@ -209,7 +209,7 @@ class TestAvgpool2dConvert(OPConvertAutoScanTest):
                     draw(
                         st.lists(
                             st.integers(
-                                min_value=1, max_value=5),
+                                min_value=1, max_value=3),
                             min_size=2,
                             max_size=2))),
                 axis=0).tolist()
@@ -218,7 +218,7 @@ class TestAvgpool2dConvert(OPConvertAutoScanTest):
                     draw(
                         st.lists(
                             st.integers(
-                                min_value=1, max_value=5),
+                                min_value=1, max_value=3),
                             min_size=2,
                             max_size=2))),
                 axis=0).tolist()

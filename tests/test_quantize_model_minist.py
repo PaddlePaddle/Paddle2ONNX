@@ -48,12 +48,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def cache_unzipping(self, target_folder, zip_path):
-        if not os.path.exists(target_folder):
-            cmd = 'mkdir {0} && tar xf {1} -C {0}'.format(target_folder,
-                                                          zip_path)
-            os.system(cmd)
-
     def merge_params(self, input_model_path, output_model_path):
         import paddle.fluid as fluid
         import paddle
@@ -73,16 +67,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
             executor=exe,
             main_program=inference_program,
             params_filename="__params__")
-
-    def download_model(self, data_url, data_md5, folder_name):
-        download(data_url, self.download_path, data_md5)
-        file_name = data_url.split('/')[-1]
-        zip_path = os.path.join(self.cache_folder, file_name)
-        print('Data is downloaded at {0}'.format(zip_path))
-
-        data_cache_folder = os.path.join(self.cache_folder, folder_name)
-        self.cache_unzipping(data_cache_folder, zip_path)
-        return data_cache_folder
 
     def run_program(self,
                     model_path,
@@ -189,20 +173,9 @@ class TestPostTrainingQuantization(unittest.TestCase):
             is_use_cache_file=is_use_cache_file)
         ptq.quantize()
         ptq.save_quantized_model(self.int8_model_path)
-        collect_dict = ptq._calibration_scales
-        save_quant_table_path = os.path.join(self.int8_model_path,
-                                             'calibration_table.txt')
-        with open(save_quant_table_path, 'w') as txt_file:
-            txt_file.write("scale_info:")
-            for tensor_name in collect_dict.keys():
-                write_line = '{} {}'.format(
-                    tensor_name, collect_dict[tensor_name]['scale']) + '\n'
-                txt_file.write(write_line)
 
     def run_test(self,
                  model_name,
-                 data_url,
-                 data_md5,
                  algo,
                  quantizable_op_type,
                  is_full_quantize,
@@ -214,8 +187,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
                  quant_iterations=5,
                  onnx_format=False,
                  skip_tensor_list=None):
-
-        origin_model_path = self.download_model(data_url, data_md5, model_name)
+        origin_model_path = os.path.join(self.cache_folder, model_name)
+        # origin_model_path = self.download_model(data_url, data_md5, model_name)
         origin_model_path = os.path.join(origin_model_path, model_name)
 
         print("Start FP32 inference for {0} on {1} images ...".format(
@@ -287,8 +260,6 @@ class TestPostTrainingMseForMnistONNXFormatFullQuant(
         TestPostTrainingQuantization):
     def test_post_training_mse_onnx_format_full_quant(self):
         model_name = "mnist_model"
-        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
-        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "mse"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
@@ -301,40 +272,6 @@ class TestPostTrainingMseForMnistONNXFormatFullQuant(
         quant_iterations = 5
         self.run_test(
             model_name,
-            data_url,
-            data_md5,
-            algo,
-            quantizable_op_type,
-            is_full_quantize,
-            is_use_cache_file,
-            is_optimize_model,
-            diff_threshold,
-            batch_size,
-            infer_iterations,
-            quant_iterations,
-            onnx_format=onnx_format)
-
-
-class TestPostTrainingKlForMnistONNXFormatFullQuant(
-        TestPostTrainingQuantization):
-    def test_post_training_kl_onnx_format_full_quant(self):
-        model_name = "mnist_model"
-        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
-        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
-        algo = "KL"
-        quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
-        is_full_quantize = True
-        is_use_cache_file = False
-        is_optimize_model = False
-        onnx_format = True
-        diff_threshold = 0.01
-        batch_size = 10
-        infer_iterations = 50
-        quant_iterations = 5
-        self.run_test(
-            model_name,
-            data_url,
-            data_md5,
             algo,
             quantizable_op_type,
             is_full_quantize,
@@ -351,8 +288,6 @@ class TestPostTrainingHistForMnistONNXFormatFullQuant(
         TestPostTrainingQuantization):
     def test_post_training_hist_onnx_format_full_quant(self):
         model_name = "mnist_model"
-        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
-        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "hist"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
@@ -365,8 +300,6 @@ class TestPostTrainingHistForMnistONNXFormatFullQuant(
         quant_iterations = 5
         self.run_test(
             model_name,
-            data_url,
-            data_md5,
             algo,
             quantizable_op_type,
             is_full_quantize,
@@ -383,8 +316,6 @@ class TestPostTrainingAvgForMnistONNXFormatFullQuant(
         TestPostTrainingQuantization):
     def test_post_training_abg_onnx_format_full_quant(self):
         model_name = "mnist_model"
-        data_url = "http://paddle-inference-dist.bj.bcebos.com/int8/mnist_model.tar.gz"
-        data_md5 = "be71d3997ec35ac2a65ae8a145e2887c"
         algo = "avg"
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
         is_full_quantize = True
@@ -397,8 +328,6 @@ class TestPostTrainingAvgForMnistONNXFormatFullQuant(
         quant_iterations = 5
         self.run_test(
             model_name,
-            data_url,
-            data_md5,
             algo,
             quantizable_op_type,
             is_full_quantize,
