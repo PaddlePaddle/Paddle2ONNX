@@ -309,8 +309,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         ptq.quantize()
         ptq.save_quantized_model(
             self.int8_model,
-            model_filename='__model__',
-            params_filename='__params__')
+            model_filename='model.pdmodel',
+            params_filename='model.pdiparams')
 
     def run_test(self,
                  model,
@@ -343,8 +343,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         print("Start INT8 inference for {0} on {1} images ...".format(
             model, infer_iterations * batch_size))
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
-            self.int8_model, batch_size, infer_iterations, "__model__",
-            "__params__")
+            self.int8_model, batch_size, infer_iterations, "model.pdmodel",
+            "model.pdiparams")
 
         print("Start use ONNXRuntime inference for {0} on {1} images ...".
               format(model, infer_iterations * batch_size))
@@ -353,8 +353,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
              self.int8_model,
              batch_size,
              infer_iterations,
-             "__model__",
-             "__params__",
+             "model.pdmodel",
+             "model.pdiparams",
              run_onnxruntime=True)
 
         print("---Post training quantization of {} method---".format(algo))

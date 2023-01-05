@@ -73,7 +73,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
                     batch_size,
                     infer_iterations,
                     use_onnxruntime=False):
-        print("test model path:" + model_path)
         place = fluid.CPUPlace()
         exe = fluid.Executor(place)
 
@@ -99,7 +98,6 @@ class TestPostTrainingQuantization(unittest.TestCase):
                 onnx_model, sess_options, providers=['CPUExecutionProvider'])
             input_name = sess.get_inputs()[0].name
             label_name = sess.get_outputs()[0].name
-            print("sess input/output name : ", input_name, label_name)
         else:
             [infer_program, feed_dict,
              fetch_targets] = fluid.io.load_inference_model(model_path, exe)
