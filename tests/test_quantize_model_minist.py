@@ -72,6 +72,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
                     model_path,
                     batch_size,
                     infer_iterations,
+                    model_filename="",
+                    params_filename="",
                     use_onnxruntime=False):
         place = fluid.CPUPlace()
         exe = fluid.Executor(place)
@@ -84,12 +86,15 @@ class TestPostTrainingQuantization(unittest.TestCase):
         if use_onnxruntime:
             import onnxruntime as rt
             import paddle2onnx
-
-            new_model_path = model_path + "_conbined"
-            self.merge_params(model_path, new_model_path)
+            new_model_path = model_path
+            if model_filename == "":
+                new_model_path = model_path + "_conbined"
+                self.merge_params(model_path, new_model_path)
+                model_filename = "__model__"
+                params_filename = "__params__"
             onnx_model = paddle2onnx.command.c_paddle_to_onnx(
-                model_file=new_model_path + "/__model__",
-                params_file=new_model_path + "/__params__",
+                model_file=new_model_path + "/" + model_filename,
+                params_file=new_model_path + "/" + params_filename,
                 opset_version=13,
                 enable_onnx_checker=True)
             sess_options = rt.SessionOptions()
@@ -99,8 +104,18 @@ class TestPostTrainingQuantization(unittest.TestCase):
             input_name = sess.get_inputs()[0].name
             label_name = sess.get_outputs()[0].name
         else:
+            new_model_path = model_path
+            if model_filename == "":
+                new_model_path = model_path + "_conbined"
+                self.merge_params(model_path, new_model_path)
+                model_filename = "__model__"
+                params_filename = "__params__"
             [infer_program, feed_dict,
-             fetch_targets] = fluid.io.load_inference_model(model_path, exe)
+             fetch_targets] = fluid.io.load_inference_model(
+                 new_model_path,
+                 exe,
+                 model_filename=model_filename,
+                 params_filename=params_filename)
 
         val_reader = paddle.batch(paddle.dataset.mnist.test(), batch_size)
 
@@ -170,7 +185,10 @@ class TestPostTrainingQuantization(unittest.TestCase):
             skip_tensor_list=skip_tensor_list,
             is_use_cache_file=is_use_cache_file)
         ptq.quantize()
-        ptq.save_quantized_model(self.int8_model_path)
+        ptq.save_quantized_model(
+            self.int8_model_path,
+            model_filename='model.pdmodel',
+            params_filename='model.pdiparams')
 
     def run_test(self,
                  model_name,
@@ -211,7 +229,11 @@ class TestPostTrainingQuantization(unittest.TestCase):
         print("Start INT8 inference for {0} on {1} images ...".format(
             model_name, infer_iterations * batch_size))
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
-            self.int8_model_path, batch_size, infer_iterations)
+            self.int8_model_path,
+            batch_size,
+            infer_iterations,
+            model_filename="model.pdmodel",
+            params_filename="model.pdiparams", )
 
         print("Start INT8 inference on onnxruntime for {0} on {1} images ...".
               format(model_name, infer_iterations * batch_size))
@@ -220,6 +242,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
              self.int8_model_path,
              batch_size,
              infer_iterations,
+             model_filename="model.pdmodel",
+             params_filename="model.pdiparams",
              use_onnxruntime=True)
 
         print("---Post training quantization of {} method---".format(algo))
