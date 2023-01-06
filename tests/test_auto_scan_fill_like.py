@@ -21,7 +21,7 @@ import paddle
 
 op_api_map = {
     "fill_any_like": paddle.ones_like,
-    "fill_zeros_like": paddle.fluid.layers.zeros_like,
+    "fill_zeros_like": paddle.zeros_like,
 }
 
 
