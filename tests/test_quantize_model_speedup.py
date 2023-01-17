@@ -24,7 +24,7 @@ import numpy as np
 import paddle
 import paddle.fluid as fluid
 from paddle.dataset.common import download
-from paddle.fluid.contrib.slim.quantization import PostTrainingQuantization
+from paddle.static.quantization import PostTrainingQuantization
 from fake_quant_demo import post_quant_fake
 
 paddle.enable_static()

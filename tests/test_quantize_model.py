@@ -24,7 +24,7 @@ from PIL import Image, ImageEnhance
 import paddle
 import paddle.fluid as fluid
 from paddle.dataset.common import download
-from paddle.fluid.contrib.slim.quantization import PostTrainingQuantization
+from paddle.static.quantization import PostTrainingQuantization
 import platform
 
 if platform.system() == "Windows":
@@ -309,22 +309,12 @@ class TestPostTrainingQuantization(unittest.TestCase):
         ptq.quantize()
         ptq.save_quantized_model(
             self.int8_model,
-            model_filename='__model__',
-            params_filename='__params__')
-        collect_dict = ptq._calibration_scales
-        save_quant_table_path = os.path.join(self.int8_model,
-                                             'calibration_table.txt')
-        with open(save_quant_table_path, 'w') as txt_file:
-            for tensor_name in collect_dict.keys():
-                write_line = '{} {}'.format(
-                    tensor_name, collect_dict[tensor_name]['scale']) + '\n'
-                txt_file.write(write_line)
+            model_filename='model.pdmodel',
+            params_filename='model.pdiparams')
 
     def run_test(self,
                  model,
                  algo,
-                 data_urls,
-                 data_md5s,
                  quantizable_op_type,
                  is_full_quantize,
                  is_use_cache_file,
@@ -335,7 +325,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         batch_size = self.batch_size
         sample_iterations = self.sample_iterations
 
-        model_cache_folder = self.download_data(data_urls, data_md5s, model)
+        model_cache_folder = os.path.join(self.cache_folder, model)
 
         print("Start FP32 inference for {0} on {1} images ...".format(
             model, infer_iterations * batch_size))
@@ -353,8 +343,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         print("Start INT8 inference for {0} on {1} images ...".format(
             model, infer_iterations * batch_size))
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
-            self.int8_model, batch_size, infer_iterations, "__model__",
-            "__params__")
+            self.int8_model, batch_size, infer_iterations, "model.pdmodel",
+            "model.pdiparams")
 
         print("Start use ONNXRuntime inference for {0} on {1} images ...".
               format(model, infer_iterations * batch_size))
@@ -363,8 +353,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
              self.int8_model,
              batch_size,
              infer_iterations,
-             "__model__",
-             "__params__",
+             "model.pdmodel",
+             "model.pdiparams",
              run_onnxruntime=True)
 
         print("---Post training quantization of {} method---".format(algo))
@@ -386,47 +376,12 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.assertLess(delta_value, diff_threshold)
 
 
-class TestPostTrainingMseONNXFormatForMobilenetv1(TestPostTrainingQuantization):
-    def test_post_training_mse_onnx_format_mobilenetv1(self):
-        model = "MobileNetV1_infer"
-        algo = "mse"
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
-        ]
-        data_md5s = ['5ee2b1775b11dc233079236cdc216c2e']
-        quantizable_op_type = [
-            "conv2d",
-            "depthwise_conv2d",
-            "mul",
-        ]
-        is_full_quantize = True
-        is_use_cache_file = False
-        is_optimize_model = False
-        onnx_format = True
-        diff_threshold = 0.09
-        self.run_test(
-            model,
-            algo,
-            data_urls,
-            data_md5s,
-            quantizable_op_type,
-            is_full_quantize,
-            is_use_cache_file,
-            is_optimize_model,
-            diff_threshold,
-            onnx_format=onnx_format)
-
-
 class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         TestPostTrainingQuantization):
     def test_post_training_hist_kl_avg_onnx_format_mobilenetv1(self):
         model = "MobileNetV1_infer"
-        algos = ["hist", "KL", "avg"]
+        algos = ["hist", "KL", "avg", "mse"]
         algo = np.random.choice(algos)
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV1_infer.tar'
-        ]
-        data_md5s = ['5ee2b1775b11dc233079236cdc216c2e']
         quantizable_op_type = [
             "conv2d",
             "depthwise_conv2d",
@@ -440,35 +395,6 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
         self.run_test(
             model,
             algo,
-            data_urls,
-            data_md5s,
-            quantizable_op_type,
-            is_full_quantize,
-            is_use_cache_file,
-            is_optimize_model,
-            diff_threshold,
-            onnx_format=onnx_format)
-
-
-class TestPostTrainingMseONNXFormatForResnet50(TestPostTrainingQuantization):
-    def test_post_training_mse_onnx_format_resnet50(self):
-        model = "ResNet50_infer"
-        algo = "mse"
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
-        ]
-        data_md5s = ['8b5e4dc0c1b12635e7f299c24038a451']
-        quantizable_op_type = ["conv2d", "mul"]
-        is_full_quantize = True
-        is_use_cache_file = False
-        is_optimize_model = False
-        diff_threshold = 0.05
-        onnx_format = True
-        self.run_test(
-            model,
-            algo,
-            data_urls,
-            data_md5s,
             quantizable_op_type,
             is_full_quantize,
             is_use_cache_file,
@@ -481,12 +407,8 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         TestPostTrainingQuantization):
     def test_post_training_hist_kl_avg_onnx_format_resnet50(self):
         model = "ResNet50_infer"
-        algos = ["hist", "KL", "avg"]
+        algos = ["hist", "KL", "avg", "mse"]
         algo = np.random.choice(algos)
-        data_urls = [
-            'https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar'
-        ]
-        data_md5s = ['8b5e4dc0c1b12635e7f299c24038a451']
         quantizable_op_type = ["conv2d", "mul"]
         is_full_quantize = True
         is_use_cache_file = False
@@ -496,8 +418,6 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
         self.run_test(
             model,
             algo,
-            data_urls,
-            data_md5s,
             quantizable_op_type,
             is_full_quantize,
             is_use_cache_file,
