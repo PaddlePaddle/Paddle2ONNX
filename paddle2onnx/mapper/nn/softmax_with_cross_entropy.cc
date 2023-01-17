@@ -37,12 +37,12 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
   auto softmax = GetOutput("Softmax");
   std::vector<int64_t> logits_shape = logits[0].shape;
   auto dim = logits[0].Rank();
+  if (axis_ < 0) {
+    axis_ += dim;
+  }
   if (soft_label_) {
     std::vector<int64_t> split;
     split.resize(logits_shape[axis_], 1);
-    if (axis_ < 0) {
-      axis_ += dim;
-    }
     std::vector<int64_t> axes_val = {axis_};
     std::string axes_node =
         helper_->Constant(GetOnnxDtype(P2ODataType::INT64), axes_val);
@@ -52,9 +52,16 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
       helper_->MakeNode("Exp", {logsoftmax_node->output(0)}, {softmax[0].name});
       auto mul_result = helper_->MakeNode(
           "Mul", {logsoftmax_node->output(0), labels[0].name});
-      auto reducesum_output =
-          helper_->MakeNode("ReduceSum", {mul_result->output(0), axes_node});
-      helper_->MakeNode("Neg", {reducesum_output->output(0)}, {loss[0].name});
+      if (helper_->GetOpsetVersion() < 13) {
+        auto reducesum_node =
+            helper_->MakeNode("ReduceSum", {mul_result->output(0)});
+        AddAttribute(reducesum_node, "axes", axes_val);
+        helper_->MakeNode("Neg", {reducesum_node->output(0)}, {loss[0].name});
+      } else {
+        auto reducesum_node =
+            helper_->MakeNode("ReduceSum", {mul_result->output(0), axes_node});
+        helper_->MakeNode("Neg", {reducesum_node->output(0)}, {loss[0].name});
+      }
     } else {
       auto perm = Arange(0, dim);
       perm[dim - 1] = axis_;
@@ -67,9 +74,16 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
       helper_->MakeNode("Exp", {transpose_logsoftmax_node}, {softmax[0].name});
       auto mul_result =
           helper_->MakeNode("Mul", {transpose_logsoftmax_node, labels[0].name});
-      auto reducesum_output =
-          helper_->MakeNode("ReduceSum", {mul_result->output(0), axes_node});
-      helper_->MakeNode("Neg", {reducesum_output->output(0)}, {loss[0].name});
+      if (helper_->GetOpsetVersion() < 13) {
+        auto reducesum_node =
+            helper_->MakeNode("ReduceSum", {mul_result->output(0)});
+        AddAttribute(reducesum_node, "axes", axes_val);
+        helper_->MakeNode("Neg", {reducesum_node->output(0)}, {loss[0].name});
+      } else {
+        auto reducesum_node =
+            helper_->MakeNode("ReduceSum", {mul_result->output(0), axes_node});
+        helper_->MakeNode("Neg", {reducesum_node->output(0)}, {loss[0].name});
+      }
     }
   } else {
     if (axis_ == 1) {
