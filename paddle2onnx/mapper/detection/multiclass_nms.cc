@@ -42,20 +42,6 @@ int32_t NMSMapper::GetMinOpset(bool verbose) {
     return 7;
   }
 
-  if (boxes_info[0].shape[1] < 0 || boxes_info[0].shape[2] < 0) {
-    Error() << "The 2-nd and 3-rd dimension of input bboxes tensor of "
-               "multiclass_nms should be fixed, but now the shape is ["
-            << boxes_info[0].shape[0] << ", " << boxes_info[0].shape[1] << ", "
-            << boxes_info[0].shape[2] << "]." << std::endl;
-    return -1;
-  }
-  if (score_info[0].shape[1] < 0 || score_info[0].shape[2] < 0) {
-    Error() << "The 2nd and 3rd dimension of input scores tensor of "
-               "multiclass_nms should be fixed, but now the shape is ["
-            << score_info[0].shape[0] << ", " << score_info[0].shape[1] << ", "
-            << score_info[0].shape[2] << "]." << std::endl;
-    return -1;
-  }
   Logger(verbose, 10) << RequireOpset(10) << std::endl;
   return 10;
 }

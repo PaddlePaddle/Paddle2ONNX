@@ -43,8 +43,11 @@ class TestLinspaceConvert(OPConvertAutoScanTest):
         stop = draw(st.integers(min_value=20, max_value=30))
 
         num = draw(st.integers(min_value=2, max_value=40))
-
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        if draw(st.booleans()):
+            dtype = draw(
+                st.sampled_from(["float32", "float64", "int32", "int64"]))
+        else:
+            dtype = None
 
         config = {
             "op_names": ["linspace"],
