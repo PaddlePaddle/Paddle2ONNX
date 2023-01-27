@@ -70,9 +70,7 @@ if (WITH_STATIC)
     # to form a build dependency tree for paddle2onnx_static lib.
     ADD_LIBRARY(paddle2onnx_dummy STATIC ${ALL_SRCS})
     ADD_DEPENDENCIES(paddle2onnx_dummy paddle2onnx)
-    find_program(Protobuf_PROTOC_EXECUTABLE
-               NAMES protoc
-               DOC "The Google Protocol Buffers Compiler")
+    
     if(APPLE)
         set_target_properties(paddle2onnx
                               PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
