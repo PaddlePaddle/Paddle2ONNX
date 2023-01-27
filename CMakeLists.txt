@@ -1,6 +1,8 @@
 PROJECT(paddle2onnx C CXX)
 CMAKE_MINIMUM_REQUIRED (VERSION 3.16)
 
+include(cmake/utils.cmake)
+
 ADD_SUBDIRECTORY(paddle2onnx)
 
 option(WITH_STATIC              "Compile Paddle2ONNX with  STATIC"               OFF)
@@ -63,23 +65,40 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
 string(STRIP "${PADDLE2ONNX_VERSION}" PADDLE2ONNX_VERSION)
 if (WITH_STATIC)
-    ADD_LIBRARY(paddle2onnx STATIC ${ALL_SRCS})
+    ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
+    # Here, we use a dummy target (fastdelpoy_dummy) 
+    # to form a build dependency tree for paddle2onnx_static lib.
+    ADD_LIBRARY(paddle2onnx_dummy STATIC ${ALL_SRCS})
+    ADD_DEPENDENCIES(paddle2onnx_dummy paddle2onnx)
+    find_program(Protobuf_PROTOC_EXECUTABLE
+               NAMES protoc
+               DOC "The Google Protocol Buffers Compiler")
     if(APPLE)
         set_target_properties(paddle2onnx
                               PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
         set_target_properties(paddle2onnx
-                            PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+        set_target_properties(paddle2onnx_dummy
+                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")                     
     elseif(MSVC)
         message("------ BUILD WITH MSVC --------")
     else()
         set_target_properties(paddle2onnx
-                            PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+        set_target_properties(paddle2onnx_dummy
+                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")    
         set_target_properties(paddle2onnx
                               PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     endif()
     set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
     TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx)
+    TARGET_LINK_LIBRARIES(paddle2onnx_dummy  p2o_paddle_proto onnx)
+
+    # Bundle paddle2onnx static lib here
+    bundle_static_library(paddle2onnx paddle2onnx_static bundle_paddle2onnx)
+    message(STATUS "PROTOBUF_LIBS: ${PROTOBUF_LIBS}")
+
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
     if(APPLE)
@@ -112,13 +131,22 @@ if(WIN32)
     RUNTIME DESTINATION lib
   )
 else()
-  install(
-    TARGETS paddle2onnx
-    LIBRARY DESTINATION lib
-  )
+  if(WITH_STATIC)
+    install(
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/libpaddle2onnx_static.a
+      DESTINATION lib
+    )
+  else()
+    install(
+      TARGETS paddle2onnx
+      LIBRARY DESTINATION lib
+    )
+  endif()
 endif()
 install(
-    FILES paddle2onnx/converter.h
+    FILES 
+    ${PROJECT_SOURCE_DIR}/paddle2onnx/p2o_factory_helper.h
+    ${PROJECT_SOURCE_DIR}/paddle2onnx/p2o_mappers.h
     ${PROJECT_SOURCE_DIR}/paddle2onnx/converter.h
     DESTINATION include/paddle2onnx
 )

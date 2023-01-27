@@ -28,6 +28,7 @@ class OnnxHelper;
   class op_name##Generator : public Generator {                         \
    public:                                                              \
     op_name##Generator() { MapperHelper::Get()->Push(#op_name, this); } \
+    int Touch##op_name##class_name() { return 1; }                        \
     Mapper* Create(const PaddleParser& p, OnnxHelper* h, int64_t b,     \
                    int64_t o) {                                         \
       auto m = new class_name(p, h, b, o);                              \
