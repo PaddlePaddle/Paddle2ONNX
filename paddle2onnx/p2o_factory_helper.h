@@ -21,9 +21,8 @@
 #define UNUSED __attribute__((unused))
 #endif
 
-#define USE_P2O_MAPPER(op_name__, class_name__)    \
-  extern op_name##Generator* op_name##inst;        \
-  int P2O_MAPPER_REGISTER_FAKE(op_name__) UNUSED = \
-  op_name##inst->Touch##op_name##class_name(); 
-
-#define P2O_MAPPER_REGISTER_FAKE(op_name__) op_name__##__registry__
+#define USE_P2O_MAPPER(op_name, class_name)                           \    
+  namespace paddle2onnx {                                             \
+    extern int Touch##op_name##class_name();                          \
+    int op_name##__registry__ UNUSED = Touch##op_name##class_name();  \
+  }
