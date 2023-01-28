@@ -95,8 +95,6 @@ if (WITH_STATIC)
 
     # Bundle paddle2onnx static lib here
     bundle_static_library(paddle2onnx paddle2onnx_static bundle_paddle2onnx)
-    message(STATUS "PROTOBUF_LIBS: ${PROTOBUF_LIBS}")
-
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
     if(APPLE)
