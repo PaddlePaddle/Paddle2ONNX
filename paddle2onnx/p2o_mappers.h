@@ -172,5 +172,5 @@ USE_P2O_MAPPER(gaussian_random, GaussianRandomMapper)
 USE_P2O_MAPPER(flatten_contiguous_range, FlattenMapper)
 USE_P2O_MAPPER(equal, EqualMapper)
 USE_P2O_MAPPER(yolo_box, YoloBoxMapper)
-USE_P2O_MAPPER(multiclass_nms3, NMSMapper);
+USE_P2O_MAPPER(multiclass_nms3, NMSMapper)
 USE_P2O_MAPPER(roi_align, RoiAlignMapper)
