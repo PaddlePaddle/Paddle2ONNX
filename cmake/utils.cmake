@@ -13,14 +13,9 @@ endfunction()
 # Bundle several static libraries into one. This function is modified from Paddle Lite. 
 # reference: https://github.com/PaddlePaddle/Paddle-Lite/blob/develop/cmake/lite.cmake#L252
 function(bundle_static_library tgt_name bundled_tgt_name fake_target)
-  if(NOT (TARGET paddle2onnx_dummy))
-    message(FATAL_ERROR "Please add paddle2onnx_dummy as a dummy target before building paddle2onnx static lib.")
-  endif()
-
-  list(APPEND static_libs paddle2onnx_dummy)
-  add_dependencies(p2o_compile_deps ${fake_target})
-  set(REDUNDANT_STATIC_LIBS fake_lib)  
-  # may add some redundant libs later
+  list(APPEND static_libs ${tgt_name})
+  add_dependencies(p2o_compile_deps ${tgt_name})
+  set(REDUNDANT_STATIC_LIBS __fake_no_lib) # may add some redundant libs later
 
   function(_recursively_collect_dependencies input_target)
     list(FIND REDUNDANT_STATIC_LIBS ${input_target} _input_redunant_id)
@@ -80,7 +75,6 @@ function(bundle_static_library tgt_name bundled_tgt_name fake_target)
 
   add_custom_target(${fake_target} ALL COMMAND ${CMAKE_COMMAND} -E echo "Building fake_target ${fake_target}")
   add_dependencies(${fake_target} ${tgt_name})
-  add_dependencies(${fake_target} paddle2onnx_dummy)
 
   if(NOT IOS AND NOT APPLE)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${bundled_tgt_name}.ar.in
@@ -138,6 +132,6 @@ function(bundle_static_library tgt_name bundled_tgt_name fake_target)
   set_property(TARGET ${bundled_tgt_name} PROPERTY IMPORTED_LOCATION
                                          ${bundled_tgt_full_name})          
   add_dependencies(${bundled_tgt_name} ${fake_target})
-  add_dependencies(${bundled_tgt_name} paddle2onnx_dummy)
+  add_dependencies(${bundled_tgt_name} ${tgt_name})
 
 endfunction()
