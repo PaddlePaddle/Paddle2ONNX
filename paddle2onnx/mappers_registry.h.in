@@ -1,5 +1,39 @@
+// Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 #pragma once
-#include "p2o_factory_helper.h"
+
+// If you want to use the paddle2onnx static library, add the 
+// registration logic here synchronously each time you add a new op.
+#ifndef WITH_PADDLE2ONNX_STATIC_INTERNAL
+#cmakedefine WITH_PADDLE2ONNX_STATIC_INTERNAL
+#endif
+
+#if defined(WITH_PADDLE2ONNX_STATIC_INTERNAL)
+#if (!defined(WITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING))
+
+#if defined(_WIN32)
+#define UNUSED
+#define __builtin_expect(EXP, C) (EXP)
+#else
+#define UNUSED __attribute__((unused))
+#endif
+
+#define USE_P2O_MAPPER(op_name, class_name)                           \
+  namespace paddle2onnx {                                             \
+    extern int Touch##op_name##class_name();                          \
+    int op_name##__registry__ UNUSED = Touch##op_name##class_name();  \
+  }
 
 USE_P2O_MAPPER(quantize_linear, QuantizeLinearMapper)
 USE_P2O_MAPPER(dequantize_linear, DequantizeLinearMapper)
@@ -174,3 +208,5 @@ USE_P2O_MAPPER(equal, EqualMapper)
 USE_P2O_MAPPER(yolo_box, YoloBoxMapper)
 USE_P2O_MAPPER(multiclass_nms3, NMSMapper)
 USE_P2O_MAPPER(roi_align, RoiAlignMapper)
+#endif // WITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING
+#endif // WITH_PADDLE2ONNX_STATIC_INTERNAL

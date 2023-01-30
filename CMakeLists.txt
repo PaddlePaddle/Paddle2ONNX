@@ -10,6 +10,15 @@ option(PADDLE2ONNX_DEBUG "If open the debug log while converting model"         
 option(MSVC_STATIC_CRT          "Compile Paddle2ONNX with  MSVC STATIC CRT"               ON)
 set(ONNX_CUSTOM_PROTOC_PATH "" CACHE STRING "Set yourself Protobufc path")
 
+# Internal flags for convert.h.in
+set(WITH_PADDLE2ONNX_STATIC_INTERNAL OFF)  
+if(WITH_STATIC)
+  set(WITH_PADDLE2ONNX_STATIC_INTERNAL ON CACHE BOOL "" FORCE)
+  add_definitions(-DWITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING)
+endif()
+
+configure_file(${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h.in ${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h)
+
 if(PADDLE2ONNX_DEBUG)
   add_definitions(-DPADDLE2ONNX_DEBUG)
 endif()
@@ -65,36 +74,22 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
 string(STRIP "${PADDLE2ONNX_VERSION}" PADDLE2ONNX_VERSION)
 if (WITH_STATIC)
-    ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
     # Here, we use a dummy target (fastdelpoy_dummy) 
     # to form a build dependency tree for paddle2onnx_static lib.
     ADD_LIBRARY(paddle2onnx_dummy STATIC ${ALL_SRCS})
-    ADD_DEPENDENCIES(paddle2onnx_dummy paddle2onnx)
     
     if(APPLE)
-        set_target_properties(paddle2onnx
-                              PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
-        set_target_properties(paddle2onnx
-                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
         set_target_properties(paddle2onnx_dummy
                               PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")                     
     elseif(MSVC)
         message("------ BUILD WITH MSVC --------")
     else()
-        set_target_properties(paddle2onnx
-                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
         set_target_properties(paddle2onnx_dummy
                               PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")    
-        set_target_properties(paddle2onnx
-                              PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
-        set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     endif()
-    set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
-    TARGET_LINK_LIBRARIES(paddle2onnx  p2o_paddle_proto onnx)
-    TARGET_LINK_LIBRARIES(paddle2onnx_dummy  p2o_paddle_proto onnx)
-
+    target_link_libraries(paddle2onnx_dummy  p2o_paddle_proto onnx)
     # Bundle paddle2onnx static lib here
-    bundle_static_library(paddle2onnx paddle2onnx_static bundle_paddle2onnx)
+    bundle_static_library(paddle2onnx_dummy paddle2onnx_static bundle_paddle2onnx)
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
     if(APPLE)
@@ -110,7 +105,7 @@ else ()
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     endif()
     set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
-    TARGET_LINK_LIBRARIES(paddle2onnx p2o_paddle_proto onnx)
+    target_link_libraries(paddle2onnx p2o_paddle_proto onnx)
 endif()
 
 #install(
@@ -141,9 +136,8 @@ else()
 endif()
 install(
     FILES 
-    ${PROJECT_SOURCE_DIR}/paddle2onnx/p2o_factory_helper.h
-    ${PROJECT_SOURCE_DIR}/paddle2onnx/p2o_mappers.h
     ${PROJECT_SOURCE_DIR}/paddle2onnx/converter.h
+    ${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h
     DESTINATION include/paddle2onnx
 )
 
