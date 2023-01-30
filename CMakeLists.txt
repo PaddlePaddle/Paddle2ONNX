@@ -74,7 +74,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
 string(STRIP "${PADDLE2ONNX_VERSION}" PADDLE2ONNX_VERSION)
 if (WITH_STATIC)
-    # Here, we use a dummy target (fastdelpoy_dummy) 
+    # Here, we use a dummy target (paddle2onnx_dummy) 
     # to form a build dependency tree for paddle2onnx_static lib.
     ADD_LIBRARY(paddle2onnx_dummy STATIC ${ALL_SRCS})
     
