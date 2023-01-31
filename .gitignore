@@ -13,3 +13,4 @@ paddle2onnx.egg-info/*
 *_*.onnx
 *.log
 version.py
+paddle2onnx/mappers_registry.h
