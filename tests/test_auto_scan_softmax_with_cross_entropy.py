@@ -34,6 +34,7 @@ class Net(BaseNet):
         x = paddle.nn.functional.softmax_with_cross_entropy(
             logits=logits,
             label=label,
+            soft_label=self.config["soft_label"],
             return_softmax=self.config["return_softmax"],
             axis=self.config["axis"])
         return x
@@ -54,15 +55,24 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
             st.integers(
                 min_value=-len(input_shape) + 1, max_value=len(input_shape) -
                 1))
+        soft_label = draw(st.booleans())
         return_softmax = draw(st.booleans())
 
         dtype = draw(st.sampled_from(["float32"]))
-        label_dtype = draw(st.sampled_from(["int64"]))
+        if soft_label:
+            label_dtype = draw(st.sampled_from(["float32"]))
+        else:
+            label_dtype = draw(st.sampled_from(["int64"]))
 
         def generator_label():
             label_shape = input_shape
-            label_shape[axis] = 1
-            label = np.random.randint(0, input_shape[axis], size=label_shape)
+            if soft_label:
+                label_dtype = draw(st.sampled_from(["float32"]))
+                label = np.random.random(label_shape)
+            else:
+                label_shape[axis] = 1
+                label = np.random.randint(
+                    0, input_shape[axis], size=label_shape)
             return label
 
         print("input:", input_shape)
@@ -73,6 +83,7 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
             "opset_version": [12, 15],
             "input_spec_shape": [],
             "axis": axis,
+            "soft_label": soft_label,
             "return_softmax": return_softmax,
             "use_gpu": False,
         }
