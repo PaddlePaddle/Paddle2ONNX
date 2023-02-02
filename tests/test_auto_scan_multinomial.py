@@ -73,7 +73,6 @@ class TestMultinomialConvert(OPConvertAutoScanTest):
             "num_samples": num_samples,
             "replacement": replacement,
             "input_spec_shape": [],
-            "out_dtype": "int64",
             "delta": 1e11,
             "rtol": 1e11
         }
