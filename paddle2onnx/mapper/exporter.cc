@@ -19,6 +19,7 @@
 
 #include <array>
 
+#include "convert_helper.h"
 #include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
 #include "paddle2onnx/optimizer/fuse_constant_cast.h"
@@ -386,6 +387,10 @@ std::string ModelExporter::Run(
       SaveExternalData(opt_model.mutable_graph(), external_data_file,
                        save_external);
     }
+    std::cout << "_________Convert fp32 to fp16 start._________ " << std::endl;
+    ConvertFp32ToFp16 convert;
+    convert.convert(opt_model);
+    std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
     if (enable_onnx_checker) {
       ONNXChecker(opt_model, verbose);
     }
