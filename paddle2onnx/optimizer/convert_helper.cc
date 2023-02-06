@@ -13,8 +13,28 @@
 // limitations under the License.
 
 #include "convert_helper.h"
+#include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
+
+void ConvertFp32ToFp16::ConvertValTpFloat16(const float& val, uint16_t* x) {
+  // Conversion routine adapted from
+  // http://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
+  Bits v, s;
+  v.f = val;
+  uint32_t sign = v.si & sigN;
+  v.si ^= sign;
+  sign >>= shiftSign;  // logical shift
+  s.si = mulN;
+  s.si = s.f * v.f;  // correct subnormals
+  v.si ^= (s.si ^ v.si) & -(minN > v.si);
+  v.si ^= (infN ^ v.si) & -((infN > v.si) & (v.si > maxN));
+  v.si ^= (nanN ^ v.si) & -((nanN > v.si) & (v.si > infN));
+  v.ui >>= shift;  // logical shift
+  v.si ^= ((v.si - maxD) ^ v.si) & -(v.si > maxC);
+  v.si ^= ((v.si - minD) ^ v.si) & -(v.si > subC);
+  *x = v.ui | sign;
+}
 
 void ConvertFp32ToFp16::SortNodes(ONNX_NAMESPACE::ModelProto& model) {
   // return the topo sort of nodes;
@@ -180,16 +200,59 @@ void ConvertFp32ToFp16::ConvertTensorFloatToFloat16(
       std::vector<float> fp32_val;
       GetTensorValue(*tensor, &fp32_val);
 
-      float pos_min_val = -1;
-      float pos_max_val = -1;
-      float neg_min_val = 1;
-      float neg_max_val = 1;
+      std::vector<uint16_t> fp16_val(fp32_val.size(), 0);
+
+      float pos_min_val = max_finite_val_;
+      float pos_max_val = min_positive_val_;
+      float neg_min_val = -1 * max_finite_val_;
+      float neg_max_val = -1 * min_positive_val_;
 
       for (auto i = 0; i < fp32_val.size(); i++) {
-        fp32_val[i] = 1e-7;
+        if (0 < fp32_val[i] && fp32_val[i] < min_positive_val_) {
+          if (fp32_val[i] < pos_min_val) {
+            pos_min_val = fp32_val[i];
+          }
+          fp32_val[i] = min_positive_val_;
+        } else if (0 > fp32_val[i] && fp32_val[i] > -1 * min_positive_val_) {
+          if (fp32_val[i] > neg_min_val) {
+            neg_min_val = fp32_val[i];
+          }
+          fp32_val[i] = -1 * min_positive_val_;
+        } else if (fp32_val[i] > max_finite_val_) {
+          if (fp32_val[i] > pos_max_val) {
+            pos_max_val = fp32_val[i];
+          }
+          fp32_val[i] = max_finite_val_;
+        } else if (fp32_val[i] < -1 * max_finite_val_) {
+          if (fp32_val[i] < neg_max_val) {
+            neg_max_val = fp32_val[i];
+          }
+          fp32_val[i] = -1 * max_finite_val_;
+        }
+        ConvertValTpFloat16(fp32_val[i], &fp16_val[i]);
       }
-      tensor->set_raw_data(
-          std::string((const char*)(fp32_val.data()), fp32_val.size() * 4));
+      if (pos_min_val < max_finite_val_ - 1) {
+        P2OLogger() << "[Info] the float32 number: " << pos_min_val
+                    << " will be truncated to: " << min_positive_val_
+                    << std::endl;
+      }
+      if (pos_max_val > min_positive_val_ + 1) {
+        P2OLogger() << "[Info] the float32 number: " << pos_max_val
+                    << " will be truncated to: " << max_finite_val_
+                    << std::endl;
+      }
+      if (neg_min_val > -1 * max_finite_val_ + 1) {
+        P2OLogger() << "[Info] the float32 number: " << neg_min_val
+                    << " will be truncated to: " << -1 * min_positive_val_
+                    << std::endl;
+      }
+      if (neg_max_val < -1 * min_positive_val_ - 1) {
+        P2OLogger() << "[Info] the float32 number: " << neg_max_val
+                    << " will be truncated to: " << -1 * max_finite_val_
+                    << std::endl;
+      }
+      tensor->set_raw_data(std::string((const char*)(fp16_val.data()),
+                                       fp16_val.size() * sizeof(uint16_t)));
     }
   }
 }
@@ -220,7 +283,6 @@ void ConvertFp32ToFp16::KeepIoType(ONNX_NAMESPACE::ModelProto& model) {
     auto output = graph->output(i);
     if (output.type().tensor_type().elem_type() ==
         ONNX_NAMESPACE::TensorProto::FLOAT) {
-      std::cout << "output name: " << output.name() << std::endl;
       std::string output_name = "graph_output_cast_" + std::to_string(i);
       name_mapping[output.name()] = output_name;
       graph_io_to_skip.push_back(output.name());
@@ -237,16 +299,13 @@ void ConvertFp32ToFp16::KeepIoType(ONNX_NAMESPACE::ModelProto& model) {
       io_casts.push_back(node_name);
     }
   }
-  std::cout << "KeepIoType end. " << std::endl;
 }
 
 void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
-  std::cout << "ConvertAttribute start." << std::endl;
   proto_node new_node(model);
   queue.push_back(new_node);
 
   while (queue.size()) {
-    std::cout << " >>>> queue size: " << queue.size() << std::endl;
     next_level.clear();
     for (auto q : queue) {
       // modelproto
@@ -421,16 +480,13 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
       }
     }
   }
-  std::cout << "ConvertAttribute end." << std::endl;
 }
 
 void ConvertFp32ToFp16::convert(ONNX_NAMESPACE::ModelProto& model) {
   if (op_block_list_.empty()) {
     op_block_list_ = DEFAULT_OP_BLOCK_LIST;
   }
-  std::cout << "start process." << std::endl;
   shape_inference::InferShapes(model);
-  std::cout << "shape infer is ok. " << std::endl;
   // 1 keep IO types
   KeepIoType(model);
   // 2 ConvertAttribute

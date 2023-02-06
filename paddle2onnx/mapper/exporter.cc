@@ -19,8 +19,8 @@
 
 #include <array>
 
-#include "convert_helper.h"
 #include "onnxoptimizer/optimize.h"
+#include "paddle2onnx/optimizer/convert_helper.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
 #include "paddle2onnx/optimizer/fuse_constant_cast.h"
 #include "paddle2onnx/optimizer/fuse_constant_reshape.h"
