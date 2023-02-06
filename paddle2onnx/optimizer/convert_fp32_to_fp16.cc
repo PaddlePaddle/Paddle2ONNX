@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "convert_helper.h"
+#include "convert_fp32_to_fp16.h"
 #include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
@@ -402,6 +402,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
                   ONNX_NAMESPACE::TensorProto::FLOAT) {
             input->mutable_type()->mutable_tensor_type()->set_elem_type(
                 ONNX_NAMESPACE::TensorProto::FLOAT16);
+            value_info_list.push_back(input);
           }
         }
         for (auto o_index = 0; o_index < q.graph->output_size(); o_index++) {
@@ -414,6 +415,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
                   ONNX_NAMESPACE::TensorProto::FLOAT) {
             output->mutable_type()->mutable_tensor_type()->set_elem_type(
                 ONNX_NAMESPACE::TensorProto::FLOAT16);
+            value_info_list.push_back(output);
           }
         }
         for (auto value_index = 0; value_index < q.graph->value_info_size();
@@ -427,6 +429,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
                   ONNX_NAMESPACE::TensorProto::FLOAT) {
             value->mutable_type()->mutable_tensor_type()->set_elem_type(
                 ONNX_NAMESPACE::TensorProto::FLOAT16);
+            value_info_list.push_back(value);
           }
         }
       }
@@ -474,7 +477,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
               node->name() + "_output_cast" + std::to_string(o_index);
           auto new_node = MakeCastNode(node_name, {input_name}, {*output}, 10);
           *(graph->add_node()) = (*new_node.get());
-          *(node->mutable_input(o_index)) = input_name;
+          *(node->mutable_output(o_index)) = input_name;
           break;
         }
       }
