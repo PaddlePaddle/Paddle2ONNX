@@ -68,7 +68,8 @@ paddle2onnx --model_dir saved_inference_model \
 |--deploy_backend |**[可选]** 量化模型部署的推理引擎，支持 onnxruntime、tensorrt 或 others，当选择 others 时，所有的量化信息存储于 max_range.txt 文件中，默认为 onnxruntime |
 |--save_calibration_file |**[可选]** TensorRT 8.X版本部署量化模型需要读取的 cache 文件的保存路径，默认为 calibration.cache |
 |--version |**[可选]** 查看 paddle2onnx 版本 |
-|--external_filename |**[可选]** 当导出的ONNX模型大于 2G 时，需要设置 external data 的存储路径，推荐设置为：external_data |
+|--external_filename |**[可选]** 当导出的 ONNX 模型大于 2G 时，需要设置 external data 的存储路径，推荐设置为：external_data |
+|--export_fp16_model |**[可选]** 是否将导出的 ONNX 的模型转换为 FP16 格式，并用 ONNXRuntime-GPU 加速推理，默认为 False |
 
 - 使用 onnxruntime 验证转换模型, 请注意安装最新版本（最低要求 1.10.0）
 

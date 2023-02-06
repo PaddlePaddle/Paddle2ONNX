@@ -252,7 +252,7 @@ std::string ModelExporter::Run(
     bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
     bool enable_optimize, const std::string& deploy_backend,
     std::string* calibration_cache, const std::string& external_file,
-    bool* save_external) {
+    bool* save_external, const bool& export_fp16_model) {
   _deploy_backend = deploy_backend;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
@@ -387,10 +387,13 @@ std::string ModelExporter::Run(
       SaveExternalData(opt_model.mutable_graph(), external_data_file,
                        save_external);
     }
-    std::cout << "_________Convert fp32 to fp16 start._________ " << std::endl;
-    ConvertFp32ToFp16 convert;
-    convert.convert(opt_model);
-    std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
+    if (export_fp16_model) {
+      std::cout << "_________Convert fp32 to fp16 start._________ "
+                << std::endl;
+      ConvertFp32ToFp16 convert;
+      convert.convert(opt_model);
+      std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
+    }
     if (enable_onnx_checker) {
       ONNXChecker(opt_model, verbose);
     }
@@ -403,6 +406,13 @@ std::string ModelExporter::Run(
   } else {
     if (external_data_file.size()) {
       SaveExternalData(graph, external_data_file, save_external);
+    }
+    if (export_fp16_model) {
+      std::cout << "_________Convert fp32 to fp16 start._________ "
+                << std::endl;
+      ConvertFp32ToFp16 convert;
+      convert.convert(*(model.get()));
+      std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
     }
     if (enable_onnx_checker) {
       ONNXChecker(*(model.get()), verbose);

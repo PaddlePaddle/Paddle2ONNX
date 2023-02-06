@@ -24,9 +24,9 @@
 #define PADDLE2ONNX_DECL __attribute__((visibility("default")))
 #endif  // _WIN32
 // Include mappers_registry.h for paddle2onnx static library.
-// This header will do notthings when you are using paddle2onnx 
+// This header will do notthings when you are using paddle2onnx
 // dynamic library.
-#include "mappers_registry.h"
+#include "paddle2onnx/mappers_registry.h"
 
 namespace paddle2onnx {
 
@@ -60,7 +60,8 @@ PADDLE2ONNX_DECL bool Export(
     CustomOp* ops = nullptr, int op_count = 0,
     const char* deploy_backend = "onnxruntime",
     char** calibration_cache = nullptr, int* calibration_size = 0,
-    const char* external_file = "", bool* save_external = nullptr);
+    const char* external_file = "", bool* save_external = nullptr,
+    const bool& export_fp16_model = false);
 
 PADDLE2ONNX_DECL bool Export(
     const void* model_buffer, int model_size, const void* params_buffer,
@@ -70,7 +71,8 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_optimize = true, CustomOp* ops = nullptr, int op_count = 0,
     const char* deploy_backend = "onnxruntime",
     char** calibration_cache = nullptr, int* calibration_size = 0,
-    const char* external_file = "", bool* save_external = nullptr);
+    const char* external_file = "", bool* save_external = nullptr,
+    const bool& export_fp16_model = false);
 
 // Following are inside usage, will remove it maybe
 struct PADDLE2ONNX_DECL ModelTensorInfo {
