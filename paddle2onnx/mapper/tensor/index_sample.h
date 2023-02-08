@@ -27,8 +27,6 @@ class IndexSampleMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpset(bool verbose = false);
   void Opset11();
-
- private:
 };
 
 }  // namespace paddle2onnx
