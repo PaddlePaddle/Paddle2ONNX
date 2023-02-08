@@ -440,6 +440,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
 
   auto graph = model.mutable_graph();
   for (auto node : node_list) {
+    std::cout << "node list type: " << node->op_type() << std::endl;
     for (auto i_index = 0; i_index < node->input_size(); i_index++) {
       std::string* input = node->mutable_input(i_index);
       for (auto value_index = 0; value_index < value_info_list.size();
@@ -466,6 +467,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
       for (auto value_index = 0; value_index < value_info_list.size();
            value_index++) {
         if (*output == value_info_list[value_index]->name()) {
+          std::cout << "output name: " << *output << std::endl;
           auto new_value_info = model.mutable_graph()->add_value_info();
           new_value_info->CopyFrom(*value_info_list[value_index]);
           std::string input_name =
@@ -485,9 +487,13 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
   }
 }
 
-void ConvertFp32ToFp16::convert(ONNX_NAMESPACE::ModelProto& model) {
+void ConvertFp32ToFp16::Convert(ONNX_NAMESPACE::ModelProto& model) {
   if (op_block_list_.empty()) {
     op_block_list_ = DEFAULT_OP_BLOCK_LIST;
+  }
+  if (custom_ops_.size()) {
+    op_block_list_.insert(op_block_list_.end(), custom_ops_.begin(),
+                          custom_ops_.end());
   }
   shape_inference::InferShapes(model);
   // 1 keep IO types

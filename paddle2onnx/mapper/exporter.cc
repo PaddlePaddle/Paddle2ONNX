@@ -390,8 +390,15 @@ std::string ModelExporter::Run(
     if (export_fp16_model) {
       std::cout << "_________Convert fp32 to fp16 start._________ "
                 << std::endl;
+      if (custom_ops.size()) {
+        for (auto op : custom_ops) {
+          std::cout << "custom op type: " << op.second << std::endl;
+          custom_op_type.push_back(op.second);
+        }
+      }
       ConvertFp32ToFp16 convert;
-      convert.convert(opt_model);
+      convert.SetCustomOps(custom_op_type);
+      convert.Convert(opt_model);
       std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
     }
     if (enable_onnx_checker) {
@@ -411,7 +418,8 @@ std::string ModelExporter::Run(
       std::cout << "_________Convert fp32 to fp16 start._________ "
                 << std::endl;
       ConvertFp32ToFp16 convert;
-      convert.convert(*(model.get()));
+      convert.SetCustomOps(custom_op_type);
+      convert.Convert(*(model.get()));
       std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
     }
     if (enable_onnx_checker) {

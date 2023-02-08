@@ -148,8 +148,9 @@ def c_paddle_to_onnx(model_file,
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     onnx_model_str = c_p2o.export(
         model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-        enable_onnx_checker, enable_experimental_op, enable_optimize, {},
-        deploy_backend, calibration_file, external_file, export_fp16_model)
+        enable_onnx_checker, enable_experimental_op, enable_optimize,
+        {"pool2d": "AdaptivePool2d"}, deploy_backend, calibration_file,
+        external_file, export_fp16_model)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)

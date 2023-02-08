@@ -73,6 +73,7 @@ struct ModelExporter {
   // custom operators for export
   // <key: op_name, value:[exported_op_name, domain]>
   std::map<std::string, std::string> custom_ops;
+  std::vector<std::string> custom_op_type;
 
   QuantizeModelProcessor quantize_model_processer;
   // Get a proper opset version in range of [7, 16]

@@ -89,7 +89,7 @@ struct ConvertFp32ToFp16 {
     node_block_list_ = node_block_list;
   }
 
-  void convert(ONNX_NAMESPACE::ModelProto& model);
+  void Convert(ONNX_NAMESPACE::ModelProto& model);
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeCastNode(
       const std::string& op_name, const std::vector<std::string>& inputs,
@@ -110,6 +110,10 @@ struct ConvertFp32ToFp16 {
   void SortNodes(ONNX_NAMESPACE::ModelProto& model);
 
   void ConvertValTpFloat16(const float& val, uint16_t* x);
+
+  void SetCustomOps(const std::vector<std::string>& custom_ops) {
+    custom_ops_ = custom_ops;
+  }
 
  private:
   union Bits {
@@ -146,6 +150,8 @@ struct ConvertFp32ToFp16 {
   bool disable_shape_infer_ = false;
   std::vector<std::string> op_block_list_ = {};
   std::vector<std::string> node_block_list_ = {};
+
+  std::vector<std::string> custom_ops_;
 
   std::map<std::string, std::string> name_mapping;
   std::vector<std::string> graph_io_to_skip;
