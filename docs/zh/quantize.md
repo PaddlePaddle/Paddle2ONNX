@@ -19,7 +19,7 @@ paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename mode
 paddle2onnx --model_dir ./ --model_filename model.pdmodel --params_filename model.pdiparams --save_file float_model.onnx --opset_version 13 --enable_dev_version True --deploy_backend tensorrt --enable_onnx_checker True
 ```
 
-3. 请确保 PaddleSlim 模型量化后，生成 3 个文件，分别时模型文件、权重文件和 scale 文件。PaddleSlim 量化 demo 和接口请查阅：[PaddleSlim 离线量化 demo](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/quant_post)  
+3. 请确保 PaddleSlim 模型量化后，生成 3 个文件，分别是模型文件、权重文件和 scale 文件。PaddleSlim 量化 demo 和接口请查阅：[PaddleSlim 离线量化 demo](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/quant_post)  
 一个简单的量化配置说明如下：  
 
 ```
