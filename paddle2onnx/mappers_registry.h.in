@@ -13,7 +13,7 @@
 // limitations under the License.
 #pragma once
 
-// If you want to use the paddle2onnx static library, add the 
+// If you want to use the paddle2onnx static library, add the
 // registration logic here synchronously each time you add a new op.
 #ifndef WITH_PADDLE2ONNX_STATIC_INTERNAL
 #cmakedefine WITH_PADDLE2ONNX_STATIC_INTERNAL
@@ -208,5 +208,6 @@ USE_P2O_MAPPER(equal, EqualMapper)
 USE_P2O_MAPPER(yolo_box, YoloBoxMapper)
 USE_P2O_MAPPER(multiclass_nms3, NMSMapper)
 USE_P2O_MAPPER(roi_align, RoiAlignMapper)
+USE_P2O_MAPPER(index_sample, IndexSampleMapper)
 #endif // WITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING
 #endif // WITH_PADDLE2ONNX_STATIC_INTERNAL
