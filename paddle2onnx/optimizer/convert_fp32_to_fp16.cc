@@ -123,6 +123,8 @@ void ConvertFp32ToFp16::SortNodes(ONNX_NAMESPACE::ModelProto& model) {
     new_nodes.push_back(node);
   }
   std::reverse(new_nodes.begin(), new_nodes.end());
+  std::cout << "model node: " << model.mutable_graph()->node_size()
+            << " new node size: " << new_nodes.size() << std::endl;
   Assert(model.mutable_graph()->node_size() == new_nodes.size(),
          "The number of nodes after topological sorting is not equal to the "
          "number before sorting");
@@ -133,7 +135,15 @@ void ConvertFp32ToFp16::SortNodes(ONNX_NAMESPACE::ModelProto& model) {
 }
 
 std::string ConvertFp32ToFp16::GenName(const std::string& prefix) {
-  return prefix + std::to_string(name_index++);
+  int64_t name_index = 0;
+  auto iter = name_index_mapper.find(prefix);
+  if (iter != name_index_mapper.end()) {
+    name_index = iter->second;
+    name_index_mapper[prefix]++;
+  } else {
+    name_index_mapper[prefix] = 1;
+  }
+  return prefix + std::to_string(name_index);
 }
 
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>
@@ -190,11 +200,39 @@ bool ConvertFp32ToFp16::GetTensorValue(
   return value->size();
 }
 
+bool ConvertFp32ToFp16::KeepNodeType(ONNX_NAMESPACE::NodeProto* node) {
+  auto KeepType = [=](const ONNX_NAMESPACE::TensorProto& tensor) {
+    std::vector<float> fp32_val;
+    GetTensorValue(tensor, &fp32_val);
+    for (auto i = 0; i < fp32_val.size(); i++) {
+      if (fp32_val[i] > 10000) {
+        std::cout << "skipped tensor name: " << tensor.name() << std::endl;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (auto attr_index = 0; attr_index < node->attribute_size(); attr_index++) {
+    auto attr = node->attribute(attr_index);
+    if (attr.has_t() && KeepType(attr.t())) {
+      return true;
+    }
+    for (auto t_index = 0; t_index < attr.tensors_size(); t_index++) {
+      if (KeepType(attr.tensors(t_index))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void ConvertFp32ToFp16::ConvertTensorFloatToFloat16(
     ONNX_NAMESPACE::TensorProto* tensor) {
   if (tensor->data_type() == ONNX_NAMESPACE::TensorProto::FLOAT) {
     tensor->set_data_type(ONNX_NAMESPACE::TensorProto::FLOAT16);
     if (tensor->float_data_size()) {
+      Assert(false, "No implemented! Please raise an issue to us.");
     }
     if (tensor->has_raw_data()) {
       std::vector<float> fp32_val;
@@ -338,9 +376,13 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
             }
           }
 
-          if (std::find(op_block_list_.begin(), op_block_list_.end(),
-                        n->op_type()) != op_block_list_.end()) {
+          if (KeepNodeType(n) ||
+              std::find(op_block_list_.begin(), op_block_list_.end(),
+                        n->op_type()) != op_block_list_.end() ||
+              std::find(fp32_output_op_list.begin(), fp32_output_op_list.end(),
+                        n->op_type()) != fp32_output_op_list.end()) {
             node_list.push_back(n);
+            std::cout << "type: " << n->op_type() << std::endl;
           } else {
             if (n->op_type() == "Cast") {
               for (auto attr_index = 0; attr_index < n->attribute_size();
@@ -441,6 +483,18 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
   auto graph = model.mutable_graph();
   for (auto node : node_list) {
     std::cout << "node list type: " << node->op_type() << std::endl;
+    if (std::find(fp32_output_op_list.begin(), fp32_output_op_list.end(),
+                  node->op_type()) != fp32_output_op_list.end()) {
+      for (auto o_index = 0; o_index < node->output_size(); o_index++) {
+        std::string* output = node->mutable_output(o_index);
+        std::string input_name = GenName(node->name() + "_output_cast_");
+        std::string node_name = GenName(node->name() + "_output_cast");
+        auto new_node = MakeCastNode(node_name, {input_name}, {*output}, 10);
+        *(graph->add_node()) = (*new_node.get());
+        *(node->mutable_output(o_index)) = input_name;
+      }
+      continue;
+    }
     for (auto i_index = 0; i_index < node->input_size(); i_index++) {
       std::string* input = node->mutable_input(i_index);
       for (auto value_index = 0; value_index < value_info_list.size();
@@ -448,13 +502,11 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
         if (*input == value_info_list[value_index]->name()) {
           auto new_value_info = model.mutable_graph()->add_value_info();
           new_value_info->CopyFrom(*value_info_list[value_index]);
-          std::string output_name =
-              node->name() + "_input_cast_" + std::to_string(i_index);
+          std::string output_name = GenName(node->name() + "_input_cast_");
           new_value_info->set_name(output_name);
           new_value_info->mutable_type()->mutable_tensor_type()->set_elem_type(
               ONNX_NAMESPACE::TensorProto::FLOAT);
-          std::string node_name =
-              node->name() + "_input_cast" + std::to_string(i_index);
+          std::string node_name = GenName(node->name() + "_input_cast");
           auto new_node = MakeCastNode(node_name, {*input}, {output_name}, 1);
           *(graph->add_node()) = (*new_node.get());
           *(node->mutable_input(i_index)) = output_name;
@@ -470,13 +522,13 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
           std::cout << "output name: " << *output << std::endl;
           auto new_value_info = model.mutable_graph()->add_value_info();
           new_value_info->CopyFrom(*value_info_list[value_index]);
-          std::string input_name =
-              node->name() + "_output_cast_" + std::to_string(o_index);
+          std::string input_name = GenName(node->name() + "_output_cast_");
           new_value_info->set_name(input_name);
           new_value_info->mutable_type()->mutable_tensor_type()->set_elem_type(
               ONNX_NAMESPACE::TensorProto::FLOAT);
-          std::string node_name =
-              node->name() + "_output_cast" + std::to_string(o_index);
+          std::string node_name = GenName(node->name() + "_output_cast");
+          std::cout << "GenName: " << input_name << " " << node_name
+                    << std::endl;
           auto new_node = MakeCastNode(node_name, {input_name}, {*output}, 10);
           *(graph->add_node()) = (*new_node.get());
           *(node->mutable_output(o_index)) = input_name;

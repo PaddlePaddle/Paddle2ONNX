@@ -104,6 +104,8 @@ struct ConvertFp32ToFp16 {
 
   void ConvertTensorFloatToFloat16(ONNX_NAMESPACE::TensorProto* tensor);
 
+  bool KeepNodeType(ONNX_NAMESPACE::NodeProto* node);
+
   bool GetTensorValue(const ONNX_NAMESPACE::TensorProto& tensor,
                       std::vector<float>* value);
 
@@ -163,36 +165,42 @@ struct ConvertFp32ToFp16 {
   std::vector<proto_node> queue;
   std::vector<proto_node> next_level;
 
-  int64_t name_index = 0;
+  std::map<std::string, int64_t> name_index_mapper;
+  // int64_t name_index = 0;
   std::string GenName(const std::string& prefix);
 
-  std::vector<std::string> DEFAULT_OP_BLOCK_LIST = {"ArrayFeatureExtractor",
-                                                    "Binarizer",
-                                                    "CastMap",
-                                                    "CategoryMapper",
-                                                    "DictVectorizer",
-                                                    "FeatureVectorizer",
-                                                    "Imputer",
-                                                    "LabelEncoder",
-                                                    "LinearClassifier",
-                                                    "LinearRegressor",
-                                                    "Normalizer",
-                                                    "OneHotEncoder",
-                                                    "RandomUniformLike",
-                                                    "SVMClassifier",
-                                                    "SVMRegressor",
-                                                    "Scaler",
-                                                    "TreeEnsembleClassifier",
-                                                    "TreeEnsembleRegressor",
-                                                    "ZipMap",
-                                                    "NonMaxSuppression",
-                                                    "TopK",
-                                                    "RoiAlign",
-                                                    "Resize",
-                                                    "Range",
-                                                    "CumSum",
-                                                    "Min",
-                                                    "Max",
-                                                    "Upsample"};
+  // The input can be FP16, but the output can only be fp32
+  std::vector<std::string> fp32_output_op_list = {"RandomNormalLike"};
+
+  std::vector<std::string> DEFAULT_OP_BLOCK_LIST = {
+      "ArrayFeatureExtractor",
+      "Binarizer",
+      "CastMap",
+      "CategoryMapper",
+      "DictVectorizer",
+      "FeatureVectorizer",
+      "Imputer",
+      "LabelEncoder",
+      "LinearClassifier",
+      "LinearRegressor",
+      "Normalizer",
+      "OneHotEncoder",
+      "RandomUniformLike",
+      "SVMClassifier",
+      "SVMRegressor",
+      "Scaler",
+      "TreeEnsembleClassifier",
+      "TreeEnsembleRegressor",
+      "ZipMap",
+      "NonMaxSuppression",
+      "TopK",
+      "RoiAlign",
+      "Resize",
+      "Range",
+      "CumSum",
+      "Min",
+      "Max",
+      "Upsample",  // The following OP is added by Paddle developer
+      "EyeLike"};
 };
 }  // namespace paddle2onnx
