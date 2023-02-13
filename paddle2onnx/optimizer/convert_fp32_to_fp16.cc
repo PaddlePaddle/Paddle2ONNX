@@ -479,58 +479,119 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto& model) {
   auto graph = model.mutable_graph();
   for (auto node : node_list) {
     std::cout << "node list type: " << node->op_type() << std::endl;
-    //
-    if (std::find(custom_ops_.begin(), custom_ops_.end(), node->op_type()) ! =
-            custom_ops_.end()) {
-    }
 
     if (std::find(fp32_output_op_list.begin(), fp32_output_op_list.end(),
                   node->op_type()) != fp32_output_op_list.end()) {
       for (auto o_index = 0; o_index < node->output_size(); o_index++) {
         std::string* output = node->mutable_output(o_index);
-        std::string input_name = GenName(node->name() + "_output_cast_");
-        std::string node_name = GenName(node->name() + "_output_cast");
-        auto new_node = MakeCastNode(node_name, {input_name}, {*output}, 10);
-        *(graph->add_node()) = (*new_node.get());
-        *(node->mutable_output(o_index)) = input_name;
+        for (auto v_index = 0; v_index < graph->value_info().size();
+             v_index++) {
+          auto value_info = graph->mutable_value_info(v_index);
+          if (value_info->name() == *output) {
+            if (value_info->type().tensor_type().elem_type() ==
+                ONNX_NAMESPACE::TensorProto::FLOAT16) {
+              std::string input_name = GenName(node->name() + "_output_cast_");
+              std::string node_name = GenName(node->name() + "_output_cast");
+              auto new_node =
+                  MakeCastNode(node_name, {input_name}, {*output}, 10);
+              *(graph->add_node()) = (*new_node.get());
+              *(node->mutable_output(o_index)) = input_name;
+            } else {
+              break;
+            }
+          }
+        }
       }
       continue;
     }
-    for (auto i_index = 0; i_index < node->input_size(); i_index++) {
-      std::string* input = node->mutable_input(i_index);
-      for (auto value_index = 0; value_index < value_info_list.size();
-           value_index++) {
-        if (*input == value_info_list[value_index]->name()) {
-          auto new_value_info = model.mutable_graph()->add_value_info();
-          new_value_info->CopyFrom(*value_info_list[value_index]);
-          std::string output_name = GenName(node->name() + "_input_cast_");
-          new_value_info->set_name(output_name);
-          new_value_info->mutable_type()->mutable_tensor_type()->set_elem_type(
-              ONNX_NAMESPACE::TensorProto::FLOAT);
-          std::string node_name = GenName(node->name() + "_input_cast");
-          auto new_node = MakeCastNode(node_name, {*input}, {output_name}, 1);
-          *(graph->add_node()) = (*new_node.get());
-          *(node->mutable_input(i_index)) = output_name;
-          break;
+
+    // Handle the case of a custom OP
+    if (std::find(custom_ops_.begin(), custom_ops_.end(), node->op_type()) !=
+        custom_ops_.end()) {
+      std::cout << "custom op type: " << node->op_type() << std::endl;
+      for (auto i_index = 0; i_index < node->input_size(); i_index++) {
+        std::string* input = node->mutable_input(i_index);
+        for (auto v_index = 0; v_index < graph->value_info().size();
+             v_index++) {
+          auto value_info = graph->mutable_value_info(v_index);
+          if (value_info->name() == *input) {
+            if (value_info->type().tensor_type().elem_type() ==
+                ONNX_NAMESPACE::TensorProto::FLOAT16) {
+              std::string output_name = GenName(node->name() + "_input_cast_");
+              std::string node_name = GenName(node->name() + "_input_cast");
+              auto new_node =
+                  MakeCastNode(node_name, {*input}, {output_name}, 1);
+              *(graph->add_node()) = (*new_node.get());
+              *(node->mutable_input(i_index)) = output_name;
+            } else {
+              break;
+            }
+          }
         }
       }
-    }
-    for (auto o_index = 0; o_index < node->output_size(); o_index++) {
-      std::string* output = node->mutable_output(o_index);
-      for (auto value_index = 0; value_index < value_info_list.size();
-           value_index++) {
-        if (*output == value_info_list[value_index]->name()) {
-          auto new_value_info = model.mutable_graph()->add_value_info();
-          new_value_info->CopyFrom(*value_info_list[value_index]);
-          std::string input_name = GenName(node->name() + "_output_cast_");
-          new_value_info->set_name(input_name);
-          new_value_info->mutable_type()->mutable_tensor_type()->set_elem_type(
-              ONNX_NAMESPACE::TensorProto::FLOAT);
-          std::string node_name = GenName(node->name() + "_output_cast");
-          auto new_node = MakeCastNode(node_name, {input_name}, {*output}, 10);
-          *(graph->add_node()) = (*new_node.get());
-          *(node->mutable_output(o_index)) = input_name;
-          break;
+      for (auto o_index = 0; o_index < node->output_size(); o_index++) {
+        std::string* output = node->mutable_output(o_index);
+        for (auto v_index = 0; v_index < graph->value_info().size();
+             v_index++) {
+          auto value_info = graph->mutable_value_info(v_index);
+          if (value_info->name() == *output) {
+            std::cout << *output << " "
+                      << value_info->type().tensor_type().elem_type()
+                      << std::endl;
+            if (value_info->type().tensor_type().elem_type() ==
+                ONNX_NAMESPACE::TensorProto::FLOAT) {
+              std::string input_name = GenName(node->name() + "_output_cast_");
+              std::string node_name = GenName(node->name() + "_output_cast");
+              auto new_node =
+                  MakeCastNode(node_name, {input_name}, {*output}, 10);
+              *(graph->add_node()) = (*new_node.get());
+              *(node->mutable_output(o_index)) = input_name;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      for (auto i_index = 0; i_index < node->input_size(); i_index++) {
+        std::string* input = node->mutable_input(i_index);
+        for (auto value_index = 0; value_index < value_info_list.size();
+             value_index++) {
+          if (*input == value_info_list[value_index]->name()) {
+            auto new_value_info = model.mutable_graph()->add_value_info();
+            new_value_info->CopyFrom(*value_info_list[value_index]);
+            std::string output_name = GenName(node->name() + "_input_cast_");
+            new_value_info->set_name(output_name);
+            new_value_info->mutable_type()
+                ->mutable_tensor_type()
+                ->set_elem_type(ONNX_NAMESPACE::TensorProto::FLOAT);
+            std::string node_name = GenName(node->name() + "_input_cast");
+            auto new_node = MakeCastNode(node_name, {*input}, {output_name}, 1);
+            *(graph->add_node()) = (*new_node.get());
+            *(node->mutable_input(i_index)) = output_name;
+            break;
+          }
+        }
+      }
+      for (auto o_index = 0; o_index < node->output_size(); o_index++) {
+        std::string* output = node->mutable_output(o_index);
+        for (auto value_index = 0; value_index < value_info_list.size();
+             value_index++) {
+          if (*output == value_info_list[value_index]->name()) {
+            auto new_value_info = model.mutable_graph()->add_value_info();
+            new_value_info->CopyFrom(*value_info_list[value_index]);
+            std::string input_name = GenName(node->name() + "_output_cast_");
+            new_value_info->set_name(input_name);
+            new_value_info->mutable_type()
+                ->mutable_tensor_type()
+                ->set_elem_type(ONNX_NAMESPACE::TensorProto::FLOAT);
+            std::string node_name = GenName(node->name() + "_output_cast");
+            auto new_node =
+                MakeCastNode(node_name, {input_name}, {*output}, 10);
+            *(graph->add_node()) = (*new_node.get());
+            *(node->mutable_output(o_index)) = input_name;
+            break;
+          }
         }
       }
     }
