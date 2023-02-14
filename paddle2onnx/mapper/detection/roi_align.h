@@ -40,7 +40,7 @@ class RoiAlignMapper : public Mapper {
   int64_t pooled_height_;
   int64_t pooled_width_;
   float spatial_scale_;
-  float sampling_ratio_;
+  int64_t sampling_ratio_;
   bool aligned_;
 };
 
