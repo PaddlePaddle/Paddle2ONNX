@@ -22,10 +22,7 @@ import tempfile
 import contextlib
 import numpy as np
 import paddle
-import paddle.fluid as fluid
-from paddle.dataset.common import download
-from paddle.static.quantization import PostTrainingQuantization
-from fake_quant_demo import post_quant_fake
+from fake_quant import post_quant_fake
 
 paddle.enable_static()
 
@@ -121,8 +118,13 @@ class TestPostTrainingQuantization(unittest.TestCase):
                                       model_filename, params_filename)
 
         print("Start INT8 inference for {0}  ...".format(model_name))
-        int8_latency = self.run_program(quantize_model_path, model_filename,
-                                        params_filename, threads_num)
+        if (".pdmodel" in model_filename):
+            int8_latency = self.run_program(quantize_model_path, model_filename,
+                                            params_filename, threads_num)
+        else:
+            int8_latency = self.run_program(quantize_model_path,
+                                            "__model__.pdmodel",
+                                            "__model__.pdiparams", threads_num)
 
         print("---Post training quantization---")
         print("FP32 lentency {0}: latency {1} s."
@@ -137,27 +139,27 @@ class TestPostTrainingQuantization(unittest.TestCase):
 class TestPostTrainingE2eqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_e2eq_onnx_format_full_quant(self):
         model_name = "e2eq"
-        self.run_test(model_name)
+        self.run_test(model_name, threads_num=1)
 
 
 class TestPostTrainingFeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_feedasq_onnx_format_full_quant(self):
         model_name = "feedasq"
-        self.run_test(model_name)
+        self.run_test(model_name, threads_num=1)
 
 
 class TestPostTrainingFeedasqNohadamaONNXFormatFullQuant(
         TestPostTrainingQuantization):
     def test_post_training_feedasq_nohadama_onnx_format_full_quant(self):
         model_name = "feedasq_nohadama"
-        self.run_test(model_name)
+        self.run_test(model_name, threads_num=1)
 
 
 class TestPostTrainingVideofeedasqONNXFormatFullQuant(
         TestPostTrainingQuantization):
     def test_post_training_videofeedasq_onnx_format_full_quant(self):
         model_name = "videofeedasq"
-        self.run_test(model_name)
+        self.run_test(model_name, threads_num=1)
 
 
 class TestPostTrainingLiminghaoONNXFormatFullQuant(
