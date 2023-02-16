@@ -27,8 +27,6 @@ class GatherMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     if (HasAttr("axis")) {
       GetAttr("axis", &axis_);
-    } else {
-      axis_ = 0;
     }
   }
 
@@ -37,7 +35,7 @@ class GatherMapper : public Mapper {
   void Opset11();
 
  private:
-  int64_t axis_;
+  int64_t axis_ = 0;
 };
 
 }  // namespace paddle2onnx
