@@ -30,7 +30,7 @@ class Net(BaseNet):
         forward
         """
 
-        condition = paddle.fluid.layers.cast(inputs, 'bool')
+        condition = paddle.cast(inputs, 'bool')
         x = paddle.nonzero(condition)
         return x
 
