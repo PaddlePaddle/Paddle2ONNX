@@ -252,7 +252,7 @@ std::string ModelExporter::Run(
     bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
     bool enable_optimize, const std::string& deploy_backend,
     std::string* calibration_cache, const std::string& external_file,
-    bool* save_external, const bool& export_fp16_model) {
+    bool* save_external, bool export_fp16_model) {
   _deploy_backend = deploy_backend;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
@@ -353,7 +353,6 @@ std::string ModelExporter::Run(
     // Update int8 weights in quantized OP to float32
     UpdateParameters(_helper.updated_params);
   }
-  // RemoveIsolatedNodes(&parameters, &inputs, &outputs, &_helper.nodes);
 
   for (auto& item : parameters) {
     *(graph->add_node()) = *(item.get());
@@ -371,66 +370,53 @@ std::string ModelExporter::Run(
     *(graph->add_value_info()) = (*item.get());
   }
 
+  ONNX_NAMESPACE::ModelProto* model_ptr;
+  std::string out;
+  if (enable_optimize) {
+    auto opt_model = Optimize(*(model.get()));
+    model_ptr = &opt_model;
+  } else {
+    model_ptr = model.get();
+  }
+
+  auto onnx_model = *model;
+  // convert fp32 model to fp16
+  if (export_fp16_model) {
+    P2OLogger(verbose) << "Convert FP32 to FP16 for ONNXRuntime-GPU."
+                       << std::endl;
+    if (custom_ops.size()) {
+      for (auto op : custom_ops) {
+        custom_op_type.push_back(op.second);
+      }
+    }
+    ConvertFp32ToFp16 convert;
+    convert.SetCustomOps(custom_op_type);
+    convert.Convert(onnx_model);
+  }
+
+  // save external data file for big model
   std::string external_data_file;
-  if (model->ByteSizeLong() > INT_MAX) {
+  if (onnx_model.ByteSizeLong() > INT_MAX) {
     if (external_file.empty()) {
       external_data_file = "external_data";
     } else {
       external_data_file = external_file;
     }
   }
+  if (external_data_file.size()) {
+    SaveExternalData(onnx_model.mutable_graph(), external_data_file,
+                     save_external);
+  }
+  // check model
+  if (enable_onnx_checker) {
+    ONNXChecker(onnx_model, verbose);
+  }
 
-  std::string out;
-  if (enable_optimize) {
-    auto opt_model = Optimize(*(model.get()));
-    if (external_data_file.size()) {
-      SaveExternalData(opt_model.mutable_graph(), external_data_file,
-                       save_external);
-    }
-    if (export_fp16_model) {
-      std::cout << "_________Convert fp32 to fp16 start._________ "
-                << std::endl;
-      if (custom_ops.size()) {
-        for (auto op : custom_ops) {
-          std::cout << "custom op type: " << op.second << std::endl;
-          custom_op_type.push_back(op.second);
-        }
-      }
-      ConvertFp32ToFp16 convert;
-      convert.SetCustomOps(custom_op_type);
-      convert.Convert(opt_model);
-      std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
-    }
-    if (enable_onnx_checker) {
-      ONNXChecker(opt_model, verbose);
-    }
-    if (!opt_model.SerializeToString(&out)) {
-      P2OLogger(verbose)
-          << "Error happenedd while optimizing the exported ONNX model."
-          << std::endl;
-      return "";
-    }
-  } else {
-    if (external_data_file.size()) {
-      SaveExternalData(graph, external_data_file, save_external);
-    }
-    if (export_fp16_model) {
-      std::cout << "_________Convert fp32 to fp16 start._________ "
-                << std::endl;
-      ConvertFp32ToFp16 convert;
-      convert.SetCustomOps(custom_op_type);
-      convert.Convert(*(model.get()));
-      std::cout << "_________Convert fp32 to fp16 end. _________" << std::endl;
-    }
-    if (enable_onnx_checker) {
-      ONNXChecker(*(model.get()), verbose);
-    }
-    if (!model->SerializeToString(&out)) {
-      P2OLogger(verbose)
-          << "Error happened while optimizing the exported ONNX model."
-          << std::endl;
-      return "";
-    }
+  if (!onnx_model.SerializeToString(&out)) {
+    P2OLogger(verbose)
+        << "Error happenedd while optimizing the exported ONNX model."
+        << std::endl;
+    return "";
   }
   return out;
 }

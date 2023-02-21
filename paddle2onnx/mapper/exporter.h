@@ -117,7 +117,7 @@ struct ModelExporter {
                   std::string* calibration_cache = nullptr,
                   const std::string& external_file = "",
                   bool* save_external = nullptr,
-                  const bool& export_fp16_model = false);
+                  bool export_fp16_model = false);
 };
 
 }  // namespace paddle2onnx

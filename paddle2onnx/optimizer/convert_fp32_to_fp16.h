@@ -91,11 +91,11 @@ struct ConvertFp32ToFp16 {
 
   void Convert(ONNX_NAMESPACE::ModelProto& model);
 
-  std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeCastNode(
+  ONNX_NAMESPACE::NodeProto* MakeCastNode(
       const std::string& op_name, const std::vector<std::string>& inputs,
       const std::vector<std::string>& outputs, int32_t to_dtype);
 
-  std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfoFromTensor(
+  ONNX_NAMESPACE::ValueInfoProto* MakeValueInfoFromTensor(
       const ONNX_NAMESPACE::TensorProto& tensor);
 
   void KeepIoType(ONNX_NAMESPACE::ModelProto& model);
@@ -104,14 +104,31 @@ struct ConvertFp32ToFp16 {
 
   void ConvertTensorFloatToFloat16(ONNX_NAMESPACE::TensorProto* tensor);
 
+  // return if keep the type of node
   bool KeepNodeType(ONNX_NAMESPACE::NodeProto* node);
 
   bool GetTensorValue(const ONNX_NAMESPACE::TensorProto& tensor,
                       std::vector<float>* value);
 
+  // topo sort
   void SortNodes(ONNX_NAMESPACE::ModelProto& model);
 
   void ConvertValTpFloat16(const float& val, uint16_t* x);
+
+  // return if the next node of name is Cast and its attr type is dtype.
+  bool CastedTo(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
+                const int64_t& dtype);
+  // return if the pre node of name is Cast and its attr type is dtype.
+  bool CastedFrom(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
+                  const int64_t& dtype);
+  // return if the name is the input of DEFAULT_OP_BLOCK_LIST
+  bool IsInputOfOpBlock(const std::string& name,
+                        ONNX_NAMESPACE::ModelProto& model);
+
+  // return if the name is the input of DEFAULT_OP_BLOCK_LIST and
+  // fp32_output_op_list
+  bool IsOutputOfOpBlockAndFP32Out(const std::string& name,
+                                   ONNX_NAMESPACE::ModelProto& model);
 
   void SetCustomOps(const std::vector<std::string>& custom_ops) {
     custom_ops_ = custom_ops;
@@ -153,7 +170,9 @@ struct ConvertFp32ToFp16 {
   std::vector<std::string> op_block_list_ = {};
   std::vector<std::string> node_block_list_ = {};
 
-  std::vector<std::string> custom_ops_;
+  std::vector<std::string> custom_ops_ = {"AdaptivePool2d", "MultiClassNMS"};
+
+  int64_t converted_attr = 0;
 
   std::map<std::string, std::string> name_mapping;
   std::vector<std::string> graph_io_to_skip;
