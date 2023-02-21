@@ -370,16 +370,14 @@ std::string ModelExporter::Run(
     *(graph->add_value_info()) = (*item.get());
   }
 
-  ONNX_NAMESPACE::ModelProto* model_ptr;
+  ONNX_NAMESPACE::ModelProto onnx_model;
   std::string out;
   if (enable_optimize) {
-    auto opt_model = Optimize(*(model.get()));
-    model_ptr = &opt_model;
+    onnx_model = Optimize(*(model.get()));
   } else {
-    model_ptr = model.get();
+    onnx_model = *model.get();
   }
 
-  auto onnx_model = *model;
   // convert fp32 model to fp16
   if (export_fp16_model) {
     P2OLogger(verbose) << "Convert FP32 to FP16 for ONNXRuntime-GPU."
