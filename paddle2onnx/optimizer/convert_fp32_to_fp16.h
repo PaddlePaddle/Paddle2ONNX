@@ -75,10 +75,9 @@ struct proto_node {
 
 struct ConvertFp32ToFp16 {
  public:
-  ConvertFp32ToFp16(const float& min_positive_val = 1e-7,
-                    const float& max_finite_val = 1e4,
-                    const bool& keep_io_types = false,
-                    const bool& disable_shape_infer = false,
+  ConvertFp32ToFp16(float min_positive_val = 1e-7, float max_finite_val = 1e4,
+                    bool keep_io_types = false,
+                    bool disable_shape_infer = false,
                     const std::vector<std::string>& op_block_list = {},
                     const std::vector<std::string>& node_block_list = {}) {
     min_positive_val_ = min_positive_val;
@@ -89,7 +88,7 @@ struct ConvertFp32ToFp16 {
     node_block_list_ = node_block_list;
   }
 
-  void Convert(ONNX_NAMESPACE::ModelProto& model);
+  void Convert(ONNX_NAMESPACE::ModelProto* model);
 
   ONNX_NAMESPACE::NodeProto* MakeCastNode(
       const std::string& op_name, const std::vector<std::string>& inputs,
@@ -98,9 +97,9 @@ struct ConvertFp32ToFp16 {
   ONNX_NAMESPACE::ValueInfoProto* MakeValueInfoFromTensor(
       const ONNX_NAMESPACE::TensorProto& tensor);
 
-  void KeepIoType(ONNX_NAMESPACE::ModelProto& model);
+  void KeepIoType(ONNX_NAMESPACE::ModelProto* model);
 
-  void ConvertAttribute(ONNX_NAMESPACE::ModelProto& model);
+  void ConvertAttribute(ONNX_NAMESPACE::ModelProto* model);
 
   void ConvertTensorFloatToFloat16(ONNX_NAMESPACE::TensorProto* tensor);
 
@@ -111,16 +110,16 @@ struct ConvertFp32ToFp16 {
                       std::vector<float>* value);
 
   // topo sort
-  void SortNodes(ONNX_NAMESPACE::ModelProto& model);
+  void SortNodes(ONNX_NAMESPACE::ModelProto* model);
 
-  void ConvertValTpFloat16(const float& val, uint16_t* x);
+  void ConvertValToFloat16(float val, uint16_t* x);
 
   // return if the next node of name is Cast and its attr type is dtype.
   bool CastedTo(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
-                const int64_t& dtype);
+                int64_t dtype);
   // return if the pre node of name is Cast and its attr type is dtype.
   bool CastedFrom(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
-                  const int64_t& dtype);
+                  int64_t dtype);
   // return if the name is the input of DEFAULT_OP_BLOCK_LIST
   bool IsInputOfOpBlock(const std::string& name,
                         ONNX_NAMESPACE::ModelProto& model);
@@ -130,8 +129,13 @@ struct ConvertFp32ToFp16 {
   bool IsOutputOfOpBlockAndFP32Out(const std::string& name,
                                    ONNX_NAMESPACE::ModelProto& model);
 
-  void SetCustomOps(const std::vector<std::string>& custom_ops) {
-    custom_ops_ = custom_ops;
+  void SetCustomOps(const std::map<std::string, std::string>& custom_ops) {
+    if (custom_ops.size()) {
+      custom_ops_.clear();
+      for (auto op : custom_ops) {
+        custom_ops_.push_back(op.second);
+      }
+    }
   }
 
  private:

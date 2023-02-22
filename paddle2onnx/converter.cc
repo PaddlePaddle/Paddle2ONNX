@@ -135,7 +135,7 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_onnx_checker, bool enable_experimental_op, bool enable_optimize,
     CustomOp* ops, int op_count, const char* deploy_backend,
     char** calibration_cache, int* calibration_size, const char* external_file,
-    bool* save_external, const bool& export_fp16_model) {
+    bool* save_external, bool export_fp16_model) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model, params)) {
@@ -190,7 +190,7 @@ PADDLE2ONNX_DECL bool Export(
     bool enable_experimental_op, bool enable_optimize, CustomOp* ops,
     int op_count, const char* deploy_backend, char** calibration_cache,
     int* calibration_size, const char* external_file, bool* save_external,
-    const bool& export_fp16_model) {
+    bool export_fp16_model) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
@@ -243,9 +243,9 @@ PADDLE2ONNX_DECL bool ConvertFP32ToFP16(const char* onnx_model, int model_size,
   ONNX_NAMESPACE::ModelProto model;
   model.ParseFromString(onnx_proto);
 
-  P2OLogger(true) << "Convert FP32 to FP16 for ONNXRuntime-GPU." << std::endl;
+  P2OLogger(true) << "Convert FP32 ONNX model to FP16." << std::endl;
   ConvertFp32ToFp16 convert;
-  convert.Convert(model);
+  convert.Convert(&model);
   // save external data file for big model
   std::string external_data_file;
   if (model.ByteSizeLong() > INT_MAX) {

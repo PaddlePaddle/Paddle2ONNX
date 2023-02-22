@@ -380,16 +380,10 @@ std::string ModelExporter::Run(
 
   // convert fp32 model to fp16
   if (export_fp16_model) {
-    P2OLogger(verbose) << "Convert FP32 to FP16 for ONNXRuntime-GPU."
-                       << std::endl;
-    if (custom_ops.size()) {
-      for (auto op : custom_ops) {
-        custom_op_type.push_back(op.second);
-      }
-    }
+    P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
     ConvertFp32ToFp16 convert;
-    convert.SetCustomOps(custom_op_type);
-    convert.Convert(onnx_model);
+    convert.SetCustomOps(custom_ops);
+    convert.Convert(&onnx_model);
   }
 
   // save external data file for big model
