@@ -141,13 +141,13 @@ class StandardModel(object):
         self.convert_model(save_dir)
         self.save_paddle_params(save_dir)
 
-    def print_model(self):
-        print(self.prog)
+    def program(self):
+        return self.prog
 
-    def print_graph(self):
-        print(self.prog.graph)
+    def graph(self):
+        return self.prog.graph
 
-    def print_node(self, node_index=0, block_index=0):
+    def node(self, node_index=0, block_index=0):
         Assert(block_index >= 0 and block_index < len(self.prog.graph),
                "block_idex must be in range [0, " + str(len(self.prog.graph)) +
                "]")
@@ -155,24 +155,24 @@ class StandardModel(object):
                node_index < len(self.prog.graph[block_index].operator_node),
                "node_index must be in range [0, " +
                str(len(self.prog.graph[block_index].operator_node)) + "]")
-        print(str(self.prog.graph[block_index].operator_node[node_index]))
+        return self.prog.graph[block_index].operator_node[node_index]
 
-    def print_var(self, var):
+    def variable_type(self, var):
         if isinstance(var, six.string_types):
-            vars_str = None
+            find_var = None
             for vars in self.prog.graph[0].variable_type:
                 if vars.name == var:
-                    vars_str = str(vars)
-            if vars_str is None:
+                    find_var = vars
+            if find_var is None:
                 print("Input var is not found: ", var)
             else:
-                print(vars_str)
+                return find_var
 
         elif isinstance(var, int):
             Assert(var >= 0 and var < len(self.prog.graph[0].variable_type),
                    "tensor must be in range [0, " +
                    str(len(self.prog.graph[0].variable_type)) + "]")
-            print(str(self.prog.graph[0].variable_type[var]))
+            return self.prog.graph[0].variable_type[var]
         else:
             Assert(False, "Please inter a weight name or weight index")
 
@@ -182,19 +182,18 @@ class StandardModel(object):
             for param in param_names:
                 print("   ", param, self.params2val_dict[param].shape)
 
-    def print_tensor(self, tensor):
+    def tensor(self, tensor):
         if isinstance(tensor, six.string_types):
             if tensor in self.params2val_dict:
-                print(self.params2val_dict[tensor])
+                return self.params2val_dict[tensor]
             else:
-                print("Input tensor is not found: ", tensor)
+                Assert(False, "Input tensor is not found: " + tensor)
         elif isinstance(tensor, int):
             Assert(tensor >= 0 and tensor < len(self.params2val_dict.keys()),
                    "tensor must be in range [0, " +
                    str(len(self.params2val_dict.keys())) + "]")
             tensor_name = self.all_var_names[tensor]
-            print("temsor name: ", tensor_name)
-            print(self.params2val_dict[tensor_name])
+            return self.params2val_dict[tensor_name]
         else:
             Assert(False, "Please inter a weight name or weight index")
 
@@ -204,26 +203,26 @@ if __name__ == '__main__':
     paddle.set_device("cpu")
     model = StandardModel(args.standard_model)
     print("*" * 20)
-    print("print graph: ")
-    model.print_model()
+    print("print model: ")
+    print(model.program())
     print("*" * 20)
     print("print graph: ")
-    model.print_graph()
+    print(model.graph())
     print("*" * 20)
     print("print contributors: ")
     print(model.prog.contributors)
     print("*" * 20)
     print("print node_index 21: ")
-    model.print_node(21)
+    print(model.node(21))
     print("*" * 20)
     print("print all_tensors: ")
     model.print_all_tensors()
     print("*" * 20)
     print("print tensor_name conv2d_49.b_0: ")
-    model.print_tensor("conv2d_49.b_0")
+    print(model.tensor("conv2d_49.b_0"))
     print("*" * 20)
     print("print var conv2d_49.b_0")
-    model.print_var("conv2d_49.b_0")
+    print(model.variable_type("conv2d_49.b_0"))
     print("-" * 20)
 
     if args.save_dir is None:
