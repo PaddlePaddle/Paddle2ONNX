@@ -89,8 +89,6 @@ def make_standard_operator(op, name, all_vars):
             continue
         attr_get = OperatorNode.Attr.FromString(paddle_attr.SerializeToString())
         variable_type = operator.attribute[paddle_attr.name].CopyFrom(attr_get)
-
-    # print(operator)
     return operator
 
 
@@ -112,6 +110,4 @@ def make_paddle_operator(op):
         attr_get = framework_pb2.OpDesc.Attr.FromString(value.SerializeToString(
         ))
         operator.attrs.append(attr_get)
-
-    # print(operator)
     return operator

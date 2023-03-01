@@ -94,11 +94,12 @@ class StandardModel(object):
         fp = open(params_save_path, 'wb')
         for name in all_var_names:
             val = self.params2val_dict[name]
-            for var in paddle_model.blocks[0].vars:
-                if var.name == name:
-                    dims = var.type.lod_tensor.tensor.dims
-                    val = val.reshape(dims)
-                    break
+            for block in paddle_model.blocks:
+                for var in block.vars:
+                    if var.name == name:
+                        dims = var.type.lod_tensor.tensor.dims
+                        val = val.reshape(dims)
+                        break
             shape = val.shape
             if len(shape) == 0:
                 shape = [1]
