@@ -73,6 +73,8 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 $PY_CMD -m pip uninstall onnxruntime
+$PY_CMD -m pip uninstall paddlepaddle-gpu
+$PY_CMD -m pip install https://paddle-ci.gz.bcebos.com/paddlepaddle_gpu-0.0.0-cp37-cp37m-linux_x86_64.whl
 $PY_CMD -m pip install onnxruntime==1.11.1
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
