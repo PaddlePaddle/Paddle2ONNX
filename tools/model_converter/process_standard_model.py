@@ -71,8 +71,8 @@ class StandardModel(object):
         standard_model_str = standard_model_model_file.read()
         standard_model_model_file.close()
         self.prog = standard_model_pb2.Model().FromString(standard_model_str)
-        for graph in self.prog.graphs:
-            for var in graph.vars:
+        for graph in self.prog.graph:
+            for var in graph.variable_type:
                 if var.name in self.params2val_dict:
                     shape = var.type.lod_tensor.tensor.dims
                     self.params2val_dict[var.name] = self.params2val_dict[
@@ -117,14 +117,14 @@ class StandardModel(object):
 
     def convert_model(self, save_dir):
         paddle_model = framework_pb2.ProgramDesc()
-        for graph in self.prog.graphs:
+        for graph in self.prog.graph:
             block = paddle_model.blocks.add()
             block.idx = graph.id
             block.parent_idx = graph.parent_idx
-            for op in graph.ops:
+            for op in graph.operator_node:
                 operator = helper.make_paddle_operator(op)
                 block.ops.append(operator)
-            for var in graph.vars:
+            for var in graph.variable_type:
                 var_proto = framework_pb2.VarDesc.FromString(
                     var.SerializeToString())
                 block.vars.append(var_proto)
@@ -141,23 +141,26 @@ class StandardModel(object):
         self.convert_model(save_dir)
         self.save_paddle_params(save_dir)
 
+    def print_model(self):
+        print(self.prog)
+
     def print_graph(self):
-        print(self.prog.graphs)
+        print(self.prog.graph)
 
     def print_node(self, node_index=0, block_index=0):
-        Assert(block_index >= 0 and block_index < len(self.prog.graphs),
-               "block_idex must be in range [0, " + str(len(self.prog.graphs)) +
+        Assert(block_index >= 0 and block_index < len(self.prog.graph),
+               "block_idex must be in range [0, " + str(len(self.prog.graph)) +
                "]")
         Assert(node_index >= 0 and
-               node_index < len(self.prog.graphs[block_index].ops),
+               node_index < len(self.prog.graph[block_index].operator_node),
                "node_index must be in range [0, " +
-               str(len(self.prog.graphs[block_index].ops)) + "]")
-        print(str(self.prog.graphs[block_index].ops[node_index]))
+               str(len(self.prog.graph[block_index].operator_node)) + "]")
+        print(str(self.prog.graph[block_index].operator_node[node_index]))
 
     def print_var(self, var):
         if isinstance(var, six.string_types):
             vars_str = None
-            for vars in self.prog.graphs[0].vars:
+            for vars in self.prog.graph[0].variable_type:
                 if vars.name == var:
                     vars_str = str(vars)
             if vars_str is None:
@@ -166,10 +169,10 @@ class StandardModel(object):
                 print(vars_str)
 
         elif isinstance(var, int):
-            Assert(var >= 0 and var < len(self.prog.graphs[0].vars),
+            Assert(var >= 0 and var < len(self.prog.graph[0].variable_type),
                    "tensor must be in range [0, " +
-                   str(len(self.prog.graphs[0].vars)) + "]")
-            print(str(self.prog.graphs[0].vars[var]))
+                   str(len(self.prog.graph[0].variable_type)) + "]")
+            print(str(self.prog.graph[0].variable_type[var]))
         else:
             Assert(False, "Please inter a weight name or weight index")
 
@@ -202,13 +205,16 @@ if __name__ == '__main__':
     model = StandardModel(args.standard_model)
     print("*" * 20)
     print("print graph: ")
+    model.print_model()
+    print("*" * 20)
+    print("print graph: ")
     model.print_graph()
     print("*" * 20)
     print("print contributors: ")
     print(model.prog.contributors)
     print("*" * 20)
     print("print node_index 21: ")
-    print(model.print_node(21))
+    model.print_node(21)
     print("*" * 20)
     print("print all_tensors: ")
     model.print_all_tensors()
@@ -219,6 +225,7 @@ if __name__ == '__main__':
     print("print var conv2d_49.b_0")
     model.print_var("conv2d_49.b_0")
     print("-" * 20)
+
     if args.save_dir is None:
         args.save_dir = "paddle_model"
         print("will save paddle in: ", args.save_dir)

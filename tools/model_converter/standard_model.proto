@@ -83,10 +83,10 @@ message OperatorNode {
     repeated VariableType variable_type = 1;
   };
 
-  required string type = 3;
+  required string operator_type = 3;
   map<string, ListVariableType> inputs = 1;
   map<string, ListVariableType> outputs = 2;
-  map<string, Attr> attrs = 4;
+  map<string, Attr> attribute = 4;
   optional bool is_target = 5 [default = false];
   required string name = 6;
   required string doc_string = 7;
@@ -256,8 +256,8 @@ message Attribute {
 message Graph {
   required int32 id = 1;
   required int32 parent_idx = 2;
-  repeated VariableType vars = 3;
-  repeated OperatorNode ops = 4;
+  repeated VariableType variable_type = 3;
+  repeated OperatorNode operator_node = 4;
   optional int32 forward_block_idx = 5 [default = -1];
   optional VariableType input_nodes = 6;
   optional VariableType output_nodes = 7;
@@ -291,7 +291,7 @@ message ContributorsList {
 // way to distinguish them. Maybe ID or name?
 message Model {
   reserved 2, 3;  // For backward compatibility.
-  repeated Graph graphs = 1;
+  repeated Graph graph = 1;
   required int64 version = 4;
   optional OpVersionMap op_version_map = 5;
   required ContributorsList contributors = 6;

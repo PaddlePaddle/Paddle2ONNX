@@ -45,7 +45,7 @@ standard_str_2_int_map = {
 
 def make_standard_operator(op, name, all_vars):
     operator = OperatorNode()
-    operator.type = op.type
+    operator.operator_type = op.type
     operator.name = name
     operator.doc_string = op.type + " OP."
     operator.definition = op.type + " OP."
@@ -57,7 +57,6 @@ def make_standard_operator(op, name, all_vars):
             variable_type.is_persitable = False
             for var in all_vars:
                 if var.name == argument:
-                    # print(str(var))
                     variable_type.is_persitable = var.persistable
                     if var.type.type == framework_pb2.VarType.LOD_TENSOR:
                         variable_type.data_type = standard_str_2_int_map[
@@ -89,7 +88,7 @@ def make_standard_operator(op, name, all_vars):
         if paddle_attr.name in ["op_callstack"]:
             continue
         attr_get = OperatorNode.Attr.FromString(paddle_attr.SerializeToString())
-        variable_type = operator.attrs[paddle_attr.name].CopyFrom(attr_get)
+        variable_type = operator.attribute[paddle_attr.name].CopyFrom(attr_get)
 
     # print(operator)
     return operator
@@ -97,7 +96,7 @@ def make_standard_operator(op, name, all_vars):
 
 def make_paddle_operator(op):
     operator = framework_pb2.OpDesc()
-    operator.type = op.type
+    operator.type = op.operator_type
     for key, values in op.inputs.items():
         input_var = operator.inputs.add()
         input_var.parameter = key
@@ -109,7 +108,7 @@ def make_paddle_operator(op):
         for value in values.variable_type:
             output_var.arguments.append(value.name)
 
-    for key, value in op.attrs.items():
+    for key, value in op.attribute.items():
         attr_get = framework_pb2.OpDesc.Attr.FromString(value.SerializeToString(
         ))
         operator.attrs.append(attr_get)

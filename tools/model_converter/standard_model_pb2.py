@@ -17,7 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax='proto2',
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14standard_model.proto\x12\x1bpaddle.standard_model.proto\"\x1d\n\x07Version\x12\x12\n\x07version\x18\x01 \x01(\x03:\x01\x30\"\xa1\t\n\x0cOperatorNode\x12\x0c\n\x04type\x18\x03 \x02(\t\x12\x45\n\x06inputs\x18\x01 \x03(\x0b\x32\x35.paddle.standard_model.proto.OperatorNode.InputsEntry\x12G\n\x07outputs\x18\x02 \x03(\x0b\x32\x36.paddle.standard_model.proto.OperatorNode.OutputsEntry\x12\x43\n\x05\x61ttrs\x18\x04 \x03(\x0b\x32\x34.paddle.standard_model.proto.OperatorNode.AttrsEntry\x12\x18\n\tis_target\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x0c\n\x04name\x18\x06 \x02(\t\x12\x12\n\ndoc_string\x18\x07 \x02(\t\x12\x12\n\ndefinition\x18\x08 \x02(\t\x1a\xbc\x02\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\t\n\x01i\x18\x03 \x01(\x05\x12\t\n\x01\x66\x18\x04 \x01(\x02\x12\t\n\x01s\x18\x05 \x01(\t\x12\x0c\n\x04ints\x18\x06 \x03(\x05\x12\x0e\n\x06\x66loats\x18\x07 \x03(\x02\x12\x0f\n\x07strings\x18\x08 \x03(\t\x12\t\n\x01\x62\x18\n \x01(\x08\x12\r\n\x05\x62ools\x18\x0b \x03(\x08\x12\x11\n\tblock_idx\x18\x0c \x01(\x05\x12\t\n\x01l\x18\r \x01(\x03\x12\x12\n\nblocks_idx\x18\x0e \x03(\x05\x12\r\n\x05longs\x18\x0f \x03(\x03\x12\x10\n\x08\x66loat64s\x18\x10 \x03(\x01\x12\x10\n\x08var_name\x18\x11 \x01(\t\x12\x11\n\tvars_name\x18\x12 \x03(\t\x12\x0f\n\x07\x66loat64\x18\x13 \x01(\x01\x1a+\n\x03Var\x12\x11\n\tparameter\x18\x01 \x02(\t\x12\x11\n\targuments\x18\x02 \x03(\t\x1aZ\n\x0cVariableType\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x11\n\tdata_type\x18\x02 \x02(\x03\x12\x15\n\ris_persitable\x18\x03 \x02(\x08\x12\x12\n\ndoc_string\x18\x04 \x01(\t\x1a\x61\n\x10ListVariableType\x12M\n\rvariable_type\x18\x01 \x03(\x0b\x32\x36.paddle.standard_model.proto.OperatorNode.VariableType\x1ai\n\x0bInputsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1aj\n\x0cOutputsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1a\\\n\nAttrsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12=\n\x05value\x18\x02 \x01(\x0b\x32..paddle.standard_model.proto.OperatorNode.Attr:\x02\x38\x01\"\xc0\x04\n\x07OpProto\x12\x0c\n\x04type\x18\x01 \x02(\t\x12\x38\n\x06inputs\x18\x02 \x03(\x0b\x32(.paddle.standard_model.proto.OpProto.Var\x12\x39\n\x07outputs\x18\x03 \x03(\x0b\x32(.paddle.standard_model.proto.OpProto.Var\x12\x38\n\x05\x61ttrs\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OpProto.Attr\x12\x0f\n\x07\x63omment\x18\x05 \x02(\t\x1a\xa4\x01\n\x03Var\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x0f\n\x07\x63omment\x18\x02 \x02(\t\x12\x19\n\nduplicable\x18\x03 \x01(\x08:\x05\x66\x61lse\x12\x1b\n\x0cintermediate\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x1a\n\x0b\x64ispensable\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05\x65xtra\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05quant\x18\x07 \x01(\x08:\x05\x66\x61lse\x1a\xbf\x01\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\x0f\n\x07\x63omment\x18\x03 \x02(\t\x12\x18\n\tgenerated\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05\x65xtra\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05quant\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\x1d\n\x0esupport_tensor\x18\x07 \x01(\x08:\x05\x66\x61lse\"\xe7\x0c\n\x07VarType\x12\x37\n\x04type\x18\x01 \x02(\x0e\x32).paddle.standard_model.proto.VarType.Type\x12\x46\n\rselected_rows\x18\x02 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x46\n\nlod_tensor\x18\x03 \x01(\x0b\x32\x32.paddle.standard_model.proto.VarType.LoDTensorDesc\x12M\n\x0ctensor_array\x18\x04 \x01(\x0b\x32\x37.paddle.standard_model.proto.VarType.LoDTensorArrayDesc\x12?\n\x06reader\x18\x05 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.ReaderDesc\x12\x39\n\x05tuple\x18\x07 \x01(\x0b\x32*.paddle.standard_model.proto.VarType.Tuple\x12?\n\x06string\x18\x08 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12@\n\x07strings\x18\t \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12>\n\x05vocab\x18\n \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x43\n\nsparse_coo\x18\x0b \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x43\n\nsparse_csr\x18\x0c \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x1aX\n\nTensorDesc\x12<\n\tdata_type\x18\x01 \x02(\x0e\x32).paddle.standard_model.proto.VarType.Type\x12\x0c\n\x04\x64ims\x18\x02 \x03(\x03\x1a\x66\n\rLoDTensorDesc\x12?\n\x06tensor\x18\x01 \x02(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x14\n\tlod_level\x18\x02 \x01(\x05:\x01\x30\x1ak\n\x12LoDTensorArrayDesc\x12?\n\x06tensor\x18\x01 \x02(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x14\n\tlod_level\x18\x02 \x01(\x05:\x01\x30\x1aT\n\nReaderDesc\x12\x46\n\nlod_tensor\x18\x01 \x03(\x0b\x32\x32.paddle.standard_model.proto.VarType.LoDTensorDesc\x1aH\n\x05Tuple\x12?\n\x0c\x65lement_type\x18\x01 \x03(\x0e\x32).paddle.standard_model.proto.VarType.Type\"\xab\x03\n\x04Type\x12\x08\n\x04\x42OOL\x10\x00\x12\t\n\x05INT16\x10\x01\x12\t\n\x05INT32\x10\x02\x12\t\n\x05INT64\x10\x03\x12\x08\n\x04\x46P16\x10\x04\x12\x08\n\x04\x46P32\x10\x05\x12\x08\n\x04\x46P64\x10\x06\x12\n\n\x06SIZE_T\x10\x13\x12\t\n\x05UINT8\x10\x14\x12\x08\n\x04INT8\x10\x15\x12\x08\n\x04\x42\x46\x31\x36\x10\x16\x12\r\n\tCOMPLEX64\x10\x17\x12\x0e\n\nCOMPLEX128\x10\x18\x12\x0e\n\nLOD_TENSOR\x10\x07\x12\x11\n\rSELECTED_ROWS\x10\x08\x12\x12\n\x0e\x46\x45\x45\x44_MINIBATCH\x10\t\x12\x0e\n\nFETCH_LIST\x10\n\x12\x0f\n\x0bSTEP_SCOPES\x10\x0b\x12\x12\n\x0eLOD_RANK_TABLE\x10\x0c\x12\x14\n\x10LOD_TENSOR_ARRAY\x10\r\x12\x0e\n\nPLACE_LIST\x10\x0e\x12\n\n\x06READER\x10\x0f\x12\x07\n\x03RAW\x10\x11\x12\t\n\x05TUPLE\x10\x12\x12\n\n\x06STRING\x10\x19\x12\x0b\n\x07STRINGS\x10\x1a\x12\t\n\x05VOCAB\x10\x1b\x12\r\n\tFEED_LIST\x10\x1c\x12\x0b\n\x07PSTRING\x10\x1d\x12\x0e\n\nSPARSE_COO\x10\x1e\x12\x0e\n\nSPARSE_CSR\x10\x1f\"\xf5\x02\n\x0cVariableType\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x32\n\x04type\x18\x02 \x02(\x0b\x32$.paddle.standard_model.proto.VarType\x12\x1a\n\x0bpersistable\x18\x03 \x01(\x08:\x05\x66\x61lse\x12\x1e\n\x0fneed_check_feed\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x1b\n\x0cis_parameter\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x1c\n\rstop_gradient\x18\x06 \x01(\x08:\x05\x66\x61lse\x12=\n\x05\x61ttrs\x18\x07 \x03(\x0b\x32..paddle.standard_model.proto.VariableType.Attr\x1am\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\t\n\x01i\x18\x03 \x01(\x05\x12\t\n\x01s\x18\x04 \x01(\t\x12\x0c\n\x04ints\x18\x05 \x03(\x05\"\xc1\x02\n\tAttribute\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\t\n\x01i\x18\x03 \x01(\x05\x12\t\n\x01\x66\x18\x04 \x01(\x02\x12\t\n\x01s\x18\x05 \x01(\t\x12\x0c\n\x04ints\x18\x06 \x03(\x05\x12\x0e\n\x06\x66loats\x18\x07 \x03(\x02\x12\x0f\n\x07strings\x18\x08 \x03(\t\x12\t\n\x01\x62\x18\n \x01(\x08\x12\r\n\x05\x62ools\x18\x0b \x03(\x08\x12\x11\n\tblock_idx\x18\x0c \x01(\x05\x12\t\n\x01l\x18\r \x01(\x03\x12\x12\n\nblocks_idx\x18\x0e \x03(\x05\x12\r\n\x05longs\x18\x0f \x03(\x03\x12\x10\n\x08\x66loat64s\x18\x10 \x03(\x01\x12\x10\n\x08var_name\x18\x11 \x01(\t\x12\x11\n\tvars_name\x18\x12 \x03(\t\x12\x0f\n\x07\x66loat64\x18\x13 \x01(\x01\"\x90\x04\n\x05Graph\x12\n\n\x02id\x18\x01 \x02(\x05\x12\x12\n\nparent_idx\x18\x02 \x02(\x05\x12\x37\n\x04vars\x18\x03 \x03(\x0b\x32).paddle.standard_model.proto.VariableType\x12\x36\n\x03ops\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OperatorNode\x12\x1d\n\x11\x66orward_block_idx\x18\x05 \x01(\x05:\x02-1\x12>\n\x0binput_nodes\x18\x06 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12?\n\x0coutput_nodes\x18\x07 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12\x36\n\nsub_graphs\x18\x08 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x44\n\tattribute\x18\t \x03(\x0b\x32\x31.paddle.standard_model.proto.Graph.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01\"\x1c\n\tOpVersion\x12\x0f\n\x07version\x18\x01 \x02(\x05\"\xb3\x01\n\x0cOpVersionMap\x12\x45\n\x04pair\x18\x01 \x03(\x0b\x32\x37.paddle.standard_model.proto.OpVersionMap.OpVersionPair\x1a\\\n\rOpVersionPair\x12\x0f\n\x07op_name\x18\x01 \x02(\t\x12:\n\nop_version\x18\x02 \x02(\x0b\x32&.paddle.standard_model.proto.OpVersion\"B\n\x10\x43ontributorsList\x12\x0c\n\x04name\x18\x01 \x03(\t\x12\r\n\x05\x65mail\x18\x02 \x03(\t\x12\x11\n\tinstitute\x18\x03 \x03(\t\"\xef\x03\n\x05Model\x12\x32\n\x06graphs\x18\x01 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x0f\n\x07version\x18\x04 \x02(\x03\x12\x41\n\x0eop_version_map\x18\x05 \x01(\x0b\x32).paddle.standard_model.proto.OpVersionMap\x12\x43\n\x0c\x63ontributors\x18\x06 \x02(\x0b\x32-.paddle.standard_model.proto.ContributorsList\x12\x16\n\x0e\x66ramework_name\x18\x07 \x02(\t\x12\x19\n\x11\x66ramework_version\x18\x08 \x02(\t\x12\x12\n\nmodel_name\x18\t \x02(\t\x12\x15\n\rmodel_version\x18\n \x02(\t\x12\x0f\n\x07\x64oc_url\x18\x0b \x02(\t\x12\x44\n\tattribute\x18\x0c \x03(\x0b\x32\x31.paddle.standard_model.proto.Model.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04*\xc2\x01\n\x08\x41ttrType\x12\x07\n\x03INT\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04INTS\x10\x03\x12\n\n\x06\x46LOATS\x10\x04\x12\x0b\n\x07STRINGS\x10\x05\x12\x0b\n\x07\x42OOLEAN\x10\x06\x12\x0c\n\x08\x42OOLEANS\x10\x07\x12\t\n\x05\x42LOCK\x10\x08\x12\x08\n\x04LONG\x10\t\x12\n\n\x06\x42LOCKS\x10\n\x12\t\n\x05LONGS\x10\x0b\x12\x0c\n\x08\x46LOAT64S\x10\x0c\x12\x07\n\x03VAR\x10\r\x12\x08\n\x04VARS\x10\x0e\x12\x0b\n\x07\x46LOAT64\x10\x0f'
+    serialized_pb=b'\n\x14standard_model.proto\x12\x1bpaddle.standard_model.proto\"\x1d\n\x07Version\x12\x12\n\x07version\x18\x01 \x01(\x03:\x01\x30\"\xb6\t\n\x0cOperatorNode\x12\x15\n\roperator_type\x18\x03 \x02(\t\x12\x45\n\x06inputs\x18\x01 \x03(\x0b\x32\x35.paddle.standard_model.proto.OperatorNode.InputsEntry\x12G\n\x07outputs\x18\x02 \x03(\x0b\x32\x36.paddle.standard_model.proto.OperatorNode.OutputsEntry\x12K\n\tattribute\x18\x04 \x03(\x0b\x32\x38.paddle.standard_model.proto.OperatorNode.AttributeEntry\x12\x18\n\tis_target\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x0c\n\x04name\x18\x06 \x02(\t\x12\x12\n\ndoc_string\x18\x07 \x02(\t\x12\x12\n\ndefinition\x18\x08 \x02(\t\x1a\xbc\x02\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\t\n\x01i\x18\x03 \x01(\x05\x12\t\n\x01\x66\x18\x04 \x01(\x02\x12\t\n\x01s\x18\x05 \x01(\t\x12\x0c\n\x04ints\x18\x06 \x03(\x05\x12\x0e\n\x06\x66loats\x18\x07 \x03(\x02\x12\x0f\n\x07strings\x18\x08 \x03(\t\x12\t\n\x01\x62\x18\n \x01(\x08\x12\r\n\x05\x62ools\x18\x0b \x03(\x08\x12\x11\n\tblock_idx\x18\x0c \x01(\x05\x12\t\n\x01l\x18\r \x01(\x03\x12\x12\n\nblocks_idx\x18\x0e \x03(\x05\x12\r\n\x05longs\x18\x0f \x03(\x03\x12\x10\n\x08\x66loat64s\x18\x10 \x03(\x01\x12\x10\n\x08var_name\x18\x11 \x01(\t\x12\x11\n\tvars_name\x18\x12 \x03(\t\x12\x0f\n\x07\x66loat64\x18\x13 \x01(\x01\x1a+\n\x03Var\x12\x11\n\tparameter\x18\x01 \x02(\t\x12\x11\n\targuments\x18\x02 \x03(\t\x1aZ\n\x0cVariableType\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x11\n\tdata_type\x18\x02 \x02(\x03\x12\x15\n\ris_persitable\x18\x03 \x02(\x08\x12\x12\n\ndoc_string\x18\x04 \x01(\t\x1a\x61\n\x10ListVariableType\x12M\n\rvariable_type\x18\x01 \x03(\x0b\x32\x36.paddle.standard_model.proto.OperatorNode.VariableType\x1ai\n\x0bInputsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1aj\n\x0cOutputsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1a`\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12=\n\x05value\x18\x02 \x01(\x0b\x32..paddle.standard_model.proto.OperatorNode.Attr:\x02\x38\x01\"\xc0\x04\n\x07OpProto\x12\x0c\n\x04type\x18\x01 \x02(\t\x12\x38\n\x06inputs\x18\x02 \x03(\x0b\x32(.paddle.standard_model.proto.OpProto.Var\x12\x39\n\x07outputs\x18\x03 \x03(\x0b\x32(.paddle.standard_model.proto.OpProto.Var\x12\x38\n\x05\x61ttrs\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OpProto.Attr\x12\x0f\n\x07\x63omment\x18\x05 \x02(\t\x1a\xa4\x01\n\x03Var\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x0f\n\x07\x63omment\x18\x02 \x02(\t\x12\x19\n\nduplicable\x18\x03 \x01(\x08:\x05\x66\x61lse\x12\x1b\n\x0cintermediate\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x1a\n\x0b\x64ispensable\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05\x65xtra\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05quant\x18\x07 \x01(\x08:\x05\x66\x61lse\x1a\xbf\x01\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\x0f\n\x07\x63omment\x18\x03 \x02(\t\x12\x18\n\tgenerated\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05\x65xtra\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05quant\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\x1d\n\x0esupport_tensor\x18\x07 \x01(\x08:\x05\x66\x61lse\"\xe7\x0c\n\x07VarType\x12\x37\n\x04type\x18\x01 \x02(\x0e\x32).paddle.standard_model.proto.VarType.Type\x12\x46\n\rselected_rows\x18\x02 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x46\n\nlod_tensor\x18\x03 \x01(\x0b\x32\x32.paddle.standard_model.proto.VarType.LoDTensorDesc\x12M\n\x0ctensor_array\x18\x04 \x01(\x0b\x32\x37.paddle.standard_model.proto.VarType.LoDTensorArrayDesc\x12?\n\x06reader\x18\x05 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.ReaderDesc\x12\x39\n\x05tuple\x18\x07 \x01(\x0b\x32*.paddle.standard_model.proto.VarType.Tuple\x12?\n\x06string\x18\x08 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12@\n\x07strings\x18\t \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12>\n\x05vocab\x18\n \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x43\n\nsparse_coo\x18\x0b \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x43\n\nsparse_csr\x18\x0c \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x1aX\n\nTensorDesc\x12<\n\tdata_type\x18\x01 \x02(\x0e\x32).paddle.standard_model.proto.VarType.Type\x12\x0c\n\x04\x64ims\x18\x02 \x03(\x03\x1a\x66\n\rLoDTensorDesc\x12?\n\x06tensor\x18\x01 \x02(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x14\n\tlod_level\x18\x02 \x01(\x05:\x01\x30\x1ak\n\x12LoDTensorArrayDesc\x12?\n\x06tensor\x18\x01 \x02(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x14\n\tlod_level\x18\x02 \x01(\x05:\x01\x30\x1aT\n\nReaderDesc\x12\x46\n\nlod_tensor\x18\x01 \x03(\x0b\x32\x32.paddle.standard_model.proto.VarType.LoDTensorDesc\x1aH\n\x05Tuple\x12?\n\x0c\x65lement_type\x18\x01 \x03(\x0e\x32).paddle.standard_model.proto.VarType.Type\"\xab\x03\n\x04Type\x12\x08\n\x04\x42OOL\x10\x00\x12\t\n\x05INT16\x10\x01\x12\t\n\x05INT32\x10\x02\x12\t\n\x05INT64\x10\x03\x12\x08\n\x04\x46P16\x10\x04\x12\x08\n\x04\x46P32\x10\x05\x12\x08\n\x04\x46P64\x10\x06\x12\n\n\x06SIZE_T\x10\x13\x12\t\n\x05UINT8\x10\x14\x12\x08\n\x04INT8\x10\x15\x12\x08\n\x04\x42\x46\x31\x36\x10\x16\x12\r\n\tCOMPLEX64\x10\x17\x12\x0e\n\nCOMPLEX128\x10\x18\x12\x0e\n\nLOD_TENSOR\x10\x07\x12\x11\n\rSELECTED_ROWS\x10\x08\x12\x12\n\x0e\x46\x45\x45\x44_MINIBATCH\x10\t\x12\x0e\n\nFETCH_LIST\x10\n\x12\x0f\n\x0bSTEP_SCOPES\x10\x0b\x12\x12\n\x0eLOD_RANK_TABLE\x10\x0c\x12\x14\n\x10LOD_TENSOR_ARRAY\x10\r\x12\x0e\n\nPLACE_LIST\x10\x0e\x12\n\n\x06READER\x10\x0f\x12\x07\n\x03RAW\x10\x11\x12\t\n\x05TUPLE\x10\x12\x12\n\n\x06STRING\x10\x19\x12\x0b\n\x07STRINGS\x10\x1a\x12\t\n\x05VOCAB\x10\x1b\x12\r\n\tFEED_LIST\x10\x1c\x12\x0b\n\x07PSTRING\x10\x1d\x12\x0e\n\nSPARSE_COO\x10\x1e\x12\x0e\n\nSPARSE_CSR\x10\x1f\"\xf5\x02\n\x0cVariableType\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x32\n\x04type\x18\x02 \x02(\x0b\x32$.paddle.standard_model.proto.VarType\x12\x1a\n\x0bpersistable\x18\x03 \x01(\x08:\x05\x66\x61lse\x12\x1e\n\x0fneed_check_feed\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x1b\n\x0cis_parameter\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x1c\n\rstop_gradient\x18\x06 \x01(\x08:\x05\x66\x61lse\x12=\n\x05\x61ttrs\x18\x07 \x03(\x0b\x32..paddle.standard_model.proto.VariableType.Attr\x1am\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\t\n\x01i\x18\x03 \x01(\x05\x12\t\n\x01s\x18\x04 \x01(\t\x12\x0c\n\x04ints\x18\x05 \x03(\x05\"\xc1\x02\n\tAttribute\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\t\n\x01i\x18\x03 \x01(\x05\x12\t\n\x01\x66\x18\x04 \x01(\x02\x12\t\n\x01s\x18\x05 \x01(\t\x12\x0c\n\x04ints\x18\x06 \x03(\x05\x12\x0e\n\x06\x66loats\x18\x07 \x03(\x02\x12\x0f\n\x07strings\x18\x08 \x03(\t\x12\t\n\x01\x62\x18\n \x01(\x08\x12\r\n\x05\x62ools\x18\x0b \x03(\x08\x12\x11\n\tblock_idx\x18\x0c \x01(\x05\x12\t\n\x01l\x18\r \x01(\x03\x12\x12\n\nblocks_idx\x18\x0e \x03(\x05\x12\r\n\x05longs\x18\x0f \x03(\x03\x12\x10\n\x08\x66loat64s\x18\x10 \x03(\x01\x12\x10\n\x08var_name\x18\x11 \x01(\t\x12\x11\n\tvars_name\x18\x12 \x03(\t\x12\x0f\n\x07\x66loat64\x18\x13 \x01(\x01\"\xa3\x04\n\x05Graph\x12\n\n\x02id\x18\x01 \x02(\x05\x12\x12\n\nparent_idx\x18\x02 \x02(\x05\x12@\n\rvariable_type\x18\x03 \x03(\x0b\x32).paddle.standard_model.proto.VariableType\x12@\n\roperator_node\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OperatorNode\x12\x1d\n\x11\x66orward_block_idx\x18\x05 \x01(\x05:\x02-1\x12>\n\x0binput_nodes\x18\x06 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12?\n\x0coutput_nodes\x18\x07 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12\x36\n\nsub_graphs\x18\x08 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x44\n\tattribute\x18\t \x03(\x0b\x32\x31.paddle.standard_model.proto.Graph.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01\"\x1c\n\tOpVersion\x12\x0f\n\x07version\x18\x01 \x02(\x05\"\xb3\x01\n\x0cOpVersionMap\x12\x45\n\x04pair\x18\x01 \x03(\x0b\x32\x37.paddle.standard_model.proto.OpVersionMap.OpVersionPair\x1a\\\n\rOpVersionPair\x12\x0f\n\x07op_name\x18\x01 \x02(\t\x12:\n\nop_version\x18\x02 \x02(\x0b\x32&.paddle.standard_model.proto.OpVersion\"B\n\x10\x43ontributorsList\x12\x0c\n\x04name\x18\x01 \x03(\t\x12\r\n\x05\x65mail\x18\x02 \x03(\t\x12\x11\n\tinstitute\x18\x03 \x03(\t\"\xee\x03\n\x05Model\x12\x31\n\x05graph\x18\x01 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x0f\n\x07version\x18\x04 \x02(\x03\x12\x41\n\x0eop_version_map\x18\x05 \x01(\x0b\x32).paddle.standard_model.proto.OpVersionMap\x12\x43\n\x0c\x63ontributors\x18\x06 \x02(\x0b\x32-.paddle.standard_model.proto.ContributorsList\x12\x16\n\x0e\x66ramework_name\x18\x07 \x02(\t\x12\x19\n\x11\x66ramework_version\x18\x08 \x02(\t\x12\x12\n\nmodel_name\x18\t \x02(\t\x12\x15\n\rmodel_version\x18\n \x02(\t\x12\x0f\n\x07\x64oc_url\x18\x0b \x02(\t\x12\x44\n\tattribute\x18\x0c \x03(\x0b\x32\x31.paddle.standard_model.proto.Model.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04*\xc2\x01\n\x08\x41ttrType\x12\x07\n\x03INT\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04INTS\x10\x03\x12\n\n\x06\x46LOATS\x10\x04\x12\x0b\n\x07STRINGS\x10\x05\x12\x0b\n\x07\x42OOLEAN\x10\x06\x12\x0c\n\x08\x42OOLEANS\x10\x07\x12\t\n\x05\x42LOCK\x10\x08\x12\x08\n\x04LONG\x10\t\x12\n\n\x06\x42LOCKS\x10\n\x12\t\n\x05LONGS\x10\x0b\x12\x0c\n\x08\x46LOAT64S\x10\x0c\x12\x07\n\x03VAR\x10\r\x12\x08\n\x04VARS\x10\x0e\x12\x0b\n\x07\x46LOAT64\x10\x0f'
 )
 
 _ATTRTYPE = _descriptor.EnumDescriptor(
@@ -142,8 +142,8 @@ _ATTRTYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=5503,
-    serialized_end=5697, )
+    serialized_start=5542,
+    serialized_end=5736, )
 _sym_db.RegisterEnumDescriptor(_ATTRTYPE)
 
 AttrType = enum_type_wrapper.EnumTypeWrapper(_ATTRTYPE)
@@ -391,8 +391,8 @@ _VARTYPE_TYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=3064,
-    serialized_end=3491, )
+    serialized_start=3085,
+    serialized_end=3512, )
 _sym_db.RegisterEnumDescriptor(_VARTYPE_TYPE)
 
 _VERSION = _descriptor.Descriptor(
@@ -774,8 +774,8 @@ _OPERATORNODE_ATTR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=409,
-    serialized_end=725, )
+    serialized_start=426,
+    serialized_end=742, )
 
 _OPERATORNODE_VAR = _descriptor.Descriptor(
     name='Var',
@@ -830,8 +830,8 @@ _OPERATORNODE_VAR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=727,
-    serialized_end=770, )
+    serialized_start=744,
+    serialized_end=787, )
 
 _OPERATORNODE_VARIABLETYPE = _descriptor.Descriptor(
     name='VariableType',
@@ -922,8 +922,8 @@ _OPERATORNODE_VARIABLETYPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=772,
-    serialized_end=862, )
+    serialized_start=789,
+    serialized_end=879, )
 
 _OPERATORNODE_LISTVARIABLETYPE = _descriptor.Descriptor(
     name='ListVariableType',
@@ -960,8 +960,8 @@ _OPERATORNODE_LISTVARIABLETYPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=864,
-    serialized_end=961, )
+    serialized_start=881,
+    serialized_end=978, )
 
 _OPERATORNODE_INPUTSENTRY = _descriptor.Descriptor(
     name='InputsEntry',
@@ -1016,8 +1016,8 @@ _OPERATORNODE_INPUTSENTRY = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=963,
-    serialized_end=1068, )
+    serialized_start=980,
+    serialized_end=1085, )
 
 _OPERATORNODE_OUTPUTSENTRY = _descriptor.Descriptor(
     name='OutputsEntry',
@@ -1072,12 +1072,12 @@ _OPERATORNODE_OUTPUTSENTRY = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1070,
-    serialized_end=1176, )
+    serialized_start=1087,
+    serialized_end=1193, )
 
-_OPERATORNODE_ATTRSENTRY = _descriptor.Descriptor(
-    name='AttrsEntry',
-    full_name='paddle.standard_model.proto.OperatorNode.AttrsEntry',
+_OPERATORNODE_ATTRIBUTEENTRY = _descriptor.Descriptor(
+    name='AttributeEntry',
+    full_name='paddle.standard_model.proto.OperatorNode.AttributeEntry',
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -1085,7 +1085,7 @@ _OPERATORNODE_ATTRSENTRY = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name='key',
-            full_name='paddle.standard_model.proto.OperatorNode.AttrsEntry.key',
+            full_name='paddle.standard_model.proto.OperatorNode.AttributeEntry.key',
             index=0,
             number=1,
             type=9,
@@ -1103,7 +1103,7 @@ _OPERATORNODE_ATTRSENTRY = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key),
         _descriptor.FieldDescriptor(
             name='value',
-            full_name='paddle.standard_model.proto.OperatorNode.AttrsEntry.value',
+            full_name='paddle.standard_model.proto.OperatorNode.AttributeEntry.value',
             index=1,
             number=2,
             type=11,
@@ -1128,8 +1128,8 @@ _OPERATORNODE_ATTRSENTRY = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1178,
-    serialized_end=1270, )
+    serialized_start=1195,
+    serialized_end=1291, )
 
 _OPERATORNODE = _descriptor.Descriptor(
     name='OperatorNode',
@@ -1140,8 +1140,8 @@ _OPERATORNODE = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name='type',
-            full_name='paddle.standard_model.proto.OperatorNode.type',
+            name='operator_type',
+            full_name='paddle.standard_model.proto.OperatorNode.operator_type',
             index=0,
             number=3,
             type=9,
@@ -1194,8 +1194,8 @@ _OPERATORNODE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key),
         _descriptor.FieldDescriptor(
-            name='attrs',
-            full_name='paddle.standard_model.proto.OperatorNode.attrs',
+            name='attribute',
+            full_name='paddle.standard_model.proto.OperatorNode.attribute',
             index=3,
             number=4,
             type=11,
@@ -1292,7 +1292,7 @@ _OPERATORNODE = _descriptor.Descriptor(
         _OPERATORNODE_LISTVARIABLETYPE,
         _OPERATORNODE_INPUTSENTRY,
         _OPERATORNODE_OUTPUTSENTRY,
-        _OPERATORNODE_ATTRSENTRY,
+        _OPERATORNODE_ATTRIBUTEENTRY,
     ],
     enum_types=[],
     serialized_options=None,
@@ -1301,7 +1301,7 @@ _OPERATORNODE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=85,
-    serialized_end=1270, )
+    serialized_end=1291, )
 
 _OPPROTO_VAR = _descriptor.Descriptor(
     name='Var',
@@ -1446,8 +1446,8 @@ _OPPROTO_VAR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1491,
-    serialized_end=1655, )
+    serialized_start=1512,
+    serialized_end=1676, )
 
 _OPPROTO_ATTR = _descriptor.Descriptor(
     name='Attr',
@@ -1592,8 +1592,8 @@ _OPPROTO_ATTR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1658,
-    serialized_end=1849, )
+    serialized_start=1679,
+    serialized_end=1870, )
 
 _OPPROTO = _descriptor.Descriptor(
     name='OpProto',
@@ -1705,8 +1705,8 @@ _OPPROTO = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1273,
-    serialized_end=1849, )
+    serialized_start=1294,
+    serialized_end=1870, )
 
 _VARTYPE_TENSORDESC = _descriptor.Descriptor(
     name='TensorDesc',
@@ -1761,8 +1761,8 @@ _VARTYPE_TENSORDESC = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2600,
-    serialized_end=2688, )
+    serialized_start=2621,
+    serialized_end=2709, )
 
 _VARTYPE_LODTENSORDESC = _descriptor.Descriptor(
     name='LoDTensorDesc',
@@ -1817,8 +1817,8 @@ _VARTYPE_LODTENSORDESC = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2690,
-    serialized_end=2792, )
+    serialized_start=2711,
+    serialized_end=2813, )
 
 _VARTYPE_LODTENSORARRAYDESC = _descriptor.Descriptor(
     name='LoDTensorArrayDesc',
@@ -1873,8 +1873,8 @@ _VARTYPE_LODTENSORARRAYDESC = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2794,
-    serialized_end=2901, )
+    serialized_start=2815,
+    serialized_end=2922, )
 
 _VARTYPE_READERDESC = _descriptor.Descriptor(
     name='ReaderDesc',
@@ -1911,8 +1911,8 @@ _VARTYPE_READERDESC = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2903,
-    serialized_end=2987, )
+    serialized_start=2924,
+    serialized_end=3008, )
 
 _VARTYPE_TUPLE = _descriptor.Descriptor(
     name='Tuple',
@@ -1949,8 +1949,8 @@ _VARTYPE_TUPLE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2989,
-    serialized_end=3061, )
+    serialized_start=3010,
+    serialized_end=3082, )
 
 _VARTYPE = _descriptor.Descriptor(
     name='VarType',
@@ -2173,8 +2173,8 @@ _VARTYPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1852,
-    serialized_end=3491, )
+    serialized_start=1873,
+    serialized_end=3512, )
 
 _VARIABLETYPE_ATTR = _descriptor.Descriptor(
     name='Attr',
@@ -2283,8 +2283,8 @@ _VARIABLETYPE_ATTR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3758,
-    serialized_end=3867, )
+    serialized_start=3779,
+    serialized_end=3888, )
 
 _VARIABLETYPE = _descriptor.Descriptor(
     name='VariableType',
@@ -2429,8 +2429,8 @@ _VARIABLETYPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3494,
-    serialized_end=3867, )
+    serialized_start=3515,
+    serialized_end=3888, )
 
 _ATTRIBUTE = _descriptor.Descriptor(
     name='Attribute',
@@ -2773,8 +2773,8 @@ _ATTRIBUTE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3870,
-    serialized_end=4191, )
+    serialized_start=3891,
+    serialized_end=4212, )
 
 _GRAPH_ATTRIBUTEENTRY = _descriptor.Descriptor(
     name='AttributeEntry',
@@ -2829,8 +2829,8 @@ _GRAPH_ATTRIBUTEENTRY = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4634,
-    serialized_end=4722, )
+    serialized_start=4674,
+    serialized_end=4762, )
 
 _GRAPH = _descriptor.Descriptor(
     name='Graph',
@@ -2877,8 +2877,8 @@ _GRAPH = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key),
         _descriptor.FieldDescriptor(
-            name='vars',
-            full_name='paddle.standard_model.proto.Graph.vars',
+            name='variable_type',
+            full_name='paddle.standard_model.proto.Graph.variable_type',
             index=2,
             number=3,
             type=11,
@@ -2895,8 +2895,8 @@ _GRAPH = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key),
         _descriptor.FieldDescriptor(
-            name='ops',
-            full_name='paddle.standard_model.proto.Graph.ops',
+            name='operator_node',
+            full_name='paddle.standard_model.proto.Graph.operator_node',
             index=3,
             number=4,
             type=11,
@@ -3011,8 +3011,8 @@ _GRAPH = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4194,
-    serialized_end=4722, )
+    serialized_start=4215,
+    serialized_end=4762, )
 
 _OPVERSION = _descriptor.Descriptor(
     name='OpVersion',
@@ -3049,8 +3049,8 @@ _OPVERSION = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4724,
-    serialized_end=4752, )
+    serialized_start=4764,
+    serialized_end=4792, )
 
 _OPVERSIONMAP_OPVERSIONPAIR = _descriptor.Descriptor(
     name='OpVersionPair',
@@ -3105,8 +3105,8 @@ _OPVERSIONMAP_OPVERSIONPAIR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4842,
-    serialized_end=4934, )
+    serialized_start=4882,
+    serialized_end=4974, )
 
 _OPVERSIONMAP = _descriptor.Descriptor(
     name='OpVersionMap',
@@ -3143,8 +3143,8 @@ _OPVERSIONMAP = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4755,
-    serialized_end=4934, )
+    serialized_start=4795,
+    serialized_end=4974, )
 
 _CONTRIBUTORSLIST = _descriptor.Descriptor(
     name='ContributorsList',
@@ -3217,8 +3217,8 @@ _CONTRIBUTORSLIST = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4936,
-    serialized_end=5002, )
+    serialized_start=4976,
+    serialized_end=5042, )
 
 _MODEL_ATTRIBUTEENTRY = _descriptor.Descriptor(
     name='AttributeEntry',
@@ -3273,8 +3273,8 @@ _MODEL_ATTRIBUTEENTRY = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4634,
-    serialized_end=4722, )
+    serialized_start=4674,
+    serialized_end=4762, )
 
 _MODEL = _descriptor.Descriptor(
     name='Model',
@@ -3285,8 +3285,8 @@ _MODEL = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name='graphs',
-            full_name='paddle.standard_model.proto.Model.graphs',
+            name='graph',
+            full_name='paddle.standard_model.proto.Model.graph',
             index=0,
             number=1,
             type=11,
@@ -3473,8 +3473,8 @@ _MODEL = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=5005,
-    serialized_end=5500, )
+    serialized_start=5045,
+    serialized_end=5539, )
 
 _OPERATORNODE_ATTR.fields_by_name['type'].enum_type = _ATTRTYPE
 _OPERATORNODE_ATTR.containing_type = _OPERATORNODE
@@ -3489,13 +3489,14 @@ _OPERATORNODE_INPUTSENTRY.containing_type = _OPERATORNODE
 _OPERATORNODE_OUTPUTSENTRY.fields_by_name[
     'value'].message_type = _OPERATORNODE_LISTVARIABLETYPE
 _OPERATORNODE_OUTPUTSENTRY.containing_type = _OPERATORNODE
-_OPERATORNODE_ATTRSENTRY.fields_by_name[
+_OPERATORNODE_ATTRIBUTEENTRY.fields_by_name[
     'value'].message_type = _OPERATORNODE_ATTR
-_OPERATORNODE_ATTRSENTRY.containing_type = _OPERATORNODE
+_OPERATORNODE_ATTRIBUTEENTRY.containing_type = _OPERATORNODE
 _OPERATORNODE.fields_by_name['inputs'].message_type = _OPERATORNODE_INPUTSENTRY
 _OPERATORNODE.fields_by_name[
     'outputs'].message_type = _OPERATORNODE_OUTPUTSENTRY
-_OPERATORNODE.fields_by_name['attrs'].message_type = _OPERATORNODE_ATTRSENTRY
+_OPERATORNODE.fields_by_name[
+    'attribute'].message_type = _OPERATORNODE_ATTRIBUTEENTRY
 _OPPROTO_VAR.containing_type = _OPPROTO
 _OPPROTO_ATTR.fields_by_name['type'].enum_type = _ATTRTYPE
 _OPPROTO_ATTR.containing_type = _OPPROTO
@@ -3535,8 +3536,8 @@ _VARIABLETYPE.fields_by_name['attrs'].message_type = _VARIABLETYPE_ATTR
 _ATTRIBUTE.fields_by_name['type'].enum_type = _ATTRTYPE
 _GRAPH_ATTRIBUTEENTRY.fields_by_name['value'].message_type = _ATTRIBUTE
 _GRAPH_ATTRIBUTEENTRY.containing_type = _GRAPH
-_GRAPH.fields_by_name['vars'].message_type = _VARIABLETYPE
-_GRAPH.fields_by_name['ops'].message_type = _OPERATORNODE
+_GRAPH.fields_by_name['variable_type'].message_type = _VARIABLETYPE
+_GRAPH.fields_by_name['operator_node'].message_type = _OPERATORNODE
 _GRAPH.fields_by_name['input_nodes'].message_type = _VARIABLETYPE
 _GRAPH.fields_by_name['output_nodes'].message_type = _VARIABLETYPE
 _GRAPH.fields_by_name['sub_graphs'].message_type = _GRAPH
@@ -3547,7 +3548,7 @@ _OPVERSIONMAP_OPVERSIONPAIR.containing_type = _OPVERSIONMAP
 _OPVERSIONMAP.fields_by_name['pair'].message_type = _OPVERSIONMAP_OPVERSIONPAIR
 _MODEL_ATTRIBUTEENTRY.fields_by_name['value'].message_type = _ATTRIBUTE
 _MODEL_ATTRIBUTEENTRY.containing_type = _MODEL
-_MODEL.fields_by_name['graphs'].message_type = _GRAPH
+_MODEL.fields_by_name['graph'].message_type = _GRAPH
 _MODEL.fields_by_name['op_version_map'].message_type = _OPVERSIONMAP
 _MODEL.fields_by_name['contributors'].message_type = _CONTRIBUTORSLIST
 _MODEL.fields_by_name['attribute'].message_type = _MODEL_ATTRIBUTEENTRY
@@ -3627,13 +3628,13 @@ OperatorNode = _reflection.GeneratedProtocolMessageType(
                 '__module__': 'standard_model_pb2'
                 # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.OperatorNode.OutputsEntry)
             }),
-        'AttrsEntry': _reflection.GeneratedProtocolMessageType(
-            'AttrsEntry',
+        'AttributeEntry': _reflection.GeneratedProtocolMessageType(
+            'AttributeEntry',
             (_message.Message, ),
             {
-                'DESCRIPTOR': _OPERATORNODE_ATTRSENTRY,
+                'DESCRIPTOR': _OPERATORNODE_ATTRIBUTEENTRY,
                 '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.OperatorNode.AttrsEntry)
+                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.OperatorNode.AttributeEntry)
             }),
         'DESCRIPTOR': _OPERATORNODE,
         '__module__': 'standard_model_pb2'
@@ -3646,7 +3647,7 @@ _sym_db.RegisterMessage(OperatorNode.VariableType)
 _sym_db.RegisterMessage(OperatorNode.ListVariableType)
 _sym_db.RegisterMessage(OperatorNode.InputsEntry)
 _sym_db.RegisterMessage(OperatorNode.OutputsEntry)
-_sym_db.RegisterMessage(OperatorNode.AttrsEntry)
+_sym_db.RegisterMessage(OperatorNode.AttributeEntry)
 
 OpProto = _reflection.GeneratedProtocolMessageType(
     'OpProto',
@@ -3839,7 +3840,7 @@ _sym_db.RegisterMessage(Model.AttributeEntry)
 
 _OPERATORNODE_INPUTSENTRY._options = None
 _OPERATORNODE_OUTPUTSENTRY._options = None
-_OPERATORNODE_ATTRSENTRY._options = None
+_OPERATORNODE_ATTRIBUTEENTRY._options = None
 _GRAPH_ATTRIBUTEENTRY._options = None
 _MODEL_ATTRIBUTEENTRY._options = None
 # @@protoc_insertion_point(module_scope)

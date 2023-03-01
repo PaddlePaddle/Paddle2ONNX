@@ -112,7 +112,7 @@ def convert_model(paddle_model, save_dir):
     new_model.doc_url = "https://www.paddlepaddle.org.cn/"
 
     for block_idex in range(block_size):
-        graph = new_model.graphs.add()
+        graph = new_model.graph.add()
         block = prog.blocks[block_idex]
         graph.id = block.idx
         graph.parent_idx = block.parent_idx
@@ -120,19 +120,14 @@ def convert_model(paddle_model, save_dir):
             op = block.ops[op_index]
             layer_name = op.type + "_" + str(block_idex) + "_" + str(op_index)
             operator = helper.make_standard_operator(op, layer_name, block.vars)
-            graph.ops.append(operator)
+            graph.operator_node.append(operator)
 
         for var in block.vars:
             var_proto = standard_model_pb2.VariableType.FromString(
                 var.SerializeToString())
-            graph.vars.append(var_proto)
+            graph.variable_type.append(var_proto)
 
         graph.forward_block_idx = block.forward_block_idx
-
-    # print("paddle model node size: ", len(prog.blocks[0].ops))
-    # print("paddle model blocks.var size: ", len(prog.blocks[0].vars))
-    # print("standard model node size: ", len(new_model.graphs[0].ops))
-    # print("standard model graphs.var size: ", len(new_model.graphs[0].vars))
 
     model_save_path = os.path.join(save_dir, "standard_model.model")
     model_str = new_model.SerializeToString()
