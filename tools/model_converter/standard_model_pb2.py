@@ -17,7 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax='proto2',
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14standard_model.proto\x12\x1bpaddle.standard_model.proto\"\x1d\n\x07Version\x12\x12\n\x07version\x18\x01 \x01(\x03:\x01\x30\"\xd3\x05\n\x0cOperatorNode\x12\x15\n\roperator_type\x18\x03 \x02(\t\x12\x43\n\x05input\x18\x01 \x03(\x0b\x32\x34.paddle.standard_model.proto.OperatorNode.InputEntry\x12\x45\n\x06output\x18\x02 \x03(\x0b\x32\x35.paddle.standard_model.proto.OperatorNode.OutputEntry\x12K\n\tattribute\x18\x04 \x03(\x0b\x32\x38.paddle.standard_model.proto.OperatorNode.AttributeEntry\x12\x18\n\tis_target\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x0c\n\x04name\x18\x06 \x02(\t\x12\x12\n\ndoc_string\x18\x07 \x02(\t\x12\x12\n\ndefinition\x18\x08 \x02(\t\x1aT\n\x10ListVariableType\x12@\n\rvariable_type\x18\x01 \x03(\x0b\x32).paddle.standard_model.proto.VariableType\x1ah\n\nInputEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1ai\n\x0bOutputEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01\"\xc0\x04\n\x07OpProto\x12\x0c\n\x04type\x18\x01 \x02(\t\x12\x38\n\x06inputs\x18\x02 \x03(\x0b\x32(.paddle.standard_model.proto.OpProto.Var\x12\x39\n\x07outputs\x18\x03 \x03(\x0b\x32(.paddle.standard_model.proto.OpProto.Var\x12\x38\n\x05\x61ttrs\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OpProto.Attr\x12\x0f\n\x07\x63omment\x18\x05 \x02(\t\x1a\xa4\x01\n\x03Var\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x0f\n\x07\x63omment\x18\x02 \x02(\t\x12\x19\n\nduplicable\x18\x03 \x01(\x08:\x05\x66\x61lse\x12\x1b\n\x0cintermediate\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x1a\n\x0b\x64ispensable\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05\x65xtra\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05quant\x18\x07 \x01(\x08:\x05\x66\x61lse\x1a\xbf\x01\n\x04\x41ttr\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x33\n\x04type\x18\x02 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\x12\x0f\n\x07\x63omment\x18\x03 \x02(\t\x12\x18\n\tgenerated\x18\x04 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05\x65xtra\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x14\n\x05quant\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\x1d\n\x0esupport_tensor\x18\x07 \x01(\x08:\x05\x66\x61lse\"\xe7\x0c\n\x07VarType\x12\x37\n\x04type\x18\x01 \x02(\x0e\x32).paddle.standard_model.proto.VarType.Type\x12\x46\n\rselected_rows\x18\x02 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x46\n\nlod_tensor\x18\x03 \x01(\x0b\x32\x32.paddle.standard_model.proto.VarType.LoDTensorDesc\x12M\n\x0ctensor_array\x18\x04 \x01(\x0b\x32\x37.paddle.standard_model.proto.VarType.LoDTensorArrayDesc\x12?\n\x06reader\x18\x05 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.ReaderDesc\x12\x39\n\x05tuple\x18\x07 \x01(\x0b\x32*.paddle.standard_model.proto.VarType.Tuple\x12?\n\x06string\x18\x08 \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12@\n\x07strings\x18\t \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12>\n\x05vocab\x18\n \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x43\n\nsparse_coo\x18\x0b \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x43\n\nsparse_csr\x18\x0c \x01(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x1aX\n\nTensorDesc\x12<\n\tdata_type\x18\x01 \x02(\x0e\x32).paddle.standard_model.proto.VarType.Type\x12\x0c\n\x04\x64ims\x18\x02 \x03(\x03\x1a\x66\n\rLoDTensorDesc\x12?\n\x06tensor\x18\x01 \x02(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x14\n\tlod_level\x18\x02 \x01(\x05:\x01\x30\x1ak\n\x12LoDTensorArrayDesc\x12?\n\x06tensor\x18\x01 \x02(\x0b\x32/.paddle.standard_model.proto.VarType.TensorDesc\x12\x14\n\tlod_level\x18\x02 \x01(\x05:\x01\x30\x1aT\n\nReaderDesc\x12\x46\n\nlod_tensor\x18\x01 \x03(\x0b\x32\x32.paddle.standard_model.proto.VarType.LoDTensorDesc\x1aH\n\x05Tuple\x12?\n\x0c\x65lement_type\x18\x01 \x03(\x0e\x32).paddle.standard_model.proto.VarType.Type\"\xab\x03\n\x04Type\x12\x08\n\x04\x42OOL\x10\x00\x12\t\n\x05INT16\x10\x01\x12\t\n\x05INT32\x10\x02\x12\t\n\x05INT64\x10\x03\x12\x08\n\x04\x46P16\x10\x04\x12\x08\n\x04\x46P32\x10\x05\x12\x08\n\x04\x46P64\x10\x06\x12\n\n\x06SIZE_T\x10\x13\x12\t\n\x05UINT8\x10\x14\x12\x08\n\x04INT8\x10\x15\x12\x08\n\x04\x42\x46\x31\x36\x10\x16\x12\r\n\tCOMPLEX64\x10\x17\x12\x0e\n\nCOMPLEX128\x10\x18\x12\x0e\n\nLOD_TENSOR\x10\x07\x12\x11\n\rSELECTED_ROWS\x10\x08\x12\x12\n\x0e\x46\x45\x45\x44_MINIBATCH\x10\t\x12\x0e\n\nFETCH_LIST\x10\n\x12\x0f\n\x0bSTEP_SCOPES\x10\x0b\x12\x12\n\x0eLOD_RANK_TABLE\x10\x0c\x12\x14\n\x10LOD_TENSOR_ARRAY\x10\r\x12\x0e\n\nPLACE_LIST\x10\x0e\x12\n\n\x06READER\x10\x0f\x12\x07\n\x03RAW\x10\x11\x12\t\n\x05TUPLE\x10\x12\x12\n\n\x06STRING\x10\x19\x12\x0b\n\x07STRINGS\x10\x1a\x12\t\n\x05VOCAB\x10\x1b\x12\r\n\tFEED_LIST\x10\x1c\x12\x0b\n\x07PSTRING\x10\x1d\x12\x0e\n\nSPARSE_COO\x10\x1e\x12\x0e\n\nSPARSE_CSR\x10\x1f\"\xc4\x01\n\x0cVariableType\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x11\n\tdata_type\x18\x02 \x02(\x03\x12\x33\n\x06tensor\x18\x03 \x02(\x0b\x32#.paddle.standard_model.proto.Tensor\x12\x15\n\ris_persitable\x18\x04 \x02(\x08\x12\x12\n\ndoc_string\x18\x05 \x01(\t\x12\x33\n\x04type\x18\x06 \x01(\x0e\x32%.paddle.standard_model.proto.AttrType\"\'\n\tDimension\x12\x0c\n\x04size\x18\x01 \x02(\x03\x12\x0c\n\x04name\x18\x02 \x02(\t\"S\n\x0bTensorShape\x12\x0f\n\x07unknown\x18\x01 \x02(\x08\x12\x33\n\x03\x64im\x18\x02 \x03(\x0b\x32&.paddle.standard_model.proto.Dimension\"\xc9\x02\n\x06Tensor\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x37\n\x05shape\x18\x02 \x02(\x0b\x32(.paddle.standard_model.proto.TensorShape\x12\x11\n\tdata_type\x18\x03 \x02(\x03\x12\x32\n\x07\x63ontent\x18\x04 \x03(\x0b\x32!.paddle.standard_model.proto.Type\x12\x12\n\nint32_data\x18\x05 \x01(\x05\x12\x13\n\x0buint32_data\x18\x06 \x01(\r\x12\x12\n\nint64_data\x18\x07 \x01(\x03\x12\x13\n\x0buint64_data\x18\x08 \x01(\x04\x12\x12\n\nfloat_data\x18\t \x01(\x02\x12\x13\n\x0b\x64ouble_data\x18\n \x01(\x01\x12\x11\n\tbool_data\x18\x0b \x01(\x08\x12\x13\n\x0bstring_data\x18\x0c \x01(\t\x12\x0e\n\x06\x66ormat\x18\r \x02(\t\"N\n\x04Type\x12\t\n\x01i\x18\x02 \x01(\x05\x12\t\n\x01\x66\x18\x03 \x01(\x02\x12\t\n\x01s\x18\x04 \x01(\t\x12\t\n\x01\x62\x18\x05 \x01(\x08\x12\t\n\x01l\x18\x06 \x01(\x03\x12\x0f\n\x07\x66loat64\x18\x07 \x01(\x01\"\xaf\x01\n\tAttribute\x12\x0c\n\x04name\x18\x01 \x02(\t\x12.\n\x03val\x18\x02 \x01(\x0b\x32!.paddle.standard_model.proto.Type\x12/\n\x04list\x18\x03 \x03(\x0b\x32!.paddle.standard_model.proto.Type\x12\x33\n\x04type\x18\x04 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\"\xa3\x04\n\x05Graph\x12\n\n\x02id\x18\x01 \x02(\x05\x12\x12\n\nparent_idx\x18\x02 \x02(\x05\x12@\n\rvariable_type\x18\x03 \x03(\x0b\x32).paddle.standard_model.proto.VariableType\x12@\n\roperator_node\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OperatorNode\x12\x1d\n\x11\x66orward_block_idx\x18\x05 \x01(\x05:\x02-1\x12>\n\x0binput_nodes\x18\x06 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12?\n\x0coutput_nodes\x18\x07 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12\x36\n\nsub_graphs\x18\x08 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x44\n\tattribute\x18\t \x03(\x0b\x32\x31.paddle.standard_model.proto.Graph.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01\"\x1c\n\tOpVersion\x12\x0f\n\x07version\x18\x01 \x02(\x05\"\xb3\x01\n\x0cOpVersionMap\x12\x45\n\x04pair\x18\x01 \x03(\x0b\x32\x37.paddle.standard_model.proto.OpVersionMap.OpVersionPair\x1a\\\n\rOpVersionPair\x12\x0f\n\x07op_name\x18\x01 \x02(\t\x12:\n\nop_version\x18\x02 \x02(\x0b\x32&.paddle.standard_model.proto.OpVersion\"B\n\x10\x43ontributorsList\x12\x0c\n\x04name\x18\x01 \x03(\t\x12\r\n\x05\x65mail\x18\x02 \x03(\t\x12\x11\n\tinstitute\x18\x03 \x03(\t\"\xee\x03\n\x05Model\x12\x31\n\x05graph\x18\x01 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x0f\n\x07version\x18\x04 \x02(\x03\x12\x41\n\x0eop_version_map\x18\x05 \x01(\x0b\x32).paddle.standard_model.proto.OpVersionMap\x12\x43\n\x0c\x63ontributors\x18\x06 \x02(\x0b\x32-.paddle.standard_model.proto.ContributorsList\x12\x16\n\x0e\x66ramework_name\x18\x07 \x02(\t\x12\x19\n\x11\x66ramework_version\x18\x08 \x02(\t\x12\x12\n\nmodel_name\x18\t \x02(\t\x12\x15\n\rmodel_version\x18\n \x02(\t\x12\x0f\n\x07\x64oc_url\x18\x0b \x02(\t\x12\x44\n\tattribute\x18\x0c \x03(\x0b\x32\x31.paddle.standard_model.proto.Model.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04*\xc2\x01\n\x08\x41ttrType\x12\x07\n\x03INT\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04INTS\x10\x03\x12\n\n\x06\x46LOATS\x10\x04\x12\x0b\n\x07STRINGS\x10\x05\x12\x0b\n\x07\x42OOLEAN\x10\x06\x12\x0c\n\x08\x42OOLEANS\x10\x07\x12\t\n\x05\x42LOCK\x10\x08\x12\x08\n\x04LONG\x10\t\x12\n\n\x06\x42LOCKS\x10\n\x12\t\n\x05LONGS\x10\x0b\x12\x0c\n\x08\x46LOAT64S\x10\x0c\x12\x07\n\x03VAR\x10\r\x12\x08\n\x04VARS\x10\x0e\x12\x0b\n\x07\x46LOAT64\x10\x0f'
+    serialized_pb=b'\n\x14standard_model.proto\x12\x1bpaddle.standard_model.proto\"\x1d\n\x07Version\x12\x12\n\x07version\x18\x01 \x01(\x03:\x01\x30\"\xd3\x05\n\x0cOperatorNode\x12\x15\n\roperator_type\x18\x03 \x02(\t\x12\x43\n\x05input\x18\x01 \x03(\x0b\x32\x34.paddle.standard_model.proto.OperatorNode.InputEntry\x12\x45\n\x06output\x18\x02 \x03(\x0b\x32\x35.paddle.standard_model.proto.OperatorNode.OutputEntry\x12K\n\tattribute\x18\x04 \x03(\x0b\x32\x38.paddle.standard_model.proto.OperatorNode.AttributeEntry\x12\x18\n\tis_target\x18\x05 \x01(\x08:\x05\x66\x61lse\x12\x0c\n\x04name\x18\x06 \x02(\t\x12\x12\n\ndoc_string\x18\x07 \x02(\t\x12\x12\n\ndefinition\x18\x08 \x02(\t\x1aT\n\x10ListVariableType\x12@\n\rvariable_type\x18\x01 \x03(\x0b\x32).paddle.standard_model.proto.VariableType\x1ah\n\nInputEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1ai\n\x0bOutputEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12I\n\x05value\x18\x02 \x01(\x0b\x32:.paddle.standard_model.proto.OperatorNode.ListVariableType:\x02\x38\x01\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01\"\xc4\x01\n\x0cVariableType\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x11\n\tdata_type\x18\x02 \x02(\x03\x12\x33\n\x06tensor\x18\x03 \x02(\x0b\x32#.paddle.standard_model.proto.Tensor\x12\x15\n\ris_persitable\x18\x04 \x02(\x08\x12\x12\n\ndoc_string\x18\x05 \x01(\t\x12\x33\n\x04type\x18\x06 \x01(\x0e\x32%.paddle.standard_model.proto.AttrType\"\'\n\tDimension\x12\x0c\n\x04size\x18\x01 \x02(\x03\x12\x0c\n\x04name\x18\x02 \x02(\t\"S\n\x0bTensorShape\x12\x0f\n\x07unknown\x18\x01 \x02(\x08\x12\x33\n\x03\x64im\x18\x02 \x03(\x0b\x32&.paddle.standard_model.proto.Dimension\"\xc9\x02\n\x06Tensor\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x37\n\x05shape\x18\x02 \x02(\x0b\x32(.paddle.standard_model.proto.TensorShape\x12\x11\n\tdata_type\x18\x03 \x02(\x03\x12\x32\n\x07\x63ontent\x18\x04 \x03(\x0b\x32!.paddle.standard_model.proto.Type\x12\x12\n\nint32_data\x18\x05 \x01(\x05\x12\x13\n\x0buint32_data\x18\x06 \x01(\r\x12\x12\n\nint64_data\x18\x07 \x01(\x03\x12\x13\n\x0buint64_data\x18\x08 \x01(\x04\x12\x12\n\nfloat_data\x18\t \x01(\x02\x12\x13\n\x0b\x64ouble_data\x18\n \x01(\x01\x12\x11\n\tbool_data\x18\x0b \x01(\x08\x12\x13\n\x0bstring_data\x18\x0c \x01(\t\x12\x0e\n\x06\x66ormat\x18\r \x02(\t\"N\n\x04Type\x12\t\n\x01i\x18\x02 \x01(\x05\x12\t\n\x01\x66\x18\x03 \x01(\x02\x12\t\n\x01s\x18\x04 \x01(\t\x12\t\n\x01\x62\x18\x05 \x01(\x08\x12\t\n\x01l\x18\x06 \x01(\x03\x12\x0f\n\x07\x66loat64\x18\x07 \x01(\x01\"\xaf\x01\n\tAttribute\x12\x0c\n\x04name\x18\x01 \x02(\t\x12.\n\x03val\x18\x02 \x01(\x0b\x32!.paddle.standard_model.proto.Type\x12/\n\x04list\x18\x03 \x03(\x0b\x32!.paddle.standard_model.proto.Type\x12\x33\n\x04type\x18\x04 \x02(\x0e\x32%.paddle.standard_model.proto.AttrType\"\xa3\x04\n\x05Graph\x12\n\n\x02id\x18\x01 \x02(\x05\x12\x12\n\nparent_idx\x18\x02 \x02(\x05\x12@\n\rvariable_type\x18\x03 \x03(\x0b\x32).paddle.standard_model.proto.VariableType\x12@\n\roperator_node\x18\x04 \x03(\x0b\x32).paddle.standard_model.proto.OperatorNode\x12\x1d\n\x11\x66orward_block_idx\x18\x05 \x01(\x05:\x02-1\x12>\n\x0binput_nodes\x18\x06 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12?\n\x0coutput_nodes\x18\x07 \x01(\x0b\x32).paddle.standard_model.proto.VariableType\x12\x36\n\nsub_graphs\x18\x08 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x44\n\tattribute\x18\t \x03(\x0b\x32\x31.paddle.standard_model.proto.Graph.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01\"\x1c\n\tOpVersion\x12\x0f\n\x07version\x18\x01 \x02(\x05\"\xb3\x01\n\x0cOpVersionMap\x12\x45\n\x04pair\x18\x01 \x03(\x0b\x32\x37.paddle.standard_model.proto.OpVersionMap.OpVersionPair\x1a\\\n\rOpVersionPair\x12\x0f\n\x07op_name\x18\x01 \x02(\t\x12:\n\nop_version\x18\x02 \x02(\x0b\x32&.paddle.standard_model.proto.OpVersion\"B\n\x10\x43ontributorsList\x12\x0c\n\x04name\x18\x01 \x03(\t\x12\r\n\x05\x65mail\x18\x02 \x03(\t\x12\x11\n\tinstitute\x18\x03 \x03(\t\"\xee\x03\n\x05Model\x12\x31\n\x05graph\x18\x01 \x03(\x0b\x32\".paddle.standard_model.proto.Graph\x12\x0f\n\x07version\x18\x04 \x02(\x03\x12\x41\n\x0eop_version_map\x18\x05 \x01(\x0b\x32).paddle.standard_model.proto.OpVersionMap\x12\x43\n\x0c\x63ontributors\x18\x06 \x02(\x0b\x32-.paddle.standard_model.proto.ContributorsList\x12\x16\n\x0e\x66ramework_name\x18\x07 \x02(\t\x12\x19\n\x11\x66ramework_version\x18\x08 \x02(\t\x12\x12\n\nmodel_name\x18\t \x02(\t\x12\x15\n\rmodel_version\x18\n \x02(\t\x12\x0f\n\x07\x64oc_url\x18\x0b \x02(\t\x12\x44\n\tattribute\x18\x0c \x03(\x0b\x32\x31.paddle.standard_model.proto.Model.AttributeEntry\x1aX\n\x0e\x41ttributeEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x35\n\x05value\x18\x02 \x01(\x0b\x32&.paddle.standard_model.proto.Attribute:\x02\x38\x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04*\xc2\x01\n\x08\x41ttrType\x12\x07\n\x03INT\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x08\n\x04INTS\x10\x03\x12\n\n\x06\x46LOATS\x10\x04\x12\x0b\n\x07STRINGS\x10\x05\x12\x0b\n\x07\x42OOLEAN\x10\x06\x12\x0c\n\x08\x42OOLEANS\x10\x07\x12\t\n\x05\x42LOCK\x10\x08\x12\x08\n\x04LONG\x10\t\x12\n\n\x06\x42LOCKS\x10\n\x12\t\n\x05LONGS\x10\x0b\x12\x0c\n\x08\x46LOAT64S\x10\x0c\x12\x07\n\x03VAR\x10\r\x12\x08\n\x04VARS\x10\x0e\x12\x0b\n\x07\x46LOAT64\x10\x0f'
 )
 
 _ATTRTYPE = _descriptor.EnumDescriptor(
@@ -142,8 +142,8 @@ _ATTRTYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=5274,
-    serialized_end=5468, )
+    serialized_start=3053,
+    serialized_end=3247, )
 _sym_db.RegisterEnumDescriptor(_ATTRTYPE)
 
 AttrType = enum_type_wrapper.EnumTypeWrapper(_ATTRTYPE)
@@ -163,237 +163,6 @@ FLOAT64S = 12
 VAR = 13
 VARS = 14
 FLOAT64 = 15
-
-_VARTYPE_TYPE = _descriptor.EnumDescriptor(
-    name='Type',
-    full_name='paddle.standard_model.proto.VarType.Type',
-    filename=None,
-    file=DESCRIPTOR,
-    create_key=_descriptor._internal_create_key,
-    values=[
-        _descriptor.EnumValueDescriptor(
-            name='BOOL',
-            index=0,
-            number=0,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='INT16',
-            index=1,
-            number=1,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='INT32',
-            index=2,
-            number=2,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='INT64',
-            index=3,
-            number=3,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='FP16',
-            index=4,
-            number=4,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='FP32',
-            index=5,
-            number=5,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='FP64',
-            index=6,
-            number=6,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='SIZE_T',
-            index=7,
-            number=19,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='UINT8',
-            index=8,
-            number=20,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='INT8',
-            index=9,
-            number=21,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='BF16',
-            index=10,
-            number=22,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='COMPLEX64',
-            index=11,
-            number=23,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='COMPLEX128',
-            index=12,
-            number=24,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='LOD_TENSOR',
-            index=13,
-            number=7,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='SELECTED_ROWS',
-            index=14,
-            number=8,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='FEED_MINIBATCH',
-            index=15,
-            number=9,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='FETCH_LIST',
-            index=16,
-            number=10,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='STEP_SCOPES',
-            index=17,
-            number=11,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='LOD_RANK_TABLE',
-            index=18,
-            number=12,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='LOD_TENSOR_ARRAY',
-            index=19,
-            number=13,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='PLACE_LIST',
-            index=20,
-            number=14,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='READER',
-            index=21,
-            number=15,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='RAW',
-            index=22,
-            number=17,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='TUPLE',
-            index=23,
-            number=18,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='STRING',
-            index=24,
-            number=25,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='STRINGS',
-            index=25,
-            number=26,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='VOCAB',
-            index=26,
-            number=27,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='FEED_LIST',
-            index=27,
-            number=28,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='PSTRING',
-            index=28,
-            number=29,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='SPARSE_COO',
-            index=29,
-            number=30,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.EnumValueDescriptor(
-            name='SPARSE_CSR',
-            index=30,
-            number=31,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key),
-    ],
-    containing_type=None,
-    serialized_options=None,
-    serialized_start=2602,
-    serialized_end=3029, )
-_sym_db.RegisterEnumDescriptor(_VARTYPE_TYPE)
 
 _VERSION = _descriptor.Descriptor(
     name='Version',
@@ -808,879 +577,6 @@ _OPERATORNODE = _descriptor.Descriptor(
     serialized_start=85,
     serialized_end=808, )
 
-_OPPROTO_VAR = _descriptor.Descriptor(
-    name='Var',
-    full_name='paddle.standard_model.proto.OpProto.Var',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='name',
-            full_name='paddle.standard_model.proto.OpProto.Var.name',
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=2,
-            has_default_value=False,
-            default_value=b"".decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='comment',
-            full_name='paddle.standard_model.proto.OpProto.Var.comment',
-            index=1,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=2,
-            has_default_value=False,
-            default_value=b"".decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='duplicable',
-            full_name='paddle.standard_model.proto.OpProto.Var.duplicable',
-            index=2,
-            number=3,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='intermediate',
-            full_name='paddle.standard_model.proto.OpProto.Var.intermediate',
-            index=3,
-            number=4,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='dispensable',
-            full_name='paddle.standard_model.proto.OpProto.Var.dispensable',
-            index=4,
-            number=5,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='extra',
-            full_name='paddle.standard_model.proto.OpProto.Var.extra',
-            index=5,
-            number=6,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='quant',
-            full_name='paddle.standard_model.proto.OpProto.Var.quant',
-            index=6,
-            number=7,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1029,
-    serialized_end=1193, )
-
-_OPPROTO_ATTR = _descriptor.Descriptor(
-    name='Attr',
-    full_name='paddle.standard_model.proto.OpProto.Attr',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='name',
-            full_name='paddle.standard_model.proto.OpProto.Attr.name',
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=2,
-            has_default_value=False,
-            default_value=b"".decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='type',
-            full_name='paddle.standard_model.proto.OpProto.Attr.type',
-            index=1,
-            number=2,
-            type=14,
-            cpp_type=8,
-            label=2,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='comment',
-            full_name='paddle.standard_model.proto.OpProto.Attr.comment',
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=2,
-            has_default_value=False,
-            default_value=b"".decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='generated',
-            full_name='paddle.standard_model.proto.OpProto.Attr.generated',
-            index=3,
-            number=4,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='extra',
-            full_name='paddle.standard_model.proto.OpProto.Attr.extra',
-            index=4,
-            number=5,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='quant',
-            full_name='paddle.standard_model.proto.OpProto.Attr.quant',
-            index=5,
-            number=6,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='support_tensor',
-            full_name='paddle.standard_model.proto.OpProto.Attr.support_tensor',
-            index=6,
-            number=7,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=True,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1196,
-    serialized_end=1387, )
-
-_OPPROTO = _descriptor.Descriptor(
-    name='OpProto',
-    full_name='paddle.standard_model.proto.OpProto',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='type',
-            full_name='paddle.standard_model.proto.OpProto.type',
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=2,
-            has_default_value=False,
-            default_value=b"".decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='inputs',
-            full_name='paddle.standard_model.proto.OpProto.inputs',
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='outputs',
-            full_name='paddle.standard_model.proto.OpProto.outputs',
-            index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='attrs',
-            full_name='paddle.standard_model.proto.OpProto.attrs',
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='comment',
-            full_name='paddle.standard_model.proto.OpProto.comment',
-            index=4,
-            number=5,
-            type=9,
-            cpp_type=9,
-            label=2,
-            has_default_value=False,
-            default_value=b"".decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[
-        _OPPROTO_VAR,
-        _OPPROTO_ATTR,
-    ],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=811,
-    serialized_end=1387, )
-
-_VARTYPE_TENSORDESC = _descriptor.Descriptor(
-    name='TensorDesc',
-    full_name='paddle.standard_model.proto.VarType.TensorDesc',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='data_type',
-            full_name='paddle.standard_model.proto.VarType.TensorDesc.data_type',
-            index=0,
-            number=1,
-            type=14,
-            cpp_type=8,
-            label=2,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='dims',
-            full_name='paddle.standard_model.proto.VarType.TensorDesc.dims',
-            index=1,
-            number=2,
-            type=3,
-            cpp_type=2,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2138,
-    serialized_end=2226, )
-
-_VARTYPE_LODTENSORDESC = _descriptor.Descriptor(
-    name='LoDTensorDesc',
-    full_name='paddle.standard_model.proto.VarType.LoDTensorDesc',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='tensor',
-            full_name='paddle.standard_model.proto.VarType.LoDTensorDesc.tensor',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=2,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='lod_level',
-            full_name='paddle.standard_model.proto.VarType.LoDTensorDesc.lod_level',
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=True,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2228,
-    serialized_end=2330, )
-
-_VARTYPE_LODTENSORARRAYDESC = _descriptor.Descriptor(
-    name='LoDTensorArrayDesc',
-    full_name='paddle.standard_model.proto.VarType.LoDTensorArrayDesc',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='tensor',
-            full_name='paddle.standard_model.proto.VarType.LoDTensorArrayDesc.tensor',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=2,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='lod_level',
-            full_name='paddle.standard_model.proto.VarType.LoDTensorArrayDesc.lod_level',
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=True,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2332,
-    serialized_end=2439, )
-
-_VARTYPE_READERDESC = _descriptor.Descriptor(
-    name='ReaderDesc',
-    full_name='paddle.standard_model.proto.VarType.ReaderDesc',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='lod_tensor',
-            full_name='paddle.standard_model.proto.VarType.ReaderDesc.lod_tensor',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2441,
-    serialized_end=2525, )
-
-_VARTYPE_TUPLE = _descriptor.Descriptor(
-    name='Tuple',
-    full_name='paddle.standard_model.proto.VarType.Tuple',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='element_type',
-            full_name='paddle.standard_model.proto.VarType.Tuple.element_type',
-            index=0,
-            number=1,
-            type=14,
-            cpp_type=8,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2527,
-    serialized_end=2599, )
-
-_VARTYPE = _descriptor.Descriptor(
-    name='VarType',
-    full_name='paddle.standard_model.proto.VarType',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='type',
-            full_name='paddle.standard_model.proto.VarType.type',
-            index=0,
-            number=1,
-            type=14,
-            cpp_type=8,
-            label=2,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='selected_rows',
-            full_name='paddle.standard_model.proto.VarType.selected_rows',
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='lod_tensor',
-            full_name='paddle.standard_model.proto.VarType.lod_tensor',
-            index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='tensor_array',
-            full_name='paddle.standard_model.proto.VarType.tensor_array',
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='reader',
-            full_name='paddle.standard_model.proto.VarType.reader',
-            index=4,
-            number=5,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='tuple',
-            full_name='paddle.standard_model.proto.VarType.tuple',
-            index=5,
-            number=7,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='string',
-            full_name='paddle.standard_model.proto.VarType.string',
-            index=6,
-            number=8,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='strings',
-            full_name='paddle.standard_model.proto.VarType.strings',
-            index=7,
-            number=9,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='vocab',
-            full_name='paddle.standard_model.proto.VarType.vocab',
-            index=8,
-            number=10,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='sparse_coo',
-            full_name='paddle.standard_model.proto.VarType.sparse_coo',
-            index=9,
-            number=11,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-        _descriptor.FieldDescriptor(
-            name='sparse_csr',
-            full_name='paddle.standard_model.proto.VarType.sparse_csr',
-            index=10,
-            number=12,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key),
-    ],
-    extensions=[],
-    nested_types=[
-        _VARTYPE_TENSORDESC,
-        _VARTYPE_LODTENSORDESC,
-        _VARTYPE_LODTENSORARRAYDESC,
-        _VARTYPE_READERDESC,
-        _VARTYPE_TUPLE,
-    ],
-    enum_types=[_VARTYPE_TYPE, ],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto2',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1390,
-    serialized_end=3029, )
-
 _VARIABLETYPE = _descriptor.Descriptor(
     name='VariableType',
     full_name='paddle.standard_model.proto.VariableType',
@@ -1806,8 +702,8 @@ _VARIABLETYPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3032,
-    serialized_end=3228, )
+    serialized_start=811,
+    serialized_end=1007, )
 
 _DIMENSION = _descriptor.Descriptor(
     name='Dimension',
@@ -1862,8 +758,8 @@ _DIMENSION = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3230,
-    serialized_end=3269, )
+    serialized_start=1009,
+    serialized_end=1048, )
 
 _TENSORSHAPE = _descriptor.Descriptor(
     name='TensorShape',
@@ -1918,8 +814,8 @@ _TENSORSHAPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3271,
-    serialized_end=3354, )
+    serialized_start=1050,
+    serialized_end=1133, )
 
 _TENSOR = _descriptor.Descriptor(
     name='Tensor',
@@ -2172,8 +1068,8 @@ _TENSOR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3357,
-    serialized_end=3686, )
+    serialized_start=1136,
+    serialized_end=1465, )
 
 _TYPE = _descriptor.Descriptor(
     name='Type',
@@ -2300,8 +1196,8 @@ _TYPE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3688,
-    serialized_end=3766, )
+    serialized_start=1467,
+    serialized_end=1545, )
 
 _ATTRIBUTE = _descriptor.Descriptor(
     name='Attribute',
@@ -2392,8 +1288,8 @@ _ATTRIBUTE = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3769,
-    serialized_end=3944, )
+    serialized_start=1548,
+    serialized_end=1723, )
 
 _GRAPH_ATTRIBUTEENTRY = _descriptor.Descriptor(
     name='AttributeEntry',
@@ -2630,8 +1526,8 @@ _GRAPH = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3947,
-    serialized_end=4494, )
+    serialized_start=1726,
+    serialized_end=2273, )
 
 _OPVERSION = _descriptor.Descriptor(
     name='OpVersion',
@@ -2668,8 +1564,8 @@ _OPVERSION = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4496,
-    serialized_end=4524, )
+    serialized_start=2275,
+    serialized_end=2303, )
 
 _OPVERSIONMAP_OPVERSIONPAIR = _descriptor.Descriptor(
     name='OpVersionPair',
@@ -2724,8 +1620,8 @@ _OPVERSIONMAP_OPVERSIONPAIR = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4614,
-    serialized_end=4706, )
+    serialized_start=2393,
+    serialized_end=2485, )
 
 _OPVERSIONMAP = _descriptor.Descriptor(
     name='OpVersionMap',
@@ -2762,8 +1658,8 @@ _OPVERSIONMAP = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4527,
-    serialized_end=4706, )
+    serialized_start=2306,
+    serialized_end=2485, )
 
 _CONTRIBUTORSLIST = _descriptor.Descriptor(
     name='ContributorsList',
@@ -2836,8 +1732,8 @@ _CONTRIBUTORSLIST = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4708,
-    serialized_end=4774, )
+    serialized_start=2487,
+    serialized_end=2553, )
 
 _MODEL_ATTRIBUTEENTRY = _descriptor.Descriptor(
     name='AttributeEntry',
@@ -3092,8 +1988,8 @@ _MODEL = _descriptor.Descriptor(
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4777,
-    serialized_end=5271, )
+    serialized_start=2556,
+    serialized_end=3050, )
 
 _OPERATORNODE_LISTVARIABLETYPE.fields_by_name[
     'variable_type'].message_type = _VARIABLETYPE
@@ -3110,38 +2006,6 @@ _OPERATORNODE.fields_by_name['input'].message_type = _OPERATORNODE_INPUTENTRY
 _OPERATORNODE.fields_by_name['output'].message_type = _OPERATORNODE_OUTPUTENTRY
 _OPERATORNODE.fields_by_name[
     'attribute'].message_type = _OPERATORNODE_ATTRIBUTEENTRY
-_OPPROTO_VAR.containing_type = _OPPROTO
-_OPPROTO_ATTR.fields_by_name['type'].enum_type = _ATTRTYPE
-_OPPROTO_ATTR.containing_type = _OPPROTO
-_OPPROTO.fields_by_name['inputs'].message_type = _OPPROTO_VAR
-_OPPROTO.fields_by_name['outputs'].message_type = _OPPROTO_VAR
-_OPPROTO.fields_by_name['attrs'].message_type = _OPPROTO_ATTR
-_VARTYPE_TENSORDESC.fields_by_name['data_type'].enum_type = _VARTYPE_TYPE
-_VARTYPE_TENSORDESC.containing_type = _VARTYPE
-_VARTYPE_LODTENSORDESC.fields_by_name[
-    'tensor'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE_LODTENSORDESC.containing_type = _VARTYPE
-_VARTYPE_LODTENSORARRAYDESC.fields_by_name[
-    'tensor'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE_LODTENSORARRAYDESC.containing_type = _VARTYPE
-_VARTYPE_READERDESC.fields_by_name[
-    'lod_tensor'].message_type = _VARTYPE_LODTENSORDESC
-_VARTYPE_READERDESC.containing_type = _VARTYPE
-_VARTYPE_TUPLE.fields_by_name['element_type'].enum_type = _VARTYPE_TYPE
-_VARTYPE_TUPLE.containing_type = _VARTYPE
-_VARTYPE.fields_by_name['type'].enum_type = _VARTYPE_TYPE
-_VARTYPE.fields_by_name['selected_rows'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE.fields_by_name['lod_tensor'].message_type = _VARTYPE_LODTENSORDESC
-_VARTYPE.fields_by_name[
-    'tensor_array'].message_type = _VARTYPE_LODTENSORARRAYDESC
-_VARTYPE.fields_by_name['reader'].message_type = _VARTYPE_READERDESC
-_VARTYPE.fields_by_name['tuple'].message_type = _VARTYPE_TUPLE
-_VARTYPE.fields_by_name['string'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE.fields_by_name['strings'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE.fields_by_name['vocab'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE.fields_by_name['sparse_coo'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE.fields_by_name['sparse_csr'].message_type = _VARTYPE_TENSORDESC
-_VARTYPE_TYPE.containing_type = _VARTYPE
 _VARIABLETYPE.fields_by_name['tensor'].message_type = _TENSOR
 _VARIABLETYPE.fields_by_name['type'].enum_type = _ATTRTYPE
 _TENSORSHAPE.fields_by_name['dim'].message_type = _DIMENSION
@@ -3170,8 +2034,6 @@ _MODEL.fields_by_name['contributors'].message_type = _CONTRIBUTORSLIST
 _MODEL.fields_by_name['attribute'].message_type = _MODEL_ATTRIBUTEENTRY
 DESCRIPTOR.message_types_by_name['Version'] = _VERSION
 DESCRIPTOR.message_types_by_name['OperatorNode'] = _OPERATORNODE
-DESCRIPTOR.message_types_by_name['OpProto'] = _OPPROTO
-DESCRIPTOR.message_types_by_name['VarType'] = _VARTYPE
 DESCRIPTOR.message_types_by_name['VariableType'] = _VARIABLETYPE
 DESCRIPTOR.message_types_by_name['Dimension'] = _DIMENSION
 DESCRIPTOR.message_types_by_name['TensorShape'] = _TENSORSHAPE
@@ -3241,89 +2103,6 @@ _sym_db.RegisterMessage(OperatorNode.ListVariableType)
 _sym_db.RegisterMessage(OperatorNode.InputEntry)
 _sym_db.RegisterMessage(OperatorNode.OutputEntry)
 _sym_db.RegisterMessage(OperatorNode.AttributeEntry)
-
-OpProto = _reflection.GeneratedProtocolMessageType(
-    'OpProto',
-    (_message.Message, ),
-    {
-        'Var': _reflection.GeneratedProtocolMessageType(
-            'Var',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _OPPROTO_VAR,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.OpProto.Var)
-            }),
-        'Attr': _reflection.GeneratedProtocolMessageType(
-            'Attr',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _OPPROTO_ATTR,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.OpProto.Attr)
-            }),
-        'DESCRIPTOR': _OPPROTO,
-        '__module__': 'standard_model_pb2'
-        # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.OpProto)
-    })
-_sym_db.RegisterMessage(OpProto)
-_sym_db.RegisterMessage(OpProto.Var)
-_sym_db.RegisterMessage(OpProto.Attr)
-
-VarType = _reflection.GeneratedProtocolMessageType(
-    'VarType',
-    (_message.Message, ),
-    {
-        'TensorDesc': _reflection.GeneratedProtocolMessageType(
-            'TensorDesc',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _VARTYPE_TENSORDESC,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.VarType.TensorDesc)
-            }),
-        'LoDTensorDesc': _reflection.GeneratedProtocolMessageType(
-            'LoDTensorDesc',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _VARTYPE_LODTENSORDESC,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.VarType.LoDTensorDesc)
-            }),
-        'LoDTensorArrayDesc': _reflection.GeneratedProtocolMessageType(
-            'LoDTensorArrayDesc',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _VARTYPE_LODTENSORARRAYDESC,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.VarType.LoDTensorArrayDesc)
-            }),
-        'ReaderDesc': _reflection.GeneratedProtocolMessageType(
-            'ReaderDesc',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _VARTYPE_READERDESC,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.VarType.ReaderDesc)
-            }),
-        'Tuple': _reflection.GeneratedProtocolMessageType(
-            'Tuple',
-            (_message.Message, ),
-            {
-                'DESCRIPTOR': _VARTYPE_TUPLE,
-                '__module__': 'standard_model_pb2'
-                # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.VarType.Tuple)
-            }),
-        'DESCRIPTOR': _VARTYPE,
-        '__module__': 'standard_model_pb2'
-        # @@protoc_insertion_point(class_scope:paddle.standard_model.proto.VarType)
-    })
-_sym_db.RegisterMessage(VarType)
-_sym_db.RegisterMessage(VarType.TensorDesc)
-_sym_db.RegisterMessage(VarType.LoDTensorDesc)
-_sym_db.RegisterMessage(VarType.LoDTensorArrayDesc)
-_sym_db.RegisterMessage(VarType.ReaderDesc)
-_sym_db.RegisterMessage(VarType.Tuple)
 
 VariableType = _reflection.GeneratedProtocolMessageType(
     'VariableType',
