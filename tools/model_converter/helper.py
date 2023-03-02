@@ -1,4 +1,5 @@
 from typing import ItemsView
+from typing_extensions import Self
 from standard_model_pb2 import OperatorNode, AttrType
 import framework_pb2
 
@@ -43,7 +44,7 @@ standard_str_2_int_map = {
 }
 
 
-def make_standard_operator(op, name, all_vars):
+def make_standard_operator(op, name, all_vars, params2val_dict):
     operator = OperatorNode()
     operator.operator_type = op.type
     operator.name = name
@@ -51,10 +52,14 @@ def make_standard_operator(op, name, all_vars):
     operator.definition = op.type + " OP."
     for input in op.inputs:
         for argument in input.arguments:
-            variable_type = operator.inputs[input.parameter].variable_type.add()
+            variable_type = operator.input[input.parameter].variable_type.add()
             variable_type.name = argument
             variable_type.data_type = 1
             variable_type.is_persitable = False
+            variable_type.tensor.name = argument
+            variable_type.tensor.format = "NCHW"
+            variable_type.tensor.data_type = 16
+            variable_type.tensor.shape.unknown = True
             for var in all_vars:
                 if var.name == argument:
                     variable_type.is_persitable = var.persistable
@@ -62,17 +67,37 @@ def make_standard_operator(op, name, all_vars):
                         variable_type.data_type = standard_str_2_int_map[
                             paddle_int_2_str_map[
                                 var.type.lod_tensor.tensor.data_type]]
+                        variable_type.tensor.data_type = variable_type.data_type
+                        variable_type.tensor.shape.unknown = False
+                        shape_dims = variable_type.tensor.shape.dim
+                        for dim_index in range(
+                                len(var.type.lod_tensor.tensor.dims)):
+                            dim = var.type.lod_tensor.tensor.dims[dim_index]
+                            shape_dim = shape_dims.add()
+                            shape_dim.name = "dim_" + str(dim_index)
+                            shape_dim.size = dim
+                        if variable_type.is_persitable:
+                            content = variable_type.tensor.content
+                            numpy_array = params2val_dict[argument].reshape(
+                                -1).tolist()
+                            if len(numpy_array) >= 2:
+                                content.add().f = numpy_array[0]
+                                content.add().f = numpy_array[1]
                     else:
-                        variable_type.data_type = var.type.type
+                        assert (False, "Unsupported var type")
                     break
 
     for output in op.outputs:
         for argument in output.arguments:
-            variable_type = operator.outputs[
-                output.parameter].variable_type.add()
+            variable_type = operator.output[output.parameter].variable_type.add(
+            )
             variable_type.name = argument
             variable_type.data_type = 1
             variable_type.is_persitable = False
+            variable_type.tensor.name = argument
+            variable_type.tensor.format = "NCHW"
+            variable_type.tensor.data_type = 16
+            variable_type.tensor.shape.unknown = True
             for var in all_vars:
                 if var.name == argument:
                     variable_type.is_persitable = var.persistable
@@ -80,34 +105,109 @@ def make_standard_operator(op, name, all_vars):
                         variable_type.data_type = standard_str_2_int_map[
                             paddle_int_2_str_map[
                                 var.type.lod_tensor.tensor.data_type]]
+                        variable_type.tensor.data_type = variable_type.data_type
+                        variable_type.tensor.shape.unknown = False
+                        shape_dims = variable_type.tensor.shape.dim
+                        for dim_index in range(
+                                len(var.type.lod_tensor.tensor.dims)):
+                            dim = var.type.lod_tensor.tensor.dims[dim_index]
+                            shape_dim = shape_dims.add()
+                            shape_dim.name = "dim_" + str(dim_index)
+                            shape_dim.size = dim
                     else:
-                        variable_type.data_type = var.type.type
+                        assert (False, "Unsupported var type")
                     break
 
     for paddle_attr in op.attrs:
         if paddle_attr.name in ["op_callstack"]:
             continue
-        attr_get = OperatorNode.Attr.FromString(paddle_attr.SerializeToString())
-        variable_type = operator.attribute[paddle_attr.name].CopyFrom(attr_get)
+        operator.attribute[paddle_attr.name].name = paddle_attr.name
+        operator.attribute[paddle_attr.name].type = paddle_attr.type
+        if paddle_attr.type == 0:
+            operator.attribute[paddle_attr.name].val.i = paddle_attr.i
+        elif paddle_attr.type == 1:
+            operator.attribute[paddle_attr.name].val.f = paddle_attr.f
+        elif paddle_attr.type == 2:
+            operator.attribute[paddle_attr.name].val.s = paddle_attr.s
+        elif paddle_attr.type == 3:
+            for val in paddle_attr.ints:
+                operator.attribute[paddle_attr.name].list.add().i = val
+        elif paddle_attr.type == 4:
+            for val in paddle_attr.floats:
+                operator.attribute[paddle_attr.name].list.add().f = val
+        elif paddle_attr.type == 5:
+            for val in paddle_attr.strings:
+                operator.attribute[paddle_attr.name].list.add().s = val
+        elif paddle_attr.type == 6:
+            operator.attribute[paddle_attr.name].val.b = paddle_attr.b
+        elif paddle_attr.type == 7:
+            for val in paddle_attr.bools:
+                operator.attribute[paddle_attr.name].list.add().b = val
+        elif paddle_attr.type == 9:
+            operator.attribute[paddle_attr.name].val.l = paddle_attr.l
+        elif paddle_attr.type == 11:
+            for val in paddle_attr.longs:
+                operator.attribute[paddle_attr.name].list.add().l = val
+        elif paddle_attr.type == 12:
+            for val in paddle_attr.float64s:
+                operator.attribute[paddle_attr.name].list.add().float64 = val
+        elif paddle_attr.type == 15:
+            operator.attribute[
+                paddle_attr.name].val.float64 = paddle_attr.float64
+        else:
+            print("unsupported paddle attr: ", paddle_attr)
     return operator
 
 
 def make_paddle_operator(op):
     operator = framework_pb2.OpDesc()
     operator.type = op.operator_type
-    for key, values in op.inputs.items():
+    for key, values in op.input.items():
         input_var = operator.inputs.add()
         input_var.parameter = key
         for value in values.variable_type:
             input_var.arguments.append(value.name)
-    for key, values in op.outputs.items():
+    for key, values in op.output.items():
         output_var = operator.outputs.add()
         output_var.parameter = key
         for value in values.variable_type:
             output_var.arguments.append(value.name)
 
-    for key, value in op.attribute.items():
-        attr_get = framework_pb2.OpDesc.Attr.FromString(value.SerializeToString(
-        ))
-        operator.attrs.append(attr_get)
+    for name, attr in op.attribute.items():
+        paddle_attr = operator.attrs.add()
+        paddle_attr.name = name
+        paddle_attr.type = attr.type
+        if attr.type == 0:
+            paddle_attr.i = attr.val.i
+        elif attr.type == 1:
+            paddle_attr.f = attr.val.f
+        elif attr.type == 2:
+            paddle_attr.s = attr.val.s
+        elif attr.type == 3:
+            for val in attr.list:
+                paddle_attr.ints.append(val.i)
+        elif attr.type == 4:
+            for val in attr.list:
+                paddle_attr.floats.append(val.f)
+        elif attr.type == 5:
+            for val in attr.list:
+                paddle_attr.strings.append(val.s)
+        elif attr.type == 6:
+            paddle_attr.b = attr.val.b
+        elif attr.type == 7:
+            for val in attr.list:
+                paddle_attr.bools.append(val.b)
+        elif attr.type == 9:
+            paddle_attr.l = attr.val.l
+        elif attr.type == 11:
+            for val in attr.list:
+                paddle_attr.longs.append(val.l)
+        elif attr.type == 12:
+            for val in attr.list:
+                paddle_attr.float64s.append(val.float64)
+        elif attr.type == 15:
+            paddle_attr.float64 = attr.val.float64
+        else:
+            print("unsupported standard attr: ", attr)
+
     return operator

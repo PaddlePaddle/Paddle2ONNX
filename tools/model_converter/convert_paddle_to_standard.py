@@ -90,9 +90,10 @@ def convert_params(paddle_model, save_dir):
             file.write(bytes_str_enc)
     file.close()
     print("standard params saved in: ", params_save_path)
+    return params2val_dict, layer2params_dict
 
 
-def convert_model(paddle_model, save_dir):
+def convert_model(paddle_model, save_dir, params2val_dict):
     model_file = open(paddle_model + ".pdmodel", 'rb')
     model_str = model_file.read()
     model_file.close()
@@ -102,7 +103,7 @@ def convert_model(paddle_model, save_dir):
 
     new_model = standard_model_pb2.Model()
     new_model.contributors.name.append("PaddlePaddle")
-    new_model.contributors.email.append("PaddlePaddle")
+    new_model.contributors.email.append("paddlepaddle@baidu.com")
     new_model.contributors.institute.append("Baidu")
     new_model.version = prog.version.version
     new_model.framework_name = "PaddlePaddle"
@@ -110,22 +111,49 @@ def convert_model(paddle_model, save_dir):
     new_model.model_name = "Standard_model"
     new_model.model_version = "V1.0"
     new_model.doc_url = "https://www.paddlepaddle.org.cn/"
+    new_model.attribute["data"].name = "data"
+    new_model.attribute["data"].type = 2
+    new_model.attribute["data"].val.s = "20230101"
 
     for block_idex in range(block_size):
         graph = new_model.graph.add()
         block = prog.blocks[block_idex]
         graph.id = block.idx
         graph.parent_idx = block.parent_idx
+        graph.attribute["graph_type"].name = "graph_type"
+        graph.attribute["graph_type"].type = 2
+        graph.attribute["graph_type"].val.s = "inference model"
         for op_index in range(len(block.ops)):
             op = block.ops[op_index]
             layer_name = op.type + "_" + str(block_idex) + "_" + str(op_index)
-            operator = helper.make_standard_operator(op, layer_name, block.vars)
+            operator = helper.make_standard_operator(op, layer_name, block.vars,
+                                                     params2val_dict)
             graph.operator_node.append(operator)
 
         for var in block.vars:
-            var_proto = standard_model_pb2.VariableType.FromString(
-                var.SerializeToString())
-            graph.variable_type.append(var_proto)
+            variable_type = graph.variable_type.add()
+            variable_type.name = var.name
+            variable_type.type = var.type.type
+            variable_type.data_type = helper.standard_str_2_int_map[
+                helper.paddle_int_2_str_map[
+                    var.type.lod_tensor.tensor.data_type]]
+            variable_type.is_persitable = var.persistable
+            variable_type.tensor.data_type = variable_type.data_type
+            variable_type.tensor.shape.unknown = False
+            variable_type.tensor.format = "NCHW"
+            variable_type.tensor.name = var.name
+            shape_dims = variable_type.tensor.shape.dim
+            for dim_index in range(len(var.type.lod_tensor.tensor.dims)):
+                dim = var.type.lod_tensor.tensor.dims[dim_index]
+                shape_dim = shape_dims.add()
+                shape_dim.name = "dim_" + str(dim_index)
+                shape_dim.size = dim
+            if variable_type.is_persitable and var.name in params2val_dict:
+                content = variable_type.tensor.content
+                numpy_array = params2val_dict[var.name].reshape(-1).tolist()
+                if len(numpy_array) >= 2:
+                    content.add().f = numpy_array[0]
+                    content.add().f = numpy_array[1]
 
         graph.forward_block_idx = block.forward_block_idx
 
@@ -141,5 +169,5 @@ if __name__ == '__main__':
     paddle.set_device("cpu")
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
-    convert_params(args.paddle_model, args.save_dir)
-    convert_model(args.paddle_model, args.save_dir)
+    params2val_dict, _ = convert_params(args.paddle_model, args.save_dir)
+    convert_model(args.paddle_model, args.save_dir, params2val_dict)

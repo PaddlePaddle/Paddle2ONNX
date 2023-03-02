@@ -74,7 +74,9 @@ class StandardModel(object):
         for graph in self.prog.graph:
             for var in graph.variable_type:
                 if var.name in self.params2val_dict:
-                    shape = var.type.lod_tensor.tensor.dims
+                    shape = []
+                    for dim in var.tensor.shape.dim:
+                        shape.append(dim.size)
                     self.params2val_dict[var.name] = self.params2val_dict[
                         var.name].reshape(shape)
 
@@ -116,6 +118,13 @@ class StandardModel(object):
         fp.close()
         print("paddle params saved in: ", params_save_path)
 
+    def get_dict_key(self, dic, value):
+        keys = list(dic.keys())
+        values = list(dic.values())
+        idx = values.index(value)
+        key = keys[idx]
+        return key
+
     def convert_model(self, save_dir):
         paddle_model = framework_pb2.ProgramDesc()
         for graph in self.prog.graph:
@@ -125,10 +134,18 @@ class StandardModel(object):
             for op in graph.operator_node:
                 operator = helper.make_paddle_operator(op)
                 block.ops.append(operator)
-            for var in graph.variable_type:
-                var_proto = framework_pb2.VarDesc.FromString(
-                    var.SerializeToString())
-                block.vars.append(var_proto)
+
+            for variable_type in graph.variable_type:
+                var = block.vars.add()
+                var.name = variable_type.name
+                var.type.type = variable_type.type
+                var.persistable = variable_type.is_persitable
+                key = self.get_dict_key(helper.standard_str_2_int_map,
+                                        variable_type.data_type)
+                var.type.lod_tensor.tensor.data_type = self.get_dict_key(
+                    helper.paddle_int_2_str_map, key)
+                for dim in variable_type.tensor.shape.dim:
+                    var.type.lod_tensor.tensor.dims.append(dim.size)
 
         paddle_model_file_path = os.path.join(save_dir, 'model.pdmodel')
         paddle_model_str = paddle_model.SerializeToString()
@@ -142,13 +159,13 @@ class StandardModel(object):
         self.convert_model(save_dir)
         self.save_paddle_params(save_dir)
 
-    def program(self):
+    def model(self):
         return self.prog
 
     def graph(self):
         return self.prog.graph
 
-    def node(self, node_index=0, block_index=0):
+    def operator_node(self, node_index=0, block_index=0):
         Assert(block_index >= 0 and block_index < len(self.prog.graph),
                "block_idex must be in range [0, " + str(len(self.prog.graph)) +
                "]")
@@ -203,28 +220,46 @@ if __name__ == '__main__':
     args = parse_arguments()
     paddle.set_device("cpu")
     model = StandardModel(args.standard_model)
-    print("*" * 20)
-    print("print model: ")
-    print(model.program())
-    print("*" * 20)
-    print("print graph: ")
-    print(model.graph())
-    print("*" * 20)
-    print("print contributors: ")
-    print(model.prog.contributors)
-    print("*" * 20)
-    print("print node_index 21: ")
-    print(model.node(21))
-    print("*" * 20)
-    print("print all_tensors: ")
-    model.print_all_tensors()
-    print("*" * 20)
-    print("print tensor_name conv2d_49.b_0: ")
-    print(model.tensor("conv2d_49.b_0"))
-    print("*" * 20)
-    print("print var conv2d_49.b_0")
-    print(model.variable_type("conv2d_49.b_0"))
-    print("-" * 20)
+    # print("*" * 20)
+    # print("print model: ")
+    # print(model.model())
+    # print("*" * 20)
+    # print("print graph: ")
+    # print(model.graph())
+    # print("*" * 20)
+    # print("print contributors: ")
+    # print(model.model().contributors)
+    # print("*" * 20)
+    # print("print node_index 21: ")
+    # print(model.operator_node(21))
+    # print("*" * 20)
+    # print("print node_index 21 input variable_type: ")
+    # print(model.operator_node(21).input["Bias"].variable_type)
+    # print("*" * 20)
+    # print("print node_index 21 attribute: ")
+    # print(model.operator_node(21).attribute["data_layout"])
+    # print("*" * 20)
+    # print("print node_index 21 data_type: ")
+    # print("data_type: ",model.operator_node(21).input["Bias"].variable_type[0].data_type)
+    # print("*" * 20)
+    # print("print node_index 21 tensor: ")
+    # print(model.operator_node(21).input["Bias"].variable_type[0].tensor)
+    # print("*" * 20)
+    # print("print node_index 21 tensor shape: ")
+    # print(model.operator_node(21).input["Bias"].variable_type[0].tensor.shape)
+    # print("*" * 20)
+    # print("print node_index 21 tensor shape dim: ")
+    # print(model.operator_node(21).input["Bias"].variable_type[0].tensor.shape.dim)
+    # print("*" * 20)
+    # print("print all_tensors: ")
+    # model.print_all_tensors()
+    # print("*" * 20)
+    # print("print tensor_name conv2d_49.b_0: ")
+    # print(model.tensor("conv2d_49.b_0"))
+    # print("*" * 20)
+    # print("print var conv2d_49.w_0")
+    # print(model.variable_type("conv2d_49.w_0"))
+    # print("-" * 20)
 
     if args.save_dir is None:
         args.save_dir = "paddle_model"
