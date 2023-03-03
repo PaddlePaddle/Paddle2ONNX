@@ -200,7 +200,21 @@ class StandardModel(object):
             for param in param_names:
                 print("   ", param, self.params2val_dict[param].shape)
 
-    def tensor(self, tensor):
+    def tensor_str(self, tensor_index):
+        tensor_str = str(
+            model.operator_node(tensor_index).input["Bias"].variable_type[0]
+            .tensor)
+        tensor_str += "int32_data:\n"
+        tensor_str += "uint32_data:\n"
+        tensor_str += "int64_data:\n"
+        tensor_str += "uint64_data:\n"
+        tensor_str += "float_data:\n"
+        tensor_str += "double_data:\n"
+        tensor_str += "bool_data:\n"
+        tensor_str += "string_data:\n"
+        return tensor_str
+
+    def tensor_val(self, tensor):
         if isinstance(tensor, six.string_types):
             if tensor in self.params2val_dict:
                 return self.params2val_dict[tensor]
@@ -242,8 +256,8 @@ if __name__ == '__main__':
     # print("print node_index 21 data_type: ")
     # print("data_type: ",model.operator_node(21).input["Bias"].variable_type[0].data_type)
     # print("*" * 20)
-    # print("print node_index 21 tensor: ")
-    # print(model.operator_node(21).input["Bias"].variable_type[0].tensor)
+    # print("print the tensor of node_index 21: ")
+    # print(model.tensor_str(21))
     # print("*" * 20)
     # print("print node_index 21 tensor shape: ")
     # print(model.operator_node(21).input["Bias"].variable_type[0].tensor.shape)
@@ -255,7 +269,7 @@ if __name__ == '__main__':
     # model.print_all_tensors()
     # print("*" * 20)
     # print("print tensor_name conv2d_49.b_0: ")
-    # print(model.tensor("conv2d_49.b_0"))
+    # print(model.tensor_val("conv2d_49.b_0"))
     # print("*" * 20)
     # print("print var conv2d_49.w_0")
     # print(model.variable_type("conv2d_49.w_0"))
