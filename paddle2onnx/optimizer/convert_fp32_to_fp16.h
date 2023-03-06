@@ -197,6 +197,7 @@ struct ConvertFp32ToFp16 {
 
   std::vector<std::string> DEFAULT_OP_BLOCK_LIST = {
       "ArrayFeatureExtractor",
+      "ReduceMean",  // this op may cause wrong results on FP16
       "Binarizer",
       "CastMap",
       "CategoryMapper",

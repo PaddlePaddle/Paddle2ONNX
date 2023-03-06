@@ -516,11 +516,31 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
           // or needs to be kept without conversion, then store the node in
           // node_list,
           // which is convenient for adding cast op in the front or back
-          if (KeepNodeType(n) ||
-              std::find(op_block_list_.begin(), op_block_list_.end(),
-                        n->op_type()) != op_block_list_.end() ||
-              std::find(fp32_output_op_list.begin(), fp32_output_op_list.end(),
-                        n->op_type()) != fp32_output_op_list.end()) {
+          if (KeepNodeType(n)) {
+            if (n->op_type() != "Constant" &&
+                std::find(node_list.begin(), node_list.end(), n) ==
+                    node_list.end()) {
+              node_list.push_back(n);
+            } else {
+              for (auto index = 0; index < q.graph->node_size(); index++) {
+                auto keep_type_node = q.graph->mutable_node(index);
+                for (auto node_input : keep_type_node->input()) {
+                  if (node_input == *(n->mutable_output(0)) &&
+                      std::find(node_list.begin(), node_list.end(), n) ==
+                          node_list.end()) {
+                    node_list.push_back(keep_type_node);
+                    break;
+                  }
+                }
+              }
+            }
+          } else if ((std::find(op_block_list_.begin(), op_block_list_.end(),
+                                n->op_type()) != op_block_list_.end() ||
+                      std::find(fp32_output_op_list.begin(),
+                                fp32_output_op_list.end(),
+                                n->op_type()) != fp32_output_op_list.end()) &&
+                     std::find(node_list.begin(), node_list.end(), n) ==
+                         node_list.end()) {
             node_list.push_back(n);
           } else {
             std::string op_name = n->name();
