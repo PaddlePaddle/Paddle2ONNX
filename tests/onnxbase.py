@@ -347,7 +347,8 @@ class APIOnnx(object):
                     res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
                 for v in self._version:
-                    compare(res_fict[str(v)], exp, delta=1e-3, rtol=1e-3)
+                    compare(
+                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
 
                 # dygraph model jit save
                 if self.static is True and place == 'gpu':
@@ -380,7 +381,7 @@ class APIOnnx(object):
                 for v in self._version:
                     onnx_model_str = c_p2o.export(
                         model_file, params_file, v, False, True, True, True,
-                        True, {}, "onnxruntime", "", "", True)
+                        True, {}, "onnxruntime", "", "", False)
                     with open(
                             os.path.join(self.name,
                                          self.name + '_' + str(v) + ".onnx"),
@@ -389,6 +390,7 @@ class APIOnnx(object):
                     res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
                 for v in self._version:
-                    compare(res_fict[str(v)], exp, delta=1e-3, rtol=1e-3)
+                    compare(
+                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
             else:
                 print("`export ENABLE_DEV=ON or export ENABLE_DEV=OFF`")
