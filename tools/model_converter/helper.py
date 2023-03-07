@@ -51,6 +51,7 @@ def make_standard_operator(op, name, all_vars, params2val_dict):
     operator.doc_string = op.type + " OP."
     operator.definition = op.type + " OP."
     for input in op.inputs:
+        operator.input[input.parameter]
         for argument in input.arguments:
             variable_type = operator.input[input.parameter].variable_type.add()
             variable_type.name = argument
@@ -88,6 +89,7 @@ def make_standard_operator(op, name, all_vars, params2val_dict):
                     break
 
     for output in op.outputs:
+        operator.output[output.parameter]
         for argument in output.arguments:
             variable_type = operator.output[output.parameter].variable_type.add(
             )
@@ -143,6 +145,9 @@ def make_standard_operator(op, name, all_vars, params2val_dict):
         elif paddle_attr.type == 7:
             for val in paddle_attr.bools:
                 operator.attribute[paddle_attr.name].list.add().b = val
+        elif paddle_attr.type == 8:
+            operator.attribute[
+                paddle_attr.name].val.block_idx = paddle_attr.block_idx
         elif paddle_attr.type == 9:
             operator.attribute[paddle_attr.name].val.l = paddle_attr.l
         elif paddle_attr.type == 11:
@@ -197,6 +202,8 @@ def make_paddle_operator(op):
         elif attr.type == 7:
             for val in attr.list:
                 paddle_attr.bools.append(val.b)
+        elif attr.type == 8:
+            paddle_attr.block_idx = attr.val.block_idx
         elif attr.type == 9:
             paddle_attr.l = attr.val.l
         elif attr.type == 11:

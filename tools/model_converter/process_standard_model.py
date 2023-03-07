@@ -131,6 +131,7 @@ class StandardModel(object):
             block = paddle_model.blocks.add()
             block.idx = graph.id
             block.parent_idx = graph.parent_idx
+            block.forward_block_idx = graph.forward_block_idx
             for op in graph.operator_node:
                 operator = helper.make_paddle_operator(op)
                 block.ops.append(operator)

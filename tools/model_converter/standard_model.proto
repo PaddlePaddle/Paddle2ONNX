@@ -102,6 +102,7 @@ message Type {
   optional bool b = 5;
   optional int64 l = 6;
   optional double float64 = 7;
+  optional int32 block_idx = 8;
 }
 
 message Attribute {
