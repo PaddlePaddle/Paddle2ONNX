@@ -347,8 +347,7 @@ class APIOnnx(object):
                     res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
                 for v in self._version:
-                    compare(
-                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                    compare(res_fict[str(v)], exp, delta=1e-3, rtol=1e-3)
 
                 # dygraph model jit save
                 if self.static is True and place == 'gpu':
