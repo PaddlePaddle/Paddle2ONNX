@@ -3,6 +3,16 @@ from typing_extensions import Self
 from standard_model_pb2 import OperatorNode, AttrType
 import framework_pb2
 
+dtype_map = {
+    framework_pb2.VarType.INT16: "int16",
+    framework_pb2.VarType.INT32: "int32",
+    framework_pb2.VarType.INT64: "int64",
+    framework_pb2.VarType.FP16: "float16",
+    framework_pb2.VarType.FP32: "float32",
+    framework_pb2.VarType.FP64: "float64",
+    framework_pb2.VarType.BOOL: "bool"
+}
+
 paddle_int_2_str_map = {
     0: "BOOL",
     1: "INT16",

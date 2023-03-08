@@ -79,6 +79,10 @@ class StandardModel(object):
                         shape.append(dim.size)
                     self.params2val_dict[var.name] = self.params2val_dict[
                         var.name].reshape(shape)
+                    key = self.get_dict_key(helper.standard_str_2_int_map,
+                                            var.data_type)
+                    self.params2val_dict[var.name] = self.params2val_dict[
+                        var.name].astype(key.lower())
 
     def save_paddle_params(self, save_dir):
         all_var_names = set()
@@ -96,10 +100,13 @@ class StandardModel(object):
         fp = open(params_save_path, 'wb')
         for name in all_var_names:
             val = self.params2val_dict[name]
+            type_str = None
             for block in paddle_model.blocks:
-                for var in block.vars:
-                    if var.name == name:
-                        dims = var.type.lod_tensor.tensor.dims
+                for b_var in block.vars:
+                    if b_var.name == name:
+                        dims = b_var.type.lod_tensor.tensor.dims
+                        type_str = helper.paddle_int_2_str_map[
+                            b_var.type.lod_tensor.tensor.data_type]
                         val = val.reshape(dims)
                         break
             shape = val.shape
@@ -109,7 +116,8 @@ class StandardModel(object):
             numpy.array([0], dtype='int64').tofile(fp)
             numpy.array([0], dtype='int32').tofile(fp)
             tensor_desc = framework_pb2.VarType.TensorDesc()
-            tensor_desc.data_type = framework_pb2.VarType.FP32
+            key = self.get_dict_key(helper.dtype_map, type_str.lower())
+            tensor_desc.data_type = key
             tensor_desc.dims.extend(shape)
             desc_size = tensor_desc.ByteSize()
             numpy.array([desc_size], dtype='int32').tofile(fp)
@@ -145,6 +153,9 @@ class StandardModel(object):
                                         variable_type.data_type)
                 var.type.lod_tensor.tensor.data_type = self.get_dict_key(
                     helper.paddle_int_2_str_map, key)
+                if var.type.type == framework_pb2.VarType.LOD_TENSOR_ARRAY:
+                    var.type.tensor_array.tensor.data_type = self.get_dict_key(
+                        helper.paddle_int_2_str_map, key)
                 for dim in variable_type.tensor.shape.dim:
                     var.type.lod_tensor.tensor.dims.append(dim.size)
 

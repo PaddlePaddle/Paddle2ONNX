@@ -21,17 +21,6 @@ def parse_arguments():
     return parser.parse_args()
 
 
-dtype_map = {
-    framework_pb2.VarType.INT16: "int16",
-    framework_pb2.VarType.INT32: "int32",
-    framework_pb2.VarType.INT64: "int64",
-    framework_pb2.VarType.FP16: "float16",
-    framework_pb2.VarType.FP32: "float32",
-    framework_pb2.VarType.FP64: "float64",
-    framework_pb2.VarType.BOOL: "bool"
-}
-
-
 def convert_params(paddle_model, save_dir):
     model_file = open(paddle_model + ".pdmodel", 'rb')
     model_str = model_file.read()
@@ -60,8 +49,10 @@ def convert_params(paddle_model, save_dir):
         for dim in tensor_desc.dims:
             nums *= dim
         raw_data = numpy.fromfile(
-            params_file, dtype=dtype_map[tensor_desc.data_type], count=nums)
-        params2val_dict[name] = raw_data
+            params_file,
+            dtype=helper.dtype_map[tensor_desc.data_type],
+            count=nums)
+        params2val_dict[name] = raw_data.astype("float32")
 
     layer2params_dict = {}
     for block_idex in range(block_size):
@@ -143,11 +134,35 @@ def convert_model(paddle_model, save_dir, params2val_dict):
             variable_type.tensor.format = "NCHW"
             variable_type.tensor.name = var.name
             shape_dims = variable_type.tensor.shape.dim
-            for dim_index in range(len(var.type.lod_tensor.tensor.dims)):
-                dim = var.type.lod_tensor.tensor.dims[dim_index]
-                shape_dim = shape_dims.add()
-                shape_dim.name = "dim_" + str(dim_index)
-                shape_dim.size = dim
+            if var.type.type == framework_pb2.VarType.LOD_TENSOR:
+                variable_type.data_type = helper.standard_str_2_int_map[
+                    helper.paddle_int_2_str_map[
+                        var.type.lod_tensor.tensor.data_type]]
+                variable_type.is_persitable = var.persistable
+                variable_type.tensor.data_type = variable_type.data_type
+                for dim_index in range(len(var.type.lod_tensor.tensor.dims)):
+                    dim = var.type.lod_tensor.tensor.dims[dim_index]
+                    shape_dim = shape_dims.add()
+                    shape_dim.name = "dim_" + str(dim_index)
+                    shape_dim.size = dim
+            elif var.type.type == framework_pb2.VarType.LOD_TENSOR_ARRAY:
+                variable_type.data_type = helper.standard_str_2_int_map[
+                    helper.paddle_int_2_str_map[
+                        var.type.tensor_array.tensor.data_type]]
+                variable_type.is_persitable = False
+                variable_type.tensor.data_type = variable_type.data_type
+                for dim_index in range(len(var.type.tensor_array.tensor.dims)):
+                    dim = var.type.tensor_array.tensor.dims[dim_index]
+                    shape_dim = shape_dims.add()
+                    shape_dim.name = "dim_" + str(dim_index)
+                    shape_dim.size = dim
+            elif var.type.type not in [
+                    framework_pb2.VarType.FEED_MINIBATCH,
+                    framework_pb2.VarType.STEP_SCOPES,
+                    framework_pb2.VarType.FETCH_LIST
+            ]:
+                print("Unsupported var type: ", var)
+
             if variable_type.is_persitable and var.name in params2val_dict:
                 content = variable_type.tensor.content
                 numpy_array = params2val_dict[var.name].reshape(-1).tolist()
