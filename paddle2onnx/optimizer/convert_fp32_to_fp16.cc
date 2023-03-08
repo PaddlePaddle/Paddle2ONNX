@@ -529,6 +529,10 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
                       std::find(node_list.begin(), node_list.end(), n) ==
                           node_list.end()) {
                     node_list.push_back(keep_type_node);
+                    Assert(n->op_type() == "Constant",
+                           "The node type be Constant, but it is: " +
+                               n->op_type());
+                    keep_type_tensors.push_back(n->output()[0]);
                     break;
                   }
                 }
@@ -654,8 +658,13 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
             }
             if (zero_shape_constant) break;
           }
+          // if it is a tensor that should keep type float
+          bool keep_type_tensor =
+              std::find(keep_type_tensors.begin(), keep_type_tensors.end(),
+                        value->name()) != keep_type_tensors.end();
+
           if (!zero_shape_constant && !skip && !in_of_custom &&
-              !out_of_custom &&
+              !keep_type_tensor && !out_of_custom &&
               value->type().tensor_type().elem_type() ==
                   ONNX_NAMESPACE::TensorProto::FLOAT) {
             value->mutable_type()->mutable_tensor_type()->set_elem_type(

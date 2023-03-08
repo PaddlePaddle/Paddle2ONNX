@@ -192,6 +192,9 @@ struct ConvertFp32ToFp16 {
   // int64_t name_index = 0;
   std::string GenName(const std::string& prefix);
 
+  // save the tensor names that should keep data type
+  std::vector<std::string> keep_type_tensors;
+
   // The input can be FP16, but the output can only be fp32
   std::vector<std::string> fp32_output_op_list = {"RandomNormalLike"};
 
