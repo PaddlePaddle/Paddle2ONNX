@@ -137,6 +137,8 @@ struct ConvertFp32ToFp16 {
       }
     }
   }
+  // If the input ONNX model is a FP16 model, return True
+  bool IsFP16Model(const ONNX_NAMESPACE::ModelProto& model);
 
  private:
   union Bits {
