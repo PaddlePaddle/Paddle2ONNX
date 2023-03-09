@@ -212,10 +212,23 @@ class StandardModel(object):
             for param in param_names:
                 print("   ", param, self.params2val_dict[param].shape)
 
-    def tensor_str(self, tensor_index):
-        tensor_str = str(
-            model.operator_node(tensor_index).input["Bias"].variable_type[0]
-            .tensor)
+    def tensor_str(self, tensor):
+        tensor_str = ""
+        if isinstance(tensor, six.string_types):
+            for graph in self.prog.graph:
+                for variable_type in graph.variable_type:
+                    if variable_type.name == tensor:
+                        tensor_str = str(variable_type)
+                        break
+        elif isinstance(tensor, int):
+            index = tensor
+            for graph in self.prog.graph:
+                if index < len(graph.variable_type):
+                    tensor_str = str(graph.variable_type[index])
+                else:
+                    index - len(graph.variable_type)
+        else:
+            Assert(False, "Please inter a weight name or weight index")
         tensor_str += "int32_data:\n"
         tensor_str += "uint32_data:\n"
         tensor_str += "int64_data:\n"
@@ -268,8 +281,11 @@ if __name__ == '__main__':
     # print("print node_index 21 data_type: ")
     # print("data_type: ",model.operator_node(21).input["Bias"].variable_type[0].data_type)
     # print("*" * 20)
-    # print("print the tensor of node_index 21: ")
+    # print("print the tensor of tensor_index 21: ")
     # print(model.tensor_str(21))
+    # print("*" * 20)
+    # print("print the tensor of tensor name conv2d_45.w_0: ")
+    # print(model.tensor_str("conv2d_45.w_0"))
     # print("*" * 20)
     # print("print node_index 21 tensor shape: ")
     # print(model.operator_node(21).input["Bias"].variable_type[0].tensor.shape)
