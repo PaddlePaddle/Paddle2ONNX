@@ -239,6 +239,23 @@ class StandardModel(object):
         tensor_str += "string_data:\n"
         return tensor_str
 
+    def node_attr(self, node_index, attr_name=None):
+        operator = self.operator_node(node_index)
+        attr_str = ""
+        if attr_name is None:
+            attr_str = str(operator.attribute)
+        elif attr_name in operator.attribute:
+            attr_str = str(operator.attribute[attr_name])
+        else:
+            print("can not find attribute: ", attr_name, " in operator: ",
+                  operator)
+        if attr_name is not None:
+            if "val" in attr_str:
+                attr_str += "list: \n"
+            elif "list" in attr_str:
+                attr_str += "val: \n"
+        return attr_str
+
     def tensor_val(self, tensor):
         if isinstance(tensor, six.string_types):
             if tensor in self.params2val_dict:
@@ -276,7 +293,7 @@ if __name__ == '__main__':
     # print(model.operator_node(21).input["Bias"].variable_type)
     # print("*" * 20)
     # print("print node_index 21 attribute: ")
-    # print(model.operator_node(21).attribute["data_layout"])
+    # print(model.node_attr(21, "data_layout"))
     # print("*" * 20)
     # print("print node_index 21 data_type: ")
     # print("data_type: ",model.operator_node(21).input["Bias"].variable_type[0].data_type)
