@@ -40,7 +40,6 @@ ignore="test_auto_scan_affine_channel.py \
         test_auto_scan_interpolate_v1_ops.py \
         test_auto_scan_isx_ops.py \
         test_auto_scan_masked_select.py \
-        test_auto_scan_mv.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_roll.py \
         test_auto_scan_set_value.py \
@@ -61,7 +60,6 @@ ignore="test_auto_scan_affine_channel.py \
         test_isnan.py \
         test_mask_select.py \
         test_median.py \
-        test_mv.py \
         test_nn_Conv3DTranspose.py \
         test_nn_GroupNorm.py \
         test_nn_InstanceNorm3D.py \
