@@ -67,7 +67,8 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
-  if (deploy_backend == "tensorrt" && calibration_str.empty()) {
+  if (parser.is_quantized_model && "tensorrt" == std::string(deploy_backend) &&
+      calibration_str.empty()) {
     P2OLogger(verbose) << "Can not generate calibration cache for TensorRT "
                           "deploy backend when export quantize model."
                        << std::endl;
@@ -120,7 +121,8 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
-  if (deploy_backend == "tensorrt" && calibration_str.empty()) {
+  if (parser.is_quantized_model && "tensorrt" == std::string(deploy_backend) &&
+      calibration_str.empty()) {
     P2OLogger(verbose) << "Can not generate calibration cache for TensorRT "
                           "deploy backend when export quantize model."
                        << std::endl;
@@ -166,7 +168,8 @@ PADDLE2ONNX_DECL bool Export(
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
-  if (deploy_backend == "tensorrt" && calibration_str.empty()) {
+  if (parser.is_quantized_model && "tensorrt" == std::string(deploy_backend) &&
+      calibration_str.empty()) {
     P2OLogger(verbose) << "Can not generate calibration cache for TensorRT "
                           "deploy backend when export quantize model."
                        << std::endl;
@@ -220,7 +223,9 @@ PADDLE2ONNX_DECL bool Export(
     P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
     return false;
   }
-  if (deploy_backend == "tensorrt" && calibration_str.empty()) {
+
+  if (parser.is_quantized_model && "tensorrt" == std::string(deploy_backend) &&
+      calibration_str.empty()) {
     P2OLogger(verbose) << "Can not generate calibration cache for TensorRT "
                           "deploy backend when export quantize model."
                        << std::endl;
