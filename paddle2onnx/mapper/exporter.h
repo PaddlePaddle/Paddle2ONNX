@@ -66,7 +66,8 @@ struct ModelExporter {
   void ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
                   int32_t opset_version, int64_t block_id, int64_t op_id,
                   bool verbose);
-
+  void CovertCustomOps(const PaddleParser& parser, OnnxHelper* helper,
+                       int64_t block_id, int64_t op_id);
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
  public:
