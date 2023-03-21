@@ -1,8 +1,7 @@
 from typing import ItemsView
 from typing_extensions import Self
 from standard_model_pb2 import OperatorNode, AttrType
-import framework_pb2
-
+from paddle.fluid.proto import framework_pb2
 dtype_map = {
     framework_pb2.VarType.INT16: "int16",
     framework_pb2.VarType.INT32: "int32",

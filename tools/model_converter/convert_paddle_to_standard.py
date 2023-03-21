@@ -4,7 +4,7 @@ import paddle
 import numpy
 import standard_model_pb2
 import helper
-import framework_pb2
+from paddle.fluid.proto import framework_pb2
 
 
 def parse_arguments():

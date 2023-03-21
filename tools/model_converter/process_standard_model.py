@@ -1,12 +1,13 @@
 import argparse
 from ast import Assert
+from optparse import Values
 import os
 from xmlrpc.server import SimpleXMLRPCDispatcher
 import paddle
 import numpy
 import standard_model_pb2
 import helper
-import framework_pb2
+from paddle.fluid.proto import framework_pb2
 import six
 
 
@@ -212,6 +213,33 @@ class StandardModel(object):
             for param in param_names:
                 print("   ", param, self.params2val_dict[param].shape)
 
+    def print_the_first_tensor(self):
+        return self.params2val_dict.get(next(iter(self.params2val_dict)))
+
+    def print_the_first_variable_type(self):
+        index = 0
+        while index >= 0:
+            operator_node = self.operator_node(index)
+            if len(operator_node.output) > 0:
+                index = -1
+        return operator_node.output
+
+    def print_the_first_attribute(self):
+        index = 0
+        while index >= 0:
+            operator_node = self.operator_node(index)
+            if len(operator_node.attribute) > 0:
+                index = -1
+        attr_str = ""
+        for _, attr in operator_node.attribute.items():
+            one_attr = str(attr)
+            if "val" in one_attr:
+                one_attr += "list: \n"
+            elif "list" in one_attr:
+                one_attr += "val: \n"
+            attr_str = attr_str + one_attr + "\n"
+        return attr_str
+
     def tensor_str(self, tensor):
         tensor_str = ""
         if isinstance(tensor, six.string_types):
@@ -276,49 +304,36 @@ if __name__ == '__main__':
     args = parse_arguments()
     paddle.set_device("cpu")
     model = StandardModel(args.standard_model)
-    # print("*" * 20)
-    # print("print model: ")
-    # print(model.model())
-    # print("*" * 20)
-    # print("print graph: ")
-    # print(model.graph())
-    # print("*" * 20)
-    # print("print contributors: ")
-    # print(model.model().contributors)
-    # print("*" * 20)
-    # print("print node_index 21: ")
-    # print(model.operator_node(21))
-    # print("*" * 20)
-    # print("print node_index 21 input variable_type: ")
-    # print(model.operator_node(21).input["Bias"].variable_type)
-    # print("*" * 20)
-    # print("print node_index 21 attribute: ")
-    # print(model.node_attr(21, "data_layout"))
-    # print("*" * 20)
-    # print("print node_index 21 data_type: ")
-    # print("data_type: ",model.operator_node(21).input["Bias"].variable_type[0].data_type)
-    # print("*" * 20)
-    # print("print the tensor of tensor_index 21: ")
-    # print(model.tensor_str(21))
-    # print("*" * 20)
-    # print("print the tensor of tensor name conv2d_45.w_0: ")
-    # print(model.tensor_str("conv2d_45.w_0"))
-    # print("*" * 20)
-    # print("print node_index 21 tensor shape: ")
-    # print(model.operator_node(21).input["Bias"].variable_type[0].tensor.shape)
-    # print("*" * 20)
-    # print("print node_index 21 tensor shape dim: ")
-    # print(model.operator_node(21).input["Bias"].variable_type[0].tensor.shape.dim)
-    # print("*" * 20)
-    # print("print all_tensors: ")
-    # model.print_all_tensors()
-    # print("*" * 20)
-    # print("print tensor_name conv2d_49.b_0: ")
-    # print(model.tensor_val("conv2d_49.b_0"))
-    # print("*" * 20)
-    # print("print var conv2d_49.w_0")
-    # print(model.variable_type("conv2d_49.w_0"))
-    # print("-" * 20)
+    print("-" * 10 + " Test NO 2 " + "-" * 10)
+    model.print_all_tensors()
+    print("-" * 10 + " Test NO 3 " + "-" * 10)
+    print(model.print_the_first_tensor())
+    print("-" * 10 + " Test NO 4 " + "-" * 10)
+    print(model.model())
+    print("-" * 10 + " Test NO 5 " + "-" * 10)
+    print(model.model().contributors)
+    print("-" * 10 + " Test NO 6 " + "-" * 10)
+    print(model.graph())
+    print("-" * 10 + " Test NO 7 " + "-" * 10)
+    print(model.operator_node(1))
+    print("-" * 10 + " Test NO 8 " + "-" * 10)
+    print(model.print_the_first_variable_type())
+    print("-" * 10 + " Test NO 9 " + "-" * 10)
+    print(model.print_the_first_attribute())
+    print("-" * 10 + " Test NO 10 " + "-" * 10)
+    for _, val in model.print_the_first_variable_type().items():
+        for variable_type in val.variable_type:
+            print(variable_type.data_type)
+    print("-" * 10 + " Test NO 11 " + "-" * 10)
+    print(model.tensor_str(0))
+    print("-" * 10 + " Test NO 12 " + "-" * 10)
+    for _, val in model.print_the_first_variable_type().items():
+        for variable_type in val.variable_type:
+            print(variable_type.tensor.shape)
+    print("-" * 10 + " Test NO 13 " + "-" * 10)
+    for _, val in model.print_the_first_variable_type().items():
+        for variable_type in val.variable_type:
+            print(variable_type.tensor.shape.dim)
 
     if args.save_dir is None:
         args.save_dir = "paddle_model"
