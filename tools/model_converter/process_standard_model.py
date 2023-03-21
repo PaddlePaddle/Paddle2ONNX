@@ -347,5 +347,4 @@ if __name__ == '__main__':
                 print(variable_type.tensor.shape.dim)
 
     if args.save_dir is not None:
-        print("will save paddle in: ", args.save_dir)
         model.convert_to_paddle_model(args.save_dir)
