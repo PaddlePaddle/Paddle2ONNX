@@ -308,36 +308,36 @@ if __name__ == '__main__':
     args = parse_arguments()
     paddle.set_device("cpu")
     model = StandardModel(args.standard_model)
-    # print("-" * 10 + " Test NO 2 " + "-" * 10)
-    # model.print_all_tensors()
-    # print("-" * 10 + " Test NO 3 " + "-" * 10)
-    # print(model.print_the_first_tensor())
-    # print("-" * 10 + " Test NO 4 " + "-" * 10)
-    # print(model.model())
-    # print("-" * 10 + " Test NO 5 " + "-" * 10)
-    # print(model.model().contributors)
-    # print("-" * 10 + " Test NO 6 " + "-" * 10)
-    # print(model.graph())
-    # print("-" * 10 + " Test NO 7 " + "-" * 10)
-    # print(model.operator_node(1))
+    print("-" * 10 + " Test NO 2 " + "-" * 10)
+    model.print_all_tensors()
+    print("-" * 10 + " Test NO 3 " + "-" * 10)
+    print(model.print_the_first_tensor())
+    print("-" * 10 + " Test NO 4 " + "-" * 10)
+    print(model.model())
+    print("-" * 10 + " Test NO 5 " + "-" * 10)
+    print(model.model().contributors)
+    print("-" * 10 + " Test NO 6 " + "-" * 10)
+    print(model.graph())
+    print("-" * 10 + " Test NO 7 " + "-" * 10)
+    print(model.operator_node(1))
     print("-" * 10 + " Test NO 8 " + "-" * 10)
     print(model.print_the_first_variable_type())
-    # print("-" * 10 + " Test NO 9 " + "-" * 10)
-    # print(model.print_the_first_attribute())
-    # print("-" * 10 + " Test NO 10 " + "-" * 10)
-    # for _, val in model.print_the_first_variable_type().items():
-    #     for variable_type in val.variable_type:
-    #         print(variable_type.data_type)
-    # print("-" * 10 + " Test NO 11 " + "-" * 10)
-    # print(model.tensor_str(0))
-    # print("-" * 10 + " Test NO 12 " + "-" * 10)
-    # for _, val in model.print_the_first_variable_type().items():
-    #     for variable_type in val.variable_type:
-    #         print(variable_type.tensor.shape)
-    # print("-" * 10 + " Test NO 13 " + "-" * 10)
-    # for _, val in model.print_the_first_variable_type().items():
-    #     for variable_type in val.variable_type:
-    #         print(variable_type.tensor.shape.dim)
+    print("-" * 10 + " Test NO 9 " + "-" * 10)
+    print(model.print_the_first_attribute())
+    print("-" * 10 + " Test NO 10 " + "-" * 10)
+    for _, val in model.print_the_first_variable_type().items():
+        for variable_type in val.variable_type:
+            print(variable_type.data_type)
+    print("-" * 10 + " Test NO 11 " + "-" * 10)
+    print(model.tensor_str(0))
+    print("-" * 10 + " Test NO 12 " + "-" * 10)
+    for _, val in model.print_the_first_variable_type().items():
+        for variable_type in val.variable_type:
+            print(variable_type.tensor.shape)
+    print("-" * 10 + " Test NO 13 " + "-" * 10)
+    for _, val in model.print_the_first_variable_type().items():
+        for variable_type in val.variable_type:
+            print(variable_type.tensor.shape.dim)
 
     if args.save_dir is None:
         args.save_dir = "paddle_model"
