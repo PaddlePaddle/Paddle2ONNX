@@ -93,5 +93,11 @@ python -m paddle2onnx.optimize --input_model model.onnx \
 
 5. PaddleSlim 量化模型导出请参考：[量化模型导出ONNX](./docs/zh/quantize.md)
 
+### 使用VisualDL进行模型转换
+
+飞桨可视化工具VisualDL已经将模型转换工具部署在官网提供服务，可以点击[服务链接](https://www.paddlepaddle.org.cn/paddle/visualdl/modelconverter/)进行在线的Paddle2ONNX模型转换。
+
+![Paddle2ONNX](https://user-images.githubusercontent.com/22424850/226798785-33167569-4bd0-4b00-a5c0-5d6642cd6751.gif)
+
 ## License
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
