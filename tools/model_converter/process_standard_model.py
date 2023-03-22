@@ -271,7 +271,7 @@ class StandardModel(object):
                     index - len(graph.variable_type)
         else:
             Assert(False, "Please inter a weight name or weight index")
-        if not tensor_str.find("content"):
+        if "content" not in tensor_str:
             tensor_str += "content:\n"
         tensor_str += "int32_data:\n"
         tensor_str += "uint32_data:\n"
