@@ -218,10 +218,15 @@ class StandardModel(object):
             for param in param_names:
                 print("   ", param, self.params2val_dict[param].shape)
 
-    def print_the_first_tensor(self):
+    def get_graph(self):
+        model_str = str(self.graph())
+        model_str += "\nsub_graphs:\n"
+        return model_str
+
+    def get_the_first_tensor(self):
         return self.params2val_dict.get(next(iter(self.params2val_dict)))
 
-    def print_the_first_variable_type(self):
+    def get_the_first_variable_type(self):
         index = 0
         while index >= 0:
             operator_node = self.operator_node(index)
@@ -266,6 +271,8 @@ class StandardModel(object):
                     index - len(graph.variable_type)
         else:
             Assert(False, "Please inter a weight name or weight index")
+        if not tensor_str.find("content"):
+            tensor_str += "content:\n"
         tensor_str += "int32_data:\n"
         tensor_str += "uint32_data:\n"
         tensor_str += "int64_data:\n"
@@ -318,31 +325,31 @@ if __name__ == '__main__':
         print("-" * 10 + " Test NO 2 " + "-" * 10)
         model.print_all_tensors()
         print("-" * 10 + " Test NO 3 " + "-" * 10)
-        print(model.print_the_first_tensor())
+        print(model.get_the_first_tensor())
         print("-" * 10 + " Test NO 4 " + "-" * 10)
         print(model.model())
         print("-" * 10 + " Test NO 5 " + "-" * 10)
         print(model.model().contributors)
         print("-" * 10 + " Test NO 6 " + "-" * 10)
-        print(model.graph())
+        print(model.get_graph())
         print("-" * 10 + " Test NO 7 " + "-" * 10)
         print(model.operator_node(1))
         print("-" * 10 + " Test NO 8 " + "-" * 10)
-        print(model.print_the_first_variable_type())
+        print(model.get_the_first_variable_type())
         print("-" * 10 + " Test NO 9 " + "-" * 10)
         print(model.print_the_first_attribute())
         print("-" * 10 + " Test NO 10 " + "-" * 10)
-        for _, val in model.print_the_first_variable_type().items():
+        for _, val in model.get_the_first_variable_type().items():
             for variable_type in val.variable_type:
                 print(variable_type.data_type)
         print("-" * 10 + " Test NO 11 " + "-" * 10)
         print(model.tensor_str(0))
         print("-" * 10 + " Test NO 12 " + "-" * 10)
-        for _, val in model.print_the_first_variable_type().items():
+        for _, val in model.get_the_first_variable_type().items():
             for variable_type in val.variable_type:
                 print(variable_type.tensor.shape)
         print("-" * 10 + " Test NO 13 " + "-" * 10)
-        for _, val in model.print_the_first_variable_type().items():
+        for _, val in model.get_the_first_variable_type().items():
             for variable_type in val.variable_type:
                 print(variable_type.tensor.shape.dim)
 
