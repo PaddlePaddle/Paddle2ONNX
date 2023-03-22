@@ -132,7 +132,7 @@ def arg_parser():
     parser.add_argument(
         "--custom_ops",
         type=_text_type,
-        default={},
+        default="{}",
         help="Ops that needs to be converted to custom op, e.g --custom_ops '{\"paddle_op\":\"onnx_op\"}', default {}"
     )
     return parser
