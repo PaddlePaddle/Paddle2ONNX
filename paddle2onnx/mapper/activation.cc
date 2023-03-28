@@ -357,7 +357,6 @@ void SizeMapper::Opset7() {
   auto out_info = GetOutput("Out");
   auto output =
       helper_->MakeNode("Size", {GetInput("Input")[0].name})->output(0);
-  output = helper_->Reshape(output, {-1});
   output = helper_->AutoCast(output, out_info[0].name, P2ODataType::INT64,
                              out_info[0].dtype);
 }

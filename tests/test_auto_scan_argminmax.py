@@ -61,7 +61,7 @@ class TestArgMinMaxConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=10), min_size=2, max_size=4))
+                    min_value=2, max_value=10), min_size=1, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 

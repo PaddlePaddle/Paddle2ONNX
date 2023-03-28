@@ -43,7 +43,7 @@ class TestNumelConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=6), min_size=3, max_size=5))
+                    min_value=2, max_value=6), min_size=1, max_size=5))
 
         dtype = draw(
             st.sampled_from(

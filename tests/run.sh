@@ -50,6 +50,7 @@ ignore="test_auto_scan_affine_channel.py \
         test_auto_scan_dist.py \
         test_auto_scan_distribute_fpn_proposals1.py \
         test_auto_scan_distribute_fpn_proposals_v2.py \
+        test_auto_scan_fill_constant_batch_size_like.py \
         test_auto_scan_generate_proposals.py \
         test_uniform.py \
         test_ceil.py \
