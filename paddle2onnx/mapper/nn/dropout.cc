@@ -61,17 +61,17 @@ void DropoutMapper::Opset7() {
     } else {
       GetAttr("dropout_prob", &dropout_prob_);
     }
-    if (input_info[0].Rank()) {
+    if (input_info[0].Rank() == 0) {
+      std::string scale_node = helper_->Constant(
+          {}, GetOnnxDtype(input_info[0].dtype), 1 - dropout_prob_);
+      auto node = helper_->MakeNode("Mul", {input_info[0].name, scale_node});
+      helper_->Squeeze(node->output(0), output_info[0].name, {0});
+    } else {
       std::vector<float> value = {1 - dropout_prob_};
       std::string scale_node =
           helper_->Constant(GetOnnxDtype(input_info[0].dtype), value);
       helper_->MakeNode("Mul", {input_info[0].name, scale_node},
                         {output_info[0].name});
-    } else {
-      std::string scale_node = helper_->Constant(
-          {}, GetOnnxDtype(input_info[0].dtype), 1 - dropout_prob_);
-      auto node = helper_->MakeNode("Mul", {input_info[0].name, scale_node});
-      helper_->Squeeze(node->output(0), output_info[0].name, {0});
     }
   }
 }

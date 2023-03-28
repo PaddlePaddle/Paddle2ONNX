@@ -20,14 +20,14 @@ REGISTER_MAPPER(cast, CastMapper)
 void CastMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  if (input_info[0].Rank()) {
-    auto node =
-        helper_->MakeNode("Cast", {input_info[0].name}, {output_info[0].name});
-    AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
-  } else {
+  if (input_info[0].Rank() == 0) {
     auto node = helper_->MakeNode("Cast", {input_info[0].name});
     AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
     helper_->Squeeze(node->output(0), output_info[0].name, {0});
+  } else {
+    auto node =
+        helper_->MakeNode("Cast", {input_info[0].name}, {output_info[0].name});
+    AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
   }
 }
 

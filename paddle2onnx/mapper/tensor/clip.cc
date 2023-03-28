@@ -69,23 +69,22 @@ void ClipMapper::Opset7() {
       min_name = helper_->Constant({}, GetOnnxDtype(dtype), min_val);
     }
     if (dtype_converted) {
-      if (input_info[0].Rank()) {
-        auto node = helper_->MakeNode("Clip", {input_name, min_name, max_name});
-        helper_->AutoCast(node->output(0), output_info[0].name,
-                          P2ODataType::FP32, output_info[0].dtype);
-      } else {
-        auto node = helper_->MakeNode("Clip", {input_name, min_name, max_name});
+      auto node = helper_->MakeNode("Clip", {input_name, min_name, max_name});
+      if (input_info[0].Rank() == 0) {
         auto squeeze = helper_->Squeeze(node->output(0), {0});
         helper_->AutoCast(squeeze, output_info[0].name, P2ODataType::FP32,
                           output_info[0].dtype);
+      } else {
+        helper_->AutoCast(node->output(0), output_info[0].name,
+                          P2ODataType::FP32, output_info[0].dtype);
       }
     } else {
-      if (input_info[0].Rank()) {
-        helper_->MakeNode("Clip", {input_name, min_name, max_name},
-                          {output_info[0].name});
-      } else {
+      if (input_info[0].Rank() == 0) {
         auto node = helper_->MakeNode("Clip", {input_name, min_name, max_name});
         helper_->Squeeze(node->output(0), output_info[0].name, {0});
+      } else {
+        helper_->MakeNode("Clip", {input_name, min_name, max_name},
+                          {output_info[0].name});
       }
     }
   } else {
@@ -93,13 +92,13 @@ void ClipMapper::Opset7() {
     GetAttr("max", &max_val);
     float min_val;
     GetAttr("min", &min_val);
-    if (input_info[0].Rank()) {
-      helper_->Clip(input_info[0].name, output_info[0].name, min_val, max_val,
-                    input_info[0].dtype);
-    } else {
+    if (input_info[0].Rank() == 0) {
       auto node = helper_->Clip(input_info[0].name, min_val, max_val,
                                 input_info[0].dtype);
       helper_->Squeeze(node, output_info[0].name, {0});
+    } else {
+      helper_->Clip(input_info[0].name, output_info[0].name, min_val, max_val,
+                    input_info[0].dtype);
     }
   }
 }
