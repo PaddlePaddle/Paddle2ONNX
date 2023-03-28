@@ -330,6 +330,26 @@ std::string OnnxHelper::Clip(const std::string& input, const float& min,
   return Clip(input, output, min, max, in_dtype);
 }
 
+std::string OnnxHelper::Clip(const TensorInfo& input_info,
+                             const std::string& output_name, const float& min,
+                             const float& max, const int32_t& in_dtype) {
+  std::string node_output;
+  if (input_info.Rank() == 0) {
+    std::string output = MapperHelper::Get()->GenName("helper.clip");
+    std::string clip_node = Clip(input_info.name, output, min, max, in_dtype);
+    node_output = Squeeze(clip_node, output_name, {0});
+  } else {
+    node_output = Clip(input_info.name, output_name, min, max, in_dtype);
+  }
+  return node_output;
+}
+
+std::string OnnxHelper::Clip(const TensorInfo& input_info, const float& min,
+                             const float& max, const int32_t& in_dtype) {
+  std::string output = MapperHelper::Get()->GenName("helper.clip");
+  return Clip(input_info, output, min, max, in_dtype);
+}
+
 std::string OnnxHelper::Squeeze(const std::string& input,
                                 const std::string& output,
                                 const std::vector<int64_t>& axes) {

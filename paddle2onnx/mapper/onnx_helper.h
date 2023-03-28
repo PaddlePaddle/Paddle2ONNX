@@ -126,6 +126,10 @@ class OnnxHelper {
                    const int32_t& in_dtype);
   std::string Clip(const std::string& input, const std::string& output,
                    const float& min, const float& max, const int32_t& in_dtype);
+  std::string Clip(const TensorInfo& input_info, const float& min,
+                   const float& max, const int32_t& in_dtype);
+  std::string Clip(const TensorInfo& input_info, const std::string& output_name,
+                   const float& min, const float& max, const int32_t& in_dtype);
   std::string Squeeze(const std::string& input,
                       const std::vector<int64_t>& axes);
   std::string Squeeze(const std::string& input, const std::string& output,

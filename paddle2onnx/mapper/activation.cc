@@ -121,14 +121,8 @@ void Relu6Mapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   float min = 0.0;
-  if (input_info[0].Rank() == 0) {
-    auto node =
-        helper_->Clip(input_info[0].name, min, threshold_, input_info[0].dtype);
-    helper_->Squeeze(node, output_info[0].name, {0});
-  } else {
-    helper_->Clip(input_info[0].name, output_info[0].name, min, threshold_,
-                  input_info[0].dtype);
-  }
+  helper_->Clip(input_info[0], output_info[0].name, min, threshold_,
+                input_info[0].dtype);
 }
 
 int32_t PReluMapper::GetMinOpset(bool verbose) {
@@ -183,14 +177,15 @@ void PReluMapper::Opset7() {
 void SeluMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto node = helper_->MakeNode("Selu", {input_info[0].name});
-  AddAttribute(node, "alpha", alpha_);
-  AddAttribute(node, "gamma", scale_);
   if (input_info[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Selu", {input_info[0].name});
+    AddAttribute(node, "alpha", alpha_);
     helper_->Squeeze(node->output(0), output_info[0].name, {0});
   } else {
-    helper_->AutoCast(node->output(0), output_info[0].name, input_info[0].dtype,
-                      output_info[0].dtype);
+    auto node =
+        helper_->MakeNode("Selu", {input_info[0].name}, {output_info[0].name});
+    AddAttribute(node, "alpha", alpha_);
+    AddAttribute(node, "gamma", scale_);
   }
 }
 
@@ -254,13 +249,14 @@ void HardSwishMapper::Opset14() {
 void LeakyReluMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto node = helper_->MakeNode("LeakyRelu", {input_info[0].name});
-  AddAttribute(node, "alpha", alpha_);
   if (input_info[0].Rank() == 0) {
+    auto node = helper_->MakeNode("LeakyRelu", {input_info[0].name});
+    AddAttribute(node, "alpha", alpha_);
     helper_->Squeeze(node->output(0), output_info[0].name, {0});
   } else {
-    helper_->AutoCast(node->output(0), output_info[0].name, input_info[0].dtype,
-                      output_info[0].dtype);
+    auto node = helper_->MakeNode("LeakyRelu", {input_info[0].name},
+                                  {output_info[0].name});
+    AddAttribute(node, "alpha", alpha_);
   }
 }
 
