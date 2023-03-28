@@ -20,9 +20,15 @@ REGISTER_MAPPER(cast, CastMapper)
 void CastMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto node =
-      helper_->MakeNode("Cast", {input_info[0].name}, {output_info[0].name});
-  AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
+  if (input_info[0].Rank()) {
+    auto node =
+        helper_->MakeNode("Cast", {input_info[0].name}, {output_info[0].name});
+    AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
+  } else {
+    auto node = helper_->MakeNode("Cast", {input_info[0].name});
+    AddAttribute(node, "to", GetOnnxDtype(out_dtype_));
+    helper_->Squeeze(node->output(0), output_info[0].name, {0});
+  }
 }
 
 }  // namespace paddle2onnx

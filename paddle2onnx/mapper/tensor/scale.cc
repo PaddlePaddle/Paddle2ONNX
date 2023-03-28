@@ -69,8 +69,14 @@ void ScaleMapper::Opset7() {
         }
       }
     }
-    helper_->AutoCast(out, output_info[0].name, P2ODataType::FP32,
-                      output_info[0].dtype);
+    if (input_info[0].Rank()) {
+      helper_->AutoCast(out, output_info[0].name, P2ODataType::FP32,
+                        output_info[0].dtype);
+    } else {
+      auto squeeze = helper_->Squeeze(out, {0});
+      helper_->AutoCast(squeeze, output_info[0].name, P2ODataType::FP32,
+                        output_info[0].dtype);
+    }
   }
 }
 }  // namespace paddle2onnx
