@@ -332,13 +332,8 @@ void SoftMaxMapper::Opset13() {
 
 void BReluMapper::Opset7() {
   auto x_info = GetInput("X");
-  if (x_info[0].Rank() == 0) {
-    auto node = helper_->Clip(x_info[0].name, t_min_, t_max_, x_info[0].dtype);
-    helper_->Squeeze(node, GetOutput("Out")[0].name, {0});
-  } else {
-    helper_->Clip(x_info[0].name, GetOutput("Out")[0].name, t_min_, t_max_,
-                  x_info[0].dtype);
-  }
+  helper_->Clip(x_info[0], GetOutput("Out")[0].name, t_min_, t_max_,
+                x_info[0].dtype);
 }
 
 void EluMapper::Opset7() {
@@ -348,14 +343,16 @@ void EluMapper::Opset7() {
 }
 
 void HardShrinkMapper::Opset9() {
-  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name});
-  AddAttribute(node, "lambd", threshold_);
-  AddAttribute(node, "bias", float(0.0));
   if (GetInput("X")[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name});
+    AddAttribute(node, "lambd", threshold_);
+    AddAttribute(node, "bias", float(0.0));
     helper_->Squeeze(node->output(0), GetOutput("Out")[0].name, {0});
   } else {
-    helper_->AutoCast(node->output(0), GetOutput("Out")[0].name,
-                      GetInput("X")[0].dtype, GetOutput("Out")[0].dtype);
+    auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
+                                  {GetOutput("Out")[0].name});
+    AddAttribute(node, "lambd", threshold_);
+    AddAttribute(node, "bias", float(0.0));
   }
 }
 
