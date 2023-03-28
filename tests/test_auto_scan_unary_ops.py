@@ -110,7 +110,6 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
                     min_value=2, max_value=20), min_size=0, max_size=4))
 
         data_shapes = input_shape
-        # input_specs = [-1, input_shape[1], -1, -1]
         input_specs = []
         dtype = draw(st.sampled_from(["float32"]))
         config = {
