@@ -98,11 +98,22 @@ void ActivationMapper::Opset7() {
     auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
     auto output = helper_->MakeNode(iter->second, {input})->output(0);
-    helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
-                      output_info[0].dtype);
+    if (input_info[0].Rank() == 0) {
+      auto node = helper_->Squeeze(output, {0});
+      helper_->AutoCast(node, output_info[0].name, P2ODataType::FP32,
+                        output_info[0].dtype);
+    } else {
+      helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
+                        output_info[0].dtype);
+    }
   } else {
-    helper_->MakeNode(iter->second, {input_info[0].name},
-                      {output_info[0].name});
+    if (input_info[0].Rank() == 0) {
+      auto node = helper_->MakeNode(iter->second, {input_info[0].name});
+      helper_->Squeeze(node->output(0), output_info[0].name, {0});
+    } else {
+      helper_->MakeNode(iter->second, {input_info[0].name},
+                        {output_info[0].name});
+    }
   }
 }
 
@@ -110,8 +121,14 @@ void Relu6Mapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   float min = 0.0;
-  helper_->Clip(input_info[0].name, output_info[0].name, min, threshold_,
-                input_info[0].dtype);
+  if (input_info[0].Rank() == 0) {
+    auto node =
+        helper_->Clip(input_info[0].name, min, threshold_, input_info[0].dtype);
+    helper_->Squeeze(node, output_info[0].name, {0});
+  } else {
+    helper_->Clip(input_info[0].name, output_info[0].name, min, threshold_,
+                  input_info[0].dtype);
+  }
 }
 
 int32_t PReluMapper::GetMinOpset(bool verbose) {
@@ -166,10 +183,15 @@ void PReluMapper::Opset7() {
 void SeluMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto node =
-      helper_->MakeNode("Selu", {input_info[0].name}, {output_info[0].name});
+  auto node = helper_->MakeNode("Selu", {input_info[0].name});
   AddAttribute(node, "alpha", alpha_);
   AddAttribute(node, "gamma", scale_);
+  if (input_info[0].Rank() == 0) {
+    helper_->Squeeze(node->output(0), output_info[0].name, {0});
+  } else {
+    helper_->AutoCast(node->output(0), output_info[0].name, input_info[0].dtype,
+                      output_info[0].dtype);
+  }
 }
 
 void HardSigmoidMapper::Opset7() {
@@ -191,8 +213,14 @@ void SwishMapper::Opset7() {
   // TODO(jiangjiajun) eliminate add with a constant of value 0
   auto beta_x_node = helper_->MakeNode("Mul", {input_info[0].name, beta_node});
   auto sigmod_node = helper_->MakeNode("Sigmoid", {beta_x_node->output(0)});
-  helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
-                    {output_info[0].name});
+  if (input_info[0].Rank() == 0) {
+    auto node =
+        helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)});
+    helper_->Squeeze(node->output(0), output_info[0].name, {0});
+  } else {
+    helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
+                      {output_info[0].name});
+  }
 }
 
 void HardSwishMapper::Opset7() {
@@ -226,9 +254,14 @@ void HardSwishMapper::Opset14() {
 void LeakyReluMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto node = helper_->MakeNode("LeakyRelu", {input_info[0].name},
-                                {output_info[0].name});
+  auto node = helper_->MakeNode("LeakyRelu", {input_info[0].name});
   AddAttribute(node, "alpha", alpha_);
+  if (input_info[0].Rank() == 0) {
+    helper_->Squeeze(node->output(0), output_info[0].name, {0});
+  } else {
+    helper_->AutoCast(node->output(0), output_info[0].name, input_info[0].dtype,
+                      output_info[0].dtype);
+  }
 }
 
 void GeluMapper::Opset9() {
@@ -303,8 +336,13 @@ void SoftMaxMapper::Opset13() {
 
 void BReluMapper::Opset7() {
   auto x_info = GetInput("X");
-  helper_->Clip(x_info[0].name, GetOutput("Out")[0].name, t_min_, t_max_,
-                x_info[0].dtype);
+  if (x_info[0].Rank() == 0) {
+    auto node = helper_->Clip(x_info[0].name, t_min_, t_max_, x_info[0].dtype);
+    helper_->Squeeze(node, GetOutput("Out")[0].name, {0});
+  } else {
+    helper_->Clip(x_info[0].name, GetOutput("Out")[0].name, t_min_, t_max_,
+                  x_info[0].dtype);
+  }
 }
 
 void EluMapper::Opset7() {
@@ -314,10 +352,15 @@ void EluMapper::Opset7() {
 }
 
 void HardShrinkMapper::Opset9() {
-  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
-                                {GetOutput("Out")[0].name});
+  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name});
   AddAttribute(node, "lambd", threshold_);
   AddAttribute(node, "bias", float(0.0));
+  if (GetInput("X")[0].Rank() == 0) {
+    helper_->Squeeze(node->output(0), GetOutput("Out")[0].name, {0});
+  } else {
+    helper_->AutoCast(node->output(0), GetOutput("Out")[0].name,
+                      GetInput("X")[0].dtype, GetOutput("Out")[0].dtype);
+  }
 }
 
 int32_t MishMapper::GetMinOpset(bool verbose) {
@@ -342,8 +385,14 @@ void MishMapper::Opset7() {
 
 void SquareMapper::Opset7() {
   auto input_info = GetInput("X");
-  helper_->MakeNode("Mul", {input_info[0].name, input_info[0].name},
-                    {GetOutput("Out")[0].name});
+  if (input_info[0].Rank() == 0) {
+    auto node =
+        helper_->MakeNode("Mul", {input_info[0].name, input_info[0].name});
+    helper_->Squeeze(node->output(0), GetOutput("Out")[0].name, {0});
+  } else {
+    helper_->MakeNode("Mul", {input_info[0].name, input_info[0].name},
+                      {GetOutput("Out")[0].name});
+  }
 }
 
 void SoftShrinkMapper::Opset9() {
@@ -363,7 +412,12 @@ void SizeMapper::Opset7() {
 
 void RsqrtMapper::Opset7() {
   auto output = helper_->MakeNode("Sqrt", {GetInput("X")[0].name})->output(0);
-  helper_->MakeNode("Reciprocal", {output}, {GetOutput("Out")[0].name});
+  if (GetInput("X")[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Reciprocal", {output});
+    helper_->Squeeze(node->output(0), GetOutput("Out")[0].name, {0});
+  } else {
+    helper_->MakeNode("Reciprocal", {output}, {GetOutput("Out")[0].name});
+  }
 }
 
 void TanhShrinkMapper::Opset7() {
@@ -421,7 +475,12 @@ void Log1PMapper::Opset7() {
   auto out_info = GetOutput("Out");
   auto one = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), float(1.0));
   auto input = helper_->MakeNode("Add", {x_info[0].name, one})->output(0);
-  helper_->MakeNode("Log", {input}, {out_info[0].name});
+  if (x_info[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Log", {input});
+    helper_->Squeeze(node->output(0), out_info[0].name, {0});
+  } else {
+    helper_->MakeNode("Log", {input}, {out_info[0].name});
+  }
 }
 
 void Log2Mapper::Opset7() {
@@ -430,7 +489,13 @@ void Log2Mapper::Opset7() {
   double ln2 = 0.693147180559945309;
   auto ln2_tensor = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln2);
   auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
-  helper_->MakeNode("Div", {output, ln2_tensor}, {out_info[0].name});
+
+  if (x_info[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Div", {output, ln2_tensor});
+    helper_->Squeeze(node->output(0), out_info[0].name, {0});
+  } else {
+    helper_->MakeNode("Div", {output, ln2_tensor}, {out_info[0].name});
+  }
 }
 
 void Log10Mapper::Opset7() {
@@ -440,13 +505,24 @@ void Log10Mapper::Opset7() {
   auto ln10_tensor =
       helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln10);
   auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
-  helper_->MakeNode("Div", {output, ln10_tensor}, {out_info[0].name});
+
+  if (x_info[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Div", {output, ln10_tensor});
+    helper_->Squeeze(node->output(0), out_info[0].name, {0});
+  } else {
+    helper_->MakeNode("Div", {output, ln10_tensor}, {out_info[0].name});
+  }
 }
 
 void SiluMapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
   auto out = helper_->MakeNode("Sigmoid", {x_info[0].name})->output(0);
-  helper_->MakeNode("Mul", {x_info[0].name, out}, {out_info[0].name});
+  if (x_info[0].Rank() == 0) {
+    auto node = helper_->MakeNode("Mul", {x_info[0].name, out});
+    helper_->Squeeze(node->output(0), out_info[0].name, {0});
+  } else {
+    helper_->MakeNode("Mul", {x_info[0].name, out}, {out_info[0].name});
+  }
 }
 }  // namespace paddle2onnx
