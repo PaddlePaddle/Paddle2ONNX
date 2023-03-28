@@ -45,12 +45,12 @@ void DropoutMapper::Opset7() {
   auto output_info = GetOutput("Out");
 
   if (dropout_implementation_ == "upscale_in_train") {
-    if (input_info[0].Rank()) {
-      helper_->MakeNode("Identity", {input_info[0].name},
-                        {output_info[0].name});
-    } else {
+    if (input_info[0].Rank() == 0) {
       auto node = helper_->MakeNode("Identity", {input_info[0].name});
       helper_->Squeeze(node->output(0), output_info[0].name, {0});
+    } else {
+      helper_->MakeNode("Identity", {input_info[0].name},
+                        {output_info[0].name});
     }
   } else {
     if (IsAttrVar("dropout_prob")) {
