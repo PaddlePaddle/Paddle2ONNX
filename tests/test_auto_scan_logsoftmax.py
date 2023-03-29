@@ -43,13 +43,17 @@ class TestLogSoftmaxConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         output_dtype = draw(st.sampled_from(["float32", "float64"]))
-        axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        if len(input_shape) == 0:
+            axis = 0
+        else:
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
 
         config = {
             "op_names": ["log_softmax"],

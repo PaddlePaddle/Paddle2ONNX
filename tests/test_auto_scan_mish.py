@@ -44,7 +44,7 @@ class TestMishConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=5, max_value=20), min_size=1, max_size=4))
+                    min_value=5, max_value=20), min_size=0, max_size=4))
 
         def generator_data():
             input_data = randtool("float", -100, 100, input_shape)
