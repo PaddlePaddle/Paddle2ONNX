@@ -109,6 +109,18 @@ class BuildClass(paddle.nn.Layer):
         return x
 
 
+dtype_map = {
+    paddle.float32: np.float32,
+    paddle.float16: np.float16,
+    paddle.float64: np.float64,
+    paddle.int64: np.int64,
+    paddle.int32: np.int32,
+    paddle.int16: np.int16,
+    paddle.int8: np.int8,
+    paddle.bool: np.bool,
+}
+
+
 class APIOnnx(object):
     """
      paddle API transfer to onnx
@@ -164,7 +176,6 @@ class APIOnnx(object):
         self.kwargs_dict[group_name] = args
         if isinstance(self.kwargs_dict[group_name][0], tuple):
             self.kwargs_dict[group_name] = self.kwargs_dict[group_name][0]
-
         i = 0
         for in_data in self.kwargs_dict[group_name]:
             if isinstance(in_data, list):
@@ -175,7 +186,11 @@ class APIOnnx(object):
                             shape=tensor_data.shape,
                             dtype=tensor_data.dtype,
                             name=str(i)))
-                    self.input_feed[str(i)] = tensor_data.numpy()
+                    if len(tensor_data.shape) == 0:
+                        self.input_feed[str(i)] = np.array(
+                            float(in_data), dtype=dtype_map[in_data.dtype])
+                    else:
+                        self.input_feed[str(i)] = tensor_data.numpy()
                     i += 1
             else:
                 if isinstance(in_data, tuple):
@@ -184,7 +199,12 @@ class APIOnnx(object):
                 self.input_spec.append(
                     paddle.static.InputSpec(
                         shape=in_data.shape, dtype=in_data.dtype, name=str(i)))
-                self.input_feed[str(i)] = in_data.numpy()
+                if len(in_data.shape) == 0:
+                    self.input_feed[str(i)] = np.array(
+                        float(in_data), dtype=dtype_map[in_data.dtype])
+                else:
+                    self.input_feed[str(i)] = in_data.numpy()
+
                 i += 1
 
     def set_device_mode(self, is_gpu=True):

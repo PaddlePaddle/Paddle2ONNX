@@ -186,7 +186,7 @@ void SwishMapper::Opset7() {
   auto output_info = GetOutput("Out");
 
   std::string beta_node =
-      helper_->Constant({1}, GetOnnxDtype(input_info[0].dtype), beta_);
+      helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), beta_);
   // TODO(jiangjiajun) eliminate multiply with a constant of value 1
   // TODO(jiangjiajun) eliminate add with a constant of value 0
   auto beta_x_node = helper_->MakeNode("Mul", {input_info[0].name, beta_node});
@@ -419,7 +419,7 @@ void ThresholdedReluMapper::Opset10() {
 void Log1PMapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
-  auto one = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), float(1.0));
+  auto one = helper_->Constant({}, GetOnnxDtype(x_info[0].dtype), float(1.0));
   auto input = helper_->MakeNode("Add", {x_info[0].name, one})->output(0);
   helper_->MakeNode("Log", {input}, {out_info[0].name});
 }
@@ -428,7 +428,7 @@ void Log2Mapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
   double ln2 = 0.693147180559945309;
-  auto ln2_tensor = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln2);
+  auto ln2_tensor = helper_->Constant({}, GetOnnxDtype(x_info[0].dtype), ln2);
   auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
   helper_->MakeNode("Div", {output, ln2_tensor}, {out_info[0].name});
 }
@@ -437,8 +437,7 @@ void Log10Mapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
   double ln10 = 2.30258509299404568401;
-  auto ln10_tensor =
-      helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), ln10);
+  auto ln10_tensor = helper_->Constant({}, GetOnnxDtype(x_info[0].dtype), ln10);
   auto output = helper_->MakeNode("Log", {x_info[0].name})->output(0);
   helper_->MakeNode("Div", {output, ln10_tensor}, {out_info[0].name});
 }

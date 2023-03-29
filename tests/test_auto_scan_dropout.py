@@ -54,20 +54,28 @@ class TestDropoutConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=8), min_size=2, max_size=5))
+                    min_value=2, max_value=8), min_size=0, max_size=5))
         # "float64" has a bug
         dtype = draw(st.sampled_from(["float32"]))
         p = random.random()
         mode = draw(st.sampled_from(["upscale_in_train", "downscale_in_infer"]))
 
-        is_axis_none = draw(st.sampled_from(["None", "NotNone"]))
-        if is_axis_none == "None":
+        if draw(st.booleans()) or len(input_shape) == 0:
             axis = None
         else:
             axis = draw(
                 st.integers(
                     min_value=0, max_value=len(input_shape) - 1))
+
         tensor_attr = draw(st.booleans())
+
+        if len(input_shape) == 0:
+            axis = 0
+            tensor_attr = False  # must be false when 0D tensor
+
+        if len(input_shape) == 1:
+            axis = 0
+
         config = {
             "op_names": ["dropout"],
             "test_data_shapes": [input_shape],

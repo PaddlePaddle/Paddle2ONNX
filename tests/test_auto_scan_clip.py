@@ -96,7 +96,7 @@ class TestClipConvert0(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 
@@ -134,7 +134,7 @@ class TestClipConvert1(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 
@@ -173,9 +173,7 @@ class TestClipConvert2(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
-
-        input_spec = [-1] * len(input_shape)
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
@@ -208,7 +206,7 @@ class TestClipConvert3(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 
@@ -248,7 +246,7 @@ class TestClipConvert4(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         input_spec = [-1] * len(input_shape)
 
