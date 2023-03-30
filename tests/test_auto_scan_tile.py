@@ -51,13 +51,17 @@ class TestTileConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=5))
+                    min_value=2, max_value=5), min_size=0, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor", "int"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
+        if len(input_shape) == 0:
+            repeat_times = [10]
+        else:
+            repeat_times = input_shape
         config = {
             "op_names": ["tile"],
             "test_data_shapes": [input_shape],
@@ -65,7 +69,7 @@ class TestTileConvert(OPConvertAutoScanTest):
             "opset_version": [7, 11, 15],
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
-            "repeat_times": input_shape,
+            "repeat_times": repeat_times,
             "shape_dtype": shape_dtype,
         }
 
@@ -109,10 +113,15 @@ class TestTileConvert1(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=5))
+                    min_value=2, max_value=5), min_size=0, max_size=5))
         input_shape = [4, 3, 2, 1]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
+
+        if len(input_shape) == 0:
+            repeat_times = [10]
+        else:
+            repeat_times = input_shape
 
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
@@ -123,7 +132,7 @@ class TestTileConvert1(OPConvertAutoScanTest):
             "opset_version": [7, 11, 15],
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
-            "repeat_times": input_shape,
+            "repeat_times": repeat_times,
             "shape_dtype": shape_dtype,
         }
 

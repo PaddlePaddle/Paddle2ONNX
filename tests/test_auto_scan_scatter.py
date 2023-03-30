@@ -52,6 +52,10 @@ class TestScatterConvert(OPConvertAutoScanTest):
         update_shape = input_shape
         update_shape[0] = index_shape
 
+        if len(input_shape) == 1 and draw(st.booleans()):
+            index_shape = []
+            update_shape = []
+
         dtype = draw(st.sampled_from(["float32", "float64"]))
         index_dtype = draw(st.sampled_from(["int32", "int64"]))
         overwrite = draw(st.booleans())
