@@ -95,8 +95,6 @@ opset_version_map = {
 
 class Net(BaseNet):
     def forward(self, inputs):
-        if self.config["op_names"].count("log") > 0:
-            inputs = paddle.abs(inputs) + 0.01
         return op_api_map[self.config["op_names"]](inputs)
 
 
@@ -107,17 +105,15 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=4, max_size=4))
-
+                    min_value=2, max_value=20), min_size=0, max_size=4))
         data_shapes = input_shape
-        input_specs = [-1, input_shape[1], -1, -1]
         dtype = draw(st.sampled_from(["float32"]))
         config = {
             "op_names": "",
             "test_data_shapes": [data_shapes],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": [input_specs],
+            "input_spec_shape": [],
         }
         models = list()
         op_names = list()

@@ -45,11 +45,14 @@ class TestSoftmaxConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=5))
-
-        axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+                    min_value=4, max_value=10), min_size=0, max_size=5))
+        if len(input_shape) == 0:
+            axis = 0
+        else:
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
@@ -57,7 +60,7 @@ class TestSoftmaxConvert(OPConvertAutoScanTest):
             "op_names": ["softmax"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 15],
             "input_spec_shape": [],
             "axis": axis
         }

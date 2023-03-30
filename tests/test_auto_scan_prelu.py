@@ -43,13 +43,17 @@ class TestPreluConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=5, max_value=20), min_size=1, max_size=4))
+                    min_value=5, max_value=20), min_size=0, max_size=4))
+        if len(input_shape) == 0:
+            weight_shape = []
+        else:
+            weight_shape = [1]
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         config = {
             "op_names": ["prelu"],
-            "test_data_shapes": [input_shape, [1]],
+            "test_data_shapes": [input_shape, weight_shape],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [9, 15],
             "input_spec_shape": [],
