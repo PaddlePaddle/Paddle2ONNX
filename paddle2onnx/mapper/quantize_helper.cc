@@ -174,6 +174,7 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
     // 6. use topo sort in nodes
     QuantizeInfoBroadcast();
     RemoveAllQuantizeOps();
+    RemoveIdentityOp();
     MergeConvAdd();
     MergeConvBN();
     AddQDQForRKNN();
@@ -184,6 +185,19 @@ void QuantizeModelProcessor::ProcessQuantizeModel(
            "/ 'others' as "
            "backend now, but now the backend is: " +
                deploy_backend + ".");
+  }
+}
+
+void QuantizeModelProcessor::RemoveIdentityOp() {
+  UpdateInputNameToNodes();
+  auto iter = nodes_->begin();
+  while (iter != nodes_->end()) {
+    auto node = *iter;
+    if (node->op_type() == "Identity" && !ConnectToOutput(node->output(0))) {
+      RemoveNodeByName(node->name());
+    } else {
+      iter++;
+    }
   }
 }
 
