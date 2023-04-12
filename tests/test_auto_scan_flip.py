@@ -43,26 +43,30 @@ class TestFlattenConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=20), min_size=2, max_size=5))
+                    min_value=1, max_value=20), min_size=0, max_size=5))
 
         dtype = draw(
             st.sampled_from(["bool", "int32", "int64", "float32", "float64"]))
 
-        axis = draw(
-            st.lists(
-                st.integers(
-                    min_value=0, max_value=len(input_shape) - 1),
-                min_size=1,
-                max_size=len(input_shape)))
-        axis = list(set(axis))
+        if len(input_shape) > 0:
+            axis = draw(
+                st.lists(
+                    st.integers(
+                        min_value=0, max_value=len(input_shape) - 1),
+                    min_size=1,
+                    max_size=len(input_shape)))
+            axis = list(set(axis))
 
-        for i in range(len(axis)):
-            if draw(st.booleans()):
-                axis[i] -= len(input_shape)
+            for i in range(len(axis)):
+                if draw(st.booleans()):
+                    axis[i] -= len(input_shape)
 
-        input_spec_shape = [-1] * len(input_shape)
-        for i in range(len(axis)):
-            input_spec_shape[axis[i]] = input_shape[axis[i]]
+            input_spec_shape = [-1] * len(input_shape)
+            for i in range(len(axis)):
+                input_spec_shape[axis[i]] = input_shape[axis[i]]
+        else:
+            axis = []
+            input_spec_shape = []
 
         config = {
             "op_names": ["flip"],

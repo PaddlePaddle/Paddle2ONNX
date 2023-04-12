@@ -70,15 +70,33 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[-1]]
+        if len(input1_shape) > 0:
+            if draw(st.booleans()):
+                # [N * N] + [N]
+                input2_shape = [input1_shape[-1]]
+            elif draw(st.booleans()):
+                # [N * N] + [N * N]
+                input2_shape = input1_shape
+            elif draw(st.booleans()):
+                # [N * N] + [1]
+                input2_shape = [1]
+            else:
+                # [N * N] + []
+                input2_shape = []
         else:
-            input2_shape = input1_shape
-
-        if draw(st.booleans()):
-            input2_shape = [1]
+            if draw(st.booleans()):
+                # [] + []
+                input2_shape = input1_shape
+            else:
+                # [] + [N * N]
+                input2_shape = draw(
+                    st.lists(
+                        st.integers(
+                            min_value=10, max_value=20),
+                        min_size=1,
+                        max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "int32", "int64", "bool"]))
 
@@ -123,7 +141,7 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
         dtype = "bool"
         config = {

@@ -54,9 +54,13 @@ class TestGatherNDConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=10, max_value=20), min_size=2, max_size=4))
-        input2_shape[-1] = draw(
-            st.integers(
-                min_value=1, max_value=len(input_shape)))
+
+        if draw(st.booleans()):
+            input2_shape[-1] = draw(
+                st.integers(
+                    min_value=1, max_value=len(input_shape)))
+        else:
+            input2_shape = [len(input_shape)]
 
         def generator_data():
             input_data = randtool("int", 0, 10, input2_shape)
@@ -67,7 +71,7 @@ class TestGatherNDConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape, generator_data],
             "test_data_types": [[dtype], [dtype2]],
             "opset_version": [11, 15],
-            "input_spec_shape": [],
+            "input_spec_shape": []
         }
 
         models = Net(config)

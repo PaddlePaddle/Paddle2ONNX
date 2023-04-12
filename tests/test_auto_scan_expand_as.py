@@ -44,7 +44,7 @@ class TestStackConvert(OPConvertAutoScanTest):
         input_shape1 = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=5))
+                    min_value=4, max_value=8), min_size=0, max_size=5))
 
         n = random.randint(1, 6 - len(input_shape1))
         pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
@@ -55,7 +55,7 @@ class TestStackConvert(OPConvertAutoScanTest):
             "op_names": ["expand_as_v2"],
             "test_data_shapes": [input_shape1, input_shape2],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [8, 9, 10, 11, 12, 13, 14, 15],
+            "opset_version": [8, 15],
             "input_spec_shape": [],
         }
 

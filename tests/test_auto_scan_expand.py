@@ -49,7 +49,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=5))
+                    min_value=2, max_value=5), min_size=0, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         # int64 are not supported
@@ -107,7 +107,7 @@ class TestExpandConvert1(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=5))
+                    min_value=2, max_value=5), min_size=0, max_size=5))
         input_shape = [4, 3, 2, 1]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))

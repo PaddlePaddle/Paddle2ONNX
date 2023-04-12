@@ -29,11 +29,13 @@ class Net(BaseNet):
         """
         forward
         """
-        if self.config["tensor_attr"]:
-            axis = paddle.to_tensor(
-                self.config["axis"], dtype=self.config["axis_dtype"])
-        else:
-            axis = self.config["axis"]
+        axis = self.config["axis"]
+        if axis is not None:
+            if self.config["tensor_attr"]:
+                axis = paddle.to_tensor(
+                    self.config["axis"], dtype=self.config["axis_dtype"])
+            else:
+                axis = self.config["axis"]
         x = paddle.cumsum(inputs, axis=axis, dtype=self.config["dtype"])
         return x
 
@@ -48,11 +50,18 @@ class TestCumsumConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
-        axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        if len(input_shape) == 0:
+            axis = 0
+        else:
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
+
+        if draw(st.booleans()):
+            axis = None
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 

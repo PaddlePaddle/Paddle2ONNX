@@ -29,7 +29,7 @@ class Net0(BaseNet):
         """
         forward
         """
-        x = paddle.reshape(inputs, [1, -1])
+        x = paddle.reshape(inputs, self.config["shape"])
         return x
 
 
@@ -56,9 +56,25 @@ class TestReshapeConvert0(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=1, max_size=4))
+                    min_value=2, max_value=20), min_size=0, max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
+
+        if len(input_shape) == 0:
+            if draw(st.booleans()):
+                # reshape from [] to [1]
+                shape = [1]
+            else:
+                # reshape from [] to []
+                shape = []
+        else:
+            # reshape from [N] to [1 N]
+            shape = [1, -1]
+
+        # reshape from [1] to []
+        if len(input_shape) == 1 and input_shape[0] == 1 and draw(st.booleans(
+        )):
+            shape = []
 
         config = {
             "op_names": ["reshape2"],
@@ -66,6 +82,7 @@ class TestReshapeConvert0(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
+            "shape": shape
         }
 
         models = Net0(config)
@@ -86,14 +103,18 @@ class TestReshapeConvert1(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=1, max_size=4))
+                    min_value=2, max_value=20), min_size=0, max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
 
+        if len(input_shape) == 0:
+            shape = [1]
+        else:
+            # reshape from [N] to [1 N]
+            shape = [1, -1]
+
         def generator_shape():
-            shape_list = input_shape
-            shape_list[-1] = -1
-            return np.array(shape_list)
+            return np.array(shape)
 
         config = {
             "op_names": ["reshape2"],
