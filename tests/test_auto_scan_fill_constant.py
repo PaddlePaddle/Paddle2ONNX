@@ -45,7 +45,7 @@ class TestFullConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=1, max_size=4))
+                    min_value=2, max_value=20), min_size=0, max_size=4))
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
@@ -57,6 +57,7 @@ class TestFullConvert(OPConvertAutoScanTest):
             opset_version = [9, 11, 15]
         else:
             opset_version = [7, 9, 15]
+
         config = {
             "op_names": ["fill_constant"],
             "test_data_shapes": [],

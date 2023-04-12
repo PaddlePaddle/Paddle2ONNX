@@ -58,19 +58,20 @@ class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator1_data():
-            input_data1 = randtool("int", 1, 10, [input_shape[0]])
+            input_data1 = randtool("int", 1, 10, input_shape[0])
             return input_data1
 
         def generator2_data():
-            input_data2 = randtool("int", 1, 10, [input_shape[1]])
+            input_data2 = randtool("int", 1, 10, input_shape[1])
             return input_data2
 
         def generator3_data():
-            input_data3 = randtool("int", 1, 10, [input_shape[2]])
+            input_data3 = randtool("int", 1, 10, input_shape[2])
             return input_data3
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
+        # Tensor List input, three 0D tensors
         config = {
             "op_names": ["gaussian_random"],
             "test_data_shapes":
@@ -134,6 +135,7 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
+        # Tensor input, one 1D tensor
         config = {
             "op_names": ["gaussian_random"],
             "test_data_shapes": [generator_data],
@@ -182,7 +184,7 @@ class TestGaussianRandomConvert_list(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=10), min_size=1, max_size=5))
+                    min_value=1, max_value=10), min_size=0, max_size=5))
 
         mean = draw(st.floats(min_value=-1.0, max_value=1.0))
 
@@ -190,8 +192,7 @@ class TestGaussianRandomConvert_list(OPConvertAutoScanTest):
 
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
-        dtype = draw(st.sampled_from(["int32", "int64"]))
-
+        # int list
         config = {
             "op_names": ["gaussian_random"],
             "test_data_shapes": [],
