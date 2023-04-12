@@ -51,9 +51,12 @@ class TestScatterNdAddConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=2, max_size=4))
 
-        index_shape[-1] = draw(
-            st.integers(
-                min_value=1, max_value=len(input_shape)))
+        if draw(st.booleans()):
+            index_shape[-1] = draw(
+                st.integers(
+                    min_value=1, max_value=len(input_shape)))
+        else:
+            index_shape = [len(input_shape)]
 
         update_shape = index_shape[:-1] + input_shape[index_shape[-1]:]
 

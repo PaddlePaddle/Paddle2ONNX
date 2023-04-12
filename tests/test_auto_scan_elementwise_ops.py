@@ -53,17 +53,35 @@ class TestElementwiseopsConvert(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[-1]]
+        if len(input1_shape) > 0:
+            if draw(st.booleans()):
+                # [N * N] + [N]
+                input2_shape = [input1_shape[-1]]
+            elif draw(st.booleans()):
+                # [N * N] + [N * N]
+                input2_shape = input1_shape
+            else:
+                # [N * N] + []
+                input2_shape = []
         else:
-            input2_shape = input1_shape
+            if draw(st.booleans()):
+                # [] + []
+                input2_shape = input1_shape
+            else:
+                # [] + [N * N]
+                input2_shape = draw(
+                    st.lists(
+                        st.integers(
+                            min_value=10, max_value=20),
+                        min_size=1,
+                        max_size=4))
 
         dtype = draw(st.sampled_from(["float32", "int32"]))
 
         def generator_data():
-            input_data = randtool("float", -5.0, 5.0, input2_shape)
+            input_data = randtool("int", -5.0, 5.0, input2_shape)
             input_data[abs(input_data) < 1.0] = 1.0
             return input_data
 
@@ -122,25 +140,38 @@ class TestElementwiseopsConvert_2(OPConvertAutoScanTest):
         input1_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
+                    min_value=10, max_value=20), min_size=0, max_size=4))
 
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[-1]]
+        if len(input1_shape) > 0:
+            if draw(st.booleans()):
+                # [N * N] + [N]
+                input2_shape = [input1_shape[-1]]
+            elif draw(st.booleans()):
+                # [N * N] + [N * N]
+                input2_shape = input1_shape
+            else:
+                # [N * N] + []
+                input2_shape = []
         else:
-            input2_shape = input1_shape
+            if draw(st.booleans()):
+                # [] + []
+                input2_shape = input1_shape
+            else:
+                # [] + [N * N]
+                input2_shape = draw(
+                    st.lists(
+                        st.integers(
+                            min_value=10, max_value=20),
+                        min_size=1,
+                        max_size=4))
 
         dtype = draw(st.sampled_from(["float32"]))
 
-        def generator_data():
-            input_data = randtool("float", -5.0, 5.0, input2_shape)
-            input_data[abs(input_data) < 1.0] = 1.0
-            return input_data
-
         config = {
             "op_names": ["elementwise_add"],
-            "test_data_shapes": [input1_shape, generator_data],
+            "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 9, 16],
             "input_spec_shape": []
         }
 

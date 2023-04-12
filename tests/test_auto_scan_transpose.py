@@ -43,12 +43,17 @@ class TestTransposeConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=20), min_size=2, max_size=4))
+                    min_value=2, max_value=20), min_size=0, max_size=4))
 
         dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
-        perm = [i for i in range(len(input_shape))]
-        perm[0], perm[1] = perm[1], perm[0]
+        if len(input_shape) >= 2:
+            perm = [i for i in range(len(input_shape))]
+            perm[0], perm[1] = perm[1], perm[0]
+        elif len(input_shape) == 1:
+            perm = [0]
+        else:
+            perm = []
 
         config = {
             "op_names": ["transpose2"],

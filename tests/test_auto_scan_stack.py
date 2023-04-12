@@ -43,12 +43,16 @@ class TestStackConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=8), min_size=2, max_size=5))
+                    min_value=4, max_value=8), min_size=0, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        if len(input_shape) > 0:
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
+        else:
+            axis = 0
 
         config = {
             "op_names": ["stack"],

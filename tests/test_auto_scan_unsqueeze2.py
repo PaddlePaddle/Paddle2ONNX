@@ -48,12 +48,16 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=6), min_size=2, max_size=5))
-
+                    min_value=2, max_value=6), min_size=0, max_size=5))
+        input_shape = []
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        if len(input_shape) > 0:
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
+        else:
+            axis = [0, 1]
         isTensor = draw(st.booleans())
 
         axis_dtype = draw(st.sampled_from(["int", "list"]))

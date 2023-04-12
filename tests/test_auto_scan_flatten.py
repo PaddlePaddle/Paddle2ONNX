@@ -46,19 +46,23 @@ class TestFlattenConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=20), min_size=2, max_size=5))
+                    min_value=1, max_value=20), min_size=0, max_size=5))
 
         dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
-        # 生成合法的start_axis
-        start_axis = draw(
-            st.integers(
-                min_value=0, max_value=len(input_shape) - 1))
+        if len(input_shape) == 0:
+            start_axis = 0
+            stop_axis = 0
+        else:
+            # 生成合法的start_axis
+            start_axis = draw(
+                st.integers(
+                    min_value=0, max_value=len(input_shape) - 1))
 
-        # 生成合法的stop_axis
-        stop_axis = draw(
-            st.integers(
-                min_value=start_axis, max_value=len(input_shape) - 1))
+            # 生成合法的stop_axis
+            stop_axis = draw(
+                st.integers(
+                    min_value=start_axis, max_value=len(input_shape) - 1))
 
         # 随机将start_axis转为负数
         if draw(st.booleans()):

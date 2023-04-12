@@ -51,7 +51,7 @@ class TestExpandConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=6), min_size=2, max_size=5))
+                    min_value=2, max_value=6), min_size=0, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isTensor = draw(st.booleans())  # future to valid
@@ -110,7 +110,7 @@ class TestExpandConvert1(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=6), min_size=2, max_size=5))
+                    min_value=2, max_value=6), min_size=0, max_size=5))
         input_shape = [2, 2]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isTensor = draw(st.booleans())  # future to valid

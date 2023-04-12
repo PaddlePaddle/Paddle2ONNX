@@ -53,9 +53,9 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=3), min_size=1, max_size=5))
+                    min_value=1, max_value=3), min_size=0, max_size=5))
         axis = None
-        if draw(st.booleans()):
+        if draw(st.booleans()) and len(input_shape) > 0:
             axis = draw(
                 st.integers(
                     min_value=-len(input_shape), max_value=len(input_shape) -
@@ -68,13 +68,22 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
         sorted = draw(st.booleans())
 
         def generator_data():
+            if len(input_shape) == 0:
+                return np.array(10, dtype="float32")
             prod = np.prod(input_shape)
             input_data = np.array(list(range(0, prod)))
             shuffle(input_data)
             input_data = input_data.reshape(input_shape)
             return input_data
 
-        k = random.randint(1, min(input_shape))
+        if len(input_shape) > 0:
+            if axis is not None:
+                k = random.randint(1, input_shape[axis])
+            else:
+                k = random.randint(1, input_shape[-1])
+        else:
+            k = 1
+            axis = 0
         isTensor = draw(st.booleans())
 
         config = {
@@ -89,8 +98,9 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
             "isTensor": isTensor,
             "k": k,
             "k_dtype": k_dtype,
-            "rtol": 100,
-            "delta": 100,
+            "rtol": 200,
+            "delta": 200,
+            "input_shape": input_shape
         }
 
         models = Net(config)

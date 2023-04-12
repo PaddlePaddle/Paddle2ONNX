@@ -50,14 +50,14 @@ class TestUniqueConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=10), min_size=1, max_size=4))
+                    min_value=2, max_value=10), min_size=0, max_size=4))
 
         return_index = draw(st.booleans())
         return_inverse = draw(st.booleans())
         return_counts = draw(st.booleans())
 
         axis = None
-        if draw(st.booleans()):
+        if draw(st.booleans()) and len(input_shape) > 0:
             axis = draw(
                 st.integers(
                     min_value=0, max_value=len(input_shape) - 1))

@@ -25,15 +25,18 @@ class Net(BaseNet):
     def forward(self):
         start = self.config["start"]
         if self.config['is_tensor_start']:
-            start = paddle.to_tensor(start).astype(self.config['index_dtype'])
+            start = paddle.to_tensor(np.array(start)).astype(self.config[
+                'index_dtype'])
 
         end = self.config["end"]
         if self.config['is_tensor_end']:
-            end = paddle.to_tensor(end).astype(self.config['index_dtype'])
+            end = paddle.to_tensor(np.array(end)).astype(self.config[
+                'index_dtype'])
 
         step = self.config["step"]
         if self.config['is_tensor_step']:
-            step = paddle.to_tensor(step).astype(self.config['index_dtype'])
+            step = paddle.to_tensor(np.array(step)).astype(self.config[
+                'index_dtype'])
 
         dtype = self.config["dtype"]
         x = paddle.arange(start=start, end=end, step=step, dtype=dtype)
