@@ -597,12 +597,11 @@ void QuantizeModelProcessor::AddQDQInModel(
       std::vector<float> bias;
       Assert(GetTensorByName(name, &bias),
              "[QuantizeModelProcessor] Can not find bias value: " + name);
-      std::vector<int32_t> new_bias(scale.size(), 0);
+      std::vector<int32_t> new_bias(bias.size(), 0);
       for (int64_t i = 0; i < bias.size(); i++) {
         float scale_val = scale.size() == 1 ? scale[0] : scale[i];
         new_bias[i] = rint(bias[i] / scale_val);
       }
-
       Weight updated_bias;
       std::vector<int64_t> bias_shape = {static_cast<int64_t>(new_bias.size())};
       updated_bias.set(P2ODataType::INT32, bias_shape, new_bias);
@@ -995,10 +994,22 @@ void QuantizeModelProcessor::RemoveAllQuantizeOps() {
       continue;
     }
     std::string input_name = node->input(0);
-    RemoveNodeByName(node->name());
+    RemoveNodeByName(node->name(), false);
     std::string output_name = next_node_names[0]->output(0);
-    RemoveNodeByName(next_node_names[0]->name());
-    ReplaceInputOfAllNodes(output_name, input_name);
+    RemoveNodeByName(next_node_names[0]->name(), false);
+    if (ConnectToOutput(output_name)) {
+      for (auto pre_iter = nodes_->begin(); pre_iter < nodes_->end();
+           pre_iter++) {
+        auto pre_node = *pre_iter;
+        for (size_t o_idex = 0; o_idex < pre_node->output_size(); ++o_idex) {
+          if (pre_node->output(o_idex) == input_name) {
+            pre_node->set_output(o_idex, output_name);
+          }
+        }
+      }
+    } else {
+      ReplaceInputOfAllNodes(output_name, input_name);
+    }
   }
 }
 
