@@ -132,7 +132,7 @@ void ArgsortMapper::Opset7() {
  - 实现 OP 转换时请将 opset version 7~16 都实现
  - ONNX 的 OP 定义以及 opset version 等信息可以查阅：[ONNX OP 文档](https://github.com/onnx/onnx/blob/main/docs/Operators.md)
 
-**Note** Paddle2ONNX 已经实现了大量的 OP 转换，可以参考 Paddle2ONNX/paddle2onnx/mapper/* 中已经实现的转换来写需要新增的 OP 转换。
+>  **Note** Paddle2ONNX 已经实现了大量的 OP 转换，可以参考 Paddle2ONNX/paddle2onnx/mapper/* 中已经实现的转换来写需要新增的 OP 转换。
 
 ### 实现 Paddle OP 转换的单测
 为了确保转换的正确性，请在 OP 实现完成之后为该转换写单测。
@@ -268,7 +268,7 @@ class Net(BaseNet):
  4. 开发完成后将本地修改 git commit 到本地仓库，然后 git push origin XXX 到远端仓库，此时回到 github 中 Fork 的 Repo 可以看到为如下提示：
  ![图片](https://user-images.githubusercontent.com/30516196/231718803-d2b3c940-144e-44e3-8b2b-ae93cc01f8f2.png)
  点击 compare&pull request 按钮，然后出现如下界面，这里需要写言简意赅的标题和详细的修改内容。认真填写完成之后点击 creat pull request 完成 PR。
- ![图片](https://user-images.githubusercontent.com/30516196/231719191-7fcf812a-e0b4-4db0-b66e-fade3e5be5bc.png)
+ ![图片](https://user-images.githubusercontent.com/30516196/231721182-500bdbe9-c73a-4b42-ba8d-7de7a6c9cb28.png)
  5. 进入到 Paddle2ONNX 的官方 Repo 可以在[Pull Request](https://github.com/PaddlePaddle/Paddle2ONNX/pulls) 中可以看到提交的 PR，PR 中有 CI 测试，如果 CI 测试没有通过，请点击没有通过 CI 后的 Details 查看详情并修改，通过 CI 之后会有专人进行 code review 和 merge。
 ![图片](https://user-images.githubusercontent.com/30516196/231719335-d61c433f-70f3-4cc1-b7f5-29f2bab7e69a.png)
  6. 更详细的资料请参考[Paddle 的 PR 指南](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/10_contribution/submit_pr_guide_cn.html)
