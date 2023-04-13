@@ -11,7 +11,8 @@ Paddle2ONNX 开发的主要步骤为：
 1. 根据 Paddle OP 查阅对应的 Paddle API 并掌握其使用方法；  
 2. 根据 Paddle OP 的原理通过 ONNX OP 直接或者组合实现相同功能；  
 3. 为 Paddle OP 的转换添加单测；  
-4. 为 Paddle2ONNX 提 PR；  
+4. 为 Paddle2ONNX 提 PR；
+接下来将详细介绍上述的每一步。  
 
 ### 查找 Paddle API 和 paddle OP 对应关系 ###
 Paddle OP 的转换需要掌握 Paddle OP 的原理和使用方式，因此需要查阅 Paddle OP 对应的 Paddle API。  
@@ -24,22 +25,23 @@ Paddle OP 的转换需要掌握 Paddle OP 的原理和使用方式，因此需�
 - 例如：需要查找 size OP 对应的 API，在 Paddle 文档中并不能找到结果，在 Paddle/python/paddle 文件夹下全局搜索到 Paddle/python/paddle/tensor/stat.py 脚本中 paddle.numel API 接口使用到了 size op，因此可确认 paddle.numel 为 size op 的对应 API。
 ![图片](https://user-images.githubusercontent.com/30516196/231719526-101e2e27-dfeb-4003-a1be-96297d70ed8c.png)
 
-3. 找到对应 API 后需要到 Paddle 文档中掌握其使用方法，尤其是其输入和属性，在 ONNX OP 实现 Paddle OP 时需要尽可能将所有功能都实现，如果不能实现的属性需要给出相应的提示。size OP 对应的 输入输出和属性等需要在 paddle/fluid/operators 下搜索 SizeOpMaker，获得的结果便是 Size OP对应的输入输出属性等所有信息。
+3. 找到对应 API 后需要到 Paddle 文档中熟悉并掌握其使用方法，尤其是其输入输出和属性对应的意义和功能，在 ONNX OP 实现 Paddle OP 时需要尽可能将所有功能都实现，如有不能实现的属性和功能，需要给出相应的提示。size OP 对应的所有输入输出和属性等信息需要在 paddle/fluid/operators 下搜索 SizeOpMaker，获得的结果便是 Size OP 对应的输入输出和属性等所有信息。
 ![图片](https://user-images.githubusercontent.com/30516196/231705787-169ed5fc-494e-4404-a2c3-fa461e7cb962.png)
 
 ### ONNX OP 实现 Paddle OP相同的功能
-掌握Paddle OP的原理和使用方式后，查阅[ONNX OP列表](https://github.com/onnx/onnx/blob/master/docs/Operators.md)找到对应的实现，若ONNX OP和Paddle OP没有一对一的实现，则需要根据Paddle OP的原理使用多个ONNX OP组合实现。  
+掌握 Paddle OP 的原理和使用方式后，查阅[ONNX OP列表](https://github.com/onnx/onnx/blob/master/docs/Operators.md)找到对应的实现，若 ONNX OP 和 Paddle OP 没有一对一的实现，则需要根据 Paddle OP 的原理使用多个 ONNX OP 组合实现。  
 
-下面以一个稍微复杂的算子 Paddle 的 argsort OP 为例，首先按照上述步骤查找 argsort 对应的 API 和原理，以及其所有的输入和输出及属性等信息。
+下面以一个稍复杂的 Paddle 算子 argsort 为例来进行介绍。
+首先按照上述步骤查找 argsort 对应的 API 和原理，掌握其所有的输入和输出和属性等信息，然后依据查到的信息，使用 ONNX OP 实现和 Paddle OP相同的功能。
 
 新的 OP 转换实现需要根据算子的类别确认：
 1. 如是 conv2d、pool2d 和 pad 等算子，需要将算子转换实现于 Paddle2ONNX/paddle2onnx/mapper/nn 中
 2. 如是 rule、relu6 和 sigmod 等激活值类别算子，需要将算子转换实现于 Paddle2ONNX/paddle2onnx/mapper/activation.* 中
 3. 如是 eye、cumsum 和 index_sample 等 tensor 处理类算子，需要将算子转换实现于 Paddle2ONNX/paddle2onnx/mapper/tensor 中
 
-argsort 需要在 Paddle2ONNX/paddle2onnx/mapper/tensor 文件夹中实现，首先根据 OP 名称新生成 argsort.h 和 argsort.cc 然后转换实现于相应的文件中：
+argsort 需要在 Paddle2ONNX/paddle2onnx/mapper/tensor 文件夹中实现，首先根据 OP 名称新生成 argsort.h 和 argsort.cc，然后转换实现于相应的文件中：
 
-在头文件中实现 OPNameMapper 类，继承 Mapper 基类。
+在头文件中实现 OPNameMapper 类，继承 Mapper 基类
 ```
 class ArgsortMapper : public Mapper {
  public:
@@ -59,9 +61,9 @@ class ArgsortMapper : public Mapper {
 };
 ```
 
- - 在构造函数中将 OP 的所有属性获取，并存到私有成员变量中
- - Paddle2ONNX 需要实现 Opset version 7～16，如果实现的 OP 不是从 Opset version 7 开始或者由于 Paddle OP中的某些属性导致无法导出为ONNX，则需要重写 GetMinOpset 函数，该函数返回 -1 表示该 OP 无法导出为 ONNX，否则表示 导出该 OP 所需的最小 Opset version
- - OpsetX 表示 opset version 为 x 时的转换实现，如果定义了 Opset7 和 Opset10 两个转换方法，意味着用户指定转出 opset version 7～9 时，使用 Opset7 中的转换逻辑实现转换，用户指定 opset version 10～16 时，使用 Opset10 中的转换逻辑实现转换。
+ - 在构造函数中获取 OP 的所有属性，并存到私有成员变量中
+ - Paddle2ONNX 需要实现 Opset version 7～16，如果实现的 OP 不是从 Opset version 7 开始，或者由于 Paddle OP 中的某些属性导致无法导出为ONNX，则需要重写基类中的 GetMinOpset 函数，该函数返回 -1 表示该 OP 无法导出为 ONNX，否则表示导出该 OP 所需的最小 Opset version
+ - OpsetX 函数表示 opset version 为 x 时的转换实现函数，如果定义了 Opset7 和 Opset10 两个转换方法，意味着用户指定转出 opset version 7～9 时，使用 Opset7 中的转换逻辑实现转换，用户指定 opset version 10～16 时，使用 Opset10 中的转换逻辑实现转换
 
 在源文件中实现具体的逻辑
 ```
@@ -124,12 +126,12 @@ void ArgsortMapper::Opset7() {
   AddAttribute(out_node, "k", x_info[0].shape[axis_]);
 }
 ```
- - 使用 REGISTER_MAPPER(op, OpMapper) 来注册 OP 的转换逻辑到 Paddle2ONNX
- - GetMinOpset 函数中要将所有的判断逻辑写清楚，提示信息要清晰
- - ONNX组网使用 helper_->MakeNode 函数实现，函数的具体定义可参考：Paddle2ONNX/paddle2onnx/mapper/onnx_helper.cc
+ - 使用 REGISTER_MAPPER(op, OpMapper) 来注册 OP 的转换逻辑到 Paddle2ONNX 中
+ - GetMinOpset 函数中要将所有的判断逻辑写清楚，不能转换的情况返回 -1，提示信息也要清晰
+ - ONNX 组网使用 helper_->MakeNode 函数实现，函数的具体定义可参考：Paddle2ONNX/paddle2onnx/mapper/onnx_helper.cc
  - AddAttribute 可为 Node 新增属性信息，具体的函数定义可参考：Paddle2ONNX/paddle2onnx/mapper/onnx_helper.cc
- - Paddle2ONNX/paddle2onnx/mapper/onnx_helper.h 中提供了大量的辅助组网信息，比如 Split, Transpose, Slice, Reshape 等等，可以有效的简化转换
- - 实现 OP 转换时请将 opset version 7~16 都实现
+ - Paddle2ONNX/paddle2onnx/mapper/onnx_helper.h 中提供了大量的辅助组网信息，比如 Split, Transpose, Slice, Reshape 等等，可以有效的简化转换逻辑，推荐优先使用 Paddle2ONNX 提供的函数
+ - 实现 OP 转换时，如 OP 支持，请将 opset version 7~16 都实现
  - ONNX 的 OP 定义以及 opset version 等信息可以查阅：[ONNX OP 文档](https://github.com/onnx/onnx/blob/main/docs/Operators.md)
 
 >  **Note** Paddle2ONNX 已经实现了大量的 OP 转换，可以参考 Paddle2ONNX/paddle2onnx/mapper/* 中已经实现的转换来写需要新增的 OP 转换。
@@ -257,6 +259,8 @@ class Net(BaseNet):
 > 单个单测测试多个 API 示例：[`test_auto_scan_unary_ops.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_unary_ops.py)  
 > 支持生成自定义数据，请参考：[`test_auto_scan_lookup_table_v2.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_lookup_table_v2.py)  
 > **注意**：所有输入、属性和数据类型都要测试完整。
+
+>  **Note** Paddle2ONNX 已经实现了大量 OP 的单测，可以参考 Paddle2ONNX/test/* 中已经实现的单测。
 
 ## 为 Paddle2ONNX 提 PR ##
 繁荣的生态需要大家的携手共建，期待和感谢大家为 PaddlePaddle 贡献自己的力量
