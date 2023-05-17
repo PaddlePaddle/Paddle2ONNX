@@ -815,7 +815,7 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
 }
 
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
-  Assert(paddle_dtype != FP16, "Float16 is not supported.");
+  // Assert(paddle_dtype != FP16, "Float16 is not supported.");
   if (paddle_dtype == P2ODataType::BOOL) {
     return sizeof(bool);
   } else if (paddle_dtype == P2ODataType::INT8) {
@@ -832,6 +832,10 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
     return sizeof(double);
   } else if (paddle_dtype == P2ODataType::UINT8) {
     return sizeof(uint8_t);
+  } else if (paddle_dtype == P2ODataType::FP16) {
+    // TODO(qiuyanjun): can fp16 sizeof support ?
+    // For now, let's assume that fp16 must have 2 bytes.
+    return 2; 
   } else {
     Assert(false, "Unexpected data type: " + std::to_string(paddle_dtype));
   }
