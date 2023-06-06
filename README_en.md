@@ -1,6 +1,6 @@
 # Paddle2ONNX
 
-[简体中文](README_zh.md) | English
+[简体中文](README.md) | English
 
 ## 🆕 New open source project FastDeploy
 If the purpose of your conversion is to deploy TensorRT, OpenVINO, ONNX Runtime, the current PaddlePaddle provides [FastDeploy] (https://github.com/PaddlePaddle/FastDeploy), which supports 150+ models to be directly deployed to these engines, Paddle2ONNX The conversion process also no longer needs to be explicitly called by the user, helping everyone to solve various tricks and alignment problems during the conversion process.
