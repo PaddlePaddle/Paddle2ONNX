@@ -116,8 +116,8 @@ struct ModelExporter {
                   const std::string& deploy_backend = "onnxruntime",
                   std::string* calibration_cache = nullptr,
                   const std::string& external_file = "",
-                  bool* save_external = nullptr,
-                  bool export_fp16_model = false);
+                  bool* save_external = nullptr, bool export_fp16_model = false,
+                  std::vector<std::string> disable_fp16_op_types = {});
 };
 
 }  // namespace paddle2onnx

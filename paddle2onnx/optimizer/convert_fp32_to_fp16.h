@@ -137,6 +137,11 @@ struct ConvertFp32ToFp16 {
       }
     }
   }
+
+  void AddDisabledOpTypes(const std::vector<std::string>& disable_fp16_ops) {
+    op_block_list_.insert(op_block_list_.end(), disable_fp16_ops.begin(),
+                          disable_fp16_ops.end());
+  }
   // If the input ONNX model is a FP16 model, return True
   bool IsFP16Model(const ONNX_NAMESPACE::ModelProto& model);
 
@@ -203,7 +208,6 @@ struct ConvertFp32ToFp16 {
   std::vector<std::string> DEFAULT_OP_BLOCK_LIST = {
       "ArrayFeatureExtractor",
       "ReduceMean",  // this op may cause wrong results on FP16
-      "Pow",         // this op may cause wrong results on FP16
       "Binarizer",
       "CastMap",
       "CategoryMapper",
