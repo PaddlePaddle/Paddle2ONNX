@@ -14,12 +14,12 @@
 
 #pragma once
 #include <onnx/onnx_pb.h>
+#include <onnx/shape_inference/implementation.h>
 
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 
-#include <onnx/shape_inference/implementation.h>
 #include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"
 namespace paddle2onnx {
@@ -203,6 +203,7 @@ struct ConvertFp32ToFp16 {
   std::vector<std::string> DEFAULT_OP_BLOCK_LIST = {
       "ArrayFeatureExtractor",
       "ReduceMean",  // this op may cause wrong results on FP16
+      "Pow",         // this op may cause wrong results on FP16
       "Binarizer",
       "CastMap",
       "CategoryMapper",
