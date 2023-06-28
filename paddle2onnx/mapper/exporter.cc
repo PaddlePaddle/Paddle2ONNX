@@ -330,7 +330,8 @@ std::string ModelExporter::Run(
     bool verbose, bool enable_onnx_checker, bool enable_experimental_op,
     bool enable_optimize, const std::string& deploy_backend,
     std::string* calibration_cache, const std::string& external_file,
-    bool* save_external, bool export_fp16_model) {
+    bool* save_external, bool export_fp16_model,
+    std::vector<std::string> disable_fp16_op_types) {
   _deploy_backend = deploy_backend;
   _helper.SetOpsetVersion(opset_version);
   _total_ops_num = 0;
@@ -461,6 +462,7 @@ std::string ModelExporter::Run(
     P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
     ConvertFp32ToFp16 convert;
     convert.SetCustomOps(custom_ops);
+    convert.AddDisabledOpTypes(disable_fp16_op_types);
     convert.Convert(&onnx_model);
   }
 
