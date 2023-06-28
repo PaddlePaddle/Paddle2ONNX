@@ -22,6 +22,7 @@ mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddl
 wget https://bj.bcebos.com/paddle2onnx/tests/quantized_models.tar.gz
 tar xf quantized_models.tar.gz
 
+
 cases=`find . -name "test*.py" | sort`
 ignore="test_auto_scan_affine_channel.py \
         test_auto_scan_expand.py \
