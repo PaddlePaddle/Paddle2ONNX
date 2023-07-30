@@ -37,7 +37,7 @@ def init_args():
     parser.add_argument("--det_limit_side_len", type=float, default=960)
     parser.add_argument("--det_limit_type", type=str, default='max')
 
-    # DB parmas
+    # DB params
     parser.add_argument("--det_db_thresh", type=float, default=0.3)
     parser.add_argument("--det_db_box_thresh", type=float, default=0.6)
     parser.add_argument("--det_db_unclip_ratio", type=float, default=1.5)

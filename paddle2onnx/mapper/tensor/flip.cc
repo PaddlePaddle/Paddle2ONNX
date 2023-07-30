@@ -22,7 +22,7 @@ int32_t FlipMapper::GetMinOpset(bool verbose) {
   for (auto i = 0; i < axes_.size(); i++) {
     if (input_info[0].shape[axes_[i]] <= 0) {
       Error() << "The dimension in axis of input must be fixed for flip "
-                 "operator, but now the input shape in axis is unkown."
+                 "operator, but now the input shape in axis is unknown."
               << std::endl;
       return -1;
     }

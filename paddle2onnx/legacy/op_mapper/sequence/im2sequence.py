@@ -22,7 +22,7 @@ from paddle2onnx.legacy.op_mapper import OpMapper as op_mapper
 
 @op_mapper('im2sequence')
 class Im2Sequence():
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_1(cls, graph, node, **kw):

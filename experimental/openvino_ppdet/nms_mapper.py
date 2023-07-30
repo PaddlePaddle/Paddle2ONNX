@@ -25,7 +25,7 @@ print("===============================\n\n")
 @op_mapper(
     ['multiclass_nms', 'multiclass_nms2', 'matrix_nms', 'multiclass_nms3'])
 class MultiClassNMS():
-    support_opset_verision_range = (10, 12)
+    support_opset_version_range = (10, 12)
     """
     Convert the paddle multiclass_nms to onnx op.
     This op is get the select boxes from origin boxes.

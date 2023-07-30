@@ -44,7 +44,7 @@ class PriorBox():
     the image data and feature map, wo could the python code to create the varaible,
     and to create the onnx tensor as output.
     """
-    support_opset_verison_range = (1, 12)
+    support_opset_version_range = (1, 12)
 
     @classmethod
     def opset_9(cls, graph, node, **kw):

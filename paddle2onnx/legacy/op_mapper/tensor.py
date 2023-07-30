@@ -1070,7 +1070,7 @@ class Gather():
                 attrs={'axis': axis})
         else:
             raise Exception(
-                "please try to convert OP:gather(indices's rank >1) with opset_version >= 11."
+                "please try to convert OP:gather(indices' rank >1) with opset_version >= 11."
             )
 
     @classmethod
@@ -1269,7 +1269,7 @@ class Reshape():
             shape_name = 'Shape'
         if shape_name not in node.inputs or len(node.input(shape_name)) == 0:
             if node.attr('shape') is None or len(node.attr('shape')) == 0:
-                raise Exception("shape tensor and shape attrubite all unkown.")
+                raise Exception("shape tensor and shape attrubite all unknown.")
         if len(node.input(shape_name)) > 1:
             dims = []
             for i in range(len(node.input(shape_name))):

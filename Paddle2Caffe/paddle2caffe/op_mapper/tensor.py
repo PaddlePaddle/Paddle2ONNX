@@ -431,7 +431,7 @@ class Resize:
         elif mode == 'bilinear':
             pass
         else:
-            logging.warning('Unsupport resize type, use nearest_neighbor instead')
+            logging.warning('Unsupported resize type, use nearest_neighbor instead')
             mode = 'nearest_neighbor'
         align_corners = source_node.attrs.get('align_corners', True)
         scales = source_node.attrs.get('scale_factor')
