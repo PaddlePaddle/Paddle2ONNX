@@ -129,3 +129,19 @@ def require_fixed_shape(op_name=None):
     logging.error(
         "[{}]Fixed shape is required, refer this doc for more information: https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/FAQ.md".
         format(op_name))
+
+
+def paddle_jit_save_configs(configs):
+    assert isinstance(
+        configs,
+        dict), "create jit.save configs from input, but input data is not dict."
+    supported_configs = {
+        "output_spec",
+        "with_hook",
+        "combine_params",
+        "clip_extra",
+        "skip_forward",
+        "input_names_after_prune",
+    }
+    retval = {k: v for (k, v) in configs.items() if k in supported_configs}
+    return retval
