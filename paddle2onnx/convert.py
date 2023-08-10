@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddle2onnx.utils import logging
+from paddle2onnx.utils import logging, paddle_jit_save_configs
 
 
 def export_onnx(paddle_graph,
@@ -53,7 +53,10 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
             os.remove(model_file)
         if os.path.isfile(params_file):
             os.remove(params_file)
-    paddle.jit.save(layer, os.path.join(paddle_model_dir, "model"), input_spec)
+    save_configs = paddle_jit_save_configs(configs)
+    paddle.jit.save(layer,
+                    os.path.join(paddle_model_dir, "model"), input_spec,
+                    **save_configs)
     logging.info("Static PaddlePaddle model saved in {}.".format(
         paddle_model_dir))
     if not os.path.isfile(params_file):
