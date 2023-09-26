@@ -33,6 +33,19 @@ inline const std::string RequireOpset(const int32_t& opset_version) {
          std::to_string(opset_version) + ".";
 }
 
+// from https://blog.csdn.net/q2519008/article/details/129264884
+inline uint16_t FP32ToFP16(float fp32_num)
+{
+  uint32_t temp_data;
+  memcpy(&temp_data,&fp32_num,sizeof(float));
+  uint16_t t = ((temp_data & 0x007fffff) >> 13) | ((temp_data & 0x80000000) >> 16) | (((temp_data & 0x7f800000) >> 13) - (112 << 10));           
+  if(temp_data & 0x1000) {
+    t++;   
+  }                
+  uint16_t fp16 = *(uint16_t*)(&t);     
+  return fp16;
+}
+
 class P2OLogger {
  public:
   P2OLogger() {

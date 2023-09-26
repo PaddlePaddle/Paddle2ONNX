@@ -25,9 +25,10 @@ int32_t FillConstantMapper::GetMinOpset(bool verbose) {
   auto onnx_dtype = GetOnnxDtype(out_info[0].dtype);
   if (onnx_dtype != ONNX_NAMESPACE::TensorProto::INT32 &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::INT64 &&
+      onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT16 &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::DOUBLE) {
-    Error() << "Only support int32/int64/float32/float64 data type in "
+    Error() << "Only support int32/int64/float16/float32/float64 data type in "
                "fill_constant operator."
             << std::endl;
     return -1;
@@ -124,6 +125,11 @@ void FillConstantMapper::Opset9() {
       data[0] = static_cast<int64_t>(value);
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(int64_t)));
+    } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
+      std::vector<int16_t> data(1);
+      data[0] = FP32ToFP16(value);
+      auto ptr = reinterpret_cast<char*>(data.data());
+      tensor->set_raw_data(std::string(ptr, sizeof(int16_t)));
     } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
       std::vector<float> data(1, value_);
       auto ptr = reinterpret_cast<char*>(data.data());

@@ -281,6 +281,12 @@ std::string OnnxHelper::Constant(const std::string& output,
       data.push_back(static_cast<float>(item));
     }
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
+    std::vector<uint16_t> data;
+    for (auto& item : value) {
+      data.push_back(FP32ToFP16(item));
+    }
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * sizeof(uint16_t)));
   } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
     std::vector<double> data;
     for (auto& item : value) {
@@ -315,7 +321,7 @@ std::string OnnxHelper::Constant(const std::string& output,
     tensor->set_raw_data(std::string((const char*)(data.data()), numel));
   } else {
     Assert(false,
-           "Only support data type of BOOL/FLOAT/DOUBLE/INT32/INT64/INT8 in "
+           "Only support data type of BOOL/FLOAT/FLOTA16/DOUBLE/INT32/INT64/INT8 in "
            "Constant "
            "function.");
   }
@@ -353,6 +359,9 @@ std::string OnnxHelper::Constant(const std::string& output,
   if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
     std::vector<float> data(numel, static_cast<float>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
+    std::vector<uint16_t> data(numel, FP32ToFP16(value));
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * sizeof(uint16_t)));
   } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
     std::vector<double> data(numel, static_cast<double>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
@@ -375,7 +384,7 @@ std::string OnnxHelper::Constant(const std::string& output,
   } else {
     Assert(
         false,
-        "Only support data type of BOOL/FLOAT/DOUBLE/INT32/INT64 in Constant "
+        "Only support data type of BOOL/FLOAT/FLOTA16/DOUBLE/INT32/INT64 in Constant "
         "function.");
   }
   nodes.push_back(node);
