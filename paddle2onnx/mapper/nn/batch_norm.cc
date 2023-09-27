@@ -28,11 +28,20 @@ void BatchNormMapper::Opset7() {
   auto variance_info = GetInput("Variance");
   auto output_info = GetOutput("Y");
 
+  if(input_info[0].dtype == P2ODataType::FP16)
+  {
+    scale_info[0].name = helper_->AutoCast(scale_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
+    bias_info[0].name = helper_->AutoCast(bias_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
+    mean_info[0].name = helper_->AutoCast(mean_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
+    variance_info[0].name = helper_->AutoCast(variance_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
+  }
+
   auto node = helper_->MakeNode(
       "BatchNormalization",
       {input_info[0].name, scale_info[0].name, bias_info[0].name,
-       mean_info[0].name, variance_info[0].name},
+      mean_info[0].name, variance_info[0].name},
       {output_info[0].name});
+
   if (helper_->GetOpsetVersion() < 9) {
     int64_t spatial = 1;
     AddAttribute(node, "spatial", spatial);
