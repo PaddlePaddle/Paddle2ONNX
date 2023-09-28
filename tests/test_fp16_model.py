@@ -1,11 +1,12 @@
 import unittest
-
+import os
 import onnxruntime as rt
 import numpy as np
 import paddle.inference as paddle_infer
 import cv2
 from paddle.inference import PrecisionType, PlaceType
 from paddle.inference import convert_to_mixed_precision
+
 
 def preprocess(image_path):
     """ Preprocess input image file
@@ -67,7 +68,7 @@ def predict_by_onnx(input_data):
 
 
 def predict_by_paddle_inference(input_data):
-    config = paddle_infer.Config("inference.pdmodel", "inference.pdiparams")
+    config = paddle_infer.Config("inference_fp16.pdmodel", "inference_fp16.pdiparams")
     config.enable_use_gpu(500, 0)
 
     predictor = paddle_infer.create_predictor(config)
@@ -88,46 +89,45 @@ def predict_by_paddle_inference(input_data):
     return output_data
 
 
-class TestCalculator(unittest.TestCase):
-    def creat_fp16_model(src_model,src_params):
-        black_list = set()
-        dst_model = "./inference_fp16.pdmodel"
-        dst_params = "./inference_fp16.pdiparams"
+def creat_fp16_model(src_model, src_params):
+    black_list = set()
+    dst_model = "./inference_fp16.pdmodel"
+    dst_params = "./inference_fp16.pdiparams"
 
-        convert_to_mixed_precision(
-            src_model,  # fp32模型文件路径
-            src_params,  # fp32权重文件路径
-            dst_model,  # 混合精度模型文件保存路径
-            dst_params,  # 混合精度权重文件保存路径
-            PrecisionType.Half,  # 转换精度，如 PrecisionType.Half
-            PlaceType.GPU,  # 后端，如 PlaceType.GPU
-            True,  # 保留输入输出精度信息，若为 True 则输入输出保留为 fp32 类型，否则转为 precision 类型
-            black_list  # 黑名单列表，哪些 op 不需要进行精度类型转换
-        )
-
-    def testDivide01(self):
-        cal = Calculator()
-        result = cal.divide(10, 2)
-        self.assertEqual(result, 5)
-
-    def testDivide02(self):
-        cal = Calculator()
-        result = cal.divide(20, 0.5)
-        self.assertEqual(result, 40)
+    convert_to_mixed_precision(
+        src_model,  # fp32模型文件路径
+        src_params,  # fp32权重文件路径
+        dst_model,  # 混合精度模型文件保存路径
+        dst_params,  # 混合精度权重文件保存路径
+        PrecisionType.Half,  # 转换精度，如 PrecisionType.Half
+        PlaceType.GPU,  # 后端，如 PlaceType.GPU
+        True,  # 保留输入输出精度信息，若为 True 则输入输出保留为 fp32 类型，否则转为 precision 类型
+        black_list  # 黑名单列表，哪些 op 不需要进行精度类型转换
+    )
+    os.system(
+        "paddle2onnx --model_dir . --model_filename inference_fp16.pdmodel --params_filename "
+        "inference_fp16.pdiparams --save_file inference_fp16.onnx --enable_dev_version True --enable_onnx_checker "
+        "True")
 
 
-# if __name__ == "__main__":
-#     input_data = preprocess("ILSVRC2012_val_00000010.jpeg")
+def clas_test(src_model, src_params, image_path, rtol=1e-07, atol=0.01):
+    creat_fp16_model(src_model, src_params)
+    input_data = preprocess(image_path)
+    data_onnx = predict_by_onnx(input_data)
+    data_paddle_inference = predict_by_paddle_inference(input_data)
+    np.testing.assert_allclose(data_onnx, data_paddle_inference, rtol=rtol, atol=atol)
 
-#     data_onnx = predict_by_onnx(input_data)
-#     data_paddle_inference = predict_by_paddle_inference(input_data)
 
-#     sim_0 = np.fabs(data_onnx - data_paddle_inference)
-#     print(np.max(sim_0), np.min(sim_0), np.mean(sim_0))
-#     sim_1 = np.fabs(data_onnx - data_paddle_inference) / (np.fabs(data_paddle_inference) + 1e-06)
-#     print(np.max(sim_1), np.min(sim_1), np.mean(sim_1))
+class TestClas(unittest.TestCase):
+    def test_resnet(self):
+        clas_test("./ResNet18_infer/inference.pdmodel", "./ResNet18_infer/inference.pdiparams",
+                  "ILSVRC2012_val_00000010.jpeg")
 
-#     print(np.fabs(data_paddle_inference.max()), np.fabs(data_paddle_inference.min()))
+    def test_mobilenetV3(self):
+        clas_test("./MobileNetV3_small_x0_35_infer/inference.pdmodel",
+                  "./MobileNetV3_small_x0_35_infer/inference.pdiparams",
+                  "ILSVRC2012_val_00000010.jpeg", atol=0.02)
+
 
 if __name__ == '__main__':
     unittest.main()

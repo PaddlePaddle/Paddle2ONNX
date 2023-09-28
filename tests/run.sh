@@ -21,9 +21,11 @@ wget -P ~/.cache/paddle/dataset/int8/download/ http://paddle-inference-dist.bj.b
 mkdir ~/.cache/paddle/dataset/int8/download/small_data/ && tar xf ~/.cache/paddle/dataset/int8/download/calibration_test_data.tar.gz -C ~/.cache/paddle/dataset/int8/download/small_data/
 wget https://bj.bcebos.com/paddle2onnx/tests/quantized_models.tar.gz
 tar xf quantized_models.tar.gz
-wget https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/PPLCNet_x1_0_infer.tar -P ~/.cache/paddle/dataset/int8/download/ 
-tar -zxvf PPLCNet_x1_0_infer.tar
-
+wget https://gitee.com/paddlepaddle/PaddleClas/raw/release/2.4/deploy/images/ImageNet/ILSVRC2012_val_00000010.jpeg
+wget https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet18_infer.tar
+tar xf ResNet18_infer.tar
+wget https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/MobileNetV3_small_x0_35_infer.tar
+tar xf MobileNetV3_small_x0_35_infer.tar
 
 cases=`find . -name "test*.py" | sort`
 ignore="test_auto_scan_affine_channel.py \
