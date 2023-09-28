@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstring>
 
 namespace paddle2onnx {
 
