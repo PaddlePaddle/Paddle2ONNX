@@ -50,9 +50,7 @@ void MatmulV2Mapper::Opset7() {
       input_y_info[0].name, input_y_info[0].dtype, input_x_info[0].dtype);
   }
 
-  auto node = helper_->MakeNode("MatMul", {input_x_info[0].name, input_y_info[0].name});
-  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                    input_y_info[0].dtype);
+  helper_->MakeNode("MatMul", {input_x_info[0].name, input_y_info[0].name}, {output_info[0].name});
 }
 
 }  // namespace paddle2onnx

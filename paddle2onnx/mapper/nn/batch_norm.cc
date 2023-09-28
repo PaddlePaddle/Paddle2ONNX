@@ -20,6 +20,18 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(batch_norm, BatchNormMapper)
 
+int32_t BatchNormMapper::GetMinOpset(bool verbose) {
+  // NHWC is not supported
+  auto input_info = GetInput("X");
+  int opset = 7;
+  if (input_info[0].dtype == P2ODataType::FP16) {
+    opset = 15;
+    Logger(verbose, opset) << RequireOpset(opset) << std::endl;
+  }
+  return opset;
+}
+
+
 void BatchNormMapper::Opset7() {
   auto input_info = GetInput("X");
   auto scale_info = GetInput("Scale");
@@ -27,14 +39,6 @@ void BatchNormMapper::Opset7() {
   auto mean_info = GetInput("Mean");
   auto variance_info = GetInput("Variance");
   auto output_info = GetOutput("Y");
-
-  if(input_info[0].dtype == P2ODataType::FP16)
-  {
-    scale_info[0].name = helper_->AutoCast(scale_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
-    bias_info[0].name = helper_->AutoCast(bias_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
-    mean_info[0].name = helper_->AutoCast(mean_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
-    variance_info[0].name = helper_->AutoCast(variance_info[0].name,P2ODataType::FP32,P2ODataType::FP16);
-  }
 
   auto node = helper_->MakeNode(
       "BatchNormalization",

@@ -29,48 +29,54 @@ void ScaleMapper::Opset7() {
   if (!has_scale_tensor && is_scale_1 && is_bias_0) {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                   P2ODataType::FP32);
-    std::string out = input;
+    // Scale supports FP32/FP16, so only Y and X aligned data types are required.
+    auto p2o_support_type = P2ODataType::FP32;
+    auto onnx_support_type = ONNX_NAMESPACE::TensorProto::FLOAT;
+    auto input_name = input_info[0].name;
+    if(input_info[0].dtype == P2ODataType::FP16) {
+      p2o_support_type = P2ODataType::FP16;
+      onnx_support_type = ONNX_NAMESPACE::TensorProto::FLOAT16;
+    } else {
+      input_name = helper_->AutoCast(input_name, input_info[0].dtype, p2o_support_type);
+    }
+    std::string out = input_name;
     if (bias_after_scale_) {
       if (!is_scale_1 || HasInput("ScaleTensor")) {
         if (HasInput("ScaleTensor")) {
           auto scale_info = GetInput("ScaleTensor");
-          auto scale = helper_->AutoCast(
-              scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+          auto scale = helper_->AutoCast(scale_info[0].name, scale_info[0].dtype, p2o_support_type);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);
         } else {
           auto scale =
-              helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, scale_);
+              helper_->Constant({}, onnx_support_type, scale_);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);
         }
       }
       if (!is_bias_0) {
         auto bias =
-            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, bias_);
+            helper_->Constant({}, onnx_support_type, bias_);
         out = helper_->MakeNode("Add", {out, bias})->output(0);
       }
     } else {
       if (!is_bias_0) {
         auto bias =
-            helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, bias_);
+            helper_->Constant({}, onnx_support_type, bias_);
         out = helper_->MakeNode("Add", {out, bias})->output(0);
       }
       if (!is_scale_1 || HasInput("ScaleTensor")) {
         if (HasInput("ScaleTensor")) {
           auto scale_info = GetInput("ScaleTensor");
           auto scale = helper_->AutoCast(
-              scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+              scale_info[0].name, scale_info[0].dtype, p2o_support_type);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);
         } else {
           auto scale =
-              helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, scale_);
+              helper_->Constant({}, onnx_support_type, scale_);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);
         }
       }
     }
-    helper_->AutoCast(out, output_info[0].name, P2ODataType::FP32,
-                      output_info[0].dtype);
+    helper_->AutoCast(out, output_info[0].name, p2o_support_type, output_info[0].dtype);
   }
 }
 }  // namespace paddle2onnx

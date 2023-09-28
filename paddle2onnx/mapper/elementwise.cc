@@ -26,11 +26,18 @@ REGISTER_MAPPER(elementwise_mod, ElementWiseModMapper)
 REGISTER_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
 
 int32_t ElementwiseMapper::GetMinOpset(bool verbose) {
+  int opset = 7;
   if (OpType() == "elementwise_min" || OpType() == "elementwise_max") {
-    Logger(verbose, 8) << RequireOpset(13) << std::endl;
-    return 13;
+    auto input_x_info = GetInput("X");
+    if(input_x_info[0].dtype == P2ODataType::INT32)
+    {
+      opset = 12;
+    } else {
+      opset = 8;
+    }
+    Logger(verbose, opset) << RequireOpset(opset) << std::endl;
   }
-  return 7;
+  return opset;
 }
 
 void ElementwiseMapper::Opset7() {

@@ -25,8 +25,8 @@ void LayerNormMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Y");
 
-  std::string input_name = helper_->AutoCast(
-      input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+  // LayerNorm support FP32/FP16
+  std::string input_name = helper_->AutoCast(input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
 
   std::vector<int64_t> input_shape = input_info[0].shape;
   std::vector<int64_t> axes;
