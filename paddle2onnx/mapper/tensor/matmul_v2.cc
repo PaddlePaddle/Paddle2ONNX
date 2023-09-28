@@ -35,15 +35,22 @@ void MatmulV2Mapper::Opset7() {
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");
-  std::string input_x = input_x_info[0].name;
   if (trans_x_) {
-    input_x = GetTrans(input_x_info);
+    input_x_info[0].name = GetTrans(input_x_info);
+    input_x_info[0].dtype = P2ODataType::FP32;
   }
-  std::string input_y = input_y_info[0].name;
   if (trans_y_) {
-    input_y = GetTrans(input_y_info);
+    input_y_info[0].name = GetTrans(input_y_info);
+    input_y_info[0].dtype = P2ODataType::FP32;
   }
-  auto node = helper_->MakeNode("MatMul", {input_x, input_y});
+
+  if(input_x_info[0].dtype != input_y_info[0].dtype)
+  {
+    input_y_info[0].name = helper_->AutoCast(
+      input_y_info[0].name, input_y_info[0].dtype, input_x_info[0].dtype);
+  }
+
+  auto node = helper_->MakeNode("MatMul", {input_x_info[0].name, input_y_info[0].name});
   helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                     input_y_info[0].dtype);
 }

@@ -27,8 +27,8 @@ REGISTER_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
 
 int32_t ElementwiseMapper::GetMinOpset(bool verbose) {
   if (OpType() == "elementwise_min" || OpType() == "elementwise_max") {
-    Logger(verbose, 8) << RequireOpset(8) << std::endl;
-    return 8;
+    Logger(verbose, 8) << RequireOpset(13) << std::endl;
+    return 13;
   }
   return 7;
 }
