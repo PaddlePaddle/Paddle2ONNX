@@ -100,7 +100,9 @@ class Mapper {
     if (IsExportAsCustomOp()) {
       return ExportAsCustomOp();
     }
-    if (opset_version == 16) {
+    if (opset_version == 17) {
+      Opset17();
+    } else if (opset_version == 16) {
       Opset16();
     } else if (opset_version == 15) {
       Opset15();
@@ -127,6 +129,8 @@ class Mapper {
     Assert(false,
            "Operator " + name_ + "doesn't support export as custom operator.");
   }
+
+  virtual void Opset17() { Opset16(); }
 
   virtual void Opset16() { Opset15(); }
 

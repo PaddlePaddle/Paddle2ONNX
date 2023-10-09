@@ -21,6 +21,65 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(layer_norm, LayerNormMapper)
 
+void LayerNormMapper::Opset17() {
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Y");
+
+  std::string input_name = helper_->AutoCast(
+      input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+  bool has_input_Bias = HasInput("Bias");
+  bool has_input_Scale = HasInput("Scale");
+
+  if (has_input_Bias && has_input_Scale) {
+    auto scale_info = GetInput("Scale");
+    auto bias_info = GetInput("Bias");
+    std::string scale_name = helper_->AutoCast(
+        scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+    std::string bias_name = helper_->AutoCast(
+        bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
+    auto layer_norm_node = helper_->MakeNode(
+        "LayerNormalization", {input_name, scale_name, bias_name},
+        {output_info[0].name});
+    AddAttribute(layer_norm_node, "axis", begin_norm_axis_);
+    AddAttribute(layer_norm_node, "epsilon", epsilon_);
+    return;
+  }
+  if (has_input_Scale) {
+    auto scale_info = GetInput("Scale");
+    std::string scale_name = helper_->AutoCast(
+        scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+    auto layer_norm_node = helper_->MakeNode(
+        "LayerNormalization", {input_name, scale_name}, {output_info[0].name});
+    AddAttribute(layer_norm_node, "axis", begin_norm_axis_);
+    AddAttribute(layer_norm_node, "epsilon", epsilon_);
+    return;
+  }
+
+  if (has_input_Bias) {
+    auto bias_info = GetInput("Bias");
+    std::string bias_name = helper_->AutoCast(
+        bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
+    std::string scale_name =
+        helper_->Constant({}, GetOnnxDtype(P2ODataType::FP32), float(1.0));
+    auto layer_norm_node = helper_->MakeNode(
+        "LayerNormalization", {input_name, scale_name, bias_name},
+        {output_info[0].name});
+    AddAttribute(layer_norm_node, "axis", begin_norm_axis_);
+    AddAttribute(layer_norm_node, "epsilon", epsilon_);
+    return;
+  }
+
+  if (!has_input_Bias && !has_input_Scale) {
+    auto scale_name =
+        helper_->Constant({}, GetOnnxDtype(P2ODataType::FP32), float(1.0));
+    auto layer_norm_node = helper_->MakeNode(
+        "LayerNormalization", {input_name, scale_name}, {output_info[0].name});
+    AddAttribute(layer_norm_node, "axis", begin_norm_axis_);
+    AddAttribute(layer_norm_node, "epsilon", epsilon_);
+    return;
+  }
+}
+
 void LayerNormMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Y");
