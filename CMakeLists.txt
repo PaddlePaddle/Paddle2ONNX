@@ -11,7 +11,7 @@ option(MSVC_STATIC_CRT          "Compile Paddle2ONNX with  MSVC STATIC CRT"     
 set(ONNX_CUSTOM_PROTOC_PATH "" CACHE STRING "Set yourself Protobufc path")
 
 # Internal flags for convert.h.in
-set(WITH_PADDLE2ONNX_STATIC_INTERNAL OFF)  
+set(WITH_PADDLE2ONNX_STATIC_INTERNAL OFF)
 if(WITH_STATIC)
   set(WITH_PADDLE2ONNX_STATIC_INTERNAL ON CACHE BOOL "" FORCE)
   add_definitions(-DWITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING)
@@ -31,7 +31,7 @@ endif(NOT MSVC)
 # if you build from other version of onnx
 # this should be modified
 # refer to https://github.com/onnx/onnx/blob/main/docs/Versioning.md#released-versions
-add_definitions(-DMAX_ONNX_OPSET_VERSION=16)
+add_definitions(-DMAX_ONNX_OPSET_VERSION=17)
 add_definitions(-DPADDLE2ONNX_LIB)
 
 # Third dependency: onnx
@@ -74,18 +74,18 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
 string(STRIP "${PADDLE2ONNX_VERSION}" PADDLE2ONNX_VERSION)
 if (WITH_STATIC)
-    # Here, we use a dummy target (paddle2onnx_dummy) 
+    # Here, we use a dummy target (paddle2onnx_dummy)
     # to form a build dependency tree for paddle2onnx_static lib.
     ADD_LIBRARY(paddle2onnx_dummy STATIC ${ALL_SRCS})
-    
+
     if(APPLE)
         set_target_properties(paddle2onnx_dummy
-                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")                     
+                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     elseif(MSVC)
         message("------ BUILD WITH MSVC --------")
     else()
         set_target_properties(paddle2onnx_dummy
-                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")    
+                              PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     endif()
     target_link_libraries(paddle2onnx_dummy  p2o_paddle_proto onnx)
     # Bundle paddle2onnx static lib here
@@ -135,7 +135,7 @@ else()
   endif()
 endif()
 install(
-    FILES 
+    FILES
     ${PROJECT_SOURCE_DIR}/paddle2onnx/converter.h
     ${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h
     DESTINATION include/paddle2onnx

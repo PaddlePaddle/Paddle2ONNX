@@ -29,6 +29,8 @@ class LayerNormMapper : public Mapper {
     GetAttr("epsilon", &epsilon_);
   }
 
+  void Opset17();
+
   void Opset7();
 
  private:

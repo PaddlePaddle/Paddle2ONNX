@@ -82,7 +82,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
             "op_names": ["layer_norm"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 15],
+            "opset_version": [7, 17],
             "input_spec_shape": [],
             "epsilon": epsilon,
             "normalized_shape": normalized_shape,
