@@ -20,6 +20,16 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(batch_norm, BatchNormMapper)
 
+int32_t BatchNormMapper::GetMinOpset(bool verbose) {
+  auto input_info = GetInput("X");
+  int opset = 7;
+  if (input_info[0].dtype == P2ODataType::FP16) {
+    opset = 15;
+    Logger(verbose, opset) << RequireOpset(opset) << std::endl;
+  }
+  return opset;
+}
+
 void BatchNormMapper::Opset7() {
   auto input_info = GetInput("X");
   auto scale_info = GetInput("Scale");

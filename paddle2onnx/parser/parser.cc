@@ -582,9 +582,9 @@ std::vector<TensorInfo> PaddleParser::GetOpAttrVar(
   std::vector<TensorInfo> inputs;
   for (auto i = 0; i < op.attrs_size(); ++i) {
     if (op.attrs(i).name() == name) {
-      Assert(IsAttrVar(op, i), "Required AttrVar: " + name +
-                                   " type is Variable in operator: " +
-                                   op.type());
+      Assert(IsAttrVar(op, i),
+             "Required AttrVar: " + name +
+                 " type is Variable in operator: " + op.type());
       // Case 1: Attribute is a single Var
       if (op.attrs(i).has_var_name()) {
         inputs.push_back(GetTensorInfo(op.attrs(i).var_name(), block));
@@ -630,8 +630,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
       found = true;
       if (IsAttrVar(op, i)) break;
       Assert(op.attrs(i).has_i() || op.attrs(i).has_l(),
-             "Cannot find int32/int64 data from attr: " + name + " in op:" +
-                 op.type());
+             "Cannot find int32/int64 data from attr: " + name +
+                 " in op:" + op.type());
       if (op.attrs(i).has_i()) {
         *res = (int64_t)(op.attrs(i).i());
       } else {
@@ -728,8 +728,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
       found = true;
       if (IsAttrVar(op, i)) break;
       Assert(op.attrs(i).floats_size() >= 0,
-             "Cannot find list of float data from attr: " + name + " in op: " +
-                 op.type());
+             "Cannot find list of float data from attr: " + name +
+                 " in op: " + op.type());
       for (auto j = 0; j < op.attrs(i).floats_size(); ++j) {
         res->push_back(static_cast<float>(op.attrs(i).floats(j)));
       }
@@ -749,8 +749,8 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
       found = true;
       if (IsAttrVar(op, i)) break;
       Assert(op.attrs(i).float64s_size() >= 0,
-             "Cannot find list of double data from attr: " + name + " in op: " +
-                 op.type());
+             "Cannot find list of double data from attr: " + name +
+                 " in op: " + op.type());
       for (auto j = 0; j < op.attrs(i).float64s_size(); ++j) {
         res->push_back(static_cast<double>(op.attrs(i).float64s(j)));
       }
@@ -815,7 +815,6 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
 }
 
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
-  Assert(paddle_dtype != FP16, "Float16 is not supported.");
   if (paddle_dtype == P2ODataType::BOOL) {
     return sizeof(bool);
   } else if (paddle_dtype == P2ODataType::INT8) {
@@ -826,6 +825,8 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
     return sizeof(int32_t);
   } else if (paddle_dtype == P2ODataType::INT64) {
     return sizeof(int64_t);
+  } else if (paddle_dtype == P2ODataType::FP16) {
+    return sizeof(int16_t);
   } else if (paddle_dtype == P2ODataType::FP32) {
     return sizeof(float);
   } else if (paddle_dtype == P2ODataType::FP64) {

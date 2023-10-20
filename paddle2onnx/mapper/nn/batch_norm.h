@@ -29,6 +29,7 @@ class BatchNormMapper : public Mapper {
     GetAttr("momentum", &momentum_);
   }
 
+  int32_t GetMinOpset(bool verbose = false);
   void Opset7();
 
  private:
