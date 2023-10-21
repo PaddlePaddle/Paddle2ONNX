@@ -137,9 +137,10 @@ void FillConstantMapper::Opset9() {
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(int64_t)));
     } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
-      std::vector<float> data(1, value_);
+      std::vector<int16_t> data(1);
+      data[0] = FP32ToFP16(value);
       auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(float)));
+      tensor->set_raw_data(std::string(ptr, sizeof(int16_t)));
     } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
       std::vector<float> data(1, value_);
       auto ptr = reinterpret_cast<char*>(data.data());

@@ -350,11 +350,13 @@ std::string OnnxHelper::Constant(const std::string& output,
   }
   tensor->set_data_type(dtype);
   if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
-    auto data = reinterpret_cast<int16_t*>(&value);
-    tensor->set_raw_data(std::string((const char*)(data), numel * 2));
+    std::vector<int16_t> data(1);
+    data[0] = FP32ToFP16(value);
+    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 2));
   } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
     std::vector<float> data(numel, static_cast<float>(value));
-    tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
+    auto ptr = reinterpret_cast<char*>(data.data());
+    tensor->set_raw_data(std::string(ptr, numel * 4));
   } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
     std::vector<double> data(numel, static_cast<double>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 8));
