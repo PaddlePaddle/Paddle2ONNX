@@ -16,6 +16,8 @@
 #include <sstream>
 #include <vector>
 
+#include "paddle2onnx/utils/utils.h"
+
 namespace paddle2onnx {
 
 REGISTER_MAPPER(fill_constant, FillConstantMapper)
@@ -23,23 +25,26 @@ REGISTER_MAPPER(fill_constant, FillConstantMapper)
 int32_t FillConstantMapper::GetMinOpset(bool verbose) {
   auto out_info = GetOutput("Out");
   auto onnx_dtype = GetOnnxDtype(out_info[0].dtype);
-  if (onnx_dtype != ONNX_NAMESPACE::TensorProto::INT32 &&
-      onnx_dtype != ONNX_NAMESPACE::TensorProto::INT64 &&
-      onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT &&
-      onnx_dtype != ONNX_NAMESPACE::TensorProto::DOUBLE) {
-    Error() << "Only support int32/int64/float32/float64 data type in "
-               "fill_constant operator."
-            << std::endl;
-    return -1;
+  if (onnx_dtype == ONNX_NAMESPACE::TensorProto::UINT8 ||
+      onnx_dtype == ONNX_NAMESPACE::TensorProto::INT8 ||
+      onnx_dtype == ONNX_NAMESPACE::TensorProto::UINT16 ||
+      onnx_dtype == ONNX_NAMESPACE::TensorProto::INT16) {
+    return 14;
   }
+
   if (HasInput("ShapeTensorList")) {
-    Logger(verbose, 9) << "While ShapeTensorList as input, " << RequireOpset(9) << std::endl;
+    Logger(verbose, 9) << "While ShapeTensorList as input, " << RequireOpset(9)
+                       << std::endl;
     return 9;
   }
+
   if (HasInput("ShapeTensor") && !IsConstantInput("ShapeTensor")) {
-    Logger(verbose, 9) << "While ShapeTensor as input and it's not a constant tensor, " << RequireOpset(9) << std::endl;
+    Logger(verbose, 9)
+        << "While ShapeTensor as input and it's not a constant tensor, "
+        << RequireOpset(9) << std::endl;
     return 9;
   }
+
   return 7;
 }
 
@@ -67,21 +72,28 @@ float FillConstantMapper::GetFillValue() {
 
 void FillConstantMapper::Opset7() {
   auto out_info = GetOutput("Out");
-  Assert(!HasInput("ShapeTensorList"), "While ShapeTensorList as input, requires opset_version>=9 for op fill_constant.");
+  Assert(!HasInput("ShapeTensorList"),
+         "While ShapeTensorList as input, requires opset_version>=9 for op "
+         "fill_constant.");
   std::vector<int64_t> shape;
   if (HasInput("ShapeTensor")) {
-    Assert(TryGetInputValue("ShapeTensor", &shape), "While ShapeTensor as input and it's not a constant tensor, requires opset_version>=9 for op fill_constant.");
+    Assert(TryGetInputValue("ShapeTensor", &shape),
+           "While ShapeTensor as input and it's not a constant tensor, "
+           "requires opset_version>=9 for op fill_constant.");
   } else {
     GetAttr("shape", &shape);
   }
   float value = GetFillValue();
   if (HasInput("ValueTensor")) {
     auto value_info = GetInput("ValueTensor");
-    auto value_tensor = helper_->AutoCast(value_info[0].name, value_info[0].dtype, out_info[0].dtype);
-    auto out = helper_->Constant(shape, GetOnnxDtype(out_info[0].dtype), float(0.0));
+    auto value_tensor = helper_->AutoCast(
+        value_info[0].name, value_info[0].dtype, out_info[0].dtype);
+    auto out =
+        helper_->Constant(shape, GetOnnxDtype(out_info[0].dtype), float(0.0));
     helper_->MakeNode("Add", {out, value_tensor}, {out_info[0].name});
   } else {
-    helper_->Constant(out_info[0].name, shape, GetOnnxDtype(out_info[0].dtype), value);
+    helper_->Constant(out_info[0].name, shape, GetOnnxDtype(out_info[0].dtype),
+                      value);
   }
 }
 
@@ -115,8 +127,8 @@ void FillConstantMapper::Opset9() {
     tensor->set_data_type(onnx_dtype);
     tensor->add_dims(1);
     if (onnx_dtype == ONNX_NAMESPACE::TensorProto::INT32) {
-      std::vector<int32_t> data(1);
-      data[0] = static_cast<int32_t>(value);
+      std::vector<int16_t> data(1);
+      data[0] = FP32ToFP16(value);
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(int32_t)));
     } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::INT64) {
@@ -124,6 +136,10 @@ void FillConstantMapper::Opset9() {
       data[0] = static_cast<int64_t>(value);
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(int64_t)));
+    } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
+      std::vector<float> data(1, value_);
+      auto ptr = reinterpret_cast<char*>(data.data());
+      tensor->set_raw_data(std::string(ptr, sizeof(float)));
     } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
       std::vector<float> data(1, value_);
       auto ptr = reinterpret_cast<char*>(data.data());
@@ -133,6 +149,10 @@ void FillConstantMapper::Opset9() {
       data[0] = static_cast<double>(value);
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(double)));
+    } else {
+      Assert(false,
+             "Only support data type of FLOAT16/FLOAT/DOUBLE/INT32/INT64 in "
+             "FillConstant function.");
     }
     out = node->output(0);
   } else {

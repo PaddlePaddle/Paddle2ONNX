@@ -316,8 +316,7 @@ std::string OnnxHelper::Constant(const std::string& output,
   } else {
     Assert(false,
            "Only support data type of BOOL/FLOAT/DOUBLE/INT32/INT64/INT8 in "
-           "Constant "
-           "function.");
+           "Constant function.");
   }
   nodes.push_back(node);
   return output;
@@ -350,7 +349,10 @@ std::string OnnxHelper::Constant(const std::string& output,
     numel *= shape[i];
   }
   tensor->set_data_type(dtype);
-  if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+  if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
+    auto data = reinterpret_cast<int16_t*>(&value);
+    tensor->set_raw_data(std::string((const char*)(data), numel * 2));
+  } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
     std::vector<float> data(numel, static_cast<float>(value));
     tensor->set_raw_data(std::string((const char*)(data.data()), numel * 4));
   } else if (dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
@@ -373,10 +375,9 @@ std::string OnnxHelper::Constant(const std::string& output,
     tensor->set_raw_data(std::string((const char*)(data), numel));
     delete[] data;
   } else {
-    Assert(
-        false,
-        "Only support data type of BOOL/FLOAT/DOUBLE/INT32/INT64 in Constant "
-        "function.");
+    Assert(false,
+           "Only support data type of BOOL/FLOAT/FLOAT16/DOUBLE/INT32/INT64 in "
+           "Constant function.");
   }
   nodes.push_back(node);
   return output;
