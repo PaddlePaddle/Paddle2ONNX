@@ -28,15 +28,27 @@ class Pool2dMapper : public Mapper {
     op_mapper_["max"] = {"MaxPool", "GlobalMaxPool"};
     op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
     GetAttr("global_pooling", &global_pooling_);
-    GetAttr("adaptive", &adaptive_);
+    if (HasAttr("adaptive")) {
+      GetAttr("adaptive", &adaptive_);
+    } else {
+      adaptive_ = false;
+    }
     GetAttr("strides", &strides_);
     GetAttr("paddings", &pads_);
     if (OpType() != "max_pool2d_with_index") {
       GetAttr("pooling_type", &pooling_type_);
       GetAttr("data_format", &data_format_);
       GetAttr("ceil_mode", &ceil_mode_);
-      GetAttr("padding_algorithm", &padding_algorithm_);
-      GetAttr("exclusive", &exclusive_);
+      if (HasAttr("padding_algorithm")) {
+        GetAttr("padding_algorithm", &padding_algorithm_);
+      } else {
+        padding_algorithm_ = "EXPLICIT";
+      }
+      if (HasAttr("exclusive")) {
+        GetAttr("exclusive", &exclusive_);
+      } else {
+        exclusive_ = true;
+      }
       exclusive_ = !exclusive_;
     }
   }

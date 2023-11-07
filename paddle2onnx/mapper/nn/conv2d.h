@@ -29,7 +29,11 @@ class Conv2dMapper : public Mapper {
     GetAttr("dilations", &dilations_);
     GetAttr("strides", &strides_);
     GetAttr("paddings", &paddings_);
-    GetAttr("padding_algorithm", &padding_algorithm_);
+    if (HasAttr("padding_algorithm")) {
+      GetAttr("padding_algorithm", &padding_algorithm_);
+    } else {
+      padding_algorithm_ = "EXPLICIT";
+    }
     GetAttr("data_format", &data_format_);
   }
 

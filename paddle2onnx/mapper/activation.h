@@ -180,7 +180,11 @@ class SoftMaxMapper : public Mapper {
   SoftMaxMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    GetAttr("axis", &axis_);
+    if (HasAttr("axis")) {
+      GetAttr("axis", &axis_);
+    } else {
+      axis_ = -1;
+    }
   }
 
   void Opset7();
