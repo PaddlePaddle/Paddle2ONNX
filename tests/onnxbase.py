@@ -19,6 +19,7 @@ import logging
 import paddle
 from onnxruntime import InferenceSession
 from paddle2onnx.convert import dygraph2onnx
+from paddle.base import core
 
 
 def compare(result, expect, delta=1e-10, rtol=1e-10):
@@ -310,8 +311,7 @@ class APIOnnx(object):
             self.ops, paddle_op_list)
 
     def dev_check_ops(self, op_name, model_file_path):
-        from paddle.fluid.proto import framework_pb2
-        prog = framework_pb2.ProgramDesc()
+        prog = core.ProgramDesc()
 
         with open(model_file_path, "rb") as f:
             prog.ParseFromString(f.read())
