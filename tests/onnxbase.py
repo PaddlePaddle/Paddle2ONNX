@@ -16,10 +16,11 @@ import os
 from inspect import isfunction
 import numpy as np
 import logging
-import paddle
 from onnxruntime import InferenceSession
 from paddle2onnx.convert import dygraph2onnx
-
+import paddle
+import paddle.static as static
+from paddle.static import Program
 
 def compare(result, expect, delta=1e-10, rtol=1e-10):
     """
@@ -310,11 +311,10 @@ class APIOnnx(object):
             self.ops, paddle_op_list)
 
     def dev_check_ops(self, op_name, model_file_path):
-        from paddle.fluid.proto import framework_pb2
-        prog = framework_pb2.ProgramDesc()
+        prog = Program()
 
         with open(model_file_path, "rb") as f:
-            prog.ParseFromString(f.read())
+            prog.parse_from_string(f.read())
 
         ops = set()
         find = False
@@ -335,7 +335,6 @@ class APIOnnx(object):
         Returns:
             None
         """
-        import paddle.static as static
         paddle.enable_static()
         origin_program_bytes = static.io.load_from_file(orig_program_path)
         origin_program = static.io.deserialize_program(origin_program_bytes)

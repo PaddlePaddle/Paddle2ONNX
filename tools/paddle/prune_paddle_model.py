@@ -1,10 +1,14 @@
 import argparse
+import sys
+import paddle
+import paddle.base.core as core
+import paddle.static as static
+import os
 
 
 def new_prepend_feed_ops(inference_program,
                          feed_target_names,
                          feed_holder_name='feed'):
-    import paddle.fluid.core as core
     if len(feed_target_names) == 0:
         return
 
@@ -33,7 +37,6 @@ def append_fetch_ops(program, fetch_target_names, fetch_holder_name='fetch'):
     """
     In this palce, we will add the fetch op
     """
-    import paddle.fluid.core as core
     global_block = program.global_block()
     fetch_var = global_block.create_var(
         name=fetch_holder_name,
@@ -41,7 +44,6 @@ def append_fetch_ops(program, fetch_target_names, fetch_holder_name='fetch'):
         persistable=True)
     print("the len of fetch_target_names:%d" % (len(fetch_target_names)))
     for i, name in enumerate(fetch_target_names):
-
         global_block.append_op(
             type='fetch',
             inputs={'X': [name]},
@@ -91,26 +93,24 @@ if __name__ == '__main__':
         )
         sys.exit(-1)
 
-    import paddle
     paddle.enable_static()
-    paddle.fluid.io.prepend_feed_ops = new_prepend_feed_ops
-    import paddle.fluid as fluid
+    paddle.static.io.prepend_feed_ops = new_prepend_feed_ops
     print("Start to load paddle model...")
-    exe = fluid.Executor(fluid.CPUPlace())
-    [prog, ipts, outs] = fluid.io.load_inference_model(
+    exe = static.Executor(paddle.CPUPlace())
+    [program, feed_target_names, fetch_targets] = static.io.load_inference_model(
         args.model_dir,
         exe,
         model_filename=args.model_filename,
         params_filename=args.params_filename)
-    new_outputs = list()
-    insert_fetch(prog, args.output_names)
-    for out_name in args.output_names:
-        new_outputs.append(prog.global_block().var(out_name))
-    fluid.io.save_inference_model(
-        args.save_dir,
-        ipts,
-        new_outputs,
-        exe,
-        prog,
-        model_filename=args.model_filename,
-        params_filename=args.params_filename)
+    insert_fetch(program, args.output_names)
+    feed_vars = [program.global_block().var(name) for name in feed_target_names]
+    fetch_vars = [program.global_block().var(out_name) for out_name in args.output_names]
+
+    model_name = args.model_filename.split(".")[0]
+    path_prefix = os.path.join(args.save_dir, model_name)
+    static.io.save_inference_model(
+        path_prefix=path_prefix,
+        feed_vars=feed_vars,
+        fetch_vars=fetch_vars,
+        executor=exe,
+        program=program)
