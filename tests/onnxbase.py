@@ -118,7 +118,7 @@ dtype_map = {
     paddle.int32: np.int32,
     paddle.int16: np.int16,
     paddle.int8: np.int8,
-    paddle.bool: np.bool,
+    paddle.bool: np.bool_,
 }
 
 
