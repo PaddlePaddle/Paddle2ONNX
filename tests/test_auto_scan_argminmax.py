@@ -13,12 +13,9 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
-import random
 
 op_api_map = {
     "arg_min": paddle.argmin,

@@ -18,9 +18,8 @@ import os
 import time
 import logging
 import paddle
-
 import hypothesis
-from hypothesis import given, settings, seed, reproduce_failure
+from hypothesis import given, settings, HealthCheck
 import hypothesis.strategies as st
 from onnxbase import APIOnnx, randtool
 from itertools import product
@@ -89,7 +88,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
         settings.register_profile(
             "ci",
             max_examples=max_examples,
-            suppress_health_check=hypothesis.HealthCheck.all(),
+            suppress_health_check=list(HealthCheck),
             deadline=None,
             print_blob=True,
             derandomize=True,
