@@ -12,15 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from inspect import isfunction
-import numpy as np
 import logging
+import numpy as np
 from onnxruntime import InferenceSession
+import os
 from paddle2onnx.convert import dygraph2onnx
 import paddle
 import paddle.static as static
 from paddle.static import Program
+import shutil
+
+
+def compare_data(result_data, expect_data, delta, rtol):
+    res_data = np.allclose(result_data, expect_data, atol=delta, rtol=rtol, equal_nan=True)
+    if res_data is True:
+        return res_data
+
+    # 输出错误类型
+    # 输出数据类型错误
+    if result_data.dtype != result_data.dtype:
+        logging.error("Different output data types! res type is: {}, and expect type is: {}".format(result_data.dtype,
+                                                                                                    expect_data.dtype))
+        return False
+
+    # 输出数据大小错误
+    if result_data.dtype == np.bool_:
+        diff = abs(result_data.astype("int32") - expect_data.astype("int32"))
+    else:
+        diff = abs(result_data - expect_data)
+    logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
+    return False
+
+
+def compare_shape(result_data, expect_data):
+    result_shape = result_data.shape
+    expect_shape = expect_data.shape
+    # For result_shape is (1) and expect_shape shape is ()
+    if len(result_shape) == 1 and len(expect_shape) == 0:
+        return result_data[0] == expect_data
+    return result_shape == expect_shape
+
 
 def compare(result, expect, delta=1e-10, rtol=1e-10):
     """
@@ -31,26 +63,19 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     :return:
     """
     if type(result) == np.ndarray:
+        # Convert Paddle Tensor to Numpy array
         if type(expect) == list:
             expect = expect[0]
-        expect = np.array(expect)
-        res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
-        # 出错打印错误数据
-        if res is False:
-            if result.dtype == np.bool_:
-                diff = abs(result.astype("int32") - expect.astype("int32"))
-            else:
-                diff = abs(result - expect)
-            logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
-        if result.dtype != expect.dtype:
-            logging.error(
-                "Different output data types! res type is: {}, and expect type is: {}".
-                format(result.dtype, expect.dtype))
-        assert res
-        assert result.shape == expect.shape, "result.shape: {} != expect.shape: {}".format(
-            result.shape, expect.shape)
-        assert result.dtype == expect.dtype, "result.dtype: {} != expect.dtype: {}".format(
-            result.dtype, expect.dtype)
+        expect = expect.numpy()
+
+        # Compare the actual value with the expected value and determine whether the output result is correct.
+        res_data = compare_data(result, expect, delta, rtol)
+        # Compare the actual shape with the expected shape and determine if the output results are correct.
+        res_shape = compare_shape(result, expect)
+
+        assert res_data, "result: {} != expect: {}".format(result, expect)
+        assert res_shape, "result.shape: {} != expect.shape: {}".format(result.shape, expect.shape)
+        assert result.dtype == expect.dtype, "result.dtype: {} != expect.dtype: {}".format(result.dtype, expect.dtype)
     elif type(result) == list and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
@@ -366,25 +391,18 @@ class APIOnnx(object):
                     res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
                 for v in self._version:
-                    compare(
-                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                    compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
 
                 # dygraph model jit save
                 if self.static is True and place == 'gpu':
                     self._dygraph_jit_save(instance=self._func)
             elif os.getenv("ENABLE_DEV", "OFF") == "ON":
-                assert len(
-                    self.ops
-                ) <= 1, "Need to make sure the number of ops in config is 1."
-                import shutil
+                assert len(self.ops) <= 1, "Need to make sure the number of ops in config is 1."
                 if os.path.exists(self.name):
                     shutil.rmtree(self.name)
-                paddle.jit.save(self._func,
-                                os.path.join(self.name, "model"),
-                                self.input_spec)
+                paddle.jit.save(self._func, os.path.join(self.name, "model"), self.input_spec)
                 if len(self.ops) > 0:
-                    self.dev_check_ops(self.ops[0],
-                                       os.path.join(self.name, "model.pdmodel"))
+                    self.dev_check_ops(self.ops[0], os.path.join(self.name, "model.pdmodel"))
                 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
                 original_model_file = os.path.join(self.name, "model.pdmodel")
                 params_file = os.path.join(self.name, "model.pdiparams")
@@ -401,15 +419,11 @@ class APIOnnx(object):
                     onnx_model_str = c_p2o.export(
                         model_file, params_file, v, False, True, True, True,
                         True, {}, "onnxruntime", "", "", False)
-                    with open(
-                            os.path.join(self.name,
-                                         self.name + '_' + str(v) + ".onnx"),
-                            "wb") as f:
+                    with open(os.path.join(self.name, self.name + '_' + str(v) + ".onnx"), "wb") as f:
                         f.write(onnx_model_str)
                     res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
                 for v in self._version:
-                    compare(
-                        res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                    compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
             else:
                 print("`export ENABLE_DEV=ON or export ENABLE_DEV=OFF`")
