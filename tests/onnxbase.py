@@ -49,9 +49,6 @@ def compare_data(result_data, expect_data, delta, rtol):
 def compare_shape(result_data, expect_data):
     result_shape = result_data.shape
     expect_shape = expect_data.shape
-    # For result_shape is (1) and expect_shape shape is ()
-    if len(result_shape) == 1 and len(expect_shape) == 0:
-        return result_data[0] == expect_data
     return result_shape == expect_shape
 
 
@@ -68,6 +65,9 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         if type(expect) == list:
             expect = expect[0]
         expect = expect.numpy()
+
+        # For result_shape is (1) and expect_shape shape is ()
+        result = result.squeeze()
 
         # Compare the actual value with the expected value and determine whether the output result is correct.
         res_data = compare_data(result, expect, delta, rtol)
@@ -389,7 +389,6 @@ class APIOnnx(object):
             exp = self._mk_dygraph_exp(self._func)
             res_fict = {}
 
-            print(self.ops)
             assert len(self.ops) <= 1, "Need to make sure the number of ops in config is 1."
 
             # save Paddle Inference model
