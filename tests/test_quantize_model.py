@@ -16,13 +16,11 @@ import os
 import time
 import sys
 import random
-import math
 import functools
-import contextlib
 import numpy as np
-from PIL import Image, ImageEnhance
+from paddle.static.io import load_inference_model
+from PIL import Image
 import paddle
-import paddle.fluid as fluid
 from paddle.dataset.common import download
 from paddle.static.quantization import PostTrainingQuantization
 import platform
@@ -224,10 +222,10 @@ class TestPostTrainingQuantization(unittest.TestCase):
             label_name = sess.get_outputs()[0].name
             print("sess input/output name : ", input_name, label_name)
         else:
-            place = fluid.CPUPlace()
-            exe = fluid.Executor(place)
+            place = paddle.CPUPlace()
+            exe = paddle.base.Executor(place)
             [infer_program, feed_dict, fetch_targets] = \
-                fluid.io.load_inference_model(model_path, exe, model_filename=model_filename, params_filename=params_filename)
+                load_inference_model(model_path, exe, model_filename=model_filename, params_filename=params_filename)
 
         val_reader = paddle.batch(val(), batch_size)
         iterations = infer_iterations
@@ -289,9 +287,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
                                                          str(e)))
             sys.exit(-1)
 
-        place = fluid.CPUPlace()
-        exe = fluid.Executor(place)
-        scope = fluid.global_scope()
+        place = paddle.CPUPlace()
+        exe = paddle.base.Executor(place)
         val_reader = val()
 
         ptq = PostTrainingQuantization(
@@ -376,8 +373,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.assertLess(delta_value, diff_threshold)
 
 
-class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(
-        TestPostTrainingQuantization):
+class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(TestPostTrainingQuantization):
     def test_post_training_hist_kl_avg_onnx_format_mobilenetv1(self):
         model = "MobileNetV1_infer"
         algos = ["hist", "KL", "avg", "mse"]
