@@ -1,6 +1,7 @@
 from multiprocessing import Process
 from multiprocessing import Queue
 import numpy as np
+from detection_ops.nms import multiclass_nms
 
 
 def all_sort(x):
@@ -15,9 +16,6 @@ def untar(tar_file, save_path):
     import tarfile
     tf = tarfile.open(tar_file)
     tf.extractall(save_path)
-
-
-from detection_ops.nms import multiclass_nms
 
 
 def gen_paddle_nms(q):
@@ -125,15 +123,12 @@ def gen_onnx_export(q):
         assert (len(result0) == len(result1),
                 "multiclass_nms3: Length of result is not same")
         diff = np.fabs(all_sort(result0[0]) - all_sort(result1[0]))
-        print("Max diff of BBoxes:", result0[0].shape, result1[0].shape,
-              diff.max())
-        assert diff.max(
-        ) < 1e-05, "Difference={} of bbox is exceed 1e-05".format(diff.max())
+        print("Max diff of BBoxes:", result0[0].shape, result1[0].shape, diff.max())
+        assert diff.max() < 1e-05, "Difference={} of bbox is exceed 1e-05".format(diff.max())
         for i in range(1, len(result0)):
             diff = np.fabs(result0[i] - result1[i])
             print(result0[i], result1[i])
-            assert diff.max(
-            ) < 1e-05, "Difference={} of output {}(shape is {}) is exceed 1e-05".format(
+            assert diff.max() < 1e-05, "Difference={} of output {}(shape is {}) is exceed 1e-05".format(
                 diff.max(), i, result0[i].shape)
         q.put(True)
 
@@ -145,13 +140,13 @@ def test_nms():
         p0.start()
         p0.join()
         if not q0.get(timeout=1):
-            assert false, "Test failed for multiclass_nms as gen paddle model step."
+            assert False, "Test failed for multiclass_nms as gen paddle model step."
         q1 = Queue()
         p1 = Process(target=gen_onnx_export, args=(q1, ))
         p1.start()
         p1.join()
         if not q1.get(timeout=1):
-            assert false, "Test failed for multiclass_nms at gen_onnx_export step."
+            assert False, "Test failed for multiclass_nms at gen_onnx_export step."
 
 
 if __name__ == "__main__":

@@ -12,75 +12,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import paddle
+import paddle2onnx
 from paddle2onnx.utils import logging, paddle_jit_save_configs
 
 
-def export_onnx(paddle_graph,
-                save_file,
-                opset_version=9,
-                enable_onnx_checker=False,
-                operator_export_type="ONNX",
-                verbose=False,
-                auto_update_opset=True,
-                output_names=None):
+def export_onnx(
+    paddle_graph,
+    save_file,
+    opset_version=9,
+    enable_onnx_checker=False,
+    operator_export_type="ONNX",
+    verbose=False,
+    auto_update_opset=True,
+    output_names=None,
+):
     from paddle2onnx.legacy.convert import export_onnx
-    return export_onnx(paddle_graph, save_file, opset_version, opset_version,
-                       enable_onnx_checker, operator_export_type, verbose,
-                       auto_update_opset, output_names)
+
+    return export_onnx(
+        paddle_graph,
+        save_file,
+        opset_version,
+        opset_version,
+        enable_onnx_checker,
+        operator_export_type,
+        verbose,
+        auto_update_opset,
+        output_names,
+    )
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
-    if "enable_dev_version" in configs and not configs["enable_dev_version"]:
-        from paddle2onnx.legacy.convert import dygraph2onnx
-        return dygraph2onnx(layer, save_file, input_spec, opset_version,
-                            **configs)
-
-    import os
-    import paddle2onnx
-    import paddle
+    # Get PaddleInference model file path
     dirname = os.path.split(save_file)[0]
-    paddle_model_dir = os.path.join(dirname,
-                                    "paddle_model_static_onnx_temp_dir")
+    paddle_model_dir = os.path.join(dirname, "paddle_model_static_onnx_temp_dir")
     model_file = os.path.join(paddle_model_dir, "model.pdmodel")
     params_file = os.path.join(paddle_model_dir, "model.pdiparams")
 
     if os.path.exists(paddle_model_dir):
         if os.path.isfile(paddle_model_dir):
-            logging.info("File {} exists, will remove it.".format(
-                paddle_model_dir))
+            logging.info("File {} exists, will remove it.".format(paddle_model_dir))
             os.remove(paddle_model_dir)
         if os.path.isfile(model_file):
             os.remove(model_file)
         if os.path.isfile(params_file):
             os.remove(params_file)
     save_configs = paddle_jit_save_configs(configs)
-    paddle.jit.save(layer,
-                    os.path.join(paddle_model_dir, "model"), input_spec,
-                    **save_configs)
-    logging.info("Static PaddlePaddle model saved in {}.".format(
-        paddle_model_dir))
+    paddle.jit.save(
+        layer, os.path.join(paddle_model_dir, "model"), input_spec, **save_configs
+    )
+    logging.info("Static PaddlePaddle model saved in {}.".format(paddle_model_dir))
     if not os.path.isfile(params_file):
         params_file = ""
 
     if save_file is None:
-        return paddle2onnx.export(model_file, params_file, save_file,
-                                  opset_version)
+        return paddle2onnx.export(model_file, params_file, save_file, opset_version)
     else:
         paddle2onnx.export(model_file, params_file, save_file, opset_version)
     logging.info("ONNX model saved in {}.".format(save_file))
 
 
-def program2onnx(program,
-                 scope,
-                 save_file,
-                 feed_var_names=None,
-                 target_vars=None,
-                 opset_version=9,
-                 enable_onnx_checker=False,
-                 operator_export_type="ONNX",
-                 auto_update_opset=True,
-                 **configs):
+def program2onnx(
+    program,
+    scope,
+    save_file,
+    feed_var_names=None,
+    target_vars=None,
+    opset_version=9,
+    enable_onnx_checker=False,
+    operator_export_type="ONNX",
+    auto_update_opset=True,
+    **configs
+):
     from paddle2onnx.legacy.convert import program2onnx
-    return program2onnx(program, scope, save_file, feed_var_names, target_vars,
-                        opset_version, enable_onnx_checker,
-                        operator_export_type, auto_update_opset, **configs)
+
+    return program2onnx(
+        program,
+        scope,
+        save_file,
+        feed_var_names,
+        target_vars,
+        opset_version,
+        enable_onnx_checker,
+        operator_export_type,
+        auto_update_opset,
+        **configs
+    )

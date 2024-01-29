@@ -1,12 +1,7 @@
 from quantize_ops import dequantize_linear, quantize_linear
-import paddle
 import os
-import numpy as np
-from onnxbase import APIOnnx
-from onnxbase import randtool
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from onnxbase import randtool
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest

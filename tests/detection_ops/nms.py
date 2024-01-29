@@ -1,13 +1,7 @@
 import paddle
-import paddle.nn.functional as F
-import paddle.nn as nn
-from paddle import ParamAttr
-from paddle.regularizer import L2Decay
-
-from paddle.fluid.framework import Variable, in_dygraph_mode
-from paddle.fluid import core
-from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle.base.framework import in_dygraph_mode
+from paddle.base import core
+from paddle.base.layer_helper import LayerHelper
 
 
 @paddle.jit.not_to_static

@@ -240,7 +240,7 @@ def test_nn_functional_interpolate_linear_scale_factor_tensor():
     """
     op = Net(mode='linear',
              size=paddle.to_tensor(
-                 12, dtype='int32'),
+                 [12], dtype='int32'),
              align_corners=False,
              align_mode=1,
              data_format="NCW")
