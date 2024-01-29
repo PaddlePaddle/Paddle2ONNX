@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from paddle.incubate.layers import partial_sum, partial_concat
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
-import paddle
 
 name2fun_dict = {}
-name2fun_dict["partial_sum"] = paddle.fluid.contrib.layers.partial_sum
-name2fun_dict["partial_concat"] = paddle.fluid.contrib.layers.partial_concat
+name2fun_dict["partial_sum"] = partial_sum
+name2fun_dict["partial_concat"] = partial_concat
 
 
 class Net(BaseNet):
