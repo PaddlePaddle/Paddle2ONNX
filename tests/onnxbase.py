@@ -67,8 +67,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         expect = expect.numpy()
 
         # For result_shape is (1) and expect_shape shape is ()
+        expect = expect.squeeze()
         result = result.squeeze()
-
         # Compare the actual value with the expected value and determine whether the output result is correct.
         res_data = compare_data(result, expect, delta, rtol)
         # Compare the actual shape with the expected shape and determine if the output results are correct.
@@ -391,7 +391,7 @@ class APIOnnx(object):
 
             assert len(self.ops) <= 1, "Need to make sure the number of ops in config is 1."
 
-            # save Paddle Inference model
+            # Save Paddle Inference model
             if os.path.exists(self.name):
                 shutil.rmtree(self.name)
             paddle.jit.save(self._func, os.path.join(self.name, "model"), self.input_spec)
