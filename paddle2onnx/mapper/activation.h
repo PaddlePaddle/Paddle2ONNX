@@ -113,14 +113,9 @@ class SwishMapper : public Mapper {
  public:
   SwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("beta", &beta_);
-  }
+      : Mapper(p, helper, block_id, op_id) {}
 
   void Opset7();
-
- private:
-  float beta_;
 };
 
 class HardSwishMapper : public Mapper {

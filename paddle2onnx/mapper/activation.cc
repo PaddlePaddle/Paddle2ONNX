@@ -183,13 +183,7 @@ void HardSigmoidMapper::Opset7() {
 void SwishMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-
-  std::string beta_node =
-      helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), beta_);
-  // TODO(jiangjiajun) eliminate multiply with a constant of value 1
-  // TODO(jiangjiajun) eliminate add with a constant of value 0
-  auto beta_x_node = helper_->MakeNode("Mul", {input_info[0].name, beta_node});
-  auto sigmod_node = helper_->MakeNode("Sigmoid", {beta_x_node->output(0)});
+  auto sigmod_node = helper_->MakeNode("Sigmoid", {input_info[0].name});
   helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
                     {output_info[0].name});
 }
