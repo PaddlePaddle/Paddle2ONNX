@@ -110,8 +110,7 @@ void Relu6Mapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   float min = 0.0;
-  helper_->Clip(input_info[0].name, output_info[0].name, min, threshold_,
-                input_info[0].dtype);
+  helper_->Clip(input_info[0].name, output_info[0].name, min, 6, input_info[0].dtype);
 }
 
 int32_t PReluMapper::GetMinOpset(bool verbose) {
