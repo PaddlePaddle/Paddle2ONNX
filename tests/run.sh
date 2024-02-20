@@ -25,9 +25,7 @@
 #tar xf quantized_models.tar.gz
 
 cases=$(find . -name "test*.py" | sort)
-ignore="test_auto_scan_affine_channel.py \
-        test_auto_scan_expand.py \
-        test_auto_scan_flatten2.py \
+ignore="test_auto_scan_flatten2.py \
         test_auto_scan_generate_proposals_v2.py \
         test_auto_scan_matmul.py \
         test_auto_scan_mean.py \
