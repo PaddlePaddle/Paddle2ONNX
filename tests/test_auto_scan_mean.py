@@ -29,7 +29,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.mean(inputs)
+        x = paddle.mean(inputs)
         return x
 
 

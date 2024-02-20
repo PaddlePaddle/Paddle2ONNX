@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+import random
 
 
 class Net(BaseNet):
@@ -29,42 +30,43 @@ class Net(BaseNet):
         """
         forward
         """
-        expand_times = self.config['repeat_times']
-        if self.config['repeat_times_dtype'] == "list":
-            expand_times = expand_times
-        elif self.config['repeat_times_dtype'] == "Tensor":
-            expand_times = paddle.to_tensor(
-                np.array(expand_times).astype(self.config['shape_dtype']))
-        x = paddle.fluid.layers.expand(inputs, expand_times=expand_times)
+        shape = self.config['shape']
+        if self.config['isTensor']:
+            shape = paddle.to_tensor(
+                np.array(shape).astype(self.config['shape_dtype']))
+        x = paddle.expand(inputs, shape=shape)
+        # TODO there's bug with expand operator
+        x = paddle.reshape(
+            x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
         return x
 
 
 class TestExpandConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.expand
-    OPset version: 7, 11, 15
+    api: paddle.expand
+    OPset version: 8, 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=0, max_size=5))
+                    min_value=2, max_value=6), min_size=0, max_size=5))
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        # int64 are not supported
-        shape_dtype = draw(st.sampled_from(["int32"]))
+        isTensor = draw(st.booleans())  # future to valid
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
+        n = random.randint(1, 6 - len(input_shape))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
 
-        # when repeat_times_dtype is tensor has a bug
-        repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
         config = {
-            "op_names": ["expand"],
+            "op_names": ["expand_v2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 11, 15],
+            "opset_version": [8, 9, 15],
             "input_spec_shape": [],
-            "repeat_times_dtype": repeat_times_dtype,
-            "repeat_times": input_shape,
+            "isTensor": isTensor,
+            "shape": pre_shape + input_shape,
             "shape_dtype": shape_dtype,
         }
 
@@ -85,43 +87,45 @@ class Net1(BaseNet):
         """
         forward
         """
-        # expand_times = [4, paddle.to_tensor(3), 2, 1]
-        # expand_times = [4, 3, 2, 1]
-        # expand_times = paddle.to_tensor(
-        #                     np.array([4, 3, 2, 1]).astype('int32'))
-        expand_times = [
-            4, 3,
-            paddle.to_tensor(np.array(2).astype(self.config['shape_dtype'])), 1
+        shape = [
+            2, 1, paddle.to_tensor(
+                2, dtype=self.config['shape_dtype']), 3, 2, 2
         ]
-        x = paddle.fluid.layers.expand(inputs, expand_times=expand_times)
+        # not supported
+        # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), paddle.to_tensor(2), paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)]
+        x = paddle.expand(inputs, shape=shape)
+        # TODO there's bug with expand operator
+        x = paddle.reshape(
+            x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
         return x
 
 
 class TestExpandConvert1(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.expand
-    OPset version:7, 11, 15
+    api: paddle.expand
+    OPset version: 8, 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=2, max_value=5), min_size=0, max_size=5))
-        input_shape = [4, 3, 2, 1]
+                    min_value=2, max_value=6), min_size=0, max_size=5))
+        input_shape = [2, 2]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
+        isTensor = draw(st.booleans())  # future to valid
 
-        # when repeat_times_dtype is tensor has a bug
-        repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))
+        n = random.randint(1, 6 - len(input_shape))
+        pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)
+        shape_dtype = draw(st.sampled_from(["int32", "int64"]))
         config = {
-            "op_names": ["expand"],
+            "op_names": ["expand_v2"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 11, 15],
+            "opset_version": [8, 9, 15],
             "input_spec_shape": [],
-            "repeat_times_dtype": repeat_times_dtype,
-            "repeat_times": input_shape,
+            "isTensor": isTensor,
+            "shape": pre_shape + input_shape,
             "shape_dtype": shape_dtype,
         }
 

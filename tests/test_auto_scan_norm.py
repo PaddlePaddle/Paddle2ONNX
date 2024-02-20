@@ -29,7 +29,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.l2_normalize(
+        x = paddle.nn.functional.normalize(
             inputs, axis=self.config["axis"], epsilon=self.config["epsilon"])
         return x
 
