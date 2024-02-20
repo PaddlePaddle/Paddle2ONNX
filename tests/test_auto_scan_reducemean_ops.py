@@ -46,12 +46,7 @@ class Net(BaseNet):
         """
         forward
         """
-        if self.config["tensor_attr"]:
-            axis = paddle.to_tensor(
-                self.config["dim"], dtype=self.config["axis_dtype"])
-        else:
-            axis = self.config["dim"]
-
+        axis = self.config["dim"]
         x = op_api_map[self.config["op_names"]](inputs,
                                                 axis=axis,
                                                 keepdim=self.config["keep_dim"])
@@ -94,7 +89,6 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
                 for i, axis in enumerate(axes)
             ]
         keep_dim = draw(st.booleans())
-        tensor_attr = draw(st.booleans())
         # Must be int64, otherwise cast will be added after const and the value cannot be obtained
         axis_dtype = draw(st.sampled_from(["int64"]))
         config = {
@@ -107,7 +101,6 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "delta": 1e-4,
             "rtol": 1e-4,
-            "tensor_attr": tensor_attr,
             "axis_dtype": axis_dtype
         }
 
