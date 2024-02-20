@@ -25,9 +25,7 @@
 #tar xf quantized_models.tar.gz
 
 cases=$(find . -name "test*.py" | sort)
-ignore="test_auto_scan_multiclass_nms_lod.py \
-        test_auto_scan_multiclass_nms_tensor.py \
-        test_auto_scan_norm.py \
+ignore="test_auto_scan_norm.py \
         test_auto_scan_roi_align.py \ # need to be rewrite
         test_expand_as.py \
         test_split.py \
