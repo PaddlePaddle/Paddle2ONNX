@@ -40,7 +40,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
                      const bool& export_fp16_model = false) {
     P2OLogger(verbose) << "Start to parse PaddlePaddle model..." << std::endl;
     P2OLogger(verbose) << "Model file path: " << model_filename << std::endl;
-    P2OLogger(verbose) << "Paramters file path: " << params_filename
+    P2OLogger(verbose) << "Parameters file path: " << params_filename
                        << std::endl;
     if (info.size() == 0) {
       char* out = nullptr;

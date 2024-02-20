@@ -27,7 +27,7 @@ MAX_FLOAT32 = 3.402823466E+38
 
 @op_mapper('yolo_box')
 class YOLOBox():
-    support_opset_verison_range = (9, 12)
+    support_opset_version_range = (9, 12)
 
     node_pred_box_x1_decode = None
     node_pred_box_y1_decode = None
@@ -400,13 +400,13 @@ class YOLOBox():
         node_pred_box_y2 = graph.make_node(
             'Add', inputs=[node_pred_box_y, node_half_h])
 
-        node_sqeeze_image_size = mapper_helper.squeeze_helper(
+        node_squeeze_image_size = mapper_helper.squeeze_helper(
             graph, image_size[0], [0])
 
         node_img_height = model_name + "@img_height"
         node_img_width = model_name + "@img_width"
         node_image_size_split = mapper_helper.split_helper(
-            graph, [node_sqeeze_image_size], [node_img_height, node_img_width],
+            graph, [node_squeeze_image_size], [node_img_height, node_img_width],
             -1, [1, 1],
             dtype=node.input_dtype('X', 0))
 

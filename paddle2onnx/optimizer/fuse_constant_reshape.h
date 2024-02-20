@@ -95,25 +95,25 @@ struct FuseConstantReshape final : public PredicateBasedPass {
     }
 
     // process -1 in shape
-    int count_of_unkown = 0;
-    int index_of_unkown = -1;
+    int count_of_unknown = 0;
+    int index_of_unknown = -1;
     for (size_t i = 0; i < shape.size(); ++i) {
       if (shape[i] == -1) {
-        count_of_unkown += 1;
-        index_of_unkown = i;
+        count_of_unknown += 1;
+        index_of_unknown = i;
       }
     }
     // illegal situtaion
-    if (count_of_unkown > 1) {
+    if (count_of_unknown > 1) {
       return false;
     }
     int64_t numel = std::accumulate(ori_size.begin(), ori_size.end(), 1,
                                     std::multiplies<int>());
-    if (index_of_unkown >= 0) {
-      int64_t value_of_unkown = -1 * numel /
+    if (index_of_unknown >= 0) {
+      int64_t value_of_unknown = -1 * numel /
                                 std::accumulate(shape.begin(), shape.end(), 1,
                                                 std::multiplies<int>());
-      shape[index_of_unkown] = value_of_unkown;
+      shape[index_of_unknown] = value_of_unknown;
     }
 
     t.sizes().clear();

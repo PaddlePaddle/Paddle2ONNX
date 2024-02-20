@@ -26,7 +26,7 @@ class BoxCoder():
     we use the decode the prior box to target box,
     we just use the decode mode to transform this op.
     """
-    support_opset_verison_range = (7, 12)
+    support_opset_version_range = (7, 12)
 
     @classmethod
     def opset_7(cls, graph, node, **kw):
