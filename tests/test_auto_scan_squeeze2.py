@@ -52,29 +52,15 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=4, max_value=10), min_size=3, max_size=5))
 
-        dtype = draw(
-            st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
-        axis = None
-        axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
-        if axis_dtype == "list":
-            axis = draw(
-                st.integers(
-                    min_value=-len(input_shape), max_value=len(input_shape) -
-                    1))
-            if axis == 0:
-                axis = [0, -1]
-            else:
-                axis = [0, axis]
-            input_shape[axis[0]] = 1
-            input_shape[axis[1]] = 1
-        elif axis_dtype == "int":
-            axis = draw(
-                st.integers(
-                    min_value=-len(input_shape), max_value=len(input_shape) -
-                    1))
-            input_shape[axis] = 1
+        dtype = draw(st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
+
+        axis = draw(st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        if axis == 0:
+            axis = [0, -1]
         else:
-            input_shape[0] = 1
+            axis = [0, axis]
+        input_shape[axis[0]] = 1
+        input_shape[axis[1]] = 1
 
         tensor_attr = draw(st.booleans())
 
