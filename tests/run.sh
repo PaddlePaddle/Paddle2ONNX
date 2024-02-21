@@ -27,7 +27,6 @@
 cases=$(find . -name "test*.py" | sort)
 ignore="test_auto_scan_roi_align.py \ # need to be rewrite
         test_auto_scan_pool_adaptive_max_ops.py \
-        test_auto_scan_interpolate_v1_ops.py \
         test_auto_scan_isx_ops.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_pad2d.py \
