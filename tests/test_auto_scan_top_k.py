@@ -19,58 +19,10 @@ import numpy as np
 import unittest
 import paddle
 import random
+from random import shuffle
 
 
 class Net(BaseNet):
-    """
-    simple Net
-    """
-
-    def forward(self, input, k):
-        """
-        forward
-        """
-        x = paddle.fluid.layers.topk(input, k=k)
-        return x
-
-
-class TestTopkConvert(OPConvertAutoScanTest):
-    """
-    api: paddle.fluid.layers.topk
-    OPset version: 11, 15
-    """
-
-    def sample_convert_config(self, draw):
-        input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=5))
-
-        dtype = draw(st.sampled_from(["float32", "float64"]))
-        k = random.randint(1, min(input_shape))
-        isTensor = draw(st.booleans())
-
-        def generator_k():
-            input_data = np.array([k])
-            return input_data
-
-        config = {
-            "op_names": ["top_k"],
-            "test_data_shapes": [input_shape, generator_k],
-            "test_data_types": [[dtype], ["int32"]],
-            "opset_version": [11, 15],
-            "input_spec_shape": [],
-        }
-
-        models = Net(config)
-
-        return (config, models)
-
-    def test(self):
-        self.run_and_statis(max_examples=30)
-
-
-class Net1(BaseNet):
     """
     simple Net
     """
@@ -79,13 +31,21 @@ class Net1(BaseNet):
         """
         forward
         """
-        x = paddle.fluid.layers.topk(input, k=self.config['k'])
+        k = self.config['k']
+        if self.config['isTensor']:
+            k = paddle.to_tensor(k, dtype=self.config['k_dtype'])
+        x = paddle.topk(
+            input,
+            k=k,
+            axis=self.config['axis'],
+            largest=self.config['largest'],
+            sorted=self.config['sorted'])
         return x
 
 
-class TestTopkConvert1(OPConvertAutoScanTest):
+class TestTopkv2Convert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.topk
+    api: paddle.topk
     OPset version: 11, 15
     """
 
@@ -93,26 +53,62 @@ class TestTopkConvert1(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=5))
+                    min_value=1, max_value=3), min_size=0, max_size=5))
+        axis = None
+        if draw(st.booleans()) and len(input_shape) > 0:
+            axis = draw(
+                st.integers(
+                    min_value=-len(input_shape), max_value=len(input_shape) -
+                    1))
 
-        dtype = draw(st.sampled_from(["float32", "float64"]))
-        k = random.randint(1, min(input_shape))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        k_dtype = draw(st.sampled_from(["int32", "int64"]))
+        largest = draw(st.booleans())
+        # has a diff when sorted is False
+        sorted = draw(st.booleans())
+
+        def generator_data():
+            if len(input_shape) == 0:
+                return np.array(10, dtype="float32")
+            prod = np.prod(input_shape)
+            input_data = np.array(list(range(0, prod)))
+            shuffle(input_data)
+            input_data = input_data.reshape(input_shape)
+            return input_data
+
+        if len(input_shape) > 0:
+            if axis is not None:
+                k = random.randint(1, input_shape[axis])
+            else:
+                k = random.randint(1, input_shape[-1])
+        else:
+            k = 1
+            axis = 0
+        isTensor = draw(st.booleans())
 
         config = {
-            "op_names": ["top_k"],
-            "test_data_shapes": [input_shape],
+            "op_names": ["top_k_v2"],
+            "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
-            "opset_version": [11, 15],
+            "opset_version": [11, 12, 13, 14, 15],
             "input_spec_shape": [],
+            "axis": axis,
+            "largest": largest,
+            "sorted": sorted,
+            "isTensor": isTensor,
             "k": k,
+            "k_dtype": k_dtype,
+            "rtol": 200,
+            "delta": 200,
+            "input_shape": input_shape
         }
 
-        models = Net1(config)
+        models = Net(config)
 
         return (config, models)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=80)
 
 
 if __name__ == "__main__":
