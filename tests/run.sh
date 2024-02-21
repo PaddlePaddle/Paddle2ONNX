@@ -64,6 +64,8 @@ export PY_CMD=$1
 $PY_CMD -m pip install -y pytest
 $PY_CMD -m pip uninstall -y onnxruntime
 $PY_CMD -m pip install onnxruntime
+$PY_CMD -m pip uninstall -y paddlepaddle-gpu
+$PY_CMD -m pip install paddlepaddle-gpu==2.6.0
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
