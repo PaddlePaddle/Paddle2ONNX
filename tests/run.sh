@@ -63,7 +63,7 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install -y pytest
 $PY_CMD -m pip uninstall -y onnxruntime
-$PY_CMD -m pip install -y onnxruntime
+$PY_CMD -m pip install onnxruntime
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
