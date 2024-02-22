@@ -61,11 +61,11 @@ ignore="test_auto_scan_roi_align.py \ # need to be rewrite
         test_quantize_model_speedup.py"
 bug=0
 export PY_CMD=$1
-$PY_CMD -m pip install -y pytest
+$PY_CMD -m pip install -y pytest -i https://pypi.tuna.tsinghua.edu.cn/simple
 $PY_CMD -m pip uninstall -y onnxruntime
-$PY_CMD -m pip install onnxruntime
+$PY_CMD -m pip install onnxruntime -i https://pypi.tuna.tsinghua.edu.cn/simple
 $PY_CMD -m pip uninstall -y paddlepaddle-gpu
-$PY_CMD -m pip install paddlepaddle-gpu==2.6.0
+$PY_CMD -m pip install paddlepaddle==2.6.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
