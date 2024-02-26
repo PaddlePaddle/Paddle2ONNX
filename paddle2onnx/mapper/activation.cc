@@ -183,7 +183,18 @@ void HardSigmoidMapper::Opset7() {
 void SwishMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto sigmod_node = helper_->MakeNode("Sigmoid", {input_info[0].name});
+  std::shared_ptr<paddle2onnx::NodeProto> sigmod_node = nullptr;
+
+  if (HasAttr("beta")) {
+    float temp_beta = 1.0;
+    GetAttr("beta", &temp_beta);
+    std::string beta_node = helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), temp_beta);
+    auto beta_x_node = helper_->MakeNode("Mul", {input_info[0].name, beta_node});
+    sigmod_node = helper_->MakeNode("Sigmoid", {beta_x_node->output(0)});
+  } else {
+    sigmod_node = helper_->MakeNode("Sigmoid", {input_info[0].name});
+  }
+
   helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
                     {output_info[0].name});
 }
