@@ -33,61 +33,61 @@ class Net(paddle.nn.Layer):
         return x
 
 
-# def test_split_9():
-#     """
-#     api: paddle.split
-#     op version: 9
-#     """
-#     op = Net()
-#     op.eval()
-#     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'split', [9])
-#     obj.set_input_data("input_data",
-#                        paddle.to_tensor(
-#                            randtool("float", -1, 1, [3, 10]).astype('float32')))
-#     obj.run()
-#
-#
-# def test_split_10():
-#     """
-#     api: paddle.split
-#     op version: 10
-#     """
-#     op = Net()
-#     op.eval()
-#     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'split', [10])
-#     obj.set_input_data("input_data",
-#                        paddle.to_tensor(
-#                            randtool("float", -1, 1, [3, 10]).astype('float32')))
-#     obj.run()
-#
-#
-# def test_split_11():
-#     """
-#     api: paddle.split
-#     op version: 11
-#     """
-#     op = Net()
-#     op.eval()
-#     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'split', [11])
-#     obj.set_input_data("input_data",
-#                        paddle.to_tensor(
-#                            randtool("float", -1, 1, [3, 10]).astype('float32')))
-#     obj.run()
-#
-#
-# def test_split_12():
-#     """
-#     api: paddle.split
-#     op version: 12
-#     """
-#     op = Net()
-#     op.eval()
-#     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'split', [12])
-#     obj.set_input_data("input_data",
-#                        paddle.to_tensor(
-#                            randtool("float", -1, 1, [3, 10]).astype('float32')))
-#     obj.run()
+def test_split_9():
+    """
+    api: paddle.split
+    op version: 9
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'split', [9])
+    obj.set_input_data("input_data",
+                       paddle.to_tensor(
+                           randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_split_10():
+    """
+    api: paddle.split
+    op version: 10
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'split', [10])
+    obj.set_input_data("input_data",
+                       paddle.to_tensor(
+                           randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_split_11():
+    """
+    api: paddle.split
+    op version: 11
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'split', [11])
+    obj.set_input_data("input_data",
+                       paddle.to_tensor(
+                           randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()
+
+
+def test_split_12():
+    """
+    api: paddle.split
+    op version: 12
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'split', [12])
+    obj.set_input_data("input_data",
+                       paddle.to_tensor(
+                           randtool("float", -1, 1, [3, 10]).astype('float32')))
+    obj.run()

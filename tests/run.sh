@@ -26,16 +26,12 @@
 
 cases=$(find . -name "test*.py" | sort)
 ignore="test_auto_scan_roi_align.py \ # need to be rewrite
-        test_expand_as.py \
-        test_split.py \
         test_auto_scan_pool_adaptive_max_ops.py \
-        test_auto_scan_interpolate_v1_ops.py \
         test_auto_scan_isx_ops.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_roll.py \
         test_auto_scan_set_value.py \
-        test_auto_scan_top_k.py \
         test_auto_scan_unfold.py \
         test_auto_scan_uniform_random_batch_size_like.py \
         test_auto_scan_uniform_random.py \
@@ -64,10 +60,15 @@ ignore="test_auto_scan_roi_align.py \ # need to be rewrite
         test_quantize_model_minist.py \
         test_quantize_model_speedup.py"
 bug=0
+
+# Install Python Packet
 export PY_CMD=$1
-$PY_CMD -m pip install pytest
-$PY_CMD -m pip uninstall onnxruntime
-$PY_CMD -m pip install onnxruntime==1.11.1
+$PY_CMD -m pip install pytest -i https://pypi.tuna.tsinghua.edu.cn/simple
+$PY_CMD -m pip install onnx onnxruntime tqdm filelock -i https://pypi.tuna.tsinghua.edu.cn/simple
+$PY_CMD -m pip install paddlepaddle==2.6.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+$PY_CMD -m pip install six hypothesis -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
 for file in ${cases}
