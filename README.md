@@ -51,7 +51,6 @@ paddle2onnx --model_dir saved_inference_model \
 |--params_filename |**[可选]** 配置位于 `--model_dir` 下存储模型参数的文件名称|
 |--save_file | 指定转换后的模型保存目录路径 |
 |--opset_version | **[可选]** 配置转换为 ONNX 的 OpSet 版本，目前支持 7~16 等多个版本，默认为 9 |
-|--enable_dev_version | **[可选]** 是否使用新版本 Paddle2ONNX（推荐使用），默认为 True |
 |--enable_onnx_checker| **[可选]**  配置是否检查导出为 ONNX 模型的正确性, 建议打开此开关， 默认为 False|
 |--enable_auto_update_opset| **[可选]**  是否开启 opset version 自动升级功能，当低版本 opset 无法转换时，自动选择更高版本的 opset进行转换， 默认为 True|
 |--deploy_backend |**[可选]** 量化模型部署的推理引擎，支持 onnxruntime、tensorrt 或 others，当选择 others 时，所有的量化信息存储于 max_range.txt 文件中，默认为 onnxruntime |
