@@ -65,13 +65,6 @@ def arg_parser():
         default=9,
         help="set onnx opset version to export")
     parser.add_argument(
-       "--input_shape_dict",
-       "-isd",
-       type=_text_type,
-       default="None",
-       help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
-       "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
-    parser.add_argument(
         "--deploy_backend",
         "-d",
         type=_text_type,
@@ -100,14 +93,6 @@ def arg_parser():
         action="store_true",
         default=False,
         help="get version of paddle2onnx")
-    parser.add_argument(
-        "--output_names",
-        "-on",
-        type=str2list,
-        default=None,
-        help="define output names, e.g --output_names=\"[\"output1\"]\" or \
-       --output_names=\"[\"output1\", \"output2\", \"output3\"]\" or \
-       --output_names=\"{\"Paddleoutput\":\"Onnxoutput\"}\"")
     parser.add_argument(
         "--enable_auto_update_opset",
         type=ast.literal_eval,
@@ -178,22 +163,6 @@ def main():
 
     assert args.model_dir is not None, "--model_dir should be defined while translating paddle model to onnx"
     assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
-
-    input_shape_dict = eval(args.input_shape_dict)
-
-    if args.output_names is not None and args.enable_dev_version:
-        logging.warning(
-            "[Deprecated] The flag `--output_names` is deprecated, if you need to modify the output name, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx "
-        )
-        if not isinstance(args.output_names, (list, dict)):
-            raise TypeError(
-                "The output_names should be 'list' or 'dict', but received type is %s."
-                % type(args.output_names))
-
-    if input_shape_dict is not None and args.enable_dev_version:
-        logging.warning(
-            "[Deprecated] The flag `--input_shape_dict` is deprecated, if you need to modify the input shape of PaddlePaddle model, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle "
-        )
 
     model_file = os.path.join(args.model_dir, args.model_filename)
     if args.params_filename is None:
