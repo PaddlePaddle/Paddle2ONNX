@@ -23,14 +23,6 @@ __version__ = version
 __commit_id__ = git_version
 
 
-def run_convert(model, input_shape_dict=None, scope=None, opset_version=9):
-    logging.warning(
-        "[Deprecated] `paddle2onnx.run_convert` will be deprecated in the future version, the recommended usage is `paddle2onnx.export`"
-    )
-    from paddle2onnx.legacy import run_convert
-    return run_convert(model, input_shape_dict, scope, opset_version)
-
-
 def export(model_file,
            params_file="",
            save_file=None,
