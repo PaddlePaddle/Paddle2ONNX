@@ -72,12 +72,6 @@ def arg_parser():
        help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
        "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
     parser.add_argument(
-        "--enable_dev_version",
-        type=ast.literal_eval,
-        default=True,
-        help="whether to use new version of Paddle2ONNX which is under developing, default True"
-    )
-    parser.add_argument(
         "--deploy_backend",
         "-d",
         type=_text_type,
@@ -208,13 +202,8 @@ def main():
     input_shape_dict = eval(args.input_shape_dict)
 
     operator_export_type = "ONNX"
-    if args.enable_paddle_fallback:
-        logging.warning(
-            "[Deprecated] The flag `--enable_paddle_fallback` will be deprecated, and only works while `--enable_dev_version False` now."
-        )
-        operator_export_type = "PaddleFallback"
 
-    if args.output_names is not None and args.enable_dev_version:
+    if args.output_names is not None:
         logging.warning(
             "[Deprecated] The flag `--output_names` is deprecated, if you need to modify the output name, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/onnx "
         )
@@ -223,47 +212,10 @@ def main():
                 "The output_names should be 'list' or 'dict', but received type is %s."
                 % type(args.output_names))
 
-    if input_shape_dict is not None and args.enable_dev_version:
+    if input_shape_dict is not None:
         logging.warning(
             "[Deprecated] The flag `--input_shape_dict` is deprecated, if you need to modify the input shape of PaddlePaddle model, please refer to this tool https://github.com/jiangjiajun/PaddleUtils/tree/main/paddle "
         )
-
-    if args.enable_dev_version:
-        model_file = os.path.join(args.model_dir, args.model_filename)
-        if args.params_filename is None:
-            params_file = ""
-        else:
-            params_file = os.path.join(args.model_dir, args.params_filename)
-
-        if args.external_filename is None:
-            args.external_filename = "external_data"
-
-        base_path = os.path.dirname(args.save_file)
-        if base_path and not os.path.exists(base_path):
-            os.mkdir(base_path)
-        external_file = os.path.join(base_path, args.external_filename)
-
-        custom_ops_dict = eval(args.custom_ops)
-
-        calibration_file = args.save_calibration_file
-        c_paddle_to_onnx(
-            model_file=model_file,
-            params_file=params_file,
-            save_file=args.save_file,
-            opset_version=args.opset_version,
-            auto_upgrade_opset=args.enable_auto_update_opset,
-            verbose=True,
-            enable_onnx_checker=args.enable_onnx_checker,
-            enable_experimental_op=True,
-            enable_optimize=True,
-            deploy_backend=args.deploy_backend,
-            calibration_file=calibration_file,
-            external_file=external_file,
-            export_fp16_model=args.export_fp16_model,
-            custom_ops=custom_ops_dict)
-        logging.info("===============Make PaddlePaddle Better!================")
-        logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
-        return
 
     program2onnx(
         args.model_dir,
