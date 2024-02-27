@@ -54,7 +54,7 @@ class Net(paddle.nn.Layer):
 
 def test_Upsample_size():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12, 12], align_mode=1)
@@ -72,7 +72,7 @@ def test_Upsample_size():
 # has a bug
 # def test_Upsample_size_tensor():
 #     """
-#     api: paddle.Upsample
+#     api: paddle.nn.functional.upsample
 #     op version: 11, 12
 #     """
 #     op = Net(scale_factor=(paddle.to_tensor(2), paddle.to_tensor(2)),
@@ -90,7 +90,7 @@ def test_Upsample_size():
 
 def test_Upsample_scale_factor():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(scale_factor=[2, 3])
@@ -107,7 +107,7 @@ def test_Upsample_scale_factor():
 
 def test_Upsample_size_linear_tensor():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12],
@@ -127,7 +127,7 @@ def test_Upsample_size_linear_tensor():
 
 def test_Upsample_size_linear():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12],
@@ -148,7 +148,7 @@ def test_Upsample_size_linear():
 
 def test_Upsample_scale_factor_linear():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(scale_factor=[1.5],
@@ -169,7 +169,7 @@ def test_Upsample_scale_factor_linear():
 
 def test_Upsample_size_bilinear():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12, 15],
@@ -190,7 +190,7 @@ def test_Upsample_size_bilinear():
 
 def test_Upsample_scale_factor_bilinear():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(scale_factor=[2, 3],
@@ -211,7 +211,7 @@ def test_Upsample_scale_factor_bilinear():
 
 def test_Upsample_size_nearest():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12, 15],
@@ -232,7 +232,7 @@ def test_Upsample_size_nearest():
 
 def test_Upsample_scale_factor_nearest():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(scale_factor=[2, 3],
@@ -253,7 +253,7 @@ def test_Upsample_scale_factor_nearest():
 
 def test_Upsample_size_bicubic():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12, 15],
@@ -274,7 +274,7 @@ def test_Upsample_size_bicubic():
 
 def test_Upsample_scale_factor_bicubic():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(scale_factor=[2, 3],
@@ -295,7 +295,7 @@ def test_Upsample_scale_factor_bicubic():
 
 def test_Upsample_size_trilinear():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(size=[12, 15, 20],
@@ -316,7 +316,7 @@ def test_Upsample_size_trilinear():
 
 def test_Upsample_scale_factor_trilinear():
     """
-    api: paddle.Upsample
+    api: paddle.nn.functional.upsample
     op version: 11, 12
     """
     op = Net(scale_factor=[2, 3, 4],
