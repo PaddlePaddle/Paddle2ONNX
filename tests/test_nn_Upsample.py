@@ -52,7 +52,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_Unsample_size():
+def test_Upsample_size():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -61,7 +61,7 @@ def test_Unsample_size():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -70,7 +70,7 @@ def test_Unsample_size():
 
 
 # has a bug
-# def test_Unsample_size_tensor():
+# def test_Upsample_size_tensor():
 #     """
 #     api: paddle.Upsample
 #     op version: 11, 12
@@ -80,7 +80,7 @@ def test_Unsample_size():
 #
 #     op.eval()
 #     # net, name, ver_list, delta=1e-6, rtol=1e-5
-#     obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+#     obj = APIOnnx(op, 'nn_Upsample', [11, 12])
 #     obj.set_input_data(
 #         "input_data",
 #         paddle.to_tensor(
@@ -88,7 +88,7 @@ def test_Unsample_size():
 #     obj.run()
 
 
-def test_Unsample_scale_factor():
+def test_Upsample_scale_factor():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -97,7 +97,7 @@ def test_Unsample_scale_factor():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -105,20 +105,19 @@ def test_Unsample_scale_factor():
     obj.run()
 
 
-def test_Unsample_size_linear_tensor():
+def test_Upsample_size_linear_tensor():
     """
     api: paddle.Upsample
     op version: 11, 12
     """
-    op = Net(size=paddle.to_tensor(
-        12, dtype='int32'),
+    op = Net(size=[12],
              mode='linear',
              data_format='NCW',
              align_mode=1)
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11])
+    obj = APIOnnx(op, 'nn_Upsample', [11])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -126,7 +125,7 @@ def test_Unsample_size_linear_tensor():
     obj.run()
 
 
-def test_Unsample_size_linear():
+def test_Upsample_size_linear():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -139,7 +138,7 @@ def test_Unsample_size_linear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -147,7 +146,7 @@ def test_Unsample_size_linear():
     obj.run()
 
 
-def test_Unsample_scale_factor_linear():
+def test_Upsample_scale_factor_linear():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -160,7 +159,7 @@ def test_Unsample_scale_factor_linear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -168,7 +167,7 @@ def test_Unsample_scale_factor_linear():
     obj.run()
 
 
-def test_Unsample_size_bilinear():
+def test_Upsample_size_bilinear():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -181,7 +180,7 @@ def test_Unsample_size_bilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -189,7 +188,7 @@ def test_Unsample_size_bilinear():
     obj.run()
 
 
-def test_Unsample_scale_factor_bilinear():
+def test_Upsample_scale_factor_bilinear():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -202,7 +201,7 @@ def test_Unsample_scale_factor_bilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -210,7 +209,7 @@ def test_Unsample_scale_factor_bilinear():
     obj.run()
 
 
-def test_Unsample_size_nearest():
+def test_Upsample_size_nearest():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -223,7 +222,7 @@ def test_Unsample_size_nearest():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -231,7 +230,7 @@ def test_Unsample_size_nearest():
     obj.run()
 
 
-def test_Unsample_scale_factor_nearest():
+def test_Upsample_scale_factor_nearest():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -244,7 +243,7 @@ def test_Unsample_scale_factor_nearest():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -252,7 +251,7 @@ def test_Unsample_scale_factor_nearest():
     obj.run()
 
 
-def test_Unsample_size_bicubic():
+def test_Upsample_size_bicubic():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -265,7 +264,7 @@ def test_Unsample_size_bicubic():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -273,7 +272,7 @@ def test_Unsample_size_bicubic():
     obj.run()
 
 
-def test_Unsample_scale_factor_bicubic():
+def test_Upsample_scale_factor_bicubic():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -286,7 +285,7 @@ def test_Unsample_scale_factor_bicubic():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -294,7 +293,7 @@ def test_Unsample_scale_factor_bicubic():
     obj.run()
 
 
-def test_Unsample_size_trilinear():
+def test_Upsample_size_trilinear():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -307,7 +306,7 @@ def test_Unsample_size_trilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -315,7 +314,7 @@ def test_Unsample_size_trilinear():
     obj.run()
 
 
-def test_Unsample_scale_factor_trilinear():
+def test_Upsample_scale_factor_trilinear():
     """
     api: paddle.Upsample
     op version: 11, 12
@@ -328,7 +327,7 @@ def test_Unsample_scale_factor_trilinear():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Unsample', [11, 12])
+    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
@@ -336,17 +335,17 @@ def test_Unsample_scale_factor_trilinear():
     obj.run()
 
 
-# if __name__ == '__main__':
-#     test_Unsample_size()
-#     test_Unsample_scale_factor()
-#     test_Unsample_size_linear_tensor()
-#     test_Unsample_size_linear()
-#     test_Unsample_scale_factor_linear()
-#     test_Unsample_size_bilinear()
-#     test_Unsample_scale_factor_bilinear()
-#     test_Unsample_size_nearest()
-#     test_Unsample_scale_factor_nearest()
-#     test_Unsample_size_bicubic()
-#     test_Unsample_scale_factor_bicubic()
-#     test_Unsample_size_trilinear()
-#     test_Unsample_scale_factor_trilinear()
+if __name__ == '__main__':
+    test_Upsample_size()
+    test_Upsample_scale_factor()
+    test_Upsample_size_linear_tensor()
+    test_Upsample_size_linear()
+    test_Upsample_scale_factor_linear()
+    test_Upsample_size_bilinear()
+    test_Upsample_scale_factor_bilinear()
+    test_Upsample_size_nearest()
+    test_Upsample_scale_factor_nearest()
+    test_Upsample_size_bicubic()
+    test_Upsample_scale_factor_bicubic()
+    test_Upsample_size_trilinear()
+    test_Upsample_scale_factor_trilinear()
