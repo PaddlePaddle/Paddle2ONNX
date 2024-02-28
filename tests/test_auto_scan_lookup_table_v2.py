@@ -71,12 +71,16 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
         dtype1 = draw(st.sampled_from(["int32", "int64"]))
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
+        input_spec_shape = []
+        input_spec_shape.append([-1] * len(input_shape))
+        input_spec_shape.append(weight_shape)
+
         config = {
             "op_names": ["lookup_table_v2"],
             "test_data_shapes": [generator_data, weight_shape],
             "test_data_types": [[dtype1], [dtype]],
             "opset_version": [7, 9, 11, 15],
-            "input_spec_shape": [],
+            "input_spec_shape": input_spec_shape,
             "padding_idx": padding_idx,
             "sparse": sparse
         }
