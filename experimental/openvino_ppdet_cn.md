@@ -46,7 +46,8 @@ python setup.py install
 cd experimental
 ```
 
-当前你处于`Paddle2ONNX/experimental`目录，可以看到有个子目录`openvino_ppdet`，在当前目录下使用Python执行如下代码
+当前你处于`Paddle2ONNX/experimental`目录，可以看到有个子目录`openvino_ppdet`，在当前目录下使用Python执行如下代码  
+**注意：执行如下代码时，确保你的paddlepaddle版本与在上面导出inference模型时版本一致，否则可能执行出错**
 ```
 import paddle2onnx
 import paddle

@@ -46,7 +46,8 @@ python setup.py install
 cd experimental
 ```
 
-Currenly, you are in the directory of `Paddle2ONNX/experimental`, and you will see a sub directory `openvino_ppdet` there. Execute the follwoing python code here
+Currenly, you are in the directory of `Paddle2ONNX/experimental`, and you will see a sub directory `openvino_ppdet` there. Execute the follwoing python code here  
+**Warning: Please make sure the version of paddlepaddle keeps same each**
 ```
 import paddle2onnx
 import paddle
