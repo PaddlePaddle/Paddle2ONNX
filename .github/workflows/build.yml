@@ -29,12 +29,15 @@ jobs:
     - name: Show Working directory
       run: ls
 
-    - name: Checkout and Build Protobuf
+    - name: Checkout Protobuf
       uses: actions/checkout@v4
       with:
         repository: protocolbuffers/protobuf
         ref: v3.16.0
         path: protobuf
+
+    - name: Build Protobuf
+      working-directory: ./protobuf
       run: |
         #============
         cmake ./cmake -B build_wd -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./install_dir
