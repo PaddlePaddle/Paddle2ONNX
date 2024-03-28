@@ -1,4 +1,7 @@
 import argparse
+import paddle
+import paddle.base as base
+import paddle.static as static
 
 
 def process_old_ops_desc(program):
@@ -9,9 +12,7 @@ def process_old_ops_desc(program):
 
 
 def infer_shape(program, input_shape_dict):
-    import paddle
     paddle.enable_static()
-    import paddle.fluid as fluid
 
     OP_WITHOUT_KERNEL_SET = {
         'feed', 'fetch', 'recurrent', 'go', 'rnn_memory_helper_grad',
@@ -45,43 +46,33 @@ def infer_shape(program, input_shape_dict):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--model_dir',
+        '--model_path',
         required=True,
-        help='Path of directory saved the input model.')
-    parser.add_argument(
-        '--model_filename', required=True, help='The input model file name.')
-    parser.add_argument(
-        '--params_filename', required=True, help='The parameters file name.')
-    parser.add_argument(
-        '--save_dir',
-        required=True,
-        help='Path of directory to save the new exported model.')
+        help='Directory path to input model + model name without suffix.')
     parser.add_argument(
         '--input_shape_dict', required=True, help="The new shape information.")
+    parser.add_argument(
+        '--save_path',
+        required=True,
+        help='Directory path to save model + model name without suffix.')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_arguments()
-    import paddle
     paddle.enable_static()
-    import paddle.fluid as fluid
     input_shape_dict_str = args.input_shape_dict
     input_shape_dict = eval(input_shape_dict_str)
     print("Start to load paddle model...")
-    exe = fluid.Executor(fluid.CPUPlace())
-    [prog, ipts, outs] = fluid.io.load_inference_model(
-        args.model_dir,
-        exe,
-        model_filename=args.model_filename,
-        params_filename=args.params_filename)
-    process_old_ops_desc(prog)
-    infer_shape(prog, input_shape_dict)
-    fluid.io.save_inference_model(
-        args.save_dir,
-        ipts,
-        outs,
-        exe,
-        prog,
-        model_filename=args.model_filename,
-        params_filename=args.params_filename)
+    exe = base.Executor(paddle.CPUPlace())
+    [program, feed_target_names, fetch_targets] = static.io.load_inference_model(args.model_path, exe)
+    process_old_ops_desc(program)
+    infer_shape(program, input_shape_dict)
+
+    feed_vars = [program.global_block().var(name) for name in feed_target_names]
+    static.io.save_inference_model(
+        args.save_path,
+        feed_vars=feed_vars,
+        fetch_vars=fetch_targets,
+        executor=exe,
+        program=program)
