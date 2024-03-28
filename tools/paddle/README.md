@@ -7,7 +7,8 @@
 python prune_paddle_model.py --model_dir original_paddle_model  \
                              --model_filename model.pdmodel \
                              --params_filename model.pdiparams \
-                             --output_names unsqueeze2_0.tmp_0 unsqueeze2_0.tmp_0 \
+                             --input_names input0 input1 \
+                             --output_names output0 output1 \
                              --save_dir new_paddle
 ```
 
@@ -20,11 +21,9 @@ python prune_paddle_model.py --model_dir original_paddle_model  \
 
 事实上，这个模型的结构是可以支持动态形态输入的，我们使用 `paddle_infer_shape.py` 脚本进行重新导出模型，再通过 Netron 查看模型，可以看到新模型的输入输出都已经更新了
 ```
-python paddle_infer_shape.py --model_dir ch_PP-OCRv2_det_infer/ \
-                             --model_filename inference.pdmodel \
-                             --params_filename inference.pdiparams \
-                             --save_dir new_model \
-                             --input_shape_dict="{'x':[-1,3,-1,-1]}"
+python infer_paddle_model_shape.py --model_path ch_PP-OCRv2_det_infer/inference \
+                                    --save_path ch_PP-OCRv2_det_infer/new_inference  \
+                                    --input_shape_dict="{'x':[-1,3,-1,-1]}"
 ```
 ![image-20220331165925526](imgs/new.png)
 
