@@ -13,7 +13,7 @@ jobs:
   build:
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily run on Ubuntu-latest.
     # However, to ensure the stability of the packaging system, we will need to fix the Ubuntu version in the future.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
 
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
     # In the future, we will need to extend support to cover Python 3.8 through Python 3.10.
