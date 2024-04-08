@@ -60,4 +60,4 @@ jobs:
       working-directory: ./paddle2onnx
       run: |
         python setup.py bdist_wheel
-        auditwheel repair dist/paddle2onnx-$(cat VERSION_NUMBER)-cp39-cp39-linux_x86_64.whl
+        auditwheel repair dist/paddle2onnx-$(cat VERSION_NUMBER)-cp38-cp38-linux_x86_64.whl
