@@ -13,12 +13,12 @@ jobs:
   build:
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily run on Ubuntu-latest.
     # However, to ensure the stability of the packaging system, we will need to fix the Ubuntu version in the future.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
     # In the future, we will need to extend support to cover Python 3.8 through Python 3.10.
     steps:
-    - name: Setup Python 3.5
+    - name: Setup Python 3.8
       uses: actions/setup-python@v5
       with:
         python-version: '3.8'
@@ -59,4 +59,5 @@ jobs:
     - name: Build Paddle2ONNX
       working-directory: ./paddle2onnx
       run: |
-        python setup.py install
+        python setup.py bdist_wheel
+        auditwheel repair dist/paddle2onnx-$(cat VERSION_NUMBER)-cp39-cp39-linux_x86_64.whl
