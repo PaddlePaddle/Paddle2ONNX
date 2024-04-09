@@ -60,3 +60,10 @@ jobs:
         working-directory: ./paddle2onnx
         run: |
           python -m build
+          python -m pip install dist/*.whl
+
+      # Install Test
+      - name: Run Test
+        working-directory: ./paddle2onnx/tests
+        run: |
+          bash run.sh python
