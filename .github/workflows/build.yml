@@ -51,4 +51,4 @@ jobs:
     - name: Build Paddle2ONNX
       working-directory: ./paddle2onnx
       run: |
-        python setup.py install
+        python -m build
