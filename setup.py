@@ -60,15 +60,9 @@ ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'paddle2onnx')
 # Version
 ################################################################################
 
-try:
-    git_version = subprocess.check_output(
-        ['git', 'rev-parse', 'HEAD'], cwd=TOP_DIR).decode('ascii').strip()
-except (OSError, subprocess.CalledProcessError):
-    git_version = None
-
 with open(os.path.join(TOP_DIR, 'VERSION_NUMBER')) as version_file:
-    VersionInfo = namedtuple('VersionInfo', ['version', 'git_version'])(
-        version=version_file.read().strip(), git_version=git_version)
+    _version = version_file.read().strip()
+    VERSION_INFO = {"version": _version}
 
 ################################################################################
 # Pre Check
@@ -119,8 +113,7 @@ class create_version(ONNXCommand):
             from __future__ import print_function
             from __future__ import unicode_literals
             version = '{version}'
-            git_version = '{git_version}'
-            '''.format(**dict(VersionInfo._asdict()))))
+            '''.format(**VERSION_INFO)))
 
 
 class cmake_build(setuptools.Command):
@@ -164,8 +157,7 @@ class cmake_build(setuptools.Command):
                 '-DBUILD_PADDLE2ONNX_PYTHON=ON',
                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
                 '-DONNX_NAMESPACE={}'.format(ONNX_NAMESPACE),
-                '-DPY_EXT_SUFFIX={}'.format(
-                    sysconfig.get_config_var('EXT_SUFFIX') or ''),
+                '-DPY_EXT_SUFFIX={}'.format(sysconfig.get_config_var('EXT_SUFFIX') or ''),
             ]
             cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
             if WINDOWS:
@@ -298,7 +290,7 @@ if sys.version_info[0] == 3:
 
 setuptools.setup(
     name="paddle2onnx",
-    version=VersionInfo.version,
+    version=VERSION_INFO["version"],
     description="Export PaddlePaddle to ONNX",
     ext_modules=ext_modules,
     cmdclass=cmdclass,
@@ -309,7 +301,6 @@ setuptools.setup(
     author='paddle-infer',
     author_email='paddle-infer@baidu.com',
     url='https://github.com/PaddlePaddle/Paddle2ONNX.git',
-    #    install_requires=['six', 'protobuf', 'onnx<=1.9.0'],
     install_requires=['six'],
     classifiers=[
         "Programming Language :: Python :: 3",
