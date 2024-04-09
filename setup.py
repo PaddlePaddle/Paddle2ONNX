@@ -53,13 +53,6 @@ MAKE = find_executable('make')
 # However going forward the recomemded way to is to set this to False\0
 USE_MSVC_STATIC_RUNTIME = bool(os.getenv('USE_MSVC_STATIC_RUNTIME', '1') == '1')
 ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'paddle2onnx')
-################################################################################
-# Version
-################################################################################
-
-with open(os.path.join(TOP_DIR, 'VERSION_NUMBER')) as version_file:
-    _version = version_file.read().strip()
-    VERSION_INFO = {"version": _version}
 
 ################################################################################
 # Pre Check
@@ -253,8 +246,6 @@ ext_modules = [
 ################################################################################
 
 setuptools.setup(
-    name="paddle2onnx",
-    version=VERSION_INFO["version"],
     ext_modules=ext_modules,
     cmdclass=cmdclass,
-    entry_points={'console_scripts': ['paddle2onnx=paddle2onnx.command:main']})
+)
