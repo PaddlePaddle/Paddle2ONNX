@@ -3,6 +3,7 @@ requires = [
     "setuptools>=42",
     "wheel",
     "cmake>=3.16",
+    "setuptools-scm"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -27,8 +28,14 @@ dependencies = [
     "onnxruntime>=1.10.0"
 ]
 
+[tool.setuptools.dynamic]
+version = {file = "VERSION_NUMBER"}
+
 [tool.setuptools.packages.find]
 include = ["paddle2onnx*"]
+
+[tool.setuptools_scm]
+write_to = "paddle2onnx/version.py"
 
 [tool.mypy]
 files = "setup.py"
