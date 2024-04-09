@@ -45,9 +45,6 @@ WINDOWS = (os.name == 'nt')
 CMAKE = find_executable('cmake3') or find_executable('cmake')
 MAKE = find_executable('make')
 
-setup_requires = []
-extras_require = {}
-
 ################################################################################
 # Global variables for controlling the build variant
 ################################################################################
@@ -268,44 +265,12 @@ ext_modules = [
 ]
 
 ################################################################################
-# Packages
-################################################################################
-
-# no need to do fancy stuff so far
-packages = setuptools.find_packages()
-
-################################################################################
-# Test
-################################################################################
-
-setup_requires.append('pytest-runner')
-
-if sys.version_info[0] == 3:
-    # Mypy doesn't work with Python 2
-    extras_require['mypy'] = ['mypy==0.600']
-
-################################################################################
 # Final
 ################################################################################
 
 setuptools.setup(
     name="paddle2onnx",
     version=VERSION_INFO["version"],
-    description="Export PaddlePaddle to ONNX",
     ext_modules=ext_modules,
     cmdclass=cmdclass,
-    packages=packages,
-    include_package_data=True,
-    setup_requires=setup_requires,
-    extras_require=extras_require,
-    author='paddle-infer',
-    author_email='paddle-infer@baidu.com',
-    url='https://github.com/PaddlePaddle/Paddle2ONNX.git',
-    install_requires=['six'],
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
-    ],
-    license='Apache 2.0',
     entry_points={'console_scripts': ['paddle2onnx=paddle2onnx.command:main']})

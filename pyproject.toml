@@ -6,8 +6,29 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.poetry.dependencies.files]
-version = { path = "version.txt" }
+[project]
+name = "paddle2onnx"
+dynamic = ["version"]
+description = "Export PaddlePaddle to ONNX"
+readme = "README.md"
+authors = [
+    {name = "paddle-infer", email = "paddle-infer@baidu.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+license = {text = "Apache License v2.0"}
+requires-python = ">=3.8"
+dependencies = [
+    "six",
+#    "paddlepaddle==2.6.0",
+    "onnxruntime>=1.10.0"
+]
+
+[tool.setuptools.packages.find]
+include = ["paddle2onnx*"]
 
 [tool.mypy]
 files = "setup.py"

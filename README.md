@@ -12,7 +12,7 @@ TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持�
 
 # 2 环境依赖
 
-- PaddlePaddle 2.6.0
+- PaddlePaddle == 2.6.0
 - onnxruntime >= 1.10.0
 
 # 3 安装
