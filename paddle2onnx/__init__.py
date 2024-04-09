@@ -17,10 +17,8 @@ from . import command
 from .convert import dygraph2onnx
 from .convert import program2onnx
 from .version import version
-from .version import git_version
 
 __version__ = version
-__commit_id__ = git_version
 
 
 def export(model_file,
