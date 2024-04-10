@@ -48,8 +48,7 @@ Paddle2ONNX 在导出模型时，需要传入部署模型格式，包括两个�
 paddle2onnx --model_dir saved_inference_model \
             --model_filename model.pdmodel \
             --params_filename model.pdiparams \
-            --save_file model.onnx \
-            --enable_dev_version True
+            --save_file model.onnx
 ```
 
 可调整的转换参数如下表:
