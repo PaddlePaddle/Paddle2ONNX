@@ -64,10 +64,10 @@ bug=0
 
 # Install Python Packet
 export PY_CMD=$1
-$PY_CMD -m pip install pytest -i https://pypi.tuna.tsinghua.edu.cn/simple
-$PY_CMD -m pip install onnx onnxruntime tqdm filelock -i https://pypi.tuna.tsinghua.edu.cn/simple
-$PY_CMD -m pip install paddlepaddle==2.6.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
-$PY_CMD -m pip install six hypothesis -i https://pypi.tuna.tsinghua.edu.cn/simple
+$PY_CMD -m pip install pytest
+$PY_CMD -m pip install onnx onnxruntime tqdm filelock
+$PY_CMD -m pip install paddlepaddle==2.6.0
+$PY_CMD -m pip install six hypothesis
 
 
 export ENABLE_DEV=ON

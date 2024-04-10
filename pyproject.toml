@@ -1,0 +1,47 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "cmake>=3.16",
+    "setuptools-scm"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paddle2onnx"
+dynamic = ["version"]
+description = "Export PaddlePaddle to ONNX"
+readme = "README.md"
+authors = [
+    {name = "paddle-infer", email = "paddle-infer@baidu.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+license = {text = "Apache License v2.0"}
+requires-python = ">=3.8"
+dependencies = [
+    "onnxruntime>=1.10.0",
+]
+
+[project.scripts]
+paddle2onnx = "paddle2onnx.command:main"
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION_NUMBER"}
+
+[tool.setuptools.packages.find]
+include = ["paddle2onnx*"]
+
+[tool.setuptools_scm]
+write_to = "paddle2onnx/version.py"
+
+[tool.mypy]
+files = "setup.py"
+python_version = "3.8"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
