@@ -58,17 +58,17 @@ if(NOT TARGET onnx_proto)
   endif()
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/third/onnx)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/onnx)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/third/optimizer)
+include_directories(${PROJECT_SOURCE_DIR}/third_party/optimizer)
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/*.cc)
+file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc ${PROJECT_SOURCE_DIR}/third_party/optimizer/onnxoptimizer/*.cc)
 list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc)
-list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third/optimizer/onnxoptimizer/cpp2py_export.cc)
+list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/third_party/optimizer/onnxoptimizer/cpp2py_export.cc)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
@@ -189,9 +189,9 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     target_include_directories(paddle2onnx_cpp2py_export PUBLIC
       ${pybind11_INCLUDE_DIRS})
   else()
-    if(EXISTS ${PROJECT_SOURCE_DIR}/third/pybind11/include/pybind11/pybind11.h)
+    if(EXISTS ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
       target_include_directories(paddle2onnx_cpp2py_export PUBLIC
-      ${PROJECT_SOURCE_DIR}/third/pybind11/include)
+      ${PROJECT_SOURCE_DIR}/third_party/pybind11/include)
     else()
       message(FATAL_ERROR "cannot find pybind")
     endif()
