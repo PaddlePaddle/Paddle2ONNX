@@ -23,7 +23,7 @@ TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持�
 pip install paddle2onnx
 ```
 
-由于没有自动发包机制，针对PaddlePaddle2.6.0的用户，请按照[Github 源码安装方式](docs/zh/compile.md)编译Paddle2ONNX。
+由于没有自动发包机制，针对PaddlePaddle2.6.0的用户，请按照[Github 源码安装方式](docs/zh/compile_local.md)编译Paddle2ONNX。
 
 # 4 使用
 
