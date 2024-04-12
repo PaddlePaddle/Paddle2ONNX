@@ -35,7 +35,7 @@ cd Paddle2ONNX
 git submodule init
 git submodule update
 
-python setup.py install
+python -m build
 ```
 
 ## Windows编译安装
@@ -71,5 +71,5 @@ cd Paddle2ONNX
 git submodule init
 git submodule update
 
-python setup.py install
+python -m build
 ```
