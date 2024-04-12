@@ -18,5 +18,5 @@ cd protobuf
 mkdir build_source && cd build_source
 cmake ../cmake -DCMAKE_INSTALL_PREFIX=${PWD}/installed_protobuf_lib -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
 make -j$CORE_NUMBER && make install
-export PATH=$INSTALL_PROTOBUF_PATH/include:$INSTALL_PROTOBUF_PATH/lib:$INSTALL_PROTOBUF_PATH/bin:$PATH
+export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 cd $ORIGINAL_PATH
