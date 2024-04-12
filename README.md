@@ -7,9 +7,6 @@
 Paddle2ONNX 支持将 **PaddlePaddle** 模型格式转化到 **ONNX** 模型格式。通过 ONNX 可以完成将 Paddle 模型到多种推理引擎的部署，包括
 TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持的推理引擎或硬件。
 
-感谢[EasyEdge团队](https://ai.baidu.com/easyedge/home)贡献的Paddle2Caffe,
-支持将Paddle模型导出为Caffe格式，安装及使用方式参考[Paddle2Caffe](Paddle2Caffe)。
-
 # 2 环境依赖
 
 - PaddlePaddle == 2.6.0
@@ -48,8 +45,7 @@ Paddle2ONNX 在导出模型时，需要传入部署模型格式，包括两个�
 paddle2onnx --model_dir saved_inference_model \
             --model_filename model.pdmodel \
             --params_filename model.pdiparams \
-            --save_file model.onnx \
-            --enable_dev_version True
+            --save_file model.onnx
 ```
 
 可调整的转换参数如下表:
