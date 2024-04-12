@@ -26,7 +26,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          path: paddle2onnx
 
       - name: Build on manylinux2014_x86_64
         uses: docker://quay.io/pypa/manylinux2014_x86_64:latest
