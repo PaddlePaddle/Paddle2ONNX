@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9']
+        python-version: [ '3.8' ]
         architecture: [ 'x64' ]
 
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
@@ -32,19 +32,14 @@ jobs:
           entrypoint: bash
           args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64
 
-      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
-        with:
-          name: wheels
-          path: dist
+      # Build Paddle2ONNX
+      - name: Build Paddle2ONNX
+        working-directory: ./paddle2onnx
+        run: |
+          python -m pip install dist/*.whl
 
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-        with:
-          user: __token__
-          password: ${{ secrets.ZHENG_BICHENG_PYPI_TOKEN }}
-
-#      # Do Test
-#      - name: Run Test
-#        working-directory: ./paddle2onnx/tests
-#        run: |
-#          bash run.sh python
+      # Install Test
+      - name: Run Test
+        working-directory: ./paddle2onnx/tests
+        run: |
+          bash run.sh python
