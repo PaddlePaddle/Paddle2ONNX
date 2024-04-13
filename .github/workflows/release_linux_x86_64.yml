@@ -22,11 +22,8 @@ jobs:
       # Checkout the latest branch of Paddle2ONNX.
       - name: Checkout Paddle2ONNX
         uses: actions/checkout@v4
-        shell: bash
-        run: |
-          auth_header="$(git config --local --get http.https://github.com/.extraheader)"
-          git submodule sync --recursive
-          git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+        with:
+          submodules: true
 
       - name: Build on manylinux2014_x86_64
         uses: docker://quay.io/pypa/manylinux2014_x86_64:latest
