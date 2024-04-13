@@ -4,7 +4,6 @@
 
 *.pyc
 .pydevproject
-build/*
 .eggs/*
 dist/*
 .setuptools*
@@ -14,3 +13,14 @@ paddle2onnx.egg-info/*
 *.log
 version.py
 paddle2onnx/mappers_registry.h
+
+# CMD
+build/*
+paddle2onnx-*
+
+# Clion
+cmake-build-*
+.idea
+
+# VSCode
+.vscode
