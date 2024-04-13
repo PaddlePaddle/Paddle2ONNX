@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10']
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: [ 'x64' ]
 
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
