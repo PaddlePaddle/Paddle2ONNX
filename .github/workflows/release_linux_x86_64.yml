@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+#        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: [ '3.8' ]
         architecture: [ 'x64' ]
 
     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
@@ -21,8 +22,11 @@ jobs:
       # Checkout the latest branch of Paddle2ONNX.
       - name: Checkout Paddle2ONNX
         uses: actions/checkout@v4
-        with:
-          submodules: true
+        shell: bash
+        run: |
+          auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+          git submodule sync --recursive
+          git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
       - name: Build on manylinux2014_x86_64
         uses: docker://quay.io/pypa/manylinux2014_x86_64:latest
