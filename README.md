@@ -14,13 +14,11 @@ TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持�
 
 # 3 安装
 
-针对PaddlePaddle2.5.2的用户可以直接运行以下命令行代码来安装P2O
-
 ```
 pip install paddle2onnx
 ```
 
-由于没有自动发包机制，针对PaddlePaddle2.6.0的用户，请按照[Github 源码安装方式](docs/zh/compile.md)编译Paddle2ONNX。
+开发用户，请按照[Github 源码安装方式](docs/zh/compile_local.md)编译Paddle2ONNX。
 
 # 4 使用
 
