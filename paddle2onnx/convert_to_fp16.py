@@ -35,4 +35,4 @@ if __name__ == '__main__':
     args = parse_arguments()
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     c_p2o.convert_to_fp16(args.input_model_path, args.output_model_path)
-    logging.info("FP16 model saved in {}.".format(args.output_model_path))
+    logging.info('FP16 model saved in {}.'.format(args.output_model_path))
