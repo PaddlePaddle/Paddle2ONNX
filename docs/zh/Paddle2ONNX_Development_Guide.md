@@ -191,7 +191,7 @@ void RollMapper::Opset7() {
 }
 ```
 
-### 3.5 实现 Paddle OP 转换的简单单测
+### 3.6 实现 Paddle OP 转换的简单单测
 
 为了确保转换的正确性，请在 OP 实现完成之后为该转换写单测，单测实现的位置在 [Paddle2ONNX/tests](../../tests) 目录下，一般命名为 **test_op_name.py**。
 
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     test_roll()
 ```
 
-### 3.5 实现 Paddle OP 转换的扫描单测
+### 3.7 实现 Paddle OP 转换的扫描单测
 
 简单单测对于简单算子就够用了，但是对于 argsort 这样的复杂算子，我们可以新建 **test_auto_scan_argsort.py** 并添加扫描单测：
 
