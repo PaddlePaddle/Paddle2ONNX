@@ -2,17 +2,17 @@
 
 简体中文 | [English](README_en.md)
 
-# 1 简介
+# 1 Paddle2ONNX 简介
 
 Paddle2ONNX 支持将 **PaddlePaddle** 模型格式转化到 **ONNX** 模型格式。通过 ONNX 可以完成将 Paddle 模型到多种推理引擎的部署，包括
 TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持的推理引擎或硬件。
 
-# 2 环境依赖
+# 2 Paddle2ONNX 环境依赖
 
 - PaddlePaddle == 2.6.0
 - onnxruntime >= 1.10.0
 
-# 3 安装
+# 3 安装 Paddle2ONNX
 
 ```
 pip install paddle2onnx
@@ -20,7 +20,7 @@ pip install paddle2onnx
 
 开发用户，请按照[Github 源码安装方式](docs/zh/compile_local.md)编译Paddle2ONNX。
 
-# 4 使用
+# 4 快速使用教程
 
 ## 4.1 获取PaddlePaddle部署模型
 
@@ -77,11 +77,15 @@ paddle2onnx --model_dir saved_inference_model \
 python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model.onnx
 ```
 
-# 5 License
+# 5 代码贡献
+
+繁荣的生态需要大家的携手共建，开发者可以参考 [Paddle2ONNX 贡献指南](./docs/zh/Paddle2ONNX_Development_Guide.md) 来为 Paddle2ONNX贡献代码。
+
+# 6 License
 
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
 
-# 6 捐赠
+# 7 捐赠
 
 * 感谢 PaddlePaddle 团队提供服务器支持 Paddle2ONNX 的 CI 建设。
 * 感谢社区用户 [chenwhql](https://github.com/chenwhql)、[luotao1](https://github.com/luotao1)、
