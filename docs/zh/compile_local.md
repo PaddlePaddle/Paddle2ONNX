@@ -35,6 +35,7 @@ cd Paddle2ONNX
 git submodule init
 git submodule update
 
+pip install setuptools wheel auditwheel auditwheel-symbols build
 python -m build
 ```
 
@@ -71,5 +72,6 @@ cd Paddle2ONNX
 git submodule init
 git submodule update
 
+pip install setuptools wheel auditwheel auditwheel-symbols build
 python -m build
 ```
