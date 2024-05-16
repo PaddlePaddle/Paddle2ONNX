@@ -31,7 +31,7 @@ endif(NOT MSVC)
 # if you build from other version of onnx
 # this should be modified
 # refer to https://github.com/onnx/onnx/blob/main/docs/Versioning.md#released-versions
-add_definitions(-DMAX_ONNX_OPSET_VERSION=17)
+add_definitions(-DMAX_ONNX_OPSET_VERSION=21)
 add_definitions(-DPADDLE2ONNX_LIB)
 
 # Third dependency: onnx

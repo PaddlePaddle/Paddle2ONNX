@@ -1,7 +1,7 @@
 [submodule "third_party/onnx"]
 	path = third_party/onnx
 	url = https://github.com/onnx/onnx.git
-	branch = da889e6b95750350726d149bf447bf0cd1245964
+	branch = ad834eb73ee0cd9b6fa9ea892caeed5fa17d7dc0
 [submodule "third_party/optimizer"]
 	path = third_party/optimizer
 	url = https://github.com/onnx/optimizer.git
