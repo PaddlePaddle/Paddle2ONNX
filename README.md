@@ -4,21 +4,24 @@
 
 # 1 Paddle2ONNX 简介
 
-Paddle2ONNX 支持将 **PaddlePaddle** 模型格式转化到 **ONNX** 模型格式。通过 ONNX 可以完成将 Paddle 模型到多种推理引擎的部署，包括
-TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持的推理引擎或硬件。
+Paddle2ONNX 支持将 **PaddlePaddle** 模型格式转化到 **ONNX** 模型格式。通过 ONNX 可以完成将 Paddle 模型到多种推理引擎的部署，包括 TensorRT/OpenVINO/MNN/TNN/NCNN，以及其它对 ONNX 开源格式进行支持的推理引擎或硬件。
 
 # 2 Paddle2ONNX 环境依赖
+
+Paddle2ONNX 本身不依赖其他组件，但是我们建议您在以下环境下使用 Paddle2ONNX ：
 
 - PaddlePaddle == 2.6.0
 - onnxruntime >= 1.10.0
 
 # 3 安装 Paddle2ONNX
 
+如果您只是想要安装 Paddle2ONNX 且没有二次开发的需求，你可以通过执行以下代码来快速安装 Paddle2ONNX
+
 ```
 pip install paddle2onnx
 ```
 
-开发用户，请按照[Github 源码安装方式](docs/zh/compile_local.md)编译Paddle2ONNX。
+如果你希望对 Paddle2ONNX 进行二次开发，请按照[Github 源码安装方式](docs/zh/compile_local.md)编译Paddle2ONNX。
 
 # 4 快速使用教程
 
@@ -28,18 +31,16 @@ Paddle2ONNX 在导出模型时，需要传入部署模型格式，包括两个�
 
 - `model_name.pdmodel`: 表示模型结构
 - `model_name.pdiparams`: 表示模型参数
-  [注意] 这里需要注意，两个文件其中参数文件后辍为 `.pdiparams`，如你的参数文件后辍是 `.pdparams`
-  ，那说明你的参数是训练过程中保存的，当前还不是部署模型格式。 部署模型的导出可以参照各个模型套件的导出模型文档。
 
 ## 4.2 调整Paddle模型
 
 如果对Paddle模型的输入输出需要做调整，可以前往[Paddle 相关工具](./tools/paddle/README.md)查看教程。
 
-## 4.3 命令行转换
+## 4.3 使用命令行转换 PaddlePaddle 模型
 
-使用如下命令将Paddle模型转换为ONNX模型
+你可以通过使用命令行并通过以下命令将Paddle模型转换为ONNX模型
 
-```
+```bash
 paddle2onnx --model_dir saved_inference_model \
             --model_filename model.pdmodel \
             --params_filename model.pdiparams \
@@ -67,7 +68,7 @@ paddle2onnx --model_dir saved_inference_model \
 
 ## 4.4 裁剪ONNX
 
-如果你需要调整 ONNX 模型，请参考如下工具：[ONNX 相关工具](./tools/onnx/README.md)
+如果你需要调整 ONNX 模型，请参考 [ONNX 相关工具](./tools/onnx/README.md)
 
 ## 4.5 优化ONNX
 
@@ -79,7 +80,7 @@ python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model
 
 # 5 代码贡献
 
-繁荣的生态需要大家的携手共建，开发者可以参考 [Paddle2ONNX 贡献指南](./docs/zh/Paddle2ONNX_Development_Guide.md) 来为 Paddle2ONNX贡献代码。
+繁荣的生态需要大家的携手共建，开发者可以参考 [Paddle2ONNX 贡献指南](./docs/zh/Paddle2ONNX_Development_Guide.md) 来为 Paddle2ONNX 贡献代码。
 
 # 6 License
 
@@ -88,7 +89,4 @@ Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-o
 # 7 捐赠
 
 * 感谢 PaddlePaddle 团队提供服务器支持 Paddle2ONNX 的 CI 建设。
-* 感谢社区用户 [chenwhql](https://github.com/chenwhql)、[luotao1](https://github.com/luotao1)、
-  [goocody](https://github.com/goocody)、[jeff41404](https://github.com/jeff41404)、
-  [jzhang553](https://github.com/jzhang533)、[ZhengBicheng](https://github.com/ZhengBicheng)
-  于2024年03月28日向 Paddle2ONNX PMC 捐赠共 10000 元人名币用于 Paddle2ONNX 的发展。
+* 感谢社区用户 [chenwhql](https://github.com/chenwhql), [luotao1](https://github.com/luotao1), [goocody](https://github.com/goocody), [jeff41404](https://github.com/jeff41404), [jzhang553](https://github.com/jzhang533), [ZhengBicheng](https://github.com/ZhengBicheng) 于2024年03月28日向 Paddle2ONNX PMC 捐赠共 10000 元人名币用于 Paddle2ONNX 的发展。
