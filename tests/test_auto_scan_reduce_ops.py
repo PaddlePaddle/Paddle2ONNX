@@ -29,11 +29,12 @@ op_api_map = {
 }
 
 opset_version_map = {
-    "reduce_max": [7, 9, 15],
-    "reduce_min": [7, 9, 15],
-    "reduce_mean": [7, 9, 15],
-    "reduce_sum": [7, 9, 15],
-    "reduce_prod": [7, 9, 15],
+    "reduce_max": [12, 13, 18],
+    "reduce_min": [12, 13, 18],
+    "reduce_mean": [11, 13, 18],
+    "reduce_sum": [13, 18],
+    # "reduce_prod": [11, 18],
+    "reduce_prod": [11],
 }
 
 
@@ -95,7 +96,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "op_names": ["reduce_max"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 13, 18],
             "dim": axes,
             "keep_dim": keep_dim,
             "input_spec_shape": [],

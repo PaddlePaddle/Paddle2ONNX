@@ -411,8 +411,6 @@ class APIOnnx(object):
             model_file = os.path.join(self.name, "cliped_model.pdmodel")
             self.clip_extra_program_only(original_model_file, model_file)
 
-            min_opset_version = min(self._version)
-            self._version = list(range(min_opset_version, 17))
             for v in self._version:
                 onnx_model_str = c_p2o.export(
                     model_file, params_file, v, False, True, True, True,

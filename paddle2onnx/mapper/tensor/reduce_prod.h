@@ -20,26 +20,19 @@
 
 namespace paddle2onnx {
 
-class ReduceMapper : public Mapper {
+class ReduceMapperProd : public Mapper {
  public:
-  ReduceMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ReduceMapperProd(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    if (OpType() == "logsumexp") {
-      GetAttr("keepdim", &keep_dim_);
-      GetAttr("reduce_all", &reduce_all_);
-    } else {
-      GetAttr("keep_dim", &keep_dim_);
-      GetAttr("reduce_all", &reduce_all_);
-      GetAttr("in_dtype", &in_dtype_);
-      GetAttr("out_dtype", &out_dtype_);
-    }
   }
-  void Opset7();
 
-  int32_t GetMinOpset(bool verbose = false);
+  void Opset18() override;
+  void Opset11() override;
+  int32_t GetMinOpset(bool verbose) override;
 
  private:
+
   bool keep_dim_;
   bool reduce_all_;
   int64_t in_dtype_;

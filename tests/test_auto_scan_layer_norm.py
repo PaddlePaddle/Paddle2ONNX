@@ -56,11 +56,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=8), min_size=2, max_size=5))
-
+        input_shape = draw(st.lists(st.integers(min_value=2, max_value=8), min_size=2, max_size=5))
         input_spec = [-1] * len(input_shape)
 
         # When the dims is 5 and the last dimension is too small, an error will be reported due to the optimization of ONNXRuntime

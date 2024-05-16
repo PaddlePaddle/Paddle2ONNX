@@ -26,8 +26,8 @@ op_api_map = {
 }
 
 opset_version_map = {
-    "reduce_all": [7, 9, 15],
-    "reduce_any": [7, 9, 15],
+    "reduce_all": [11, 12, 13, 18],
+    "reduce_any": [11, 12, 13, 18],
 }
 
 
@@ -83,7 +83,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "op_names": ["reduce_all"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 13, 18],
             "dim": dim,
             "keep_dim": keep_dim,
             "input_spec_shape": []
