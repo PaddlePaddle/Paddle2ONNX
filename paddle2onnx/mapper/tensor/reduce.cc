@@ -15,10 +15,8 @@
 #include "paddle2onnx/mapper/tensor/reduce.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(reduce_mean, ReduceMapper)
 REGISTER_MAPPER(reduce_min, ReduceMapper)
 REGISTER_MAPPER(reduce_max, ReduceMapper)
-REGISTER_MAPPER(reduce_prod, ReduceMapper)
 REGISTER_MAPPER(logsumexp, ReduceMapper)
 REGISTER_MAPPER(reduce_all, ReduceMapper)
 REGISTER_MAPPER(reduce_any, ReduceMapper)
@@ -50,7 +48,6 @@ void ReduceMapper::Opset7() {
   op_map["reduce_mean"] = "ReduceMean";
   op_map["reduce_min"] = "ReduceMin";
   op_map["reduce_max"] = "ReduceMax";
-  op_map["reduce_prod"] = "ReduceProd";
   op_map["logsumexp"] = "ReduceLogSumExp";
   std::string out = "";
 
