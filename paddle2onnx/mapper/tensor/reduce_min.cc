@@ -39,11 +39,9 @@ void ReduceMapperMin::Opset18() {
   auto x_info = GetInput("X");
   std::string dims;
   if (IsAttrVar(axis_name_)) {
-    std::cout << "IsAttrVar(axis_name_)" << std::endl;
     auto info = GetAttrVar(axis_name_);
     dims = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
   } else {
-    std::cout << "!IsAttrVar(axis_name_)" << std::endl;
     if (!reduce_all_) {
       dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
     } else {
