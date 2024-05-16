@@ -412,7 +412,8 @@ class APIOnnx(object):
             self.clip_extra_program_only(original_model_file, model_file)
 
             min_opset_version = min(self._version)
-            self._version = list(range(min_opset_version, 17))
+            max_opset_version = 19  # Refer to https://github.com/onnx/onnx/blob/main/docs/Versioning.md#released-versions
+            self._version = list(range(min_opset_version, max_opset_version))
             for v in self._version:
                 onnx_model_str = c_p2o.export(
                     model_file, params_file, v, False, True, True, True,
