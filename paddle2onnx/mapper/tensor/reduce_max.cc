@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/reduce_prod.h"
+#include "paddle2onnx/mapper/tensor/reduce_max.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(reduce_prod, ReduceMapperProd)
+REGISTER_MAPPER(reduce_max, ReduceMapperMax)
 
-int32_t ReduceMapperProd::GetMinOpset(bool verbose) {
+int32_t ReduceMapperMax::GetMinOpset(bool verbose) {
   constexpr int op_version = 11;
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
   return op_version;
 }
 
-void ReduceMapperProd::Opset18() {
-  Assert(false, "ReduceMapperProd don't support opset18 now");
-#if 0
+void ReduceMapperMax::Opset18() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
@@ -54,7 +52,7 @@ void ReduceMapperProd::Opset18() {
   }
 
   // Add attribute
-  auto reduce_node = helper_->MakeNode("ReduceProd", {x_info[0].name, dims});
+  auto reduce_node = helper_->MakeNode("ReduceMax", {x_info[0].name, dims});
   AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
   auto out_node_name = reduce_node->output(0);
 
@@ -67,11 +65,10 @@ void ReduceMapperProd::Opset18() {
   }
   auto out_info = GetOutput("Out");
   helper_->AutoCast(out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
-#endif
 }
 
 
-void ReduceMapperProd::Opset11() {
+void ReduceMapperMax::Opset11() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
@@ -89,7 +86,7 @@ void ReduceMapperProd::Opset11() {
   if (x_info[0].dtype == P2ODataType::FP64) {
     input_name = helper_->AutoCast(x_info[0].name, P2ODataType::FP64, P2ODataType::FP32);
   }
-  auto reduce_node = helper_->MakeNode("ReduceProd", {input_name});
+  auto reduce_node = helper_->MakeNode("ReduceMax", {input_name});
 
   if (!reduce_all_) {
     AddAttribute(reduce_node, "axes", dim_);

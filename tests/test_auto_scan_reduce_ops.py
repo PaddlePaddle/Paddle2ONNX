@@ -21,19 +21,20 @@ import paddle
 import random
 
 op_api_map = {
-    # "reduce_max": paddle.max,
-    # "reduce_min": paddle.min,
-    # "reduce_mean": paddle.mean,
-    # "reduce_sum": paddle.sum,
-    # "reduce_prod": paddle.prod,
+    "reduce_max": paddle.max,
+    "reduce_min": paddle.min,
+    "reduce_mean": paddle.mean,
+    "reduce_sum": paddle.sum,
+    "reduce_prod": paddle.prod,
 }
 
 opset_version_map = {
-    "reduce_max": [7, 13, 18],
-    "reduce_min": [7, 13, 18],
+    "reduce_max": [11, 12, 13, 18],
+    "reduce_min": [11, 12, 13, 18],
     "reduce_mean": [11, 13, 18],
     "reduce_sum": [13, 18],
-    "reduce_prod": [11, 18],
+    # "reduce_prod": [11, 18],
+    "reduce_prod": [11],
 }
 
 

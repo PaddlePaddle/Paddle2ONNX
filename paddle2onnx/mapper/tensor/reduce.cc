@@ -15,39 +15,20 @@
 #include "paddle2onnx/mapper/tensor/reduce.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(reduce_min, ReduceMapper)
-REGISTER_MAPPER(reduce_max, ReduceMapper)
 REGISTER_MAPPER(logsumexp, ReduceMapper)
 REGISTER_MAPPER(reduce_all, ReduceMapper)
 REGISTER_MAPPER(reduce_any, ReduceMapper)
 
 int32_t ReduceMapper::GetMinOpset(bool verbose) {
-  std::string axis_name;
-  if (OpType() == "logsumexp") {
-    axis_name = "axis";
-  } else {
-    axis_name = "dim";
-  }
-  if (IsAttrVar(axis_name) && !IsConstant(GetAttrVar(axis_name)[0])) {
-    if (OpType() == "reduce_sum") {
-      return 13;
-    }
-    Error() << "While Attribute(" << axis_name
-            << ")'s type is Tensor, it's not supported "
-               "unless it's a constant tensor."
-            << std::endl;
-    return -1;
-  }
-  return 7;
+  constexpr int op_version = 11;
+  Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
+  return op_version;
 }
 
 void ReduceMapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
   std::map<std::string, std::string> op_map;
-  op_map["reduce_mean"] = "ReduceMean";
-  op_map["reduce_min"] = "ReduceMin";
-  op_map["reduce_max"] = "ReduceMax";
   op_map["logsumexp"] = "ReduceLogSumExp";
   std::string out = "";
 
