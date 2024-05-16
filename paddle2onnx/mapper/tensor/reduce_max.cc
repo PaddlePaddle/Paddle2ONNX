@@ -15,15 +15,22 @@
 #include "paddle2onnx/mapper/tensor/reduce_max.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(reduce_max, ReduceMapperMax)
+REGISTER_MAPPER(reduce_max, ReduceMaxMapper)
+REGISTER_MAPPER(reduce_any, ReduceMaxMapper)
 
-int32_t ReduceMapperMax::GetMinOpset(bool verbose) {
-  constexpr int op_version = 11;
+int32_t ReduceMaxMapper::GetMinOpset(bool verbose) {
+  int op_version = 11;
+
+  auto x_info = GetInput("X");
+  if (x_info[0].dtype == P2ODataType::FP64) {
+    op_version = 12;
+  }
+
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
   return op_version;
 }
 
-void ReduceMapperMax::Opset18() {
+void ReduceMaxMapper::Opset18() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
@@ -65,8 +72,12 @@ void ReduceMapperMax::Opset18() {
   helper_->AutoCast(out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
 }
 
+void ReduceMaxMapper::Opset12() {
+  // The implementation logic of Opset12 is the same as that of Opset11, with the difference being that Opset12 supports input data types as double.
+  Opset11();
+}
 
-void ReduceMapperMax::Opset11() {
+void ReduceMaxMapper::Opset11() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
@@ -94,10 +105,6 @@ void ReduceMapperMax::Opset11() {
   AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
 
   auto out_node_name = reduce_node->output(0);
-  if (x_info[0].dtype == P2ODataType::FP64) {
-    out_node_name = helper_->AutoCast(reduce_node->output(0), P2ODataType::FP32, P2ODataType::FP64);
-  }
-
   bool reduce_all_axes = dim_.size() == x_info[0].Rank();
   if (reduce_all_) {
     reduce_all_axes = true;
@@ -108,4 +115,4 @@ void ReduceMapperMax::Opset11() {
   auto out_info = GetOutput("Out");
   helper_->AutoCast(out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
 }
-}  // namespace paddle2onnx
+} // namespace paddle2onnx

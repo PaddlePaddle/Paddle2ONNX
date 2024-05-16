@@ -15,15 +15,15 @@
 #include "paddle2onnx/mapper/tensor/reduce_mean.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(reduce_mean, ReduceMapperMean)
+REGISTER_MAPPER(reduce_mean, ReduceMeanMapper)
 
-int32_t ReduceMapperMean::GetMinOpset(bool verbose) {
+int32_t ReduceMeanMapper::GetMinOpset(bool verbose) {
   constexpr int op_version = 11;
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
   return op_version;
 }
 
-void ReduceMapperMean::Opset18() {
+void ReduceMeanMapper::Opset18() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
@@ -66,7 +66,7 @@ void ReduceMapperMean::Opset18() {
 }
 
 
-void ReduceMapperMean::Opset11() {
+void ReduceMeanMapper::Opset11() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);

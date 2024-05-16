@@ -20,9 +20,9 @@
 
 namespace paddle2onnx {
 
-class ReduceMapper : public Mapper {
+class ReduceLogSumExpMapper : public Mapper {
  public:
-  ReduceMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ReduceLogSumExpMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     if (OpType() == "logsumexp") {

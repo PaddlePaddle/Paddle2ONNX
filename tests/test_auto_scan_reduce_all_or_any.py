@@ -26,8 +26,8 @@ op_api_map = {
 }
 
 opset_version_map = {
-    "reduce_all": [7, 13, 18],
-    "reduce_any": [7, 13, 18],
+    "reduce_all": [11, 12, 13, 18],
+    "reduce_any": [11, 12, 13, 18],
 }
 
 
