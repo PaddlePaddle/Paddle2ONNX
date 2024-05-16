@@ -21,7 +21,7 @@ If you only want to install Paddle2ONNX without the need for secondary developme
 pip install paddle2onnx
 ```
 
-If you wish to conduct secondary development on Paddle2ONNX, please follow the [GitHub source code installation method](docs/en/compile_local.md) to compile Paddle2ONNX.
+If you wish to conduct secondary development on Paddle2ONNX, please follow the [GitHub Source Code Installation Method](docs/en/compile_local.md) to compile Paddle2ONNX.
 
 # 4 Quick Start Tutorial
 

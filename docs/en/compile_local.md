@@ -1,4 +1,4 @@
-# How to compile and install Paddle2ONNX locally
+# How to Compile and Install Paddle2ONNX Locally
 
 The compilation and installation of Paddle2ONNX require ensuring that the environment meets the following requirements:
 
