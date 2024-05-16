@@ -31,33 +31,26 @@ int32_t ReduceMaxMapper::GetMinOpset(bool verbose) {
 }
 
 void ReduceMaxMapper::Opset18() {
-  auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
   GetAttr("in_dtype", &in_dtype_);
   GetAttr("out_dtype", &out_dtype_);
-  if (IsAttrVar(axis_name_)) {
-    auto info = GetAttrVar(axis_name_);
-    TryGetValue(info[0], &dim_);
-  } else {
-    GetAttr(axis_name_, &dim_);
-  }
+  GetAttr("dim", &dim_);
 
   auto x_info = GetInput("X");
   std::string dims;
-  if (IsAttrVar(axis_name_)) {
-    auto info = GetAttrVar(axis_name_);
-    dims = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+  if (!reduce_all_) {
+    dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
   } else {
-    if (!reduce_all_) {
-      dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
-    } else {
-      dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, Arange(0, x_info[0].Rank()));
-    }
+    dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, Arange(0, x_info[0].Rank()));
   }
 
   // Add attribute
-  auto reduce_node = helper_->MakeNode("ReduceMax", {x_info[0].name, dims});
+  std::string input_name = x_info[0].name;
+  if (x_info[0].dtype == P2ODataType::BOOL) {
+    input_name = helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
+  }
+  auto reduce_node = helper_->MakeNode("ReduceMax", {input_name, dims});
   AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
   auto out_node_name = reduce_node->output(0);
 
@@ -92,8 +85,8 @@ void ReduceMaxMapper::Opset11() {
 
   auto x_info = GetInput("X");
   std::string input_name = x_info[0].name;
-  if (x_info[0].dtype == P2ODataType::FP64) {
-    input_name = helper_->AutoCast(x_info[0].name, P2ODataType::FP64, P2ODataType::FP32);
+  if (x_info[0].dtype == P2ODataType::BOOL) {
+    input_name = helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
   }
   auto reduce_node = helper_->MakeNode("ReduceMax", {input_name});
 
