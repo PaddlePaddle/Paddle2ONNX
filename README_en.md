@@ -80,7 +80,7 @@ A thriving ecosystem requires everyone's collaborative efforts. Developers can r
 
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
 
-# 7 捐赠
+# 7 Thank you for the donation
 
 * Thanks to the PaddlePaddle team for providing server support for the CI infrastructure of Paddle2ONNX.
 * Thanks to community users [chenwhql](https://github.com/chenwhql), [luotao1](https://github.com/luotao1), [goocody](https://github.com/goocody), [jeff41404](https://github.com/jeff41404), [jzhang553](https://github.com/jzhang533), [ZhengBicheng](https://github.com/ZhengBicheng) for donating a total of 10,000 RMB to the Paddle2ONNX PMC on March 28, 2024, for the development of Paddle2ONNX.

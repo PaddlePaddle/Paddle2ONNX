@@ -86,7 +86,7 @@ python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model
 
 Provided under the [Apache-2.0 license](https://github.com/PaddlePaddle/paddle-onnx/blob/develop/LICENSE).
 
-# 7 捐赠
+# 7 感谢捐赠
 
 * 感谢 PaddlePaddle 团队提供服务器支持 Paddle2ONNX 的 CI 建设。
 * 感谢社区用户 [chenwhql](https://github.com/chenwhql), [luotao1](https://github.com/luotao1), [goocody](https://github.com/goocody), [jeff41404](https://github.com/jeff41404), [jzhang553](https://github.com/jzhang533), [ZhengBicheng](https://github.com/ZhengBicheng) 于2024年03月28日向 Paddle2ONNX PMC 捐赠共 10000 元人名币用于 Paddle2ONNX 的发展。
