@@ -23,43 +23,74 @@ int32_t ReduceLogSumExpMapper::GetMinOpset(bool verbose) {
   return op_version;
 }
 
-void ReduceLogSumExpMapper::Opset7() {
+void ReduceLogSumExpMapper::Opset18() {
+  GetAttr("keepdim", &keep_dim_);
+  GetAttr("reduce_all", &reduce_all_);
+  GetAttr("axis", &dim_);
+
   auto x_info = GetInput("X");
-  auto out_info = GetOutput("Out");
-  std::string axis_name = "axis";
-  if (IsAttrVar(axis_name)) {
-    auto info = GetAttrVar(axis_name);
-    TryGetValue(info[0], &dim_);
+  std::string dims;
+  if (!reduce_all_) {
+    dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
   } else {
-    GetAttr(axis_name, &dim_);
+    dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, Arange(0, x_info[0].Rank()));
   }
+
+  std::string input_name = x_info[0].name;
+  auto input_tpye = x_info[0].dtype;
+  if (x_info[0].dtype == P2ODataType::BOOL) {
+    input_name = helper_->AutoCast(input_name, input_tpye, P2ODataType::INT32);
+    input_tpye = P2ODataType::INT32;
+  }
+  auto reduce_node = helper_->MakeNode("ReduceLogSumExp", {input_name, dims});
+
+  // Add attribute
+  AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
+  auto out_node_name = reduce_node->output(0);
 
   bool reduce_all_axes = dim_.size() == x_info[0].Rank();
   if (reduce_all_) {
     reduce_all_axes = true;
   }
+  if (!keep_dim_ && reduce_all_axes) {
+    out_node_name = helper_->Reshape(out_node_name, {-1});
+  }
+  auto out_info = GetOutput("Out");
+  helper_->AutoCast(out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
+}
 
+void ReduceLogSumExpMapper::Opset11() {
+  GetAttr("keepdim", &keep_dim_);
+  GetAttr("reduce_all", &reduce_all_);
+  GetAttr("axis", &dim_);
+
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
   std::string input_name = x_info[0].name;
-  if (OpType() == "reduce_prod" && x_info[0].dtype == P2ODataType::FP64) {
-    input_name = helper_->AutoCast(x_info[0].name, P2ODataType::FP64, P2ODataType::FP32);
+  auto input_tpye = x_info[0].dtype;
+  if (x_info[0].dtype == P2ODataType::BOOL) {
+    input_name = helper_->AutoCast(input_name, input_tpye, P2ODataType::INT32);
+    input_tpye = P2ODataType::INT32;
   }
   auto reduce_node = helper_->MakeNode("ReduceLogSumExp", {input_name});
 
-
+  // Add attribute
   if (!reduce_all_) {
     AddAttribute(reduce_node, "axes", dim_);
   } else {
     AddAttribute(reduce_node, "axes", Arange(0, x_info[0].Rank()));
   }
   AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
+
   auto out = reduce_node->output(0);
-  if (OpType() == "reduce_prod" && x_info[0].dtype == P2ODataType::FP64) {
-    out = helper_->AutoCast(reduce_node->output(0), P2ODataType::FP32, P2ODataType::FP64);
+  bool reduce_all_axes = dim_.size() == x_info[0].Rank();
+  if (reduce_all_) {
+    reduce_all_axes = true;
   }
   if (!keep_dim_ && reduce_all_axes) {
     out = helper_->Reshape(out, {-1});
   }
-  helper_->AutoCast(out, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
+  helper_->AutoCast(out, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

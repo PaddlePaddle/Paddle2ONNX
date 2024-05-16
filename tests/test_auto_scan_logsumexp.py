@@ -56,7 +56,7 @@ class TestLogsumexpConvert(OPConvertAutoScanTest):
             "op_names": ["logsumexp"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [11, 13, 18],
             "input_spec_shape": [],
             "axis": axis,
             "keepdim": keepdim,

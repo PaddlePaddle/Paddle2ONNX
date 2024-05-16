@@ -68,6 +68,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
             input_shape[4] = 10
         axis = draw(st.integers(min_value=1, max_value=len(input_shape) - 1))
 
+        # axis_type = draw(st.sampled_from(["int", "list"]))
         axis_type = draw(st.sampled_from(["int", "list"]))
         if axis_type == "int":
             normalized_shape = input_shape[-1]
