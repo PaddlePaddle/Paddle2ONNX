@@ -1,20 +1,15 @@
-# 本地编译安装Paddle2ONNX
+# 如何在本地编译并安装 Paddle2ONNX
 
-Paddle2ONNX编译安装需要确保环境满足以下需求
+Paddle2ONNX 的编译安装至少需要确保环境满足以下需求：
+
 - cmake >= 3.18.0
 - protobuf == 3.16.0
 
-注意：Paddle2ONNX产出的模型，在使用ONNX Runtime推理时，要求使用最新版本(1.10.0版本以及上），如若需要使用低版本(1.6~1.10之间），则需要将ONNX版本降至1.8.2，在执行完`git submodule update`后，执行如下命令，然后再进行编译
-```
-cd Paddle2ONNX/third/onnx
-git checkout v1.8.1
-```
+## 在 Linux/Mac 下编译并安装
 
-## Linux/Mac编译安装
+### 安装 Protobuf
 
-### 安装Protobuf
-
-```
+```bash
 git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
 git checkout v3.16.0
@@ -29,7 +24,7 @@ export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 
 ### 安装Paddle2ONNX
 
-```
+```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 git submodule init
@@ -37,6 +32,7 @@ git submodule update
 
 pip install setuptools wheel auditwheel auditwheel-symbols build
 python -m build
+pip install dist/*.whl
 ```
 
 ## Windows编译安装
@@ -51,7 +47,7 @@ python -m build
 
 注意下面cmake命令中`-DCMAKE_INSTALL_PREFIX`指定为你实际设定的路径
 
-```
+```bash
 git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
 git checkout v3.16.0
@@ -66,7 +62,7 @@ set PATH=D:\Paddle\installed_protobuf_lib\bin;%PATH%
 
 ### 安装Paddle2ONNX
 
-```
+```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 git submodule init
@@ -74,4 +70,5 @@ git submodule update
 
 pip install setuptools wheel auditwheel auditwheel-symbols build
 python -m build
+pip install dist/*.whl
 ```

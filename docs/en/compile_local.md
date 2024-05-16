@@ -1,13 +1,15 @@
-# Build and Install
+# How to compile and install Paddle2ONNX locally
 
-Make sure the environment satisfy
+The compilation and installation of Paddle2ONNX require ensuring that the environment meets the following requirements:
+
 - cmake >= 3.18.0
 - protobuf >= 3.16.0
 
-## Install on Linux/Mac
+## 1 Install on Linux/Mac
 
-### Install Protobuf
-```
+### 1.1 Install Protobuf
+
+```bash
 git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
 git checkout v3.16.0
@@ -16,31 +18,36 @@ cmake ../cmake -DCMAKE_INSTALL_PREFIX=${PWD}/installed_protobuf_lib -Dprotobuf_B
 make -j8
 make install
 
-# Add the library to environment
-export PATH=${PWD}/installed_protobuf_lib:${PATH}
+# 将编译目录加入环境变量
+export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 ```
-### Install Paddle2ONNX
-```
+
+### 1.2 Install Paddle2ONNX
+
+```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 git submodule init
 git submodule update
 
-python setup.py install
+pip install setuptools wheel auditwheel auditwheel-symbols build
+python -m build
+pip install dist/*.whl
 ```
 
-## Install on Windows
+## 2 Install on Windows
 
 Make sure you have installed Visual Studio 2019 first
 
-### Open VS command tool
+### 2.1 Open VS command tool
+
 Find **x64 Native Tools Command Prompt for VS 2019** in system menu, and open it
 
-### Install Protobuf
+### 2.2 Install Protobuf
 
 Notice: Please change the `-DCMAKE_INSTALL_PREFIX` to your custom path
 
-```
+```bash
 git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
 git checkout v3.16.0
@@ -53,13 +60,15 @@ msbuild INSTALL.vcxproj /p:Configuration=Release /p:Platform=x64
 set PATH=D:\Paddle\installed_protobuf_lib\bin;%PATH%
 ```
 
-### Install Paddle2ONNX
-```
+### 2.3 Install Paddle2ONNX
+
+```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 git submodule init
 git submodule update
 
-python setup.py install
-
+pip install setuptools wheel auditwheel auditwheel-symbols build
+python -m build
+pip install dist/*.whl
 ```
