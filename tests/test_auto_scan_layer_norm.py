@@ -56,11 +56,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=8), min_size=2, max_size=5))
-
+        input_shape = draw(st.lists(st.integers(min_value=2, max_value=8), min_size=2, max_size=5))
         input_spec = [-1] * len(input_shape)
 
         # When the dims is 5 and the last dimension is too small, an error will be reported due to the optimization of ONNXRuntime
@@ -68,7 +64,6 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
             input_shape[4] = 10
         axis = draw(st.integers(min_value=1, max_value=len(input_shape) - 1))
 
-        # axis_type = draw(st.sampled_from(["int", "list"]))
         axis_type = draw(st.sampled_from(["int", "list"]))
         if axis_type == "int":
             normalized_shape = input_shape[-1]
