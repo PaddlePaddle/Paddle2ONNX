@@ -16,7 +16,6 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(reduce_mean, ReduceMapper)
-REGISTER_MAPPER(reduce_sum, ReduceMapper)
 REGISTER_MAPPER(reduce_min, ReduceMapper)
 REGISTER_MAPPER(reduce_max, ReduceMapper)
 REGISTER_MAPPER(reduce_prod, ReduceMapper)
@@ -49,7 +48,6 @@ void ReduceMapper::Opset7() {
   auto out_info = GetOutput("Out");
   std::map<std::string, std::string> op_map;
   op_map["reduce_mean"] = "ReduceMean";
-  op_map["reduce_sum"] = "ReduceSum";
   op_map["reduce_min"] = "ReduceMin";
   op_map["reduce_max"] = "ReduceMax";
   op_map["reduce_prod"] = "ReduceProd";
@@ -75,24 +73,7 @@ void ReduceMapper::Opset7() {
     reduce_all_axes = true;
   }
 
-  if (helper_->GetOpsetVersion() >= 13 && OpType() == "reduce_sum") {
-    std::string dims = "";
-    if (IsAttrVar(axis_name)) {
-      auto info = GetAttrVar(axis_name);
-      dims = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
-    } else {
-      if (!reduce_all_) {
-        dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
-      } else {
-        dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
-                                 Arange(0, x_info[0].Rank()));
-      }
-    }
-    auto reduce_node =
-        helper_->MakeNode(op_map[OpType()], {x_info[0].name, dims});
-    AddAttribute(reduce_node, "keepdims", static_cast<int64_t>(keep_dim_));
-    out = reduce_node->output(0);
-  } else if (OpType() == "reduce_all") {
+  if (OpType() == "reduce_all") {
     auto int32_x =
         helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
     auto reduce_node = helper_->MakeNode("ReduceMin", {int32_x});

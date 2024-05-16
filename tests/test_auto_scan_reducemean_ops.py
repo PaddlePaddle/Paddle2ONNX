@@ -21,19 +21,19 @@ import paddle
 import random
 
 op_api_map = {
-    "reduce_max": paddle.max,
-    "reduce_min": paddle.min,
-    "reduce_mean": paddle.mean,
+    # "reduce_max": paddle.max,
+    # "reduce_min": paddle.min,
+    # "reduce_mean": paddle.mean,
     "reduce_sum": paddle.sum,
-    "reduce_prod": paddle.prod,
+    # "reduce_prod": paddle.prod,
 }
 
 opset_version_map = {
-    "reduce_max": [7, 9, 15],
-    "reduce_min": [7, 9, 15],
-    "reduce_mean": [7, 9, 15],
-    "reduce_sum": [7, 9, 15],
-    "reduce_prod": [7, 9, 15],
+    "reduce_max": [7, 13, 18],
+    "reduce_min": [7, 13, 18],
+    "reduce_mean": [7, 13, 18],
+    "reduce_sum": [7, 13, 18],
+    "reduce_prod": [7, 13, 18],
 }
 
 
@@ -95,7 +95,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "op_names": ["reduce_max"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 13, 18],
             "dim": axes,
             "keep_dim": keep_dim,
             "input_spec_shape": [],

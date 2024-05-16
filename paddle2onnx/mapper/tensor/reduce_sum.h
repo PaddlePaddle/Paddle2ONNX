@@ -12,23 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/tensor/bitwise_and.h"
+#pragma once
+#include <string>
+#include <vector>
+
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(bitwise_and, BitWiseAndMapper)
 
-int32_t BitWiseAndMapper::GetMinOpset(bool verbose) {
-  constexpr int op_version = 18;
-  Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
-  return op_version;
-}
+class ReduceMapperSum : public Mapper {
+ public:
+  ReduceMapperSum(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+               int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+  }
 
+  void Opset13() override;
+  int32_t GetMinOpset(bool verbose) override;
 
-void BitWiseAndMapper::Opset18() {
-  auto x_info = GetInput("X");
-  auto y_info = GetInput("Y");
-  auto out_info = GetOutput("Out");
-  
-  auto output = helper_->MakeNode("BitwiseAnd", {x_info[0].name, y_info[0].name}, {out_info[0].name});
-}
+ private:
+
+  bool keep_dim_;
+  bool reduce_all_;
+  int64_t in_dtype_;
+  int64_t out_dtype_;
+  std::vector<int64_t> dim_;
+};
+
 }  // namespace paddle2onnx
