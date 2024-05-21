@@ -28,13 +28,13 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = paddle.add(inputs, inputs_)
+        x = paddle.bitwise_and(inputs, inputs_)
         return x
 
 
-def test_add_18():
+def test_bitwise_and_18():
     """
-    api: paddle.add
+    api: paddle.bitwise_and
     op version: 18
     """
     op = Net()
