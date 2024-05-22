@@ -17,6 +17,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace paddle2onnx {
 REGISTER_MAPPER(layer_norm, LayerNormMapper)
