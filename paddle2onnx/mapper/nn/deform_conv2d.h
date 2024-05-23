@@ -34,7 +34,7 @@ class DeformConv2dMapper : public Mapper {
   }
 
   int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  void Opset19();
 
  private:
   std::vector<int64_t> strides_;

@@ -23,21 +23,16 @@ namespace paddle2onnx
 
   int32_t DeformConv2dMapper::GetMinOpset(bool verbose)
   {
-    return 7;
+    return 19;
   }
 
-  void DeformConv2dMapper::Opset7()
+  void DeformConv2dMapper::Opset19()
   {
     auto kernel_info = GetInput("Filter");
     auto input_info = GetInput("Input");
     auto offset_info = GetInput("Offset");
     auto mask_info = GetInput("Mask");
     auto output_info = GetOutput("Output");
-
-    // TODO
-    // 1. 这个变量名称映射paddle的是哪个呢？看上去是ops.yaml和op_compat.yaml吗？
-    // 2. c++ api上没有bias，这个是def deformable_conv调用C_ops后再加上的，这里怎么处理呢？optional的输入也要全写入吗
-    // 3. 这个opsetx怎么具体对应起来呢？跟onnx似乎对不上
     auto node = helper_->MakeNode(
         "DeformConv", {input_info[0].name, kernel_info[0].name, offset_info[0].name}, {output_info[0].name});
 
