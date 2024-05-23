@@ -18,31 +18,34 @@
 
 #include "paddle2onnx/mapper/mapper.h"
 
-namespace paddle2onnx {
+namespace paddle2onnx
+{
 
-class DeformConv2dMapper : public Mapper {
- public:
-  DeformConv2dMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("strides", &strides_);
-    GetAttr("paddings", &paddings_);
-    GetAttr("dilations", &dilations_);
-    GetAttr("deformable_groups", &deformable_groups_);
-    GetAttr("groups", &groups_);
-    GetAttr("im2col_step", &im2col_step_);
-  }
+  class DeformConv2dMapper : public Mapper
+  {
+  public:
+    DeformConv2dMapper(const PaddleParser &p, OnnxHelper *helper, int64_t block_id,
+                       int64_t op_id)
+        : Mapper(p, helper, block_id, op_id)
+    {
+      GetAttr("strides", &strides_);
+      GetAttr("paddings", &paddings_);
+      GetAttr("dilations", &dilations_);
+      GetAttr("deformable_groups", &deformable_groups_);
+      GetAttr("groups", &groups_);
+      GetAttr("im2col_step", &im2col_step_);
+    }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset19();
+    int32_t GetMinOpset(bool verbose = false);
+    void Opset19();
 
- private:
-  std::vector<int64_t> strides_;
-  std::vector<int64_t> paddings_;
-  std::vector<int64_t> dilations_;
-  int64_t deformable_groups_;
-  int64_t groups_;
-  int64_t im2col_step_;
-};
+  private:
+    std::vector<int64_t> strides_;
+    std::vector<int64_t> paddings_;
+    std::vector<int64_t> dilations_;
+    int64_t deformable_groups_;
+    int64_t groups_;
+    int64_t im2col_step_;
+  };
 
-}  // namespace paddle2onnx
+} // namespace paddle2onnx
