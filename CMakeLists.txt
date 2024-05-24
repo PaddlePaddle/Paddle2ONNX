@@ -61,9 +61,6 @@ if (NOT TARGET onnx_proto)
 endif ()
 add_subdirectory(${PROJECT_SOURCE_DIR}/paddle2onnx/proto)
 
-# Third dependency: onnx
-set(ONNX_OPT_USE_SYSTEM_PROTOBUF ON)
-
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/third_party/optimizer)

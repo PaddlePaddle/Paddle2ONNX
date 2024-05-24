@@ -52,7 +52,7 @@ MAKE = find_executable('make')
 # Default value is set to TRUE\1 to keep the settings same as the current ones.
 # However going forward the recomemded way to is to set this to False\0
 USE_MSVC_STATIC_RUNTIME = bool(os.getenv('USE_MSVC_STATIC_RUNTIME', '1') == '1')
-ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'paddle2onnx')
+ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'onnx')
 
 ################################################################################
 # Pre Check
