@@ -1,11 +1,11 @@
 [submodule "third_party/onnx"]
 	path = third_party/onnx
 	url = https://github.com/onnx/onnx.git
-	branch = ad834eb73ee0cd9b6fa9ea892caeed5fa17d7dc0
+	branch = 990217f043af7222348ca8f0301e17fa7b841781
 [submodule "third_party/optimizer"]
 	path = third_party/optimizer
 	url = https://github.com/onnx/optimizer.git
-	branch = a37748b2c3a80dad4274401c45c5026c7a506730
+	branch = b3a4611861734e0731bbcc2bed1f080139e4988b
 [submodule "third_party/pybind11"]
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git

@@ -615,9 +615,9 @@ void QuantizeModelProcessor::AddQDQInModel(
     } else {
       // Handle the following situations
       //           conv                   conv
-      //         /  |  \         ->     /    \ 
-      //      conv conv scale         DQD   scale
-      //                             /   \       
+      //         /  |  \         ->     /      \
+      //      conv conv scale         DQD     scale
+      //                             /   \
       //                           conv conv
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> except_nodes;
       auto next_nodes = name2node_dict_[name];

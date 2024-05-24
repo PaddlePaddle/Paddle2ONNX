@@ -257,7 +257,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
   }
 }
 
-void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
+void ModelExporter::SaveExternalData(::ONNX_NAMESPACE::GraphProto* graph,
                                      const std::string& external_file_path,
                                      bool* save_external) {
   P2OLogger() << "The exported ONNX model is bigger than 2G, external data "
@@ -286,7 +286,7 @@ void ModelExporter::SaveExternalData(::paddle2onnx::GraphProto* graph,
         continue;
       }
 
-      tensor->set_data_location(TensorProto::EXTERNAL);
+      tensor->set_data_location(ONNX_NAMESPACE::TensorProto::EXTERNAL);
       auto external_data = tensor->add_external_data();
       external_data->set_key("location");
       external_data->set_value(file_name);

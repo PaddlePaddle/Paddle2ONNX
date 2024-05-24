@@ -823,7 +823,7 @@ void ConvertFp32ToFp16::Convert(ONNX_NAMESPACE::ModelProto* model) {
     op_block_list_.insert(op_block_list_.end(), custom_ops_.begin(),
                           custom_ops_.end());
   }
-  shape_inference::InferShapes(*model);
+  ONNX_NAMESPACE::shape_inference::InferShapes(*model);
   // 1 if it is a FP16 model, skip this
   if (IsFP16Model(*model)) {
     P2OLogger() << "[Info] The input ONNX Model is a FP16 model." << std::endl;

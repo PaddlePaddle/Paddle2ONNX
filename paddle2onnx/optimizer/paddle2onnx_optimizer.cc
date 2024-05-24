@@ -30,7 +30,7 @@
 
 namespace ONNX_NAMESPACE {
 namespace optimization {
-
+using namespace paddle2onnx;
 ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
     const ONNX_NAMESPACE::ModelProto& model_proto) {
   OptimizerOption option;

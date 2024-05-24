@@ -91,7 +91,7 @@ class Mapper {
     // the return value in [7, MAX_ONNX_OPSET_VERSION], represent the minimum
     // opset_version
     // if return value < 0, means the op is not supported.
-    virtual int32_t GetMinOpset(bool verbose = false) { return 7; }
+    virtual int32_t GetMinOpset(bool verbose) { return 7; }
 
     virtual bool IsExportAsCustomOp() { return export_as_custom_op; }
 
@@ -104,7 +104,9 @@ class Mapper {
         return ExportAsCustomOp();
       }
 
-      if (opset_version == 18) {
+      if (opset_version == 19) {
+        Opset19();
+      } else if (opset_version == 18) {
         Opset18();
       } else if (opset_version == 17) {
         Opset17();
@@ -136,6 +138,7 @@ class Mapper {
              "Operator " + name_ + "doesn't support export as custom operator.");
     }
 
+    virtual void Opset19() { Opset18(); }
     virtual void Opset18() { Opset17(); }
     virtual void Opset17() { Opset16(); }
     virtual void Opset16() { Opset15(); }
