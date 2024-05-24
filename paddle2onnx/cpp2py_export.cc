@@ -121,7 +121,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
       });
   m.def("convert_to_fp16", [](const std::string& fp32_model_path,
                               const std::string& fp16_model_path) {
-    paddle2onnx::optimization::Paddle2ONNXFP32ToFP16(fp32_model_path,
+    ONNX_NAMESPACE::optimization::Paddle2ONNXFP32ToFP16(fp32_model_path,
                                                      fp16_model_path);
   });
 }
