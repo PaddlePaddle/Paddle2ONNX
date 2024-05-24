@@ -1,5 +1,6 @@
-PROJECT(paddle2onnx C CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
+
+PROJECT(paddle2onnx C CXX)
 
 include(cmake/utils.cmake)
 
@@ -78,13 +79,11 @@ if (WITH_STATIC)
     ADD_LIBRARY(paddle2onnx_dummy STATIC ${ALL_SRCS})
 
     if (APPLE)
-        set_target_properties(paddle2onnx_dummy
-                PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+        set_target_properties(paddle2onnx_dummy PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     elseif (MSVC)
         message("------ BUILD WITH MSVC --------")
     else ()
-        set_target_properties(paddle2onnx_dummy
-                PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+        set_target_properties(paddle2onnx_dummy PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     endif ()
     target_link_libraries(paddle2onnx_dummy p2o_paddle_proto onnx)
     # Bundle paddle2onnx static lib here
@@ -92,27 +91,18 @@ if (WITH_STATIC)
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
     if (APPLE)
-        set_target_properties(paddle2onnx
-                PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+        set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
     elseif (MSVC)
         message("------ BUILD WITH MSVC --------")
     else ()
-        set_target_properties(paddle2onnx
-                PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
-        set_target_properties(paddle2onnx
-                PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
+        set_target_properties(paddle2onnx PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+        set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     endif ()
     set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
     target_link_libraries(paddle2onnx p2o_paddle_proto onnx)
 endif ()
 
-#install(
-#    DIRECTORY ${PROJECT_SOURCE_DIR}/paddle2onnx
-#    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-#    FILES_MATCHING
-#    PATTERN "converter.h"
-#)
 if (WIN32)
     install(
             TARGETS paddle2onnx
@@ -160,62 +150,41 @@ if (BUILD_PADDLE2ONNX_PYTHON)
         endif ()
     endif ()
 
-    # find_package Python has replaced PythonInterp and PythonLibs since cmake 3.12
-    # Use the following command in the future; now this is only compatible with the latest pybind11
-    # find_package(Python ${PY_VERSION} COMPONENTS Interpreter Development REQUIRED)
-    find_package(PythonInterp ${PY_VERSION} REQUIRED)
-    find_package(PythonLibs ${PY_VERSION})
+    find_package(Python ${PY_VERSION} COMPONENTS Interpreter Development REQUIRED)
     if (CMAKE_SYSTEM_NAME STREQUAL "AIX")
         set(CMAKE_NO_SYSTEM_FROM_IMPORTED 1)
     endif ()
 
     add_library(paddle2onnx_cpp2py_export MODULE ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc ${ALL_SRCS})
     set_target_properties(paddle2onnx_cpp2py_export PROPERTIES PREFIX "")
-    set_target_properties(paddle2onnx_cpp2py_export
-            PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
+    set_target_properties(paddle2onnx_cpp2py_export PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
     set_target_properties(paddle2onnx_cpp2py_export PROPERTIES SUFFIX ${PY_EXT_SUFFIX})
-    set_target_properties(paddle2onnx_cpp2py_export
-            PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set_target_properties(paddle2onnx_cpp2py_export PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     target_include_directories(paddle2onnx_cpp2py_export PRIVATE
             $<BUILD_INTERFACE:${ONNX_ROOT}>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
             $<INSTALL_INTERFACE:include>
             ${PYTHON_INCLUDE_DIR})
 
-    # pybind11 is a header only lib
-    find_package(pybind11 2.2)
-    if (pybind11_FOUND)
-        target_include_directories(paddle2onnx_cpp2py_export PUBLIC
-                ${pybind11_INCLUDE_DIRS})
+    if (EXISTS ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
+        target_include_directories(paddle2onnx_cpp2py_export PUBLIC ${PROJECT_SOURCE_DIR}/third_party/pybind11/include)
     else ()
-        if (EXISTS ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
-            target_include_directories(paddle2onnx_cpp2py_export PUBLIC
-                    ${PROJECT_SOURCE_DIR}/third_party/pybind11/include)
-        else ()
-            message(FATAL_ERROR "cannot find pybind")
-        endif ()
+        message(FATAL_ERROR "cannot find pybind")
     endif ()
 
     if (APPLE)
-        set_target_properties(paddle2onnx_cpp2py_export
-                PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
-        target_link_libraries(paddle2onnx_cpp2py_export
-                PRIVATE -Wl,-force_load,$<TARGET_FILE:onnx>)
+        set_target_properties(paddle2onnx_cpp2py_export PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+        target_link_libraries(paddle2onnx_cpp2py_export PRIVATE -Wl,-force_load,$<TARGET_FILE:onnx>)
     elseif (MSVC)
         # In MSVC, we will add whole archive in default
-        target_link_libraries(paddle2onnx_cpp2py_export
-                PRIVATE -WHOLEARCHIVE:$<TARGET_FILE:onnx>)
+        target_link_libraries(paddle2onnx_cpp2py_export PRIVATE -WHOLEARCHIVE:$<TARGET_FILE:onnx>)
     elseif (CMAKE_SYSTEM_NAME STREQUAL "AIX")
         # whole-archive linker option not available on AIX
-        target_sources(paddle2onnx_cpp2py_export
-                PRIVATE $<TARGET_OBJECTS:onnx>)
+        target_sources(paddle2onnx_cpp2py_export PRIVATE $<TARGET_OBJECTS:onnx>)
     else ()
         # Assume everything else is like gcc
-        target_link_libraries(paddle2onnx_cpp2py_export
-                PRIVATE "-Wl,--whole-archive" $<TARGET_FILE:onnx>
-                "-Wl,--no-whole-archive")
-        set_target_properties(paddle2onnx_cpp2py_export
-                PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
+        target_link_libraries(paddle2onnx_cpp2py_export PRIVATE "-Wl,--whole-archive" $<TARGET_FILE:onnx> "-Wl,--no-whole-archive")
+        set_target_properties(paddle2onnx_cpp2py_export PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
     endif ()
 
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx)
@@ -224,18 +193,13 @@ if (BUILD_PADDLE2ONNX_PYTHON)
         target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})
         target_compile_options(paddle2onnx_cpp2py_export
                 PRIVATE /MP
-                /wd4244 # 'argument': conversion from 'google::
-                # protobuf::uint64' to 'int', possible
-                # loss of data
-                /wd4267 # Conversion from 'size_t' to 'int',
-                # possible loss of data
+                /wd4244 # 'argument': conversion from 'google::protobuf::uint64' to 'int', possible loss of data
+                /wd4267 # Conversion from 'size_t' to 'int', possible loss of data
                 /wd4996 # The second parameter is ignored.
                 ${EXTRA_FLAGS})
         if (ONNX_USE_PROTOBUF_SHARED_LIBS)
             target_compile_options(onnx_cpp2py_export
-                    PRIVATE /wd4251 # 'identifier' : class 'type1' needs to
-                    # have dll-interface to be used by
-                    # clients of class 'type2'
+                    PRIVATE /wd4251 # 'identifier' : class 'type1' needs to have dll-interface to be used by clients of class 'type2'
             )
         endif ()
         add_msvc_runtime_flag(paddle2onnx_cpp2py_export)
