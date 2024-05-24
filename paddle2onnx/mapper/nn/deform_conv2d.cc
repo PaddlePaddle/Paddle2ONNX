@@ -17,47 +17,42 @@
 #include <string>
 #include <vector>
 
-namespace paddle2onnx
-{
-  REGISTER_MAPPER(deformable_conv, DeformConv2dMapper)
+namespace paddle2onnx {
+REGISTER_MAPPER(deformable_conv, DeformConv2dMapper)
 
-  int32_t DeformConv2dMapper::GetMinOpset(bool verbose)
-  {
-    return 19;
+int32_t DeformConv2dMapper::GetMinOpset(bool verbose) {
+  return 19;
+}
+
+void DeformConv2dMapper::Opset19() {
+  auto input_info = GetInput("Input");
+  auto kernel_info = GetInput("Filter");
+  auto offset_info = GetInput("Offset");
+  auto mask_info = GetInput("Mask");
+  auto output_info = GetOutput("Output");
+  std::string bias_name = helper_->Constant({kernel_info[0].shape[0]}, GetOnnxDtype(input_info[0].dtype), static_cast<float>(0.0));
+  auto node = helper_->MakeNode(
+    "DeformConv",
+    {input_info[0].name, kernel_info[0].name, offset_info[0].name, bias_name, mask_info[0].name},
+    {output_info[0].name});
+
+  AddAttribute(node, "dilations", dilations_);
+  AddAttribute(node, "group", groups_);
+  // std::vector<int64_t> kernel_shape = {
+  //   kernel_info[0].shape[2],
+  //   kernel_info[0].shape[3]
+  // };
+  // AddAttribute(node, "kernel_shape", kernel_shape);
+  std::vector<int64_t> paddings;
+  if (paddings_.size() == 2) {
+    paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
+    paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
+  } else {
+    paddings.assign(paddings_.begin(), paddings_.end());
+    paddings[1] = paddings_[2];
+    paddings[2] = paddings_[1];
   }
-
-  void DeformConv2dMapper::Opset19()
-  {
-    auto kernel_info = GetInput("Filter");
-    auto input_info = GetInput("Input");
-    auto offset_info = GetInput("Offset");
-    auto mask_info = GetInput("Mask");
-    auto output_info = GetOutput("Output");
-    std::vector<int64_t> bias_shape;
-    bias_shape.emplace_back(kernel_info[0].shape[0]);
-    std::string bias_name = helper_->Constant(bias_shape, GetOnnxDtype(P2ODataType::FP32), static_cast<float>(1.0));
-    auto node = helper_->MakeNode(
-        "DeformConv", {input_info[0].name, kernel_info[0].name, offset_info[0].name, bias_name, mask_info[0].name}, {output_info[0].name});
-
-    AddAttribute(node, "dilations", dilations_);
-    AddAttribute(node, "group", groups_);
-    std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
-                                         kernel_info[0].shape[3]};
-    AddAttribute(node, "kernel_shape", kernel_shape);
-    std::vector<int64_t> paddings;
-    if (paddings_.size() == 2)
-    {
-      paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
-      paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
-    }
-    else
-    {
-      paddings.assign(paddings_.begin(), paddings_.end());
-      paddings[1] = paddings_[2];
-      paddings[2] = paddings_[1];
-    }
-    AddAttribute(node, "pads", paddings);
-    AddAttribute(node, "strides", strides_);
-  }
-
+  AddAttribute(node, "pads", paddings);
+  AddAttribute(node, "strides", strides_);
+}
 } // namespace paddle2onnx

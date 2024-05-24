@@ -28,10 +28,10 @@ namespace paddle2onnx
                        int64_t op_id)
         : Mapper(p, helper, block_id, op_id)
     {
+      GetAttr("deformable_groups", &deformable_groups_);
       GetAttr("strides", &strides_);
       GetAttr("paddings", &paddings_);
       GetAttr("dilations", &dilations_);
-      GetAttr("deformable_groups", &deformable_groups_);
       GetAttr("groups", &groups_);
       GetAttr("im2col_step", &im2col_step_);
     }
