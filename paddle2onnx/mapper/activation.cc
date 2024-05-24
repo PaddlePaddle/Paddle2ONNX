@@ -187,7 +187,7 @@ void HardSigmoidMapper::Opset7() {
 void SwishMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  std::shared_ptr<paddle2onnx::NodeProto> sigmod_node = nullptr;
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> sigmod_node = nullptr;
 
   if (HasAttr("beta")) {
     float temp_beta = 1.0;

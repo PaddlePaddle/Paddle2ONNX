@@ -22,10 +22,11 @@ configure_file(${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h.in ${PROJECT
 if(PADDLE2ONNX_DEBUG)
   add_definitions(-DPADDLE2ONNX_DEBUG)
 endif()
-# Set C++11 as standard for the whole project
-if(NOT MSVC)
-  set(CMAKE_CXX_STANDARD 11)
-endif(NOT MSVC)
+
+# Set C++14 as standard for the whole project
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 # setting max opset version for onnx
 # if you build from other version of onnx
@@ -37,7 +38,7 @@ add_definitions(-DPADDLE2ONNX_LIB)
 # Third dependency: onnx
 if(NOT TARGET onnx_proto)
   if(NOT ONNX_NAMESPACE)
-    set(ONNX_NAMESPACE "paddle2onnx")
+    set(ONNX_NAMESPACE "onnx")
   endif()
   add_definitions("-DONNX_NAMESPACE=${ONNX_NAMESPACE}")
 

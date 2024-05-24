@@ -91,7 +91,7 @@ class Mapper {
     // the return value in [7, MAX_ONNX_OPSET_VERSION], represent the minimum
     // opset_version
     // if return value < 0, means the op is not supported.
-    virtual int32_t GetMinOpset(bool verbose = false) { return 7; }
+    virtual int32_t GetMinOpset(bool verbose) { return 7; }
 
     virtual bool IsExportAsCustomOp() { return export_as_custom_op; }
 

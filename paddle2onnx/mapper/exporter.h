@@ -101,7 +101,7 @@ struct ModelExporter {
                           std::set<std::string>* unsupported_ops,
                           bool enable_experimental_op);
 
-  void SaveExternalData(::paddle2onnx::GraphProto* graph,
+  void SaveExternalData(ONNX_NAMESPACE::GraphProto* graph,
                         const std::string& external_file_path,
                         bool* save_external = nullptr);
 
