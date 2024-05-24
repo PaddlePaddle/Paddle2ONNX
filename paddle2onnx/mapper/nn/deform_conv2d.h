@@ -36,8 +36,8 @@ namespace paddle2onnx
       GetAttr("im2col_step", &im2col_step_);
     }
 
-    int32_t GetMinOpset(bool verbose = false);
-    void Opset19();
+    int32_t GetMinOpset(bool verbose) override;
+    void Opset19() override;
 
   private:
     std::vector<int64_t> strides_;

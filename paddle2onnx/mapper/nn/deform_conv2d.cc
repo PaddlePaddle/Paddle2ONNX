@@ -41,7 +41,19 @@ namespace paddle2onnx
     std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
                                          kernel_info[0].shape[3]};
     AddAttribute(node, "kernel_shape", kernel_shape);
-    AddAttribute(node, "pads", paddings_);
+    std::vector<int64_t> paddings;
+    if (paddings_.size() == 2)
+    {
+      paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
+      paddings.insert(paddings.begin(), paddings_.begin(), paddings_.end());
+    }
+    else
+    {
+      paddings.assign(paddings_.begin(), paddings_.end());
+      paddings[1] = paddings_[2];
+      paddings[2] = paddings_[1];
+    }
+    AddAttribute(node, "pads", paddings);
     AddAttribute(node, "strides", strides_);
   }
 
