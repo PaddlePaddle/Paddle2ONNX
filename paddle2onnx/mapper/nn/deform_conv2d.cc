@@ -33,8 +33,11 @@ namespace paddle2onnx
     auto offset_info = GetInput("Offset");
     auto mask_info = GetInput("Mask");
     auto output_info = GetOutput("Output");
+    std::vector<int64_t> bias_shape;
+    bias_shape.emplace_back(kernel_info[0].shape[0]);
+    std::string bias_name = helper_->Constant(bias_shape, GetOnnxDtype(P2ODataType::FP32), static_cast<float>(1.0));
     auto node = helper_->MakeNode(
-        "DeformConv", {input_info[0].name, kernel_info[0].name, offset_info[0].name}, {output_info[0].name});
+        "DeformConv", {input_info[0].name, kernel_info[0].name, offset_info[0].name, bias_name, mask_info[0].name}, {output_info[0].name});
 
     AddAttribute(node, "dilations", dilations_);
     AddAttribute(node, "group", groups_);
