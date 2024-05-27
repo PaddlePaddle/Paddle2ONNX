@@ -26,7 +26,9 @@ int32_t FillConstantMapper::GetMinOpset(bool verbose) {
   if (onnx_dtype != ONNX_NAMESPACE::TensorProto::INT32 &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::INT64 &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT &&
-      onnx_dtype != ONNX_NAMESPACE::TensorProto::DOUBLE) {
+      onnx_dtype != ONNX_NAMESPACE::TensorProto::DOUBLE && 
+      onnx_dtype != ONNX_NAMESPACE::TensorProto::BOOL
+      ) {
     Error() << "Only support int32/int64/float32/float64 data type in "
                "fill_constant operator."
             << std::endl;
@@ -133,6 +135,11 @@ void FillConstantMapper::Opset9() {
       data[0] = static_cast<double>(value);
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(double)));
+    }else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::BOOL) {
+      std::vector<double> data(1);
+      data[0] = static_cast<bool>(value);
+      auto ptr = reinterpret_cast<char*>(data.data());
+      tensor->set_raw_data(std::string(ptr, sizeof(bool)));
     }
     out = node->output(0);
   } else {
