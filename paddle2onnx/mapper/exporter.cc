@@ -409,7 +409,7 @@ std::string ModelExporter::Run(
   }
 
   // construct a onnx model proto
-  auto ir_version = _helper.GetOpsetVersion();
+  auto ir_version = _helper.GetIRVersion();
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
   model->set_ir_version(ir_version);
   auto graph = model->mutable_graph();
