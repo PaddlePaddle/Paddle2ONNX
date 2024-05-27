@@ -409,9 +409,9 @@ std::string ModelExporter::Run(
   }
 
   // construct a onnx model proto
+  auto ir_version = _helper.GetIRVersion();
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
-  // TODO(jiangjiajun) ir version is related to onnx version
-  model->set_ir_version(ONNX_NAMESPACE::IR_VERSION);
+  model->set_ir_version(ir_version);
   auto graph = model->mutable_graph();
   graph->set_name("Model from PaddlePaddle.");
   auto opset_id = model->add_opset_import();

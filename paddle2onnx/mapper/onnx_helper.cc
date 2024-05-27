@@ -17,9 +17,9 @@
 #include <fstream>
 
 namespace paddle2onnx {
-
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
-                  const std::string& name, const int64_t& value) {
+                  const std::string &name,
+                  const int64_t &value) {
   for (int i = 0; i < node->attribute_size(); ++i) {
     if (node->attribute(i).name() == name) {
       node->mutable_attribute(i)->set_i(value);
@@ -34,12 +34,13 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 }
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
-                  const std::string& name, const float& value) {
+                  const std::string &name,
+                  const float &value) {
   for (int i = 0; i < node->attribute_size(); ++i) {
     if (node->attribute(i).name() == name) {
       node->mutable_attribute(i)->set_f(value);
       node->mutable_attribute(i)->set_type(
-          ONNX_NAMESPACE::AttributeProto::FLOAT);
+        ONNX_NAMESPACE::AttributeProto::FLOAT);
       return;
     }
   }
@@ -50,7 +51,8 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 }
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
-                  const std::string& name, const std::string& value) {
+                  const std::string &name,
+                  const std::string &value) {
   auto attr = node->add_attribute();
   attr->set_name(name);
   attr->set_s(value);
@@ -58,27 +60,29 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 }
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
-                  const std::string& name, const std::vector<int64_t>& values) {
+                  const std::string &name,
+                  const std::vector<int64_t> &values) {
   auto attr = node->add_attribute();
   attr->set_name(name);
-  for (auto& item : values) {
+  for (auto &item : values) {
     attr->add_ints(item);
   }
   attr->set_type(ONNX_NAMESPACE::AttributeProto::INTS);
 }
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
-                  const std::string& name, const std::vector<float>& values) {
+                  const std::string &name,
+                  const std::vector<float> &values) {
   auto attr = node->add_attribute();
   attr->set_name(name);
-  for (auto& item : values) {
+  for (auto &item : values) {
     attr->add_floats(item);
   }
   attr->set_type(ONNX_NAMESPACE::AttributeProto::FLOATS);
 }
 
 void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
-                  const std::string& name,
+                  const std::string &name,
                   ONNX_NAMESPACE::TensorProto_DataType dtype) {
   auto attr = node->add_attribute();
   attr->set_name(name);
@@ -88,9 +92,9 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 
 ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
   Assert((paddle_dtype >= 0 && paddle_dtype <= 6) || paddle_dtype == 20 ||
-             paddle_dtype == 21,
+         paddle_dtype == 21,
          "Unknow paddle data type: " + std::to_string(paddle_dtype) +
-             " While call GetOnnxDtype.");
+         " While call GetOnnxDtype.");
   auto onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT;
   if (paddle_dtype == P2ODataType::BOOL) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::BOOL;
@@ -114,8 +118,8 @@ ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
   return onnx_dtype;
 }
 
-std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
-                                                        const Weight& weight) {
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string &name,
+                                                        const Weight &weight) {
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   node->set_op_type("Constant");
   node->add_output(name);
@@ -126,7 +130,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
   tensor->set_name(name);
   auto onnx_dtype = GetOnnxDtype(weight.dtype);
   tensor->set_data_type(onnx_dtype);
-  for (auto& dim : weight.shape) {
+  for (auto &dim : weight.shape) {
     tensor->add_dims(dim);
   }
   tensor->set_raw_data(std::string(weight.buffer.data(), weight.buffer.size()));
@@ -161,14 +165,14 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeConstant(const std::string& name,
 //}
 
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
-    const TensorInfo& info) {
+  const TensorInfo &info) {
   auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
   value_info->set_name(info.name);
   auto type_proto = value_info->mutable_type();
   auto tensor_type_proto = type_proto->mutable_tensor_type();
   tensor_type_proto->set_elem_type(GetOnnxDtype(info.dtype));
   auto shape = tensor_type_proto->mutable_shape();
-  for (auto& dim : info.shape) {
+  for (auto &dim : info.shape) {
     if (dim < 0) {
       auto dynamic_dim_name = MapperHelper::Get()->GenName("DynamicDimension");
       shape->add_dim()->set_dim_param(dynamic_dim_name);
@@ -180,15 +184,16 @@ std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
 }
 
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> OnnxHelper::MakeValueInfo(
-    const std::string& name, const int32_t& dtype,
-    std::vector<int64_t>& shape) {
+  const std::string &name,
+  const int32_t &dtype,
+  std::vector<int64_t> &shape) {
   auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
   value_info->set_name(name);
   auto type_proto = value_info->mutable_type();
   auto tensor_type_proto = type_proto->mutable_tensor_type();
   tensor_type_proto->set_elem_type(GetOnnxDtype(dtype));
   auto shape_proto = tensor_type_proto->mutable_shape();
-  for (auto& dim : shape) {
+  for (auto &dim : shape) {
     if (dim < 0) {
       auto dynamic_dim_name = MapperHelper::Get()->GenName("DynamicDimension");
       shape_proto->add_dim()->set_dim_param(dynamic_dim_name);
@@ -201,8 +206,9 @@ std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> OnnxHelper::MakeValueInfo(
 }
 
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
-    const std::string& op_type, const std::vector<std::string>& inputs,
-    const std::vector<std::string>& outputs) {
+  const std::string &op_type,
+  const std::vector<std::string> &inputs,
+  const std::vector<std::string> &outputs) {
 #ifdef PADDLE2ONNX_DEBUG
   P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
 #endif
@@ -225,8 +231,9 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
 }
 
 std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
-    const std::string& op_type, const std::vector<std::string>& inputs,
-    int num_outputs) {
+  const std::string &op_type,
+  const std::vector<std::string> &inputs,
+  int num_outputs) {
 #ifdef PADDLE2ONNX_DEBUG
   P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
 #endif
@@ -251,7 +258,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
   return node;
 }
 
-std::string OnnxHelper::AutoCast(const std::string& input,
+std::string OnnxHelper::AutoCast(const std::string &input,
                                  int32_t input_paddle_dtype,
                                  int32_t to_paddle_dtype) {
   std::string output = MapperHelper::Get()->GenName("auto.cast");
@@ -264,8 +271,8 @@ std::string OnnxHelper::AutoCast(const std::string& input,
   return cast_node->output(0);
 }
 
-std::string OnnxHelper::AutoCast(const std::string& input,
-                                 const std::string& output,
+std::string OnnxHelper::AutoCast(const std::string &input,
+                                 const std::string &output,
                                  int32_t input_paddle_dtype,
                                  int32_t to_paddle_dtype) {
   if (input_paddle_dtype == to_paddle_dtype) {
@@ -277,7 +284,7 @@ std::string OnnxHelper::AutoCast(const std::string& input,
   return cast_node->output(0);
 }
 
-std::string OnnxHelper::ConcatIndices(const std::vector<TensorInfo>& indices) {
+std::string OnnxHelper::ConcatIndices(const std::vector<TensorInfo> &indices) {
   std::vector<std::string> vars;
   // make sure all the indices be 1-D tensor
   for (size_t i = 0; i < indices.size(); ++i) {
@@ -302,9 +309,11 @@ std::string OnnxHelper::ConcatIndices(const std::vector<TensorInfo>& indices) {
   return vars[0];
 }
 
-std::string OnnxHelper::Clip(const std::string& input,
-                             const std::string& output, const float& min,
-                             const float& max, const int32_t& in_dtype) {
+std::string OnnxHelper::Clip(const std::string &input,
+                             const std::string &output,
+                             const float &min,
+                             const float &max,
+                             const int32_t &in_dtype) {
   // onnxruntime only supports float input
   std::string input_name = AutoCast(input, in_dtype, P2ODataType::FP32);
   if (opset_version < 11) {
@@ -324,15 +333,17 @@ std::string OnnxHelper::Clip(const std::string& input,
   }
 }
 
-std::string OnnxHelper::Clip(const std::string& input, const float& min,
-                             const float& max, const int32_t& in_dtype) {
+std::string OnnxHelper::Clip(const std::string &input,
+                             const float &min,
+                             const float &max,
+                             const int32_t &in_dtype) {
   std::string output = MapperHelper::Get()->GenName("helper.clip");
   return Clip(input, output, min, max, in_dtype);
 }
 
-std::string OnnxHelper::Squeeze(const std::string& input,
-                                const std::string& output,
-                                const std::vector<int64_t>& axes) {
+std::string OnnxHelper::Squeeze(const std::string &input,
+                                const std::string &output,
+                                const std::vector<int64_t> &axes) {
   if (axes.size() == 0) {
     auto node = MakeNode("Squeeze", {input}, {output});
   } else {
@@ -347,17 +358,17 @@ std::string OnnxHelper::Squeeze(const std::string& input,
   return output;
 }
 
-std::string OnnxHelper::Squeeze(const std::string& input,
-                                const std::vector<int64_t>& axes) {
+std::string OnnxHelper::Squeeze(const std::string &input,
+                                const std::vector<int64_t> &axes) {
   std::string output = MapperHelper::Get()->GenName("helper.squeeze");
   return Squeeze(input, output, axes);
 }
 
-std::string OnnxHelper::Unsqueeze(const std::string& input,
-                                  const std::string& output,
-                                  const std::vector<int64_t>& axes) {
+std::string OnnxHelper::Unsqueeze(const std::string &input,
+                                  const std::string &output,
+                                  const std::vector<int64_t> &axes) {
   Assert(axes.size() >= 0, "OnnxHelper::Unsqueeze Size of axes should > 0");
-  for (auto& item : axes) {
+  for (auto &item : axes) {
     Assert(item >= 0,
            "OnnxHelper::Unsqueeze All the elements in axes should >= 0");
   }
@@ -371,15 +382,15 @@ std::string OnnxHelper::Unsqueeze(const std::string& input,
   return output;
 }
 
-std::string OnnxHelper::Unsqueeze(const std::string& input,
-                                  const std::vector<int64_t>& axes) {
+std::string OnnxHelper::Unsqueeze(const std::string &input,
+                                  const std::vector<int64_t> &axes) {
   std::string output = MapperHelper::Get()->GenName("helper.unsqueeze");
   return Unsqueeze(input, output, axes);
 }
 
-std::string OnnxHelper::Reshape(const std::string& input,
-                                const std::string& output,
-                                const std::vector<int64_t>& shape) {
+std::string OnnxHelper::Reshape(const std::string &input,
+                                const std::string &output,
+                                const std::vector<int64_t> &shape) {
   if (opset_version < 6) {
     auto node = MakeNode("Reshape", {input}, {output});
     AddAttribute(node, "shape", shape);
@@ -393,27 +404,27 @@ std::string OnnxHelper::Reshape(const std::string& input,
   return output;
 }
 
-std::string OnnxHelper::Reshape(const std::string& input,
-                                const std::vector<int64_t>& shape) {
+std::string OnnxHelper::Reshape(const std::string &input,
+                                const std::vector<int64_t> &shape) {
   std::string output = MapperHelper::Get()->GenName("helper.reshape");
   return Reshape(input, output, shape);
 }
 
-std::string OnnxHelper::Flatten(const std::string& input,
-                                const std::string& output) {
+std::string OnnxHelper::Flatten(const std::string &input,
+                                const std::string &output) {
   return Reshape(input, output, std::vector<int64_t>(1, -1));
 }
 
-std::string OnnxHelper::Flatten(const std::string& input) {
+std::string OnnxHelper::Flatten(const std::string &input) {
   std::string output = MapperHelper::Get()->GenName("helper.flatten");
   return Flatten(input, output);
 }
 
-std::string OnnxHelper::Slice(const std::string& input,
-                              const std::string& output,
-                              const std::vector<int64_t>& axes,
-                              const std::vector<int64_t>& starts,
-                              const std::vector<int64_t>& ends) {
+std::string OnnxHelper::Slice(const std::string &input,
+                              const std::string &output,
+                              const std::vector<int64_t> &axes,
+                              const std::vector<int64_t> &starts,
+                              const std::vector<int64_t> &ends) {
   if (opset_version < 10) {
     auto node = MakeNode("Slice", {input}, {output});
     AddAttribute(node, "axes", axes);
@@ -429,44 +440,47 @@ std::string OnnxHelper::Slice(const std::string& input,
   return output;
 }
 
-std::string OnnxHelper::Slice(const std::string& input,
-                              const std::vector<int64_t>& axes,
-                              const std::vector<int64_t>& starts,
-                              const std::vector<int64_t>& ends) {
+std::string OnnxHelper::Slice(const std::string &input,
+                              const std::vector<int64_t> &axes,
+                              const std::vector<int64_t> &starts,
+                              const std::vector<int64_t> &ends) {
   std::string output = MapperHelper::Get()->GenName("helper.slice");
   return Slice(input, output, axes, starts, ends);
 }
 
-std::string OnnxHelper::Concat(const std::vector<std::string>& input,
-                               const std::string& output, int64_t axis) {
+std::string OnnxHelper::Concat(const std::vector<std::string> &input,
+                               const std::string &output,
+                               int64_t axis) {
   auto node = MakeNode("Concat", input, {output});
   AddAttribute(node, "axis", axis);
   return output;
 }
 
-std::string OnnxHelper::Concat(const std::vector<std::string>& input,
+std::string OnnxHelper::Concat(const std::vector<std::string> &input,
                                int64_t axis) {
   auto output = MapperHelper::Get()->GenName("helper.concat");
   return Concat(input, output, axis);
 }
 
-std::string OnnxHelper::Transpose(const std::string& input,
-                                  const std::string& output,
-                                  const std::vector<int64_t>& perm) {
+std::string OnnxHelper::Transpose(const std::string &input,
+                                  const std::string &output,
+                                  const std::vector<int64_t> &perm) {
   auto node = MakeNode("Transpose", {input}, {output});
   AddAttribute(node, "perm", perm);
   return output;
 }
 
-std::string OnnxHelper::Transpose(const std::string& input,
-                                  const std::vector<int64_t>& perm) {
+std::string OnnxHelper::Transpose(const std::string &input,
+                                  const std::vector<int64_t> &perm) {
   auto output = MapperHelper::Get()->GenName("helper.transpose");
   return Transpose(input, output, perm);
 }
 
 std::vector<std::string> OnnxHelper::Split(
-    const std::string& input, const std::vector<std::string>& outputs,
-    const std::vector<int64_t>& split, int64_t axis) {
+  const std::string &input,
+  const std::vector<std::string> &outputs,
+  const std::vector<int64_t> &split,
+  int64_t axis) {
   Assert(outputs.size() > 0 || split.size() > 0,
          "OnnxHelper::Split requires the size of outputs or the size of split "
          "> 0.");
@@ -494,8 +508,8 @@ std::vector<std::string> OnnxHelper::Split(
   return outputs;
 }
 
-std::vector<std::string> OnnxHelper::Split(const std::string& input,
-                                           const std::vector<int64_t>& split,
+std::vector<std::string> OnnxHelper::Split(const std::string &input,
+                                           const std::vector<int64_t> &split,
                                            int64_t axis) {
   Assert(split.size() > 0,
          "OnnxHelper::Split requires the size of parameter split > 0.");
@@ -506,7 +520,8 @@ std::vector<std::string> OnnxHelper::Split(const std::string& input,
   return Split(input, outputs, split, axis);
 }
 std::vector<std::string> OnnxHelper::DtypeAlignment(
-    const std::vector<TensorInfo>& input_info, int32_t* out_dtype) {
+  const std::vector<TensorInfo> &input_info,
+  int32_t *out_dtype) {
   Assert(input_info.size() > 0,
          "OnnxHelper::DtypeAlignment requires the size of input info > 0.");
   std::vector<int32_t> input_dtypes;
@@ -531,4 +546,44 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
   return casted_node;
 }
 
-}  // namespace paddle2onnx
+
+ONNX_NAMESPACE::Version OnnxHelper::GetIRVersion() const {
+  int ir_version = 0;
+  switch (opset_version) {
+    case 7:
+    case 8:
+      ir_version = 3;
+      break;
+    case 9:
+      ir_version = 4;
+      break;
+    case 10:
+      ir_version = 5;
+      break;
+    case 11:
+      ir_version = 6;
+      break;
+    case 12:
+    case 13:
+    case 14:
+      ir_version = 7;
+      break;
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+      ir_version = 8;
+      break;
+    case 19:
+    case 20:
+      ir_version = 9;
+      break;
+    case 21:
+      ir_version = 10;
+      break;
+    default:
+      Assert(false, "Opset version must be 7-20");
+  }
+  return static_cast<ONNX_NAMESPACE::Version>(ir_version);
+}
+} // namespace paddle2onnx
