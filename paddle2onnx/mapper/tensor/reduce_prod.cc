@@ -24,8 +24,6 @@ int32_t ReduceMapperProd::GetMinOpset(bool verbose) {
 }
 
 void ReduceMapperProd::Opset18() {
-  Assert(false, "ReduceMapperProd don't support opset18 now");
-#if 0
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   GetAttr("reduce_all", &reduce_all_);
@@ -65,7 +63,6 @@ void ReduceMapperProd::Opset18() {
   }
   auto out_info = GetOutput("Out");
   helper_->AutoCast(out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
-#endif
 }
 
 
