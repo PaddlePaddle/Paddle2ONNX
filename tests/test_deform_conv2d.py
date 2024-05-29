@@ -35,9 +35,9 @@ def test_deform_conv2d():
     offset = paddle.rand((8, 2 * kh * kw, 26, 26))
     mask = paddle.rand((8, kh * kw, 26, 26))
     weight = paddle.rand((16, 1, kh, kw))
-    # obj = APIOnnx(op, "deform_conv2d", [19])
-    # obj.set_input_data("input_data", input, offset, weight, mask)
-    # obj.run()
+    obj = APIOnnx(op, "deform_conv2d", [19])
+    obj.set_input_data("input_data", input, offset, weight, mask)
+    obj.run()
 
 
 if __name__ == "__main__":
