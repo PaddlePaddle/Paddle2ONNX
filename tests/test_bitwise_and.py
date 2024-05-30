@@ -32,7 +32,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_bitwise_and_18():
+def test_bitwise_and_18_1():
     """
     api: paddle.bitwise_and
     op version: 18
@@ -45,4 +45,19 @@ def test_bitwise_and_18():
         "input_data",
         paddle.to_tensor([-5, -1, 1]),
         paddle.to_tensor([4,  2, -3]))
+    obj.run()
+
+def test_bitwise_and_18_2():
+    """
+    api: paddle.bitwise_and
+    op version: 18
+    """
+    op = Net()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'BitwiseAnd', [18])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor([True, True, True]),
+        paddle.to_tensor([False,  False, True]))
     obj.run()
