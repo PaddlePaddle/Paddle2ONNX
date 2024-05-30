@@ -61,12 +61,19 @@ void BitWiseAndMapper::Opset18() {
   };
   std::string x_name = x_info[0].name;
   std::string y_name = y_info[0].name;
+  bool is_cast = false;
+  constexpr int cast_dtype = P2ODataType::UINT8;
   if (std::find(T.begin(), T.end(), x_info[0].dtype) == T.end()) {
-    x_name = helper_->AutoCast(x_name, x_info[0].dtype, P2ODataType::UINT8); // cast 
+    // Since x and y are of the same type, we only need to determine the type of x
+    x_name = helper_->AutoCast(x_name, x_info[0].dtype, cast_dtype); // cast 
+    y_name = helper_->AutoCast(y_name, y_info[0].dtype, cast_dtype); // cast
+    is_cast = true;
+  } 
+  if(is_cast){
+    auto bitwise_and_node = helper_->MakeNode("BitwiseAnd", {x_name, y_name});
+    helper_->AutoCast(bitwise_and_node->output(0), out_info[0].name, cast_dtype, out_info[0].dtype);
+    return;
   }
-  if (std::find(T.begin(), T.end(), y_info[0].dtype) == T.end()) {
-    y_name = helper_->AutoCast(y_name, y_info[0].dtype, P2ODataType::UINT8); // cast 
-  }
-  auto output = helper_->MakeNode("BitwiseAnd", {x_name, y_name}, {out_info[0].name});
+  helper_->MakeNode("BitwiseAnd", {x_name, y_name},{out_info[0].name});
 }
 }  // namespace paddle2onnx

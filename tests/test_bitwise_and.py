@@ -61,25 +61,3 @@ def test_bitwise_and_18_2():
         paddle.to_tensor([True, True, True]),
         paddle.to_tensor([False,  False, True]))
     obj.run()
-def test_bitwise_and_18_3():
-    """
-    api: paddle.bitwise_and
-    op version: 18
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'BitwiseAnd', [18])
-    a = paddle.to_tensor([True,  False, True])
-    b = paddle.to_tensor([-5, -1, 1])
-    print(type(a[0].item()))
-
-    obj.set_input_data(
-        "input_data",
-        a,
-        b
-    )
-    obj.run()
-
-if __name__ == '__main__':
-    test_bitwise_and_18_2()
