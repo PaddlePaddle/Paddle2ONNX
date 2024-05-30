@@ -23,12 +23,50 @@ int32_t BitWiseAndMapper::GetMinOpset(bool verbose) {
   return op_version;
 }
 
-
+/**
+BOOL,
+  INT16,
+  INT32,
+  INT64,
+  FP16,
+  FP32,
+  FP64,
+  X7,
+  X8,
+  X9,
+  X10,
+  X11,
+  X12,
+  X13,
+  X14,
+  X15,
+  X16,
+  X17,
+  X18,
+  X19,
+  UINT8,
+  INT8,
+*/
 void BitWiseAndMapper::Opset18() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
   auto out_info = GetOutput("Out");
-  
-  auto output = helper_->MakeNode("BitwiseAnd", {x_info[0].name, y_info[0].name}, {out_info[0].name});
+  constexpr std::array<P2ODataType, 5> T = {
+    P2ODataType::INT16,
+    P2ODataType::INT32,
+    P2ODataType::INT64,
+    P2ODataType::INT8,
+    P2ODataType::UINT8,
+    // Except BOOL. Cast to UINT8.
+  };
+  std::string x_name = x_info[0].name;
+  std::string y_name = y_info[0].name;
+  if (std::find(T.begin(), T.end(), x_info[0].dtype) == T.end()) {
+    x_name = helper_->AutoCast(x_name, x_info[0].dtype, P2ODataType::UINT8); // cast 
+  }
+  if (std::find(T.begin(), T.end(), y_info[0].dtype) == T.end()) {
+    y_name = helper_->AutoCast(y_name, y_info[0].dtype, P2ODataType::UINT8); // cast 
+  }
+  auto output = helper_->MakeNode("BitwiseAnd", {x_name, y_name}, {out_info[0].name});
 }
 }  // namespace paddle2onnx
