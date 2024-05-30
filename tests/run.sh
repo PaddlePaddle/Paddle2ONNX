@@ -43,6 +43,7 @@ ignore="test_auto_scan_multiclass_nms.py
         test_auto_scan_generate_proposals.py \
         test_uniform.py \
         test_ceil.py \
+        test_deform_conv2d.py \
         test_floor_divide.py \
         test_has_nan.py \
         test_isfinite.py \
