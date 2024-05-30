@@ -22,31 +22,6 @@ int32_t BitWiseAndMapper::GetMinOpset(bool verbose) {
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
   return op_version;
 }
-
-/**
-BOOL,
-  INT16,
-  INT32,
-  INT64,
-  FP16,
-  FP32,
-  FP64,
-  X7,
-  X8,
-  X9,
-  X10,
-  X11,
-  X12,
-  X13,
-  X14,
-  X15,
-  X16,
-  X17,
-  X18,
-  X19,
-  UINT8,
-  INT8,
-*/
 void BitWiseAndMapper::Opset18() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
