@@ -117,30 +117,32 @@ void FillConstantMapper::Opset9() {
     tensor->set_data_type(onnx_dtype);
     tensor->add_dims(1);
     if (onnx_dtype == ONNX_NAMESPACE::TensorProto::INT32) {
-      std::vector<int32_t> data(1);
-      data[0] = static_cast<int32_t>(value);
-      auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(int32_t)));
-    } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::INT64) {
-      std::vector<int64_t> data(1);
-      data[0] = static_cast<int64_t>(value);
-      auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(int64_t)));
-    } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
-      std::vector<float> data(1, value_);
-      auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(float)));
-    } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
-      std::vector<double> data(1);
-      data[0] = static_cast<double>(value);
-      auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(double)));
-    } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::BOOL) {
-      std::vector<double> data(1);
+    std::vector<int32_t> data(1);
+    data[0] = static_cast<int32_t>(value);
+    const char * ptr = reinterpret_cast<const char*>(data.data());
+    tensor->set_raw_data(std::string(ptr, sizeof(int32_t)));
+  } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::INT64) {
+    std::vector<int64_t> data(1);
+    data[0] = static_cast<int64_t>(value);
+    const char * ptr = reinterpret_cast<const char*>(data.data());
+    tensor->set_raw_data(std::string(ptr, sizeof(int64_t)));
+  } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::FLOAT) {
+    std::vector<float> data(1, value_); // float do not need to be converted.
+    const char * ptr = reinterpret_cast<const char*>(data.data());
+    tensor->set_raw_data(std::string(ptr, sizeof(float)));
+  } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::DOUBLE) {
+    std::vector<double> data(1);
+    data[0] = static_cast<double>(value);
+    const char * ptr = reinterpret_cast<const char*>(data.data());
+    tensor->set_raw_data(std::string(ptr, sizeof(double)));
+  } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::BOOL) {
+      // std::vector<bool> is a specialized container class that stores data not as a byte per Boolean value, but as a bit compression. 
+      // This makes the direct use of std::vector<bool> potentially problematic
+      bool *data = new bool[1];
       data[0] = static_cast<bool>(value);
-      auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(bool)));
-    }
+      tensor->set_raw_data(std::string((const char *)(data), sizeof(bool)));
+      delete[] data;
+  }
     out = node->output(0);
   } else {
     std::vector<int64_t> shape;
@@ -151,7 +153,7 @@ void FillConstantMapper::Opset9() {
     auto value_info = GetInput("ValueTensor");
     std::string cast_value = helper_->AutoCast(
         value_info[0].name, value_info[0].dtype, out_info[0].dtype);
-    helper_->MakeNode("Add", {out, cast_value}, {out_info[0].name});
+    helper_->MakeNode("Add", {out, cast_value}, {out_info[0].name}); //broad_cast
   } else {
     helper_->MakeNode("Identity", {out}, {out_info[0].name});
   }

@@ -91,6 +91,7 @@ class Net1(BaseNet):
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), 2, 3, 2, 2]
         dtype = self.config["dtype"]
         x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
+        print("=======================\n",x.shape)
         return x
 
 
@@ -105,7 +106,7 @@ class TestFullConvert1(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=2, max_value=20), min_size=1, max_size=4))
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64","bool"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
         fill_value = draw(st.integers(min_value=1, max_value=5))
@@ -160,7 +161,7 @@ class TestFullConvert2(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=2, max_value=20), min_size=1, max_size=4))
-        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64","bool"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
         fill_value = draw(st.integers(min_value=1, max_value=5))
