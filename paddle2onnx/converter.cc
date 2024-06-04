@@ -168,6 +168,16 @@ PADDLE2ONNX_DECL bool Export(
       disable_op_types.push_back(disable_op_type);
     }
   }
+
+  // convert output to fp16
+  if (export_fp16_model || (parser.inputs[0].dtype != parser.outputs[0].dtype))
+  {
+    for (auto &output : parser.outputs)
+    {
+      output.dtype = P2ODataType::FP16;
+    }
+  }
+
   std::string calibration_str;
   std::string result = me.Run(
       parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,

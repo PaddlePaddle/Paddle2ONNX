@@ -17,8 +17,6 @@ import numpy as np
 import onnxruntime
 
 import paddle
-from onnxbase import APIOnnx, randtool
-import paddle2onnx
 
 import unittest
 
@@ -36,40 +34,29 @@ if __name__ == "__main__":
     # paddle.set_device("gpu")
     model = paddle.jit.load(path)
     model.float16()
+    model.eval()
     input_spec = [paddle.static.InputSpec(shape=[-1, 3, 224, 224], dtype='float16', name='inputs')]
-    paddle.jit.save(model, 'ResNet50_infer/inference_fp16', input_spec=input_spec)
-
-    # model.eval()
-    # x = paddle.randn([1, 3, 224, 224], "float16")
-    # output = model(x)
-    # print(f"output: {output}")
+    # paddle.jit.save(model, 'ResNet50_infer/inference_fp16', input_spec=input_spec)
 
     # convert to onnx
-    os.system("paddle2onnx --model_dir ResNet50_infer --model_filename inference_fp16.pdmodel --params_filename inference_fp16.pdiparams --export_fp16_model True --save_file ResNet50_infer/resnet_fp16.onnx")
-    # os.system("paddle2onnx --model_dir ResNet50_infer --model_filename inference.pdmodel --params_filename inference.pdiparams --export_fp16_model True --save_file ResNet50_infer/resnet_fp16.onnx")
+    paddle.onnx.export(model, "./resnet_fp16", input_spec=input_spec, export_fp16_model=True) # ONNX模型导出
 
     # valid precision
-    # np.random.seed(10)
-    # input_img = np.random.rand(1, 3, 224, 224).astype("float32")
+    np.random.seed(10)
+    input_img = np.random.rand(1, 3, 224, 224).astype("float16")
 
-    # onnx_file_name = "/wuzp/Paddle2ONNX/model/ResNet50_infer/resnet_fp32.onnx"
-    # # providers = [("CUDAExecutionProvider")]
-    # ort_session = onnxruntime.InferenceSession(onnx_file_name)
+    onnx_file_name = "./resnet_fp16.onnx"
+    ort_session = onnxruntime.InferenceSession(onnx_file_name)
 
-    # ort_inputs = {ort_session.get_inputs()[0].name: input_img}
-    # ort_outputs = ort_session.run(None, ort_inputs)
-    # print(f"ort_output: {ort_outputs}")
-    # # print(onnxruntime.get_device())
+    ort_inputs = {ort_session.get_inputs()[0].name: input_img}
+    ort_outputs = ort_session.run(None, ort_inputs)
 
-    # onnx_file_name_fp16 = "/wuzp/Paddle2ONNX/model/resnet_fp16.onnx"
-    # # providers = [("CUDAExecutionProvider")]
-    # ort_session_fp16 = onnxruntime.InferenceSession(onnx_file_name_fp16)
-    # input_img_fp16 = input_img.astype("float16")
-    # ort_inputs_fp16 = {ort_session_fp16.get_inputs()[0].name: input_img_fp16}
-    # ort_outputs_fp16 = ort_session_fp16.run(None, ort_inputs_fp16)
-    # print(f"ort_outputs_fp16: {ort_outputs_fp16}")
+    # resnet50 cannot be inferenced by half?
+    model.float()
+    paddle_input = paddle.to_tensor(input_img, dtype="float32")
+    paddle_output = model(paddle_input)
 
-    # # assert
-    # np.testing.assert_allclose(
-    #     ort_outputs_fp16[0], ort_outputs[0], rtol=1e-03, atol=1e-05
-    # )
+    # assert
+    np.testing.assert_allclose(
+        paddle_output.numpy(), ort_outputs[0], rtol=1e-03, atol=1e-05
+    )
