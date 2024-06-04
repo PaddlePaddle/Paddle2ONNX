@@ -32,6 +32,7 @@ class SplitMapper : public Mapper {
   int32_t GetMinOpset(bool verbose = false);
   void Opset7();
   void Opset13();
+  void Opset18();
 
  private:
   int64_t axis_;

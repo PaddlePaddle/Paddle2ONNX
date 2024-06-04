@@ -133,12 +133,83 @@ void SplitMapper::Opset13() {
     output_names[i] = output_info[i].name;
   }
   if (splits != "") {
+
     auto node =
         helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
     AddAttribute(node, "axis", axis);
   } else {
+
     auto node = helper_->MakeNode("Split", {input_info[0].name}, output_names);
     AddAttribute(node, "axis", axis);
+  }
+}
+
+
+void SplitMapper::Opset18() {
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+
+  int64_t axis = axis_;
+  if (HasInput("AxisTensor")) {
+    std::vector<int64_t> value;
+    Assert(TryGetInputValue("AxisTensor", &value),
+           "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
+    axis = value[0];
+  }
+  if (axis < 0) {
+    axis += input_info[0].Rank();
+  }
+
+  std::string splits = "";
+  if (HasInput("SectionsTensorList")) {
+    auto info = GetInput("SectionsTensorList");
+    splits = helper_->ConcatIndices(info);
+    Warn()<< "(SectionsTensorList) may have unexpected errors in version 18"<<std::endl;
+  } else if (sections_.size() > 0) {
+    Warn()<< "(sections) may have unexpected errors in version 18"<<std::endl;
+
+    int sum_of_kown_dim = 0;
+    for (size_t i = 0; i < sections_.size(); ++i) {
+      if (sections_[i] > 0) {
+        sum_of_kown_dim += sections_[i];
+      }
+    }
+    for (size_t i = 0; i < sections_.size(); ++i) {
+      if (sections_[i] < 0) {
+        Assert(input_info[0].shape[axis] > 0,
+               "Cannot convert split op, while there's -1 in sections and "
+               "cannot be infered by input shape.");
+        sections_[i] = input_info[0].shape[axis] - sum_of_kown_dim;
+      }
+    }
+    splits = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, sections_);
+  } else{
+    Warn() << "(sections) does not exist or is None " << std::endl;
+  }
+
+  std::vector<std::string> output_names(output_info.size());
+  for (size_t i = 0; i < output_info.size(); ++i) {
+    output_names[i] = output_info[i].name;
+  }
+  if (splits != "") {
+
+    P2OLogger() << input_info[0].name << std::endl;
+    auto node =
+        helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
+    AddAttribute(node, "axis", axis);
+  } else {
+
+    Warn() << "(split) is not specified" <<std::endl;
+    int64_t num = input_info[0].shape[axis_]; // default
+    if (HasAttr("num")){
+       GetAttr("num", &num);
+      Warn() << "get num success"<<", num:"<<num << std::endl;
+    }
+    Assert(input_info[0].shape[axis_] % num == 0,"Oh, 1 error in split.cc!\n");
+    int64_t each_part_size = input_info[0].shape[axis_]/num ;
+    std::vector<int64_t> num_outputs = std::vector<int64_t>(num, each_part_size) ;
+    Warn() << "get num success"<<", num:"<<num_outputs[0] << std::endl;
+    auto node = helper_->Split(input_info[0].name, output_names, num_outputs, axis_);
   }
 }
 
