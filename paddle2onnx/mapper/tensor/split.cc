@@ -159,7 +159,7 @@ void SplitMapper::Opset18() {
   if (axis < 0) {
     axis += input_info[0].Rank();
   }
-
+  // sections attribute
   std::string splits = "";
   if (HasInput("SectionsTensorList")) {
     auto info = GetInput("SectionsTensorList");
@@ -187,19 +187,20 @@ void SplitMapper::Opset18() {
     output_names[i] = output_info[i].name;
   }
   if (splits != "") {
-    auto node =
-        helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
+    auto node = helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
     AddAttribute(node, "axis", axis);
-  } else {
-    int64_t num = input_info[0].shape[axis_]; // default
-    if (HasAttr("num")){
-       GetAttr("num", &num);
-    }
-    Assert(input_info[0].shape[axis_] % num == 0,"Oh, 1 error in split.cc!\n");
-    int64_t each_part_size = input_info[0].shape[axis_]/num ;
-    std::vector<int64_t> num_outputs = std::vector<int64_t>(num, each_part_size) ;
-    auto node = helper_->Split(input_info[0].name, output_names, num_outputs, axis_);
+    return ;
+  } 
+  // [num] attribute -> [split] input
+  int64_t num = input_info[0].shape[axis_]; // default
+  if (HasAttr("num")){
+     GetAttr("num", &num);
   }
+  // Question: Why do we need to call helper->Split() instead of helper->MakeNode("Split")?
+  // Answer: Split-18 requires either a split input or the num_ouputs attribute. Here we choose to add split input.
+  int64_t each_part_size = input_info[0].shape[axis_] / num ;
+  std::vector<int64_t> splits_size = std::vector<int64_t>(num, each_part_size) ;
+  helper_->Split(input_info[0].name, output_names, splits_size, axis_);
 }
 
 }  // namespace paddle2onnx

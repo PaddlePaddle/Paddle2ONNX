@@ -27,6 +27,7 @@ class SplitMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
     GetAttr("sections", &sections_);
+    GetAttr("num", &num_);
   }
 
   int32_t GetMinOpset(bool verbose = false);
@@ -36,6 +37,7 @@ class SplitMapper : public Mapper {
 
  private:
   int64_t axis_;
+  int64_t num_;
   std::vector<int64_t> sections_;
 };
 
