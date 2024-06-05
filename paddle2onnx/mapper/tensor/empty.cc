@@ -39,15 +39,12 @@ namespace paddle2onnx
     {
       std::vector<TensorInfo> shape_info = GetInput("ShapeTensor");
       shape_name = helper_->AutoCast(shape_info[0].name, shape_info[0].dtype, P2ODataType::INT64);
-      Warn()<<"shape info name"<<shape_info[0].name<<std::endl;
     }
     else //tensor list
     {
       std::vector<TensorInfo> shape_info = GetInput("ShapeTensorList");
       shape_name = helper_->ConcatIndices(shape_info);
-      Warn()<<"shape info name"<<shape_info[0].name<<std::endl;
     }
-    Warn()<<"output name:" << out_info[0].name <<std::endl;
     auto node = helper_->MakeNode("ConstantOfShape", {shape_name}, {out_info[0].name});
 
     // The attribute [value] of ConstantOfShape op, a one-element tensor, is the value filled in output.
