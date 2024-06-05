@@ -18,8 +18,6 @@ namespace paddle2onnx
     bool shape_is_tensor = HasInput("ShapeTensor");
     bool shape_is_tensor_list = HasInput("ShapeTensorList");
     bool shape_is_other_types = !(shape_is_tensor || shape_is_tensor_list);
-    std::cout << "shape_is_tensor:" << shape_is_tensor << std::endl;
-    std::cout << "shape_is_tensor_list:" << shape_is_tensor_list << std::endl;
     // Paddle-model output dtype to onnx-model dtype
     ONNX_NAMESPACE::TensorProto_DataType onnx_dtype = GetOnnxDtype(out_info[0].dtype);
     // Fill with 0
@@ -86,11 +84,8 @@ namespace paddle2onnx
     {
       // std::vector<bool> is a specialized container class that stores data not as a byte per Boolean value, but as a bit compression.
       // This makes the direct use of std::vector<bool> potentially problematic
-      std::cout << "bool!!!!" << std::endl;
       bool *data = new bool[1];
       data[0] = static_cast<bool>(value);
-      std::cout << sizeof(bool) << std::endl;
-      std::cout << data[0] << std::endl;
       tensor->set_raw_data(std::string((const char *)(data), sizeof(bool)));
       delete[] data;
     }
