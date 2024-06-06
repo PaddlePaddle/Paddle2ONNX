@@ -43,7 +43,11 @@ void MatmulMapper::Opset7() {
   if (transpose_Y_) {
     input_y = GetTrans(input_y_info);
   }
-  if (fabs(alpha_ - 1.0) < 1e-6) {
+  if(P2ODataType::FP16 == input_x_info[0].dtype)
+  {
+    auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
+  }
+  else if (fabs(alpha_ - 1.0) < 1e-6) {
     auto node = helper_->MakeNode("MatMul", {input_x, input_y});
     helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                       input_y_info[0].dtype);
