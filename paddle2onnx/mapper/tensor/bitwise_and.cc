@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/bitwise_and.h"
+#include <array>
 
 namespace paddle2onnx {
 REGISTER_MAPPER(bitwise_and, BitWiseAndMapper)
