@@ -43,22 +43,18 @@ void MatmulMapper::Opset7() {
   if (transpose_Y_) {
     input_y = GetTrans(input_y_info);
   }
-  if(P2ODataType::FP16 == input_x_info[0].dtype)
+
+  if (fabs(alpha_ - 1.0) < 1e-6)
   {
     auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
   }
-  else if (fabs(alpha_ - 1.0) < 1e-6) {
-    auto node = helper_->MakeNode("MatMul", {input_x, input_y});
-    helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                      input_y_info[0].dtype);
-  } else {
+  else
+  {
     auto mutmul_node = helper_->MakeNode("MatMul", {input_x, input_y});
     std::string scale_node =
         helper_->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
     auto mul_node =
-        helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node});
-    helper_->AutoCast(mul_node->output(0), output_info[0].name,
-                      P2ODataType::FP32, input_y_info[0].dtype);
+        helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node}, {output_info[0].name});
   }
 }
 
