@@ -58,5 +58,5 @@ if __name__ == "__main__":
 
     # assert
     np.testing.assert_allclose(
-        paddle_output.numpy(), ort_outputs[0], rtol=2e-02, atol=1e-04
+        paddle_output.numpy(), ort_outputs[0], rtol=1e-02, atol=1e-05
     )
