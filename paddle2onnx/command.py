@@ -12,21 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from six import text_type as _text_type
 import argparse
 import ast
 import sys
 import os
+import paddle2onnx
 from paddle2onnx.utils import logging
-
-
-def str2list(v):
-    if len(v) == 0:
-        return None
-    v = v.replace(" ", "")
-    v = eval(v)
-    return v
 
 
 def arg_parser():
@@ -34,28 +25,28 @@ def arg_parser():
     parser.add_argument(
         "--model_dir",
         "-m",
-        type=_text_type,
+        type=str,
         default=None,
         help="PaddlePaddle model directory, if params stored in single file, you need define '--model_filename' and 'params_filename'."
     )
     parser.add_argument(
         "--model_filename",
         "-mf",
-        type=_text_type,
+        type=str,
         default=None,
         help="PaddlePaddle model's network file name, which under directory seted by --model_dir"
     )
     parser.add_argument(
         "--params_filename",
         "-pf",
-        type=_text_type,
+        type=str,
         default=None,
         help="PaddlePaddle model's param file name(param files combined in single file), which under directory seted by --model_dir."
     )
     parser.add_argument(
         "--save_file",
         "-s",
-        type=_text_type,
+        type=str,
         default=None,
         help="file path to save onnx model")
     parser.add_argument(
@@ -67,13 +58,13 @@ def arg_parser():
     parser.add_argument(
         "--deploy_backend",
         "-d",
-        type=_text_type,
+        type=str,
         default="onnxruntime",
         choices=["onnxruntime", "tensorrt", "rknn", "others"],
         help="Quantize model deploy backend, default onnxruntime.")
     parser.add_argument(
         "--save_calibration_file",
-        type=_text_type,
+        type=str,
         default="calibration.cache",
         help="The calibration cache for TensorRT deploy, default calibration.cache."
     )
@@ -100,7 +91,7 @@ def arg_parser():
         help="whether enable auto_update_opset, default is True")
     parser.add_argument(
         "--external_filename",
-        type=_text_type,
+        type=str,
         default=None,
         help="The filename of external_data when the model is bigger than 2G.")
     parser.add_argument(
@@ -110,38 +101,11 @@ def arg_parser():
         help="Whether export FP16 model for ORT-GPU, default False")
     parser.add_argument(
         "--custom_ops",
-        type=_text_type,
+        type=str,
         default="{}",
         help="Ops that needs to be converted to custom op, e.g --custom_ops '{\"paddle_op\":\"onnx_op\"}', default {}"
     )
     return parser
-
-
-def c_paddle_to_onnx(model_file,
-                     params_file="",
-                     save_file=None,
-                     opset_version=7,
-                     auto_upgrade_opset=True,
-                     verbose=True,
-                     enable_onnx_checker=True,
-                     enable_experimental_op=True,
-                     enable_optimize=True,
-                     deploy_backend="onnxruntime",
-                     calibration_file="",
-                     external_file="",
-                     export_fp16_model=False,
-                     custom_ops={}):
-    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-    onnx_model_str = c_p2o.export(
-        model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-        enable_onnx_checker, enable_experimental_op, enable_optimize,
-        custom_ops, deploy_backend, calibration_file, external_file,
-        export_fp16_model)
-    if save_file is not None:
-        with open(save_file, "wb") as f:
-            f.write(onnx_model_str)
-    else:
-        return onnx_model_str
 
 
 def main():
@@ -149,15 +113,14 @@ def main():
         logging.info("Use \"paddle2onnx -h\" to print the help information")
         logging.info(
             "For more information, please follow our github repo below:")
-        logging.info("Github: https://github.com/PaddlePaddle/paddle2onnx.git")
+        logging.info("Github: https://github.com/PaddlePaddle/paddle2onnx")
         return
 
     parser = arg_parser()
     args = parser.parse_args()
 
     if args.version:
-        import paddle2onnx
-        logging.info("paddle2onnx-{} with python>=3.6, paddlepaddle>=2.0.0".
+        logging.info("paddle2onnx-{} with python>=3.8, paddlepaddle>=2.0.0".
                      format(paddle2onnx.__version__))
         return
 
@@ -181,7 +144,7 @@ def main():
     custom_ops_dict = eval(args.custom_ops)
 
     calibration_file = args.save_calibration_file
-    c_paddle_to_onnx(
+    paddle2onnx.export(
         model_file=model_file,
         params_file=params_file,
         save_file=args.save_file,
@@ -191,13 +154,11 @@ def main():
         enable_onnx_checker=args.enable_onnx_checker,
         enable_experimental_op=True,
         enable_optimize=True,
+        custom_op_info=custom_ops_dict,
         deploy_backend=args.deploy_backend,
         calibration_file=calibration_file,
         external_file=external_file,
-        export_fp16_model=args.export_fp16_model,
-        custom_ops=custom_ops_dict)
-    logging.info("===============Make PaddlePaddle Better!================")
-    logging.info("A little survey: https://iwenjuan.baidu.com/?code=r8hu2s")
+        export_fp16_model=args.export_fp16_model)
 
 
 if __name__ == "__main__":

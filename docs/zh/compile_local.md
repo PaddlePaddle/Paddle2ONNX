@@ -35,6 +35,8 @@ python -m build
 pip install dist/*.whl
 ```
 
+如果你是在本地开发　Paddle2ONNX 项目，推荐使用 `pip install -e .` 命令，以 editable mode 来安装。
+
 ## Windows编译安装
 
 注意Windows编译安装先验条件是系统中已安装好Visual Studio 2019
