@@ -1,69 +1,69 @@
-name: Build Package
+# name: Build Package
 
-on:
-  push:
-    branches: [ "develop" ]
-  pull_request:
-    branches: [ "develop" ]
+# on:
+#   push:
+#     branches: [ "develop" ]
+#   pull_request:
+#     branches: [ "develop" ]
 
-permissions:
-  contents: read
+# permissions:
+#   contents: read
 
-jobs:
-  build:
-    # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily run on Ubuntu-latest.
-    # However, to ensure the stability of the packaging system, we will need to fix the Ubuntu version in the future.
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily run on Ubuntu-latest.
+#     # However, to ensure the stability of the packaging system, we will need to fix the Ubuntu version in the future.
+#     runs-on: ubuntu-latest
 
-    # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
-    # In the future, we will need to extend support to cover Python 3.8 through Python 3.10.
-    steps:
-      - name: Setup Python 3.8
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.8'
+#     # For the sake of simplicity in testing, the Paddle2ONNX packaging program will temporarily only package executable files for Python 3.8.
+#     # In the future, we will need to extend support to cover Python 3.8 through Python 3.10.
+#     steps:
+#       - name: Setup Python 3.8
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.8'
 
-      # Checkout the latest branch of Paddle2ONNX.
-      - name: Checkout Paddle2ONNX
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          path: paddle2onnx
+#       # Checkout the latest branch of Paddle2ONNX.
+#       - name: Checkout Paddle2ONNX
+#         uses: actions/checkout@v4
+#         with:
+#           submodules: true
+#           path: paddle2onnx
 
-      # Checkout the branch(v3.16.0) of Paddle2ONNX.
-      - name: Checkout Protobuf
-        uses: actions/checkout@v4
-        with:
-          repository: protocolbuffers/protobuf
-          ref: v3.16.0
-          path: protobuf
+#       # Checkout the branch(v3.16.0) of Paddle2ONNX.
+#       - name: Checkout Protobuf
+#         uses: actions/checkout@v4
+#         with:
+#           repository: protocolbuffers/protobuf
+#           ref: v3.16.0
+#           path: protobuf
 
-      # Build Protobuf, detailed process can refer to the [Paddle2ONNX construction documentation](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/compile.md).
-      - name: Build Protobuf
-        working-directory: ./protobuf
-        run: |
-          #============
-          cmake ./cmake -B build_wd -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./install_dir
-          cmake --build ./build_wd
-          cmake --build ./build_wd -- install
-          echo "$PWD/install_dir/bin" >> $GITHUB_PATH
+#       # Build Protobuf, detailed process can refer to the [Paddle2ONNX construction documentation](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/compile.md).
+#       - name: Build Protobuf
+#         working-directory: ./protobuf
+#         run: |
+#           #============
+#           cmake ./cmake -B build_wd -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./install_dir
+#           cmake --build ./build_wd
+#           cmake --build ./build_wd -- install
+#           echo "$PWD/install_dir/bin" >> $GITHUB_PATH
 
-      # Install Dependencies for Python
-      - name: Install Dependencies for Python
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel auditwheel auditwheel-symbols build
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+#       # Install Dependencies for Python
+#       - name: Install Dependencies for Python
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install setuptools wheel auditwheel auditwheel-symbols build
+#           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # Build Paddle2ONNX
-      - name: Build Paddle2ONNX
-        working-directory: ./paddle2onnx
-        run: |
-          python -m build
-          python -m pip install dist/*.whl
+#       # Build Paddle2ONNX
+#       - name: Build Paddle2ONNX
+#         working-directory: ./paddle2onnx
+#         run: |
+#           python -m build
+#           python -m pip install dist/*.whl
 
-      # Install Test
-      - name: Run Test
-        working-directory: ./paddle2onnx/tests
-        run: |
-          bash run.sh python
+#       # Install Test
+#       - name: Run Test
+#         working-directory: ./paddle2onnx/tests
+#         run: |
+#           bash run.sh python
