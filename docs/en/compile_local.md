@@ -35,6 +35,8 @@ python -m build
 pip install dist/*.whl
 ```
 
+If you are developing the Paddle2ONNX project locally, you can use `pip install -e .` to install it in editable mode.
+
 ## 2 Install on Windows
 
 Make sure you have installed Visual Studio 2019 first

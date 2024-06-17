@@ -13,11 +13,6 @@
 # limitations under the License.
 # This file referred to github.com/onnx/onnx.git
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from distutils.spawn import find_executable
 from distutils import sysconfig, log
 import setuptools
@@ -25,15 +20,12 @@ import setuptools.command.build_py
 import setuptools.command.develop
 import setuptools.command.build_ext
 
-from collections import namedtuple
 from contextlib import contextmanager
-import glob
 import os
 import shlex
 import subprocess
 import sys
 import platform
-from textwrap import dedent
 import multiprocessing
 
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
@@ -81,17 +73,6 @@ def cd(path):
 # Customized commands
 ################################################################################
 
-
-class ONNXCommand(setuptools.Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-
 class cmake_build(setuptools.Command):
     """
     Compiles everything when `python setupmnm.py build` is run using cmake.
@@ -117,11 +98,7 @@ class cmake_build(setuptools.Command):
             self.jobs)
 
     def run(self):
-        if cmake_build.built:
-            return
-        cmake_build.built = True
-        if not os.path.exists(CMAKE_BUILD_DIR):
-            os.makedirs(CMAKE_BUILD_DIR)
+        os.makedirs(CMAKE_BUILD_DIR, exist_ok=True)
 
         with cd(CMAKE_BUILD_DIR):
             build_type = 'Release'
@@ -166,39 +143,22 @@ class cmake_build(setuptools.Command):
             subprocess.check_call(build_args)
 
 
-class build_py(setuptools.command.build_py.build_py):
-    def run(self):
-        self.run_command('cmake_build')
-
-        generated_python_files = \
-            glob.glob(os.path.join(CMAKE_BUILD_DIR, 'paddle2onnx', '*.py')) + \
-            glob.glob(os.path.join(CMAKE_BUILD_DIR, 'paddle2onnx', '*.pyi'))
-
-        for src in generated_python_files:
-            dst = os.path.join(TOP_DIR, os.path.relpath(src, CMAKE_BUILD_DIR))
-            self.copy_file(src, dst)
-
-        return setuptools.command.build_py.build_py.run(self)
-
-
-class develop(setuptools.command.develop.develop):
-    def run(self):
-        self.run_command('build_py')
-        setuptools.command.develop.develop.run(self)
-
-
 class build_ext(setuptools.command.build_ext.build_ext):
     def run(self):
         self.run_command('cmake_build')
-        setuptools.command.build_ext.build_ext.run(self)
+        return super().run()
 
     def build_extensions(self):
+        build_lib = self.build_lib
+        extension_dst_dir = os.path.join(build_lib, "paddle2onnx")
+        os.makedirs(extension_dst_dir, exist_ok=True)
+
         for ext in self.extensions:
             fullname = self.get_ext_fullname(ext.name)
             filename = os.path.basename(self.get_ext_filename(fullname))
 
             lib_path = CMAKE_BUILD_DIR
-            if os.name == 'nt':
+            if WINDOWS:
                 debug_lib_dir = os.path.join(lib_path, "Debug")
                 release_lib_dir = os.path.join(lib_path, "Release")
                 if os.path.exists(debug_lib_dir):
@@ -210,26 +170,9 @@ class build_ext(setuptools.command.build_ext.build_ext):
                 os.path.realpath(self.build_lib), "paddle2onnx", filename)
             self.copy_file(src, dst)
 
-
-class mypy_type_check(ONNXCommand):
-    description = 'Run MyPy type checker'
-
-    def run(self):
-        """Run command."""
-        onnx_script = os.path.realpath(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "tools/mypy-onnx.py"))
-        returncode = subprocess.call([sys.executable, onnx_script])
-        sys.exit(returncode)
-
-
 cmdclass = {
     'cmake_build': cmake_build,
-    'build_py': build_py,
-    'develop': develop,
     'build_ext': build_ext,
-    'typecheck': mypy_type_check,
 }
 
 ################################################################################
