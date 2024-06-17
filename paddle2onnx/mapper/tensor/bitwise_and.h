@@ -26,6 +26,7 @@ class BitWiseAndMapper : public Mapper {
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpset(bool verbose = false) override;
+  void Opset7() override;
   void Opset18() override;
 };
 
