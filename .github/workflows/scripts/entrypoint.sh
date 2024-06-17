@@ -26,7 +26,7 @@ $PIP_INSTALL_COMMAND cmake
 
 # Build protobuf from source
 if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
-    yum install wget
+    yum install -y wget
 fi
 source .github/workflows/scripts/download_protobuf.sh
 
