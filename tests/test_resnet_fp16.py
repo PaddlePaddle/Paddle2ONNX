@@ -18,13 +18,7 @@ import onnxruntime
 
 import paddle
 
-import unittest
-
-class TestFP32ToFP16(unittest.TestCase):
-    def test():
-        pass
-
-if __name__ == "__main__":
+def test_resnet_fp16_convert():
     # download resnet model
     if not os.path.exists("ResNet50_infer"):
         os.system("wget https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar && tar -xf ResNet50_infer.tar && rm -rf ResNet50_infer.tar")
