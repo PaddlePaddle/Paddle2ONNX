@@ -25,7 +25,7 @@ $PIP_INSTALL_COMMAND --upgrade pip
 $PIP_INSTALL_COMMAND cmake
 
 # Build protobuf from source
-source .github/workflows/scripts/build_protobuf_unix.sh "$(nproc)"
+source .github/workflows/scripts/download_protobuf.sh
 
 # Build Paddle2ONNX wheels
 $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
