@@ -98,11 +98,7 @@ class cmake_build(setuptools.Command):
             self.jobs)
 
     def run(self):
-        if cmake_build.built:
-            return
-        cmake_build.built = True
-        if not os.path.exists(CMAKE_BUILD_DIR):
-            os.makedirs(CMAKE_BUILD_DIR)
+        os.makedirs(CMAKE_BUILD_DIR, exist_ok=True)
 
         with cd(CMAKE_BUILD_DIR):
             build_type = 'Release'
@@ -145,12 +141,18 @@ class cmake_build(setuptools.Command):
             else:
                 build_args.extend(['--', '-j', str(self.jobs)])
             subprocess.check_call(build_args)
+
+
 class build_ext(setuptools.command.build_ext.build_ext):
     def run(self):
         self.run_command('cmake_build')
-        setuptools.command.build_ext.build_ext.run(self)
+        return super().run()
 
     def build_extensions(self):
+        build_lib = self.build_lib
+        extension_dst_dir = os.path.join(build_lib, "paddle2onnx")
+        os.makedirs(extension_dst_dir, exist_ok=True)
+
         for ext in self.extensions:
             fullname = self.get_ext_fullname(ext.name)
             filename = os.path.basename(self.get_ext_filename(fullname))
