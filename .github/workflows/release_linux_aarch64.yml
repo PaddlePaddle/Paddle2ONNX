@@ -1,50 +1,50 @@
-name: LinuxRelease_aarch64
+# name: LinuxRelease_aarch64
+
+# # on:
+# #   release:
+# #     types: [published]
 
 # on:
-#   release:
-#     types: [published]
+#   push:
+#     branches: [ "develop" ]
+#   pull_request:
+#     branches: [ "develop" ]
 
-on:
-  push:
-    branches: [ "develop" ]
-  pull_request:
-    branches: [ "develop" ]
+# permissions:
+#   contents: read
 
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
-        python-version: [ '3.8']
-        architecture: [ 'x64' ]
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         # python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+#         python-version: [ '3.8']
+#         architecture: [ 'x64' ]
     
-    steps:
-      # Checkout the latest branch of Paddle2ONNX.
-      - name: Checkout Paddle2ONNX
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+#     steps:
+#       # Checkout the latest branch of Paddle2ONNX.
+#       - name: Checkout Paddle2ONNX
+#         uses: actions/checkout@v4
+#         with:
+#           submodules: true
 
-      # setting up qemu for enabling aarch64 binary execution on x86 machine
-      - uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+#       # setting up qemu for enabling aarch64 binary execution on x86 machine
+#       - uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
-      - name: Build on manylinux2014_aarch64
-        uses: docker://quay.io/pypa/manylinux2014_aarch64:latest
-        with:
-          entrypoint: bash
-          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_aarch64 CentOS
+#       - name: Build on manylinux2014_aarch64
+#         uses: docker://quay.io/pypa/manylinux2014_aarch64:latest
+#         with:
+#           entrypoint: bash
+#           args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_aarch64 CentOS
 
-      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
-        with:
-          name: wheels
-          path: dist
+#       - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
+#         with:
+#           name: wheels
+#           path: dist
 
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-        with:
-          user: __token__
-          password: ${{ secrets.ZHENG_BICHENG_PYPI_TOKEN }}
+#       - name: Publish package
+#         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+#         with:
+#           user: __token__
+#           password: ${{ secrets.ZHENG_BICHENG_PYPI_TOKEN }}
