@@ -9,7 +9,7 @@ set -e -x
 # CLI arguments
 PY_VERSION=$1
 PLAT=$2
-GITHUB_EVENT_NAME=$3
+SYSTEM_NAME=$3
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
@@ -25,6 +25,9 @@ $PIP_INSTALL_COMMAND --upgrade pip
 $PIP_INSTALL_COMMAND cmake
 
 # Build protobuf from source
+if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
+    yum install wget
+fi
 source .github/workflows/scripts/download_protobuf.sh
 
 # Build Paddle2ONNX wheels
