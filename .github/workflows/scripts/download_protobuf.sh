@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Installing required packages
+yum install -y wget
+
 # Detect the operating system
 OS=$(uname -s)
 ARCH=$(uname -m)
