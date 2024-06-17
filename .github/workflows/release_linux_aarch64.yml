@@ -1,8 +1,10 @@
 name: LinuxRelease_aarch64
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
 
 permissions:
   contents: read
@@ -13,7 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
-        architecture: [ 'x64' ]
+        architecture: [ 'arm64' ]
     
     steps:
       # Checkout the latest branch of Paddle2ONNX.
