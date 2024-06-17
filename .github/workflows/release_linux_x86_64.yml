@@ -1,14 +1,8 @@
 name: LinuxRelease_x86_64
 
-# on:
-#   release:
-#     types: [published]
-
 on:
-  push:
-    branches: [ "develop" ]
-  pull_request:
-    branches: [ "develop" ]
+  release:
+    types: [published]
 
 permissions:
   contents: read
