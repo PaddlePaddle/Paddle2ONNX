@@ -57,7 +57,11 @@ void Pool3dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
     onnx_pool_type = iter->second[0];
   }
   std::shared_ptr<ONNX_NAMESPACE::NodeProto>* node_ptr;
-  auto node = helper_->MakeNode(onnx_pool_type, {input_info[0].name}, {output_info[0].name});
+  auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                 P2ODataType::FP32);
+  auto node = helper_->MakeNode(onnx_pool_type, {input});
+  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                    output_info[0].dtype);
   std::vector<int64_t> kernel_size = {kernel_d, kernel_h, kernel_w};
   AddAttribute(node, "kernel_shape", kernel_size);
   std::vector<int64_t> strides = {stride_d, stride_h, stride_w};
@@ -243,7 +247,11 @@ void Pool3dMapper::Opset7() {
       auto iter = op_mapper_.find(pooling_type_);
       onnx_pool_type = iter->second[1];
     }
-    auto output = helper_->MakeNode(onnx_pool_type, {input_info[0].name}, {output_info[0].name});
+    auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                   P2ODataType::FP32);
+    auto output = helper_->MakeNode(onnx_pool_type, {input})->output(0);
+    helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
+                      output_info[0].dtype);
   } else if (adaptive_) {
     AdaptivePool(input_info, output_info);
   } else {
