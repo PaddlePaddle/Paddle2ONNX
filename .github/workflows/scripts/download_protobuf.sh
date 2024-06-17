@@ -31,7 +31,7 @@ else
    echo "The system only supports (Linux and Darwin), but the current system is $OS."
 fi
 
-protobuf_url="https://bj.bcebos.com/fastdeploy/third_libs/$protobuf_tgz_name"
+protobuf_url="https://bj.bcebos.com/paddle2onnx/third_party/$protobuf_tgz_name"
 wget $protobuf_url
 protobuf_svae_dir="$PWD/installed_protobuf"
 mkdir -p $protobuf_svae_dir
