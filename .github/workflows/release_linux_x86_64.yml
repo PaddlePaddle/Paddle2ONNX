@@ -1,8 +1,14 @@
 name: LinuxRelease_x86_64
 
+# on:
+#   release:
+#     types: [published]
+
 on:
-  release:
-    types: [published]
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
 
 permissions:
   contents: read
@@ -12,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: [ '3.8']
         architecture: [ 'x64' ]
 
     steps:
