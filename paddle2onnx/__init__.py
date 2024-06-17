@@ -11,11 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from paddle2onnx.utils import logging
-from . import command
-from .convert import dygraph2onnx
-from .convert import program2onnx
 from .version import version
 
 __version__ = version
