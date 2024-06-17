@@ -34,6 +34,7 @@ jobs:
       - name: Download protobuf
         working-directory: ./paddle2onnx
         run: |
+            apt install wget
             source .github/workflows/scripts/download_protobuf.sh
 
       # Install Dependencies for Python
