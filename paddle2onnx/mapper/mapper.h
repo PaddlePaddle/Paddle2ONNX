@@ -13,6 +13,7 @@
 // limitations under the License.
 #pragma once
 #include <vector>
+#include <unordered_set>
 
 #include "paddle2onnx/mapper/data_helper.h"
 #include "paddle2onnx/mapper/onnx_helper.h"
@@ -20,7 +21,11 @@
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
-class Mapper {
+
+  static const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32}; // 0: float32, 3: int8, 6: float16
+
+  class Mapper
+  {
   public:
     Mapper() {
     }

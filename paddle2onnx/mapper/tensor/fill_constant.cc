@@ -79,9 +79,16 @@ void FillConstantMapper::Opset7() {
   float value = GetFillValue();
   if (HasInput("ValueTensor")) {
     auto value_info = GetInput("ValueTensor");
-    auto value_tensor = helper_->AutoCast(value_info[0].name, value_info[0].dtype, out_info[0].dtype);
     auto out = helper_->Constant(shape, GetOnnxDtype(out_info[0].dtype), float(0.0));
-    helper_->MakeNode("Add", {out, value_tensor}, {out_info[0].name});
+    if (kNoNeedCastTypes.find(value_info[0].dtype) != kNoNeedCastTypes.end())
+    {
+      helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
+    }
+    else
+    {
+      auto value_tensor = helper_->AutoCast(value_info[0].name, value_info[0].dtype, out_info[0].dtype);
+      helper_->MakeNode("Add", {out, value_tensor}, {out_info[0].name});
+    }
   } else {
     helper_->Constant(out_info[0].name, shape, GetOnnxDtype(out_info[0].dtype), value);
   }
@@ -149,9 +156,16 @@ void FillConstantMapper::Opset9() {
   }
   if (value_is_tensor) {
     auto value_info = GetInput("ValueTensor");
-    std::string cast_value = helper_->AutoCast(
-        value_info[0].name, value_info[0].dtype, out_info[0].dtype);
-    helper_->MakeNode("Add", {out, cast_value}, {out_info[0].name});
+    if (kNoNeedCastTypes.find(value_info[0].dtype) != kNoNeedCastTypes.end())
+    {
+      helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
+    }
+    else
+    {
+      std::string cast_value = helper_->AutoCast(
+          value_info[0].name, value_info[0].dtype, out_info[0].dtype);
+      helper_->MakeNode("Add", {out, cast_value}, {out_info[0].name});
+    }
   } else {
     helper_->MakeNode("Identity", {out}, {out_info[0].name});
   }

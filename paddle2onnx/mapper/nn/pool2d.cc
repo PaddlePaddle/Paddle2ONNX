@@ -116,12 +116,20 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
     onnx_pool_type = iter->second[0];
   }
 
-  std::shared_ptr<ONNX_NAMESPACE::NodeProto>* node_ptr;
-  auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                 P2ODataType::FP32);
-  auto node = helper_->MakeNode(onnx_pool_type, {input});
-  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                    output_info[0].dtype);
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> node(nullptr);
+  if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end())
+  {
+    node = helper_->MakeNode(onnx_pool_type, {input_info[0].name}, {output_info[0].name});
+  }
+  else
+  {
+    auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                   P2ODataType::FP32);
+    node = helper_->MakeNode(onnx_pool_type, {input});
+    helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                      output_info[0].dtype);
+  }
+
   std::vector<int64_t> kernel_size = {kernel_h, kernel_w};
   AddAttribute(node, "kernel_shape", kernel_size);
   std::vector<int64_t> strides = {stride_h, stride_w};
@@ -165,8 +173,12 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
 
   int64_t max_ksize = *std::max_element(std::begin(k_size_), std::end(k_size_));
   int64_t max_pads = *std::max_element(std::begin(pads_), std::end(pads_));
-  auto input_x = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                   P2ODataType::FP32);
+  std::string input_x = input_info[0].name;
+  if (kNoNeedCastTypes.find(input_info[0].dtype) == kNoNeedCastTypes.end())
+  {
+    input_x = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                P2ODataType::FP32);
+  }
   if (max_ksize <= max_pads) {
     std::vector<int64_t> onnx_paddings = {0, 0, pads_[0], pads_[1],
                                           0, 0, pads_[2], pads_[3]};
@@ -199,9 +211,17 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
     auto iter = op_mapper_.find(pooling_type_);
     onnx_pool_type = iter->second[0];
   }
-  auto node = helper_->MakeNode(onnx_pool_type, {input_x});
-  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                    output_info[0].dtype);
+  std::shared_ptr<ONNX_NAMESPACE::NodeProto> node(nullptr);
+  if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end())
+  {
+    node = helper_->MakeNode(onnx_pool_type, {input_x}, {output_info[0].name});
+  }
+  else
+  {
+    node = helper_->MakeNode(onnx_pool_type, {input_x});
+    helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                      output_info[0].dtype);
+  }
 
   AddAttribute(node, "kernel_shape", k_size_);
   AddAttribute(node, "strides", strides_);
@@ -317,11 +337,18 @@ void Pool2dMapper::Opset7() {
       auto iter = op_mapper_.find(pooling_type_);
       onnx_pool_type = iter->second[1];
     }
-    auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                   P2ODataType::FP32);
-    auto output = helper_->MakeNode(onnx_pool_type, {input})->output(0);
-    helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
-                      output_info[0].dtype);
+    if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end())
+    {
+      auto output = helper_->MakeNode(onnx_pool_type, {input_info[0].name}, {output_info[0].name});
+    }
+    else
+    {
+      auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
+                                     P2ODataType::FP32);
+      auto output = helper_->MakeNode(onnx_pool_type, {input})->output(0);
+      helper_->AutoCast(output, output_info[0].name, P2ODataType::FP32,
+                        output_info[0].dtype);
+    }
   } else if (adaptive_) {
     AdaptivePool(input_info, output_info);
   } else {

@@ -20,7 +20,7 @@ REGISTER_MAPPER(matmul, MatmulMapper)
 
 std::string MatmulMapper::GetTrans(std::vector<TensorInfo>& input_info) {
   std::string castd_name = input_info[0].name;
-  if (input_info[0].dtype == P2ODataType::FP64) {
+  if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end()) {
     castd_name = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
   }
@@ -44,9 +44,26 @@ void MatmulMapper::Opset7() {
     input_y = GetTrans(input_y_info);
   }
 
-  if (fabs(alpha_ - 1.0) < 1e-6)
+  if (kNoNeedCastTypes.find(input_x_info[0].dtype) != kNoNeedCastTypes.end())
   {
-    auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
+    if (fabs(alpha_ - 1.0) < 1e-6)
+    {
+      auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
+    }
+    else
+    {
+      auto mutmul_node = helper_->MakeNode("MatMul", {input_x, input_y});
+      std::string scale_node =
+          helper_->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
+      auto mul_node =
+          helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node}, {output_info[0].name});
+    }
+  }
+  else if (fabs(alpha_ - 1.0) < 1e-6)
+  {
+    auto node = helper_->MakeNode("MatMul", {input_x, input_y});
+    helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                      input_y_info[0].dtype);
   }
   else
   {
@@ -54,7 +71,9 @@ void MatmulMapper::Opset7() {
     std::string scale_node =
         helper_->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
     auto mul_node =
-        helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node}, {output_info[0].name});
+        helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node});
+    helper_->AutoCast(mul_node->output(0), output_info[0].name,
+                      P2ODataType::FP32, input_y_info[0].dtype);
   }
 }
 

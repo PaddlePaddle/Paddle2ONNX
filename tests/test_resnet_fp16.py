@@ -45,7 +45,6 @@ def test_resnet_fp16_convert():
     ort_inputs = {ort_session.get_inputs()[0].name: input_img}
     ort_outputs = ort_session.run(None, ort_inputs)
 
-    # resnet50 cannot be inferenced by half?
     model.float()
     paddle_input = paddle.to_tensor(input_img, dtype="float32")
     paddle_output = model(paddle_input)
