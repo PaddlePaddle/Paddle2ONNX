@@ -16,15 +16,21 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(greater_than, GreaterThanMapper)
-
 void GreaterThanMapper::Opset7() {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
   auto out_info = GetOutput("Out");
 
+
   int out_dtype = 0;
-  std::vector<std::string> aligned_inputs =
-      helper_->DtypeAlignment({x_info[0], y_info[0]}, &out_dtype);
+  std::vector<std::string> aligned_inputs = helper_->DtypeAlignment({x_info[0], y_info[0]}, &out_dtype);
+
+  if (out_dtype == P2ODataType::BOOL){ 
+    std::string new_x_name = helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
+    std::string new_y_name = helper_->AutoCast(y_info[0].name, y_info[0].dtype, P2ODataType::INT32);
+    helper_->MakeNode("Greater", {new_x_name, new_y_name}, {out_info[0].name});
+    return ;
+  }
   if (out_dtype != P2ODataType::FP32 && out_dtype != P2ODataType::FP64 &&
       helper_->GetOpsetVersion() < 11) {
     aligned_inputs[0] =
@@ -32,6 +38,7 @@ void GreaterThanMapper::Opset7() {
     aligned_inputs[1] =
         helper_->AutoCast(aligned_inputs[1], out_dtype, P2ODataType::FP32);
   }
+
 
   helper_->MakeNode("Greater", aligned_inputs, {out_info[0].name});
 }
