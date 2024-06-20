@@ -168,31 +168,6 @@ PADDLE2ONNX_DECL bool Export(
       disable_op_types.push_back(disable_op_type);
     }
   }
-
-  // lamda func to judge whether to exist fp16 in inputs
-  auto judge_input_fp16 = [](const std::vector<TensorInfo> &inputs_info)
-  {
-    for (const auto &info : inputs_info)
-    {
-      if (P2ODataType::FP16 == info.dtype)
-      {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // convert output to fp16
-  if (export_fp16_model || judge_input_fp16(parser.inputs))
-  {
-    for (auto &output : parser.outputs)
-    {
-      // if output dtype is fp32 or fp64, convering to fp16
-      output.dtype =
-          (output.dtype == P2ODataType::FP32 || output.dtype == P2ODataType::FP64) ? P2ODataType::FP16 : output.dtype;
-    }
-  }
-
   std::string calibration_str;
   std::string result = me.Run(
       parser, opset_version, auto_upgrade_opset, verbose, enable_onnx_checker,
