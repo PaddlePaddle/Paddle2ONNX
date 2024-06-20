@@ -93,3 +93,40 @@ def test_gather_12():
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
+
+
+
+class Net2(paddle.nn.Layer):
+    """
+    simple Net
+    """
+
+    def __init__(self):
+        super(Net2, self).__init__()
+
+    def forward(self, inputs):
+        """
+        forward
+        """
+        x = paddle.gather(
+            inputs, 
+            index=paddle.to_tensor([[1], [2]], dtype="int64"), 
+            axis=1)
+        return x
+    
+def test_gather_13():
+    """
+    api: paddle.gather
+    op version: 13
+    """
+    op = Net2()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, 'gather', [13])
+    data =  paddle.to_tensor(randtool("float", -1, 1, [1,80,80]).astype('float32'))
+    print(data.shape)
+    obj.set_input_data(
+        "input_data",
+       data
+    )
+    obj.run()

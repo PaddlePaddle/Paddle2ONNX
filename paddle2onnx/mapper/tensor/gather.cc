@@ -70,16 +70,8 @@ void GatherMapper::Opset11() {
            "gather.");
     axis = axes[0];
   }
-  if (index_info[0].shape.size() == 1) {
-    auto node = helper_->MakeNode(
-        "Gather", {x_info[0].name, index_info[0].name}, {out_info[0].name});
-    AddAttribute(node, "axis", axis);
-  } else {
-    auto index = helper_->AutoCast(index_info[0].name, index_info[0].dtype,
-                                   P2ODataType::INT64);
-    helper_->MakeNode("GatherND", {x_info[0].name, index_info[0].name},
-                      {out_info[0].name});
-  }
+  auto node = helper_->MakeNode("Gather", {x_info[0].name, index_info[0].name}, {out_info[0].name});
+  AddAttribute(node, "axis", axis);
 }
 
 }  // namespace paddle2onnx
