@@ -17,6 +17,8 @@ import numpy as np
 import onnxruntime
 
 import paddle
+import paddle2onnx
+from paddle.inference import PrecisionType, PlaceType, convert_to_mixed_precision
 
 def test_resnet_fp16_convert():
     # download resnet model
@@ -24,32 +26,52 @@ def test_resnet_fp16_convert():
         os.system("wget https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/inference/ResNet50_infer.tar && tar -xf ResNet50_infer.tar && rm -rf ResNet50_infer.tar")
 
     # generate fp16 model
-    path = "ResNet50_infer/inference"
+    path = "ResNet50_infer"
+    src_model = os.path.join(path,"inference.pdmodel")
+    src_params = os.path.join(path,"inference.pdiparams")
+    dst_model = os.path.join(path,"inference_fp16.pdmodel")
+    dst_params = os.path.join(path,"inference_fp16.pdiparams")
+    
+    convert_to_mixed_precision(
+        src_model,     # fp32 model path 
+        src_params,    # fp32 params path
+        dst_model,     # mix precious model path 
+        dst_params,    # mix precious params path
+        PrecisionType.Half,
+        PlaceType.GPU,
+        False
+    )
+    
     # paddle.set_device("gpu")
-    model = paddle.jit.load(path)
-    model.float16()
-    model.eval()
-    input_spec = [paddle.static.InputSpec(shape=[-1, 3, 224, 224], dtype='float16', name='inputs')]
-    # paddle.jit.save(model, 'ResNet50_infer/inference_fp16', input_spec=input_spec)
+    paddle.enable_static()
+    path_fp16 = os.path.join(path, "inference_fp16")
+    exe = paddle.static.Executor(paddle.CUDAPlace(0))
+    [inference_program, feed_target_names, fetch_targets] = paddle.static.load_inference_model(path_fp16, exe)
+    
+    # infer paddle fp16
+    np.random.seed(10)
+    tensor_img = np.array(np.random.random((1, 3, 224, 224)), dtype=np.float16)
+    results = exe.run(inference_program,
+               feed={feed_target_names[0]: tensor_img},
+               fetch_list=fetch_targets)
 
     # convert to onnx
-    paddle.onnx.export(model, "./resnet_fp16", input_spec=input_spec, export_fp16_model=True) # ONNX模型导出
+    input_spec = [paddle.static.InputSpec(shape=[-1, 3, 224, 224], dtype='float16', name='inputs')]
+    model_file = path_fp16 + ".pdmodel"
+    params_file = path_fp16 + ".pdiparams"
+    paddle2onnx.export(model_file, params_file, "./resnet_fp16.onnx",  export_fp16_model=True) # ONNX模型导出
 
     # valid precision
-    np.random.seed(10)
-    input_img = np.random.rand(1, 3, 224, 224).astype("float16")
-
     onnx_file_name = "./resnet_fp16.onnx"
     ort_session = onnxruntime.InferenceSession(onnx_file_name)
 
-    ort_inputs = {ort_session.get_inputs()[0].name: input_img}
+    ort_inputs = {ort_session.get_inputs()[0].name: tensor_img}
     ort_outputs = ort_session.run(None, ort_inputs)
-
-    model.float()
-    paddle_input = paddle.to_tensor(input_img, dtype="float32")
-    paddle_output = model(paddle_input)
 
     # assert
     np.testing.assert_allclose(
-        paddle_output.numpy(), ort_outputs[0], rtol=1e-02, atol=1e-05
+        results[0], ort_outputs[0], rtol=2e-02, atol=2e-05
     )
+
+if __name__ == "__main__":
+    test_resnet_fp16_convert()

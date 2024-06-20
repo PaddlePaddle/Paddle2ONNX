@@ -56,7 +56,7 @@ class TestAssignConvert(OPConvertAutoScanTest):
 
         dtype = draw(
             st.sampled_from(
-                ["float32", "float64", "int32", "int64"]))
+                ["float16", "float32", "float64", "int32", "int64"]))
         # "list" has a bug
         input_dtype = draw(st.sampled_from(["tensor", "ndarray"]))
 
