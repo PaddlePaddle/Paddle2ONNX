@@ -26,6 +26,9 @@ class AssignMapper : public Mapper {
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7();
+
+private:
+  const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32};
 };
 
 }  // namespace paddle2onnx

@@ -21,11 +21,7 @@
 #include "paddle2onnx/parser/parser.h"
 
 namespace paddle2onnx {
-
-  static const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32};
-
-  class Mapper
-  {
+class Mapper {
   public:
     Mapper() {
     }
