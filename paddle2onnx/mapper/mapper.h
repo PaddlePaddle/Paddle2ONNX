@@ -22,7 +22,7 @@
 
 namespace paddle2onnx {
 
-  static const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32}; // 0: float32, 3: int8, 6: float16
+  static const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32};
 
   class Mapper
   {
