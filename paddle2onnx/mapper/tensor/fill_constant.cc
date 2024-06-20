@@ -25,11 +25,12 @@ int32_t FillConstantMapper::GetMinOpset(bool verbose) {
   auto onnx_dtype = GetOnnxDtype(out_info[0].dtype);
   if (onnx_dtype != ONNX_NAMESPACE::TensorProto::INT32 &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::INT64 &&
+      onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT16 &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::DOUBLE && 
       onnx_dtype != ONNX_NAMESPACE::TensorProto::BOOL
       ) {
-    Error() << "Only support int32/int64/float32/float64/bool data type in "
+    Error() << "Only support int32/int64/float16/float32/float64/bool data type in "
                "fill_constant operator."
             << std::endl;
     return -1;
@@ -80,15 +81,7 @@ void FillConstantMapper::Opset7() {
   if (HasInput("ValueTensor")) {
     auto value_info = GetInput("ValueTensor");
     auto out = helper_->Constant(shape, GetOnnxDtype(out_info[0].dtype), float(0.0));
-    if (kNoNeedCastTypes.find(value_info[0].dtype) != kNoNeedCastTypes.end())
-    {
-      helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
-    }
-    else
-    {
-      auto value_tensor = helper_->AutoCast(value_info[0].name, value_info[0].dtype, out_info[0].dtype);
-      helper_->MakeNode("Add", {out, value_tensor}, {out_info[0].name});
-    }
+    helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
   } else {
     helper_->Constant(out_info[0].name, shape, GetOnnxDtype(out_info[0].dtype), value);
   }
@@ -156,16 +149,7 @@ void FillConstantMapper::Opset9() {
   }
   if (value_is_tensor) {
     auto value_info = GetInput("ValueTensor");
-    if (kNoNeedCastTypes.find(value_info[0].dtype) != kNoNeedCastTypes.end())
-    {
-      helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
-    }
-    else
-    {
-      std::string cast_value = helper_->AutoCast(
-          value_info[0].name, value_info[0].dtype, out_info[0].dtype);
-      helper_->MakeNode("Add", {out, cast_value}, {out_info[0].name});
-    }
+    helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
   } else {
     helper_->MakeNode("Identity", {out}, {out_info[0].name});
   }

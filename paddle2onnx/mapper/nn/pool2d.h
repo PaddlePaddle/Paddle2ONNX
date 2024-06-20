@@ -63,7 +63,7 @@ class Pool2dMapper : public Mapper {
                     const std::vector<TensorInfo>& output_info);
   void NoAdaptivePool(const std::vector<TensorInfo>& input_info,
                       const std::vector<TensorInfo>& output_info);
-  const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32};
+  const std::unordered_set<int32_t> kNeedCastTypes{P2ODataType::FP64};
   bool ceil_mode_;
   bool global_pooling_;
   bool adaptive_;

@@ -117,7 +117,7 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
   }
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> node(nullptr);
-  if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end())
+  if (kNeedCastTypes.find(input_info[0].dtype) == kNeedCastTypes.end())
   {
     node = helper_->MakeNode(onnx_pool_type, {input_info[0].name}, {output_info[0].name});
   }
@@ -174,7 +174,7 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   int64_t max_ksize = *std::max_element(std::begin(k_size_), std::end(k_size_));
   int64_t max_pads = *std::max_element(std::begin(pads_), std::end(pads_));
   std::string input_x = input_info[0].name;
-  if (kNoNeedCastTypes.find(input_info[0].dtype) == kNoNeedCastTypes.end())
+  if (kNeedCastTypes.find(input_info[0].dtype) != kNeedCastTypes.end())
   {
     input_x = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                 P2ODataType::FP32);
@@ -212,7 +212,7 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
     onnx_pool_type = iter->second[0];
   }
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> node(nullptr);
-  if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end())
+  if (kNeedCastTypes.find(input_info[0].dtype) == kNeedCastTypes.end())
   {
     node = helper_->MakeNode(onnx_pool_type, {input_x}, {output_info[0].name});
   }
@@ -337,7 +337,7 @@ void Pool2dMapper::Opset7() {
       auto iter = op_mapper_.find(pooling_type_);
       onnx_pool_type = iter->second[1];
     }
-    if (kNoNeedCastTypes.find(input_info[0].dtype) != kNoNeedCastTypes.end())
+    if (kNeedCastTypes.find(input_info[0].dtype) == kNeedCastTypes.end())
     {
       auto output = helper_->MakeNode(onnx_pool_type, {input_info[0].name}, {output_info[0].name});
     }

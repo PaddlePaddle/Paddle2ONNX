@@ -31,7 +31,6 @@ class FillConstantMapper : public Mapper {
 
  private:
   float GetFillValue();
-  const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32};
   std::string str_value_;
   float value_;
 };

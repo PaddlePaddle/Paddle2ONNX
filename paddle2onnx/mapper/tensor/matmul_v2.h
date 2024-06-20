@@ -33,7 +33,7 @@ class MatmulV2Mapper : public Mapper {
 
  private:
   std::string GetTrans(std::vector<TensorInfo>& input_info);
-  const std::unordered_set<int32_t> kNoNeedCastTypes{P2ODataType::INT8, P2ODataType::FP16, P2ODataType::FP32};
+  const std::unordered_set<int32_t> kNeedCastTypes{P2ODataType::INT8, P2ODataType::FP64};
   bool trans_x_ = false;
   bool trans_y_ = false;
 };
