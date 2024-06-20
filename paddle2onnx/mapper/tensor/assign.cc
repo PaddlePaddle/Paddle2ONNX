@@ -21,8 +21,6 @@ REGISTER_MAPPER(share_data, AssignMapper)
 void AssignMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  
-
   if (block_idx_ != 0 && OpType() != "share_data") {
     // Here's a trick for tensorrt
     // Consider remove this trick
@@ -45,9 +43,6 @@ void AssignMapper::Opset7() {
   } else {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   }
-  std::cout << "use assign...\n";
-  std::cout << "use input_info dtype: " << input_info[0].dtype << std::endl;;
-  std::cout << "use output_info dtype: " << output_info[0].dtype << std::endl;
 }
 
 }  // namespace paddle2onnx
