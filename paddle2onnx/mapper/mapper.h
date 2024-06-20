@@ -13,7 +13,6 @@
 // limitations under the License.
 #pragma once
 #include <vector>
-#include <unordered_set>
 
 #include "paddle2onnx/mapper/data_helper.h"
 #include "paddle2onnx/mapper/onnx_helper.h"
