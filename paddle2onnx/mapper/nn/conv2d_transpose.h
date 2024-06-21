@@ -30,7 +30,9 @@ class Conv2dTransposeMapper : public Mapper {
     GetAttr("strides", &strides_);
     GetAttr("paddings", &paddings_);
     GetAttr("padding_algorithm", &padding_algorithm_);
-    GetAttr("output_padding", &output_padding_);
+    if (HasAttr("output_padding")){
+      GetAttr("output_padding", &output_padding_);
+    }
     GetAttr("data_format", &data_format_);
     if (paddings_.size() == 2) {
       paddings_.push_back(paddings_[0]);

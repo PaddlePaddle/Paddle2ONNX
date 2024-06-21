@@ -33,6 +33,12 @@ int32_t Conv2dTransposeMapper::GetMinOpset(bool verbose) {
 }
 
 void Conv2dTransposeMapper::Opset7() {
+  if (HasAttr("output_size")){
+    Warn()<<"There is output_size attribute in [Conv2dTranspose]. Use it carefully." <<std::endl;
+  }
+  if (HasAttr("output_padding")){
+    Warn()<<"There is output_padding attribute in [Conv2dTranspose]. Use it carefully." <<std::endl;
+  }
   auto kernel_info = GetInput("Filter");
   auto input_info = GetInput("Input");
   auto output_info = GetOutput("Output");
