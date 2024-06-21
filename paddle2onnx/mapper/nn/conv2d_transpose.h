@@ -32,6 +32,11 @@ class Conv2dTransposeMapper : public Mapper {
     GetAttr("padding_algorithm", &padding_algorithm_);
     if (HasAttr("output_padding")){
       GetAttr("output_padding", &output_padding_);
+      Warn()<<"There is output_padding attribute in [Conv2dTranspose]. Use it carefully." <<std::endl;
+    }
+    GetAttr("output_size", &output_size_);
+    if (output_size_.size() > 0){
+      Warn()<<"Output_size attribute in [Conv2dTranspose] did not do anything. " <<std::endl;
     }
     GetAttr("data_format", &data_format_);
     if (paddings_.size() == 2) {
@@ -52,6 +57,7 @@ class Conv2dTransposeMapper : public Mapper {
   std::vector<int64_t> strides_;
   std::vector<int64_t> paddings_;
   std::vector<int64_t> output_padding_;
+  std::vector<int64_t> output_size_;
   std::string padding_algorithm_;
   std::string data_format_;
   int64_t groups_;
