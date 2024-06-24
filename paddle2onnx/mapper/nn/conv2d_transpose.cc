@@ -56,6 +56,9 @@ void Conv2dTransposeMapper::Opset7() {
   } else {
     AddAttribute(node, "pads", paddings_);
   }
+  if (output_padding_.size() > 0) {
+    AddAttribute(node, "output_padding", output_padding_);
+  }
   helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
                     output_info[0].dtype);
 }
