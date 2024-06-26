@@ -23,7 +23,7 @@ REGISTER_MAPPER(matmul_v2, MatmulV2Mapper)
 
 std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info) {
   std::string castd_name = input_info[0].name;
-  if (kNeedCastTypes.find(input_info[0].dtype) != kNeedCastTypes.end())
+  if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) == kNoNeedCastTypesOpSet7.end())
   {
     castd_name = helper_->AutoCast(
         input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
@@ -48,7 +48,7 @@ void MatmulV2Mapper::Opset7() {
   if (trans_y_) {
     input_y = GetTrans(input_y_info);
   }
-  if (kNeedCastTypes.find(input_y_info[0].dtype) == kNeedCastTypes.end())
+  if (kNoNeedCastTypesOpSet7.find(input_y_info[0].dtype) != kNoNeedCastTypesOpSet7.end())
   {
     auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
   }

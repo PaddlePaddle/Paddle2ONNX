@@ -24,7 +24,6 @@ license = {text = "Apache License v2.0"}
 requires-python = ">=3.8"
 dependencies = [
     "onnxruntime>=1.10.0",
-    "numpy<2.0.0",  # numpy 2.0.0 cannot support p2o at now
 ]
 
 [project.scripts]

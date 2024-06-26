@@ -20,7 +20,7 @@ REGISTER_MAPPER(matmul, MatmulMapper)
 
 std::string MatmulMapper::GetTrans(std::vector<TensorInfo>& input_info) {
   std::string castd_name = input_info[0].name;
-  if (kNeedCastTypes.find(input_info[0].dtype) != kNeedCastTypes.end()) {
+  if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) == kNoNeedCastTypesOpSet7.end()) {
     castd_name = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
   }
@@ -44,7 +44,7 @@ void MatmulMapper::Opset7() {
     input_y = GetTrans(input_y_info);
   }
 
-  if (kNeedCastTypes.find(input_x_info[0].dtype) == kNeedCastTypes.end())
+  if (kNoNeedCastTypesOpSet7.find(input_x_info[0].dtype) != kNoNeedCastTypesOpSet7.end())
   {
     if (fabs(alpha_ - 1.0) < 1e-6)
     {
