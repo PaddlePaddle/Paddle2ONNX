@@ -1,26 +1,22 @@
+# System-generated temporary files
 .DS_Store
 
-*~
+# Temporary files that may be generated when loading Paddle2ONNX using an IDE
+.idea
+.vscode
 
-*.pyc
-.pydevproject
-.eggs/*
-dist/*
-.setuptools*
-paddle2onnx.egg-info/*
-*.pdmodel
-*_*.onnx
-*.log
+# Files that change dynamically when compiling Paddle2ONNX
 version.py
 paddle2onnx/mappers_registry.h
 
-# CMD
-build/*
-paddle2onnx-*
-
-# Clion
+# Temporary files that may be generated when building Paddle2ONNX
+protobuf-*
+installed_protobuf
+build
 cmake-build-*
-.idea
+paddle2onnx.egg-info/*
+dist/*
 
-# VSCode
-.vscode
+# Temporary files automatically generated when executing Paddle2ONNX unit tests
+*.pdmodel
+*.onnx

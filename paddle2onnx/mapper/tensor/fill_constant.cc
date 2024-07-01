@@ -136,10 +136,10 @@ void FillConstantMapper::Opset9() {
       auto ptr = reinterpret_cast<char*>(data.data());
       tensor->set_raw_data(std::string(ptr, sizeof(double)));
     } else if (onnx_dtype == ONNX_NAMESPACE::TensorProto::BOOL) {
-      std::vector<double> data(1);
+      bool *data = new bool[1];
       data[0] = static_cast<bool>(value);
-      auto ptr = reinterpret_cast<char*>(data.data());
-      tensor->set_raw_data(std::string(ptr, sizeof(bool)));
+      tensor->set_raw_data(std::string((const char *)(data), 1));
+      delete[] data;
     }
     out = node->output(0);
   } else {

@@ -1,4 +1,4 @@
-name: LinuxRelease_x86_64
+name: LinuxRelease_aarch64
 
 on:
   release:
@@ -14,7 +14,7 @@ jobs:
       matrix:
         python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: [ 'x64' ]
-
+    
     steps:
       # Checkout the latest branch of Paddle2ONNX.
       - name: Checkout Paddle2ONNX
@@ -22,11 +22,14 @@ jobs:
         with:
           submodules: true
 
-      - name: Build on manylinux2014_x86_64
-        uses: docker://quay.io/pypa/manylinux2014_x86_64:latest
+      # setting up qemu for enabling aarch64 binary execution on x86 machine
+      - uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Build on manylinux2014_aarch64
+        uses: docker://quay.io/pypa/manylinux2014_aarch64:latest
         with:
           entrypoint: bash
-          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64 CentOS
+          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_aarch64 CentOS
 
       - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
         with:

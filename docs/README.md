@@ -4,3 +4,4 @@ This directory Contains documents of how to use Paddle2ONNX. 本目录中提供�
 
 - For English User, please refer to the `en` folder
 - 中文文档参考`zh`目录下各文档说明
+- [Paddle2ONNX Technology Walkthrough](./tech_walkthrough/paddle2onnx_tech_walkthrough.ipynb)
