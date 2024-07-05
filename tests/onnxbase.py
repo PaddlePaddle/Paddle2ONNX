@@ -187,6 +187,7 @@ class APIOnnx(object):
         self.input_feed = {}
         self.input_spec_shape = input_spec_shape
         self.input_dtype = []
+        self.res_fict = {}
 
         if isfunction(self.func):
             # self._func = self.BuildFunc(self.func, **self.kwargs_dict_dygraph["params_group1"])
@@ -417,7 +418,7 @@ class APIOnnx(object):
                     True, {}, "onnxruntime", "", "", False)
                 with open(os.path.join(self.name, self.name + '_' + str(v) + ".onnx"), "wb") as f:
                     f.write(onnx_model_str)
-                res_fict[str(v)] = self._mk_onnx_res(ver=v)
+                self.res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
             for v in self._version:
-                compare(res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
+                compare(self.res_fict[str(v)], exp, delta=self.delta, rtol=self.rtol)
