@@ -22,8 +22,13 @@ namespace paddle2onnx {
 REGISTER_MAPPER(matmul_v2, MatmulV2Mapper)
 
 std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info) {
-  std::string castd_name = helper_->AutoCast(
-      input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+  std::string castd_name = input_info[0].name;
+  if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) == kNoNeedCastTypesOpSet7.end())
+  {
+    castd_name = helper_->AutoCast(
+        input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+  }
+
   std::vector<int64_t> perm = Arange(0, input_info[0].Rank());
   std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
   auto transpose_node = helper_->MakeNode("Transpose", {castd_name});
@@ -43,9 +48,16 @@ void MatmulV2Mapper::Opset7() {
   if (trans_y_) {
     input_y = GetTrans(input_y_info);
   }
-  auto node = helper_->MakeNode("MatMul", {input_x, input_y});
-  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
-                    input_y_info[0].dtype);
+  if (kNoNeedCastTypesOpSet7.find(input_y_info[0].dtype) != kNoNeedCastTypesOpSet7.end())
+  {
+    auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
+  }
+  else
+  {
+    auto node = helper_->MakeNode("MatMul", {input_x, input_y});
+    helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+                      input_y_info[0].dtype);
+  }
 }
 
 }  // namespace paddle2onnx

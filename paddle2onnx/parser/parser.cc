@@ -815,7 +815,6 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
 }
 
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
-  Assert(paddle_dtype != FP16, "Float16 is not supported.");
   if (paddle_dtype == P2ODataType::BOOL) {
     return sizeof(bool);
   } else if (paddle_dtype == P2ODataType::INT8) {
@@ -828,6 +827,8 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
     return sizeof(int64_t);
   } else if (paddle_dtype == P2ODataType::FP32) {
     return sizeof(float);
+  } else if (paddle_dtype == P2ODataType::FP16) {
+    return sizeof(int16_t);
   } else if (paddle_dtype == P2ODataType::FP64) {
     return sizeof(double);
   } else if (paddle_dtype == P2ODataType::UINT8) {
