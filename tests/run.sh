@@ -70,7 +70,6 @@ $PY_CMD -m pip install pytest
 $PY_CMD -m pip install onnx onnxruntime tqdm filelock
 $PY_CMD -m pip install paddlepaddle==2.6.0
 $PY_CMD -m pip install six hypothesis
-$PY_CMD -m pip install numpy==1.26.4
 
 
 export ENABLE_DEV=ON
