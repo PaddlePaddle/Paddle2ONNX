@@ -74,7 +74,7 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
         params_file = ""
 
     if save_file is None:
-        return paddle2onnx.export(model_file, params_file, save_file, opset_version)
+        return export(model_file, params_file, save_file, opset_version)
     else:
-        paddle2onnx.export(model_file, params_file, save_file, opset_version)
+        export(model_file, params_file, save_file, opset_version)
     logging.info("ONNX model saved in {}.".format(save_file))
