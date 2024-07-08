@@ -33,7 +33,6 @@ class GatherMapper : public Mapper {
   int32_t GetMinOpset(bool verbose = false);
   void Opset7();
   void Opset11();
-
  private:
   int64_t axis_ = 0;
 };
