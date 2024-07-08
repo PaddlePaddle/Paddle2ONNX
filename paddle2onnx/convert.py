@@ -49,6 +49,7 @@ def export(model_file,
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
+    import paddle
     from paddle2onnx.utils import logging, paddle_jit_save_configs
     # Get PaddleInference model file path
     dirname = os.path.split(save_file)[0]
