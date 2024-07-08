@@ -13,37 +13,43 @@
 # limitations under the License.
 
 import os
-import paddle
-import paddle2onnx
-from paddle2onnx.utils import logging, paddle_jit_save_configs
 
-
-def export_onnx(
-    paddle_graph,
-    save_file,
-    opset_version=9,
-    enable_onnx_checker=False,
-    operator_export_type="ONNX",
-    verbose=False,
-    auto_update_opset=True,
-    output_names=None,
-):
-    from paddle2onnx.legacy.convert import export_onnx
-
-    return export_onnx(
-        paddle_graph,
-        save_file,
-        opset_version,
-        opset_version,
-        enable_onnx_checker,
-        operator_export_type,
-        verbose,
-        auto_update_opset,
-        output_names,
-    )
+def export(model_file,
+           params_file="",
+           save_file=None,
+           opset_version=11,
+           auto_upgrade_opset=True,
+           verbose=True,
+           enable_onnx_checker=True,
+           enable_experimental_op=True,
+           enable_optimize=True,
+           custom_op_info=None,
+           deploy_backend="onnxruntime",
+           calibration_file="",
+           external_file="",
+           export_fp16_model=False):
+    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+    deploy_backend = deploy_backend.lower()
+    if custom_op_info is None:
+        onnx_model_str = c_p2o.export(
+            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize, {},
+            deploy_backend, calibration_file, external_file, export_fp16_model)
+    else:
+        onnx_model_str = c_p2o.export(
+            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize,
+            custom_op_info, deploy_backend, calibration_file, external_file,
+            export_fp16_model)
+    if save_file is not None:
+        with open(save_file, "wb") as f:
+            f.write(onnx_model_str)
+    else:
+        return onnx_model_str
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
+    from paddle2onnx.utils import logging, paddle_jit_save_configs
     # Get PaddleInference model file path
     dirname = os.path.split(save_file)[0]
     paddle_model_dir = os.path.join(dirname, "paddle_model_static_onnx_temp_dir")
@@ -71,31 +77,3 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
     else:
         paddle2onnx.export(model_file, params_file, save_file, opset_version)
     logging.info("ONNX model saved in {}.".format(save_file))
-
-
-def program2onnx(
-    program,
-    scope,
-    save_file,
-    feed_var_names=None,
-    target_vars=None,
-    opset_version=9,
-    enable_onnx_checker=False,
-    operator_export_type="ONNX",
-    auto_update_opset=True,
-    **configs
-):
-    from paddle2onnx.legacy.convert import program2onnx
-
-    return program2onnx(
-        program,
-        scope,
-        save_file,
-        feed_var_names,
-        target_vars,
-        opset_version,
-        enable_onnx_checker,
-        operator_export_type,
-        auto_update_opset,
-        **configs
-    )

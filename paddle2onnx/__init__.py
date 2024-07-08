@@ -1,4 +1,4 @@
-# Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2024  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -12,39 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from .version import version
+from .convert import export
+from .convert import dygraph2onnx
 
 __version__ = version
-
-
-def export(model_file,
-           params_file="",
-           save_file=None,
-           opset_version=11,
-           auto_upgrade_opset=True,
-           verbose=True,
-           enable_onnx_checker=True,
-           enable_experimental_op=True,
-           enable_optimize=True,
-           custom_op_info=None,
-           deploy_backend="onnxruntime",
-           calibration_file="",
-           external_file="",
-           export_fp16_model=False):
-    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-    deploy_backend = deploy_backend.lower()
-    if custom_op_info is None:
-        onnx_model_str = c_p2o.export(
-            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-            enable_onnx_checker, enable_experimental_op, enable_optimize, {},
-            deploy_backend, calibration_file, external_file, export_fp16_model)
-    else:
-        onnx_model_str = c_p2o.export(
-            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-            enable_onnx_checker, enable_experimental_op, enable_optimize,
-            custom_op_info, deploy_backend, calibration_file, external_file,
-            export_fp16_model)
-    if save_file is not None:
-        with open(save_file, "wb") as f:
-            f.write(onnx_model_str)
-    else:
-        return onnx_model_str
