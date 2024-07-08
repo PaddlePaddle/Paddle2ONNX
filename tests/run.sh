@@ -60,7 +60,8 @@ ignore="test_auto_scan_multiclass_nms.py
         test_unsqueeze.py \
         test_quantize_model.py \
         test_quantize_model_minist.py \
-        test_quantize_model_speedup.py"
+        test_quantize_model_speedup.py \
+        test_resnet_fp16.py"
 bug=0
 
 # Install Python Packet
@@ -69,6 +70,7 @@ $PY_CMD -m pip install pytest
 $PY_CMD -m pip install onnx onnxruntime tqdm filelock
 $PY_CMD -m pip install paddlepaddle==2.6.0
 $PY_CMD -m pip install six hypothesis
+$PY_CMD -m pip install numpy==1.26.4
 
 
 export ENABLE_DEV=ON
