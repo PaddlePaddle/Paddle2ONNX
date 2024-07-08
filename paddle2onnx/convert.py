@@ -20,7 +20,7 @@ from paddle2onnx.utils import logging, paddle_jit_save_configs
 def export(model_file,
            params_file="",
            save_file=None,
-           opset_version=11,
+           opset_version=9,
            auto_upgrade_opset=True,
            verbose=True,
            enable_onnx_checker=True,
@@ -50,7 +50,7 @@ def export(model_file,
         return onnx_model_str
 
 
-def dygraph2onnx(layer, save_file, input_spec=None, opset_version=11, **configs):
+def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
     # Get PaddleInference model file path
     dirname = os.path.split(save_file)[0]
     paddle_model_dir = os.path.join(dirname, "paddle_model_temp_dir")
