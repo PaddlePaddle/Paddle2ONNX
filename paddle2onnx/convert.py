@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import os
+import paddle
+import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+from paddle2onnx.utils import logging, paddle_jit_save_configs
 
 def export(model_file,
            params_file="",
@@ -28,7 +31,6 @@ def export(model_file,
            calibration_file="",
            external_file="",
            export_fp16_model=False):
-    import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
     deploy_backend = deploy_backend.lower()
     if custom_op_info is None:
         onnx_model_str = c_p2o.export(
@@ -48,12 +50,10 @@ def export(model_file,
         return onnx_model_str
 
 
-def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
-    import paddle
-    from paddle2onnx.utils import logging, paddle_jit_save_configs
+def dygraph2onnx(layer, save_file, input_spec=None, opset_version=11, **configs):
     # Get PaddleInference model file path
     dirname = os.path.split(save_file)[0]
-    paddle_model_dir = os.path.join(dirname, "paddle_model_static_onnx_temp_dir")
+    paddle_model_dir = os.path.join(dirname, "paddle_model_temp_dir")
     model_file = os.path.join(paddle_model_dir, "model.pdmodel")
     params_file = os.path.join(paddle_model_dir, "model.pdiparams")
 

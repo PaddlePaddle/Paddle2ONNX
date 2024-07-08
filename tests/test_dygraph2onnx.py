@@ -15,7 +15,7 @@ class TestDygraph2OnnxAPI(unittest.TestCase):
     def test_api(self):
         net = SimpleNet()
         input_spec = [paddle.static.InputSpec(shape=[None, 10], dtype='float32')]
-        paddle2onnx.convert.dygraph2onnx(net, "simple_net.onnx", input_spec)
+        paddle2onnx.dygraph2onnx(net, "simple_net.onnx", input_spec)
 
 if __name__ == '__main__':
     unittest.main()
