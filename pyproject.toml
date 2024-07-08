@@ -22,9 +22,7 @@ classifiers = [
 ]
 license = {text = "Apache License v2.0"}
 requires-python = ">=3.8"
-dependencies = [
-    "onnxruntime>=1.10.0",
-]
+dependencies = []
 
 [project.scripts]
 paddle2onnx = "paddle2onnx.command:main"
