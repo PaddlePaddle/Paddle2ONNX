@@ -33,7 +33,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_sin_7():
+def test_sigmoid_7():
     """
     api: paddle.nn.functional.sigmoid
     op version: 7
