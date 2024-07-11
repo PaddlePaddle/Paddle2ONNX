@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/activation/cosh.h"
+#include "paddle2onnx/mapper/activation/sinh.h"
 
 namespace paddle2onnx {
 REGISTER_MAPPER(sinh, SinhMapper)
