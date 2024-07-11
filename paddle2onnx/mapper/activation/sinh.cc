@@ -11,22 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
 
-
-#include "paddle2onnx/mapper/mapper.h"
-
-#include <cmath>
-#include <map>
-#include <string>
-#include <vector>
+#include "paddle2onnx/mapper/activation/cosh.h"
 
 namespace paddle2onnx {
-class SwishMapper : public Mapper {
- public:
-  SwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  void Opset7() override;
-};
+REGISTER_MAPPER(sinh, SinhMapper)
+
+int32_t SinhMapper::GetMinOpset(bool verbose) {
+    Logger(verbose, 9) << RequireOpset(9) << std::endl;
+    return 9;
+}
+
+void SinhMapper::Opset9() {
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  helper_->MakeNode("Sinh", {input_info[0].name}, {output_info[0].name});
+}
 }

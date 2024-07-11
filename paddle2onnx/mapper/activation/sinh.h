@@ -22,11 +22,13 @@
 #include <vector>
 
 namespace paddle2onnx {
-class SwishMapper : public Mapper {
+class SinhMapper : public Mapper {
  public:
-  SwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
+  SinhMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                   int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7() override;
+
+  int32_t GetMinOpset(bool verbose) override;
+  void Opset9() override;
 };
 }

@@ -22,7 +22,6 @@ REGISTER_MAPPER(atan, ActivationMapper)
 REGISTER_MAPPER(brelu, BReluMapper)
 REGISTER_MAPPER(ceil, ActivationMapper)
 REGISTER_MAPPER(cos, ActivationMapper)
-REGISTER_MAPPER(cosh, ActivationMapper)
 REGISTER_MAPPER(elu, EluMapper)
 REGISTER_MAPPER(erf, ActivationMapper)
 REGISTER_MAPPER(exp, ActivationMapper)
@@ -47,10 +46,8 @@ REGISTER_MAPPER(round, ActivationMapper)
 REGISTER_MAPPER(rsqrt, RsqrtMapper)
 REGISTER_MAPPER(sel, ActivationMapper)
 REGISTER_MAPPER(selu, SeluMapper)
-REGISTER_MAPPER(sign, ActivationMapper)
 REGISTER_MAPPER(silu, SiluMapper)
 REGISTER_MAPPER(sin, ActivationMapper)
-REGISTER_MAPPER(sinh, ActivationMapper)
 REGISTER_MAPPER(size, SizeMapper)
 REGISTER_MAPPER(softmax, SoftMaxMapper)
 REGISTER_MAPPER(softplus, ActivationMapper)
@@ -80,10 +77,6 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
   if (OpType() == "round") {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
-  }
-  if (OpType() == "sinh" || OpType() == "cosh" || OpType() == "sign") {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
-    return 9;
   }
   return 7;
 }

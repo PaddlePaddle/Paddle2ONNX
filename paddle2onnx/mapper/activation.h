@@ -40,12 +40,9 @@ class ActivationMapper : public Mapper {
     op_mapper_["acos"] = "Acos";
     op_mapper_["asin"] = "Asin";
     op_mapper_["atan"] = "Atan";
-    op_mapper_["sinh"] = "Sinh";
     op_mapper_["tan"] = "Tan";
     op_mapper_["ceil"] = "Ceil";
-    op_mapper_["cosh"] = "Cosh";
     op_mapper_["erf"] = "Erf";
-    op_mapper_["sign"] = "Sign";
     op_mapper_["softsign"] = "Softsign";
     op_mapper_["reciprocal"] = "Reciprocal";
   }
