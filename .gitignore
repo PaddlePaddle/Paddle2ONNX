@@ -20,3 +20,4 @@ dist/*
 # Temporary files automatically generated when executing Paddle2ONNX unit tests
 *.pdmodel
 *.onnx
+tests/__pycache_*
