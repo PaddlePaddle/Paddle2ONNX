@@ -57,7 +57,6 @@ REGISTER_MAPPER(softshrink, SoftShrinkMapper)
 REGISTER_MAPPER(softsign, ActivationMapper)
 REGISTER_MAPPER(sqrt, ActivationMapper)
 REGISTER_MAPPER(square, SquareMapper)
-REGISTER_MAPPER(swish, SwishMapper)
 REGISTER_MAPPER(tan, ActivationMapper)
 REGISTER_MAPPER(tanh, ActivationMapper)
 REGISTER_MAPPER(tanh_shrink, TanhShrinkMapper)
@@ -182,25 +181,6 @@ void HardSigmoidMapper::Opset7() {
                                 {output_info[0].name});
   AddAttribute(node, "alpha", alpha_);
   AddAttribute(node, "beta", beta_);
-}
-
-void SwishMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  std::shared_ptr<ONNX_NAMESPACE::NodeProto> sigmod_node = nullptr;
-
-  if (HasAttr("beta")) {
-    float temp_beta = 1.0;
-    GetAttr("beta", &temp_beta);
-    std::string beta_node = helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), temp_beta);
-    auto beta_x_node = helper_->MakeNode("Mul", {input_info[0].name, beta_node});
-    sigmod_node = helper_->MakeNode("Sigmoid", {beta_x_node->output(0)});
-  } else {
-    sigmod_node = helper_->MakeNode("Sigmoid", {input_info[0].name});
-  }
-
-  helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
-                    {output_info[0].name});
 }
 
 void HardSwishMapper::Opset7() {

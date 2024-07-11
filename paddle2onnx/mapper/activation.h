@@ -108,15 +108,6 @@ class HardSigmoidMapper : public Mapper {
   float beta_;
 };
 
-class SwishMapper : public Mapper {
- public:
-  SwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-
-  void Opset7();
-};
-
 class HardSwishMapper : public Mapper {
  public:
   HardSwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
