@@ -36,7 +36,7 @@ class Net(BaseNet):
 class TestHardswishConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.hardswish
-    OPset version: 7, 9, 15
+    OPset version: 7, 14
     """
 
     def sample_convert_config(self, draw):
@@ -51,7 +51,7 @@ class TestHardswishConvert(OPConvertAutoScanTest):
             "op_names": ["hard_swish"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 14],
             "input_spec_shape": [],
         }
 

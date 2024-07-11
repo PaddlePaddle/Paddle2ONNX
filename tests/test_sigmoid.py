@@ -29,35 +29,20 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = paddle.nn.functional.hardswish(inputs)
+        x = paddle.nn.functional.sigmoid(inputs)
         return x
 
 
-def test_hardswish_7():
+def test_sigmoid_7():
     """
-    api: paddle.hardswish
+    api: paddle.nn.functional.sigmoid
     op version: 7
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'hardswish', [7])
+    obj = APIOnnx(op, 'sigmoid', [7])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
-    obj.run()
-
-
-def test_hardswish_14():
-    """
-    api: paddle.hardswish
-    op version: 14
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'hardswish', [14])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()

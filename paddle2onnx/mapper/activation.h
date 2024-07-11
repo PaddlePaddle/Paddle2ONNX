@@ -29,7 +29,6 @@ class ActivationMapper : public Mapper {
     op_mapper_["relu"] = "Relu";
     op_mapper_["tanh"] = "Tanh";
     op_mapper_["log"] = "Log";
-    op_mapper_["sigmoid"] = "Sigmoid";
     op_mapper_["sqrt"] = "Sqrt";
     op_mapper_["softplus"] = "Softplus";
     op_mapper_["exp"] = "Exp";
@@ -41,12 +40,9 @@ class ActivationMapper : public Mapper {
     op_mapper_["acos"] = "Acos";
     op_mapper_["asin"] = "Asin";
     op_mapper_["atan"] = "Atan";
-    op_mapper_["sinh"] = "Sinh";
     op_mapper_["tan"] = "Tan";
     op_mapper_["ceil"] = "Ceil";
-    op_mapper_["cosh"] = "Cosh";
     op_mapper_["erf"] = "Erf";
-    op_mapper_["sign"] = "Sign";
     op_mapper_["softsign"] = "Softsign";
     op_mapper_["reciprocal"] = "Reciprocal";
   }
@@ -56,15 +52,6 @@ class ActivationMapper : public Mapper {
 
  private:
   std::map<std::string, std::string> op_mapper_;
-};
-
-class Relu6Mapper : public Mapper {
- public:
-  Relu6Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-
-  void Opset7();
 };
 
 class PReluMapper : public Mapper {
@@ -91,50 +78,6 @@ class SeluMapper : public Mapper {
  private:
   float alpha_;
   float scale_;
-};
-
-class HardSigmoidMapper : public Mapper {
- public:
-  HardSigmoidMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                    int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("slope", &alpha_);
-    GetAttr("offset", &beta_);
-  }
-
-  void Opset7();
-
- private:
-  float alpha_;
-  float beta_;
-};
-
-class SwishMapper : public Mapper {
- public:
-  SwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-
-  void Opset7();
-};
-
-class HardSwishMapper : public Mapper {
- public:
-  HardSwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                  int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("scale", &scale_);
-    GetAttr("offset", &offset_);
-    GetAttr("threshold", &threshold_);
-  }
-
-  void Opset7();
-  void Opset14();
-
- private:
-  float scale_;
-  float offset_;
-  float threshold_;
 };
 
 class LeakyReluMapper : public Mapper {
@@ -211,23 +154,6 @@ class EluMapper : public Mapper {
 
  private:
   float alpha_;
-};
-
-class HardShrinkMapper : public Mapper {
- public:
-  HardShrinkMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                   int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("threshold", &threshold_);
-  }
-  int32_t GetMinOpset(bool verbose = false) {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
-    return 9;
-  }
-  void Opset9();
-
- private:
-  float threshold_;
 };
 
 class MishMapper : public Mapper {

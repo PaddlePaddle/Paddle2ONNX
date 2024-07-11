@@ -15,54 +15,47 @@
 
 namespace paddle2onnx {
 
-REGISTER_MAPPER(relu, ActivationMapper)
-REGISTER_MAPPER(relu6, Relu6Mapper)
-REGISTER_MAPPER(tanh, ActivationMapper)
-REGISTER_MAPPER(log, ActivationMapper)
-REGISTER_MAPPER(sigmoid, ActivationMapper)
-REGISTER_MAPPER(sqrt, ActivationMapper)
-REGISTER_MAPPER(softplus, ActivationMapper)
-REGISTER_MAPPER(exp, ActivationMapper)
-REGISTER_MAPPER(floor, ActivationMapper)
-REGISTER_MAPPER(cos, ActivationMapper)
-REGISTER_MAPPER(sin, ActivationMapper)
-REGISTER_MAPPER(round, ActivationMapper)
 REGISTER_MAPPER(abs, ActivationMapper)
 REGISTER_MAPPER(acos, ActivationMapper)
 REGISTER_MAPPER(asin, ActivationMapper)
 REGISTER_MAPPER(atan, ActivationMapper)
-REGISTER_MAPPER(sinh, ActivationMapper)
-REGISTER_MAPPER(tan, ActivationMapper)
-REGISTER_MAPPER(ceil, ActivationMapper)
-REGISTER_MAPPER(cosh, ActivationMapper)
-REGISTER_MAPPER(softsign, ActivationMapper)
-REGISTER_MAPPER(sign, ActivationMapper)
-REGISTER_MAPPER(erf, ActivationMapper)
-REGISTER_MAPPER(reciprocal, ActivationMapper)
-REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
-REGISTER_MAPPER(gelu, GeluMapper)
-REGISTER_MAPPER(selu, SeluMapper)
-REGISTER_MAPPER(prelu, PReluMapper)
-REGISTER_MAPPER(hard_sigmoid, HardSigmoidMapper)
-REGISTER_MAPPER(swish, SwishMapper)
-REGISTER_MAPPER(hard_swish, HardSwishMapper)
-REGISTER_MAPPER(softmax, SoftMaxMapper)
 REGISTER_MAPPER(brelu, BReluMapper)
+REGISTER_MAPPER(ceil, ActivationMapper)
+REGISTER_MAPPER(cos, ActivationMapper)
 REGISTER_MAPPER(elu, EluMapper)
-REGISTER_MAPPER(hard_shrink, HardShrinkMapper)
-REGISTER_MAPPER(softshrink, SoftShrinkMapper)
-REGISTER_MAPPER(mish, MishMapper)
-REGISTER_MAPPER(square, SquareMapper)
-REGISTER_MAPPER(size, SizeMapper)
-REGISTER_MAPPER(rsqrt, RsqrtMapper)
-REGISTER_MAPPER(logsigmoid, LogSigmoidMapper)
-REGISTER_MAPPER(log_softmax, LogSoftmaxMapper)
-REGISTER_MAPPER(tanh_shrink, TanhShrinkMapper)
-REGISTER_MAPPER(thresholded_relu, ThresholdedReluMapper)
+REGISTER_MAPPER(erf, ActivationMapper)
+REGISTER_MAPPER(exp, ActivationMapper)
+REGISTER_MAPPER(floor, ActivationMapper)
+REGISTER_MAPPER(gelu, GeluMapper)
+REGISTER_MAPPER(leaky_relu, LeakyReluMapper)
+REGISTER_MAPPER(log, ActivationMapper)
+REGISTER_MAPPER(log10, Log10Mapper)
 REGISTER_MAPPER(log1p, Log1PMapper)
 REGISTER_MAPPER(log2, Log2Mapper)
-REGISTER_MAPPER(log10, Log10Mapper)
+REGISTER_MAPPER(logsigmoid, LogSigmoidMapper)
+REGISTER_MAPPER(log_softmax, LogSoftmaxMapper)
+REGISTER_MAPPER(mish, MishMapper)
+REGISTER_MAPPER(prelu, PReluMapper)
+REGISTER_MAPPER(reciprocal, ActivationMapper)
+REGISTER_MAPPER(relu, ActivationMapper)
+REGISTER_MAPPER(round, ActivationMapper)
+REGISTER_MAPPER(rsqrt, RsqrtMapper)
+REGISTER_MAPPER(sel, ActivationMapper)
+REGISTER_MAPPER(selu, SeluMapper)
 REGISTER_MAPPER(silu, SiluMapper)
+REGISTER_MAPPER(sin, ActivationMapper)
+REGISTER_MAPPER(size, SizeMapper)
+REGISTER_MAPPER(softmax, SoftMaxMapper)
+REGISTER_MAPPER(softplus, ActivationMapper)
+REGISTER_MAPPER(softshrink, SoftShrinkMapper)
+REGISTER_MAPPER(softsign, ActivationMapper)
+REGISTER_MAPPER(sqrt, ActivationMapper)
+REGISTER_MAPPER(square, SquareMapper)
+REGISTER_MAPPER(tan, ActivationMapper)
+REGISTER_MAPPER(tanh, ActivationMapper)
+REGISTER_MAPPER(tanh_shrink, TanhShrinkMapper)
+REGISTER_MAPPER(thresholded_relu, ThresholdedReluMapper)
+
 
 int32_t ActivationMapper::GetMinOpset(bool verbose) {
   if (OpType() == "softplus") {
@@ -80,10 +73,6 @@ int32_t ActivationMapper::GetMinOpset(bool verbose) {
   if (OpType() == "round") {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
-  }
-  if (OpType() == "sinh" || OpType() == "cosh" || OpType() == "sign") {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
-    return 9;
   }
   return 7;
 }
@@ -104,17 +93,6 @@ void ActivationMapper::Opset7() {
     helper_->MakeNode(iter->second, {input_info[0].name},
                       {output_info[0].name});
   }
-}
-
-void Relu6Mapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  float min = 0.0;
-  float threshold = 6.0;
-  if (HasAttr("threshold")) {
-    GetAttr("threshold", &threshold);
-  }
-  helper_->Clip(input_info[0].name, output_info[0].name, min, threshold, input_info[0].dtype);
 }
 
 int32_t PReluMapper::GetMinOpset(bool verbose) {
@@ -173,62 +151,6 @@ void SeluMapper::Opset7() {
       helper_->MakeNode("Selu", {input_info[0].name}, {output_info[0].name});
   AddAttribute(node, "alpha", alpha_);
   AddAttribute(node, "gamma", scale_);
-}
-
-void HardSigmoidMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  auto node = helper_->MakeNode("HardSigmoid", {input_info[0].name},
-                                {output_info[0].name});
-  AddAttribute(node, "alpha", alpha_);
-  AddAttribute(node, "beta", beta_);
-}
-
-void SwishMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  std::shared_ptr<ONNX_NAMESPACE::NodeProto> sigmod_node = nullptr;
-
-  if (HasAttr("beta")) {
-    float temp_beta = 1.0;
-    GetAttr("beta", &temp_beta);
-    std::string beta_node = helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), temp_beta);
-    auto beta_x_node = helper_->MakeNode("Mul", {input_info[0].name, beta_node});
-    sigmod_node = helper_->MakeNode("Sigmoid", {beta_x_node->output(0)});
-  } else {
-    sigmod_node = helper_->MakeNode("Sigmoid", {input_info[0].name});
-  }
-
-  helper_->MakeNode("Mul", {input_info[0].name, sigmod_node->output(0)},
-                    {output_info[0].name});
-}
-
-void HardSwishMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-
-  std::string scale_node =
-      helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), scale_);
-  std::string offset_node =
-      helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), offset_);
-
-  auto add_node = helper_->MakeNode("Add", {input_info[0].name, offset_node});
-  auto clip_node =
-      helper_->Clip(add_node->output(0), 0.0, threshold_, input_info[0].dtype);
-
-  auto mul_node = helper_->MakeNode("Mul", {input_info[0].name, clip_node});
-  helper_->MakeNode("Div", {mul_node->output(0), scale_node},
-                    {output_info[0].name});
-}
-
-void HardSwishMapper::Opset14() {
-  if (fabs(offset_ - 3.0) > 1e-05 || fabs(scale_ - 6.0) > 1e-05 ||
-      fabs(threshold_ - 6.0) > 1e-05) {
-    return Opset7();
-  }
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  helper_->MakeNode("HardSwish", {input_info[0].name}, {output_info[0].name});
 }
 
 void LeakyReluMapper::Opset7() {
@@ -334,13 +256,6 @@ void EluMapper::Opset7() {
   auto node = helper_->MakeNode("Elu", {GetInput("X")[0].name},
                                 {GetOutput("Out")[0].name});
   AddAttribute(node, "alpha", alpha_);
-}
-
-void HardShrinkMapper::Opset9() {
-  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
-                                {GetOutput("Out")[0].name});
-  AddAttribute(node, "lambd", threshold_);
-  AddAttribute(node, "bias", float(0.0));
 }
 
 int32_t MishMapper::GetMinOpset(bool verbose) {
