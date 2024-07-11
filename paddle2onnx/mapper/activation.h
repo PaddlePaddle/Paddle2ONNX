@@ -29,7 +29,6 @@ class ActivationMapper : public Mapper {
     op_mapper_["relu"] = "Relu";
     op_mapper_["tanh"] = "Tanh";
     op_mapper_["log"] = "Log";
-    op_mapper_["sigmoid"] = "Sigmoid";
     op_mapper_["sqrt"] = "Sqrt";
     op_mapper_["softplus"] = "Softplus";
     op_mapper_["exp"] = "Exp";
