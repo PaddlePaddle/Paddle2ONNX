@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/activation/sigmoid.h"
+#include "paddle2onnx/mapper/activation/hard_sigmoid.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(sigmoid, SigmoidMapper)
+REGISTER_MAPPER(hard_sigmoid, HardSigmoidMapper)
 
-void SigmoidMapper::Opset7() {
+void HardSigmoidMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  helper_->MakeNode("Sigmoid", {input_info[0].name}, {output_info[0].name});
+  auto node = helper_->MakeNode("HardSigmoid", {input_info[0].name},
+                                {output_info[0].name});
+  AddAttribute(node, "alpha", alpha_);
+  AddAttribute(node, "beta", beta_);
 }
 }

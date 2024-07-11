@@ -11,15 +11,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#pragma once
 
-#include "paddle2onnx/mapper/activation/sigmoid.h"
+
+#include "paddle2onnx/mapper/mapper.h"
+
+#include <cmath>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace paddle2onnx {
-REGISTER_MAPPER(sigmoid, SigmoidMapper)
+class HardSwishMapper : public Mapper {
+ public:
+  HardSwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+                  int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("scale", &scale_);
+    GetAttr("offset", &offset_);
+    GetAttr("threshold", &threshold_);
+  }
 
-void SigmoidMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  helper_->MakeNode("Sigmoid", {input_info[0].name}, {output_info[0].name});
-}
+  int32_t GetMinOpset(bool verbose) override;
+
+  void Opset7() override;
+  void Opset14() override;
+
+ private:
+  float scale_;
+  float offset_;
+  float threshold_;
+};
 }

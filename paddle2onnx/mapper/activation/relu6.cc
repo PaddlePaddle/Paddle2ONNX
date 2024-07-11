@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/activation/sigmoid.h"
+#include "paddle2onnx/mapper/activation/relu6.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(sigmoid, SigmoidMapper)
+REGISTER_MAPPER(relu6, Relu6Mapper)
 
-void SigmoidMapper::Opset7() {
+void Relu6Mapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  helper_->MakeNode("Sigmoid", {input_info[0].name}, {output_info[0].name});
+  float min = 0.0;
+  float threshold = 6.0;
+  if (HasAttr("threshold")) {
+    GetAttr("threshold", &threshold);
+  }
+  helper_->Clip(input_info[0].name, output_info[0].name, min, threshold, input_info[0].dtype);
 }
 }

@@ -15,7 +15,6 @@
 #include "paddle2onnx/mapper/activation/swish.h"
 
 namespace paddle2onnx {
-
 REGISTER_MAPPER(swish, SwishMapper)
 
 void SwishMapper::Opset7() {

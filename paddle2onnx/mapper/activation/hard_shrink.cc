@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/activation/sigmoid.h"
+#include "paddle2onnx/mapper/activation/hard_shrink.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(sigmoid, SigmoidMapper)
+REGISTER_MAPPER(hard_shrink, HardShrinkMapper)
 
-void SigmoidMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  helper_->MakeNode("Sigmoid", {input_info[0].name}, {output_info[0].name});
+int32_t HardShrinkMapper::GetMinOpset(bool verbose) {
+    Logger(verbose, 9) << RequireOpset(9) << std::endl;
+    return 9;
+}
+
+void HardShrinkMapper::Opset9() {
+  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
+                                {GetOutput("Out")[0].name});
+  AddAttribute(node, "lambd", threshold_);
+  AddAttribute(node, "bias", float(0.0));
 }
 }
