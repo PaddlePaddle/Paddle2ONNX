@@ -32,8 +32,6 @@ class HardSwishMapper : public Mapper {
     GetAttr("threshold", &threshold_);
   }
 
-  int32_t GetMinOpset(bool verbose) override;
-
   void Opset7() override;
   void Opset14() override;
 

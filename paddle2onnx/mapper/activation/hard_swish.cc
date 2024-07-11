@@ -17,11 +17,6 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(hard_swish, HardSwishMapper)
 
-int32_t HardSwishMapper::GetMinOpset(bool verbose) {
-    Logger(verbose, 14) << RequireOpset(14) << std::endl;
-    return 14;
-}
-
 void HardSwishMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
