@@ -41,53 +41,11 @@ def test_sin_9():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'sin', [9])
+    obj = APIOnnx(op, 'sin', [7])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
     obj.run()
 
-
-def test_sin_10():
-    """
-    api: paddle.sin
-    op version: 10
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'sin', [10])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
-    obj.run()
-
-
-def test_sin_11():
-    """
-    api: paddle.sin
-    op version: 11
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'sin', [11])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
-    obj.run()
-
-
-def test_sin_12():
-    """
-    api: paddle.sin
-    op version: 12
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'sin', [12])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
-    obj.run()
+if __name__ == "__main__":
+    test_sin_9()

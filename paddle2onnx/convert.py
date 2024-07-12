@@ -17,32 +17,34 @@ import paddle
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 from paddle2onnx.utils import logging, paddle_jit_save_configs
 
-def export(model_file,
-           params_file="",
+def export(model_filename,
+           params_filename,
            save_file=None,
-           opset_version=9,
+           opset_version=7,
            auto_upgrade_opset=True,
            verbose=True,
            enable_onnx_checker=True,
            enable_experimental_op=True,
            enable_optimize=True,
-           custom_op_info=None,
            deploy_backend="onnxruntime",
            calibration_file="",
            external_file="",
            export_fp16_model=False):
     deploy_backend = deploy_backend.lower()
-    if custom_op_info is None:
-        onnx_model_str = c_p2o.export(
-            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-            enable_onnx_checker, enable_experimental_op, enable_optimize, {},
-            deploy_backend, calibration_file, external_file, export_fp16_model)
-    else:
-        onnx_model_str = c_p2o.export(
-            model_file, params_file, opset_version, auto_upgrade_opset, verbose,
-            enable_onnx_checker, enable_experimental_op, enable_optimize,
-            custom_op_info, deploy_backend, calibration_file, external_file,
-            export_fp16_model)
+    # cpp2py_export.cc
+    onnx_model_str = c_p2o.export(
+        model_filename, 
+        params_filename, 
+        opset_version, 
+        auto_upgrade_opset, 
+        verbose,
+        enable_onnx_checker, 
+        enable_experimental_op, 
+        enable_optimize,
+        deploy_backend, 
+        calibration_file, 
+        external_file, 
+        export_fp16_model)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
@@ -73,8 +75,5 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
     if not os.path.isfile(params_file):
         params_file = ""
 
-    if save_file is None:
-        return export(model_file, params_file, save_file, opset_version)
-    else:
-        export(model_file, params_file, save_file, opset_version)
+    export(model_file, params_file, save_file, opset_version)
     logging.info("ONNX model saved in {}.".format(save_file))

@@ -102,50 +102,6 @@ void ModelExporter::CovertCustomOps(const PaddleParser& parser,
       }
     }
   }
-  auto node = helper->MakeNode(custom_ops[op.type()], input_strs, output_strs);
-  node->set_domain("Paddle");
-  for (auto attr_index = 0; attr_index < op.attrs_size(); attr_index++) {
-    auto attr = op.attrs(attr_index);
-    std::string attr_name = attr.name();
-    if (attr_name == "op_callstack") {
-      continue;
-    }
-    if (attr.has_i() || attr.has_l()) {
-      int64_t val;
-      parser.GetOpAttr(op, attr_name, &val);
-      AddAttribute(node, attr_name, val);
-    } else if (attr.has_f()) {
-      float val;
-      parser.GetOpAttr(op, attr_name, &val);
-      AddAttribute(node, attr_name, val);
-    } else if (attr.has_b()) {
-      bool val;
-      parser.GetOpAttr(op, attr_name, &val);
-      AddAttribute(node, attr_name, static_cast<int64_t>(val));
-    } else if (attr.has_s()) {
-      std::string val;
-      parser.GetOpAttr(op, attr_name, &val);
-      AddAttribute(node, attr_name, val);
-    } else if (attr.ints_size() > 0 || attr.longs_size() > 0) {
-      std::vector<int64_t> vec;
-      parser.GetOpAttr(op, attr_name, &vec);
-      AddAttribute(node, attr_name, vec);
-    } else if (attr.floats_size() > 0) {
-      std::vector<float> vec;
-      parser.GetOpAttr(op, attr_name, &vec);
-      AddAttribute(node, attr_name, vec);
-    } else if (attr.float64s_size() > 0) {
-      std::vector<double> vec;
-      parser.GetOpAttr(op, attr_name, &vec);
-      std::vector<float> fp32_vec;
-      for (auto val : vec) {
-        fp32_vec.push_back(static_cast<float>(val));
-      }
-      AddAttribute(node, attr_name, fp32_vec);
-    }
-  }
-  P2OLogger(true) << op.type() << " is exported as custom operator: "
-                  << custom_ops[op.type()] << std::endl;
 }
 
 void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
@@ -161,24 +117,13 @@ void ModelExporter::ExportOp(const PaddleParser& parser, OnnxHelper* helper,
     return ExportLoop(parser, helper, opset_version, block_id, op_id, verbose);
   }
 
-  if (MapperHelper::Get()->IsRegistered(op.type())) {
-    auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, helper,
-                                                    block_id, op_id);
-    mapper->deploy_backend = _deploy_backend;
+  auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, helper, block_id, op_id);
+  mapper->deploy_backend = _deploy_backend;
 #ifdef PADDLE2ONNX_DEBUG
-    P2OLogger(true) << "Mapper Name: " << mapper->Name() << std::endl;
+  P2OLogger(true) << "Mapper Name: " << mapper->Name() << std::endl;
 #endif
-    // Some operators will export as custom operator
-    auto iter = custom_ops.find(op.type());
-    if (iter != custom_ops.end()) {
-      mapper->export_as_custom_op = true;
-      mapper->custom_op_name = iter->second;
-    }
-    mapper->Run();
-    delete mapper;
-  } else if (custom_ops.find(op.type()) != custom_ops.end()) {
-    CovertCustomOps(parser, helper, block_id, op_id);
-  }
+  mapper->Run();
+  delete mapper;
 
 #ifdef PADDLE2ONNX_DEBUG
   P2OLogger(true) << "---Converting operator: " << op.type() << " done---"
@@ -412,16 +357,13 @@ std::string ModelExporter::Run(
   auto ir_version = _helper.GetIRVersion();
   auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
   model->set_ir_version(ir_version);
+
   auto graph = model->mutable_graph();
   graph->set_name("Model from PaddlePaddle.");
+
   auto opset_id = model->add_opset_import();
   opset_id->set_domain("");
   opset_id->set_version(opset_version);
-  if (custom_ops.size()) {
-    auto opset_paddle_id = model->add_opset_import();
-    opset_paddle_id->set_domain("Paddle");
-    opset_paddle_id->set_version(1);
-  }
 
   ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes,
                               &_helper.quantize_info);
@@ -461,7 +403,6 @@ std::string ModelExporter::Run(
   if (export_fp16_model) {
     P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
     ConvertFp32ToFp16 convert;
-    convert.SetCustomOps(custom_ops);
     convert.AddDisabledOpTypes(disable_fp16_op_types);
     convert.Convert(&onnx_model);
   }
@@ -509,9 +450,6 @@ bool ModelExporter::CheckIfOpSupported(const PaddleParser& parser,
         }
         continue;
       }
-      if (custom_ops.find(op.type()) != custom_ops.end()) {
-        continue;
-      }
       if (!MapperHelper::Get()->IsRegistered(op.type())) {
         unsupported_ops->insert(op.type());
       } else if (!enable_experimental_op) {
@@ -537,9 +475,6 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
       auto op = parser.GetOpDesc(i, j);
-      if (custom_ops.find(op.type()) != custom_ops.end()) {
-        continue;
-      }
       if (op.type() == "feed" || op.type() == "fetch") {
         continue;
       }
@@ -551,12 +486,7 @@ int32_t ModelExporter::GetMinOpset(const PaddleParser& parser, bool verbose) {
                     << std::endl;
         current_min_opset = 13;
       } else {
-        auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser,
-                                                        &_helper, i, j);
-        auto iter = custom_ops.find(op.type());
-        if (iter != custom_ops.end()) {
-          mapper->export_as_custom_op = true;
-        }
+        auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &_helper, i, j);
         current_min_opset = mapper->GetMinOpset(verbose);
         delete mapper;
       }
