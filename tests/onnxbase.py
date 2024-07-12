@@ -414,8 +414,19 @@ class APIOnnx(object):
 
             for v in self._version:
                 onnx_model_str = c_p2o.export(
-                    model_file, params_file, v, False, True, True, True,
-                    True, {}, "onnxruntime", "", "", False)
+                    model_file, # model_filename
+                    params_file, # params_filename
+                    v, # opset_version
+                    False, # auto_upgrade_opset
+                    True, # verbose
+                    True, # enable_onnx_checker
+                    True, # enable_experimental_op
+                    True, # enable_optimize
+                    "onnxruntime", # deploy_backend
+                    "", # calibration_file
+                    "", # external_file
+                    False # export_fp16_model
+                )
                 with open(os.path.join(self.name, self.name + '_' + str(v) + ".onnx"), "wb") as f:
                     f.write(onnx_model_str)
                 self.res_fict[str(v)] = self._mk_onnx_res(ver=v)
