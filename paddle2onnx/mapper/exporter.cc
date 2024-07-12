@@ -564,7 +564,7 @@ namespace paddle2onnx
         }
         else
         {
-          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &`, i, j);
+          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &helper_, i, j);
           current_opset = mapper->GetMinOpset(verbose);
           delete mapper;
         }
