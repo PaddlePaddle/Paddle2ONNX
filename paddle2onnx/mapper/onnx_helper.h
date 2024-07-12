@@ -215,8 +215,6 @@ class OnnxHelper {
     std::string Assign(const ONNX_NAMESPACE::TensorProto_DataType &dtype,
                        const std::vector<int64_t> &shape,
                        const std::vector<T> &value);
-
-    ONNX_NAMESPACE::Version GetIRVersion() const;
 };
 
 
