@@ -24,13 +24,15 @@
 
 namespace paddle2onnx {
 
-PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
-                                   int32_t opset_version,
-                                   bool auto_upgrade_opset, bool verbose,
-                                   bool enable_onnx_checker,
-                                   bool enable_experimental_op,
-                                   bool enable_optimize, CustomOp* ops,
-                                   int op_count, const char* deploy_backend) {
+PADDLE2ONNX_DECL bool IsExportable(const char* model, 
+                                  const char* params,
+                                  int32_t opset_version,
+                                  bool auto_upgrade_opset, 
+                                  bool verbose,
+                                  bool enable_onnx_checker,
+                                  bool enable_experimental_op,
+                                  bool enable_optimize, 
+                                  const char* deploy_backend) {
   auto parser = PaddleParser();
   if (!parser.Init(model, params)) {
     return false;
@@ -40,19 +42,6 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
   if (!me.CheckIfOpSupported(parser, &unsupported_ops,
                              enable_experimental_op)) {
     return false;
-  }
-
-  // Add custom operator information
-  if (ops != nullptr && op_count > 0) {
-    for (int i = 0; i < op_count; ++i) {
-      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
-      std::string export_op_name(ops[i].export_op_name,
-                                 strlen(ops[i].export_op_name));
-      if (export_op_name == "paddle2onnx_null") {
-        export_op_name = op_name;
-      }
-      me.custom_ops[op_name] = export_op_name;
-    }
   }
 
   if (me.GetMinOpset(parser, false) < 0) {
@@ -77,14 +66,17 @@ PADDLE2ONNX_DECL bool IsExportable(const char* model, const char* params,
   return true;
 }
 
-PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
-                                   const void* params_buffer, int params_size,
-                                   int32_t opset_version,
-                                   bool auto_upgrade_opset, bool verbose,
-                                   bool enable_onnx_checker,
-                                   bool enable_experimental_op,
-                                   bool enable_optimize, CustomOp* ops,
-                                   int op_count, const char* deploy_backend) {
+PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, 
+                                  int model_size,
+                                  const void* params_buffer, 
+                                  int params_size,
+                                  int32_t opset_version,
+                                  bool auto_upgrade_opset, 
+                                  bool verbose,
+                                  bool enable_onnx_checker,
+                                  bool enable_experimental_op,
+                                  bool enable_optimize, 
+                                  const char* deploy_backend) {
   auto parser = PaddleParser();
   if (!parser.Init(model_buffer, model_size, params_buffer, params_size)) {
     return false;
@@ -94,19 +86,6 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
   if (!me.CheckIfOpSupported(parser, &unsupported_ops,
                              enable_experimental_op)) {
     return false;
-  }
-
-  // Add custom operator information
-  if (ops != nullptr && op_count > 0) {
-    for (int i = 0; i < op_count; ++i) {
-      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
-      std::string export_op_name(ops[i].export_op_name,
-                                 strlen(ops[i].export_op_name));
-      if (export_op_name == "paddle2onnx_null") {
-        export_op_name = op_name;
-      }
-      me.custom_ops[op_name] = export_op_name;
-    }
   }
 
   if (me.GetMinOpset(parser, false) < 0) {
@@ -132,33 +111,32 @@ PADDLE2ONNX_DECL bool IsExportable(const void* model_buffer, int model_size,
 }
 
 PADDLE2ONNX_DECL bool Export(
-    const char* model, const char* params, char** out, int* out_size,
-    int32_t opset_version, bool auto_upgrade_opset, bool verbose,
-    bool enable_onnx_checker, bool enable_experimental_op, bool enable_optimize,
-    CustomOp* ops, int op_count, const char* deploy_backend,
-    char** calibration_cache, int* calibration_size, const char* external_file,
-    bool* save_external, bool export_fp16_model, char** disable_fp16_op_types,
+    const char* model_filename, 
+    const char* params_filename, 
+    char** out, 
+    int* out_size,
+    int32_t opset_version, 
+    bool auto_upgrade_opset, 
+    bool verbose,
+    bool enable_onnx_checker,
+    bool enable_experimental_op, 
+    bool enable_optimize,
+    const char* deploy_backend,
+    char** calibration_cache, 
+    int* calibration_size, 
+    const char* external_file,
+    bool* save_external, 
+    bool export_fp16_model, 
+    char** disable_fp16_op_types,
     int disable_fp16_op_types_count) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
-  if (!parser.Init(model, params)) {
+  if (!parser.Init(model_filename, params_filename)) {
     P2OLogger(verbose) << "Paddle model parsing failed." << std::endl;
     return false;
   }
   paddle2onnx::ModelExporter me;
 
-  // Add custom operator information
-  if (ops != nullptr && op_count > 0) {
-    for (int i = 0; i < op_count; ++i) {
-      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
-      std::string export_op_name(ops[i].export_op_name,
-                                 strlen(ops[i].export_op_name));
-      if (export_op_name == "paddle2onnx_null") {
-        export_op_name = op_name;
-      }
-      me.custom_ops[op_name] = export_op_name;
-    }
-  }
   // Add disabled fp16 op information
   std::vector<std::string> disable_op_types;
   if (disable_fp16_op_types != nullptr && disable_fp16_op_types_count > 0) {
@@ -196,13 +174,25 @@ PADDLE2ONNX_DECL bool Export(
 }
 
 PADDLE2ONNX_DECL bool Export(
-    const void* model_buffer, int64_t model_size, const void* params_buffer,
-    int64_t params_size, char** out, int* out_size, int32_t opset_version,
-    bool auto_upgrade_opset, bool verbose, bool enable_onnx_checker,
-    bool enable_experimental_op, bool enable_optimize, CustomOp* ops,
-    int op_count, const char* deploy_backend, char** calibration_cache,
-    int* calibration_size, const char* external_file, bool* save_external,
-    bool export_fp16_model, char** disable_fp16_op_types,
+    const void* model_buffer, 
+    int64_t model_size, 
+    const void* params_buffer,
+    int64_t params_size, 
+    char** out, 
+    int* out_size, 
+    int32_t opset_version,
+    bool auto_upgrade_opset, 
+    bool verbose, 
+    bool enable_onnx_checker,
+    bool enable_experimental_op, 
+    bool enable_optimize, 
+    const char* deploy_backend, 
+    char** calibration_cache,
+    int* calibration_size, 
+    const char* external_file, 
+    bool* save_external,
+    bool export_fp16_model, 
+    char** disable_fp16_op_types,
     int disable_fp16_op_types_count) {
   auto parser = PaddleParser();
   P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
@@ -212,18 +202,6 @@ PADDLE2ONNX_DECL bool Export(
   }
   paddle2onnx::ModelExporter me;
 
-  // Add custom operator information
-  if (ops != nullptr && op_count > 0) {
-    for (int i = 0; i < op_count; ++i) {
-      std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
-      std::string export_op_name(ops[i].export_op_name,
-                                 strlen(ops[i].export_op_name));
-      if (export_op_name == "paddle2onnx_null") {
-        export_op_name = op_name;
-      }
-      me.custom_ops[op_name] = export_op_name;
-    }
-  }
   // Add disabled fp16 op information
   std::vector<std::string> disable_op_types;
   if (disable_fp16_op_types != nullptr && disable_fp16_op_types_count > 0) {

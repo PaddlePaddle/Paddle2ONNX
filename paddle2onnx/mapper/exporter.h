@@ -71,10 +71,6 @@ struct ModelExporter {
   ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto& model);
 
  public:
-  // custom operators for export
-  // <key: op_name, value:[exported_op_name, domain]>
-  std::map<std::string, std::string> custom_ops;
-
   QuantizeModelProcessor quantize_model_processer;
   // Get a proper opset version in range of [7, 16]
   // Also will check the model is convertable, this will include 2 parts
