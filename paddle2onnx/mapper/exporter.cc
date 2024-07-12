@@ -308,6 +308,46 @@ namespace paddle2onnx
                        << std::endl;
   }
 
+  ONNX_NAMESPACE::Version ModelExporter::GetIRVersion() const {
+    int ir_version = 0;
+    switch (opset_version_) {
+      case 7:
+      case 8:
+        ir_version = 3;
+        break;
+      case 9:
+        ir_version = 4;
+        break;
+      case 10:
+        ir_version = 5;
+        break;
+      case 11:
+        ir_version = 6;
+        break;
+      case 12:
+      case 13:
+      case 14:
+        ir_version = 7;
+        break;
+      case 15:
+      case 16:
+      case 17:
+      case 18:
+        ir_version = 8;
+        break;
+      case 19:
+      case 20:
+        ir_version = 9;
+        break;
+      case 21:
+        ir_version = 10;
+        break;
+      default:
+        Assert(false, "Opset version must be 7-20");
+    }
+    return static_cast<ONNX_NAMESPACE::Version>(ir_version);
+  }
+
   std::string ModelExporter::Run(const PaddleParser &parser,
                                  int opset_version,
                                  bool auto_upgrade_opset,
@@ -375,14 +415,15 @@ namespace paddle2onnx
       }
     }
     Assert(opset_is_legal, "Due to opset version, the model exporting is aborted.");
+
+    opset_version_ = opset_version;
     auto opset_import = model->add_opset_import();
     opset_import->set_domain("");
-    opset_import->set_version(opset_version);
-    P2OLogger(verbose) << "Use opset_version = " << helper_.GetOpsetVersion() << " for ONNX export." << std::endl;
+    opset_import->set_version(opset_version_);
+    P2OLogger(verbose) << "Use opset_version = " << opset_version_ << " for ONNX export." << std::endl;
 
     // Set the IR Version of the ONNX model.
-    auto ir_version = helper_.GetIRVersion();
-    model->set_ir_version(ir_version);
+    model->set_ir_version(GetIRVersion());
 
     ExportParameters(parser.params);
     ExportInputOutputs(parser.inputs, parser.outputs);

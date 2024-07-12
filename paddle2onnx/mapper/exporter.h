@@ -40,38 +40,8 @@ inline std::string GetFilenameFromPath(const std::string &path)
 
 namespace paddle2onnx
 {
-
   struct ModelExporter
   {
-  private:
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
-    // The _deploy_backend will pass to Mapper to influence the conversion
-    std::string deploy_backend_ = "onnxruntime";
-    OnnxHelper helper_;
-
-    void ExportParameters(const std::map<std::string, Weight> &params,
-                          bool use_initializer = false);
-
-    // Update constant node in parameters. When process quantize model, the weight
-    // dtype may be int8, it should be convet to float32 and use this function to
-    // update converted params.
-    void UpdateParameters(const std::map<std::string, Weight> &params);
-    void ExportInputOutputs(const std::vector<TensorInfo> &input_infos,
-                            const std::vector<TensorInfo> &output_infos);
-    void ExportOp(const PaddleParser &parser, OnnxHelper *helper,
-                  int32_t opset_version, int64_t block_id, int64_t op_id,
-                  bool verbose);
-    bool IsLoopSupported(const PaddleParser &parser, const int64_t &block_id,
-                         const int64_t &op_id);
-    void ExportLoop(const PaddleParser &parser, OnnxHelper *helper,
-                    int32_t opset_version, int64_t block_id, int64_t op_id,
-                    bool verbose);
-    void CovertCustomOps(const PaddleParser &parser, OnnxHelper *helper,
-                         int64_t block_id, int64_t op_id);
-    ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto &model);
-
   public:
     QuantizeModelProcessor quantize_model_processer;
     // Get a proper opset version in range of [7, 16]
@@ -119,6 +89,37 @@ namespace paddle2onnx
                     bool *save_external = nullptr,
                     bool export_fp16_model = false,
                     std::vector<std::string> disable_fp16_op_types = {});
-  };
 
+  private:
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
+    // The _deploy_backend will pass to Mapper to influence the conversion
+    std::string deploy_backend_ = "onnxruntime";
+    OnnxHelper helper_;
+    int32_t opset_version_ = 7;
+
+    void ExportParameters(const std::map<std::string, Weight> &params,
+                          bool use_initializer = false);
+
+    // Update constant node in parameters. When process quantize model, the weight
+    // dtype may be int8, it should be convet to float32 and use this function to
+    // update converted params.
+    void UpdateParameters(const std::map<std::string, Weight> &params);
+    void ExportInputOutputs(const std::vector<TensorInfo> &input_infos,
+                            const std::vector<TensorInfo> &output_infos);
+    void ExportOp(const PaddleParser &parser, OnnxHelper *helper,
+                  int32_t opset_version, int64_t block_id, int64_t op_id,
+                  bool verbose);
+    bool IsLoopSupported(const PaddleParser &parser, const int64_t &block_id,
+                         const int64_t &op_id);
+    void ExportLoop(const PaddleParser &parser, OnnxHelper *helper,
+                    int32_t opset_version, int64_t block_id, int64_t op_id,
+                    bool verbose);
+    void CovertCustomOps(const PaddleParser &parser, OnnxHelper *helper,
+                         int64_t block_id, int64_t op_id);
+    ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto &model);
+
+    ONNX_NAMESPACE::Version GetIRVersion() const;
+  };
 } // namespace paddle2onnx
