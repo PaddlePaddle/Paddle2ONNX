@@ -24,3 +24,4 @@ protobuf-*
 *.pdmodel
 *.onnx
 tests/__pycache_*
+tests/*/__pycache_*
