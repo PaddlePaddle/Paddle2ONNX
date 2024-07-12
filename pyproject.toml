@@ -34,7 +34,7 @@ version = {file = "VERSION_NUMBER"}
 include = ["paddle2onnx*"]
 
 [tool.setuptools.exclude-package-data]
-"*" = ["*.h", "*.cc", "*.bak"]
+"*" = ["*.h", "*.cc", "*.bak", "*.in"]
 
 [tool.setuptools_scm]
 write_to = "paddle2onnx/version.py"
