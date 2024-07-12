@@ -545,45 +545,4 @@ std::vector<std::string> OnnxHelper::DtypeAlignment(
   }
   return casted_node;
 }
-
-
-ONNX_NAMESPACE::Version OnnxHelper::GetIRVersion() const {
-  int ir_version = 0;
-  switch (opset_version) {
-    case 7:
-    case 8:
-      ir_version = 3;
-      break;
-    case 9:
-      ir_version = 4;
-      break;
-    case 10:
-      ir_version = 5;
-      break;
-    case 11:
-      ir_version = 6;
-      break;
-    case 12:
-    case 13:
-    case 14:
-      ir_version = 7;
-      break;
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-      ir_version = 8;
-      break;
-    case 19:
-    case 20:
-      ir_version = 9;
-      break;
-    case 21:
-      ir_version = 10;
-      break;
-    default:
-      Assert(false, "Opset version must be 7-20");
-  }
-  return static_cast<ONNX_NAMESPACE::Version>(ir_version);
-}
 } // namespace paddle2onnx
