@@ -10,12 +10,15 @@ version.py
 paddle2onnx/mappers_registry.h
 
 # Temporary files that may be generated when building Paddle2ONNX
-protobuf-*
-installed_protobuf
+.setuptools-cmake-build
 build
 cmake-build-*
-paddle2onnx.egg-info/*
 dist/*
+installed_protobuf
+paddle2onnx.egg-info/*
+paddle2onnx/*.so
+paddle2onnx/__pycache_*
+protobuf-*
 
 # Temporary files automatically generated when executing Paddle2ONNX unit tests
 *.pdmodel
