@@ -333,18 +333,12 @@ namespace paddle2onnx
                                  std::vector<std::string> disable_fp16_op_types)
   {
     _deploy_backend = deploy_backend;
-    _helper.SetOpsetVersion(opset_version);
     _total_ops_num = 0;
     _current_exported_num = 0;
     for (auto i = 0; i < parser.NumOfBlocks(); ++i)
     {
       _total_ops_num += parser.NumOfOps(i);
     }
-    _helper.nodes.reserve(_total_ops_num * 3);
-    Assert(opset_version <= MAX_ONNX_OPSET_VERSION && opset_version >= 7,
-           "Paddle2ONNX now only support opset version in range of [7, " +
-               std::to_string(MAX_ONNX_OPSET_VERSION) + "].");
-    _helper.Clear();
     inputs.clear();
     outputs.clear();
     parameters.clear();
@@ -396,7 +390,6 @@ namespace paddle2onnx
       }
     }
     Assert(opset_is_legal, "Due to opset version, the model exporting is aborted.");
-    _helper.SetOpsetVersion(opset_version);
     auto opset_import = model->add_opset_import();
     opset_import->set_domain("");
     opset_import->set_version(opset_version);
@@ -410,52 +403,58 @@ namespace paddle2onnx
     ExportInputOutputs(parser.inputs, parser.outputs);
 
     // Only convert blocks 0 now, because control flow is not supported yet.
-    for (auto i = 0; i < parser.NumOfOps(0); ++i)
-    {
-      auto op = parser.GetOpDesc(0, i);
-      if (op.type() == "feed")
+    for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
+      // Init Node Help
+      _helper.SetOpsetVersion(opset_version);
+      _helper.nodes.reserve(_total_ops_num * 3);
+      _helper.Clear();
+
+      for (auto j = 0; j < parser.NumOfOps(i); ++j)
       {
-        continue;
+        auto op = parser.GetOpDesc(i, j);
+        if (op.type() == "feed")
+        {
+          continue;
+        }
+        else if (op.type() == "fetch")
+        {
+          continue;
+        }
+        ExportOp(parser, &_helper, opset_version, i, j, verbose);
       }
-      else if (op.type() == "fetch")
+
+      ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes, &_helper.quantize_info);
+      if (parser.is_quantized_model)
       {
-        continue;
+        quantize_model_processer.ProcessQuantizeModel(
+            &parameters, &inputs, &outputs, &_helper.nodes, &_helper,
+            deploy_backend, parser, calibration_cache);
+        // Update int8 weights in quantized OP to float32
+        UpdateParameters(_helper.updated_params);
       }
-      ExportOp(parser, &_helper, opset_version, 0, i, verbose);
-    }
 
-    auto graph = model->mutable_graph();
-    graph->set_name("Model from PaddlePaddle.");
-
-    ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes, &_helper.quantize_info);
-    if (parser.is_quantized_model)
-    {
-      quantize_model_processer.ProcessQuantizeModel(
-          &parameters, &inputs, &outputs, &_helper.nodes, &_helper,
-          deploy_backend, parser, calibration_cache);
-      // Update int8 weights in quantized OP to float32
-      UpdateParameters(_helper.updated_params);
-    }
-
-    for (auto &item : parameters)
-    {
-      *(graph->add_node()) = *(item.get());
-    }
-    for (auto &item : inputs)
-    {
-      *(graph->add_input()) = *(item.get());
-    }
-    for (auto &item : _helper.nodes)
-    {
-      *(graph->add_node()) = (*item.get());
-    }
-    for (auto &item : outputs)
-    {
-      *(graph->add_output()) = (*item.get());
-    }
-    for (auto &item : _helper.value_infos)
-    {
-      *(graph->add_value_info()) = (*item.get());
+      auto graph = model->mutable_graph();
+      graph->set_name("PaddlePaddle Graph " + std::to_string(i));
+      for (auto &item : parameters)
+      {
+        *(graph->add_node()) = *(item.get());
+      }
+      for (auto &item : inputs)
+      {
+        *(graph->add_input()) = *(item.get());
+      }
+      for (auto &item : _helper.nodes)
+      {
+        *(graph->add_node()) = (*item.get());
+      }
+      for (auto &item : outputs)
+      {
+        *(graph->add_output()) = (*item.get());
+      }
+      for (auto &item : _helper.value_infos)
+      {
+        *(graph->add_value_info()) = (*item.get());
+      }
     }
 
     ONNX_NAMESPACE::ModelProto onnx_model;
@@ -493,8 +492,7 @@ namespace paddle2onnx
     }
     if (external_data_file.size())
     {
-      SaveExternalData(onnx_model.mutable_graph(), external_data_file,
-                       save_external);
+      SaveExternalData(onnx_model.mutable_graph(), external_data_file, save_external);
     }
     // check model
     if (enable_onnx_checker)
