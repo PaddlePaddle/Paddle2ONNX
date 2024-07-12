@@ -122,33 +122,23 @@ namespace paddle2onnx
     }
   }
 
-  void ModelExporter::ExportOp(const PaddleParser &parser, OnnxHelper *helper,
-                               int32_t opset_version, int64_t block_id,
-                               int64_t op_id, bool verbose)
+  void ModelExporter::ExportOp(const PaddleParser &parser,
+                               OnnxHelper *helper,
+                               int32_t opset_version,
+                               int64_t block_id,
+                               int64_t op_id,
+                               bool verbose)
   {
-    _current_exported_num += 1;
     auto op = parser.GetOpDesc(block_id, op_id);
-#ifdef PADDLE2ONNX_DEBUG
-    P2OLogger(true) << "---Converting operator: " << op.type() << " ---"
-                    << std::endl;
-#endif
     if (op.type() == "while")
     {
       return ExportLoop(parser, helper, opset_version, block_id, op_id, verbose);
     }
 
     auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, helper, block_id, op_id);
-    mapper->deploy_backend = _deploy_backend;
-#ifdef PADDLE2ONNX_DEBUG
-    P2OLogger(true) << "Mapper Name: " << mapper->Name() << std::endl;
-#endif
+    mapper->deploy_backend = deploy_backend_;
     mapper->Run();
     delete mapper;
-
-#ifdef PADDLE2ONNX_DEBUG
-    P2OLogger(true) << "---Converting operator: " << op.type() << " done---"
-                    << std::endl;
-#endif
   }
 
   void ModelExporter::ProcessGraphDumplicateNames(
@@ -332,13 +322,7 @@ namespace paddle2onnx
                                  bool export_fp16_model,
                                  std::vector<std::string> disable_fp16_op_types)
   {
-    _deploy_backend = deploy_backend;
-    _total_ops_num = 0;
-    _current_exported_num = 0;
-    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
-    {
-      _total_ops_num += parser.NumOfOps(i);
-    }
+    deploy_backend_ = deploy_backend;
     inputs.clear();
     outputs.clear();
     parameters.clear();
@@ -369,7 +353,8 @@ namespace paddle2onnx
     // Set the Opset Version of the ONNX model.
     bool opset_is_legal = true;
     int32_t min_opset = GetMinOpset(parser, verbose);
-    if(min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION) {
+    if (min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION)
+    {
       P2OLogger() << "The Opset Version must be between 7 and " << MAX_ONNX_OPSET_VERSION - 1 << std::endl;
       opset_is_legal = false;
     }
@@ -393,21 +378,22 @@ namespace paddle2onnx
     auto opset_import = model->add_opset_import();
     opset_import->set_domain("");
     opset_import->set_version(opset_version);
-    P2OLogger(verbose) << "Use opset_version = " << _helper.GetOpsetVersion() << " for ONNX export." << std::endl;
+    P2OLogger(verbose) << "Use opset_version = " << helper_.GetOpsetVersion() << " for ONNX export." << std::endl;
 
     // Set the IR Version of the ONNX model.
-    auto ir_version = _helper.GetIRVersion();
+    auto ir_version = helper_.GetIRVersion();
     model->set_ir_version(ir_version);
 
     ExportParameters(parser.params);
     ExportInputOutputs(parser.inputs, parser.outputs);
 
     // Only convert blocks 0 now, because control flow is not supported yet.
-    for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
+    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
+    {
       // Init Node Help
-      _helper.SetOpsetVersion(opset_version);
-      _helper.nodes.reserve(_total_ops_num * 3);
-      _helper.Clear();
+      helper_.SetOpsetVersion(opset_version);
+      helper_.nodes.reserve(parser.NumOfOps(i) * 3);
+      helper_.Clear();
 
       for (auto j = 0; j < parser.NumOfOps(i); ++j)
       {
@@ -420,17 +406,17 @@ namespace paddle2onnx
         {
           continue;
         }
-        ExportOp(parser, &_helper, opset_version, i, j, verbose);
+        ExportOp(parser, &helper_, opset_version, i, j, verbose);
       }
 
-      ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes, &_helper.quantize_info);
+      ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &helper_.nodes, &helper_.quantize_info);
       if (parser.is_quantized_model)
       {
         quantize_model_processer.ProcessQuantizeModel(
-            &parameters, &inputs, &outputs, &_helper.nodes, &_helper,
+            &parameters, &inputs, &outputs, &helper_.nodes, &helper_,
             deploy_backend, parser, calibration_cache);
         // Update int8 weights in quantized OP to float32
-        UpdateParameters(_helper.updated_params);
+        UpdateParameters(helper_.updated_params);
       }
 
       auto graph = model->mutable_graph();
@@ -443,7 +429,7 @@ namespace paddle2onnx
       {
         *(graph->add_input()) = *(item.get());
       }
-      for (auto &item : _helper.nodes)
+      for (auto &item : helper_.nodes)
       {
         *(graph->add_node()) = (*item.get());
       }
@@ -451,7 +437,7 @@ namespace paddle2onnx
       {
         *(graph->add_output()) = (*item.get());
       }
-      for (auto &item : _helper.value_infos)
+      for (auto &item : helper_.value_infos)
       {
         *(graph->add_value_info()) = (*item.get());
       }
@@ -539,7 +525,7 @@ namespace paddle2onnx
         else if (!enable_experimental_op)
         {
           auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser,
-                                                          &_helper, i, j);
+                                                          &helper_, i, j);
           if (mapper->IsExperimentalOp())
           {
             unsupported_ops->insert(op.type());
@@ -553,7 +539,7 @@ namespace paddle2onnx
 
   int32_t ModelExporter::GetMinOpset(const PaddleParser &parser, bool verbose)
   {
-    int32_t opset_version = _helper.GetOpsetVersion();
+    int32_t opset_version = helper_.GetOpsetVersion();
     int32_t max_opset = 7;
     std::set<std::string> verbose_log;
     for (auto i = 0; i < parser.NumOfBlocks(); ++i)
@@ -578,7 +564,7 @@ namespace paddle2onnx
         }
         else
         {
-          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &_helper, i, j);
+          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &`, i, j);
           current_opset = mapper->GetMinOpset(verbose);
           delete mapper;
         }

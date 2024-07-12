@@ -48,10 +48,8 @@ namespace paddle2onnx
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
     // The _deploy_backend will pass to Mapper to influence the conversion
-    std::string _deploy_backend = "onnxruntime";
-    OnnxHelper _helper;
-    int32_t _total_ops_num = 0;
-    int32_t _current_exported_num = 0;
+    std::string deploy_backend_ = "onnxruntime";
+    OnnxHelper helper_;
 
     void ExportParameters(const std::map<std::string, Weight> &params,
                           bool use_initializer = false);
