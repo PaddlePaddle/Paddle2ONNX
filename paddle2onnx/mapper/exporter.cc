@@ -369,44 +369,47 @@ namespace paddle2onnx
              "Due to the unsupported operators, the conversion is aborted.");
     }
 
+    // Create onnx model
+    auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
+
+    // Set the Opset Version of the ONNX model.
+    bool opset_is_legal = true;
     int32_t min_opset = GetMinOpset(parser, verbose);
-    if (min_opset < 0)
-    {
-      Assert(false,
-             "Model exporting failed, you can report this problem to "
-             "https://github.com/PaddlePaddle/Paddle2ONNX.git.");
+    if(min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION) {
+      P2OLogger() << "The Opset Version must be between 7 and " << MAX_ONNX_OPSET_VERSION - 1 << std::endl;
+      opset_is_legal = false;
     }
     if (!auto_upgrade_opset)
     {
       if (min_opset > opset_version)
       {
-        P2OLogger() << "This PaddlePaddle model is not able to export to ONNX "
-                       "with opset_version="
-                    << opset_version << ", please set the opset_version to "
-                    << min_opset << " or higher for successfully conversion."
-                    << std::endl;
-        Assert(false,
-               "Due to opset version, the model exporting is aborted, please set "
-               "a higher opset_version or set auto_upgrade_opset=true.");
+        P2OLogger() << "Please set the opset_version to " << std::to_string(opset_version) << " or set auto_upgrade_opset=true." << std::endl;
+        opset_is_legal = false;
       }
     }
     else
     {
       if (min_opset > opset_version)
       {
-        P2OLogger() << "Opset version will change to " << min_opset << " from "
-                    << opset_version << std::endl;
+        P2OLogger() << "Opset version will change to " << min_opset << " from " << opset_version << std::endl;
         opset_version = min_opset;
       }
     }
+    Assert(opset_is_legal, "Due to opset version, the model exporting is aborted.");
     _helper.SetOpsetVersion(opset_version);
-    P2OLogger(verbose) << "Use opset_version = " << _helper.GetOpsetVersion()
-                       << " for ONNX export." << std::endl;
+    auto opset_import = model->add_opset_import();
+    opset_import->set_domain("");
+    opset_import->set_version(opset_version);
+    P2OLogger(verbose) << "Use opset_version = " << _helper.GetOpsetVersion() << " for ONNX export." << std::endl;
+
+    // Set the IR Version of the ONNX model.
+    auto ir_version = _helper.GetIRVersion();
+    model->set_ir_version(ir_version);
+
     ExportParameters(parser.params);
     ExportInputOutputs(parser.inputs, parser.outputs);
 
-    // Only convert blocks 0 now
-    // because control flow is not supported yet
+    // Only convert blocks 0 now, because control flow is not supported yet.
     for (auto i = 0; i < parser.NumOfOps(0); ++i)
     {
       auto op = parser.GetOpDesc(0, i);
@@ -421,20 +424,10 @@ namespace paddle2onnx
       ExportOp(parser, &_helper, opset_version, 0, i, verbose);
     }
 
-    // construct a onnx model proto
-    auto ir_version = _helper.GetIRVersion();
-    auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
-    model->set_ir_version(ir_version);
-
     auto graph = model->mutable_graph();
     graph->set_name("Model from PaddlePaddle.");
 
-    auto opset_id = model->add_opset_import();
-    opset_id->set_domain("");
-    opset_id->set_version(opset_version);
-
-    ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes,
-                                &_helper.quantize_info);
+    ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &_helper.nodes, &_helper.quantize_info);
     if (parser.is_quantized_model)
     {
       quantize_model_processer.ProcessQuantizeModel(
@@ -564,53 +557,47 @@ namespace paddle2onnx
   {
     int32_t opset_version = _helper.GetOpsetVersion();
     int32_t max_opset = 7;
-    bool exportable = true;
-    // Record the number of ops that need to be converted
-    int converted_op_num = 0;
     std::set<std::string> verbose_log;
     for (auto i = 0; i < parser.NumOfBlocks(); ++i)
     {
       for (auto j = 0; j < parser.NumOfOps(i); ++j)
       {
         auto op = parser.GetOpDesc(i, j);
+
+        // Skip the input and output nodes.
         if (op.type() == "feed" || op.type() == "fetch")
         {
           continue;
         }
-        converted_op_num += 1;
-        int current_min_opset = 7;
+
+        int current_opset = 7;
         if (op.type() == "while")
         {
           P2OLogger() << "Detected there's control flow 'while' op in your "
                          "model, this requires the minimal opset version of 13."
                       << std::endl;
-          current_min_opset = 13;
+          current_opset = 13;
         }
         else
         {
           auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &_helper, i, j);
-          current_min_opset = mapper->GetMinOpset(verbose);
+          current_opset = mapper->GetMinOpset(verbose);
           delete mapper;
         }
-        if (current_min_opset < 0)
+
+        if (current_opset > max_opset)
         {
-          exportable = false;
-          P2OLogger(verbose) << "Due to the operator: " << op.type()
-                             << ", this model cannot be exported to ONNX."
-                             << std::endl;
-        }
-        else if (current_min_opset > max_opset)
-        {
-          max_opset = current_min_opset;
-          if (verbose && current_min_opset > opset_version)
+          max_opset = current_opset;
+          if (verbose && current_opset > opset_version)
           {
             verbose_log.insert("Due to the operator: " + op.type() +
                                ", requires opset_version >= " +
-                               std::to_string(current_min_opset) + ".");
+                               std::to_string(current_opset) + ".");
           }
         }
       }
     }
+
     if (verbose)
     {
       for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter)
@@ -618,25 +605,7 @@ namespace paddle2onnx
         P2OLogger() << *iter << std::endl;
       }
     }
-
-    // Here we put some checks to make sure
-    // paddle2onnx could compatible with
-    // other version of onnx
-    int32_t max_support_opset = MAX_ONNX_OPSET_VERSION;
-    if (exportable && (max_opset > MAX_ONNX_OPSET_VERSION))
-    {
-      exportable = false;
-      P2OLogger() << "[ERROR] The compiled ONNX version only supports opset 7~"
-                  << MAX_ONNX_OPSET_VERSION
-                  << ", but now this model need as least opset " << max_opset
-                  << ", please compile with higher version of ONNX." << std::endl;
-    }
-    if (exportable)
-    {
-      return max_opset;
-    }
-
-    return -1;
+    return max_opset;
   }
 
   ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
