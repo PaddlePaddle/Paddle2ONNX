@@ -30,23 +30,10 @@ jobs:
           submodules: true
           path: paddle2onnx
 
-      # Checkout the branch(v3.16.0) of Paddle2ONNX.
-      - name: Checkout Protobuf
-        uses: actions/checkout@v4
-        with:
-          repository: protocolbuffers/protobuf
-          ref: v3.16.0
-          path: protobuf
-
-      # Build Protobuf, detailed process can refer to the [Paddle2ONNX construction documentation](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/compile.md).
-      - name: Build Protobuf
+      - name: Download Protobuf
         working-directory: ./protobuf
         run: |
-          #============
-          cmake ./cmake -B build_wd -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./install_dir
-          cmake --build ./build_wd
-          cmake --build ./build_wd -- install
-          echo "$PWD/install_dir/bin" >> $GITHUB_PATH
+          source .github/workflows/scripts/download_protobuf.sh
 
       # Install Dependencies for Python
       - name: Install Dependencies for Python
