@@ -29,8 +29,10 @@ else
 fi
 
 protobuf_url="https://bj.bcebos.com/paddle2onnx/third_party/$protobuf_tgz_name"
+echo $protobuf_url
 wget $protobuf_url
 protobuf_svae_dir="$PWD/installed_protobuf"
+echo $protobuf_svae_dir
 mkdir -p $protobuf_svae_dir
 tar -zxf $protobuf_tgz_name -C $protobuf_svae_dir
 export PATH=$protobuf_svae_dir/bin:${PATH}
