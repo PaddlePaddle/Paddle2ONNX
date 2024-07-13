@@ -34,7 +34,7 @@ namespace paddle2onnx
       onnx_bitwise_type_ = op_mapper_.find(paddle_type_)->second;
       onnx_elemwise_type_ = onnx_bitwise_type_.substr(7);
     }
-    int32_t GetMinOpset(bool verbose = false) override;
+    int32_t GetMinOpsetVersion(bool verbose) override;
     void Opset7() override;
     void Opset18() override;
 
