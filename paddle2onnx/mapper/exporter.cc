@@ -343,7 +343,8 @@ namespace paddle2onnx
         ir_version = 10;
         break;
       default:
-        Assert(false, "Opset version must be 7-20");
+        P2OLogger() << "The Opset Version must be between 7 and 21." << std::endl;
+        Assert(false, "Due to opset version, the model exporting is aborted.");
     }
     return static_cast<ONNX_NAMESPACE::Version>(ir_version);
   }
