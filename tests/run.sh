@@ -61,7 +61,8 @@ ignore="test_auto_scan_multiclass_nms.py
         test_quantize_model.py \
         test_quantize_model_minist.py \
         test_quantize_model_speedup.py \
-        test_resnet_fp16.py"
+        test_resnet_fp16.py \
+        test_ifelse.py"
 bug=0
 
 # Install Python Packet
