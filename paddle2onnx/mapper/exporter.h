@@ -102,11 +102,16 @@ namespace paddle2onnx
     void UpdateParameters(const std::map<std::string, Weight> &params,
                           std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
     //
-    void ExportBlock(const PaddleParser &parser,
-                     int64_t block_id,
-                     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
-                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
-                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs);
+    std::map<std::string, std::pair<int32_t, int32_t>> sub_block_map_;
+    ONNX_NAMESPACE::GraphProto ExportConditionalBlock(const PaddleParser &parser,
+                                                      int32_t block_id,
+                                                      int32_t op_id,
+                                                      const std::string &output_names);
+    ONNX_NAMESPACE::GraphProto ExportBlock(const PaddleParser &parser,
+                                           int32_t block_id,
+                                           std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                           std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                           std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs);
 
     void ExportOp(const PaddleParser &parser,
                   OnnxHelper *helper,

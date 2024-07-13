@@ -99,16 +99,17 @@ namespace paddle2onnx
         auto op = parser.GetOpDesc(i, j);
 
         // Skip the input and output nodes.
-        if (op.type() == "feed" || op.type() == "fetch")
+        if (op.type() == "feed" || op.type() == "fetch" || op.type() == "conditional_block")
         {
           continue;
         }
 
         int current_opset = 7;
-        if (op.type() == "conditional_block" || op.type() == "select_input")
+
+        if (op.type() == "select_input")
         {
-          P2OLogger() << "Detected there's control flow op('select_input') in your model, "
-                      << "this requires the minimal opset version of 13."
+          P2OLogger() << "Detected there's control flow op('conditional_block/select_input') in your model, "
+                      << "this requires the minimal opset version of 11."
                       << std::endl;
           current_opset = 11;
         }
@@ -263,14 +264,55 @@ namespace paddle2onnx
     }
   }
 
-  void ModelExporter::ExportBlock(const PaddleParser &parser,
-                                  int64_t block_id,
-                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
-                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
-                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs)
+  ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(const PaddleParser &parser,
+                                                                   int32_t block_id,
+                                                                   int32_t op_id,
+                                                                   const std::string &output_names)
   {
-    auto graph = onnx_model_.mutable_graph();
-    graph->set_name("PaddlePaddle Graph " + std::to_string(block_id));
+    auto op = parser.GetOpDesc(block_id, op_id);
+
+    // Get sub_block_idx
+    int32_t sub_block_idx = -1;
+    for (size_t i = 0; i < op.attrs_size(); ++i)
+    {
+      if (op.attrs(i).name() == "sub_block")
+      {
+        sub_block_idx = op.attrs(i).block_idx();
+        break;
+      }
+    }
+    Assert(sub_block_idx != -1, "Due to the unsupported sub_block_idx, the conversion is aborted.");
+
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
+
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
+    // auto input_info = parser.GetOpInput(block_id, op_id, "Input");
+    // for (int index = 0; index < input_info.size(); index++)
+    // {
+    //   temp_inputs.push_back(std::move(MakeValueInfo(input_info[index])));
+    // }
+
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
+    auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+    for (int index = 0; index < out_info.size(); index++)
+    {
+      if (out_info[index].name != output_names)
+      {
+        continue;
+      }
+      temp_outputs.push_back(std::move(MakeValueInfo(out_info[index])));
+    }
+    return std::move(ExportBlock(parser, sub_block_idx, temp_parameters, temp_inputs, temp_outputs));
+  }
+
+  ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(const PaddleParser &parser,
+                                                        int32_t block_id,
+                                                        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                                        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                                        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs)
+  {
+    ONNX_NAMESPACE::GraphProto graph;
+    graph.set_name("PaddlePaddle Graph " + std::to_string(block_id));
     OnnxHelper temp_helper;
     auto num_ops = parser.NumOfOps(block_id);
     temp_helper.nodes.reserve(num_ops * 3);
@@ -288,21 +330,41 @@ namespace paddle2onnx
       }
       else if (op.type() == "conditional_block")
       {
-        int32_t sub_block_idx = -1;
-        for (size_t i = 0; i < op.attrs_size(); ++i)
+        auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+        for (int index = 0; index < out_info.size(); index++)
         {
-          if (op.attrs(i).name() == "sub_block")
-          {
-            sub_block_idx = op.attrs(i).block_idx();
-            break;
-          }
+          sub_block_map_[out_info[index].name] = {block_id, op_id};
         }
-        Assert(sub_block_idx != -1, "Due to the unsupported sub_block_idx, the conversion is aborted.");
+        continue;
+      }
+      else if (op.type() == "select_input")
+      {
+        // 如果找到，则输出对应的值；否则输出错误信息
+        // 遍历输入Tensor
+        auto input_info = parser.GetOpInput(block_id, op_id, "X");
 
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
-        ExportBlock(parser, sub_block_idx, temp_parameters, temp_inputs, temp_outputs);
+        Assert(input_info.size() == 2, "Only support when number of select_input's input_node is 2.");
+
+        // 构建 else 分支图
+        auto else_node_name = input_info[0].name;
+        auto conditional_block_cood_it = sub_block_map_.find(else_node_name);
+        Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input else_input node.");
+        auto conditional_block_cood = conditional_block_cood_it->second;
+        auto else_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
+
+        // 构建 then 分支图
+        auto then_node_name = input_info[1].name;
+        conditional_block_cood_it = sub_block_map_.find(then_node_name);
+        Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input then_input node.");
+        conditional_block_cood = conditional_block_cood_it->second;
+        auto then_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name);
+
+        auto cond_info = parser.GetOpInput(block_id, op_id, "Mask");
+        auto output_info = parser.GetOpOutput(block_id, op_id, "Out");
+        auto cond_name = temp_helper.AutoCast(cond_info[0].name, cond_info[0].dtype, P2ODataType::BOOL);
+        auto node = temp_helper.MakeNode("If", {cond_name}, {output_info[0].name});
+        AddAttribute(node, "then_branch", then_graph);
+        AddAttribute(node, "else_branch", else_graph);
         continue;
       }
       ExportOp(parser, &temp_helper, opset_version_, block_id, op_id, verbose_);
@@ -325,28 +387,30 @@ namespace paddle2onnx
 
     for (auto &item : parameters)
     {
-      *(graph->add_node()) = *(item.get());
+      *(graph.add_node()) = *(item.get());
     }
 
     for (auto &item : inputs)
     {
-      *(graph->add_input()) = *(item.get());
+      *(graph.add_input()) = *(item.get());
     }
 
     for (auto &item : outputs)
     {
-      *(graph->add_output()) = (*item.get());
+      *(graph.add_output()) = (*item.get());
     }
 
     for (auto &item : temp_helper.nodes)
     {
-      *(graph->add_node()) = (*item.get());
+      *(graph.add_node()) = (*item.get());
     }
 
     for (auto &item : temp_helper.value_infos)
     {
-      *(graph->add_value_info()) = (*item.get());
+      *(graph.add_value_info()) = (*item.get());
     }
+
+    return std::move(graph);
   }
 
   void ModelExporter::UpdateParameters(const std::map<std::string, Weight> &params,
@@ -417,8 +481,8 @@ namespace paddle2onnx
     {
       if (tensor_names_.find(item->name()) != tensor_names_.end())
       {
-        Assert(false, "There's dumplicate names:" + item->name() +
-                          " in exported parameters and inputs.");
+        continue;
+        // Assert(false, "There's dumplicate names:" + item->name() + " in exported parameters and inputs.");
       }
       tensor_names_.insert(item->name());
     }
@@ -599,7 +663,9 @@ namespace paddle2onnx
     ExportInputOutputs(parser, inputs, outputs);
     // Export Blocks
     tensor_names_.clear();
-    ExportBlock(parser, 0, parameters, inputs, outputs);
+
+    auto share_graph = ExportBlock(parser, 0, parameters, inputs, outputs);
+    *onnx_model_.mutable_graph() = share_graph;
 
     if (enable_optimize)
     {
