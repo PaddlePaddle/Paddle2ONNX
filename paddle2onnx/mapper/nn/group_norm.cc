@@ -21,7 +21,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(group_norm, GroupNormMapper)
 
-int32_t GroupNormMapper::GetMinOpset(bool verbose) {
+int32_t GroupNormMapper::GetMinOpsetVersion(bool verbose) {
   auto input_info = GetInput("X");
   if (input_info[0].Rank() != 4) {
     Error() << "Only support 4D-Tensor as input for GroupNorm" << std::endl;

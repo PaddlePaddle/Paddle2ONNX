@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(clip, ClipMapper)
 
-int32_t ClipMapper::GetMinOpset(bool verbose) {
+int32_t ClipMapper::GetMinOpsetVersion(bool verbose) {
   bool has_max_tensor_input = HasInput("Max");
   bool has_min_tensor_input = HasInput("Min");
   if (has_max_tensor_input || has_min_tensor_input) {

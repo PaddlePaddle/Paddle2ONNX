@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(temporal_shift, TemporalShiftMapper)
 
-int32_t TemporalShiftMapper::GetMinOpset(bool verbose) {
+int32_t TemporalShiftMapper::GetMinOpsetVersion(bool verbose) {
   if (data_format_ == "NHWC") {
     Error() << "Only support data_format of NCHW, but now the data format is "
             << data_format_ << "." << std::endl;

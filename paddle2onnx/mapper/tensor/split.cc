@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(split, SplitMapper)
 
-int32_t SplitMapper::GetMinOpset(bool verbose) {
+int32_t SplitMapper::GetMinOpsetVersion(bool verbose) {
   int64_t axis = axis_;
   if (HasInput("AxisTensor")) {
     std::vector<int64_t> value;

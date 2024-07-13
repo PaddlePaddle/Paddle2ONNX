@@ -28,8 +28,8 @@ class MeshgridMapper : public Mapper {
     MarkAsExperimentalOp();
   }
 
-  int32_t GetMinOpset(bool verbose = false) { return 8; }
-  void Opset8();
+  int32_t GetMinOpsetVersion(bool verbose) override { return 8; }
+  void Opset8() override;
 };
 
 }  // namespace paddle2onnx

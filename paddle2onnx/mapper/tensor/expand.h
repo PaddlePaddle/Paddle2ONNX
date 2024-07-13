@@ -27,7 +27,7 @@ class ExpandMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
         GetAttr("expand_times", &expand_times_);
       }
-  void Opset7();
+  void Opset7() override;
 
   private:
   std::vector<int64_t> expand_times_;

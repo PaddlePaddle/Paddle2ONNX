@@ -28,8 +28,8 @@ class PadMapper : public Mapper {
     GetAttr("pad_value", &pad_value_);
     GetAttr("paddings", &paddings_);
   }
-  void Opset7();
-  void Opset11();
+  void Opset7() override;
+  void Opset11() override;
 
  private:
   std::vector<int64_t> ConvertPaddingParameter(

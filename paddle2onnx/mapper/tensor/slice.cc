@@ -22,7 +22,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(slice, SliceMapper)
 REGISTER_MAPPER(strided_slice, SliceMapper)
 
-int32_t SliceMapper::GetMinOpset(bool verbose) {
+int32_t SliceMapper::GetMinOpsetVersion(bool verbose) {
   if (HasInput("StartsTensorList") || HasInput("EndsTensorList") ||
       HasInput("StridesTensorList")) {
     Logger(verbose, 10)

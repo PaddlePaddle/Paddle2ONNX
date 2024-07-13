@@ -18,7 +18,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(reduce_max, ReduceMaxMapper)
 REGISTER_MAPPER(reduce_any, ReduceMaxMapper)
 
-int32_t ReduceMaxMapper::GetMinOpset(bool verbose) {
+int32_t ReduceMaxMapper::GetMinOpsetVersion(bool verbose) {
   int op_version = 11;
 
   auto x_info = GetInput("X");

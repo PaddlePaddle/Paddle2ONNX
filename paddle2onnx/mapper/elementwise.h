@@ -36,8 +36,8 @@ class ElementwiseMapper : public Mapper {
     op_mapper_["elementwise_pow"] = "Pow";
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
 
  private:
   std::map<std::string, std::string> op_mapper_;
@@ -50,12 +50,12 @@ class ElementWiseModMapper : public Mapper {
                        int64_t block_id, int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 10) << RequireOpset(10) << std::endl;
     return 10;
   }
 
-  void Opset10();
+  void Opset10() override;
 };
 
 class ElementWiseFloordivMapper : public Mapper {
@@ -66,7 +66,7 @@ class ElementWiseFloordivMapper : public Mapper {
     GetAttr("axis", &axis_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t axis_;

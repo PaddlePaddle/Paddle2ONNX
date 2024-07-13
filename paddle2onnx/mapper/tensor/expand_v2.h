@@ -22,11 +22,11 @@ class ExpandV2Mapper : public Mapper {
   ExpandV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 8) << RequireOpset(8) << std::endl;
     return 8;
   }
-  void Opset8();
+  void Opset8() override;
 };
 
 }  // namespace paddle2onnx

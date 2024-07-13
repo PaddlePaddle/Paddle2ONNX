@@ -36,10 +36,6 @@ class Mapper {
       name_ = name;
     }
 
-    // The flag will control if the op is exported as a custom operator
-    // if export_as_custom_op = true, will exported as description in
-    // custom_op_info
-    bool export_as_custom_op = false;
     // [exported_op_name, domain]
     std::string custom_op_name;
     std::string deploy_backend;
@@ -91,18 +87,14 @@ class Mapper {
     // the return value in [7, MAX_ONNX_OPSET_VERSION], represent the minimum
     // opset_version
     // if return value < 0, means the op is not supported.
-    virtual int32_t GetMinOpset(bool verbose) { return 7; }
+    virtual int32_t GetMinOpsetVersion(bool verbose) { return 7; }
 
-    virtual bool IsExportAsCustomOp() { return export_as_custom_op; }
 
     void Run() {
       int32_t opset_version = helper_->GetOpsetVersion();
       Assert(opset_version >= 7 && opset_version <= MAX_ONNX_OPSET_VERSION,
              "[Paddle2ONNX] Only support opset_version in range of [7, " +
              std::to_string(MAX_ONNX_OPSET_VERSION) + "].");
-      if (IsExportAsCustomOp()) {
-        return ExportAsCustomOp();
-      }
 
       if (opset_version == 19) {
         Opset19();
@@ -131,11 +123,6 @@ class Mapper {
       } else {
         Opset7();
       }
-    }
-
-    virtual void ExportAsCustomOp() {
-      Assert(false,
-             "Operator " + name_ + "doesn't support export as custom operator.");
     }
 
     virtual void Opset19() { Opset18(); }

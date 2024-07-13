@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(unique, UniqueMapper)
 
-int32_t UniqueMapper::GetMinOpset(bool verbose) {
+int32_t UniqueMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }

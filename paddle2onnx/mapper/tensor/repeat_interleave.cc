@@ -18,7 +18,7 @@ namespace paddle2onnx
 {
     REGISTER_MAPPER(repeat_interleave, RepeatInterleaveMapper)
 
-    int32_t RepeatInterleaveMapper::GetMinOpset(bool verbose)
+    int32_t RepeatInterleaveMapper::GetMinOpsetVersion(bool verbose)
     {
         constexpr int op_version = 9;
         Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;

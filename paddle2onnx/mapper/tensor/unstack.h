@@ -24,7 +24,7 @@ class UnstackMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t axis_;

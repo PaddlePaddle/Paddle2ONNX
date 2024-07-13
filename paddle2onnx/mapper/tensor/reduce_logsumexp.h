@@ -30,7 +30,7 @@ class ReduceLogSumExpMapper : public Mapper {
   void Opset18() override;
   void Opset11() override;
 
-  int32_t GetMinOpset(bool verbose = false) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
 
  private:
   bool keep_dim_;

@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(dequantize_linear, DequantizeLinearMapper)
 
-int32_t DequantizeLinearMapper::GetMinOpset(bool verbose) {
+int32_t DequantizeLinearMapper::GetMinOpsetVersion(bool verbose) {
   if (!IsConstantInput("Scale")) {
     Error() << "Input `Scale` requires to be a constant tensor." << std::endl;
     return -1;

@@ -36,7 +36,7 @@ namespace paddle2onnx
       GetAttr("im2col_step", &im2col_step_);
     }
 
-    int32_t GetMinOpset(bool verbose) override;
+    int32_t GetMinOpsetVersion(bool verbose) override;
     void Opset19() override;
 
   private:

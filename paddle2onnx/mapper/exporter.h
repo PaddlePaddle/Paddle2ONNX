@@ -44,12 +44,6 @@ namespace paddle2onnx
   {
   public:
     QuantizeModelProcessor quantize_model_processer;
-    // Get a proper opset version in range of [7, 16]
-    // Also will check the model is convertable, this will include 2 parts
-    //    1. is the op convert function implemented
-    //    2. is the op convertable(some cases may not be able to convert)
-    // If the model is not convertable, return -1
-    int32_t GetMinOpset(const PaddleParser &parser, bool verbose = false);
 
     //  // Remove isolated nodes in onnx model
     //  void RemoveIsolatedNodes(
@@ -64,10 +58,6 @@ namespace paddle2onnx
         std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
         std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
         std::map<std::string, QuantizeInfo> *quantize_info = nullptr);
-
-    bool CheckIfOpSupported(const PaddleParser &parser,
-                            std::set<std::string> *unsupported_ops,
-                            bool enable_experimental_op);
 
     void SaveExternalData(ONNX_NAMESPACE::GraphProto *graph,
                           const std::string &external_file_path,
@@ -99,6 +89,15 @@ namespace paddle2onnx
     OnnxHelper helper_;
     int32_t opset_version_ = 7;
 
+    bool IsOpsRegistered(const PaddleParser &parser,
+                         bool enable_experimental_op);
+
+    int32_t GetMinOpsetVersion(const PaddleParser &parser, bool verbose = false);
+    void SetOpsetVersion();
+
+    // 
+    void ExportInputOutputs(const std::vector<TensorInfo> &input_infos,
+                            const std::vector<TensorInfo> &output_infos);
     void ExportParameters(const std::map<std::string, Weight> &params,
                           bool use_initializer = false);
 
@@ -106,8 +105,6 @@ namespace paddle2onnx
     // dtype may be int8, it should be convet to float32 and use this function to
     // update converted params.
     void UpdateParameters(const std::map<std::string, Weight> &params);
-    void ExportInputOutputs(const std::vector<TensorInfo> &input_infos,
-                            const std::vector<TensorInfo> &output_infos);
     void ExportOp(const PaddleParser &parser, OnnxHelper *helper,
                   int32_t opset_version, int64_t block_id, int64_t op_id,
                   bool verbose);

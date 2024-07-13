@@ -22,7 +22,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(lookup_table, LookupTableMapper)
 REGISTER_MAPPER(lookup_table_v2, LookupTableMapper)
 
-int32_t LookupTableMapper::GetMinOpset(bool verbose) {
+int32_t LookupTableMapper::GetMinOpsetVersion(bool verbose) {
   auto input_w_info = GetInput("W");
   bool has_minus = false;
   for (auto i : input_w_info[0].shape) {

@@ -26,7 +26,7 @@ class DistMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("p", &p_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   float p_;

@@ -26,11 +26,11 @@ class WhereMapper : public Mapper {
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
-  void Opset9();
+  void Opset9() override;
 };
 
 }  // namespace paddle2onnx

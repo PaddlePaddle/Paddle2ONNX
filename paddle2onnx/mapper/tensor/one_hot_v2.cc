@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(one_hot_v2, OneHotV2Mapper)
 
-int32_t OneHotV2Mapper::GetMinOpset(bool verbose) {
+int32_t OneHotV2Mapper::GetMinOpsetVersion(bool verbose) {
   if (allow_out_of_range_) {
     Error() << "allow_out_of_range is not supported in one_hot_v2."
             << std::endl;

@@ -28,8 +28,8 @@ class UniqueMapper : public Mapper {
     GetAttr("axis", &axis_);
     GetAttr("dtype", &dtype_);
   }
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset11();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset11() override;
 
  private:
   std::vector<int64_t> axis_;

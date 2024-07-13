@@ -18,7 +18,7 @@ namespace paddle2onnx {
 
 REGISTER_MAPPER(multiclass_nms3, NMSMapper);
 
-int32_t NMSMapper::GetMinOpset(bool verbose) {
+int32_t NMSMapper::GetMinOpsetVersion(bool verbose) {
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   if (score_info[0].Rank() != 3) {
@@ -40,7 +40,7 @@ int32_t NMSMapper::GetMinOpset(bool verbose) {
     return -1;
   }
 
-  if (export_as_custom_op || this->deploy_backend == "tensorrt") {
+  if (this->deploy_backend == "tensorrt") {
     return 7;
   }
 
@@ -241,36 +241,6 @@ void NMSMapper::Opset10() {
                       {selected_box_index});
   }
   KeepTopK(selected_box_index);
-}
-
-void NMSMapper::ExportAsCustomOp() {
-  auto boxes_info = GetInput("BBoxes");
-  auto score_info = GetInput("Scores");
-  auto out_info = GetOutput("Out");
-  auto index_info = GetOutput("Index");
-  auto num_rois_info = GetOutput("NmsRoisNum");
-  auto node = helper_->MakeNode(
-      custom_op_name, {boxes_info[0].name, score_info[0].name},
-      {out_info[0].name, index_info[0].name, num_rois_info[0].name});
-  node->set_domain("Paddle");
-  int64_t normalized = normalized_ ? 1 : 0;
-  AddAttribute(node, "normalized", normalized);
-  AddAttribute(node, "nms_threshold", nms_threshold_);
-  AddAttribute(node, "score_threshold", score_threshold_);
-  AddAttribute(node, "nms_eta", nms_eta_);
-  AddAttribute(node, "nms_top_k", nms_top_k_);
-  AddAttribute(node, "background_label", background_label_);
-  AddAttribute(node, "keep_top_k", keep_top_k_);
-  helper_->MakeValueInfo(boxes_info[0].name, boxes_info[0].dtype,
-                         boxes_info[0].shape);
-  helper_->MakeValueInfo(score_info[0].name, score_info[0].dtype,
-                         score_info[0].shape);
-  helper_->MakeValueInfo(out_info[0].name, out_info[0].dtype,
-                         out_info[0].shape);
-  helper_->MakeValueInfo(index_info[0].name, index_info[0].dtype,
-                         index_info[0].shape);
-  helper_->MakeValueInfo(num_rois_info[0].name, num_rois_info[0].dtype,
-                         num_rois_info[0].shape);
 }
 
 void NMSMapper::ExportForTensorRT() {

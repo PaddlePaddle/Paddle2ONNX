@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(scatter, ScatterMapper)
 
-int32_t ScatterMapper::GetMinOpset(bool verbose) {
+int32_t ScatterMapper::GetMinOpsetVersion(bool verbose) {
   if (!overwrite_) {
     Logger(verbose, 16) << "When overwrite is False, " << RequireOpset(16)
                         << std::endl;

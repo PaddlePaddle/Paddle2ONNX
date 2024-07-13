@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(cosh, CoshMapper)
 
-int32_t CoshMapper::GetMinOpset(bool verbose) {
+int32_t CoshMapper::GetMinOpsetVersion(bool verbose) {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
 }

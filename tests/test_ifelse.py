@@ -26,29 +26,20 @@ class Net(paddle.nn.Layer):
         super(Net, self).__init__()
 
     def forward(self, inputs):
-        """
-        forward
-        """
-        x = paddle.nn.functional.normalize(
-            inputs, p=2, axis=1, epsilon=1e-12, name=None)
-        return x
+        if inputs == 1:
+            x = 1
+            return x
+        else:
+            return 2
 
 
-def test_normalize_7():
-    """
-    api: paddle.normalize
-    op version: 7
-    """
+def test_ifelse_true():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'normalize', [8])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+    obj = APIOnnx(op, 'ifelse', [11])
+    obj.set_input_data("input_data", paddle.to_tensor(1))
     obj.run()
 
-
 if __name__ == "__main__":
-    test_normalize_7()
+    test_ifelse_true()

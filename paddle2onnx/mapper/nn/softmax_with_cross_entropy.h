@@ -28,8 +28,8 @@ class SoftmaxCrossEntropyLossMapper : public Mapper {
     GetAttr("soft_label", &soft_label_);
     GetAttr("ignore_index", &ignore_index_);
   }
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset12();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset12() override;
 
  private:
   int64_t axis_ = -1;

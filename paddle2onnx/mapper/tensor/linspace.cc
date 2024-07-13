@@ -20,7 +20,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(linspace, LinspaceMapper)
 
-int32_t LinspaceMapper::GetMinOpset(bool verbose) {
+int32_t LinspaceMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 9) << RequireOpset(9) << std::endl;
   return 9;
 };

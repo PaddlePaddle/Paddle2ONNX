@@ -20,7 +20,7 @@ namespace paddle2onnx {
 
 REGISTER_MAPPER(fill_constant, FillConstantMapper)
 
-int32_t FillConstantMapper::GetMinOpset(bool verbose) {
+int32_t FillConstantMapper::GetMinOpsetVersion(bool verbose) {
   auto out_info = GetOutput("Out");
   auto onnx_dtype = GetOnnxDtype(out_info[0].dtype);
   if (onnx_dtype != ONNX_NAMESPACE::TensorProto::INT32 &&
@@ -88,7 +88,7 @@ void FillConstantMapper::Opset7() {
 }
 
 void FillConstantMapper::Opset9() {
-  if (GetMinOpset() == 7) {
+  if (GetMinOpsetVersion(false) == 7) {
     return Opset7();
   }
   auto out_info = GetOutput("Out");

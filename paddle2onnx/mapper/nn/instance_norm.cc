@@ -20,7 +20,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(instance_norm, InstanceNormMapper)
 
-int32_t InstanceNormMapper::GetMinOpset(bool verbose) {
+int32_t InstanceNormMapper::GetMinOpsetVersion(bool verbose) {
   auto input_info = GetInput("X");
   int num_groups = input_info[0].shape[1];
   if (num_groups < 0) {

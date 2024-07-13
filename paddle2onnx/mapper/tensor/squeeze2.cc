@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(squeeze2, Squeeze2Mapper)
 
-int32_t Squeeze2Mapper::GetMinOpset(bool verbose) {
+int32_t Squeeze2Mapper::GetMinOpsetVersion(bool verbose) {
   if (IsAttrVar("axes")) {
     auto infos = GetAttrVar("axes");
     for (auto &info : infos) {

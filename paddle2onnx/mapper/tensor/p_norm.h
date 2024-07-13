@@ -29,7 +29,7 @@ class PNormMapper : public Mapper {
     GetAttr("axis", &axis_);
     GetAttr("porder", &porder_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   bool keepdim_;

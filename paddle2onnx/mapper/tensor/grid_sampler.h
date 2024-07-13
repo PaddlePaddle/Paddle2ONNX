@@ -30,9 +30,9 @@ class GridSamplerMapper : public Mapper {
     GetAttr("align_corners", &align_corners_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
 
-  void Opset16();
+  void Opset16() override;
 
  private:
   std::string padding_mode_ = "zeros";

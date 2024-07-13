@@ -28,7 +28,7 @@ class MulMapper : public Mapper {
     GetAttr("x_num_col_dims", &x_num_col_dims_);
     GetAttr("y_num_col_dims", &y_num_col_dims_);
   }
-  void Opset7();
+  void Opset7() override;
  private:
   int64_t x_num_col_dims_ = 1;
   int64_t y_num_col_dims_ = 1;

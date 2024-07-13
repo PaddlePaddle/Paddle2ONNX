@@ -29,8 +29,8 @@ class ArgMinMapper : public Mapper {
     GetAttr("keepdims", &keepdims_);
     GetAttr("dtype", &dtype_);
   }
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
 
  private:
   bool flatten_;

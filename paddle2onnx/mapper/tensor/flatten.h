@@ -28,7 +28,7 @@ class FlattenMapper : public Mapper {
     GetAttr("stop_axis", &stop_axis_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t start_axis_;

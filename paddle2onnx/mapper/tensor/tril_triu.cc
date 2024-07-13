@@ -3,7 +3,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(tril_triu, TrilTriuMapper)
 
-int32_t TrilTriuMapper::GetMinOpset(bool verbose) {
+int32_t TrilTriuMapper::GetMinOpsetVersion(bool verbose) {
   constexpr int op_version = 14;
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
   return op_version;

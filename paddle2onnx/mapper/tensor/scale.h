@@ -28,7 +28,7 @@ class ScaleMapper : public Mapper {
     GetAttr("bias_after_scale", &bias_after_scale_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   float scale_ = 1.0;

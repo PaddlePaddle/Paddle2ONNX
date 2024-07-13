@@ -21,7 +21,7 @@ REGISTER_MAPPER(bitwise_not, BitWiseMapper)
 REGISTER_MAPPER(bitwise_or, BitWiseMapper)
 REGISTER_MAPPER(bitwise_xor, BitWiseMapper)
 
-int32_t BitWiseMapper::GetMinOpset(bool verbose) {
+int32_t BitWiseMapper::GetMinOpsetVersion(bool verbose) {
   auto x_info = GetInput("X");
   if(x_info[0].dtype == P2ODataType::BOOL){
     Logger(verbose, 7) << RequireOpset(7) << std::endl;

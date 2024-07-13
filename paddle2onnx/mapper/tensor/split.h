@@ -30,10 +30,10 @@ class SplitMapper : public Mapper {
     GetAttr("num", &num_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
-  void Opset13();
-  void Opset18();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
+  void Opset13() override;
+  void Opset18() override;
 
  private:
   int64_t axis_;
