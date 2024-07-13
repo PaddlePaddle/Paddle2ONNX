@@ -1,7 +1,6 @@
 recursive-include cmake *
 recursive-include paddle2onnx *
 recursive-include third_party *
-recursive-include tools *
 
 include LICENSE
 include VERSION_NUMBER

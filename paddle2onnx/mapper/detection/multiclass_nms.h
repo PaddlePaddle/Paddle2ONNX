@@ -47,7 +47,6 @@ class NMSMapper : public Mapper {
   void KeepTopK(const std::string& selected_indices);
   void Opset10() override;
   void ExportForTensorRT();
-  void ExportAsCustomOp();
 
  private:
   bool normalized_;
