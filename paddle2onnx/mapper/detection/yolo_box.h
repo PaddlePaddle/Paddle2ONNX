@@ -37,7 +37,7 @@ class YoloBoxMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset11();
+  void Opset11() override;
 
  private:
   bool clip_bbox_;

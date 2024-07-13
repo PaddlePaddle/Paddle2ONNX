@@ -34,7 +34,7 @@ class FillConstantBatchSizeLikeMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose = true);
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t dtype_;

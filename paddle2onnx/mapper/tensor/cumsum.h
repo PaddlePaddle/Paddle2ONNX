@@ -28,7 +28,7 @@ class CumsumMapper : public Mapper {
     GetAttr("flatten", &flatten_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset11();
+  void Opset11() override;
 
  private:
   int64_t axis_;

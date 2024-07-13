@@ -28,7 +28,7 @@ class Flatten2Mapper : public Mapper {
     GetAttr("axis", &axis_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t axis_;

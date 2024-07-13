@@ -29,7 +29,7 @@ class TakeAlongAxisMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset11();
+  void Opset11() override;
 
  private:
   int64_t axis_;

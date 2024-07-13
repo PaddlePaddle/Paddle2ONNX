@@ -27,7 +27,7 @@ class NonZeroMapper : public Mapper {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
-  void Opset9();
+  void Opset9() override;
 };
 
 }  // namespace paddle2onnx

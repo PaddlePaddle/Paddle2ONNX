@@ -34,7 +34,7 @@ class RoiAlignMapper : public Mapper {
     Logger(verbose, 10) << RequireOpset(10) << std::endl;
     return 10;
   }
-  void Opset10();
+  void Opset10() override;
 
  private:
   int64_t pooled_height_;

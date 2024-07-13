@@ -30,7 +30,7 @@ class GroupNormMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t groups_;

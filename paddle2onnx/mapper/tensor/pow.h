@@ -27,7 +27,7 @@ class PowMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("factor", &factor_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   float factor_ = 0.0;

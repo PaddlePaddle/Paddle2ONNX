@@ -29,7 +29,7 @@ class MeshgridMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override { return 8; }
-  void Opset8();
+  void Opset8() override;
 };
 
 }  // namespace paddle2onnx

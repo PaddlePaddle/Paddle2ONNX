@@ -31,8 +31,8 @@ class Pad3DMapper : public Mapper {
     GetAttr("paddings", &paddings_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
-  void Opset11();
+  void Opset7() override;
+  void Opset11() override;
 
  private:
   std::vector<int64_t> ConvertPaddingParameter(const std::vector<int64_t>& paddings);

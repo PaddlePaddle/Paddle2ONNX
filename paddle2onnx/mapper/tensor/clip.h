@@ -26,7 +26,7 @@ class ClipMapper : public Mapper {
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 };
 
 }  // namespace paddle2onnx

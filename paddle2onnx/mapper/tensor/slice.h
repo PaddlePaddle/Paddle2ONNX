@@ -37,8 +37,8 @@ class SliceMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
-  void Opset10();
+  void Opset7() override;
+  void Opset10() override;
 
  private:
   std::vector<int64_t> DecreaseAxis();

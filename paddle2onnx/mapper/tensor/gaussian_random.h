@@ -29,7 +29,7 @@ class GaussianRandomMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
  private:
   std::vector<int64_t> shape_;
   float mean_;

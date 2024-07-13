@@ -32,7 +32,7 @@ class PixelShuffleMapper : public Mapper {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
-  void Opset11();
+  void Opset11() override;
 
  private:
   int64_t upscale_factor_;

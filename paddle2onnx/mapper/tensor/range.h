@@ -30,7 +30,7 @@ class RangeMapper : public Mapper {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
-  void Opset11();
+  void Opset11() override;
 };
 
 }  // namespace paddle2onnx

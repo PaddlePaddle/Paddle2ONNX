@@ -37,7 +37,7 @@ class AssignValueMapper : public Mapper {
     }
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   std::vector<float> fp32_values_;

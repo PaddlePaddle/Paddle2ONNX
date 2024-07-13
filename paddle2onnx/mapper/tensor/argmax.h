@@ -30,7 +30,7 @@ class ArgMaxMapper : public Mapper {
     GetAttr("dtype", &dtype_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   bool flatten_;

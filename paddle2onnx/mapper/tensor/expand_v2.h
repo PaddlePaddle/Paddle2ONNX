@@ -26,7 +26,7 @@ class ExpandV2Mapper : public Mapper {
     Logger(verbose, 8) << RequireOpset(8) << std::endl;
     return 8;
   }
-  void Opset8();
+  void Opset8() override;
 };
 
 }  // namespace paddle2onnx

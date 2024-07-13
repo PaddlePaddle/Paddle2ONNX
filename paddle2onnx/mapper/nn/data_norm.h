@@ -33,7 +33,7 @@ class DataNormMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   std::string data_layout_;

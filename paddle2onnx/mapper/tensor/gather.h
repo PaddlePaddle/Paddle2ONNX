@@ -31,8 +31,8 @@ class GatherMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
-  void Opset11();
+  void Opset7() override;
+  void Opset11() override;
  private:
   int64_t axis_ = 0;
 };

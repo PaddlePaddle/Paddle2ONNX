@@ -48,7 +48,7 @@ class ActivationMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   std::map<std::string, std::string> op_mapper_;
@@ -61,7 +61,7 @@ class PReluMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 };
 
 class SeluMapper : public Mapper {
@@ -73,7 +73,7 @@ class SeluMapper : public Mapper {
     GetAttr("scale", &scale_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   float alpha_;
@@ -88,7 +88,7 @@ class LeakyReluMapper : public Mapper {
     GetAttr("alpha", &alpha_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   float alpha_;
@@ -105,7 +105,7 @@ class GeluMapper : public Mapper {
     return 9;
   }
 
-  void Opset9();
+  void Opset9() override;
 };
 
 class SoftMaxMapper : public Mapper {
@@ -120,8 +120,8 @@ class SoftMaxMapper : public Mapper {
     }
   }
 
-  void Opset7();
-  void Opset13();
+  void Opset7() override;
+  void Opset13() override;
 
  private:
   int64_t axis_ = -1;
@@ -136,7 +136,7 @@ class BReluMapper : public Mapper {
     GetAttr("t_max", &t_max_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   float t_min_;
@@ -150,7 +150,7 @@ class EluMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("alpha", &alpha_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   float alpha_;
@@ -164,7 +164,7 @@ class MishMapper : public Mapper {
     GetAttr("threshold", &threshold_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   float threshold_;
@@ -175,7 +175,7 @@ class SquareMapper : public Mapper {
   SquareMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class SizeMapper : public Mapper {
@@ -183,7 +183,7 @@ class SizeMapper : public Mapper {
   SizeMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class LogSigmoidMapper : public Mapper {
@@ -191,7 +191,7 @@ class LogSigmoidMapper : public Mapper {
   LogSigmoidMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class RsqrtMapper : public Mapper {
@@ -199,7 +199,7 @@ class RsqrtMapper : public Mapper {
   RsqrtMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class LogSoftmaxMapper : public Mapper {
@@ -209,7 +209,7 @@ class LogSoftmaxMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t axis_;
@@ -226,7 +226,7 @@ class SoftShrinkMapper : public Mapper {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
-  void Opset9();
+  void Opset9() override;
 
  private:
   float lambda_;
@@ -243,7 +243,7 @@ class ThresholdedReluMapper : public Mapper {
     Logger(verbose, 10) << RequireOpset(10) << std::endl;
     return 10;
   }
-  void Opset10();
+  void Opset10() override;
 
  private:
   float threshold_;
@@ -254,7 +254,7 @@ class TanhShrinkMapper : public Mapper {
   TanhShrinkMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class Log1PMapper : public Mapper {
@@ -262,7 +262,7 @@ class Log1PMapper : public Mapper {
   Log1PMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class Log2Mapper : public Mapper {
@@ -270,7 +270,7 @@ class Log2Mapper : public Mapper {
   Log2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class Log10Mapper : public Mapper {
@@ -278,7 +278,7 @@ class Log10Mapper : public Mapper {
   Log10Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 class SiluMapper : public Mapper {
@@ -286,7 +286,7 @@ class SiluMapper : public Mapper {
   SiluMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 }  // namespace paddle2onnx

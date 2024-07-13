@@ -28,7 +28,7 @@ class LinspaceMapper : public Mapper {
     GetAttr("dtype", &dtype_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset9();
+  void Opset9() override;
 
  private:
   int64_t dtype_;

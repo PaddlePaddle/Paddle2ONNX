@@ -29,7 +29,7 @@ class MatmulV2Mapper : public Mapper {
     GetAttr("trans_y", &trans_y_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   std::string GetTrans(std::vector<TensorInfo>& input_info);

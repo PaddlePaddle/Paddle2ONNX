@@ -28,7 +28,7 @@ class ScatterMapper : public Mapper {
     GetAttr("overwrite", &overwrite_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset11();
+  void Opset11() override;
 
  private:
   bool overwrite_;

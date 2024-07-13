@@ -33,7 +33,7 @@ class QuantizeLinearMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset10();
+  void Opset10() override;
 
  private:
   int64_t round_type_ = 0;  // 0: rounding to nearest ties to even. 1: rounding

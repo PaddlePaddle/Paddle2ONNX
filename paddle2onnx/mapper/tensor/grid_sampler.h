@@ -32,7 +32,7 @@ class GridSamplerMapper : public Mapper {
 
   int32_t GetMinOpsetVersion(bool verbose) override;
 
-  void Opset16();
+  void Opset16() override;
 
  private:
   std::string padding_mode_ = "zeros";

@@ -30,7 +30,7 @@ class OneHotV2Mapper : public Mapper {
     GetAttr("dtype", &dtype_);
   }
   int32_t GetMinOpsetVersion(bool verbose);
-  void Opset9();
+  void Opset9() override;
 
  private:
   bool allow_out_of_range_;

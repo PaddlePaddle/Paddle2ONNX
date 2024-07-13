@@ -31,9 +31,9 @@ class SplitMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
-  void Opset13();
-  void Opset18();
+  void Opset7() override;
+  void Opset13() override;
+  void Opset18() override;
 
  private:
   int64_t axis_;

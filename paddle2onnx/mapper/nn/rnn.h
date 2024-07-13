@@ -39,7 +39,7 @@ class RnnMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   std::vector<std::string> MakeParamInputs(int64_t layer_index);

@@ -30,7 +30,7 @@ class MatmulMapper : public Mapper {
     GetAttr("alpha", &alpha_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   std::string GetTrans(std::vector<TensorInfo>& input_info);

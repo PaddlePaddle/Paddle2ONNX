@@ -28,7 +28,7 @@ class ExpandAsMapper : public Mapper {
     GetAttr("target_shape", &target_shape_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset8();
+  void Opset8() override;
 
  private:
   std::vector<int64_t> target_shape_;

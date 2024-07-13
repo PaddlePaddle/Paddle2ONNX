@@ -29,7 +29,7 @@ class BatchNormMapper : public Mapper {
     GetAttr("momentum", &momentum_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   float epsilon_;

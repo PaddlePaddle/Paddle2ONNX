@@ -30,7 +30,7 @@ class TemporalShiftMapper : public Mapper {
     GetAttr("seg_num", &seg_num_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t seg_num_;

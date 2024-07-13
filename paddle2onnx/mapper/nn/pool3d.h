@@ -42,7 +42,7 @@ class Pool3dMapper : public Mapper {
     }
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
+  void Opset7() override;
 
  private:
   bool IsSameSpan(const int64_t& in_size, const int64_t& out_size);

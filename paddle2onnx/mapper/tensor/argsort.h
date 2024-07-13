@@ -26,8 +26,8 @@ class ArgsortMapper : public Mapper {
     GetAttr("axis", &axis_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset10();
-  void Opset7();
+  void Opset10() override;
+  void Opset7() override;
 
  private:
   bool descending_;

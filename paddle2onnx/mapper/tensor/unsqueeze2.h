@@ -28,8 +28,8 @@ class Unsqueeze2Mapper : public Mapper {
     GetAttr("axes", &axes_);
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void Opset7();
-  void Opset13();
+  void Opset7() override;
+  void Opset13() override;
 
  private:
   std::vector<int64_t> axes_;

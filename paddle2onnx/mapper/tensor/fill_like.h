@@ -36,7 +36,7 @@ class FillLikeMapper : public Mapper {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
-  void Opset9();
+  void Opset9() override;
 
  private:
   float value_;
