@@ -36,7 +36,7 @@ class ElementwiseMapper : public Mapper {
     op_mapper_["elementwise_pow"] = "Pow";
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:
@@ -50,7 +50,7 @@ class ElementWiseModMapper : public Mapper {
                        int64_t block_id, int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 10) << RequireOpset(10) << std::endl;
     return 10;
   }

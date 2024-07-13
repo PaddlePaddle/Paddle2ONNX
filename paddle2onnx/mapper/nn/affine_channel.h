@@ -28,7 +28,7 @@ class AffineChannelMapper : public Mapper {
     GetAttr("data_layout", &data_layout_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

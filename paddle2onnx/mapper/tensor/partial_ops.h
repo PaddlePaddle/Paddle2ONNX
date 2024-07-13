@@ -30,7 +30,7 @@ class PartialOpsMapper : public Mapper {
     op_mapper_["partial_sum"] = "Sum";
     op_mapper_["partial_concat"] = "Concat";
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

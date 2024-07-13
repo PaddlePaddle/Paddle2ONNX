@@ -18,7 +18,7 @@ namespace paddle2onnx {
 
 REGISTER_MAPPER(multiclass_nms3, NMSMapper);
 
-int32_t NMSMapper::GetMinOpset(bool verbose) {
+int32_t NMSMapper::GetMinOpsetVersion(bool verbose) {
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   if (score_info[0].Rank() != 3) {

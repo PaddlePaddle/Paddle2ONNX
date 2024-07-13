@@ -23,7 +23,7 @@ class Atan2Mapper : public Mapper {
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset9();
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
 };
 
 }  // namespace paddle2onnx

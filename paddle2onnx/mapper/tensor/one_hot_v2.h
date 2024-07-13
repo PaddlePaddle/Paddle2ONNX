@@ -29,7 +29,7 @@ class OneHotV2Mapper : public Mapper {
     GetAttr("depth", &depth_);
     GetAttr("dtype", &dtype_);
   }
-  int32_t GetMinOpset(bool verbose);
+  int32_t GetMinOpsetVersion(bool verbose);
   void Opset9();
 
  private:

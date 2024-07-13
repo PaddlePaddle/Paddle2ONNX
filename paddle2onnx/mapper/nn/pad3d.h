@@ -30,7 +30,7 @@ class Pad3DMapper : public Mapper {
     GetAttr("value", &value_);
     GetAttr("paddings", &paddings_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
   void Opset11();
 

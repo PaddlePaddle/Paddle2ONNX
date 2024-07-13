@@ -25,7 +25,7 @@ class BitWiseAndMapper : public Mapper {
   BitWiseAndMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  int32_t GetMinOpset(bool verbose = false) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
   void Opset18() override;
 };

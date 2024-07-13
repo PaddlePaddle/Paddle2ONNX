@@ -243,7 +243,7 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   }
 }
 
-int32_t Pool2dMapper::GetMinOpset(bool verbose) {
+int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
   // NHWC is not supported
   if (data_format_ == "NHWC") {
     Error() << "NHWC format is not supported." << std::endl;

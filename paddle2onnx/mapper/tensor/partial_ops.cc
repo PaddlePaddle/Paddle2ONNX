@@ -18,7 +18,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(partial_sum, PartialOpsMapper)
 REGISTER_MAPPER(partial_concat, PartialOpsMapper)
 
-int32_t PartialOpsMapper::GetMinOpset(bool verbose) {
+int32_t PartialOpsMapper::GetMinOpsetVersion(bool verbose) {
   auto input_info = GetInput("X");
   for (auto &in : input_info) {
     if (in.Rank() != 2) {

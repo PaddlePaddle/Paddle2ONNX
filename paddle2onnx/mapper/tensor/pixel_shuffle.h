@@ -28,7 +28,7 @@ class PixelShuffleMapper : public Mapper {
     GetAttr("upscale_factor", &upscale_factor_);
   }
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }

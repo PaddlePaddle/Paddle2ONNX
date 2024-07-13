@@ -20,7 +20,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(conv3d, Conv3dMapper)
 
-int32_t Conv3dMapper::GetMinOpset(bool verbose) {
+int32_t Conv3dMapper::GetMinOpsetVersion(bool verbose) {
   // NDHWC is not supported
   if (data_format_ == "NDHWC") {
     Error() << "Cannot support input with NDHWC format." << std::endl;

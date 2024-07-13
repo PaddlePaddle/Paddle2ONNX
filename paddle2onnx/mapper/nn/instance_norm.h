@@ -28,7 +28,7 @@ class InstanceNormMapper : public Mapper {
     GetAttr("epsilon", &epsilon_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

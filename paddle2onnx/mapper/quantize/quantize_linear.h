@@ -32,7 +32,7 @@ class QuantizeLinearMapper : public Mapper {
     }
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset10();
 
  private:

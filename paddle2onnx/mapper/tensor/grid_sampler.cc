@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(grid_sampler, GridSamplerMapper)
 
-int32_t GridSamplerMapper::GetMinOpset(bool verbose) {
+int32_t GridSamplerMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 16) << RequireOpset(16) << std::endl;
   return 16;
 };

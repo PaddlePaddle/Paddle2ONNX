@@ -23,7 +23,7 @@ REGISTER_MAPPER(bicubic_interp_v2, InterpolateMapper)
 REGISTER_MAPPER(linear_interp_v2, InterpolateMapper)
 REGISTER_MAPPER(trilinear_interp_v2, InterpolateMapper)
 
-int32_t InterpolateMapper::GetMinOpset(bool verbose) {
+int32_t InterpolateMapper::GetMinOpsetVersion(bool verbose) {
   if (data_layout_ == "NHWC") {
     Error() << "Data format of NHWC is not supported." << std::endl;
     return -1;

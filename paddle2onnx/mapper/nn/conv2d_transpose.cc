@@ -21,7 +21,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(conv2d_transpose, Conv2dTransposeMapper)
 REGISTER_MAPPER(depthwise_conv2d_transpose, Conv2dTransposeMapper)
 
-int32_t Conv2dTransposeMapper::GetMinOpset(bool verbose) {
+int32_t Conv2dTransposeMapper::GetMinOpsetVersion(bool verbose) {
   // NHWC is not supported
   if (data_format_ == "NHWC") {
     Error() << "[ERROR] Cannot support NHWC format for operator "

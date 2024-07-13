@@ -33,7 +33,7 @@ class FillConstantBatchSizeLikeMapper : public Mapper {
     GetAttr("output_dim_idx", &output_dim_idx_);
   }
 
-  int32_t GetMinOpset(bool verbose = true);
+  int32_t GetMinOpsetVersion(bool verbose = true);
   void Opset7();
 
  private:

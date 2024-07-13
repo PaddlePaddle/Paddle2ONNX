@@ -32,7 +32,7 @@ class DataNormMapper : public Mapper {
     }
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

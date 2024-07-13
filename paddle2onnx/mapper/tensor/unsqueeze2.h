@@ -27,7 +27,7 @@ class Unsqueeze2Mapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axes", &axes_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
   void Opset13();
 

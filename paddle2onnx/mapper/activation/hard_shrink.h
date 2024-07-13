@@ -29,7 +29,7 @@ class HardShrinkMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("threshold", &threshold_);
   }
-  int32_t GetMinOpset(bool verbose = false) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset9() override;
 
  private:

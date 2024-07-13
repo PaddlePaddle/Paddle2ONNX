@@ -21,7 +21,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(assign_value, AssignValueMapper)
 
-int32_t AssignValueMapper::GetMinOpset(bool verbose) {
+int32_t AssignValueMapper::GetMinOpsetVersion(bool verbose) {
   int32_t dtype = static_cast<int32_t>(dtype_);
   if (dtype != P2ODataType::INT32 && dtype != P2ODataType::INT64 &&
       dtype != P2ODataType::FP32) {

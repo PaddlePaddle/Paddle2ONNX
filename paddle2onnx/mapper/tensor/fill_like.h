@@ -32,7 +32,7 @@ class FillLikeMapper : public Mapper {
     }
   }
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }

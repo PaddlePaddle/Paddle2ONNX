@@ -23,7 +23,7 @@ void EyeMapper::ParseValue(const TensorInfo& tensor_info, int64_t* num_val) {
   *num_val = value[0];
 }
 
-int32_t EyeMapper::GetMinOpset(bool verbose) {
+int32_t EyeMapper::GetMinOpsetVersion(bool verbose) {
   if (IsAttrVar("num_rows")) {
     if (!IsConstant(GetAttrVar("num_rows")[0])) {
       Error()

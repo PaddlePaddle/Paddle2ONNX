@@ -25,3 +25,4 @@ protobuf-*
 *.onnx
 tests/__pycache_*
 tests/*/__pycache_*
+tests/*/*.info

@@ -30,7 +30,7 @@ class RoiAlignMapper : public Mapper {
     GetAttr("aligned", &aligned_);
   }
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 10) << RequireOpset(10) << std::endl;
     return 10;
   }

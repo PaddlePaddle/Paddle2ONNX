@@ -52,7 +52,7 @@ class Pool2dMapper : public Mapper {
       exclusive_ = !exclusive_;
     }
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
   void ExportAsCustomOp();
   bool IsExportAsCustomOp();

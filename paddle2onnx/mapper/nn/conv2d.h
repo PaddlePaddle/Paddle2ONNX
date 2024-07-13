@@ -37,7 +37,7 @@ class Conv2dMapper : public Mapper {
     GetAttr("data_format", &data_format_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

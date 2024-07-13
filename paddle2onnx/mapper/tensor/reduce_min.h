@@ -30,7 +30,7 @@ class ReduceMinMapper : public Mapper {
   void Opset18() override;
   void Opset12() override;
   void Opset11() override;
-  int32_t GetMinOpset(bool verbose) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
 
  private:
 

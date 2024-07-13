@@ -27,7 +27,7 @@ class LinspaceMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("dtype", &dtype_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset9();
 
  private:

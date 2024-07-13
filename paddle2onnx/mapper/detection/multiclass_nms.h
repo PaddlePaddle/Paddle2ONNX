@@ -43,7 +43,7 @@ class NMSMapper : public Mapper {
     GetAttr("keep_top_k", &keep_top_k_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void KeepTopK(const std::string& selected_indices);
   void Opset10();
   void ExportForTensorRT();

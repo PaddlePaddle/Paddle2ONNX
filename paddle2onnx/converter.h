@@ -35,28 +35,6 @@ namespace paddle2onnx
     char export_op_name[100] = "paddle2onnx_null";
   };
 
-  PADDLE2ONNX_DECL bool IsExportable(const char *model,
-                                     const char *params,
-                                     int32_t opset_version = 7,
-                                     bool auto_upgrade_opset = true,
-                                     bool verbose = false,
-                                     bool enable_onnx_checker = true,
-                                     bool enable_experimental_op = false,
-                                     bool enable_optimize = true,
-                                     const char *deploy_backend = "onnxruntime");
-
-  PADDLE2ONNX_DECL bool IsExportable(const void *model_buffer,
-                                     int model_size,
-                                     const void *params_buffer,
-                                     int params_size,
-                                     int32_t opset_version = 7,
-                                     bool auto_upgrade_opset = true,
-                                     bool verbose = false,
-                                     bool enable_onnx_checker = true,
-                                     bool enable_experimental_op = false,
-                                     bool enable_optimize = true,
-                                     const char *deploy_backend = "onnxruntime");
-
   PADDLE2ONNX_DECL bool Export(const char *model,
                                const char *params,
                                char **out, int *out_size,

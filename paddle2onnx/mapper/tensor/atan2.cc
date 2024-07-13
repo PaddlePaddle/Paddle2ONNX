@@ -21,7 +21,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(atan2, Atan2Mapper)
 
-int32_t Atan2Mapper::GetMinOpset(bool verbose) {
+int32_t Atan2Mapper::GetMinOpsetVersion(bool verbose) {
   if (GetInput("X1")[0].dtype == P2ODataType::INT32 ||
       GetInput("X2")[0].dtype == P2ODataType::INT32 ||
       GetInput("X1")[0].dtype == P2ODataType::INT64 ||

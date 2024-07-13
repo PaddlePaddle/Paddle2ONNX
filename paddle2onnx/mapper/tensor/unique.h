@@ -28,7 +28,7 @@ class UniqueMapper : public Mapper {
     GetAttr("axis", &axis_);
     GetAttr("dtype", &dtype_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset11();
 
  private:

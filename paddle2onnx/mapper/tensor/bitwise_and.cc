@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(bitwise_and, BitWiseAndMapper)
 
-int32_t BitWiseAndMapper::GetMinOpset(bool verbose) {
+int32_t BitWiseAndMapper::GetMinOpsetVersion(bool verbose) {
   int op_version = 7;
   auto input_info = GetInput("X");
   if(input_info[0].dtype == P2ODataType::BOOL){

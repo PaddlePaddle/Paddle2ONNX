@@ -47,7 +47,7 @@ class ActivationMapper : public Mapper {
     op_mapper_["reciprocal"] = "Reciprocal";
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:
@@ -60,7 +60,7 @@ class PReluMapper : public Mapper {
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 };
 
@@ -100,7 +100,7 @@ class GeluMapper : public Mapper {
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
@@ -163,7 +163,7 @@ class MishMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("threshold", &threshold_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:
@@ -222,7 +222,7 @@ class SoftShrinkMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("lambda", &lambda_);
   }
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
   }
@@ -239,7 +239,7 @@ class ThresholdedReluMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("threshold", &threshold_);
   }
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 10) << RequireOpset(10) << std::endl;
     return 10;
   }

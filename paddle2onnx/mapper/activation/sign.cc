@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(sign, SignMapper)
 
-int32_t SignMapper::GetMinOpset(bool verbose) {
+int32_t SignMapper::GetMinOpsetVersion(bool verbose) {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
 }

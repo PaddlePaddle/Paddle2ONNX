@@ -18,7 +18,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(reduce_min, ReduceMinMapper)
 REGISTER_MAPPER(reduce_all, ReduceMinMapper)
 
-int32_t ReduceMinMapper::GetMinOpset(bool verbose) {
+int32_t ReduceMinMapper::GetMinOpsetVersion(bool verbose) {
   int op_version = 11;
 
   auto x_info = GetInput("X");

@@ -29,7 +29,7 @@ class TemporalShiftMapper : public Mapper {
     GetAttr("shift_ratio", &shift_ratio_);
     GetAttr("seg_num", &seg_num_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

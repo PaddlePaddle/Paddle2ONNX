@@ -368,24 +368,12 @@ namespace paddle2onnx
     outputs.clear();
     parameters.clear();
 
-    // clear name_counter
-    // this use to generate unique name
-    // for intermdiate
-    // while converting all the op
+    // Clear name_counter, this use to generate unique name for intermdiate while converting all the op
     MapperHelper::Get()->ClearNameCounter();
 
-    std::set<std::string> unsupported_ops;
-    if (!CheckIfOpSupported(parser, &unsupported_ops, enable_experimental_op))
+    if (!IsOpsRegistered(parser, enable_experimental_op))
     {
-      auto logger = P2OLogger();
-      logger << "Oops, there are some operators not supported yet, including ";
-      for (auto &item : unsupported_ops)
-      {
-        logger << item << ",";
-      }
-      logger << std::endl;
-      Assert(1 == 0,
-             "Due to the unsupported operators, the conversion is aborted.");
+      Assert(false, "Due to the unsupported operators, the conversion is aborted.");
     }
 
     // Create onnx model
@@ -393,7 +381,7 @@ namespace paddle2onnx
 
     // Set the Opset Version of the ONNX model.
     bool opset_is_legal = true;
-    int32_t min_opset = GetMinOpset(parser, verbose);
+    int32_t min_opset = GetMinOpsetVersion(parser, verbose);
     if (min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION)
     {
       P2OLogger() << "The Opset Version must be between 7 and " << MAX_ONNX_OPSET_VERSION - 1 << std::endl;
@@ -426,8 +414,8 @@ namespace paddle2onnx
     // Set the IR Version of the ONNX model.
     model->set_ir_version(GetIRVersion());
 
-    ExportParameters(parser.params);
     ExportInputOutputs(parser.inputs, parser.outputs);
+    ExportParameters(parser.params);
 
     // Only convert blocks 0 now, because control flow is not supported yet.
     for (auto i = 0; i < parser.NumOfBlocks(); ++i)
@@ -538,11 +526,10 @@ namespace paddle2onnx
     return out;
   }
 
-  bool ModelExporter::CheckIfOpSupported(const PaddleParser &parser,
-                                         std::set<std::string> *unsupported_ops,
+  bool ModelExporter::IsOpsRegistered(const PaddleParser &parser,
                                          bool enable_experimental_op)
   {
-    unsupported_ops->clear();
+    std::set<std::string> unsupported_ops;
     for (auto i = 0; i < parser.NumOfBlocks(); ++i)
     {
       for (auto j = 0; j < parser.NumOfOps(i); ++j)
@@ -556,13 +543,13 @@ namespace paddle2onnx
         {
           if (!IsLoopSupported(parser, i, j))
           {
-            unsupported_ops->insert("while");
+            unsupported_ops.insert("while");
           }
           continue;
         }
         if (!MapperHelper::Get()->IsRegistered(op.type()))
         {
-          unsupported_ops->insert(op.type());
+          unsupported_ops.insert(op.type());
         }
         else if (!enable_experimental_op)
         {
@@ -570,16 +557,25 @@ namespace paddle2onnx
                                                           &helper_, i, j);
           if (mapper->IsExperimentalOp())
           {
-            unsupported_ops->insert(op.type());
+            unsupported_ops.insert(op.type());
           }
           delete mapper;
         }
       }
     }
-    return (unsupported_ops->size() == 0);
+
+    auto logger = P2OLogger();
+    logger << "Oops, there are some operators not supported yet, including ";
+    for (auto &item : unsupported_ops)
+    {
+      logger << item << ",";
+    }
+    logger << std::endl;
+
+    return (unsupported_ops.size() == 0);
   }
 
-  int32_t ModelExporter::GetMinOpset(const PaddleParser &parser, bool verbose)
+  int32_t ModelExporter::GetMinOpsetVersion(const PaddleParser &parser, bool verbose)
   {
     int32_t opset_version = helper_.GetOpsetVersion();
     int32_t max_opset = 7;
@@ -607,7 +603,7 @@ namespace paddle2onnx
         else
         {
           auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &helper_, i, j);
-          current_opset = mapper->GetMinOpset(verbose);
+          current_opset = mapper->GetMinOpsetVersion(verbose);
           delete mapper;
         }
 

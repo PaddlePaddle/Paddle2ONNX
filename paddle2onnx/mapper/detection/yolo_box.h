@@ -36,7 +36,7 @@ class YoloBoxMapper : public Mapper {
     GetAttr("anchors", &anchors_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset11();
 
  private:

@@ -27,7 +27,7 @@ class ConcatMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }
-  int32_t GetMinOpset(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7();
 
  private:

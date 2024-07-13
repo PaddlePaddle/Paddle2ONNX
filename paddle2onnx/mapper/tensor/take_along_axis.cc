@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(take_along_axis, TakeAlongAxisMapper)
 
-int32_t TakeAlongAxisMapper::GetMinOpset(bool verbose) {
+int32_t TakeAlongAxisMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }

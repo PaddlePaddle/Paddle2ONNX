@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(gather, GatherMapper)
 
-int32_t GatherMapper::GetMinOpset(bool verbose) {
+int32_t GatherMapper::GetMinOpsetVersion(bool verbose) {
   if (HasInput("Axis")) {
     if (!IsConstantInput("Axis")) {
       Error() << "Parameter axis as input tensor is not supported."

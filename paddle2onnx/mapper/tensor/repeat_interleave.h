@@ -32,7 +32,7 @@ namespace paddle2onnx
     }
 
     void Opset9() override;
-    int32_t GetMinOpset(bool verbose) override;
+    int32_t GetMinOpsetVersion(bool verbose) override;
 
   private:
     int64_t dim_;

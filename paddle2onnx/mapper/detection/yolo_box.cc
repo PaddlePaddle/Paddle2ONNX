@@ -18,7 +18,7 @@ namespace paddle2onnx {
 
 REGISTER_MAPPER(yolo_box, YoloBoxMapper)
 
-int32_t YoloBoxMapper::GetMinOpset(bool verbose) {
+int32_t YoloBoxMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }
