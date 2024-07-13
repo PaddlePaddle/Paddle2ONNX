@@ -46,6 +46,11 @@ namespace paddle2onnx
         {
           continue;
         }
+
+        if (op.type() == "conditional_block" || op.type() == "select_input")
+        {
+          continue;
+        }
 #if 0
         if (op.type() == "while" && enable_experimental_op)
         {
@@ -100,12 +105,12 @@ namespace paddle2onnx
         }
 
         int current_opset = 7;
-        if (op.type() == "while")
+        if (op.type() == "conditional_block" || op.type() == "select_input")
         {
-          P2OLogger() << "Detected there's control flow 'while' op in your model, "
+          P2OLogger() << "Detected there's control flow op('select_input') in your model, "
                       << "this requires the minimal opset version of 13."
                       << std::endl;
-          current_opset = 13;
+          current_opset = 11;
         }
         else
         {
@@ -113,6 +118,15 @@ namespace paddle2onnx
           current_opset = mapper->GetMinOpsetVersion(verbose_);
           delete mapper;
         }
+#if 0
+        if (op.type() == "while")
+        {
+          P2OLogger() << "Detected there's control flow 'while' op in your model, "
+                      << "this requires the minimal opset version of 13."
+                      << std::endl;
+          current_opset = 13;
+        }
+#endif
 
         if (current_opset > max_opset)
         {
@@ -218,7 +232,9 @@ namespace paddle2onnx
     onnx_model_.set_ir_version(GetIRVersion());
   }
 
-  void ModelExporter::ExportInputOutputs(const PaddleParser &parser)
+  void ModelExporter::ExportInputOutputs(const PaddleParser &parser,
+                                         std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                         std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs)
   {
     inputs.clear();
     for (auto &item : parser.inputs)
@@ -234,7 +250,8 @@ namespace paddle2onnx
     }
   }
 
-  void ModelExporter::ExportParameters(const PaddleParser &parser)
+  void ModelExporter::ExportParameters(const PaddleParser &parser,
+                                       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters)
   {
     parameters.clear();
     for (auto &item : parser.params)
@@ -246,8 +263,94 @@ namespace paddle2onnx
     }
   }
 
-  void ModelExporter::UpdateParameters(
-      const std::map<std::string, Weight> &params)
+  void ModelExporter::ExportBlock(const PaddleParser &parser,
+                                  int64_t block_id,
+                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs)
+  {
+    auto graph = onnx_model_.mutable_graph();
+    graph->set_name("PaddlePaddle Graph " + std::to_string(block_id));
+    OnnxHelper temp_helper;
+    auto num_ops = parser.NumOfOps(block_id);
+    temp_helper.nodes.reserve(num_ops * 3);
+    temp_helper.Clear();
+    for (auto op_id = 0; op_id < num_ops; ++op_id)
+    {
+      auto op = parser.GetOpDesc(block_id, op_id);
+      if (op.type() == "feed")
+      {
+        continue;
+      }
+      else if (op.type() == "fetch")
+      {
+        continue;
+      }
+      else if (op.type() == "conditional_block")
+      {
+        int32_t sub_block_idx = -1;
+        for (size_t i = 0; i < op.attrs_size(); ++i)
+        {
+          if (op.attrs(i).name() == "sub_block")
+          {
+            sub_block_idx = op.attrs(i).block_idx();
+            break;
+          }
+        }
+        Assert(sub_block_idx != -1, "Due to the unsupported sub_block_idx, the conversion is aborted.");
+
+        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
+        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
+        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
+        ExportBlock(parser, sub_block_idx, temp_parameters, temp_inputs, temp_outputs);
+        continue;
+      }
+      ExportOp(parser, &temp_helper, opset_version_, block_id, op_id, verbose_);
+    }
+
+    ProcessGraphDumplicateNames(parameters, inputs, outputs, temp_helper.nodes, temp_helper.quantize_info);
+    if (parser.is_quantized_model)
+    {
+      quantize_model_processer.ProcessQuantizeModel(&parameters,
+                                                    &inputs,
+                                                    &outputs,
+                                                    &temp_helper.nodes,
+                                                    &temp_helper,
+                                                    deploy_backend_,
+                                                    parser,
+                                                    calibration_cache_);
+      // Update int8 weights in quantized OP to float32
+      UpdateParameters(temp_helper.updated_params, parameters);
+    }
+
+    for (auto &item : parameters)
+    {
+      *(graph->add_node()) = *(item.get());
+    }
+
+    for (auto &item : inputs)
+    {
+      *(graph->add_input()) = *(item.get());
+    }
+
+    for (auto &item : outputs)
+    {
+      *(graph->add_output()) = (*item.get());
+    }
+
+    for (auto &item : temp_helper.nodes)
+    {
+      *(graph->add_node()) = (*item.get());
+    }
+
+    for (auto &item : temp_helper.value_infos)
+    {
+      *(graph->add_value_info()) = (*item.get());
+    }
+  }
+
+  void ModelExporter::UpdateParameters(const std::map<std::string, Weight> &params,
+                                       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters)
   {
     for (auto &item : params)
     {
@@ -291,37 +394,36 @@ namespace paddle2onnx
     delete mapper;
   }
 
-  void ModelExporter::ProcessGraphDumplicateNames(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *parameters,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
-      std::map<std::string, QuantizeInfo> *quantize_info)
+  void ModelExporter::ProcessGraphDumplicateNames(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
+                                                  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
+                                                  std::map<std::string, QuantizeInfo> &quantize_info)
   {
-    // process dumplicate tensor names
     std::map<std::string, std::string> renamer;
-    std::set<std::string> tensor_names;
-    for (auto &item : *parameters)
+    for (auto &item : parameters)
     {
       for (size_t i = 0; i < item->output_size(); ++i)
       {
-        if (tensor_names.find(item->output(i)) != tensor_names.end())
+        if (tensor_names_.find(item->output(i)) != tensor_names_.end())
         {
           Assert(false, "There's dumplicate names in exported parameters.");
         }
-        tensor_names.insert(item->output(i));
+        tensor_names_.insert(item->output(i));
       }
     }
-    for (auto &item : *inputs)
+
+    for (auto &item : inputs)
     {
-      if (tensor_names.find(item->name()) != tensor_names.end())
+      if (tensor_names_.find(item->name()) != tensor_names_.end())
       {
         Assert(false, "There's dumplicate names:" + item->name() +
                           " in exported parameters and inputs.");
       }
-      tensor_names.insert(item->name());
+      tensor_names_.insert(item->name());
     }
-    for (auto &item : *nodes)
+
+    for (auto &item : nodes)
     {
       // update node inputs
       for (size_t i = 0; i < item->input_size(); ++i)
@@ -336,36 +438,33 @@ namespace paddle2onnx
           *(item->mutable_input(i)) = updated_name;
         }
       }
-      // if there's dumplicate name
-      // will generate new name and replace it
+
+      // if there's dumplicate name , it will generate new name and replace the dumplicate name
       for (size_t i = 0; i < item->output_size(); ++i)
       {
-        if (tensor_names.find(item->output(i)) != tensor_names.end())
+        if (tensor_names_.find(item->output(i)) != tensor_names_.end())
         {
           std::string renamed_tensor_name = item->output(i);
           while (renamer.find(renamed_tensor_name) != renamer.end())
           {
             renamed_tensor_name = renamer[renamed_tensor_name];
           }
-          auto new_tensor_name =
-              MapperHelper::Get()->GenName(renamed_tensor_name);
+          auto new_tensor_name = MapperHelper::Get()->GenName(renamed_tensor_name);
           P2OLogger() << "Find dumplicate output name '" << renamed_tensor_name
                       << "', it will rename to '" << new_tensor_name << "'."
                       << std::endl;
-          if (quantize_info &&
-              quantize_info->find(renamed_tensor_name) != quantize_info->end())
+          if (quantize_info.find(renamed_tensor_name) != quantize_info.end())
           {
-            (*quantize_info)[new_tensor_name] =
-                (*quantize_info)[renamed_tensor_name];
+            quantize_info[new_tensor_name] = quantize_info[renamed_tensor_name];
           }
           *(item->mutable_output(i)) = new_tensor_name;
           renamer[renamed_tensor_name] = new_tensor_name;
         }
-        tensor_names.insert(item->output(i));
+        tensor_names_.insert(item->output(i));
       }
     }
 
-    for (auto &item : *outputs)
+    for (auto &item : outputs)
     {
       if (renamer.find(item->name()) != renamer.end())
       {
@@ -474,6 +573,7 @@ namespace paddle2onnx
   {
     verbose_ = verbose;
     deploy_backend_ = deploy_backend;
+    calibration_cache_ = calibration_cache;
 
     // Clear name_counter, this use to generate unique name for intermdiate while converting all the op
     MapperHelper::Get()->ClearNameCounter();
@@ -490,72 +590,16 @@ namespace paddle2onnx
     // Set ONNX IR Version
     SetIRVersion();
 
-    // Create onnx main graph
-    auto main_graph = onnx_model_.mutable_graph();
-    main_graph->set_name("PaddlePaddle Main Graph");
-
-    ExportInputOutputs(parser);
-
-    ExportParameters(parser);
-
-    // Export Main Graph
-    OnnxHelper main_helper;
-    main_helper.nodes.reserve(parser.NumOfOps(0) * 3);
-    main_helper.Clear();
-
-    for (auto j = 0; j < parser.NumOfOps(0); ++j)
-    {
-      auto op = parser.GetOpDesc(0, j);
-      if (op.type() == "feed")
-      {
-        continue;
-      }
-      else if (op.type() == "fetch")
-      {
-        continue;
-      }
-      ExportOp(parser, &main_helper, opset_version, 0, j, verbose);
-    }
-
-    ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &main_helper.nodes, &main_helper.quantize_info);
-    if (parser.is_quantized_model)
-    {
-      quantize_model_processer.ProcessQuantizeModel(&parameters,
-                                                    &inputs,
-                                                    &outputs,
-                                                    &main_helper.nodes,
-                                                    &main_helper,
-                                                    deploy_backend,
-                                                    parser,
-                                                    calibration_cache);
-      // Update int8 weights in quantized OP to float32
-      UpdateParameters(main_helper.updated_params);
-    }
-
-    for (auto &item : parameters)
-    {
-      *(main_graph->add_node()) = *(item.get());
-    }
-
-    for (auto &item : inputs)
-    {
-      *(main_graph->add_input()) = *(item.get());
-    }
-
-    for (auto &item : outputs)
-    {
-      *(main_graph->add_output()) = (*item.get());
-    }
-
-    for (auto &item : main_helper.nodes)
-    {
-      *(main_graph->add_node()) = (*item.get());
-    }
-
-    for (auto &item : main_helper.value_infos)
-    {
-      *(main_graph->add_value_info()) = (*item.get());
-    }
+    // Export Parser Parameters
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
+    ExportParameters(parser, parameters);
+    // Export Parser Inputs and Outputs
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
+    ExportInputOutputs(parser, inputs, outputs);
+    // Export Blocks
+    tensor_names_.clear();
+    ExportBlock(parser, 0, parameters, inputs, outputs);
 
     if (enable_optimize)
     {

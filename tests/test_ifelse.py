@@ -27,10 +27,11 @@ class Net(paddle.nn.Layer):
 
     def forward(self, inputs):
         if inputs == 1:
-            x = 1
-            return x
+            inputs = inputs * 2
+            return inputs
         else:
-            return 2
+            inputs = inputs * 3
+            return inputs
 
 
 def test_ifelse_true():

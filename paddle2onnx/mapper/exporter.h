@@ -40,24 +40,10 @@ inline std::string GetFilenameFromPath(const std::string &path)
 
 namespace paddle2onnx
 {
-  struct ModelExporter
+  class ModelExporter
   {
   public:
     QuantizeModelProcessor quantize_model_processer;
-
-    //  // Remove isolated nodes in onnx model
-    //  void RemoveIsolatedNodes(
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes);
-    // Process dumplicate tensor names in paddle model
-    void ProcessGraphDumplicateNames(
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *parameters,
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
-        std::map<std::string, QuantizeInfo> *quantize_info = nullptr);
 
     void SaveExternalData(ONNX_NAMESPACE::GraphProto *graph,
                           const std::string &external_file_path,
@@ -84,6 +70,7 @@ namespace paddle2onnx
     bool verbose_ = false;
     // The _deploy_backend will pass to Mapper to influence the conversion
     std::string deploy_backend_ = "onnxruntime";
+    std::string *calibration_cache_ = nullptr;
     int32_t opset_version_ = 7;
 
     bool IsOpsRegistered(const PaddleParser &parser,
@@ -97,17 +84,30 @@ namespace paddle2onnx
     inline ONNX_NAMESPACE::Version GetIRVersion() const;
     void SetIRVersion();
     //
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
-    void ExportInputOutputs(const PaddleParser &parser);
+    void ExportInputOutputs(const PaddleParser &parser,
+                            std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                            std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs);
     //
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
-    void ExportParameters(const PaddleParser &parser);
-
+    void ExportParameters(const PaddleParser &parser, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
+    // Process dumplicate tensor names in paddle model
+    std::set<std::string> tensor_names_;
+    void ProcessGraphDumplicateNames(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
+                                     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
+                                     std::map<std::string, QuantizeInfo> &quantize_info);
     // Update constant node in parameters. When process quantize model, the weight
     // dtype may be int8, it should be convet to float32 and use this function to
     // update converted params.
-    void UpdateParameters(const std::map<std::string, Weight> &params);
+    void UpdateParameters(const std::map<std::string, Weight> &params,
+                          std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
+    //
+    void ExportBlock(const PaddleParser &parser,
+                     int64_t block_id,
+                     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs);
+
     void ExportOp(const PaddleParser &parser,
                   OnnxHelper *helper,
                   int32_t opset_version,
