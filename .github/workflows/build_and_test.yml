@@ -1,8 +1,10 @@
 name: Build and Test
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
 
 permissions:
   contents: read
@@ -28,18 +30,18 @@ jobs:
           entrypoint: bash
           args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64 CentOS
 
-      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v5
         with:
-          name: wheels
-          path: dist
+          python-version: '3.8'
 
-      # Build Paddle2ONNX
+      # Install Paddle2ONNX
       - name: Install Paddle2ONNX
         run: |
           python -m pip install dist/*.whl
 
       # Install Test
       - name: Run Test
-        working-directory: ./Paddle2ONNX/tests
+        working-directory: ./tests
         run: |
           bash run.sh python
