@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if 0
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
@@ -193,3 +194,4 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
 }
 
 }  // namespace paddle2onnx
+#endif

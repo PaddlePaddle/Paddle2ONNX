@@ -96,11 +96,11 @@ namespace paddle2onnx
     // IR Version
     inline ONNX_NAMESPACE::Version GetIRVersion() const;
     void SetIRVersion();
-    // 
+    //
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
     void ExportInputOutputs(const PaddleParser &parser);
-    // 
+    //
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
     void ExportParameters(const PaddleParser &parser);
 
@@ -108,14 +108,19 @@ namespace paddle2onnx
     // dtype may be int8, it should be convet to float32 and use this function to
     // update converted params.
     void UpdateParameters(const std::map<std::string, Weight> &params);
-    void ExportOp(const PaddleParser &parser, OnnxHelper *helper,
-                  int32_t opset_version, int64_t block_id, int64_t op_id,
+    void ExportOp(const PaddleParser &parser,
+                  OnnxHelper *helper,
+                  int32_t opset_version,
+                  int64_t block_id,
+                  int64_t op_id,
                   bool verbose);
+#if 0
     bool IsLoopSupported(const PaddleParser &parser, const int64_t &block_id,
                          const int64_t &op_id);
     void ExportLoop(const PaddleParser &parser, OnnxHelper *helper,
                     int32_t opset_version, int64_t block_id, int64_t op_id,
                     bool verbose);
+#endif
     ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto &model);
   };
 } // namespace paddle2onnx

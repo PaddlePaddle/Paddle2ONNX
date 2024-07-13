@@ -46,6 +46,7 @@ namespace paddle2onnx
         {
           continue;
         }
+#if 0
         if (op.type() == "while" && enable_experimental_op)
         {
           if (!IsLoopSupported(parser, i, j))
@@ -54,6 +55,7 @@ namespace paddle2onnx
           }
           continue;
         }
+#endif
         if (!MapperHelper::Get()->IsRegistered(op.type()))
         {
           unsupported_ops.insert(op.type());
@@ -277,11 +279,12 @@ namespace paddle2onnx
                                bool verbose)
   {
     auto op = parser.GetOpDesc(block_id, op_id);
+#if 0
     if (op.type() == "while")
     {
       return ExportLoop(parser, helper, opset_version, block_id, op_id, verbose);
     }
-
+#endif
     auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, helper, block_id, op_id);
     mapper->deploy_backend = deploy_backend_;
     mapper->Run();
