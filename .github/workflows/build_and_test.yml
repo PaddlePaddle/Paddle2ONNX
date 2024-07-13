@@ -31,7 +31,7 @@ jobs:
           path: paddle2onnx
 
       - name: Download Protobuf
-        working-directory: ./protobuf
+        working-directory: .
         run: |
           source .github/workflows/scripts/download_protobuf.sh
 
