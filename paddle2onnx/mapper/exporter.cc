@@ -31,11 +31,211 @@
 namespace paddle2onnx
 {
   MapperHelper *MapperHelper::helper = nullptr;
+  int32_t OnnxHelper::opset_version = 7;
 
-  void ModelExporter::ExportParameters(
-      const std::map<std::string, Weight> &params, bool use_initializer)
+  bool ModelExporter::IsOpsRegistered(const PaddleParser &parser, bool enable_experimental_op)
   {
-    for (auto &item : params)
+    OnnxHelper temp_helper;
+    std::set<std::string> unsupported_ops;
+    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
+    {
+      for (auto j = 0; j < parser.NumOfOps(i); ++j)
+      {
+        auto op = parser.GetOpDesc(i, j);
+        if (op.type() == "feed" || op.type() == "fetch")
+        {
+          continue;
+        }
+        if (op.type() == "while" && enable_experimental_op)
+        {
+          if (!IsLoopSupported(parser, i, j))
+          {
+            unsupported_ops.insert("while");
+          }
+          continue;
+        }
+        if (!MapperHelper::Get()->IsRegistered(op.type()))
+        {
+          unsupported_ops.insert(op.type());
+        }
+        else if (!enable_experimental_op)
+        {
+          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &temp_helper, i, j);
+          if (mapper->IsExperimentalOp())
+          {
+            unsupported_ops.insert(op.type());
+          }
+          delete mapper;
+        }
+      }
+    }
+
+    auto logger = P2OLogger();
+    logger << "Oops, there are some operators not supported yet, including ";
+    for (auto &item : unsupported_ops)
+    {
+      logger << item << ",";
+    }
+    logger << std::endl;
+    return (unsupported_ops.size() == 0);
+  }
+
+  int32_t ModelExporter::GetMinOpsetVersion(const PaddleParser &parser)
+  {
+    int32_t max_opset = 7;
+    std::set<std::string> verbose_log;
+    OnnxHelper helper;
+    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
+    {
+      for (auto j = 0; j < parser.NumOfOps(i); ++j)
+      {
+        auto op = parser.GetOpDesc(i, j);
+
+        // Skip the input and output nodes.
+        if (op.type() == "feed" || op.type() == "fetch")
+        {
+          continue;
+        }
+
+        int current_opset = 7;
+        if (op.type() == "while")
+        {
+          P2OLogger() << "Detected there's control flow 'while' op in your model, "
+                      << "this requires the minimal opset version of 13."
+                      << std::endl;
+          current_opset = 13;
+        }
+        else
+        {
+          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &helper, i, j);
+          current_opset = mapper->GetMinOpsetVersion(verbose_);
+          delete mapper;
+        }
+
+        if (current_opset > max_opset)
+        {
+          max_opset = current_opset;
+          if (current_opset > opset_version_)
+          {
+            verbose_log.insert("Due to the operator: " + op.type() + ", " +
+                               "requires opset_version >= " + std::to_string(current_opset) + ".");
+          }
+        }
+      }
+    }
+
+    for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter)
+    {
+      P2OLogger(verbose_) << *iter << std::endl;
+    }
+    return max_opset;
+  }
+
+  void ModelExporter::SetOpsetVersion(const PaddleParser &parser, bool auto_upgrade_opset)
+  {
+    // Set the Opset Version of the ONNX model.
+    bool opset_is_legal = true;
+    int32_t min_opset = GetMinOpsetVersion(parser);
+    if (min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION)
+    {
+      P2OLogger(verbose_) << "The Opset Version must be between 7 and " << MAX_ONNX_OPSET_VERSION - 1 << std::endl;
+      opset_is_legal = false;
+    }
+    if (!auto_upgrade_opset)
+    {
+      if (min_opset > opset_version_)
+      {
+        P2OLogger(verbose_) << "Please set the opset_version to " << std::to_string(opset_version_)
+                            << " or set auto_upgrade_opset=true." << std::endl;
+        opset_is_legal = false;
+      }
+    }
+    else
+    {
+      if (min_opset > opset_version_)
+      {
+        P2OLogger(verbose_) << "Opset version will change to " << min_opset << " from " << opset_version_ << std::endl;
+        opset_version_ = min_opset;
+      }
+    }
+    Assert(opset_is_legal, "Due to opset version, the model exporting is aborted.");
+
+    OnnxHelper::SetOpsetVersion(opset_version_);
+
+    auto opset_import = onnx_model_.add_opset_import();
+    opset_import->set_domain("");
+    opset_import->set_version(opset_version_);
+    P2OLogger(verbose_) << "Use opset_version = " << opset_version_ << " for ONNX export." << std::endl;
+  }
+
+  inline ONNX_NAMESPACE::Version ModelExporter::GetIRVersion() const
+  {
+    int ir_version = 0;
+    switch (opset_version_)
+    {
+    case 7:
+    case 8:
+      ir_version = 3;
+      break;
+    case 9:
+      ir_version = 4;
+      break;
+    case 10:
+      ir_version = 5;
+      break;
+    case 11:
+      ir_version = 6;
+      break;
+    case 12:
+    case 13:
+    case 14:
+      ir_version = 7;
+      break;
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+      ir_version = 8;
+      break;
+    case 19:
+    case 20:
+      ir_version = 9;
+      break;
+    case 21:
+      ir_version = 10;
+      break;
+    default:
+      P2OLogger(verbose_) << "The Opset Version must be between 7 and 21." << std::endl;
+      Assert(false, "Due to opset version, the model exporting is aborted.");
+    }
+    return static_cast<ONNX_NAMESPACE::Version>(ir_version);
+  }
+
+  void ModelExporter::SetIRVersion()
+  {
+    onnx_model_.set_ir_version(GetIRVersion());
+  }
+
+  void ModelExporter::ExportInputOutputs(const PaddleParser &parser)
+  {
+    inputs.clear();
+    for (auto &item : parser.inputs)
+    {
+      auto value_info = MakeValueInfo(item);
+      inputs.push_back(std::move(value_info));
+    }
+    outputs.clear();
+    for (auto &item : parser.outputs)
+    {
+      auto value_info = MakeValueInfo(item);
+      outputs.push_back(std::move(value_info));
+    }
+  }
+
+  void ModelExporter::ExportParameters(const PaddleParser &parser)
+  {
+    parameters.clear();
+    for (auto &item : parser.params)
     {
       // TODO(jiangjiajun) I'm not handling use_initializer now, but some day I
       // will
@@ -65,59 +265,6 @@ namespace paddle2onnx
       if (!updated)
       {
         parameters.push_back(std::move(node));
-      }
-    }
-  }
-
-  void ModelExporter::ExportInputOutputs(
-      const std::vector<TensorInfo> &input_infos,
-      const std::vector<TensorInfo> &output_infos)
-  {
-    for (auto &item : input_infos)
-    {
-      auto value_info = MakeValueInfo(item);
-      inputs.push_back(std::move(value_info));
-    }
-    for (auto &item : output_infos)
-    {
-      auto value_info = MakeValueInfo(item);
-      outputs.push_back(std::move(value_info));
-    }
-  }
-
-  void ModelExporter::CovertCustomOps(const PaddleParser &parser,
-                                      OnnxHelper *helper, int64_t block_id,
-                                      int64_t op_id)
-  {
-    auto op = parser.GetOpDesc(block_id, op_id);
-    std::vector<std::string> input_strs;
-    for (auto i_index = 0; i_index < op.inputs_size(); i_index++)
-    {
-      auto input = op.inputs(i_index);
-      std::string parameter = input.parameter();
-      if (parser.OpHasInput(block_id, op_id, parameter))
-      {
-        auto input_info = parser.GetOpInput(block_id, op_id, parameter);
-        for (auto input : input_info)
-        {
-          input_strs.push_back(input.name);
-          helper->MakeValueInfo(input.name, input.dtype, input.shape);
-        }
-      }
-    }
-    std::vector<std::string> output_strs;
-    for (auto o_index = 0; o_index < op.outputs_size(); o_index++)
-    {
-      auto output = op.outputs(o_index);
-      std::string parameter = output.parameter();
-      if (parser.OpHasOutput(block_id, op_id, parameter))
-      {
-        auto output_info = parser.GetOpOutput(block_id, op_id, parameter);
-        for (auto output : output_info)
-        {
-          output_strs.push_back(output.name);
-          helper->MakeValueInfo(output.name, output.dtype, output.shape);
-        }
       }
     }
   }
@@ -308,47 +455,6 @@ namespace paddle2onnx
                        << std::endl;
   }
 
-  ONNX_NAMESPACE::Version ModelExporter::GetIRVersion() const {
-    int ir_version = 0;
-    switch (opset_version_) {
-      case 7:
-      case 8:
-        ir_version = 3;
-        break;
-      case 9:
-        ir_version = 4;
-        break;
-      case 10:
-        ir_version = 5;
-        break;
-      case 11:
-        ir_version = 6;
-        break;
-      case 12:
-      case 13:
-      case 14:
-        ir_version = 7;
-        break;
-      case 15:
-      case 16:
-      case 17:
-      case 18:
-        ir_version = 8;
-        break;
-      case 19:
-      case 20:
-        ir_version = 9;
-        break;
-      case 21:
-        ir_version = 10;
-        break;
-      default:
-        P2OLogger() << "The Opset Version must be between 7 and 21." << std::endl;
-        Assert(false, "Due to opset version, the model exporting is aborted.");
-    }
-    return static_cast<ONNX_NAMESPACE::Version>(ir_version);
-  }
-
   std::string ModelExporter::Run(const PaddleParser &parser,
                                  int opset_version,
                                  bool auto_upgrade_opset,
@@ -363,10 +469,8 @@ namespace paddle2onnx
                                  bool export_fp16_model,
                                  std::vector<std::string> disable_fp16_op_types)
   {
+    verbose_ = verbose;
     deploy_backend_ = deploy_backend;
-    inputs.clear();
-    outputs.clear();
-    parameters.clear();
 
     // Clear name_counter, this use to generate unique name for intermdiate while converting all the op
     MapperHelper::Get()->ClearNameCounter();
@@ -376,112 +480,83 @@ namespace paddle2onnx
       Assert(false, "Due to the unsupported operators, the conversion is aborted.");
     }
 
-    // Create onnx model
-    auto model = std::make_shared<ONNX_NAMESPACE::ModelProto>();
-
-    // Set the Opset Version of the ONNX model.
-    bool opset_is_legal = true;
-    int32_t min_opset = GetMinOpsetVersion(parser, verbose);
-    if (min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION)
-    {
-      P2OLogger() << "The Opset Version must be between 7 and " << MAX_ONNX_OPSET_VERSION - 1 << std::endl;
-      opset_is_legal = false;
-    }
-    if (!auto_upgrade_opset)
-    {
-      if (min_opset > opset_version)
-      {
-        P2OLogger() << "Please set the opset_version to " << std::to_string(opset_version) << " or set auto_upgrade_opset=true." << std::endl;
-        opset_is_legal = false;
-      }
-    }
-    else
-    {
-      if (min_opset > opset_version)
-      {
-        P2OLogger() << "Opset version will change to " << min_opset << " from " << opset_version << std::endl;
-        opset_version = min_opset;
-      }
-    }
-    Assert(opset_is_legal, "Due to opset version, the model exporting is aborted.");
-
+    // Set ONNX Opset Version
     opset_version_ = opset_version;
-    auto opset_import = model->add_opset_import();
-    opset_import->set_domain("");
-    opset_import->set_version(opset_version_);
-    P2OLogger(verbose) << "Use opset_version = " << opset_version_ << " for ONNX export." << std::endl;
+    SetOpsetVersion(parser, auto_upgrade_opset);
 
-    // Set the IR Version of the ONNX model.
-    model->set_ir_version(GetIRVersion());
+    // Set ONNX IR Version
+    SetIRVersion();
 
-    ExportInputOutputs(parser.inputs, parser.outputs);
-    ExportParameters(parser.params);
+    // Create onnx main graph
+    auto main_graph = onnx_model_.mutable_graph();
+    main_graph->set_name("PaddlePaddle Main Graph");
 
-    // Only convert blocks 0 now, because control flow is not supported yet.
-    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
+    ExportInputOutputs(parser);
+
+    ExportParameters(parser);
+
+    // Export Main Graph
+    OnnxHelper main_helper;
+    main_helper.nodes.reserve(parser.NumOfOps(0) * 3);
+    main_helper.Clear();
+
+    for (auto j = 0; j < parser.NumOfOps(0); ++j)
     {
-      // Init Node Help
-      helper_.SetOpsetVersion(opset_version);
-      helper_.nodes.reserve(parser.NumOfOps(i) * 3);
-      helper_.Clear();
-
-      for (auto j = 0; j < parser.NumOfOps(i); ++j)
+      auto op = parser.GetOpDesc(0, j);
+      if (op.type() == "feed")
       {
-        auto op = parser.GetOpDesc(i, j);
-        if (op.type() == "feed")
-        {
-          continue;
-        }
-        else if (op.type() == "fetch")
-        {
-          continue;
-        }
-        ExportOp(parser, &helper_, opset_version, i, j, verbose);
+        continue;
       }
-
-      ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &helper_.nodes, &helper_.quantize_info);
-      if (parser.is_quantized_model)
+      else if (op.type() == "fetch")
       {
-        quantize_model_processer.ProcessQuantizeModel(
-            &parameters, &inputs, &outputs, &helper_.nodes, &helper_,
-            deploy_backend, parser, calibration_cache);
-        // Update int8 weights in quantized OP to float32
-        UpdateParameters(helper_.updated_params);
+        continue;
       }
-
-      auto graph = model->mutable_graph();
-      graph->set_name("PaddlePaddle Graph " + std::to_string(i));
-      for (auto &item : parameters)
-      {
-        *(graph->add_node()) = *(item.get());
-      }
-      for (auto &item : inputs)
-      {
-        *(graph->add_input()) = *(item.get());
-      }
-      for (auto &item : helper_.nodes)
-      {
-        *(graph->add_node()) = (*item.get());
-      }
-      for (auto &item : outputs)
-      {
-        *(graph->add_output()) = (*item.get());
-      }
-      for (auto &item : helper_.value_infos)
-      {
-        *(graph->add_value_info()) = (*item.get());
-      }
+      ExportOp(parser, &main_helper, opset_version, 0, j, verbose);
     }
 
-    ONNX_NAMESPACE::ModelProto onnx_model;
-    std::string out;
+    ProcessGraphDumplicateNames(&parameters, &inputs, &outputs, &main_helper.nodes, &main_helper.quantize_info);
+    if (parser.is_quantized_model)
+    {
+      quantize_model_processer.ProcessQuantizeModel(&parameters,
+                                                    &inputs,
+                                                    &outputs,
+                                                    &main_helper.nodes,
+                                                    &main_helper,
+                                                    deploy_backend,
+                                                    parser,
+                                                    calibration_cache);
+      // Update int8 weights in quantized OP to float32
+      UpdateParameters(main_helper.updated_params);
+    }
+
+    for (auto &item : parameters)
+    {
+      *(main_graph->add_node()) = *(item.get());
+    }
+
+    for (auto &item : inputs)
+    {
+      *(main_graph->add_input()) = *(item.get());
+    }
+
+    for (auto &item : outputs)
+    {
+      *(main_graph->add_output()) = (*item.get());
+    }
+
+    for (auto &item : main_helper.nodes)
+    {
+      *(main_graph->add_node()) = (*item.get());
+    }
+
+    for (auto &item : main_helper.value_infos)
+    {
+      *(main_graph->add_value_info()) = (*item.get());
+    }
+
     if (enable_optimize)
     {
-      onnx_model = Optimize(*(model.get()));
-    }
-    else
-    {
-      onnx_model = *model.get();
+      onnx_model_ = Optimize(onnx_model_);
     }
 
     // convert fp32 model to fp16
@@ -490,12 +565,12 @@ namespace paddle2onnx
       P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
       ConvertFp32ToFp16 convert;
       convert.AddDisabledOpTypes(disable_fp16_op_types);
-      convert.Convert(&onnx_model);
+      convert.Convert(&onnx_model_);
     }
 
     // save external data file for big model
     std::string external_data_file;
-    if (onnx_model.ByteSizeLong() > INT_MAX)
+    if (onnx_model_.ByteSizeLong() > INT_MAX)
     {
       if (external_file.empty())
       {
@@ -506,17 +581,20 @@ namespace paddle2onnx
         external_data_file = external_file;
       }
     }
+
     if (external_data_file.size())
     {
-      SaveExternalData(onnx_model.mutable_graph(), external_data_file, save_external);
+      SaveExternalData(onnx_model_.mutable_graph(), external_data_file, save_external);
     }
+
     // check model
     if (enable_onnx_checker)
     {
-      ONNXChecker(onnx_model, verbose);
+      ONNXChecker(onnx_model_, verbose);
     }
 
-    if (!onnx_model.SerializeToString(&out))
+    std::string out;
+    if (!onnx_model_.SerializeToString(&out))
     {
       P2OLogger(verbose)
           << "Error happenedd while optimizing the exported ONNX model."
@@ -524,110 +602,6 @@ namespace paddle2onnx
       return "";
     }
     return out;
-  }
-
-  bool ModelExporter::IsOpsRegistered(const PaddleParser &parser,
-                                         bool enable_experimental_op)
-  {
-    std::set<std::string> unsupported_ops;
-    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
-    {
-      for (auto j = 0; j < parser.NumOfOps(i); ++j)
-      {
-        auto op = parser.GetOpDesc(i, j);
-        if (op.type() == "feed" || op.type() == "fetch")
-        {
-          continue;
-        }
-        if (op.type() == "while" && enable_experimental_op)
-        {
-          if (!IsLoopSupported(parser, i, j))
-          {
-            unsupported_ops.insert("while");
-          }
-          continue;
-        }
-        if (!MapperHelper::Get()->IsRegistered(op.type()))
-        {
-          unsupported_ops.insert(op.type());
-        }
-        else if (!enable_experimental_op)
-        {
-          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser,
-                                                          &helper_, i, j);
-          if (mapper->IsExperimentalOp())
-          {
-            unsupported_ops.insert(op.type());
-          }
-          delete mapper;
-        }
-      }
-    }
-
-    auto logger = P2OLogger();
-    logger << "Oops, there are some operators not supported yet, including ";
-    for (auto &item : unsupported_ops)
-    {
-      logger << item << ",";
-    }
-    logger << std::endl;
-
-    return (unsupported_ops.size() == 0);
-  }
-
-  int32_t ModelExporter::GetMinOpsetVersion(const PaddleParser &parser, bool verbose)
-  {
-    int32_t opset_version = helper_.GetOpsetVersion();
-    int32_t max_opset = 7;
-    std::set<std::string> verbose_log;
-    for (auto i = 0; i < parser.NumOfBlocks(); ++i)
-    {
-      for (auto j = 0; j < parser.NumOfOps(i); ++j)
-      {
-        auto op = parser.GetOpDesc(i, j);
-
-        // Skip the input and output nodes.
-        if (op.type() == "feed" || op.type() == "fetch")
-        {
-          continue;
-        }
-
-        int current_opset = 7;
-        if (op.type() == "while")
-        {
-          P2OLogger() << "Detected there's control flow 'while' op in your "
-                         "model, this requires the minimal opset version of 13."
-                      << std::endl;
-          current_opset = 13;
-        }
-        else
-        {
-          auto mapper = MapperHelper::Get()->CreateMapper(op.type(), parser, &helper_, i, j);
-          current_opset = mapper->GetMinOpsetVersion(verbose);
-          delete mapper;
-        }
-
-        if (current_opset > max_opset)
-        {
-          max_opset = current_opset;
-          if (verbose && current_opset > opset_version)
-          {
-            verbose_log.insert("Due to the operator: " + op.type() +
-                               ", requires opset_version >= " +
-                               std::to_string(current_opset) + ".");
-          }
-        }
-      }
-    }
-
-    if (verbose)
-    {
-      for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter)
-      {
-        P2OLogger() << *iter << std::endl;
-      }
-    }
-    return max_opset;
   }
 
   ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(

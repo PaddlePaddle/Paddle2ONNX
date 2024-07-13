@@ -67,9 +67,12 @@ struct QuantizeInfo {
 
 class OnnxHelper {
   public:
+    static int32_t opset_version;
+    static void SetOpsetVersion(int32_t op_v) { opset_version = op_v; }
+    static int32_t GetOpsetVersion() { return opset_version; }
+
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto> > nodes;
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> > value_infos;
-    int32_t opset_version = 7;
     // Use updated_params to store params that were changed during conversion
     std::map<std::string, Weight> updated_params;
     // Use quantize_info to record quantization-related information, scale and
@@ -77,10 +80,6 @@ class OnnxHelper {
     std::map<std::string, QuantizeInfo> quantize_info;
 
     void Clear() { nodes.clear(); }
-
-    void SetOpsetVersion(int32_t op_v) { opset_version = op_v; }
-
-    int32_t GetOpsetVersion() const { return opset_version; }
 
     template<typename T>
     bool TryGetTensorValue(const std::string &name, std::vector<T> *value);
