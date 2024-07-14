@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(data_norm, DataNormMapper)
 
-int32_t DataNormMapper::GetMinOpset(bool verbose) {
+int32_t DataNormMapper::GetMinOpsetVersion(bool verbose) {
   if (slot_dim_ > 0) {
     Error() << "slot_dim > 0 is not supported." << std::endl;
     return -1;

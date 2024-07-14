@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(einsum, EinsumMapper)
 
-int32_t EinsumMapper::GetMinOpset(bool verbose)
+int32_t EinsumMapper::GetMinOpsetVersion(bool verbose)
 {
   constexpr int op_version = 12;
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;

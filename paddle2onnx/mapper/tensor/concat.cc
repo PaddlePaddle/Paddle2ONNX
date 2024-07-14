@@ -20,7 +20,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(concat, ConcatMapper)
 
-int32_t ConcatMapper::GetMinOpset(bool verbose) {
+int32_t ConcatMapper::GetMinOpsetVersion(bool verbose) {
   if (HasInput("AxisTensor") && !IsConstantInput("AxisTensor")) {
     Error() << "While AxisTensor as input exists, it's not supported unless "
                "it's a constant tensor."

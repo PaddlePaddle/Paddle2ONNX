@@ -28,7 +28,7 @@ class ReduceMapperSum : public Mapper {
   }
 
   void Opset13() override;
-  int32_t GetMinOpset(bool verbose) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
 
  private:
 

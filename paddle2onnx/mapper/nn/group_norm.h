@@ -29,8 +29,8 @@ class GroupNormMapper : public Mapper {
     GetAttr("epsilon", &epsilon_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
 
  private:
   int64_t groups_;

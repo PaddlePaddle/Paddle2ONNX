@@ -19,7 +19,7 @@ namespace paddle2onnx {
 
 REGISTER_MAPPER(dropout, DropoutMapper)
 
-int32_t DropoutMapper::GetMinOpset(bool verbose) {
+int32_t DropoutMapper::GetMinOpsetVersion(bool verbose) {
   if (dropout_implementation_ != "downgrade_in_infer" &&
       dropout_implementation_ != "upscale_in_train") {
     Error() << "Drop out type: " << dropout_implementation_

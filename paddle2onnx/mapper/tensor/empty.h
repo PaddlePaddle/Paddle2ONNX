@@ -15,7 +15,7 @@ class EmptyMapper : public Mapper {
         GetAttr("dtype", &output_dtype_);
       }
   
-  int32_t GetMinOpset(bool verbose) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset11() override;
 private:
   int64_t output_dtype_;

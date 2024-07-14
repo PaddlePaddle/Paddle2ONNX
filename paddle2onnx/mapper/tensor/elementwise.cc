@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "paddle2onnx/mapper/elementwise.h"
+#include "paddle2onnx/mapper/tensor/elementwise.h"
 
 namespace paddle2onnx {
 
@@ -25,7 +25,7 @@ REGISTER_MAPPER(elementwise_pow, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_mod, ElementWiseModMapper)
 REGISTER_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
 
-int32_t ElementwiseMapper::GetMinOpset(bool verbose) {
+int32_t ElementwiseMapper::GetMinOpsetVersion(bool verbose) {
   if (OpType() == "elementwise_min" || OpType() == "elementwise_max") {
     Logger(verbose, 8) << RequireOpset(8) << std::endl;
     return 8;

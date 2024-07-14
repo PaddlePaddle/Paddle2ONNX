@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(pad3d, Pad3DMapper)
 
-int32_t Pad3DMapper::GetMinOpset(bool verbose) {
+int32_t Pad3DMapper::GetMinOpsetVersion(bool verbose) {
   if (data_format_ == "NDHWC") {
     Error() << "NDHWC format is not supported." << std::endl;
     return -1;

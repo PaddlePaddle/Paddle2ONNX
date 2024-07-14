@@ -29,8 +29,8 @@ class DequantizeLinearMapper : public Mapper {
     }
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset10();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset10() override;
 
  private:
   void ConvertInt8ToFp32(const std::vector<float>& onnx_scales,

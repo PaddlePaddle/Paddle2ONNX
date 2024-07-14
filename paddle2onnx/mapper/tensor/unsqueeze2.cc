@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(unsqueeze2, Unsqueeze2Mapper)
 
-int32_t Unsqueeze2Mapper::GetMinOpset(bool verbose) {
+int32_t Unsqueeze2Mapper::GetMinOpsetVersion(bool verbose) {
   if (axes_.size() == 0) {
     if (HasInput("AxesTensorList")) {
       Logger(verbose, 13) << "While AxisTensorList as input, "

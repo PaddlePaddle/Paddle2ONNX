@@ -23,7 +23,7 @@ class TrilTriuMapper : public Mapper {
         }
       }
   
-  int32_t GetMinOpset(bool verbose = false) override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset14() override;
 private:
   int64_t diagonal_ = 0;

@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(not_equal, NotEqualMapper)
 
-int32_t NotEqualMapper::GetMinOpset(bool verbose) {
+int32_t NotEqualMapper::GetMinOpsetVersion(bool verbose) {
   auto x_info = GetInput("X");
   auto y_info = GetInput("Y");
   if (x_info[0].dtype == P2ODataType::FP32 ||

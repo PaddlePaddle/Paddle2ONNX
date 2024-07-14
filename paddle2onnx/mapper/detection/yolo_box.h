@@ -36,8 +36,8 @@ class YoloBoxMapper : public Mapper {
     GetAttr("anchors", &anchors_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset11();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset11() override;
 
  private:
   bool clip_bbox_;

@@ -28,8 +28,8 @@ class GaussianRandomMapper : public Mapper {
     GetAttr("seed", &seed_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
  private:
   std::vector<int64_t> shape_;
   float mean_;

@@ -28,7 +28,7 @@ class NormMapper : public Mapper {
     GetAttr("axis", &axis_);
   }
 
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t axis_ = -1;

@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(scatter_nd_add, ScatterNdAddMapper)
 
-int32_t ScatterNdAddMapper::GetMinOpset(bool verbose) {
+int32_t ScatterNdAddMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 16) << RequireOpset(16) << std::endl;
   return 16;
 }

@@ -40,34 +40,10 @@ inline std::string GetFilenameFromPath(const std::string &path)
 
 namespace paddle2onnx
 {
-  struct ModelExporter
+  class ModelExporter
   {
   public:
     QuantizeModelProcessor quantize_model_processer;
-    // Get a proper opset version in range of [7, 16]
-    // Also will check the model is convertable, this will include 2 parts
-    //    1. is the op convert function implemented
-    //    2. is the op convertable(some cases may not be able to convert)
-    // If the model is not convertable, return -1
-    int32_t GetMinOpset(const PaddleParser &parser, bool verbose = false);
-
-    //  // Remove isolated nodes in onnx model
-    //  void RemoveIsolatedNodes(
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
-    //      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes);
-    // Process dumplicate tensor names in paddle model
-    void ProcessGraphDumplicateNames(
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *parameters,
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
-        std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
-        std::map<std::string, QuantizeInfo> *quantize_info = nullptr);
-
-    bool CheckIfOpSupported(const PaddleParser &parser,
-                            std::set<std::string> *unsupported_ops,
-                            bool enable_experimental_op);
 
     void SaveExternalData(ONNX_NAMESPACE::GraphProto *graph,
                           const std::string &external_file_path,
@@ -91,35 +67,65 @@ namespace paddle2onnx
                     std::vector<std::string> disable_fp16_op_types = {});
 
   private:
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> inputs;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
+    bool verbose_ = false;
     // The _deploy_backend will pass to Mapper to influence the conversion
     std::string deploy_backend_ = "onnxruntime";
-    OnnxHelper helper_;
+    std::string *calibration_cache_ = nullptr;
     int32_t opset_version_ = 7;
 
-    void ExportParameters(const std::map<std::string, Weight> &params,
-                          bool use_initializer = false);
+    bool IsOpsRegistered(const PaddleParser &parser,
+                         bool enable_experimental_op);
 
+    ONNX_NAMESPACE::ModelProto onnx_model_;
+    // Opset Version
+    int32_t GetMinOpsetVersion(const PaddleParser &parser);
+    void SetOpsetVersion(const PaddleParser &parser, bool auto_upgrade_opset);
+    // IR Version
+    inline ONNX_NAMESPACE::Version GetIRVersion() const;
+    void SetIRVersion();
+    //
+    void ExportInputOutputs(const PaddleParser &parser,
+                            std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                            std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs);
+    //
+    void ExportParameters(const PaddleParser &parser, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
+    // Process dumplicate tensor names in paddle model
+    std::set<std::string> tensor_names_;
+    void ProcessGraphDumplicateNames(std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
+                                     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
+                                     std::map<std::string, QuantizeInfo> &quantize_info);
     // Update constant node in parameters. When process quantize model, the weight
     // dtype may be int8, it should be convet to float32 and use this function to
     // update converted params.
-    void UpdateParameters(const std::map<std::string, Weight> &params);
-    void ExportInputOutputs(const std::vector<TensorInfo> &input_infos,
-                            const std::vector<TensorInfo> &output_infos);
-    void ExportOp(const PaddleParser &parser, OnnxHelper *helper,
-                  int32_t opset_version, int64_t block_id, int64_t op_id,
+    void UpdateParameters(const std::map<std::string, Weight> &params,
+                          std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
+    //
+    std::map<std::string, std::pair<int32_t, int32_t>> sub_block_map_;
+    ONNX_NAMESPACE::GraphProto ExportConditionalBlock(const PaddleParser &parser,
+                                                      int32_t block_id,
+                                                      int32_t op_id,
+                                                      const std::string &output_names);
+    ONNX_NAMESPACE::GraphProto ExportBlock(const PaddleParser &parser,
+                                           int32_t block_id,
+                                           std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+                                           std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+                                           std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs);
+
+    void ExportOp(const PaddleParser &parser,
+                  OnnxHelper *helper,
+                  int32_t opset_version,
+                  int64_t block_id,
+                  int64_t op_id,
                   bool verbose);
+#if 0
     bool IsLoopSupported(const PaddleParser &parser, const int64_t &block_id,
                          const int64_t &op_id);
     void ExportLoop(const PaddleParser &parser, OnnxHelper *helper,
                     int32_t opset_version, int64_t block_id, int64_t op_id,
                     bool verbose);
-    void CovertCustomOps(const PaddleParser &parser, OnnxHelper *helper,
-                         int64_t block_id, int64_t op_id);
+#endif
     ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto &model);
-
-    ONNX_NAMESPACE::Version GetIRVersion() const;
   };
 } // namespace paddle2onnx

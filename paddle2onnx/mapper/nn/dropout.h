@@ -26,8 +26,8 @@ class DropoutMapper : public Mapper {
     GetAttr("dropout_implementation", &dropout_implementation_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
 
  private:
   float dropout_prob_ = 0.0;

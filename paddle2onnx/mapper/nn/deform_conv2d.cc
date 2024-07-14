@@ -20,7 +20,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(deformable_conv, DeformConv2dMapper)
 
-int32_t DeformConv2dMapper::GetMinOpset(bool verbose) {
+int32_t DeformConv2dMapper::GetMinOpsetVersion(bool verbose) {
   return 19;
 }
 

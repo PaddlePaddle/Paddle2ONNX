@@ -87,14 +87,14 @@ class RollMapper : public Mapper {
   RollMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  void Opset7();
+  void Opset7() override;
 };
 
 }  // namespace paddle2onnx
 ```
 
 > 注：
-> * Paddle2ONNX 需要实现 Opset version 7～16，如果实现的 OP 不是从 Opset version 7 开始，或者由于 Paddle OP 中的某些属性导致无法导出为ONNX，则需要重写基类中的 GetMinOpset 函数，该函数返回 -1 表示该 OP 无法导出为 ONNX，否则表示导出该 OP 所需的最小 Opset version
+> * Paddle2ONNX 需要实现 Opset version 7～16，如果实现的 OP 不是从 Opset version 7 开始，或者由于 Paddle OP 中的某些属性导致无法导出为ONNX，则需要重写基类中的 GetMinOpsetVersion 函数，该函数返回 -1 表示该 OP 无法导出为 ONNX，否则表示导出该 OP 所需的最小 Opset version
 > * OpsetX 函数表示 opset version 为 x 时的转换实现函数，如果定义了 Opset7 和 Opset10 两个转换方法，意味着用户指定转出 opset version 7～9 时，使用 Opset7 中的转换逻辑实现转换，用户指定 opset version 10～16 时，使用 Opset10 中的转换逻辑实现转换
 
 

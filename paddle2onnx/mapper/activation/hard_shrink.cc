@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(hard_shrink, HardShrinkMapper)
 
-int32_t HardShrinkMapper::GetMinOpset(bool verbose) {
+int32_t HardShrinkMapper::GetMinOpsetVersion(bool verbose) {
     Logger(verbose, 9) << RequireOpset(9) << std::endl;
     return 9;
 }

@@ -35,69 +35,6 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   return spans[0] == spans[spans.size() - 1];
 }
 
-bool Pool2dMapper::IsExportAsCustomOp() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  GetAttr("ksize", &k_size_);
-  if (global_pooling_ || (k_size_[0] == 1 && k_size_[1] == 1)) {
-    return false;
-  }
-  if (export_as_custom_op && adaptive_) {
-    bool is_1x1_kernel = true;
-    for (auto i : k_size_) {
-      if (i != 1) {
-        is_1x1_kernel = false;
-      }
-    }
-    if (is_1x1_kernel) {
-      return false;
-    }
-    for (auto one_input : input_info) {
-      for (auto i = 2; i < one_input.shape.size(); ++i) {
-        if (one_input.shape[i] == -1) {
-          return true;
-        }
-      }
-    }
-    int64_t input_h = input_info[0].shape[2];
-    int64_t input_w = input_info[0].shape[3];
-    int64_t output_h = output_info[0].shape[2];
-    int64_t output_w = output_info[0].shape[3];
-    if (output_h == -1 || output_w == -1 || !IsSameSpan(input_h, output_h) ||
-        !IsSameSpan(input_w, output_w)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void Pool2dMapper::ExportAsCustomOp() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  auto node = helper_->MakeNode(custom_op_name, {input_info[0].name},
-                                {output_info[0].name});
-  node->set_domain("Paddle");
-  AddAttribute(node, "pooling_type", pooling_type_);
-  for (auto i = 1; i < output_info[0].shape.size(); i++) {
-    if (output_info[0].shape[i] == -1) {
-      if (input_info[0].shape[i] == -1) {
-        Assert(false,
-               "Can not convert to AdaptivePool custom OP, because the shapes "
-               "of the input and output are unknown.");
-      } else {
-        output_info[0].shape[i] = input_info[0].shape[i];
-      }
-    }
-  }
-  AddAttribute(node, "output_size", output_info[0].shape);
-  Warn() << "Pool2d is exported as custom operator: " << custom_op_name
-         << std::endl;
-  helper_->MakeValueInfo(input_info[0].name, input_info[0].dtype,
-                         input_info[0].shape);
-  helper_->MakeValueInfo(output_info[0].name, output_info[0].dtype,
-                         output_info[0].shape);
-}
-
 void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
                                 const std::vector<TensorInfo>& output_info) {
   int64_t input_h = input_info[0].shape[2];
@@ -243,7 +180,7 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   }
 }
 
-int32_t Pool2dMapper::GetMinOpset(bool verbose) {
+int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
   // NHWC is not supported
   if (data_format_ == "NHWC") {
     Error() << "NHWC format is not supported." << std::endl;
@@ -273,12 +210,8 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     for (auto one_input : input_info) {
       for (auto i = 2; i < one_input.shape.size(); ++i) {
         if (one_input.shape[i] == -1) {
-          if (export_as_custom_op) {
-            return 7;
-          } else {
-            Error() << "Adaptive only support static input shape." << std::endl;
-            return -1;
-          }
+          Error() << "Adaptive only support static input shape." << std::endl;
+          return -1;
         }
       }
     }
@@ -286,16 +219,11 @@ int32_t Pool2dMapper::GetMinOpset(bool verbose) {
     int64_t input_w = input_info[0].shape[3];
     int64_t output_h = output_info[0].shape[2];
     int64_t output_w = output_info[0].shape[3];
-    if (output_h == -1 || output_w == -1 || !IsSameSpan(input_h, output_h) ||
-        !IsSameSpan(input_w, output_w)) {
-      if (export_as_custom_op) {
-        return 7;
-      } else {
-        Error() << "Cannot convert adaptive pool with input_size: " << input_h
-                << " " << input_h << " output_size: " << output_h << " "
-                << output_w << std::endl;
-        return -1;
-      }
+    if (output_h == -1 || output_w == -1 || !IsSameSpan(input_h, output_h) || !IsSameSpan(input_w, output_w)) {
+      Error() << "Cannot convert adaptive pool with input_size: " << input_h
+              << " " << input_h << " output_size: " << output_h << " "
+              << output_w << std::endl;
+      return -1;
     }
   }
   if (OpType() == "max_pool2d_with_index") {

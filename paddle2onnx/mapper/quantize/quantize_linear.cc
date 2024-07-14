@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(quantize_linear, QuantizeLinearMapper)
 
-int32_t QuantizeLinearMapper::GetMinOpset(bool verbose) {
+int32_t QuantizeLinearMapper::GetMinOpsetVersion(bool verbose) {
   if (!IsConstantInput("Scale")) {
     Error() << "Input `Scale` requires to be a constant tensor." << std::endl;
     return -1;

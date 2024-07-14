@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(arg_min, ArgMinMapper)
 
-int32_t ArgMinMapper::GetMinOpset(bool verbose) {
+int32_t ArgMinMapper::GetMinOpsetVersion(bool verbose) {
   if (IsAttrVar("axis") && !IsConstant(GetAttrVar("axis")[0])) {
     Error() << "While Attribute(axis)'s type is Tensor, it's not "
                "supported "

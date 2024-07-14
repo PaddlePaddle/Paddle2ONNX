@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(softmax_with_cross_entropy, SoftmaxCrossEntropyLossMapper)
 
-int32_t SoftmaxCrossEntropyLossMapper::GetMinOpset(bool verbose) {
+int32_t SoftmaxCrossEntropyLossMapper::GetMinOpsetVersion(bool verbose) {
   auto logits = GetInput("Logits");
   std::vector<int64_t> logits_shape = logits[0].shape;
   if (logits_shape.size() < 2) {

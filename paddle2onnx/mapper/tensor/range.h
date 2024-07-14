@@ -26,11 +26,11 @@ class RangeMapper : public Mapper {
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  int32_t GetMinOpset(bool verbose = false) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
-  void Opset11();
+  void Opset11() override;
 };
 
 }  // namespace paddle2onnx

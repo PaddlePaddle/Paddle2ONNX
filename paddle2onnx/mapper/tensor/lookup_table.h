@@ -28,9 +28,9 @@ class LookupTableMapper : public Mapper {
     GetAttr("padding_idx", &padding_idx_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
-  void Opset11();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
+  void Opset11() override;
 
  private:
   int64_t padding_idx_;

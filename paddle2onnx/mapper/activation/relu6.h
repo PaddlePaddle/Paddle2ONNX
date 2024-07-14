@@ -28,6 +28,6 @@ class Relu6Mapper : public Mapper {
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  void Opset7();
+  void Opset7() override;
 };
 }

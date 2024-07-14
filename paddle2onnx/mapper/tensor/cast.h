@@ -27,7 +27,7 @@ class CastMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("out_dtype", &out_dtype_);
   }
-  void Opset7();
+  void Opset7() override;
 
  private:
   int64_t out_dtype_;

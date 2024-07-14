@@ -39,8 +39,8 @@ class InterpolateMapper : public Mapper {
     resize_mapper_["trilinear_interp_v2"] = "linear";
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset11();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset11() override;
  private:
   std::string ComputeOutSize();
   std::string ComputeScale();

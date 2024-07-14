@@ -14,6 +14,7 @@ if [ "$OS" = "Linux" ]; then
         echo "When the operating system is Linux, the system architecture only supports (x86_64 and aarch64), but the current architecture is $ARCH."
         exit 1
     fi
+    protobuf_url="https://bj.bcebos.com/paddle2onnx/third_party/$protobuf_tgz_name"
 # Check if the operating system is Darwin (macOS)
 elif [ "$OS" = "Darwin" ]; then
     if [[ "$ARCH" == "x86_64" ]]; then
@@ -24,11 +25,11 @@ elif [ "$OS" = "Darwin" ]; then
       echo "When the operating system is Darwin, the system architecture only supports (x86_64 and arm64), but the current architecture is $ARCH."
       exit 1
     fi
+    protobuf_url="https://bj.bcebos.com/fastdeploy/third_libs/$protobuf_tgz_name"
 else
    echo "The system only supports (Linux and Darwin), but the current system is $OS."
 fi
 
-protobuf_url="https://bj.bcebos.com/paddle2onnx/third_party/$protobuf_tgz_name"
 wget $protobuf_url
 protobuf_svae_dir="$PWD/installed_protobuf"
 mkdir -p $protobuf_svae_dir

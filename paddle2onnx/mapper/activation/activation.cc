@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "paddle2onnx/mapper/activation.h"
+#include "paddle2onnx/mapper/activation/activation.h"
 
 namespace paddle2onnx {
 
@@ -57,7 +57,7 @@ REGISTER_MAPPER(tanh_shrink, TanhShrinkMapper)
 REGISTER_MAPPER(thresholded_relu, ThresholdedReluMapper)
 
 
-int32_t ActivationMapper::GetMinOpset(bool verbose) {
+int32_t ActivationMapper::GetMinOpsetVersion(bool verbose) {
   if (OpType() == "softplus") {
     float beta = 0.0;
     float threshold = 20.0;
@@ -95,7 +95,7 @@ void ActivationMapper::Opset7() {
   }
 }
 
-int32_t PReluMapper::GetMinOpset(bool verbose) {
+int32_t PReluMapper::GetMinOpsetVersion(bool verbose) {
   auto input_info = GetInput("X");
   auto slope_info = GetInput("Alpha");
   if (input_info[0].Rank() != slope_info[0].Rank()) {
@@ -258,7 +258,7 @@ void EluMapper::Opset7() {
   AddAttribute(node, "alpha", alpha_);
 }
 
-int32_t MishMapper::GetMinOpset(bool verbose) {
+int32_t MishMapper::GetMinOpsetVersion(bool verbose) {
   if (fabs(threshold_ - 20.0) > 1e-05) {
     Error() << "Only support threshold = 20.0." << std::endl;
     return -1;

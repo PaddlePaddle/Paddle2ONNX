@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(gaussian_random, GaussianRandomMapper)
 
-int32_t GaussianRandomMapper::GetMinOpset(bool verbose) {
+int32_t GaussianRandomMapper::GetMinOpsetVersion(bool verbose) {
   if (HasInput("ShapeTensor") && !IsConstantInput("ShapeTensor")) {
     Logger(verbose, 9)
         << "While ShapeTensor as input and it's not a constant tensor, "

@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(equal, EqualMapper)
 
-int32_t EqualMapper::GetMinOpset(bool verbose) {
+int32_t EqualMapper::GetMinOpsetVersion(bool verbose) {
   if (axis_ != -1) {
     Error() << "axis attribute must be -1 in operator equal." << std::endl;
     return -1;

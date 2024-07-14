@@ -18,7 +18,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(rnn, RnnMapper)
 
-int32_t RnnMapper::GetMinOpset(bool verbose) {
+int32_t RnnMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 

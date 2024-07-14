@@ -36,8 +36,8 @@ class AssignValueMapper : public Mapper {
       GetAttr("int64_values", &int64_values_);
     }
   }
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
 
  private:
   std::vector<float> fp32_values_;

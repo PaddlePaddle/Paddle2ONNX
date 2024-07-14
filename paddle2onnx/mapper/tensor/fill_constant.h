@@ -25,9 +25,9 @@ class FillConstantMapper : public Mapper {
     GetAttr("value", &value_);
   }
 
-  int32_t GetMinOpset(bool verbose = false);
-  void Opset7();
-  void Opset9();
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
+  void Opset9() override;
 
  private:
   float GetFillValue();

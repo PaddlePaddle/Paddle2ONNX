@@ -26,11 +26,11 @@ class TopKV2Mapper : public Mapper {
     GetAttr("sorted", &sorted_);
     GetAttr("axis", &axis_);
   }
-  int32_t GetMinOpset(bool verbose) {
+  int32_t GetMinOpsetVersion(bool verbose) override {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
-  void Opset11();
+  void Opset11() override;
 
  private:
   bool largest_;
