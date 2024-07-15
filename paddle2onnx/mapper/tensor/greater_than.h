@@ -23,6 +23,7 @@ class GreaterThanMapper : public Mapper {
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;
+  int32_t GetMinOpsetVersion(bool verbose);
 };
 
 }  // namespace paddle2onnx
