@@ -137,8 +137,8 @@ def main():
 
     calibration_file = args.save_calibration_file
     paddle2onnx.export(
-        model_file=model_file,
-        params_file=params_file,
+        model_filename=model_file,
+        params_filename=params_file,
         save_file=args.save_file,
         opset_version=args.opset_version,
         auto_upgrade_opset=args.enable_auto_update_opset,
