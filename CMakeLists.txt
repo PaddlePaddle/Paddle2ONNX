@@ -4,6 +4,8 @@ PROJECT(paddle2onnx C CXX)
 set(CMAKE_CXX_STANDARD 17)
 # Build the libraries with -fPIC
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Always link with libstdc++fs.a when using GCC 8. See https://discourse.cmake.org/t/correct-way-to-link-std-filesystem-with-gcc-8/4121/5 for detail.
+link_libraries( "$<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:-lstdc++fs>" )
 
 option(WITH_STATIC "Compile Paddle2ONNX with  STATIC" OFF)
 option(PADDLE2ONNX_DEBUG "If open the debug log while converting model" OFF)
