@@ -466,19 +466,6 @@ void QuantizeModelProcessor::AddQDQForORT() {
         type_iter == supported_quantize_type_.end()) {
       continue;
     }
-    if (node->op_type() == "Conv") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
-                                               node->output(0)};
-      if (node->input_size() == 3) {
-        tensor_names.push_back(node->input(2));
-      }
-      if (!CanBeQuantize(tensor_names, {2})) {
-        continue;
-      }
-      for (auto& name : tensor_names) {
-        AppendQuantizeTensor(name);
-      }
-    }
     if (node->op_type() == "MatMul") {
       std::vector<std::string> tensor_names = {node->input(0), node->input(1),
                                                node->output(0)};
