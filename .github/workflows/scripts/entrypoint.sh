@@ -11,7 +11,8 @@ PY_VERSION=$1
 PLAT=$2
 SYSTEM_NAME=$3
 
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib:/usr/lib64
+ln -s /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so
 # Compile wheels
 # Need to be updated if there is a new Python Version
 # declare -A python_map=( ["3.8"]="cp38-cp38" ["3.9"]="cp39-cp39" ["3.10"]="cp310-cp310" ["3.11"]="cp311-cp311" ["3.12"]="cp312-cp312")
