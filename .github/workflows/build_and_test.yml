@@ -28,7 +28,7 @@ jobs:
         uses: docker://paddlepaddle/paddle:paddle2onnx-python3.9-gcc82
         with:
           entrypoint: bash
-          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64 Centos
+          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64
 
       - name: Setup Python 3.9
         uses: actions/setup-python@v5

@@ -9,14 +9,8 @@ set -e -x
 # CLI arguments
 PY_VERSION=$1
 PLAT=$2
-SYSTEM_NAME=$3
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
-
-# Compile wheels
-# Need to be updated if there is a new Python Version
-# declare -A python_map=( ["3.8"]="cp38-cp38" ["3.9"]="cp39-cp39" ["3.10"]="cp310-cp310" ["3.11"]="cp311-cp311" ["3.12"]="cp312-cp312")
-# PY_VER=${python_map[$PY_VERSION]}
 PYTHON_COMMAND="/usr/local/bin/python3.9"
 
 # install paddlepaddle
