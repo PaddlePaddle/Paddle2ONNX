@@ -23,6 +23,9 @@ PYTHON_COMMAND="/usr/local/bin/python3.8"
 $PYTHON_COMMAND -m pip install cmake
 $PYTHON_COMMAND -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 # Build protobuf from source
+if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
+    yum install -y wget
+fi
 source .github/workflows/scripts/download_protobuf.sh
 export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
 # Build Paddle2ONNX wheels
