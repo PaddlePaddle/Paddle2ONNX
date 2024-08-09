@@ -22,6 +22,7 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
 # Update pip and install cmake
 python3.9 -m pip install -q cmake
+python3.9 -m pip install -q setuptools-scm
 python3.9 -m pip install -q wheel
 python3.9 -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 # Build protobuf from source
