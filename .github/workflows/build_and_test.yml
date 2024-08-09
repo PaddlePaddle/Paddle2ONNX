@@ -2,9 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: ["develop","tese_pir"]
   pull_request:
-    branches: [ "develop" ]
+    branches: ["develop","tese_pir"]
 
 permissions:
   contents: read
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8']
+        python-version: [ '3.9']
         architecture: [ 'x64' ]
 
     steps:
@@ -25,15 +25,15 @@ jobs:
           submodules: true
 
       - name: Build on manylinux2014_x86_64
-        uses: docker://quay.io/pypa/manylinux2014_x86_64:latest
+        uses: docker://paddlepaddle/paddle:paddle2onnx-python3.9-gcc82
         with:
           entrypoint: bash
-          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64 CentOS
+          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }} manylinux2014_x86_64
 
-      - name: Setup Python 3.8
+      - name: Setup Python 3.9
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.9'
 
       # Install Paddle2ONNX
       - name: Install Paddle2ONNX

@@ -15,15 +15,15 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
 # Compile wheels
 # Need to be updated if there is a new Python Version
-declare -A python_map=( ["3.8"]="cp38-cp38" ["3.9"]="cp39-cp39" ["3.10"]="cp310-cp310" ["3.11"]="cp311-cp311" ["3.12"]="cp312-cp312")
-PY_VER=${python_map[$PY_VERSION]}
-PIP_INSTALL_COMMAND="/opt/python/${PY_VER}/bin/pip install --no-cache-dir -q"
-PYTHON_COMMAND="/opt/python/${PY_VER}/bin/python"
+# declare -A python_map=( ["3.8"]="cp38-cp38" ["3.9"]="cp39-cp39" ["3.10"]="cp310-cp310" ["3.11"]="cp311-cp311" ["3.12"]="cp312-cp312")
+# PY_VER=${python_map[$PY_VERSION]}
+# PIP_INSTALL_COMMAND="/opt/python/${PY_VER}/bin/pip install --no-cache-dir -q"
+# PYTHON_COMMAND="/opt/python/${PY_VER}/bin/python"
 
 # Update pip and install cmake
-$PIP_INSTALL_COMMAND --upgrade pip
-$PIP_INSTALL_COMMAND cmake
-
+python3.9 -m --upgrade pip
+python3.9 -m pip install -q cmake
+python3.9 -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 # Build protobuf from source
 if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
     yum install -y wget
@@ -31,7 +31,7 @@ fi
 source .github/workflows/scripts/download_protobuf.sh
 
 # Build Paddle2ONNX wheels
-$PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
+python3.9 -m build --wheel --no-isolation || { echo "Building wheels failed."; exit 1; }
 
 # Bundle external shared libraries into the wheels
 # find -exec does not preserve failed exit codes, so use an output file for failures
