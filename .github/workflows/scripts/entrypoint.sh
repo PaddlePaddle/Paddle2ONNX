@@ -11,7 +11,7 @@ PY_VERSION=$1
 PLAT=$2
 SYSTEM_NAME=$3
 
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib:/usr/lib64
 
 # Compile wheels
 # Need to be updated if there is a new Python Version
