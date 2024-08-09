@@ -175,7 +175,6 @@ class CustomBuildExt(build_ext):
     def build_extensions(self):
         super().build_extensions()
         import site
-
         site_packages_path = site.getsitepackages()[0]
         # Copy libpaddle.so to whl package
         libpaddle_src = site_packages_path+"/paddle/base/libpaddle.so"
