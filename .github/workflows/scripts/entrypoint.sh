@@ -11,7 +11,7 @@ PY_VERSION=$1
 PLAT=$2
 SYSTEM_NAME=$3
 
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib:/usr/lib64
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib:/usr/lib64:/
 ln -s /usr/lib64/libpython3.11.so.1.0 /usr/lib64/libpython3.11.so
 # Compile wheels
 # Need to be updated if there is a new Python Version
@@ -22,7 +22,7 @@ PYTHON_COMMAND="/usr/local/bin/python3.11"
 
 # Update pip and install cmake
 $PYTHON_COMMAND -m pip install cmake
-
+$PYTHON_COMMAND -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 # Build protobuf from source
 if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
     yum install -y wget
