@@ -23,15 +23,12 @@ PYTHON_COMMAND="/usr/local/bin/python3.10"
 # Update pip and install cmake
 $PYTHON_COMMAND -m pip install cmake
 
-# install paddle
-$PYTHON_COMMAND -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
-
 # Build protobuf from source
 if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
     yum install -y wget
 fi
 source .github/workflows/scripts/download_protobuf.sh
-
+export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
 # Build Paddle2ONNX wheels
 $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
 # Bundle external shared libraries into the wheels
