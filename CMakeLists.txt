@@ -98,6 +98,7 @@ else ()
     endif ()
     set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
     target_link_libraries(paddle2onnx ${PADDLE_LIB} p2o_paddle_proto onnx pybind11::embed)
+    target_compile_options(paddle2onnx PRIVATE -fPIC)
 endif ()
 
 if (WIN32)
