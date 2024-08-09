@@ -183,7 +183,7 @@ class CustomBuildExt(build_ext):
 
 cmdclass = {
     'cmake_build': cmake_build,
-    'build_ext': build_ext,
+    'build_ext': CustomBuildExt,
 }
 
 ################################################################################
