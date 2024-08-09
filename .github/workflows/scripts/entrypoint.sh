@@ -22,6 +22,7 @@ PYTHON_COMMAND="/usr/local/bin/python3.8"
 # Update pip and install cmake
 $PYTHON_COMMAND -m pip install --upgrade pip
 $PYTHON_COMMAND -m pip install cmake
+$PYTHON_COMMAND -m pip install wheel
 $PYTHON_COMMAND -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 # Build protobuf from source
 source .github/workflows/scripts/download_protobuf.sh
