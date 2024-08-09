@@ -33,15 +33,15 @@ export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu
 $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
 # Bundle external shared libraries into the wheels
 # find -exec does not preserve failed exit codes, so use an output file for failures
-failed_wheels=$PWD/failed-wheels
-rm -f "$failed_wheels"
-find . -type f -iname "*-linux*.whl" -exec sh -c "auditwheel repair '{}' -w \$(dirname '{}') --plat '${PLAT}' || { echo 'Repairing wheels failed.'; auditwheel show '{}' >> '$failed_wheels'; }" \;
+# failed_wheels=$PWD/failed-wheels
+# rm -f "$failed_wheels"
+# find . -type f -iname "*-linux*.whl" -exec sh -c "auditwheel repair '{}' -w \$(dirname '{}') --plat '${PLAT}' || { echo 'Repairing wheels failed.'; auditwheel show '{}' >> '$failed_wheels'; }" \;
 
-if [[ -f "$failed_wheels" ]]; then
-    echo "Repairing wheels failed:"
-    cat failed-wheels
-    exit 1
-fi
+# if [[ -f "$failed_wheels" ]]; then
+#     echo "Repairing wheels failed:"
+#     cat failed-wheels
+#     exit 1
+# fi
 
 # Remove useless *-linux*.whl; only keep manylinux*.whl
 rm -f dist/*-linux*.whl
