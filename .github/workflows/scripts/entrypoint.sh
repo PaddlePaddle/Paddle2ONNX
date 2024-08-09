@@ -28,7 +28,7 @@ export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu
 # Build Paddle2ONNX wheels
 $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
 # Bundle external shared libraries into the wheels
-find -exec does not preserve failed exit codes, so use an output file for failures
+#find -exec does not preserve failed exit codes, so use an output file for failures
 failed_wheels=$PWD/failed-wheels
 rm -f "$failed_wheels"
 find . -type f -iname "*-linux*.whl" -exec sh -c "auditwheel repair '{}' -w \$(dirname '{}') --plat '${PLAT}' || { echo 'Repairing wheels failed.'; auditwheel show '{}' >> '$failed_wheels'; }" \;
