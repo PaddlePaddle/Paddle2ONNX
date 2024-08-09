@@ -171,19 +171,19 @@ class build_ext(setuptools.command.build_ext.build_ext):
                 os.path.realpath(self.build_lib), "paddle2onnx", filename)
             self.copy_file(src, dst)
 
-# class CustomBuildExt(build_ext):
-#     def build_extensions(self):
-#         super().build_extensions()
-#         import site
-#         site_packages_path = site.getsitepackages()[0]
-#         # Copy libpaddle.so to whl package
-#         libpaddle_src = site_packages_path+"/paddle/base/libpaddle.so"
-#         libpaddle_dst = os.path.join(self.build_lib, "paddle2onnx", "libpaddle.so")
-#         self.copy_file(libpaddle_src, libpaddle_dst)
+class CustomBuildExt(build_ext):
+    def build_extensions(self):
+        super().build_extensions()
+        import site
+        site_packages_path = site.getsitepackages()[0]
+        # Copy libpaddle.so to whl package
+        libpaddle_src = site_packages_path+"/paddle/base/libpaddle.so"
+        libpaddle_dst = os.path.join(self.build_lib, "paddle2onnx", "libpaddle.so")
+        self.copy_file(libpaddle_src, libpaddle_dst)
 
 cmdclass = {
     'cmake_build': cmake_build,
-    'build_ext': build_ext,
+    'build_ext': CustomBuildExt,
 }
 
 ################################################################################
