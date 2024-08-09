@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "develop","tese_pir" ]
   pull_request:
-    branches: [ "develop","test_pir" ]
+    branches: [ "develop","tese_pir" ]
 
 permissions:
   contents: read
