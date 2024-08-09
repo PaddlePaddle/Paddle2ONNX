@@ -179,7 +179,7 @@ class CustomBuildExt(build_ext):
         # Copy libpaddle.so to whl package
         libpaddle_src = site_packages_path+"/paddle/base/libpaddle.so"
         libpaddle_dst = os.path.join(self.build_lib, "paddle2onnx", "libpaddle.so")
-        shutil.copyfile(libpaddle_src, libpaddle_dst)
+        self.copy_file(libpaddle_src, libpaddle_dst)
 
 cmdclass = {
     'cmake_build': cmake_build,
