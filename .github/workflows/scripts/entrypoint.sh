@@ -8,6 +8,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu/
 $PYTHON_COMMAND -m pip install --upgrade pip
 $PYTHON_COMMAND -m pip install cmake
 $PYTHON_COMMAND -m pip install build
+$PYTHON_COMMAND -m pip install setuptools-scm
 $PYTHON_COMMAND -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 
 # Build protobuf from source
