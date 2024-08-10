@@ -65,7 +65,7 @@ ignore="test_auto_scan_multiclass_nms.py
 bug=0
 
 # Install Python Packet
-export PY_CMD=$1
+export PY_CMD=
 $PY_CMD -m pip install pytest
 $PY_CMD -m pip install onnx onnxruntime tqdm filelock
 # $PY_CMD -m pip install paddlepaddle==2.6.0
