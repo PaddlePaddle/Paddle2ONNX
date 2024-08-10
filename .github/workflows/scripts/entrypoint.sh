@@ -26,7 +26,7 @@ export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 cd ../..
 export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
 # Build Paddle2ONNX wheels
-$PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
+$PYTHON_COMMAND -m build --wheel --no-isolation || { echo "Building wheels failed."; exit 1; }
 
 # Install Paddle2ONNX wheels
 $PYTHON_COMMAND -m pip install dist/*.whl
