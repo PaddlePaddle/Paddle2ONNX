@@ -77,8 +77,8 @@ ignore="test_auto_scan_multiclass_nms.py
 bug=0
 
 # Install Python Packet
-$PYTHON_COMMAND-m pip install pytest
-$PYTHON_COMMAND-m pip install onnx onnxruntime tqdm filelock
+$PYTHON_COMMAND -m pip install pytest
+$PYTHON_COMMAND -m pip install onnx onnxruntime tqdm filelock
 $PYTHON_COMMAND -m pip install six hypothesis
 
 echo "============ failed cases =============" >> result.txt
