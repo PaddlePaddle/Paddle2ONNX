@@ -6,8 +6,8 @@
 
 set -e -x
 
-PYTHON_COMMAND="/usr/local/bin/python3.8"
-
+PYTHON_COMMAND="/usr/bin/python3.8"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu/
 # Update pip and install cmake
 $PYTHON_COMMAND -m pip install --upgrade pip
 $PYTHON_COMMAND -m pip install cmake
