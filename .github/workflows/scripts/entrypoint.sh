@@ -36,7 +36,7 @@ $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
 $PYTHON_COMMAND -m pip install dist/*.whl
 
 #Run tests
-cases=$(find . -name "test*.py" | sort)
+cases=$(find ./tests/ -name "test*.py" | sort)
 ignore="test_auto_scan_multiclass_nms.py
         test_auto_scan_roi_align.py \ # need to be rewrite
         test_auto_scan_pool_adaptive_max_ops.py \
