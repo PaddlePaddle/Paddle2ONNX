@@ -14,7 +14,7 @@ $PYTHON_COMMAND -m pip install cmake
 $PYTHON_COMMAND -m pip install build
 $PYTHON_COMMANDpy
 # Build protobuf from source
-# source .github/workflows/scripts/build_protobuf.sh
+source .github/workflows/scripts/build_protobuf.sh
 
 export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
 # Build Paddle2ONNX wheels
