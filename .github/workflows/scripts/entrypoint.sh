@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Copyright (c) ONNX Project Contributors
-#
-# SPDX-License-Identifier: Apache-2.0
-
 set -e -x
 
 PYTHON_COMMAND="/usr/bin/python3.8"
