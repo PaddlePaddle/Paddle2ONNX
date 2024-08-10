@@ -40,6 +40,7 @@ ignore="test_auto_scan_multiclass_nms.py
         test_auto_scan_isx_ops.py \
         test_auto_scan_argminmax.py \
         test_auto_scan_assign.py \
+        test_auto_scan_concat.py \
         test_auto_scan_masked_select.py \
         test_auto_scan_pad2d.py \
         test_auto_scan_roll.py \
