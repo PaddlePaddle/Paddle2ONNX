@@ -25,7 +25,7 @@ jobs:
           submodules: true
 
       - name: Build paddle2onnx and Run tests
-        uses: docker://paddlepaddle/paddle:latest-dev-cuda12.3-cudnn9.0-trt8.6-gcc12.2
+        uses: docker://paddlepaddle/paddle:paddle2onnx-python3.9-gcc82
         with:
           entrypoint: bash
           args: .github/workflows/scripts/entrypoint.sh

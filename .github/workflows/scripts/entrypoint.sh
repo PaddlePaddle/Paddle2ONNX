@@ -12,7 +12,7 @@ PYTHON_COMMAND="/usr/local/bin/python3.8"
 $PYTHON_COMMAND -m pip install --upgrade pip
 $PYTHON_COMMAND -m pip install cmake
 $PYTHON_COMMAND -m pip install build
-$PYTHON_COMMAND -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
+$PYTHON_COMMANDpy
 # Build protobuf from source
 source .github/workflows/scripts/build_protobuf.sh
 
