@@ -89,7 +89,7 @@ ignore="test_auto_scan_multiclass_nms.py
         test_index_select.py \
         test_prelu.py \
         test_repeat_interleave.py \
-        test_unique.py "
+        test_unique.py"
 
 bug=0
 
