@@ -70,6 +70,26 @@ if (WITH_STATIC)
     bundle_static_library(paddle2onnx_dummy paddle2onnx_static bundle_paddle2onnx)
 else ()
     ADD_LIBRARY(paddle2onnx SHARED ${ALL_SRCS})
+
+    #add pybind11
+    add_subdirectory(third_party/pybind11)
+
+    # find Python site-packages dir
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
+        OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message(STATUS  "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")
+    find_library(PADDLE_LIB paddle PATHS ${PYTHON_SITE_PACKAGES}/paddle/base NO_DEFAULT_PATH)
+    if (NOT PADDLE_LIB)
+        message(FATAL_ERROR "Paddle lib not found")
+    else()
+        message(STATUS "Found paddle lib: ${PADDLE_LIB}")
+    endif()
+
+    # add paddle include dir
+    set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
+    target_include_directories(paddle2onnx PRIVATE ${PADDLE_INCLUDE_DIR})
+
     if (APPLE)
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
     elseif (MSVC)
@@ -80,7 +100,8 @@ else ()
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     endif ()
     set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
-    target_link_libraries(paddle2onnx p2o_paddle_proto onnx)
+
+    target_link_libraries(paddle2onnx ${PADDLE_LIB} p2o_paddle_proto onnx pybind11::embed)
 endif ()
 
 if (WIN32)
@@ -128,7 +149,8 @@ if (BUILD_PADDLE2ONNX_PYTHON)
             $<BUILD_INTERFACE:${ONNX_ROOT}>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
             $<INSTALL_INTERFACE:include>
-            ${PYTHON_INCLUDE_DIR})
+            ${PYTHON_INCLUDE_DIR}
+            ${PADDLE_INCLUDE_DIR})
 
     if (EXISTS ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
         target_include_directories(paddle2onnx_cpp2py_export PUBLIC ${PROJECT_SOURCE_DIR}/third_party/pybind11/include)
@@ -136,6 +158,7 @@ if (BUILD_PADDLE2ONNX_PYTHON)
         message(FATAL_ERROR "cannot find pybind")
     endif ()
 
+    target_compile_options(paddle2onnx_cpp2py_export PRIVATE -g)
     if (APPLE)
         set_target_properties(paddle2onnx_cpp2py_export PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
         target_link_libraries(paddle2onnx_cpp2py_export PRIVATE -Wl,-force_load,$<TARGET_FILE:onnx>)
@@ -148,7 +171,7 @@ if (BUILD_PADDLE2ONNX_PYTHON)
         set_target_properties(paddle2onnx_cpp2py_export PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
     endif ()
 
-    target_link_libraries(paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx)
+    target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PADDLE_LIB} p2o_paddle_proto onnx)
 
     if (MSVC)
         target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})
