@@ -69,8 +69,7 @@ If you need to adjust ONNX models, please refer to [ONNX related tools](./tools/
 
 ## 4.5 Optimize ONNX
 
-If you have optimization needs for the exported ONNX model, we recommend using `onnx-simplifier`. You can also optimize the model using the following command.
-
+If you have optimization needs for the exported ONNX model, we recommend using `onnx-simplifier`. You can also optimize the model using third-party tool [onnxslim](https://github.com/inisis/OnnxSlim).
 ```
 pip install onnxslim
 onnxslim model.onnx slim.onnx
