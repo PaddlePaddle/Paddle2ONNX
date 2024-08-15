@@ -183,56 +183,17 @@ class Mapper {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       return parser_->OpHasAttr(op, name);
     }
-    void GetAttr(const std::string &name, int64_t *val) {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-    void GetAttr(const std::string &name, float *val) {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-    void GetAttr(const std::string &name, bool *val) {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-    void GetAttr(const std::string &name, std::string *val) {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-    void GetAttr(const std::string &name, std::vector<int64_t> *val) {
+
+    template<typename T>
+    void GetAttr(const std::string &name, T* val) {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
 
-    void GetAttr(const std::string &name, std::vector<bool> *val) {
+    template<typename T>
+    void GetScalarsAttr(const std::string &name, std::vector<T>* val){
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-
-    void GetAttr(const std::string &name, std::vector<float> *val) {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-    void GetAttr(const std::string &name, std::vector<double> *val) {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpAttr(op, name, val);
-    }
-    void GetScalars(const std::string &name, std::vector<int64_t> *val){
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpScalars<int64_t>(op, name, val);
-    }
-    void GetScalars(const std::string &name, std::vector<bool> *val){
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpScalars<bool>(op, name, val);
-    }
-
-    void GetScalars(const std::string &name, std::vector<float> *val){
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpScalars<float>(op, name, val);
-    }
-    void GetScalars(const std::string &name, std::vector<double> *val){
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpScalars<double>(op, name, val);
+      parser_->GetOpScalars(op, name, val);
     }
 
     bool IsConstantInput(const std::string &input_key) const {
