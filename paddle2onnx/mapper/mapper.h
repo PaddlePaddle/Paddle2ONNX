@@ -191,9 +191,9 @@ class Mapper {
     }
 
     template<typename T>
-    void GetScalarsAttr(const std::string &name, std::vector<T>* val){
+    void GetScalars(const std::string &name, std::vector<T>* val){
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
-      parser_->GetOpScalars(op, name, val);
+      parser_->GetOpScalarsAttr(op, name, val);
     }
 
     bool IsConstantInput(const std::string &input_key) const {

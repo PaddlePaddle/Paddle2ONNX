@@ -39,23 +39,23 @@ class AssignValueMapper : public Mapper {
     const std::string attr_name = HasAttr("values") ? "values" : GetAttrNameByDtype(dtype);
     std::unordered_map<int32_t, std::function<void()>> type_handlers = {
         {P2ODataType::INT32, [&](){
-            if (attr_name == "values") GetScalarsAttr(attr_name, &int64_values_);
+            if (attr_name == "values") GetScalars(attr_name, &int64_values_);
             else if (attr_name == "int32_values") GetAttr(attr_name, &int64_values_);
         }},
         {P2ODataType::INT64, [&](){
-            if (attr_name == "values") GetScalarsAttr(attr_name, &int64_values_);
+            if (attr_name == "values") GetScalars(attr_name, &int64_values_);
             else if (attr_name == "int64_values") GetAttr(attr_name, &int64_values_);
         }},
         {P2ODataType::FP32, [&](){
-            if (attr_name == "values") GetScalarsAttr(attr_name, &fp32_values_);
+            if (attr_name == "values") GetScalars(attr_name, &fp32_values_);
             else if (attr_name == "fp32_values") GetAttr(attr_name, &fp32_values_);
         }},
         {P2ODataType::FP64, [&](){
-            if (attr_name == "values") GetScalarsAttr(attr_name, &double_values_);
+            if (attr_name == "values") GetScalars(attr_name, &double_values_);
             else if (attr_name == "fp32_values") GetAttr(attr_name, &double_values_);
         }},
         {P2ODataType::BOOL, [&](){
-            if (attr_name == "values") GetScalarsAttr(attr_name, &bool_values_);
+            if (attr_name == "values") GetScalars(attr_name, &bool_values_);
             else if (attr_name == "bool_values") GetAttr(attr_name, &bool_values_);
         }},
     };

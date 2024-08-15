@@ -190,7 +190,7 @@ class PaddleParser {
                          std::vector<T>* data) const;
 
   template <typename T>
-  void GetOpScalars(const paddle2onnx::framework::proto::OpDesc& op,
+  void GetOpScalarsAttr(const paddle2onnx::framework::proto::OpDesc& op,
                     const std::string& name,
                     std::vector<T>* res) const;
 

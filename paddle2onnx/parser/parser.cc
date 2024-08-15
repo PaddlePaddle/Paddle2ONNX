@@ -883,7 +883,7 @@ bool PaddleParser::ExistsDumplicateTensorName() const {
 
 #define DECLARE_GET_OP_SCALARS(scalar_type, target_type) \
 template <> \
-void PaddleParser::GetOpScalars<target_type>(const paddle2onnx::framework::proto::OpDesc& op, \
+void PaddleParser::GetOpScalarsAttr<target_type>(const paddle2onnx::framework::proto::OpDesc& op, \
                                              const std::string& name, \
                                              std::vector<target_type>* res) const { \
     bool found = false; \
