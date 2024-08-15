@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 #include "paddle2onnx/mapper/mapper.h"
-#include "paddle2onnx/mapper/mapper.h"
 #include <unordered_map>
 #include <functional>
 
