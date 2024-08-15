@@ -71,6 +71,11 @@ If you need to adjust ONNX models, please refer to [ONNX related tools](./tools/
 
 If you have optimization needs for the exported ONNX model, we recommend using `onnx-simplifier`. You can also optimize the model using the following command.
 
+```
+pip install onnxslim
+onnxslim model.onnx slim.onnx
+```
+
 # 5 Code Contribution
 
 A thriving ecosystem requires everyone's collaborative efforts. Developers can refer to the [Paddle2ONNX Contribution Guide](./docs/zh/Paddle2ONNX_Development_Guide.md) to contribute code to Paddle2ONNX.
