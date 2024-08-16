@@ -68,9 +68,7 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 $PY_CMD -m pip install onnx onnxruntime tqdm filelock
-$PY_CMD -m pip install paddlepaddle==2.6.0
 $PY_CMD -m pip install six hypothesis
-
 
 export ENABLE_DEV=ON
 echo "============ failed cases =============" >> result.txt
