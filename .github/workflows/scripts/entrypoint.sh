@@ -29,6 +29,7 @@ if [[ "$SYSTEM_NAME" == "CentOS" ]]; then
     yum install -y wget
 fi
 source .github/workflows/scripts/download_protobuf.sh
+source .github/workflows/scripts/download_paddle.sh
 
 # Build Paddle2ONNX wheels
 $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
