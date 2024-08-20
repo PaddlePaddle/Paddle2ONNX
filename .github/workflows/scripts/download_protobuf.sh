@@ -7,7 +7,7 @@ ARCH=$(uname -m)
 # Check if the operating system is Linux
 if [ "$OS" = "Linux" ]; then
     if [[ "$ARCH" == "x86_64" ]]; then
-      protobuf_tgz_name="protobuf-linux-x64-3.16.0.tgz"
+      protobuf_tgz_name="protobuf-linux-x64-3.21.12.tgz"
     elif [[ "$ARCH" == "arm"* || "$ARCH" == "aarch64" ]]; then
       protobuf_tgz_name="protobuf-linux-aarch64-3.16.0.tgz"
     else
@@ -30,8 +30,8 @@ else
    echo "The system only supports (Linux and Darwin), but the current system is $OS."
 fi
 
-wget $protobuf_url
-protobuf_svae_dir="$PWD/installed_protobuf"
-mkdir -p $protobuf_svae_dir
-tar -zxf $protobuf_tgz_name -C $protobuf_svae_dir
-export PATH=$protobuf_svae_dir/bin:${PATH}
+wget -q $protobuf_url
+protobuf_save_dir="$PWD/installed_protobuf"
+mkdir -p $protobuf_save_dir
+tar -zxf $protobuf_tgz_name -C $protobuf_save_dir
+export PATH=$protobuf_save_dir/bin:${PATH}
