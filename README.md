@@ -74,7 +74,8 @@ paddle2onnx --model_dir saved_inference_model \
 如你对导出的 ONNX 模型有优化的需求，推荐使用 `onnx-simplifier`，也可使用如下命令对模型进行优化
 
 ```
-python -m paddle2onnx.optimize --input_model model.onnx --output_model new_model.onnx
+pip install onnxslim
+onnxslim model.onnx slim.onnx
 ```
 
 # 5 代码贡献

@@ -739,6 +739,7 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
 }
 
+
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                              const std::string& name,
                              std::vector<double>* res) const {
@@ -759,7 +760,26 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
   }
   Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
 }
-
+void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                             const std::string& name,
+                             std::vector<bool>* res) const {
+  bool found = false;
+  res->clear();
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      found = true;
+      if (IsAttrVar(op, i)) break;
+      Assert(op.attrs(i).bools_size() >= 0,
+             "Cannot find list of double data from attr: " + name + " in op: " +
+                 op.type());
+      for (auto j = 0; j < op.attrs(i).bools_size(); ++j) {
+        res->push_back(static_cast<double>(op.attrs(i).bools(j)));
+      }
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
 void PaddleParser::GetGlobalBlockInputOutputInfo() {
   inputs.clear();
   outputs.clear();
@@ -860,4 +880,35 @@ bool PaddleParser::ExistsDumplicateTensorName() const {
   }
   return false;
 }
+
+#define DECLARE_GET_OP_SCALARS(scalar_type, target_type) \
+template <> \
+void PaddleParser::GetOpScalarsAttr<target_type>(const paddle2onnx::framework::proto::OpDesc& op, \
+                                             const std::string& name, \
+                                             std::vector<target_type>* res) const { \
+    bool found = false; \
+    res->clear(); \
+    for (auto i = 0; i < op.attrs_size(); ++i) { \
+        if (op.attrs(i).name() == name) { \
+            found = true; \
+            if (IsAttrVar(op, i)) break; \
+            Assert(op.attrs(i).scalars_size() >= 0, \
+                   "Cannot find list of scalars data from attr: " + name + \
+                       " in op: " + op.type()); \
+            for (auto j = 0; j < op.attrs(i).scalars_size(); ++j) { \
+                Assert(op.attrs(i).scalars(j).has_##scalar_type(), \
+                       "Scalar type does not match with " #scalar_type); \
+                res->push_back(static_cast<target_type>(op.attrs(i).scalars(j).scalar_type())); \
+            } \
+            break; \
+        } \
+    } \
+    Assert(found, "Cannot found attribute " + name + " in op: " + op.type()); \
+}
+
+DECLARE_GET_OP_SCALARS(i, int64_t)
+DECLARE_GET_OP_SCALARS(i, int32_t)
+DECLARE_GET_OP_SCALARS(r, float)
+DECLARE_GET_OP_SCALARS(r, double)
+DECLARE_GET_OP_SCALARS(b, bool)
 }  // namespace paddle2onnx
