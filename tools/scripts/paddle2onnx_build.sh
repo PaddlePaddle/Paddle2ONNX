@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 set -e
-PADDLE2ONNX_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}")/../../" && pwd )"
+PADDLE2ONNX_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}")/../../../" && pwd )"
 
 function download_protobuf(){
     OS=$(uname -s)
@@ -53,20 +53,21 @@ function build_paddle2onnx(){
     build_protobuf
 
     #install dependencies needed by building paddle2onnx
+    cd ${PADDLE2ONNX_ROOT}
     $1 -m pip install --upgrade pip
     $1 -m pip install build
     $1 -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 
     #build paddle2onnx
     export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
-    cd ${PADDLE2ONNX_ROOT}
+    cd ${PADDLE2ONNX_ROOT}/Paddle2ONNX
     $1 -m build --wheel
     $1 -m pip install dist/*.whl
 
 }
 
 function run_onnx_test() {
-    cd ${PADDLE2ONNX_ROOT}/tests
+    cd ${PADDLE2ONNX_ROOT}/Paddle2ONNX/tests
     bash run.sh $1
 }
 
