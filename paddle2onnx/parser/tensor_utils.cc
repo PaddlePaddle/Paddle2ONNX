@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "paddle2onnx/parser/tensor_utils.h"
+#include "paddle2onnx/utils/utils.h"
 
 namespace paddle2onnx {
 
@@ -31,49 +32,6 @@ TensorInfo::TensorInfo(const TensorInfo &info) {
   is_tensor_array = info.is_tensor_array;
 }
 
-// Weight
-template <typename T>
-void Weight::set(int32_t data_type, const std::vector<int64_t> &dims,
-                 const std::vector<T> &data) {
-  buffer.clear();
-  shape.clear();
-  dtype = data_type;
-  buffer.resize(data.size() * PaddleDataTypeSize(dtype));
-  memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
-  for (auto &d : dims) {
-    shape.push_back(d);
-  }
-
-  template <typename T> void Weight::get(std::vector<T> * data) const {
-    int64_t nums = std::accumulate(std::begin(shape), std::end(shape), 1,
-                                   std::multiplies<int64_t>());
-    data->resize(nums);
-    if (dtype == P2ODataType::INT64) {
-      std::vector<int64_t> value(nums);
-      memcpy(value.data(), buffer.data(), nums * sizeof(int64_t));
-      data->assign(value.begin(), value.end());
-    } else if (dtype == P2ODataType::INT32) {
-      std::vector<int32_t> value(nums);
-      memcpy(value.data(), buffer.data(), nums * sizeof(int32_t));
-      data->assign(value.begin(), value.end());
-    } else if (dtype == P2ODataType::INT8) {
-      std::vector<int8_t> value(nums);
-      memcpy(value.data(), buffer.data(), nums * sizeof(int8_t));
-      data->assign(value.begin(), value.end());
-    } else if (dtype == P2ODataType::FP32) {
-      std::vector<float> value(nums);
-      memcpy(value.data(), buffer.data(), nums * sizeof(float));
-      data->assign(value.begin(), value.end());
-    } else if (dtype == P2ODataType::FP64) {
-      std::vector<double> value(nums);
-      memcpy(value.data(), buffer.data(), nums * sizeof(double));
-      data->assign(value.begin(), value.end());
-    } else {
-      Assert(false,
-             "Weight::get() only support int64/int32/int8/float32/float64.");
-    }
-  }
-}
 int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   if (paddle_dtype == P2ODataType::BOOL) {
     return sizeof(bool);
