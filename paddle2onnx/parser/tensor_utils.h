@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #pragma once
-#include "paddle2onnx/parser/tensor_utils.h"
+#include "paddle2onnx/utils/utils.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -72,19 +72,20 @@ struct Weight {
   std::vector<int32_t> shape;
   int32_t dtype;
 
-template <typename T>
-void Weight::set(int32_t data_type, const std::vector<int64_t> &dims,
-                 const std::vector<T> &data) {
-  buffer.clear();
-  shape.clear();
-  dtype = data_type;
-  buffer.resize(data.size() * PaddleDataTypeSize(dtype));
-  memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
-  for (auto &d : dims) {
-    shape.push_back(d);
+  template <typename T>
+  void set(int32_t data_type, const std::vector<int64_t>& dims,
+           const std::vector<T>& data) {
+    buffer.clear();
+    shape.clear();
+    dtype = data_type;
+    buffer.resize(data.size() * PaddleDataTypeSize(dtype));
+    memcpy(buffer.data(), data.data(), data.size() * PaddleDataTypeSize(dtype));
+    for (auto& d : dims) {
+      shape.push_back(d);
+    }
   }
-
-  template <typename T> void Weight::get(std::vector<T> * data) const {
+  template <typename T>
+  void get(std::vector<T>* data) const {
     int64_t nums = std::accumulate(std::begin(shape), std::end(shape), 1,
                                    std::multiplies<int64_t>());
     data->resize(nums);
@@ -113,7 +114,5 @@ void Weight::set(int32_t data_type, const std::vector<int64_t> &dims,
              "Weight::get() only support int64/int32/int8/float32/float64.");
     }
   }
-}
 };
-
 }  // namespace paddle2onnx

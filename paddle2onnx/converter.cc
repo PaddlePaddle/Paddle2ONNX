@@ -46,7 +46,7 @@ namespace paddle2onnx
       int disable_fp16_op_types_count)
   {
     if (enable_pir_mode){
-        auto pir_parser = PaddlePirParser();
+        // auto pir_parser = PaddlePirParser();
         P2OLogger(verbose) << "Start to parsing Paddle model saved in pir program format..." << std::endl;
 
     }else{
