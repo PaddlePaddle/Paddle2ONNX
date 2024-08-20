@@ -90,6 +90,12 @@ def arg_parser():
         default=True,
         help="whether enable auto_update_opset, default is True")
     parser.add_argument(
+        "--enable_pir_mode",
+        type=str,
+        default=False,
+        help="whether enable Paddle new IR mode, default is False"
+    )
+    parser.add_argument(
         "--external_filename",
         type=str,
         default=None,
@@ -142,6 +148,7 @@ def main():
         save_file=args.save_file,
         opset_version=args.opset_version,
         auto_upgrade_opset=args.enable_auto_update_opset,
+        enable_pir_mode=args.enable_pir_mode,
         verbose=True,
         enable_onnx_checker=args.enable_onnx_checker,
         enable_experimental_op=True,

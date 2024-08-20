@@ -29,9 +29,10 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
   m.doc() = "Paddle2ONNX: export PaddlePaddle to ONNX";
   // converter.cc
   m.def("export", [](const std::string& model_filename,
-                     const std::string& params_filename, 
+                     const std::string& params_filename,
                      int opset_version = 7,
-                     bool auto_upgrade_opset = true, 
+                     bool auto_upgrade_opset = true,
+                     bool enable_pir_mode = false,
                      bool verbose = true,
                      bool enable_onnx_checker = true,
                      bool enable_experimental_op = true,
@@ -48,20 +49,21 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
     char* calibration_cache = nullptr;
     int cache_size = 0;
     bool save_external;
-    if (!Export(model_filename.c_str(), 
-                params_filename.c_str(), 
-                &out, 
+    if (!Export(model_filename.c_str(),
+                params_filename.c_str(),
+                &out,
                 &size,
-                opset_version, 
-                auto_upgrade_opset, 
+                opset_version,
+                auto_upgrade_opset,
+                enable_pir_mode,
                 verbose,
-                enable_onnx_checker, 
-                enable_experimental_op, 
+                enable_onnx_checker,
+                enable_experimental_op,
                 enable_optimize,
-                deploy_backend.c_str(), 
+                deploy_backend.c_str(),
                 &calibration_cache,
-                &cache_size, 
-                external_file.c_str(), 
+                &cache_size,
+                external_file.c_str(),
                 &save_external,
                 export_fp16_model)) {
       P2OLogger(verbose) << "Paddle model convert failed." << std::endl;
