@@ -241,7 +241,6 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
                               "Split",
                               "Sqrt",
                               "Tan",
-                              "MatMul",
                               "Tanh"};
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
