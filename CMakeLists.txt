@@ -258,11 +258,7 @@ else ()
     add_subdirectory(third_party/pybind11)
 
     # find Python site-packages dir
-<<<<<<< HEAD
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
-=======
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig;print(sysconfig.get_paths()['purelib'])"
->>>>>>> fedeab59754e2d7017e2f90a30e9e90307d2f77a
         OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     message(STATUS  "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")
@@ -272,17 +268,10 @@ else ()
     else()
         message(STATUS "Found paddle lib: ${PADDLE_LIB}")
     endif()
-<<<<<<< HEAD
 
     # add paddle include dir
     set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
     target_include_directories(paddle2onnx PRIVATE ${PADDLE_INCLUDE_DIR})
-
-=======
-    # add paddle include dir
-    set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
-    target_include_directories(paddle2onnx PRIVATE ${PADDLE_INCLUDE_DIR})
->>>>>>> fedeab59754e2d7017e2f90a30e9e90307d2f77a
     if (APPLE)
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
     elseif (MSVC)
@@ -293,10 +282,6 @@ else ()
         set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS_RELEASE -s)
     endif ()
     set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
-<<<<<<< HEAD
-
-=======
->>>>>>> fedeab59754e2d7017e2f90a30e9e90307d2f77a
     target_link_libraries(paddle2onnx ${PADDLE_LIB} p2o_paddle_proto onnx pybind11::embed)
 endif ()
 
