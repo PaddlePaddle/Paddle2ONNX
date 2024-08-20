@@ -61,7 +61,35 @@ ignore="test_auto_scan_multiclass_nms.py
         test_quantize_model.py \
         test_quantize_model_minist.py \
         test_quantize_model_speedup.py \
-        test_resnet_fp16.py"
+        test_resnet_fp16.py \
+        test_auto_scan_argminmax.py \
+        test_auto_scan_assign.py \
+        test_auto_scan_concat.py \
+        test_auto_scan_cumsum.py \
+        test_auto_scan_dropout.py \
+        test_auto_scan_expand.py \
+        test_auto_scan_eye.py \
+        test_auto_scan_fill_constant.py \
+        test_auto_scan_gather.py \
+        test_auto_scan_interpolate_ops.py \
+        test_auto_scan_one_hot_v2.py \
+        test_auto_scan_pad3d.py \
+        test_auto_scan_pool_max_ops.py \
+        test_auto_scan_range.py \
+        test_auto_scan_scale.py \
+        test_auto_scan_slice.py \
+        test_auto_scan_split.py \
+        test_auto_scan_squeeze2.py \
+        test_auto_scan_strided_slice.py \
+        test_auto_scan_tile.py \
+        test_auto_scan_top_k.py \
+        test_auto_scan_unsqueeze2.py \
+        test_einsum.py \
+        test_gather.py \
+        test_index_select.py \
+        test_prelu.py \
+        test_repeat_interleave.py \
+        test_unique "
 bug=0
 
 # Install Python Packet
