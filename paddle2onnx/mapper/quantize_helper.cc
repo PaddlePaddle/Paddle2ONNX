@@ -228,6 +228,7 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
                               "IsInf",
                               "IsNaN",
                               "Log",
+                              "MatMul",
                               "MaxPool",
                               "Mul",
                               "Neg",
@@ -252,8 +253,7 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
     }
 
     if (node->op_type() == "MatMul") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
-                                               node->output(0)};
+      std::vector<std::string> tensor_names = {node->input(0), node->input(1), node->output(0)};
       for (auto& name : tensor_names) {
         if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
           continue;
@@ -266,17 +266,18 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
         if (!GetTensorShape(name, &matmul_weight_shape)) {
           continue;
         }
+
         int64_t quantize_axis = 1;
         std::vector<float> scale;
         std::vector<int64_t> zeros;
-        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape,
-                                   quantize_axis, &scale, &zeros);
-        auto scale_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
-        auto zero_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node,
-                                                 zero_node, quantize_axis);
+        if(matmul_weight_shape.size() <= quantize_axis) {
+          quantize_axis = 0;
+        }
+        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape, quantize_axis, &scale, &zeros);
+        
+        auto scale_node = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
+        auto zero_node = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node, zero_node, quantize_axis);
         helper_->quantize_info[name] = matmul_weight_quantize_info;
       }
       if (!CanBeQuantize(tensor_names)) {
@@ -1047,10 +1048,11 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
   zero->push_back(0);
 }
 
-void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
-    const std::vector<float>& tensor, const std::vector<int64_t>& shape,
-    const int64_t& quant_axis, std::vector<float>* scale,
-    std::vector<int64_t>* zero) {
+void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(const std::vector<float>& tensor, 
+                                                        const std::vector<int64_t>& shape,
+                                                        const int64_t& quant_axis, 
+                                                        std::vector<float>* scale,
+                                                        std::vector<int64_t>* zero) {
   int64_t channel_count = shape[quant_axis];
 
   for (int64_t i = 0; i < channel_count; i++) {
