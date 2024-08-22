@@ -89,7 +89,7 @@ else()
   # find Python site-packages dir
   execute_process(
     COMMAND ${PYTHON_EXECUTABLE} -c
-            "import sysconfig;print(sysconfig.get_paths()['purelib'])"
+            "import site;print(site.getsitepackages()[0])"
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   message(STATUS "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")

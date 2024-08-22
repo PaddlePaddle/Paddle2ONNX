@@ -332,6 +332,13 @@ bool PaddleParser::LoadParams(const std::string& path) {
       params[var_names[index]] = weight;
     }
   }
+  for(const auto& pair:params){
+        std::cout << "Key:"<<pair.first << ",Dtype: "<<pair.second.dtype << std::endl;
+        for(auto i:pair.second.shape){
+          std::cout << i<<",";
+        }
+        std::cout << std::endl;
+      }
   is.close();
   return true;
 }
@@ -813,32 +820,6 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
     }
   }
 }
-
-int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
-  if (paddle_dtype == P2ODataType::BOOL) {
-    return sizeof(bool);
-  } else if (paddle_dtype == P2ODataType::INT8) {
-    return sizeof(int8_t);
-  } else if (paddle_dtype == P2ODataType::INT16) {
-    return sizeof(int16_t);
-  } else if (paddle_dtype == P2ODataType::INT32) {
-    return sizeof(int32_t);
-  } else if (paddle_dtype == P2ODataType::INT64) {
-    return sizeof(int64_t);
-  } else if (paddle_dtype == P2ODataType::FP32) {
-    return sizeof(float);
-  } else if (paddle_dtype == P2ODataType::FP16) {
-    return sizeof(int16_t);
-  } else if (paddle_dtype == P2ODataType::FP64) {
-    return sizeof(double);
-  } else if (paddle_dtype == P2ODataType::UINT8) {
-    return sizeof(uint8_t);
-  } else {
-    Assert(false, "Unexpected data type: " + std::to_string(paddle_dtype));
-  }
-  return -1;
-}
-
 bool PaddleParser::ExistsDumplicateTensorName() const {
   std::set<std::string> names;
   for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {

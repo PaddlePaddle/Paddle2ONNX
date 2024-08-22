@@ -111,6 +111,7 @@ class cmake_build(setuptools.Command):
                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
                 '-DONNX_NAMESPACE={}'.format(ONNX_NAMESPACE),
                 '-DPY_EXT_SUFFIX={}'.format(sysconfig.get_config_var('EXT_SUFFIX') or ''),
+                '-DPY_VERSION={}'.format(str(sys.version_info[0])+'.'+str(sys.version_info[1])),
             ]
             cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
             if WINDOWS:

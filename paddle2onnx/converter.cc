@@ -48,7 +48,7 @@ namespace paddle2onnx
     if (enable_pir_mode){
         // auto pir_parser = PaddlePirParser();
         P2OLogger(verbose) << "Start to parsing Paddle model saved in pir program format..." << std::endl;
-
+      
     }else{
         auto parser = PaddleParser();
         P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
