@@ -240,6 +240,7 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
                               "Sigmoid",
                               "Sin",
                               "Sinh",
+                              "Slice",
                               "Softmax",
                               "Split",
                               "Sqrt",
@@ -250,9 +251,6 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
     auto node = *iter;
     auto type_iter = std::find(supported_quantize_type_.begin(), supported_quantize_type_.end(), node->op_type());
     if (!supported_quantize_type_.empty() && type_iter == supported_quantize_type_.end()) {
-      if (node->op_type() != "Constant") {
-        P2OLogger() << "skip " << node->op_type() << std::endl;
-      }
       continue;
     }
 
@@ -1137,7 +1135,6 @@ bool QuantizeModelProcessor::CanBeQuantize(
     const std::vector<int64_t>& output_index) {
   for (auto& tensor : tensor_names) {
     if (helper_->quantize_info.find(tensor) == helper_->quantize_info.end()) {
-      P2OLogger() << "can't find quantize_info: " << tensor << std::endl;
       return false;
     }
   }
