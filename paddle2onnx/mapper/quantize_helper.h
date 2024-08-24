@@ -117,8 +117,8 @@ struct QuantizeModelProcessor {
 
   // Perform channel wise quantization, returning scale and zero
   void GetChannelWiseQuantizeInfo(const std::vector<float>& tensor,
-                                  const std::vector<int64_t>& shape,
-                                  const int64_t& quant_axis,
+                                  const std::vector<int64_t>& shapes,
+                                  int64_t quant_axis,
                                   std::vector<float>* scale,
                                   std::vector<int64_t>* zero);
 

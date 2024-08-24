@@ -28,3 +28,4 @@ protobuf-*
 tests/__pycache_*
 tests/*/__pycache_*
 tests/*/*.info
+tools/onnx/__pycache__*
