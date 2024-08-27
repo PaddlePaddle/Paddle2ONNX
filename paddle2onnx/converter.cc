@@ -21,9 +21,9 @@
 
 #include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/optimizer/convert_fp32_to_fp16.h"
+#include "paddle2onnx/parser/pir_parser.h"
 
-namespace paddle2onnx
-{
+namespace paddle2onnx{
   PADDLE2ONNX_DECL bool Export(
       const char *model_filename,
       const char *params_filename,
@@ -43,12 +43,19 @@ namespace paddle2onnx
       bool *save_external,
       bool export_fp16_model,
       char **disable_fp16_op_types,
-      int disable_fp16_op_types_count)
-  {
+      int disable_fp16_op_types_count){
+    P2OLogger(verbose) << "eable_pir_mode:"<<enable_pir_mode << std::endl;
+
     if (enable_pir_mode){
-        // auto pir_parser = PaddlePirParser();
+      // auto pir_parser = PaddlePirParser();
         P2OLogger(verbose) << "Start to parsing Paddle model saved in pir program format..." << std::endl;
-      
+        auto pir_parser = PaddlePirParser();
+        P2OLogger(verbose) << "Start to parsing Paddle Pir model..." << std::endl;
+        if (!pir_parser.Init(model_filename, params_filename))
+        {
+          P2OLogger(verbose) << "Paddle pir::model parsing failed." << std::endl;
+          return false;
+        }
     }else{
         auto parser = PaddleParser();
         P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;

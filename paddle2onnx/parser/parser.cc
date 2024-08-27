@@ -332,8 +332,9 @@ bool PaddleParser::LoadParams(const std::string& path) {
       params[var_names[index]] = weight;
     }
   }
+  std::cout<<"old:program:"<<prog<<std::endl;
   for(const auto& pair:params){
-        std::cout << "Key:"<<pair.first << ",Dtype: "<<pair.second.dtype << std::endl;
+        std::cout << "Key:"<<pair.first;
         for(auto i:pair.second.shape){
           std::cout << i<<",";
         }
@@ -439,9 +440,11 @@ void PaddleParser::GetBlocksOps() {
   _blocks_ops.resize(prog->blocks_size());
   _constant_ops.resize(prog->blocks_size());
   for (auto i = 0; i < prog->blocks_size(); ++i) {
+    std::cout<<"block size:"<<prog->blocks_size()<<std::endl;
     _blocks_ops[i].reserve(prog->blocks(i).ops_size());
     for (auto j = 0; j < prog->blocks(i).ops_size(); ++j) {
       _blocks_ops[i].push_back(&prog->blocks(i).ops(j));
+      std::cout<<"op name:"<<prog->blocks(i).ops(j).type()<<std::endl;
       if (prog->blocks(i).ops(j).type() == "assign_value") {
         _constant_ops[i][prog->blocks(i).ops(j).outputs(0).arguments(0)] = j;
       }
@@ -483,7 +486,9 @@ TensorInfo PaddleParser::GetTensorInfo(
     TensorInfo info;
     info.is_tensor_array = true;
     info.name = name;
+    // std::cout<<"info.name:"<<info.name<<std::endl;
     info.dtype = tensor_array.tensor().data_type();
+    // std::cout<<"info.dtype:"<<info.dtype<<std::endl;
     for (auto i = 0; i < tensor_array.tensor().dims_size(); ++i) {
       info.shape.push_back(tensor_array.tensor().dims(i));
     }
@@ -495,9 +500,12 @@ TensorInfo PaddleParser::GetTensorInfo(
   info.name = name;
   info.dtype = tensor.tensor().data_type();
   for (auto i = 0; i < tensor.tensor().dims_size(); ++i) {
+    //std::cout<<"tensor.tensor().dims:"<<i<<":"<<tensor.tensor().dims(i)<<std::endl;
     info.shape.push_back(tensor.tensor().dims(i));
   }
-
+  //std::cout<<"info.name:"<<info.name<<std::endl;
+  //std::cout<<"info.dtype:"<<info.dtype<<std::endl;
+  // std::cout<<"info.shape:"
   return info;
 }
 
@@ -778,8 +786,15 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
 
   for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
     if (prog->blocks(0).ops(i).type() == "fetch") {
-      std::string name = prog->blocks(0).ops(i).inputs(0).arguments(0);
+      std::string name = prog->blocks(0).ops(i).inputs(0).arguments(0);//此处是fectch op 的 variable的name
       outputs_with_no_order.push_back(GetTensorInfo(name, prog->blocks(0)));
+      // for(auto info:outputs_with_no_order){
+      //   std::cout<<"info.name: "<<info.name<<std::endl;
+      //   std::cout<<"info.dtype:"<<info.dtype<<std::endl;
+      //   for(auto dim:info.shape){
+      //     std::cout<<"dim: "<<dim<<std::endl;
+      //   }
+      // }
       int64_t order = -1;
       GetOpAttr(prog->blocks(0).ops(i), "col", &order);
       output_order.push_back(order);
@@ -808,7 +823,20 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
   for (size_t i = 0; i < output_order.size(); ++i) {
     outputs[output_order[i]] = outputs_with_no_order[i];
   }
-
+  // for(auto info:outputs){
+  //   std::cout<<"info.name: "<<info.name<<std::endl;
+  //   std::cout<<"info.dtype:"<<info.dtype<<std::endl;
+  //   for(auto dim:info.shape){
+  //     std::cout<<"dim: "<<dim<<std::endl;
+  //   }
+  // }
+  // for(auto info:inputs){
+  //   std::cout<<"info.name: "<<info.name<<std::endl;
+  //   std::cout<<"info.dtype:"<<info.dtype<<std::endl;
+  //   for(auto dim:info.shape){
+  //     std::cout<<"dim: "<<dim<<std::endl;
+  //   }
+  // }
   // Trick setting for nms, remove this after shape inference fixed
   if (_has_nms) {
     for (size_t i = 0; i < outputs.size(); ++i) {

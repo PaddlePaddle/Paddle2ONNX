@@ -93,6 +93,7 @@ else()
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   message(STATUS "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")
+
   find_library(
     PADDLE_LIB paddle
     PATHS ${PYTHON_SITE_PACKAGES}/paddle/base
@@ -104,7 +105,7 @@ else()
   endif()
   # add paddle include dir
   set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
-  target_include_directories(paddle2onnx PRIVATE ${PADDLE_INCLUDE_DIR})
+  include_directories(paddle2onnx PRIVATE ${PADDLE_INCLUDE_DIR})
   if(APPLE)
     set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS
                                                  "-undefined dynamic_lookup")

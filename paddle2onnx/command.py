@@ -27,92 +27,96 @@ def arg_parser():
         "-m",
         type=str,
         default=None,
-        help="PaddlePaddle model directory, if params stored in single file, you need define '--model_filename' and 'params_filename'."
+        help="PaddlePaddle model directory, if params stored in single file, you need define '--model_filename' and 'params_filename'.",
     )
     parser.add_argument(
         "--model_filename",
         "-mf",
         type=str,
         default=None,
-        help="PaddlePaddle model's network file name, which under directory seted by --model_dir"
+        help="PaddlePaddle model's network file name, which under directory seted by --model_dir",
     )
     parser.add_argument(
         "--params_filename",
         "-pf",
         type=str,
         default=None,
-        help="PaddlePaddle model's param file name(param files combined in single file), which under directory seted by --model_dir."
+        help="PaddlePaddle model's param file name(param files combined in single file), which under directory seted by --model_dir.",
     )
     parser.add_argument(
-        "--save_file",
-        "-s",
-        type=str,
-        default=None,
-        help="file path to save onnx model")
+        "--save_file", "-s", type=str, default=None, help="file path to save onnx model"
+    )
     parser.add_argument(
         "--opset_version",
         "-ov",
         type=int,
         default=9,
-        help="set onnx opset version to export")
+        help="set onnx opset version to export",
+    )
     parser.add_argument(
         "--deploy_backend",
         "-d",
         type=str,
         default="onnxruntime",
         choices=["onnxruntime", "tensorrt", "rknn", "others"],
-        help="Quantize model deploy backend, default onnxruntime.")
+        help="Quantize model deploy backend, default onnxruntime.",
+    )
     parser.add_argument(
         "--save_calibration_file",
         type=str,
         default="calibration.cache",
-        help="The calibration cache for TensorRT deploy, default calibration.cache."
+        help="The calibration cache for TensorRT deploy, default calibration.cache.",
     )
     parser.add_argument(
         "--enable_onnx_checker",
         type=ast.literal_eval,
         default=True,
-        help="whether check onnx model validity, default True")
+        help="whether check onnx model validity, default True",
+    )
     parser.add_argument(
         "--enable_paddle_fallback",
         type=ast.literal_eval,
         default=False,
-        help="whether use PaddleFallback for custom op, default is False")
+        help="whether use PaddleFallback for custom op, default is False",
+    )
     parser.add_argument(
         "--version",
         "-v",
         action="store_true",
         default=False,
-        help="get version of paddle2onnx")
+        help="get version of paddle2onnx",
+    )
     parser.add_argument(
         "--enable_auto_update_opset",
         type=ast.literal_eval,
         default=True,
-        help="whether enable auto_update_opset, default is True")
+        help="whether enable auto_update_opset, default is True",
+    )
     parser.add_argument(
         "--enable_pir_mode",
-        type=str,
+        type=ast.literal_eval,
         default=False,
-        help="whether enable Paddle new IR mode, default is False"
+        help="whether enable Paddle new IR mode, default is False",
     )
     parser.add_argument(
         "--external_filename",
         type=str,
         default=None,
-        help="The filename of external_data when the model is bigger than 2G.")
+        help="The filename of external_data when the model is bigger than 2G.",
+    )
     parser.add_argument(
         "--export_fp16_model",
         type=ast.literal_eval,
         default=False,
-        help="Whether export FP16 model for ORT-GPU, default False")
+        help="Whether export FP16 model for ORT-GPU, default False",
+    )
     return parser
 
 
 def main():
     if len(sys.argv) < 2:
-        logging.info("Use \"paddle2onnx -h\" to print the help information")
-        logging.info(
-            "For more information, please follow our github repo below:")
+        logging.info('Use "paddle2onnx -h" to print the help information')
+        logging.info("For more information, please follow our github repo below:")
         logging.info("Github: https://github.com/PaddlePaddle/paddle2onnx")
         return
 
@@ -120,12 +124,19 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        logging.info("paddle2onnx-{} with python>=3.8, paddlepaddle>=2.0.0".
-                     format(paddle2onnx.__version__))
+        logging.info(
+            "paddle2onnx-{} with python>=3.8, paddlepaddle>=2.0.0".format(
+                paddle2onnx.__version__
+            )
+        )
         return
 
-    assert args.model_dir is not None, "--model_dir should be defined while translating paddle model to onnx"
-    assert args.save_file is not None, "--save_file should be defined while translating paddle model to onnx"
+    assert (
+        args.model_dir is not None
+    ), "--model_dir should be defined while translating paddle model to onnx"
+    assert (
+        args.save_file is not None
+    ), "--save_file should be defined while translating paddle model to onnx"
 
     model_file = os.path.join(args.model_dir, args.model_filename)
     if args.params_filename is None:
@@ -156,7 +167,8 @@ def main():
         deploy_backend=args.deploy_backend,
         calibration_file=calibration_file,
         external_file=external_file,
-        export_fp16_model=args.export_fp16_model)
+        export_fp16_model=args.export_fp16_model,
+    )
 
 
 if __name__ == "__main__":
