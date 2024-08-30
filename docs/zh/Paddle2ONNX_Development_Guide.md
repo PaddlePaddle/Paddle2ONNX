@@ -53,6 +53,14 @@ Paddle2ONNX 开发的主要步骤为：
 
 通过 Netron 的可视化，可以看到， **ATTRIBUTES** 中的参数 **axis** 和 **shifts** 与核心文档中的输入参数一一对应。
 
+> [!NOTE]
+> 获取当前所有支持的 OP 列表的方法：
+>
+> ```python
+> import paddle2onnx
+> paddle2onnx.get_all_supported_operators()
+> ```
+
 ### 3.3 查阅 ONNX API 文档
 
 掌握 Paddle OP 的原理和使用方式后，查阅 [ONNX Operators Docs](https://onnx.ai/onnx/operators/index.html) 找到对应的实现，若 ONNX OP 和 Paddle OP 没有一对一的实现，则需要根据 Paddle OP 的原理使用多个 ONNX OP 组合实现。 
