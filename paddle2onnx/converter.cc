@@ -35,6 +35,8 @@ namespace paddle2onnx
       bool enable_onnx_checker,
       bool enable_experimental_op,
       bool enable_optimize,
+      CustomOp* ops,
+      int op_count,
       const char *deploy_backend,
       char **calibration_cache,
       int *calibration_size,
@@ -52,6 +54,19 @@ namespace paddle2onnx
       return false;
     }
     paddle2onnx::ModelExporter me;
+
+    // Add custom operator information
+    if (ops != nullptr && op_count > 0) {
+      for (int i = 0; i < op_count; ++i) {
+        std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
+        std::string export_op_name(ops[i].export_op_name,
+                                   strlen(ops[i].export_op_name));
+        if (export_op_name == "paddle2onnx_null") {
+          export_op_name = op_name;
+        }
+        me.custom_ops[op_name] = export_op_name;
+      }
+    }
 
     // Add disabled fp16 op information
     std::vector<std::string> disable_op_types;
@@ -107,6 +122,8 @@ namespace paddle2onnx
       bool enable_onnx_checker,
       bool enable_experimental_op,
       bool enable_optimize,
+      CustomOp* ops,
+      int op_count,
       const char *deploy_backend,
       char **calibration_cache,
       int *calibration_size,
@@ -124,6 +141,18 @@ namespace paddle2onnx
       return false;
     }
     paddle2onnx::ModelExporter me;
+    // Add custom operator information
+    if (ops != nullptr && op_count > 0) {
+      for (int i = 0; i < op_count; ++i) {
+        std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
+        std::string export_op_name(ops[i].export_op_name,
+                                   strlen(ops[i].export_op_name));
+        if (export_op_name == "paddle2onnx_null") {
+          export_op_name = op_name;
+        }
+        me.custom_ops[op_name] = export_op_name;
+      }
+    }
 
     // Add disabled fp16 op information
     std::vector<std::string> disable_op_types;

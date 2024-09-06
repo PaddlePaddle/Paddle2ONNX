@@ -62,6 +62,7 @@ The adjustable conversion parameters are listed in the following table:
 | --version                  | **[Optional]** View paddle2onnx version                                                                                                                                                                                           |
 | --external_filename        | **[Optional]** When the exported ONNX model is larger than 2G, you need to set the storage path of external data, the recommended setting is: external_data                                                                       |
 | --export_fp16_model        | **[Optional]** Whether to convert the exported ONNX model to FP16 format, and use ONNXRuntime-GPU to accelerate inference, the default is False                                                                                   |
+| --custom_ops               | **[Optional]** Export Paddle OP as ONNX's Custom OP, for example: --custom_ops '{"paddle_op":"onnx_op"}, default is {}                                                                                                            |
 
 ## 4.4 Pruning ONNX
 

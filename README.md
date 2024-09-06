@@ -63,6 +63,7 @@ paddle2onnx --model_dir saved_inference_model \
 | --version                  | **[可选]** 查看 paddle2onnx 版本                                                                                      |
 | --external_filename        | **[可选]** 当导出的 ONNX 模型大于 2G 时，需要设置 external data 的存储路径，推荐设置为：external_data                                       |
 | --export_fp16_model        | **[可选]** 是否将导出的 ONNX 的模型转换为 FP16 格式，并用 ONNXRuntime-GPU 加速推理，默认为 False                                           |
+| --custom_ops               | **[可选]** 将 Paddle OP 导出为 ONNX 的 Custom OP，例如：--custom_ops '{"paddle_op":"onnx_op"}，默认为 {}                       |
 
 
 ## 4.4 裁剪ONNX

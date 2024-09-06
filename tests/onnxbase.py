@@ -422,6 +422,7 @@ class APIOnnx(object):
                     True, # enable_onnx_checker
                     True, # enable_experimental_op
                     True, # enable_optimize
+                    {},
                     "onnxruntime", # deploy_backend
                     "", # calibration_file
                     "", # external_file
