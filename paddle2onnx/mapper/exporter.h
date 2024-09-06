@@ -43,6 +43,9 @@ namespace paddle2onnx
   class ModelExporter
   {
   public:
+    // custom operators for export
+    // <key: op_name, value:[exported_op_name, domain]>
+    std::map<std::string, std::string> custom_ops;
     QuantizeModelProcessor quantize_model_processer;
 
     void SaveExternalData(ONNX_NAMESPACE::GraphProto *graph,
@@ -127,5 +130,6 @@ namespace paddle2onnx
                     bool verbose);
 #endif
     ONNX_NAMESPACE::ModelProto Optimize(const ONNX_NAMESPACE::ModelProto &model);
+    void CovertCustomOps(const PaddleParser& parser, OnnxHelper* helper, int64_t block_id, int64_t op_id);
   };
 } // namespace paddle2onnx

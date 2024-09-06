@@ -99,6 +99,11 @@ def arg_parser():
         type=ast.literal_eval,
         default=False,
         help="Whether export FP16 model for ORT-GPU, default False")
+    parser.add_argument(
+        "--custom_ops",
+        type=str,
+        default="{}",
+        help="Ops that needs to be converted to custom op, e.g --custom_ops '{\"paddle_op\":\"onnx_op\"}', default {}")
     return parser
 
 
@@ -134,6 +139,7 @@ def main():
     if base_path and not os.path.exists(base_path):
         os.mkdir(base_path)
     external_file = os.path.join(base_path, args.external_filename)
+    custom_ops_dict = eval(args.custom_ops)
 
     calibration_file = args.save_calibration_file
     paddle2onnx.export(
@@ -146,6 +152,7 @@ def main():
         enable_onnx_checker=args.enable_onnx_checker,
         enable_experimental_op=True,
         enable_optimize=True,
+        custom_op_info=custom_ops_dict,
         deploy_backend=args.deploy_backend,
         calibration_file=calibration_file,
         external_file=external_file,

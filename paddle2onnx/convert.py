@@ -26,25 +26,23 @@ def export(model_filename,
            enable_onnx_checker=True,
            enable_experimental_op=True,
            enable_optimize=True,
+           custom_op_info=None,
            deploy_backend="onnxruntime",
            calibration_file="",
            external_file="",
            export_fp16_model=False):
     deploy_backend = deploy_backend.lower()
-    # cpp2py_export.cc
-    onnx_model_str = c_p2o.export(
-        model_filename, 
-        params_filename, 
-        opset_version, 
-        auto_upgrade_opset, 
-        verbose,
-        enable_onnx_checker, 
-        enable_experimental_op, 
-        enable_optimize,
-        deploy_backend, 
-        calibration_file, 
-        external_file, 
-        export_fp16_model)
+    if custom_op_info is None:
+        onnx_model_str = c_p2o.export(
+            model_filename, params_filename, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize, {},
+            deploy_backend, calibration_file, external_file, export_fp16_model)
+    else:
+        onnx_model_str = c_p2o.export(
+            model_filename, params_filename, opset_version, auto_upgrade_opset, verbose,
+            enable_onnx_checker, enable_experimental_op, enable_optimize,
+            custom_op_info, deploy_backend, calibration_file, external_file,
+            export_fp16_model)
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)
