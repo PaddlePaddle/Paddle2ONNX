@@ -24,7 +24,6 @@ def export(
     save_file=None,
     opset_version=7,
     auto_upgrade_opset=True,
-    enable_pir_mode=False,
     verbose=True,
     enable_onnx_checker=True,
     enable_experimental_op=True,
@@ -36,13 +35,15 @@ def export(
 ):
 
     deploy_backend = deploy_backend.lower()
+    # Check if file exists
+    if not os.path.isfile(model_filename):
+        raise RuntimeError("File does not exist: %s" % model_filename)
     # cpp2py_export.cc
     onnx_model_str = c_p2o.export(
         model_filename,
         params_filename,
         opset_version,
         auto_upgrade_opset,
-        enable_pir_mode,
         verbose,
         enable_onnx_checker,
         enable_experimental_op,
