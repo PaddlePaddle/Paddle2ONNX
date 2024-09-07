@@ -105,10 +105,22 @@ class MapperHelper {
   }
 
   bool IsRegistered(const std::string& op_name) {
+    auto logger = P2OLogger();
+    // Search in PIR mappers first.
+    auto iter_pir = pir_mappers.find(op_name);
+    if (pir_mappers.end() != iter_pir) {
+      logger << "Find " << op_name << " in PIR mappers" << std::endl;
+      return true;
+    }
+
+    // 
     auto iter = mappers.find(op_name);
     if (mappers.end() == iter) {
+      logger << "Not Founded! " << op_name 
+             << " is not registered" << std::endl;
       return false;
     }
+    logger << "Find " << op_name << " in old mappers" << std::endl;
     return true;
   }
 
