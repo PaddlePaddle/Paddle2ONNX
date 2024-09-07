@@ -304,9 +304,8 @@ void ModelExporter::SetIRVersion() {
 
 void ModelExporter::ExportInputOutputs(
     const PaddleParser &parser,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
-        &outputs) {
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs) {
   inputs.clear();
   for (auto &item : parser.inputs) {
     auto value_info = MakeValueInfo(item);
@@ -321,8 +320,8 @@ void ModelExporter::ExportInputOutputs(
 
 void ExportInputOutputs(
     const PaddlePirParser &pir_parser,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
         &outputs) {
   inputs.clear();
   for (auto &item : pir_parser.inputs) {
@@ -350,7 +349,7 @@ void ModelExporter::ExportParameters(
 
 void ExportParameters(
     const PaddlePirParser &pir_parser,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters) {
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters) {
   parameters.clear();
   for (auto &item : pir_parser.params) {
     auto node = MakeConstant(item.first, item.second);
@@ -398,8 +397,8 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
 ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     const PaddlePirParser &pir_parser,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
         &outputs) {
   ONNX_NAMESPACE::GraphProto graph;
   graph.set_name("PaddlePaddle Graph in pir mode");
@@ -441,8 +440,8 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     const PaddleParser &parser,
     int32_t block_id,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
         &outputs) {
   ONNX_NAMESPACE::GraphProto graph;
   graph.set_name("PaddlePaddle Graph " + std::to_string(block_id));
@@ -601,7 +600,7 @@ void ModelExporter::ExportOp(const PaddleParser &parser,
 
 void ModelExporter::ProcessGraphDumplicateNames(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
-    const std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
     std::map<std::string, QuantizeInfo> &quantize_info) {

@@ -795,13 +795,13 @@ void PaddleParser::GetGlobalBlockInputOutputInfo() {
 
   for (auto i = 0; i < prog->blocks(0).ops_size(); ++i) {
     if (prog->blocks(0).ops(i).type() == "fetch") {
-      std::string name = prog->blocks(0).ops(i).inputs(0).arguments(
-          0);  // 此处是fectch op 的 variable的name
+      std::string name = prog->blocks(0).ops(i).inputs(0).arguments(0);
       outputs_with_no_order.push_back(GetTensorInfo(name, prog->blocks(0)));
       int64_t order = -1;
       GetOpAttr(prog->blocks(0).ops(i), "col", &order);
       output_order.push_back(order);
     } else if (prog->blocks(0).ops(i).type() == "feed") {
+      std::string name = prog->blocks(0).ops(i).outputs(0).arguments(0);
       inputs_with_no_order.push_back(GetTensorInfo(name, prog->blocks(0)));
       int64_t order = -1;
       GetOpAttr(prog->blocks(0).ops(i), "col", &order);
