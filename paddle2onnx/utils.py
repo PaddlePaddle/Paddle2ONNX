@@ -15,11 +15,12 @@
 from __future__ import absolute_import
 
 import importlib
-import collections
 import time
-import os
 import sys
+import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 
+def get_all_supported_operators():
+    return c_p2o.get_all_supported_operators()
 
 def try_import(module_name):
     """Try importing a module, with an informative error message on failure."""
