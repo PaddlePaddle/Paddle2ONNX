@@ -55,7 +55,12 @@ class OnnxHelper;
       m->name_ = #class_name;                                              \
       return m;                                                            \
     }                                                                      \
-  };
+  };                                                                       \
+  op_name##PirGenerator* op_name##Pirinst = new op_name##PirGenerator();   \
+  int TouchPir##op_name##class_name() {                                       \
+    op_name##Pirinst->Touch();                                             \
+    return 0;                                                              \
+  }
 
 class Generator {
  public:
