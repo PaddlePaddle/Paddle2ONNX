@@ -245,47 +245,32 @@ int PaddlePirParser::NumOfProgramOps() const { return pir_program_->num_ops(); }
 void PaddlePirParser::GetGlobalBlocksOps() {
   is_quantized_model = false;
   global_blocks_ops.clear();
-  // _constant_ops.clear();
-  // // global_blocks_ops.resize(NumOfBlocks());
-  // _constant_ops.resize(NumOfBlocks());
   auto global_block = pir_program_->block();
   for (auto& op : global_block->ops()) {
     if (op->name() != "builtin.parameter") {
-      std::cout << "op name: " << op->name() << std::endl;
       global_blocks_ops.push_back(op);
     }
   }
 }
 TensorInfo PaddlePirParser::GetTensorInfo(std::string name,
                                           const pir::Operation* op) {
-  // std::cout<<"op num results:"<<op->num_results()<<std::endl;
   if (op->result(0).type().isa<pir::DenseTensorType>()) {
     TensorInfo info;
     // get info.name
     info.name = name;
-    // std::cout<<"info.name:"<<info.name<<std::endl;
     // get info.dtype
     auto type = op->result(0).type().cast<pir::DenseTensorType>().dtype();
     auto data_type = TransToPhiDataType(type);
     auto it = pir_dtype_to_onnx_dtype.find(data_type);
     if (it != pir_dtype_to_onnx_dtype.end()) {
       info.dtype = it->second;
-      // std::cout<<"info.dtype:"<<info.dtype<<std::endl;
     } else {
       std::cerr << "data_type not found" << std::endl;
     }
     // get info.shape
     std::vector<int64_t> dims = common::vectorize(
         op->result(0).type().cast<pir::DenseTensorType>().dims());
-    // for(auto dim:dims){
-    //   std::cout<<"dim:"<<dim<<std::endl;
-    // }
-    // std::cout <<"----------"<<std::endl;
     info.shape = dims;
-    // for (size_t i = 0; i < shape.size(); ++i) {
-    //     info.shape.push_back(shape[i]);
-    //     std::cout<<"info.shape:"<<info.shape[i]<<std::endl;
-    // }
     return info;
 
   } else {
@@ -297,22 +282,18 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   inputs.clear();
   outputs.clear();
   // print pir::program in C++
-  std::ostringstream print_stream;
-  print_stream << "ForwardProgram is :\n";
-  pir_program_->Print(print_stream);
-  std::cout << "Program (fwd | bwd): \n" << print_stream.str() << std::endl;
+  // std::ostringstream print_stream;
+  // print_stream << "ForwardProgram is :\n";
+  // pir_program_->Print(print_stream);
+  // std::cout << "Program (fwd | bwd): \n" << print_stream.str() << std::endl;
   for (auto op : global_blocks_ops) {
     if (op->name() == "pd_op.data") {
-      // std::cout<<"op->name:"<<op->name()<<std::endl;
       std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();
-      // std::cout<<"var_name:"<<var_name<<std::endl;
       inputs.push_back(GetTensorInfo(var_name, op));
     } else if (op->name() == "pd_op.fetch") {
-      // std::cout<<"op->name:"<<op->name()<<std::endl;
       std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();
-      // std::cout<<"var_name:"<<var_name<<std::endl;
       outputs.push_back(GetTensorInfo(var_name, op));
     }
   }
