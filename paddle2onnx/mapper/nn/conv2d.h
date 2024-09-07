@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class Conv2dMapper : public Mapper {
  public:
-  Conv2dMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  Conv2dMapper(const PaddleParser &p,
+               OnnxHelper *helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("groups", &groups_);
@@ -35,6 +37,20 @@ class Conv2dMapper : public Mapper {
       padding_algorithm_ = "EXPLICIT";
     }
     GetAttr("data_format", &data_format_);
+  }
+
+  Conv2dMapper(const PaddlePirParser &p, OnnxHelper *helper, int64_t i)
+      : Mapper(p, helper, i) {
+    GetAttr("groups", &groups_, true);
+    GetAttr("dilations", &dilations_, true);
+    GetAttr("strides", &strides_, true);
+    GetAttr("paddings", &paddings_, true);
+    if (HasAttr("padding_algorithm", true)) {
+      GetAttr("padding_algorithm", &padding_algorithm_, true);
+    } else {
+      padding_algorithm_ = "EXPLICIT";
+    }
+    GetAttr("data_format", &data_format_, true);
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;

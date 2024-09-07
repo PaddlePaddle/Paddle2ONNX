@@ -17,6 +17,7 @@
 #include <map>
 #include <string>
 
+#include "paddle2onnx/parser/pir_parser.h"
 #include "paddle2onnx/utils/utils.h"
 // This code is modified from
 // https://blog.csdn.net/ZJU_fish1996/article/details/86515711
@@ -28,8 +29,10 @@ class OnnxHelper;
   class op_name##Generator : public Generator {                         \
    public:                                                              \
     op_name##Generator() { MapperHelper::Get()->Push(#op_name, this); } \
-    void Touch() {};                                                    \
-    Mapper* Create(const PaddleParser& p, OnnxHelper* h, int64_t b,     \
+    void Touch() {}                                                     \
+    Mapper* Create(const PaddleParser& p,                               \
+                   OnnxHelper* h,                                       \
+                   int64_t b,                                           \
                    int64_t o) {                                         \
       auto m = new class_name(p, h, b, o);                              \
       m->name_ = #class_name;                                           \
@@ -42,15 +45,37 @@ class OnnxHelper;
     return 0;                                                           \
   }
 
+#define REGISTER_PIR_MAPPER(op_name, class_name)                           \
+  class op_name##PirGenerator : public PirGenerator {                      \
+   public:                                                                 \
+    op_name##PirGenerator() { MapperHelper::Get()->Push(#op_name, this); } \
+    void Touch() {}                                                        \
+    Mapper* Create(const PaddlePirParser& p, OnnxHelper* h, int64_t i) {   \
+      auto m = new class_name(p, h, i);                                    \
+      m->name_ = #class_name;                                              \
+      return m;                                                            \
+    }                                                                      \
+  };
+
 class Generator {
  public:
-  virtual Mapper* Create(const PaddleParser&, OnnxHelper* helper, int64_t,
+  virtual Mapper* Create(const PaddleParser&,
+                         OnnxHelper* helper,
+                         int64_t,
+                         int64_t) = 0;
+};
+
+class PirGenerator {
+ public:
+  virtual Mapper* Create(const PaddlePirParser&,
+                         OnnxHelper* helper,
                          int64_t) = 0;
 };
 
 class MapperHelper {
  private:
   std::map<std::string, Generator*> mappers;
+  std::map<std::string, PirGenerator*> pir_mappers;
   std::map<std::string, int64_t> name_counter;
   MapperHelper() {}
 
@@ -99,17 +124,35 @@ class MapperHelper {
 
   void ClearNameCounter() { name_counter.clear(); }
 
-  Mapper* CreateMapper(const std::string& name, const PaddleParser& parser,
-                       OnnxHelper* helper, int64_t block_id, int64_t op_id) {
+  Mapper* CreateMapper(const std::string& name,
+                       const PaddleParser& parser,
+                       OnnxHelper* helper,
+                       int64_t block_id,
+                       int64_t op_id) {
     Assert(mappers.find(name) != mappers.end(),
            name + " cannot be found in registered mappers.");
     return mappers[name]->Create(parser, helper, block_id, op_id);
+  }
+
+  Mapper* CreateMapper(const std::string& name,
+                       const PaddlePirParser& pir_parser,
+                       OnnxHelper* helper,
+                       int64_t i) {
+    Assert(pir_mappers.find(name) != pir_mappers.end(),
+           name + " cannot be found in registered mappers.");
+    return pir_mappers[name]->Create(pir_parser, helper, i);
   }
 
   void Push(const std::string& name, Generator* generator) {
     Assert(mappers.find(name) == mappers.end(),
            name + " has been registered before.");
     mappers[name] = generator;
+  }
+
+  void Push(const std::string& name, PirGenerator* pir_generator) {
+    Assert(pir_mappers.find(name) == pir_mappers.end(),
+           name + " has been registered before.");
+    pir_mappers[name] = pir_generator;
   }
 };
 }  // namespace paddle2onnx

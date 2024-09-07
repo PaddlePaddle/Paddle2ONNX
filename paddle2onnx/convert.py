@@ -17,34 +17,42 @@ import paddle
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 from paddle2onnx.utils import logging, paddle_jit_save_configs
 
-def export(model_filename,
-           params_filename,
-           save_file=None,
-           opset_version=7,
-           auto_upgrade_opset=True,
-           verbose=True,
-           enable_onnx_checker=True,
-           enable_experimental_op=True,
-           enable_optimize=True,
-           deploy_backend="onnxruntime",
-           calibration_file="",
-           external_file="",
-           export_fp16_model=False):
+
+def export(
+    model_filename,
+    params_filename,
+    save_file=None,
+    opset_version=7,
+    auto_upgrade_opset=True,
+    verbose=True,
+    enable_onnx_checker=True,
+    enable_experimental_op=True,
+    enable_optimize=True,
+    deploy_backend="onnxruntime",
+    calibration_file="",
+    external_file="",
+    export_fp16_model=False,
+):
+
     deploy_backend = deploy_backend.lower()
+    # Check if file exists
+    if not os.path.isfile(model_filename):
+        raise RuntimeError("File does not exist: %s" % model_filename)
     # cpp2py_export.cc
     onnx_model_str = c_p2o.export(
-        model_filename, 
-        params_filename, 
-        opset_version, 
-        auto_upgrade_opset, 
+        model_filename,
+        params_filename,
+        opset_version,
+        auto_upgrade_opset,
         verbose,
-        enable_onnx_checker, 
-        enable_experimental_op, 
+        enable_onnx_checker,
+        enable_experimental_op,
         enable_optimize,
-        deploy_backend, 
-        calibration_file, 
-        external_file, 
-        export_fp16_model)
+        deploy_backend,
+        calibration_file,
+        external_file,
+        export_fp16_model,
+    )
     if save_file is not None:
         with open(save_file, "wb") as f:
             f.write(onnx_model_str)

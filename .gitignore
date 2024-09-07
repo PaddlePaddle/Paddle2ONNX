@@ -26,3 +26,5 @@ protobuf-*
 tests/__pycache_*
 tests/*/__pycache_*
 tests/*/*.info
+UNKNOWN.egg-info/*
+resnet50/*
