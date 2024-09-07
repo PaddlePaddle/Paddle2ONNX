@@ -113,7 +113,8 @@ class MapperHelper {
       return true;
     }
 
-    // 
+    // If we can't find op in PIR mappers, then try to 
+    // find it in old mappers
     auto iter = mappers.find(op_name);
     if (mappers.end() == iter) {
       logger << "Not Founded! " << op_name 
