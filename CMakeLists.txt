@@ -94,18 +94,16 @@ else()
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   message(STATUS "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")
 
-  find_library(
-    PADDLE_LIB paddle
-    PATHS ${PYTHON_SITE_PACKAGES}/paddle/base
-    NO_DEFAULT_PATH)
-  if(NOT PADDLE_LIB)
-    message(FATAL_ERROR "Paddle lib not found")
+  set(PADDLE_LIB ${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so)
+  if(EXISTS ${PADDLE_LIB})
+    message(STATUS "found libpaddle.so : ${PADDLE_LIB}")
   else()
-    message(STATUS "Found paddle lib: ${PADDLE_LIB}")
+    message(FATAL_ERROR "not found libpaddle.so!")
   endif()
+
   # add paddle include dir
   set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
-  include_directories(paddle2onnx PRIVATE ${PADDLE_INCLUDE_DIR})
+  include_directories(${PADDLE_INCLUDE_DIR})
   if(APPLE)
     set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS
                                                  "-undefined dynamic_lookup")
