@@ -34,6 +34,23 @@ std::unordered_map<std::string, std::string> op_name_mappings = {
     {"flatten", "flatten_contiguous_range"},
     {"add", "elementwise_add"}};
 
+static std::string convert_pir_op_name(const std::string pir_op_name) {
+  std::string op_name = pir_op_name;
+  std::string prefix = "pd_op.";
+
+  size_t prefix_pos = op_name.find(prefix);
+  if (prefix_pos != std::string::npos) {
+    op_name = op_name.substr(prefix_pos + prefix.size());
+  }
+  auto it = op_name_mappings.find(op_name);
+  if (it != op_name_mappings.end()) {
+    op_name = it->second;
+  }
+
+  return op_name;
+}
+
+
 namespace paddle2onnx {
 MapperHelper *MapperHelper::helper = nullptr;
 int32_t OnnxHelper::opset_version = 7;
@@ -46,17 +63,7 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser &pir_parser,
     if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") {
       continue;
     }
-    std::string op_name = op->name();
-    std::string prefix = "pd_op.";
-
-    size_t prefix_pos = op_name.find(prefix);
-    if (prefix_pos != std::string::npos) {
-      op_name = op_name.substr(prefix_pos + prefix.size());
-    }
-    auto it = op_name_mappings.find(op_name);
-    if (it != op_name_mappings.end()) {
-      op_name = it->second;
-    }
+    std::string op_name = convert_pir_op_name(op->name());
     if (!MapperHelper::Get()->IsRegistered(op_name)) {
       unsupported_ops.insert(op_name);
     }
@@ -182,7 +189,8 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser &pir_parser) {
     }
     int current_opset = 7;
     auto mapper = MapperHelper::Get()->CreateMapper(
-        pir_parser.global_blocks_ops[i]->name(), pir_parser, &helper, i);
+        convert_pir_op_name(pir_parser.global_blocks_ops[i]->name()), 
+        pir_parser, &helper, i);
     current_opset = mapper->GetMinOpsetVersion(verbose_);
     delete mapper;
   }
@@ -575,7 +583,8 @@ void ModelExporter::ExportOp(const PaddlePirParser &pir_parser,
                              int64_t op_id,
                              bool verbose) {
   auto mapper =
-      MapperHelper::Get()->CreateMapper(op->name(), pir_parser, helper, op_id);
+      MapperHelper::Get()->CreateMapper(convert_pir_op_name(op->name()), 
+                                            pir_parser, helper, op_id);
   mapper->deploy_backend = deploy_backend_;
   mapper->Run();
   delete mapper;

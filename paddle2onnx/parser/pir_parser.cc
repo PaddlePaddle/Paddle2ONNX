@@ -397,14 +397,21 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
+          // TODO: Need double check.
           PADDLE_ENFORCE_EQ(
-              array_list[0].isa<::pir::Int64Attribute>(),
+              array_list[0].isa<::pir::Int64Attribute>() 
+                  || array_list[0].isa<::pir::Int32Attribute>(),
               true,
               ::common::errors::Unimplemented(
                   "the 0th elementwise MUST be ir::Int64Attribute"));
           for (size_t i = 0; i < array_list.size(); ++i) {
-            res->push_back(
+            if (array_list[0].isa<::pir::Int64Attribute>()) {
+              res->push_back(
                 array_list[i].dyn_cast<::pir::Int64Attribute>().data());
+            } else {
+              res->push_back(
+                array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+            }
           }
         }
 
