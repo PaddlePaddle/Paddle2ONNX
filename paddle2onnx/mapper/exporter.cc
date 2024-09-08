@@ -61,12 +61,15 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser &pir_parser,
       unsupported_ops.insert(op_name);
     }
   }
-  auto logger = P2OLogger();
-  logger << "There are some ops not supported yet, including ";
-  for (auto &item : unsupported_ops) {
-    logger << item << ",";
+
+  if (unsupported_ops.size() != 0) {
+    auto logger = P2OLogger();
+    logger << "There are some ops not supported yet, including ";
+    for (auto &item : unsupported_ops) {
+      logger << item << ",";
+    }
+    logger << std::endl;
   }
-  logger << std::endl;
   return (unsupported_ops.size() == 0);
 }
 

@@ -57,7 +57,7 @@ class OnnxHelper;
     }                                                                      \
   };                                                                       \
   op_name##PirGenerator* op_name##Pirinst = new op_name##PirGenerator();   \
-  int TouchPir##op_name##class_name() {                                       \
+  int TouchPir##op_name##class_name() {                                    \
     op_name##Pirinst->Touch();                                             \
     return 0;                                                              \
   }
@@ -156,9 +156,16 @@ class MapperHelper {
                        const PaddlePirParser& pir_parser,
                        OnnxHelper* helper,
                        int64_t i) {
-    Assert(pir_mappers.find(name) != pir_mappers.end(),
-           name + " cannot be found in registered mappers.");
-    return pir_mappers[name]->Create(pir_parser, helper, i);
+    // Remove prefix
+    std::string op_name = name;
+    std::string prefix = "pd_op.";
+    size_t prefix_pos = name.find(prefix);
+    if (prefix_pos != std::string::npos) {
+      op_name = op_name.substr(prefix_pos + prefix.size());
+    }
+    Assert(pir_mappers.find(op_name) != pir_mappers.end(),
+           op_name + " cannot be found in registered mappers.");
+    return pir_mappers[op_name]->Create(pir_parser, helper, i);
   }
 
   void Push(const std::string& name, Generator* generator) {
