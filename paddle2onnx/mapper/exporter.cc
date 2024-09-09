@@ -30,6 +30,7 @@
 
 std::unordered_map<std::string, std::string> op_name_mappings = {
     {"matmul", "matmul_v2"},
+    {"relu", "relu6"},
     {"batch_norm_", "batch_norm"},
     {"flatten", "flatten_contiguous_range"},
     {"add", "elementwise_add"}};
@@ -231,6 +232,7 @@ void ModelExporter::SetOpsetVersion(const PaddlePirParser &pir_parser,
   P2OLogger(verbose_) << "Use opset_version = " << opset_version_
                       << " for ONNX export." << std::endl;
 }
+
 void ModelExporter::SetOpsetVersion(const PaddleParser &parser,
                                     bool auto_upgrade_opset) {
   // Set the Opset Version of the ONNX model.
