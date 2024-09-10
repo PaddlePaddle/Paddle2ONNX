@@ -19,6 +19,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(batch_norm, BatchNormMapper)
+REGISTER_PIR_MAPPER(batch_norm, BatchNormMapper)
 
 void BatchNormMapper::Opset7() {
   auto input_info = GetInput("X");

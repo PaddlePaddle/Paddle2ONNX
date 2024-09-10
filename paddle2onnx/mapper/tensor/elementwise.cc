@@ -25,6 +25,16 @@ REGISTER_MAPPER(elementwise_pow, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_mod, ElementWiseModMapper)
 REGISTER_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
 
+REGISTER_PIR_MAPPER(elementwise_add, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_sub, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_div, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_mul, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_min, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_max, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_pow, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_mod, ElementWiseModMapper)
+REGISTER_PIR_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
+
 int32_t ElementwiseMapper::GetMinOpsetVersion(bool verbose) {
   if (OpType() == "elementwise_min" || OpType() == "elementwise_max") {
     Logger(verbose, 8) << RequireOpset(8) << std::endl;

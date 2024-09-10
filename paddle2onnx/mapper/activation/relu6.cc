@@ -16,6 +16,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(relu6, Relu6Mapper)
+REGISTER_PIR_MAPPER(relu6, Relu6Mapper)
 
 void Relu6Mapper::Opset7() {
   auto input_info = GetInput("X");

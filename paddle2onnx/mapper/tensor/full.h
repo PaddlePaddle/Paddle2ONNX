@@ -26,15 +26,16 @@ class FullMapper : public Mapper {
   FullMapper(const PaddlePirParser& p, OnnxHelper* helper, 
                  int64_t op_id)
       : Mapper(p, helper, op_id) {
-    GetAttr("dtype", &dtype_, true);
-    GetAttr("value", &value_, true);
-    GetAttr("shape", &shape_, true);
+    in_pir_mode = true;
+    GetAttr("dtype", &dtype_);
+    GetAttr("value", &value_);
+    GetAttr("shape", &shape_);
   }
 
   void Opset7() override;
 
  private:
-  int64_t dtype_;
+  std::string dtype_;
   float value_;
   std::vector<int64_t> shape_;
 };

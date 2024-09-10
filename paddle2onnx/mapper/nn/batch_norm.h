@@ -29,11 +29,26 @@ class BatchNormMapper : public Mapper {
     GetAttr("momentum", &momentum_);
   }
 
+  BatchNormMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    GetAttr("is_test", &is_test_);
+    GetAttr("use_global_stats", &use_global_stats_);
+    GetAttr("trainable_statistics", &trainable_statistics_);
+    GetAttr("epsilon", &epsilon_);
+    GetAttr("momentum", &momentum_);
+    GetAttr("data_format", &data_format_);
+  }
+
   void Opset7() override;
 
  private:
+  bool is_test_;
+  bool use_global_stats_;
+  bool trainable_statistics_;
   float epsilon_;
   float momentum_;
+  std::string data_format_;
 };
 
 }  // namespace paddle2onnx

@@ -26,14 +26,15 @@ class FullIntArrayMapper : public Mapper {
   FullIntArrayMapper(const PaddlePirParser& p, OnnxHelper* helper, 
                  int64_t op_id)
       : Mapper(p, helper, op_id) {
-    GetAttr("dtype", &dtype_, true);
-    GetAttr("value", &shape_values_, true);
+    in_pir_mode = true;
+    GetAttr("dtype", &dtype_);
+    GetAttr("value", &shape_values_);
   }
 
   void Opset7() override;
 
  private:
-  int64_t dtype_;
+  std::string dtype_;
   std::vector<int64_t> shape_values_;
 };
 

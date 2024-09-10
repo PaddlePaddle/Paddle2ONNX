@@ -18,6 +18,7 @@
 namespace paddle2onnx {
 
 REGISTER_MAPPER(scale, ScaleMapper)
+REGISTER_PIR_MAPPER(scale, ScaleMapper)
 
 void ScaleMapper::Opset7() {
   auto input_info = GetInput("X");

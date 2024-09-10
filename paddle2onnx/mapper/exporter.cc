@@ -768,7 +768,6 @@ std::string ModelExporter::Run(const PaddlePirParser &pir_parser,
   verbose_ = verbose;
   deploy_backend_ = deploy_backend;
   calibration_cache_ = calibration_cache;
-
   // Clear name_counter, this use to generate unique name for intermdiate while
   // converting all the op
   MapperHelper::Get()->ClearNameCounter();

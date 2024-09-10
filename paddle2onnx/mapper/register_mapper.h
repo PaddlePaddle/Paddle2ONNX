@@ -51,6 +51,7 @@ class OnnxHelper;
     op_name##PirGenerator() { MapperHelper::Get()->Push(#op_name, this); } \
     void Touch() {}                                                        \
     Mapper* Create(const PaddlePirParser& p, OnnxHelper* h, int64_t i) {   \
+      P2OLogger() << "Construct operation : " #op_name << std::endl;       \
       auto m = new class_name(p, h, i);                                    \
       m->name_ = #class_name;                                              \
       return m;                                                            \

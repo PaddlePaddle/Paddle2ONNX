@@ -529,9 +529,12 @@ PaddleParser::GetOpInput(int64_t block_id, int64_t op_id,
   auto &op = block.ops(op_id);
   std::vector<TensorInfo> inputs;
   bool found = false;
+  op.PrintDebugString();
   for (auto i = 0; i < op.inputs_size(); ++i) {
     if (op.inputs(i).parameter() == name) {
       for (auto j = 0; j < op.inputs(i).arguments_size(); ++j) {
+        P2OLogger() << "OpHasInput parameter : " << name 
+                  << " , " << op.inputs(i).arguments(j) << std::endl;
         inputs.push_back(GetTensorInfo(op.inputs(i).arguments(j), block));
         found = true;
       }

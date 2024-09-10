@@ -37,6 +37,10 @@ class PaddlePirParser {
   int NumOfProgramOps() const;
   // recoring set of operators for pir global block
   TensorInfo GetTensorInfo(std::string name, const pir::Operation *op);
+  std::vector<TensorInfo> GetOpInput(int64_t op_id, 
+                                      const std::string &name) const;
+  std::vector<TensorInfo> GetOpOutput(int64_t op_id,
+                                      const std::string &name) const;
   void GetOpAttr(const pir::Operation *op,
                  const std::string &name,
                  int64_t *res) const;

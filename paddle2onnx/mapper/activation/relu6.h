@@ -27,6 +27,9 @@ class Relu6Mapper : public Mapper {
   Relu6Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
+  
+  Relu6Mapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
+      : Mapper(p, helper, op_id) { in_pir_mode = true; }
 
   void Opset7() override;
 };

@@ -19,6 +19,7 @@
 namespace paddle2onnx {
 
 REGISTER_MAPPER(flatten_contiguous_range, FlattenMapper)
+REGISTER_PIR_MAPPER(flatten_contiguous_range, FlattenMapper)
 
 void FlattenMapper::Opset7() {
   auto input_info = GetInput("X");

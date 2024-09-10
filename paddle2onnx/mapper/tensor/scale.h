@@ -28,6 +28,13 @@ class ScaleMapper : public Mapper {
     GetAttr("bias_after_scale", &bias_after_scale_);
   }
 
+  ScaleMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    GetAttr("scale", &scale_);
+    GetAttr("bias", &bias_);
+    GetAttr("bias_after_scale", &bias_after_scale_);
+  }
+
   void Opset7() override;
 
  private:
