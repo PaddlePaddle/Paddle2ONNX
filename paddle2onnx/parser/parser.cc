@@ -529,12 +529,9 @@ PaddleParser::GetOpInput(int64_t block_id, int64_t op_id,
   auto &op = block.ops(op_id);
   std::vector<TensorInfo> inputs;
   bool found = false;
-  op.PrintDebugString();
   for (auto i = 0; i < op.inputs_size(); ++i) {
     if (op.inputs(i).parameter() == name) {
       for (auto j = 0; j < op.inputs(i).arguments_size(); ++j) {
-        P2OLogger() << "OpHasInput parameter : " << name 
-                  << " , " << op.inputs(i).arguments(j) << std::endl;
         inputs.push_back(GetTensorInfo(op.inputs(i).arguments(j), block));
         found = true;
       }
@@ -583,7 +580,9 @@ bool PaddleParser::OpIsAttrVar(int64_t block_id, int64_t op_id,
                                const std::string &name) const {
   bool is_attr_var = false;
   auto &op = GetOpDesc(block_id, op_id);
+  P2OLogger() << " Operation : " << op.type() << std::endl;
   for (auto i = 0; i < op.attrs_size(); ++i) {
+    P2OLogger() << "Attr " << i << " , " << op.attrs(i).name() << std::endl;
     if (op.attrs(i).name() == name && IsAttrVar(op, i)) {
       is_attr_var = true;
       break;

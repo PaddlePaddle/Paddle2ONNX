@@ -317,7 +317,7 @@ PaddlePirParser::GetOpInput(int64_t op_id,
     auto operand_value = op->operand(i).source();
     if (operand_value.type().isa<pir::DenseTensorType>()) {
       TensorInfo info;
-      auto type = operand_value.type().dyn_cast<pir::DenseTensorType>();
+      auto type = operand_value.type().dyn_cast<pir::DenseTensorType>().dtype();
       auto data_type = TransToPhiDataType(type);
       auto it = pir_dtype_to_onnx_dtype.find(data_type);
       if (it != pir_dtype_to_onnx_dtype.end()) {
@@ -351,7 +351,7 @@ PaddlePirParser::GetOpOutput(int64_t op_id,
     auto operand_value = op->result(i);
     if (operand_value.type().isa<pir::DenseTensorType>()) {
       TensorInfo info;
-      auto type = operand_value.type().dyn_cast<pir::DenseTensorType>();
+      auto type = operand_value.type().dyn_cast<pir::DenseTensorType>().dtype();
       auto data_type = TransToPhiDataType(type);
       auto it = pir_dtype_to_onnx_dtype.find(data_type);
       if (it != pir_dtype_to_onnx_dtype.end()) {
