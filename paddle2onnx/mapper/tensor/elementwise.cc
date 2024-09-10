@@ -44,9 +44,9 @@ int32_t ElementwiseMapper::GetMinOpsetVersion(bool verbose) {
 }
 
 void ElementwiseMapper::Opset7() {
-  auto input_x_info = GetInput("X");
-  auto input_y_info = GetInput("Y");
-  auto output_info = GetOutput("Out");
+  auto input_x_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto input_y_info = in_pir_mode ? GetInput("1") : GetInput("Y");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
   auto iter = op_mapper_.find(OpType());
   Assert(op_mapper_.end() != iter,
          "Cannot find " + OpType() + " in elementwise op_mapper.");
@@ -87,9 +87,9 @@ void ElementwiseMapper::Opset7() {
 }
 
 void ElementWiseModMapper::Opset10() {
-  auto input_x_info = GetInput("X");
-  auto input_y_info = GetInput("Y");
-  auto output_info = GetOutput("Out");
+  auto input_x_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto input_y_info = in_pir_mode ? GetInput("1") : GetInput("Y");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
   int64_t fmod = 0;
   if (input_y_info[0].dtype == P2ODataType::INT32 ||
       input_y_info[0].dtype == P2ODataType::INT64) {
@@ -154,9 +154,9 @@ void ElementWiseModMapper::Opset10() {
 }
 
 void ElementWiseFloordivMapper::Opset7() {
-  auto input_x_info = GetInput("X");
-  auto input_y_info = GetInput("Y");
-  auto output_info = GetOutput("Out");
+  auto input_x_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto input_y_info = in_pir_mode ? GetInput("1") : GetInput("Y");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
 
   auto div_input_0 = helper_->AutoCast(input_x_info[0].name, input_x_info[0].dtype, P2ODataType::FP32);
   auto div_input_1 = helper_->AutoCast(input_y_info[0].name, input_y_info[0].dtype, P2ODataType::FP32);

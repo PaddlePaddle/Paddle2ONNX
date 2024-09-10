@@ -201,8 +201,8 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
     Error() << "NHWC format is not supported." << std::endl;
     return -1;
   }
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
   if (IsAttrVar("ksize")) {
     Error() << "While Attribute(ksize)'s type is Tensor, it's not "
                "supported."
@@ -260,8 +260,8 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
 }
 
 void Pool2dMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto output_info = in_pir_mode ? GetInput("0") : GetOutput("Out");
 
   GetAttr("ksize", &k_size_);
 

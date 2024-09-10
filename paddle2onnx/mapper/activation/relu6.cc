@@ -19,8 +19,8 @@ REGISTER_MAPPER(relu6, Relu6Mapper)
 REGISTER_PIR_MAPPER(relu6, Relu6Mapper)
 
 void Relu6Mapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
   float min = 0.0;
   float threshold = 6.0;
   if (HasAttr("threshold")) {
