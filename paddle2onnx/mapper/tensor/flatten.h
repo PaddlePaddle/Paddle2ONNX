@@ -30,6 +30,7 @@ class FlattenMapper : public Mapper {
 
   FlattenMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
       : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
     GetAttr("start_axis", &start_axis_);
     GetAttr("stop_axis", &stop_axis_);
   }

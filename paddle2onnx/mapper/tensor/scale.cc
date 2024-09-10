@@ -21,8 +21,8 @@ REGISTER_MAPPER(scale, ScaleMapper)
 REGISTER_PIR_MAPPER(scale, ScaleMapper)
 
 void ScaleMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
   bool has_scale_tensor = HasInput("ScaleTensor");
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
   bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);

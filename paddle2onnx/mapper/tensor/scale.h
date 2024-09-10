@@ -30,6 +30,7 @@ class ScaleMapper : public Mapper {
 
   ScaleMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
       : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
     GetAttr("scale", &scale_);
     GetAttr("bias", &bias_);
     GetAttr("bias_after_scale", &bias_after_scale_);
