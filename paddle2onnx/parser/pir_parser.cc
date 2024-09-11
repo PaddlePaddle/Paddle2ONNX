@@ -305,6 +305,48 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   }
 }
 
+bool PaddlePirParser::IsAttrVar(const pir::Operation *op, 
+                                const int64_t &attr_id) const {
+  // TODO: For Resnet50, this interface always return false.
+  return false;
+}
+
+bool PaddlePirParser::OpIsAttrVar(int64_t op_id,
+                                  const std::string &name) const {
+  bool is_attr_var = false;
+  auto &op = global_blocks_ops[op_id];
+  int32_t i = 0;
+  for (auto [key, value] : op->attributes()) {
+    if (key == name && IsAttrVar(op, i)) {
+      is_attr_var = true;
+      break;
+    }
+    i ++;
+  }
+
+  return is_attr_var;
+}
+
+bool PaddlePirParser::OpHasInput(int64_t op_id,
+                                 const std::string &name) const {
+  auto &op = global_blocks_ops[op_id];
+  for (auto i = 0; i < op->num_operands(); ++ i) {
+    // // TODO: need double check
+    if (name == std::to_string(i)) return true;
+  }
+  return false;
+}
+
+bool PaddlePirParser::OpHasOutput(int64_t op_id,
+                                 const std::string &name) const {
+  auto &op = global_blocks_ops[op_id];
+  for (auto i = 0; i < op->num_results(); ++ i) {
+    // TODO: need double check
+    if (name == std::to_string(i)) return true;
+  }
+  return false;
+}
+
 std::vector<TensorInfo> 
 PaddlePirParser::GetOpInput(int64_t op_id, 
                             const std::string &name) const {
@@ -315,6 +357,7 @@ PaddlePirParser::GetOpInput(int64_t op_id,
     if (name != std::to_string(i)) continue;
     found = true;
     auto operand_value = op->operand(i).source();
+    // TODO: need double check
     if (operand_value.type().isa<pir::DenseTensorType>()) {
       TensorInfo info;
       auto type = operand_value.type().dyn_cast<pir::DenseTensorType>().dtype();

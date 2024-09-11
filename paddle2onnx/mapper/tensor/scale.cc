@@ -23,7 +23,7 @@ REGISTER_PIR_MAPPER(scale, ScaleMapper)
 void ScaleMapper::Opset7() {
   auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
   auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
-  bool has_scale_tensor = HasInput("ScaleTensor");
+  bool has_scale_tensor = in_pir_mode ? HasInput("1") :  HasInput("ScaleTensor");
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
   bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
 
@@ -34,9 +34,9 @@ void ScaleMapper::Opset7() {
                                    P2ODataType::FP32);
     std::string out = input;
     if (bias_after_scale_) {
-      if (!is_scale_1 || HasInput("ScaleTensor")) {
-        if (HasInput("ScaleTensor")) {
-          auto scale_info = GetInput("ScaleTensor");
+      if (!is_scale_1 || has_scale_tensor) {
+        if (has_scale_tensor) {
+          auto scale_info = in_pir_mode ? GetInput("1") : GetInput("ScaleTensor");
           auto scale = helper_->AutoCast(
               scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);
@@ -57,9 +57,9 @@ void ScaleMapper::Opset7() {
             helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, bias_);
         out = helper_->MakeNode("Add", {out, bias})->output(0);
       }
-      if (!is_scale_1 || HasInput("ScaleTensor")) {
-        if (HasInput("ScaleTensor")) {
-          auto scale_info = GetInput("ScaleTensor");
+      if (!is_scale_1 || has_scale_tensor) {
+        if (has_scale_tensor) {
+          auto scale_info = in_pir_mode ? GetInput("1") : GetInput("ScaleTensor");
           auto scale = helper_->AutoCast(
               scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);

@@ -181,9 +181,11 @@ class Mapper {
   std::string Name() const { return name_; }
 
   bool HasInput(const std::string &name) const {
+    if (in_pir_mode) return pir_parser_->OpHasInput(pir_op_idx_, name);
     return parser_->OpHasInput(block_idx_, op_idx_, name);
   }
   bool HasOutput(const std::string &name) const {
+    if (in_pir_mode) return pir_parser_->OpHasOutput(pir_op_idx_, name);
     return parser_->OpHasOutput(block_idx_, op_idx_, name);
   }
   std::vector<TensorInfo> GetInput(const std::string &name) const {
@@ -196,6 +198,7 @@ class Mapper {
   }
   // Judge whether Attribute(name)'s type is Var or Vars.
   bool IsAttrVar(const std::string &name) const {
+    if (in_pir_mode) return pir_parser_->OpIsAttrVar(pir_op_idx_, name);
     return parser_->OpIsAttrVar(block_idx_, op_idx_, name);
   }
 

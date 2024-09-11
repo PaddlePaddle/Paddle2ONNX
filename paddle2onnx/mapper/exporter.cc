@@ -184,17 +184,34 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser &pir_parser) {
   std::set<std::string> verbose_log;
   OnnxHelper helper;
   for (auto i = 0; i < pir_parser.global_blocks_ops.size(); i++) {
-    if (pir_parser.global_blocks_ops[i]->name() == "pd_op.data" ||
-        pir_parser.global_blocks_ops[i]->name() == "pd_op.fetch") {
+    std::string op_name = pir_parser.global_blocks_ops[i]->name();
+    if (op_name == "pd_op.data" || op_name == "pd_op.fetch") {
       continue;
     }
     int current_opset = 7;
+    P2OLogger() << "GetMinOpsetVersion : i " << std::to_string(i) << " , op : " << op_name << std::endl;
     auto mapper = MapperHelper::Get()->CreateMapper(
-        convert_pir_op_name(pir_parser.global_blocks_ops[i]->name()), 
+        convert_pir_op_name(op_name), 
         pir_parser, &helper, i);
     current_opset = mapper->GetMinOpsetVersion(verbose_);
     delete mapper;
+
+    // TODO : some bugs will appear, not solved yet
+    // if (current_opset > max_opset) {
+    //   max_opset = current_opset;
+    //   if (current_opset > opset_version_) {
+    //     verbose_log.insert("Due to the operator: " + 
+    //                         pir_parser.global_blocks_ops[i]->name() + ", " +
+    //                         "requires opset_version >= " +
+    //                         std::to_string(current_opset) + ".");
+    //   }
+    // }
   }
+
+  // for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter) {
+  //   P2OLogger(verbose_) << *iter << std::endl;
+  // }
+  // return max_opset;
 }
 
 void ModelExporter::SetOpsetVersion(const PaddlePirParser &pir_parser,
