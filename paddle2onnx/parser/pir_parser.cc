@@ -110,6 +110,10 @@ bool PaddlePirParser::LoadProgram(const std::string& model) {
     P2OLogger() << "Failed to deserialize PaddlePaddle model." << std::endl;
     return false;
   }
+  std::ostringstream print_stream;
+  pir_program_.get()->Print(print_stream);
+  P2OLogger() << "PIR Program: \n" 
+              << print_stream.str() << std::endl;
   return true;
 }
 bool PaddlePirParser::GetParamValueName(std::vector<std::string>* var_names) {
@@ -152,7 +156,7 @@ bool PaddlePirParser::LoadParams(const std::string& path) {
   is.seekg(0, std::ios::beg);
   std::vector<std::string> var_names;
   GetParamValueName(&var_names);
-  P2OLogger() << "getting paramas value name from pir::program successfully"
+  P2OLogger() << "Getting paramas value name from pir::program successfully"
               << std::endl;
 
   int64_t read_size = 0;
@@ -224,14 +228,14 @@ bool PaddlePirParser::Init(const std::string& _model,
                            const std::string& _params) {
   std::vector<Weight> weights;
   if (!LoadProgram(_model)) {
-    P2OLogger() << "Failed to load program of PaddlePaddle pir model ."
+    P2OLogger() << "Failed to load program of PaddlePaddle pir model"
                 << std::endl;
     return false;
   }
-  P2OLogger() << "load PaddlePaddle pir model successfully ." << std::endl;
+  P2OLogger() << "Load PaddlePaddle pir model successfully" << std::endl;
   if (_params != "") {
     if (!LoadParams(_params)) {
-      P2OLogger() << "Failed to load parameters of PaddlePaddle model."
+      P2OLogger() << "Failed to load parameters of PaddlePaddle model"
                   << std::endl;
       return false;
     }
@@ -264,8 +268,10 @@ void PaddlePirParser::GetGlobalBlocksOps() {
     }
   }
 }
+
 TensorInfo PaddlePirParser::GetTensorInfo(std::string name,
                                           const pir::Operation* op) {
+  // TODO: need double check
   if (op->result(0).type().isa<pir::DenseTensorType>()) {
     TensorInfo info;
     // get info.name
@@ -311,6 +317,116 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   }
 }
 
+bool PaddlePirParser::IsAttrVar(const pir::Operation *op, 
+                                const int64_t &attr_id) const {
+  // TODO: For Resnet50, this interface always return false.
+  return false;
+}
+
+bool PaddlePirParser::OpIsAttrVar(int64_t op_id,
+                                  const std::string &name) const {
+  bool is_attr_var = false;
+  auto &op = global_blocks_ops[op_id];
+  int32_t i = 0;
+  for (auto [key, value] : op->attributes()) {
+    if (key == name && IsAttrVar(op, i)) {
+      is_attr_var = true;
+      break;
+    }
+    i ++;
+  }
+
+  return is_attr_var;
+}
+
+bool PaddlePirParser::OpHasInput(int64_t op_id,
+                                 const std::string &name) const {
+  auto &op = global_blocks_ops[op_id];
+  for (auto i = 0; i < op->num_operands(); ++ i) {
+    // // TODO: need double check
+    if (name == std::to_string(i)) return true;
+  }
+  return false;
+}
+
+bool PaddlePirParser::OpHasOutput(int64_t op_id,
+                                 const std::string &name) const {
+  auto &op = global_blocks_ops[op_id];
+  for (auto i = 0; i < op->num_results(); ++ i) {
+    // TODO: need double check
+    if (name == std::to_string(i)) return true;
+  }
+  return false;
+}
+
+std::vector<TensorInfo> 
+PaddlePirParser::GetOpInput(int64_t op_id, 
+                            const std::string &name) const {
+  auto &op = global_blocks_ops[op_id];
+  std::vector<TensorInfo> inputs;
+  bool found = false;
+  for (auto i = 0; i < op->num_operands(); ++ i) {
+    if (name != std::to_string(i)) continue;
+    found = true;
+    auto operand_value = op->operand(i).source();
+    // TODO: need double check
+    if (operand_value.type().isa<pir::DenseTensorType>()) {
+      TensorInfo info;
+      auto type = operand_value.type().dyn_cast<pir::DenseTensorType>().dtype();
+      auto data_type = TransToPhiDataType(type);
+      auto it = pir_dtype_to_onnx_dtype.find(data_type);
+      if (it != pir_dtype_to_onnx_dtype.end()) {
+        info.dtype = it->second;
+      } else {
+        std::cerr << "data_type not found" << std::endl;
+      }
+      // get info.shape
+      std::vector<int64_t> dims = common::vectorize(
+          op->result(0).type().cast<pir::DenseTensorType>().dims());
+      info.shape = dims;
+      info.name = std::to_string(i);
+      inputs.push_back(info);
+      break;
+    }
+  }
+
+  Assert(found, "Cannot find output: " + name + " in operator: " + op->name());
+  return inputs;
+}
+
+std::vector<TensorInfo> 
+PaddlePirParser::GetOpOutput(int64_t op_id,
+                             const std::string &name) const {
+  auto &op = global_blocks_ops[op_id];
+  std::vector<TensorInfo> outputs;
+  bool found = false;
+  for (auto i = 0; i < op->num_results(); ++ i) {
+    if (name != std::to_string(i)) continue;
+    found = true;
+    auto operand_value = op->result(i);
+    if (operand_value.type().isa<pir::DenseTensorType>()) {
+      TensorInfo info;
+      auto type = operand_value.type().dyn_cast<pir::DenseTensorType>().dtype();
+      auto data_type = TransToPhiDataType(type);
+      auto it = pir_dtype_to_onnx_dtype.find(data_type);
+      if (it != pir_dtype_to_onnx_dtype.end()) {
+        info.dtype = it->second;
+      } else {
+        std::cerr << "data_type not found" << std::endl;
+      }
+      // get info.shape
+      std::vector<int64_t> dims = common::vectorize(
+          op->result(0).type().cast<pir::DenseTensorType>().dims());
+      info.shape = dims;
+      info.name = std::to_string(i);
+      outputs.push_back(info);
+      break;
+    }
+  }
+
+  Assert(found, "Cannot find output: " + name + " in operator: " + op->name());
+  return outputs;
+}
 
 bool PaddlePirParser::OpHasAttr(pir::Operation* op,
                                 const std::string& name) const {
@@ -410,14 +526,21 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
+          // TODO: Need double check.
           PADDLE_ENFORCE_EQ(
-              array_list[0].isa<::pir::Int64Attribute>(),
+              array_list[0].isa<::pir::Int64Attribute>() 
+                  || array_list[0].isa<::pir::Int32Attribute>(),
               true,
               ::common::errors::Unimplemented(
                   "the 0th elementwise MUST be ir::Int64Attribute"));
           for (size_t i = 0; i < array_list.size(); ++i) {
-            res->push_back(
+            if (array_list[0].isa<::pir::Int64Attribute>()) {
+              res->push_back(
                 array_list[i].dyn_cast<::pir::Int64Attribute>().data());
+            } else {
+              res->push_back(
+                array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+            }
           }
         }
 

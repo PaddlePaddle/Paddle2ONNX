@@ -12,20 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/activation/relu6.h"
+#pragma once
+#include <string>
+#include <vector>
+
+#include "paddle2onnx/mapper/mapper.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(relu6, Relu6Mapper)
-REGISTER_PIR_MAPPER(relu6, Relu6Mapper)
 
-void Relu6Mapper::Opset7() {
-  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
-  float min = 0.0;
-  float threshold = 6.0;
-  if (HasAttr("threshold")) {
-    GetAttr("threshold", &threshold);
+class FullMapper : public Mapper {
+ public:
+  // Only for PIR
+  FullMapper(const PaddlePirParser& p, OnnxHelper* helper, 
+                 int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    GetAttr("dtype", &dtype_);
+    GetAttr("value", &value_);
+    GetAttr("shape", &shape_);
   }
-  helper_->Clip(input_info[0].name, output_info[0].name, min, threshold, input_info[0].dtype);
-}
-}
+
+  void Opset7() override;
+
+ private:
+  std::string dtype_;
+  float value_;
+  std::vector<int64_t> shape_;
+};
+
+}  // namespace paddle2onnx

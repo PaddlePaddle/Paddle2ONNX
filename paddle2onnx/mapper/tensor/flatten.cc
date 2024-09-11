@@ -19,16 +19,17 @@
 namespace paddle2onnx {
 
 REGISTER_MAPPER(flatten_contiguous_range, FlattenMapper)
+REGISTER_PIR_MAPPER(flatten_contiguous_range, FlattenMapper)
 
 void FlattenMapper::Opset7() {
-  auto input_info = GetInput("X");
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
   if (start_axis_ < 0) {
     start_axis_ += input_info[0].Rank();
   }
   if (stop_axis_ < 0) {
     stop_axis_ += input_info[0].Rank();
   }
-  auto output_info = GetOutput("Out");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
 
   auto unknown_dim_node =
       helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, -1);

@@ -30,9 +30,27 @@
 
 std::unordered_map<std::string, std::string> op_name_mappings = {
     {"matmul", "matmul_v2"},
+    {"relu", "relu6"},
     {"batch_norm_", "batch_norm"},
     {"flatten", "flatten_contiguous_range"},
     {"add", "elementwise_add"}};
+
+static std::string convert_pir_op_name(const std::string pir_op_name) {
+  std::string op_name = pir_op_name;
+  std::string prefix = "pd_op.";
+
+  size_t prefix_pos = op_name.find(prefix);
+  if (prefix_pos != std::string::npos) {
+    op_name = op_name.substr(prefix_pos + prefix.size());
+  }
+  auto it = op_name_mappings.find(op_name);
+  if (it != op_name_mappings.end()) {
+    op_name = it->second;
+  }
+
+  return op_name;
+}
+
 
 namespace paddle2onnx {
 MapperHelper *MapperHelper::helper = nullptr;
@@ -46,27 +64,20 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser &pir_parser,
     if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") {
       continue;
     }
-    std::string op_name = op->name();
-    std::string prefix = "pd_op.";
-
-    size_t prefix_pos = op_name.find(prefix);
-    if (prefix_pos != std::string::npos) {
-      op_name = op_name.substr(prefix_pos + prefix.size());
-    }
-    auto it = op_name_mappings.find(op_name);
-    if (it != op_name_mappings.end()) {
-      op_name = it->second;
-    }
+    std::string op_name = convert_pir_op_name(op->name());
     if (!MapperHelper::Get()->IsRegistered(op_name)) {
       unsupported_ops.insert(op_name);
     }
   }
-  auto logger = P2OLogger();
-  logger << "There are some ops not supported yet, including ";
-  for (auto &item : unsupported_ops) {
-    logger << item << ",";
+
+  if (unsupported_ops.size() != 0) {
+    auto logger = P2OLogger();
+    logger << "There are some ops not supported yet, including ";
+    for (auto &item : unsupported_ops) {
+      logger << item << ",";
+    }
+    logger << std::endl;
   }
-  logger << std::endl;
   return (unsupported_ops.size() == 0);
 }
 
@@ -173,16 +184,34 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser &pir_parser) {
   std::set<std::string> verbose_log;
   OnnxHelper helper;
   for (auto i = 0; i < pir_parser.global_blocks_ops.size(); i++) {
-    if (pir_parser.global_blocks_ops[i]->name() == "pd_op.data" ||
-        pir_parser.global_blocks_ops[i]->name() == "pd_op.fetch") {
+    std::string op_name = pir_parser.global_blocks_ops[i]->name();
+    if (op_name == "pd_op.data" || op_name == "pd_op.fetch") {
       continue;
     }
     int current_opset = 7;
+    P2OLogger() << "GetMinOpsetVersion : i " << std::to_string(i) << " , op : " << op_name << std::endl;
     auto mapper = MapperHelper::Get()->CreateMapper(
-        pir_parser.global_blocks_ops[i]->name(), pir_parser, &helper, i);
+        convert_pir_op_name(op_name), 
+        pir_parser, &helper, i);
     current_opset = mapper->GetMinOpsetVersion(verbose_);
     delete mapper;
+
+    // TODO : some bugs will appear, not solved yet
+    // if (current_opset > max_opset) {
+    //   max_opset = current_opset;
+    //   if (current_opset > opset_version_) {
+    //     verbose_log.insert("Due to the operator: " + 
+    //                         pir_parser.global_blocks_ops[i]->name() + ", " +
+    //                         "requires opset_version >= " +
+    //                         std::to_string(current_opset) + ".");
+    //   }
+    // }
   }
+
+  // for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter) {
+  //   P2OLogger(verbose_) << *iter << std::endl;
+  // }
+  // return max_opset;
 }
 
 void ModelExporter::SetOpsetVersion(const PaddlePirParser &pir_parser,
@@ -220,6 +249,7 @@ void ModelExporter::SetOpsetVersion(const PaddlePirParser &pir_parser,
   P2OLogger(verbose_) << "Use opset_version = " << opset_version_
                       << " for ONNX export." << std::endl;
 }
+
 void ModelExporter::SetOpsetVersion(const PaddleParser &parser,
                                     bool auto_upgrade_opset) {
   // Set the Opset Version of the ONNX model.
@@ -572,7 +602,8 @@ void ModelExporter::ExportOp(const PaddlePirParser &pir_parser,
                              int64_t op_id,
                              bool verbose) {
   auto mapper =
-      MapperHelper::Get()->CreateMapper(op->name(), pir_parser, helper, op_id);
+      MapperHelper::Get()->CreateMapper(convert_pir_op_name(op->name()), 
+                                            pir_parser, helper, op_id);
   mapper->deploy_backend = deploy_backend_;
   mapper->Run();
   delete mapper;
@@ -754,7 +785,6 @@ std::string ModelExporter::Run(const PaddlePirParser &pir_parser,
   verbose_ = verbose;
   deploy_backend_ = deploy_backend;
   calibration_cache_ = calibration_cache;
-
   // Clear name_counter, this use to generate unique name for intermdiate while
   // converting all the op
   MapperHelper::Get()->ClearNameCounter();

@@ -23,6 +23,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(pool2d, Pool2dMapper)
 REGISTER_MAPPER(max_pool2d_with_index, Pool2dMapper)
 
+REGISTER_PIR_MAPPER(pool2d, Pool2dMapper)
+
 bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
   std::vector<int64_t> spans;
   spans.reserve(out_size);
@@ -46,12 +48,15 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
   int64_t kernel_h = input_h - (output_h - 1) * stride_h;
   int64_t kernel_w = input_w - (output_w - 1) * stride_w;
   std::string onnx_pool_type;
-  if (OpType() == "max_pool2d_with_index") {
-    onnx_pool_type = "MaxPool";
-  } else {
-    auto iter = op_mapper_.find(pooling_type_);
-    onnx_pool_type = iter->second[0];
-  }
+  // if (OpType() == "max_pool2d_with_index") {
+  //   onnx_pool_type = "MaxPool";
+  // } else {
+  //   auto iter = op_mapper_.find(pooling_type_);
+  //   onnx_pool_type = iter->second[0];
+  // }
+  auto iter = op_mapper_.find(pooling_type_);
+  Assert(iter != op_mapper_.end(), "Pooling not found");
+  onnx_pool_type = iter->second[0];
 
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> node(nullptr);
   if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) != kNoNeedCastTypesOpSet7.end())
@@ -142,12 +147,15 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
     pads_.resize(4, 0);
   }
   std::string onnx_pool_type;
-  if (OpType() == "max_pool2d_with_index") {
-    onnx_pool_type = "MaxPool";
-  } else {
-    auto iter = op_mapper_.find(pooling_type_);
-    onnx_pool_type = iter->second[0];
-  }
+  // if (OpType() == "max_pool2d_with_index") {
+  //   onnx_pool_type = "MaxPool";
+  // } else {
+  //   auto iter = op_mapper_.find(pooling_type_);
+  //   onnx_pool_type = iter->second[0];
+  // }
+  auto iter = op_mapper_.find(pooling_type_);
+  Assert(iter != op_mapper_.end(), "Pooling not found");
+  onnx_pool_type = iter->second[0];
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> node(nullptr);
   if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) != kNoNeedCastTypesOpSet7.end())
   {
@@ -172,10 +180,17 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   } else {
     AddAttribute(node, "pads", pads_);
   }
-  if (OpType() != "max_pool2d_with_index" && helper_->GetOpsetVersion() >= 10) {
+  // TODO: Need double check
+  // if (OpType() != "max_pool2d_with_index" && helper_->GetOpsetVersion() >= 10) {
+  //   AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
+  // }
+  // if (OpType() != "max_pool2d_with_index" && pooling_type_ == "avg") {
+  //   AddAttribute(node, "count_include_pad", static_cast<int64_t>(exclusive_));
+  // }
+  if (helper_->GetOpsetVersion() >= 10) {
     AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
   }
-  if (OpType() != "max_pool2d_with_index" && pooling_type_ == "avg") {
+  if (pooling_type_ == "avg") {
     AddAttribute(node, "count_include_pad", static_cast<int64_t>(exclusive_));
   }
 }
@@ -186,15 +201,23 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
     Error() << "NHWC format is not supported." << std::endl;
     return -1;
   }
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  if (IsAttrVar("ksize")) {
-    Error() << "While Attribute(ksize)'s type is Tensor, it's not "
-               "supported."
-            << std::endl;
-    return -1;
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
+  if (in_pir_mode) {
+    // TODO: For PIR, kernel size is in inputs
+    auto ksize = GetInput("1")[0];
+    for (auto i = 0; i < ksize.shape.size(); ++ i) {
+      k_size_.push_back(ksize.shape[i]);
+    }
   } else {
-    GetAttr("ksize", &k_size_);
+    if (IsAttrVar("ksize")) {
+      Error() << "While Attribute(ksize)'s type is Tensor, it's not "
+                "supported."
+              << std::endl;
+      return -1;
+    } else {
+      GetAttr("ksize", &k_size_);
+    }
   }
 
   if (global_pooling_ || (k_size_[0] == 1 && k_size_[1] == 1)) {
@@ -245,8 +268,8 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
 }
 
 void Pool2dMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
+  auto output_info = in_pir_mode ? GetInput("0") : GetOutput("Out");
 
   GetAttr("ksize", &k_size_);
 

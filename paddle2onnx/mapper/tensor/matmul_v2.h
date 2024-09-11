@@ -29,6 +29,14 @@ class MatmulV2Mapper : public Mapper {
     GetAttr("trans_y", &trans_y_);
   }
 
+  MatmulV2Mapper(const PaddlePirParser& p, OnnxHelper* helper,
+                 int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    GetAttr("transpose_x", &trans_x_);
+    GetAttr("transpose_y", &trans_y_);
+  }
+
   void Opset7() override;
 
  private:
