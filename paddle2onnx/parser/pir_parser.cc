@@ -88,6 +88,18 @@ phi::DataType TransToPhiDataType(pir::Type dtype) {
 }
 
 namespace paddle2onnx {
+  std::string PaddlePirParser::GenOpInputOutputName(const std::string& name)
+  {
+    std::string new_name = "p2o_" + name;
+    if(_name_counter.find(new_name) != _name_counter.end()) {
+      _name_counter[new_name] += 1;
+    }
+    else {
+      _name_counter[new_name] = 1;
+    }
+    new_name += "_" + std::to_string(_name_counter[new_name]);
+    return new_name;
+  }
 bool PaddlePirParser::LoadProgram(const std::string& model) {
   pir::IrContext* ctx = pir::IrContext::Instance();
   ctx->GetOrRegisterDialect<paddle::dialect::OperatorDialect>();
@@ -299,6 +311,7 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   }
 }
 
+
 bool PaddlePirParser::OpHasAttr(pir::Operation* op,
                                 const std::string& name) const {
   return op->HasAttribute(name);
@@ -483,5 +496,64 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
       true,
       common::errors::InvalidArgument(
           "Cannot found attribute %s in op %s", name, op->name()));
+}
+
+std::vector<TensorInfo> PaddlePirParser::GetOpInput(
+    const pir::Operation* op, const std::string& name, int input_idx) {
+      PADDLE_ENFORCE_LT(input_idx, op->num_operands(),
+        common::errors::InvalidArgument(
+          "input index %d is out of range, the input size is %d",
+          input_idx, op->num_operands()));
+      bool found = false;
+      std::vector<TensorInfo> inputs;
+      auto operand = op->operand(input_idx);
+      TensorInfo info;
+      info.name = GenOpInputOutputName(name);
+      if(operand.type().isa<pir::DenseTensorType>()){
+        auto dense_tensor = operand.type().cast<pir::DenseTensorType>();
+        info.shape = common::vectorize(dense_tensor.dims());
+        auto data_type = TransToPhiDataType(dense_tensor.dtype());
+        auto it = pir_dtype_to_onnx_dtype.find(data_type);
+        if (it != pir_dtype_to_onnx_dtype.end()) {
+          info.dtype = it->second;
+        } else {
+          std::cerr << "data_type not found" << std::endl;
+        }
+        inputs.push_back(info);
+      }
+      else {
+        std::cerr << "input type not supported" << std::endl;
+      }
+      return inputs;
+      
+}
+std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
+    const pir::Operation* op, const std::string& name, int output_idx) {
+      PADDLE_ENFORCE_LT(output_idx, op->num_results(),
+        common::errors::InvalidArgument(
+          "output index %d is out of range, the output size is %d",
+          output_idx, op->num_results()));
+      bool found = false;
+      std::vector<TensorInfo> outputs;
+      pir::Value value = op->result(output_idx);
+      TensorInfo info;
+      info.name = GenOpInputOutputName(name);
+      if(value.type().isa<pir::DenseTensorType>()){
+        auto dense_tensor = value.type().cast<pir::DenseTensorType>();
+        info.shape = common::vectorize(dense_tensor.dims());
+        auto data_type = TransToPhiDataType(dense_tensor.dtype());
+        auto it = pir_dtype_to_onnx_dtype.find(data_type);
+        if (it != pir_dtype_to_onnx_dtype.end()) {
+          info.dtype = it->second;
+        } else {
+          std::cerr << "data_type not found" << std::endl;
+        }
+        outputs.push_back(info);
+      }
+      else {
+        std::cerr << "output type not supported" << std::endl;
+      }
+      return outputs;
+      
 }
 }  // namespace paddle2onnx

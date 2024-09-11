@@ -59,6 +59,9 @@ class PaddlePirParser {
                  const std::string &name,
                  std::vector<double> *res) const;
   bool OpHasAttr(pir::Operation *op, const std::string &name) const;
+  std::vector<TensorInfo> GetOpInput(const pir::Operation *op, const std::string& name, int input_idx);
+  std::vector<TensorInfo> GetOpOutput(const pir::Operation *op, const std::string& name, int output_idx);
+  std::string GenOpInputOutputName(const std::string& name);
 
  private:
   bool LoadProgram(const std::string &model);
@@ -67,5 +70,7 @@ class PaddlePirParser {
   void GetGlobalBlocksOps();
   void GetGlobalBlockInputOutputInfo();
   std::vector<std::map<std::string, int64_t>> _constant_ops;
+  std::unordered_map<std::string, int64_t> _name_counter;
+  
 };
 }  // namespace paddle2onnx
