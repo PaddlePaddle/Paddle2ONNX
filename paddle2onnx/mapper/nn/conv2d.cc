@@ -46,6 +46,13 @@ int32_t Conv2dMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
+void Conv2dMapper::SetOpInputIndex() {
+  input_idx_ = {
+    {"Input", 0},
+    {"Filter", 1},
+  };
+}
+
 void Conv2dMapper::Opset7() {
   auto input_info = in_pir_mode ? GetInput("0") : GetInput("Input");
   auto kernel_info = in_pir_mode ? GetInput("1") : GetInput("Filter");

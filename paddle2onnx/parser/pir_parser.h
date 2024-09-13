@@ -69,9 +69,8 @@ class PaddlePirParser {
                  const std::string &name,
                  std::vector<double> *res) const;
   bool OpHasAttr(pir::Operation *op, const std::string &name) const;
-  std::vector<TensorInfo> GetOpInput(const pir::Operation *op, const std::string& name, int input_idx);
-  std::vector<TensorInfo> GetOpOutput(const pir::Operation *op, const std::string& name, int output_idx);
-  std::string GenOpInputOutputName(const std::string& name);
+  std::vector<TensorInfo> GetOpInput(int64_t op_id, int64_t input_idx) const;
+  std::vector<TensorInfo> GetOpOutput(const pir::Operation *op, const std::string& name, int output_idx) const;
 
  private:
   bool IsAttrVar(const pir::Operation *op, const int64_t &attr_id) const;
@@ -80,8 +79,14 @@ class PaddlePirParser {
   bool GetParamValueName(std::vector<std::string> *var_names);
   void GetGlobalBlocksOps();
   void GetGlobalBlockInputOutputInfo();
+  void GetAllOpOutputName();
+  std::string GenOpInputOutputName(const std::string& name) const;
+  void AddOpOutputName(pir::Operation *op, std::string var_name, int64_t output_idx) const;
+  std::string GetOpOutputName(const pir::OpOperand& operand) const;
   std::vector<std::map<std::string, int64_t>> _constant_ops;
-  std::unordered_map<std::string, int64_t> _name_counter;
+  mutable std::unordered_map<std::string, int64_t> _name_counter;
+  mutable std::unordered_map<pir::Operation *, std::vector<std::string>> _op_outputs;
+  // mutable std::unordered_map<pir::Operation *, std::vector<std::string>> _op_outputs;
   
 };
 }  // namespace paddle2onnx

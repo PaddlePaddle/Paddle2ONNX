@@ -46,7 +46,7 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser &pir_parser,
       unsupported_ops.insert(op_name);
     }
   }
-
+  // TODO(wangmingkai02) : judge op whether is experimental op
   if (unsupported_ops.size() != 0) {
     auto logger = P2OLogger();
     logger << "There are some ops not supported yet, including ";
@@ -413,6 +413,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
   auto num_ops = pir_parser.global_blocks_ops.size();
   temp_helper.nodes.reserve(num_ops * 3);
   temp_helper.Clear();
+  std::cout << "operator num: " << num_ops << std::endl;
   for (auto i = 0; i < num_ops; ++i) {
     auto op = pir_parser.global_blocks_ops[i];
     if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") {

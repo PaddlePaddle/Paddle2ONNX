@@ -164,6 +164,14 @@ class Mapper {
   int32_t op_idx_;
   int32_t pir_op_idx_;
   std::string name_;  // op transform name
+  std::unordered_map<std::string, int64_t> input_idx_;
+  virtual void SetOpInputIndex() {
+    Assert(false,
+           "The error occurred because the " + name_ +
+           " Mapper class did not override the "
+           "SetOpInputIndex function. Please double-check if the SetOpInputIndex function is "
+           "implemented correctly.");
+  }
 
   std::string OpType() const {
     if (in_pir_mode) {

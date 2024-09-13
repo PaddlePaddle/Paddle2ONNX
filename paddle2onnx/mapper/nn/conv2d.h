@@ -52,10 +52,12 @@ class Conv2dMapper : public Mapper {
       padding_algorithm_ = "EXPLICIT";
     }
     GetAttr("data_format", &data_format_);
+    // p.GetOpInput(i, 0);
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
+  void SetOpInputIndex() override;
 
  private:
   std::vector<int64_t> dilations_;
