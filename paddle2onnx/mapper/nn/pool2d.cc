@@ -270,8 +270,16 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
 void Pool2dMapper::Opset7() {
   auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
   auto output_info = in_pir_mode ? GetInput("0") : GetOutput("Out");
+  if (in_pir_mode) {
+    // TODO: For PIR, kernel size is in inputs
+    auto ksize = GetInput("1")[0];
+    for (auto i = 0; i < ksize.shape.size(); ++ i) {
+      k_size_.push_back(ksize.shape[i]);
+    }
+  } else{
+    GetAttr("ksize", &k_size_);
+  }
 
-  GetAttr("ksize", &k_size_);
 
   bool is_1x1_kernel = true;
   for (auto i : k_size_) {

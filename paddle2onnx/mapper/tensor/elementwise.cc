@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "paddle2onnx/mapper/tensor/elementwise.h"
-
+#include "paddle2onnx/mapper/exporter.h"
 namespace paddle2onnx {
 
 REGISTER_MAPPER(elementwise_add, ElementwiseMapper)
@@ -47,9 +47,9 @@ void ElementwiseMapper::Opset7() {
   auto input_x_info = in_pir_mode ? GetInput("0") : GetInput("X");
   auto input_y_info = in_pir_mode ? GetInput("1") : GetInput("Y");
   auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
-  auto iter = op_mapper_.find(OpType());
+  auto iter = op_mapper_.find(convert_pir_op_name(OpType()));
   Assert(op_mapper_.end() != iter,
-         "Cannot find " + OpType() + " in elementwise op_mapper.");
+         "Cannot find " + convert_pir_op_name(OpType()) + " in elementwise op_mapper.");
 
   auto x_name = input_x_info[0].name;
   auto y_name = input_y_info[0].name;

@@ -33,6 +33,29 @@
 #define PATH_SEP "/"
 #endif
 
+inline std::string convert_pir_op_name(const std::string pir_op_name) {
+    std::unordered_map<std::string, std::string> op_name_mappings = {
+        {"matmul", "matmul_v2"},
+        {"relu", "relu6"},
+        {"batch_norm_", "batch_norm"},
+        {"flatten", "flatten_contiguous_range"},
+        {"add", "elementwise_add"}};
+  std::string op_name = pir_op_name;
+  std::string prefix = "pd_op.";
+
+  size_t prefix_pos = op_name.find(prefix);
+  if (prefix_pos != std::string::npos) {
+    op_name = op_name.substr(prefix_pos + prefix.size());
+  }
+  auto it = op_name_mappings.find(op_name);
+  if (it != op_name_mappings.end()) {
+    op_name = it->second;
+  }
+
+  return op_name;
+}
+
+
 inline std::string GetFilenameFromPath(const std::string &path) {
   auto pos = path.find_last_of(PATH_SEP);
   if (pos == std::string::npos) {
@@ -44,7 +67,7 @@ inline std::string GetFilenameFromPath(const std::string &path) {
 namespace paddle2onnx {
 class ModelExporter {
  public:
-  QuantizeModelProcessor quantize_model_processer;
+    QuantizeModelProcessor quantize_model_processer;
 
   void SaveExternalData(ONNX_NAMESPACE::GraphProto *graph,
                         const std::string &external_file_path,

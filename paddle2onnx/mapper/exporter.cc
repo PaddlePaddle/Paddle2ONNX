@@ -28,29 +28,6 @@
 #include "paddle2onnx/optimizer/fuse_paddle_conv_bias.h"
 #include "paddle2onnx/optimizer/fuse_unsqueeze_conv2d_squeeze.h"
 
-std::unordered_map<std::string, std::string> op_name_mappings = {
-    {"matmul", "matmul_v2"},
-    {"relu", "relu6"},
-    {"batch_norm_", "batch_norm"},
-    {"flatten", "flatten_contiguous_range"},
-    {"add", "elementwise_add"}};
-
-static std::string convert_pir_op_name(const std::string pir_op_name) {
-  std::string op_name = pir_op_name;
-  std::string prefix = "pd_op.";
-
-  size_t prefix_pos = op_name.find(prefix);
-  if (prefix_pos != std::string::npos) {
-    op_name = op_name.substr(prefix_pos + prefix.size());
-  }
-  auto it = op_name_mappings.find(op_name);
-  if (it != op_name_mappings.end()) {
-    op_name = it->second;
-  }
-
-  return op_name;
-}
-
 
 namespace paddle2onnx {
 MapperHelper *MapperHelper::helper = nullptr;
@@ -191,7 +168,7 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser &pir_parser) {
     int current_opset = 7;
     P2OLogger() << "GetMinOpsetVersion : i " << std::to_string(i) << " , op : " << op_name << std::endl;
     auto mapper = MapperHelper::Get()->CreateMapper(
-        convert_pir_op_name(op_name), 
+        convert_pir_op_name(op_name),
         pir_parser, &helper, i);
     current_opset = mapper->GetMinOpsetVersion(verbose_);
     delete mapper;
@@ -200,7 +177,7 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser &pir_parser) {
     // if (current_opset > max_opset) {
     //   max_opset = current_opset;
     //   if (current_opset > opset_version_) {
-    //     verbose_log.insert("Due to the operator: " + 
+    //     verbose_log.insert("Due to the operator: " +
     //                         pir_parser.global_blocks_ops[i]->name() + ", " +
     //                         "requires opset_version >= " +
     //                         std::to_string(current_opset) + ".");
@@ -208,10 +185,10 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser &pir_parser) {
     // }
   }
 
-  // for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter) {
-  //   P2OLogger(verbose_) << *iter << std::endl;
-  // }
-  // return max_opset;
+  for (auto iter = verbose_log.begin(); iter != verbose_log.end(); ++iter) {
+    P2OLogger(verbose_) << *iter << std::endl;
+  }
+  return max_opset;
 }
 
 void ModelExporter::SetOpsetVersion(const PaddlePirParser &pir_parser,
@@ -348,7 +325,7 @@ void ModelExporter::ExportInputOutputs(
   }
 }
 
-void ExportInputOutputs(
+void ModelExporter::ExportInputOutputs(
     const PaddlePirParser &pir_parser,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
@@ -377,7 +354,7 @@ void ModelExporter::ExportParameters(
   }
 }
 
-void ExportParameters(
+void ModelExporter::ExportParameters(
     const PaddlePirParser &pir_parser,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters) {
   parameters.clear();
@@ -438,7 +415,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
   temp_helper.Clear();
   for (auto i = 0; i < num_ops; ++i) {
     auto op = pir_parser.global_blocks_ops[i];
-    if (op->name() == "data" || op->name() == "fetch") {
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") {
       continue;
     }
     ExportOp(pir_parser, &temp_helper, opset_version_, op, i, verbose_);
@@ -602,7 +579,7 @@ void ModelExporter::ExportOp(const PaddlePirParser &pir_parser,
                              int64_t op_id,
                              bool verbose) {
   auto mapper =
-      MapperHelper::Get()->CreateMapper(convert_pir_op_name(op->name()), 
+      MapperHelper::Get()->CreateMapper(convert_pir_op_name(op->name()),
                                             pir_parser, helper, op_id);
   mapper->deploy_backend = deploy_backend_;
   mapper->Run();
@@ -814,6 +791,9 @@ std::string ModelExporter::Run(const PaddlePirParser &pir_parser,
   auto share_graph = ExportBlock(pir_parser, parameters, inputs, outputs);
   *onnx_model_.mutable_graph() = share_graph;
 
+  if (enable_onnx_checker) {
+    ONNXChecker(onnx_model_, verbose);
+  }
   std::string out;
   if (!onnx_model_.SerializeToString(&out)) {
     P2OLogger(verbose)
