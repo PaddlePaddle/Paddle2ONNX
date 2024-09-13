@@ -685,7 +685,8 @@ std::vector<TensorInfo> PaddlePirParser::GetOpInput(
       
 }
 std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
-    const pir::Operation* op, const std::string& name, int output_idx) const {
+    int64_t op_id, int64_t output_idx) const {
+      pir::Operation* op = global_blocks_ops[op_id];
       PADDLE_ENFORCE_LT(output_idx, op->num_results(),
         common::errors::InvalidArgument(
           "output index %d is out of range, the output size is %d",
@@ -694,7 +695,8 @@ std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
       std::vector<TensorInfo> outputs;
       pir::Value value = op->result(output_idx);
       TensorInfo info;
-      info.name = GenOpInputOutputName(name);
+      // info.name = GenOpInputOutputName(name);
+      info.name = _op_outputs[op][output_idx];
       if(value.type().isa<pir::DenseTensorType>()){
         auto dense_tensor = value.type().cast<pir::DenseTensorType>();
         info.shape = common::vectorize(dense_tensor.dims());

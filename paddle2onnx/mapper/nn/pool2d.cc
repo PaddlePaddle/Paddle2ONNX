@@ -201,11 +201,11 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
     Error() << "NHWC format is not supported." << std::endl;
     return -1;
   }
-  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   if (in_pir_mode) {
     // TODO: For PIR, kernel size is in inputs
-    auto ksize = GetInput("1")[0];
+    auto ksize = GetInput("ksize")[0];
     for (auto i = 0; i < ksize.shape.size(); ++ i) {
       k_size_.push_back(ksize.shape[i]);
     }
@@ -267,12 +267,22 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
+void Pool2dMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"ksize", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
 void Pool2dMapper::Opset7() {
-  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
-  auto output_info = in_pir_mode ? GetInput("0") : GetOutput("Out");
+  SetOpInputOutputIndex();
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
   if (in_pir_mode) {
     // TODO: For PIR, kernel size is in inputs
-    auto ksize = GetInput("1")[0];
+    auto ksize = GetInput("ksize")[0];
     for (auto i = 0; i < ksize.shape.size(); ++ i) {
       k_size_.push_back(ksize.shape[i]);
     }

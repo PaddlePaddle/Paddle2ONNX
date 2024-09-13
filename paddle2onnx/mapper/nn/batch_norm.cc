@@ -21,13 +21,26 @@ namespace paddle2onnx {
 REGISTER_MAPPER(batch_norm, BatchNormMapper)
 REGISTER_PIR_MAPPER(batch_norm, BatchNormMapper)
 
+void BatchNormMapper::SetOpInputOutputIndex()
+{
+  input_idx_ = {
+    {"X", 0},
+    {"Scale", 1}, 
+    {"Bias", 2},
+    {"Mean", 3},
+    {"Variance", 4},
+  };
+  output_idx_ = {{"Y", 0}};
+}
+
 void BatchNormMapper::Opset7() {
-  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
-  auto scale_info = in_pir_mode ? GetInput("1") : GetInput("Scale");
-  auto bias_info = in_pir_mode ? GetInput("2") : GetInput("Bias");
-  auto mean_info = in_pir_mode ? GetInput("3") : GetInput("Mean");
-  auto variance_info = in_pir_mode ? GetInput("4") : GetInput("Variance");
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Y");
+  SetOpInputOutputIndex();
+  auto input_info = GetInput("X");
+  auto scale_info = GetInput("Scale");
+  auto bias_info  = GetInput("Bias");
+  auto mean_info  = GetInput("Mean");
+  auto variance_info = GetInput("Variance");
+  auto output_info = GetOutput("Y");
 
   auto node = helper_->MakeNode(
       "BatchNormalization",

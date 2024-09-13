@@ -20,10 +20,20 @@ namespace paddle2onnx {
 REGISTER_MAPPER(scale, ScaleMapper)
 REGISTER_PIR_MAPPER(scale, ScaleMapper)
 
+void ScaleMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"ScaleTensor", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
 void ScaleMapper::Opset7() {
-  auto input_info = in_pir_mode ? GetInput("0") : GetInput("X");
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
-  bool has_scale_tensor = in_pir_mode ? HasInput("1") :  HasInput("ScaleTensor");
+  SetOpInputOutputIndex();
+  auto input_info = GetInput("X");
+  auto output_info = GetOutput("Out");
+  bool has_scale_tensor = HasInput("ScaleTensor");
   bool is_scale_1 = ((scale_ - 1.0) < 1e-06 && (scale_ - 1.0) > -1e-06);
   bool is_bias_0 = (bias_ < 1e-06 && bias_ > -1e-06);
 
@@ -36,7 +46,7 @@ void ScaleMapper::Opset7() {
     if (bias_after_scale_) {
       if (!is_scale_1 || has_scale_tensor) {
         if (has_scale_tensor) {
-          auto scale_info = in_pir_mode ? GetInput("1") : GetInput("ScaleTensor");
+          auto scale_info = GetInput("ScaleTensor");
           auto scale = helper_->AutoCast(
               scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);
@@ -59,7 +69,7 @@ void ScaleMapper::Opset7() {
       }
       if (!is_scale_1 || has_scale_tensor) {
         if (has_scale_tensor) {
-          auto scale_info = in_pir_mode ? GetInput("1") : GetInput("ScaleTensor");
+          auto scale_info = GetInput("ScaleTensor");
           auto scale = helper_->AutoCast(
               scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
           out = helper_->MakeNode("Mul", {out, scale})->output(0);

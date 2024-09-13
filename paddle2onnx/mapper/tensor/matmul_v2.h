@@ -38,6 +38,7 @@ class MatmulV2Mapper : public Mapper {
   }
 
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   std::string GetTrans(std::vector<TensorInfo>& input_info);

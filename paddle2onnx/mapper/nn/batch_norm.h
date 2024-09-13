@@ -41,6 +41,7 @@ class BatchNormMapper : public Mapper {
   }
 
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   bool is_test_;

@@ -57,7 +57,7 @@ class Conv2dMapper : public Mapper {
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
-  void SetOpInputIndex() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   std::vector<int64_t> dilations_;

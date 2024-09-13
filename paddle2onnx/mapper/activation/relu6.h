@@ -32,5 +32,6 @@ class Relu6Mapper : public Mapper {
       : Mapper(p, helper, op_id) { in_pir_mode = true; }
 
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 };
 }

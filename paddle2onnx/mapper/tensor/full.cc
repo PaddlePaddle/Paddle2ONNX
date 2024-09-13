@@ -21,8 +21,15 @@
 namespace paddle2onnx {
 REGISTER_PIR_MAPPER(full, FullMapper)
 
+void FullMapper::SetOpInputOutputIndex() {
+  input_idx_ = {};
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
 void FullMapper::Opset7() {
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
+  SetOpInputOutputIndex();
+  auto output_info = GetOutput("Out");
   helper_->Constant(output_info[0].name, shape_, 
                     GetOnnxDtype(output_info[0].dtype), value_);
 }

@@ -46,17 +46,21 @@ int32_t Conv2dMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
-void Conv2dMapper::SetOpInputIndex() {
+void Conv2dMapper::SetOpInputOutputIndex() {
   input_idx_ = {
     {"Input", 0},
     {"Filter", 1},
   };
+  output_idx_ = {
+    {"Output", 0},
+  };
 }
 
 void Conv2dMapper::Opset7() {
-  auto input_info = in_pir_mode ? GetInput("0") : GetInput("Input");
-  auto kernel_info = in_pir_mode ? GetInput("1") : GetInput("Filter");
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Output");
+  SetOpInputOutputIndex();
+  auto input_info = GetInput("Input");
+  auto kernel_info = GetInput("Filter");
+  auto output_info = GetOutput("Output");
 
   auto node = helper_->MakeNode(
       "Conv", {input_info[0].name, kernel_info[0].name}, {output_info[0].name});

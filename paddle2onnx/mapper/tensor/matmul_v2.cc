@@ -37,10 +37,21 @@ std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info) {
   return transpose_node->output(0);
 }
 
+void MatmulV2Mapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"Y", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+
+}
 void MatmulV2Mapper::Opset7() {
-  auto input_x_info = in_pir_mode ? GetInput("0") : GetInput("X");
-  auto input_y_info = in_pir_mode ? GetInput("1") : GetInput("Y");
-  auto output_info = in_pir_mode ? GetOutput("0") : GetOutput("Out");
+  SetOpInputOutputIndex();
+  auto input_x_info = GetInput("X");
+  auto input_y_info = GetInput("Y");
+  auto output_info = GetOutput("Out");
   std::string input_x = input_x_info[0].name;
   if (trans_x_) {
     input_x = GetTrans(input_x_info);
