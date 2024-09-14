@@ -45,6 +45,7 @@ class Mapper {
     helper_ = helper;
     name_ = name;
     pir_op_idx_ = op_id;
+    // TODO(by wangmingkai02) call SetOpInputOutputIndex()
   }
 
   // [exported_op_name, domain]
@@ -98,7 +99,7 @@ class Mapper {
   // the return value in [7, MAX_ONNX_OPSET_VERSION], represent the minimum
   // opset_version
   // if return value < 0, means the op is not supported.
-  virtual int32_t GetMinOpsetVersion(bool verbose) { return 7; }
+  virtual int32_t GetMinOpsetVersion(bool verbose) {return 7; }
 
   void Run() {
     int32_t opset_version = helper_->GetOpsetVersion();
