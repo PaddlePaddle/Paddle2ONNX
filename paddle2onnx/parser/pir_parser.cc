@@ -119,7 +119,28 @@ namespace paddle2onnx {
     return _op_outputs[op][output_idx];
   }
 
+  void PaddlePirParser::GetGlobalBlockInputValueName() {
+    for (auto op : global_blocks_ops) {
+      if (op->name() == "pd_op.data") {
+        std::string var_name =
+            op->attribute<pir::StrAttribute>("name").AsString();
+        AddOpOutputName(op, var_name, 0);
+      }
+    }
+  }
+  void PaddlePirParser::GetGlobalBlockOutputValueName() {
+    for (auto op : global_blocks_ops) {
+      if (op->name() == "pd_op.fetch") {
+        std::string var_name =
+            op->attribute<pir::StrAttribute>("name").AsString();
+        auto value = op->operand(0).source();
+        AddOpOutputName(value.defining_op(), var_name, value.dyn_cast<pir::OpResult>().index());
+      }
+    }
+  }
+
   void PaddlePirParser::GetAllOpOutputName() {
+    GetGlobalBlockInputValueName();
     for(auto op : global_blocks_ops) {
       if(op->name() == "pd_op.data" || op->name() == "pd_op.fetch") continue;
       std::string var_name = GenOpInputOutputName(op->name());
@@ -129,6 +150,7 @@ namespace paddle2onnx {
         AddOpOutputName(op, var_name, i);
       }
     }
+    GetGlobalBlockOutputValueName();
   }
 bool PaddlePirParser::LoadProgram(const std::string& model) {
   pir::IrContext* ctx = pir::IrContext::Instance();
@@ -341,7 +363,6 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
       std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();
       inputs.push_back(GetTensorInfo(var_name, op));
-      AddOpOutputName(op, var_name, 0);
     } else if (op->name() == "pd_op.fetch") {
       std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();

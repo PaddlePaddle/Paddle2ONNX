@@ -79,6 +79,8 @@ class PaddlePirParser {
   bool GetParamValueName(std::vector<std::string> *var_names);
   void GetGlobalBlocksOps();
   void GetGlobalBlockInputOutputInfo();
+  void GetGlobalBlockInputValueName();
+  void GetGlobalBlockOutputValueName();
   void GetAllOpOutputName();
   std::string GenOpInputOutputName(const std::string& name) const;
   void AddOpOutputName(pir::Operation *op, std::string var_name, int64_t output_idx) const;
