@@ -112,7 +112,9 @@ namespace paddle2onnx {
     auto op = operand.source().defining_op();
     auto output_idx = operand.source().dyn_cast<pir::OpResult>().index();
     if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
-      std::cerr << "Can not find output name" << std::endl;
+      std::cout << "input is a parameter" << std::endl;
+      return op->result(0).defining_op<pir::ParameterOp>().param_name();
+      // std::cerr << "Can not find output name" << std::endl;
     }
     return _op_outputs[op][output_idx];
   }
