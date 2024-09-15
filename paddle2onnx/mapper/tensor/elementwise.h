@@ -39,8 +39,8 @@ class ElementwiseMapper : public Mapper {
   ElementwiseMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
       : Mapper(p, helper, op_id) {
     in_pir_mode = true;
-    // TODO: no axis in PIR, we set it to 0 for resnet50
-    axis_ = 0;
+    // TODO: no axis in PIR
+    axis_ = -1;
     // GetAttr("axis", &axis_);
 
     op_mapper_["elementwise_add"] = "Add";
