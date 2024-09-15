@@ -738,4 +738,15 @@ std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
       return outputs;
       
 }
+
+  std::vector<int64_t> PaddlePirParser::GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const {
+    pir::Operation* op = global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
+    std::vector<int64_t> result;
+    GetOpAttr(op, name, &result);
+    for(auto i : result)
+    {
+      std::cout << "attr: " << i << std::endl;
+    }
+    return result;
+  }
 }  // namespace paddle2onnx

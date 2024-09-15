@@ -419,6 +419,17 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") {
       continue;
     }
+    if(op->name() == "pd_op.full_int_array") {
+      bool needExport = false;
+      for(auto it = op->result(0).use_begin(); it != op->result(0).use_end(); ++it) {
+        // if (!(it->owner()->isa<paddle::dialect::Pool2dOp>())) {
+        if (!(it->owner()->name() == "pd_op.pool2d")){
+          needExport = true;
+          break;
+        }
+      }
+      if(!needExport)  continue;
+    }
     ExportOp(pir_parser, &temp_helper, opset_version_, op, i, verbose_);
   }
   for (auto &item : parameters) {

@@ -222,6 +222,11 @@ class Mapper {
     return parser_->GetOpAttrVar(block_idx_, op_idx_, name);
   }
 
+  std::vector<int64_t> GetInputAttrVar(const std::string &input_name, const std::string &attr_name) const {
+    return pir_parser_->GetOpAttrVar(pir_op_idx_, input_idx_.at(input_name), attr_name);
+  }
+  
+
   bool HasAttr(const std::string &name) const {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];

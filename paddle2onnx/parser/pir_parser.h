@@ -71,6 +71,8 @@ class PaddlePirParser {
   bool OpHasAttr(pir::Operation *op, const std::string &name) const;
   std::vector<TensorInfo> GetOpInput(int64_t op_id, int64_t input_idx) const;
   std::vector<TensorInfo> GetOpOutput(int64_t op_id, int64_t output_idx) const;
+  std::vector<int64_t> GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const;
+  
 
  private:
   bool IsAttrVar(const pir::Operation *op, const int64_t &attr_id) const;
