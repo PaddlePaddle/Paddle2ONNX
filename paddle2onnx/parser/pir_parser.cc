@@ -394,23 +394,15 @@ bool PaddlePirParser::OpIsAttrVar(int64_t op_id,
 }
 
 bool PaddlePirParser::OpHasInput(int64_t op_id,
-                                 const std::string &name) const {
+                                 int64_t input_idx) const {
   auto &op = global_blocks_ops[op_id];
-  for (auto i = 0; i < op->num_operands(); ++ i) {
-    // // TODO: need double check
-    if (name == std::to_string(i)) return true;
-  }
-  return false;
+  return input_idx < op->num_operands();
 }
 
 bool PaddlePirParser::OpHasOutput(int64_t op_id,
-                                 const std::string &name) const {
+                                  int64_t output_idx) const {
   auto &op = global_blocks_ops[op_id];
-  for (auto i = 0; i < op->num_results(); ++ i) {
-    // TODO: need double check
-    if (name == std::to_string(i)) return true;
-  }
-  return false;
+  return output_idx < op->num_results();
 }
 
 std::vector<TensorInfo> 

@@ -40,9 +40,9 @@ class PaddlePirParser {
   bool OpIsAttrVar(int64_t op_id,
                    const std::string &name) const;
   bool OpHasInput(int64_t op_id,
-                  const std::string &name) const;
+                  int64_t input_idx) const;
   bool OpHasOutput(int64_t op_id,
-                   const std::string &name) const;
+                   int64_t output_idx) const;
   std::vector<TensorInfo> GetOpInput(int64_t op_id, 
                                       const std::string &name) const;
   std::vector<TensorInfo> GetOpOutput(int64_t op_id,
