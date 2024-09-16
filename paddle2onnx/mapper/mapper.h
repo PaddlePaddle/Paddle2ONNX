@@ -255,6 +255,15 @@ class Mapper {
       parser_->GetOpAttr(op, name, val);
     }
   }
+  void GetAttr(const std::string &name, double *val) {
+    if (in_pir_mode) {
+      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
+      pir_parser_->GetOpAttr(op, name, val);
+    } else {
+      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      parser_->GetOpAttr(op, name, val);
+    }
+  }
   void GetAttr(const std::string &name, bool *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];

@@ -71,6 +71,8 @@ class PaddleParser {
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name, float* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
+                 const std::string& name, double* res) const;
+  void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name, bool* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name, std::string* res) const;

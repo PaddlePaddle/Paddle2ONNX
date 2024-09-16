@@ -55,6 +55,9 @@ class PaddlePirParser {
                  float *res) const;
   void GetOpAttr(const pir::Operation *op,
                  const std::string &name,
+                 double *res) const;
+  void GetOpAttr(const pir::Operation *op,
+                 const std::string &name,
                  bool *res) const;
   void GetOpAttr(const pir::Operation *op,
                  const std::string &name,

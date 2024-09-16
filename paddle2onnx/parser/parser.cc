@@ -679,6 +679,22 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc &op,
   }
   Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
 }
+void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc &op,
+                             const std::string &name, double *res) const {
+  bool found = false;
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      found = true;
+      if (IsAttrVar(op, i))
+        break;
+      Assert(op.attrs(i).has_float64(), "Cannot find float64 data from attr: " + name +
+                                      " in op: " + op.type());
+      *res = op.attrs(i).float64();
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
 
 void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc &op,
                              const std::string &name, bool *res) const {

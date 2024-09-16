@@ -523,6 +523,26 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
+                                double* res) const {
+  bool found = false;
+  for (auto& pair : op->attributes()) {
+    if (pair.first == name) {
+      found = true;
+      if (pair.second.isa<pir::DoubleAttribute>()) {
+        *res = pair.second.dyn_cast<::pir::DoubleAttribute>().data();
+        break;
+      }
+    }
+  }
+  PADDLE_ENFORCE_EQ(
+      found,
+      true,
+      common::errors::InvalidArgument(
+          "Cannot found attribute %s in op %s", name, op->name()));
+}
+
+void PaddlePirParser::GetOpAttr(const pir::Operation* op,
+                                const std::string& name,
                                 bool* res) const {
   bool found = false;
   for (auto& pair : op->attributes()) {

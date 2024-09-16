@@ -37,7 +37,7 @@ class FullMapper : public Mapper {
 
  private:
   std::string dtype_;
-  float value_;
+  double value_;
   std::vector<int64_t> shape_;
 };
 
