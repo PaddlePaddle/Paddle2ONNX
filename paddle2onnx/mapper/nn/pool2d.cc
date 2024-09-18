@@ -39,7 +39,6 @@ bool Pool2dMapper::IsSameSpan(const int64_t& in_size, const int64_t& out_size) {
 
 void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
                                 const std::vector<TensorInfo>& output_info) {
-  /**
   int64_t input_h = input_info[0].shape[2];
   int64_t input_w = input_info[0].shape[3];
   int64_t output_h = output_info[0].shape[2];
@@ -48,7 +47,6 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
   int64_t stride_w = std::floor(input_w / output_w);
   int64_t kernel_h = input_h - (output_h - 1) * stride_h;
   int64_t kernel_w = input_w - (output_w - 1) * stride_w;
-  */
   std::string onnx_pool_type;
   // if (OpType() == "max_pool2d_with_index") {
   //   onnx_pool_type = "MaxPool";
@@ -74,14 +72,12 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
                       output_info[0].dtype);
   }
 
-  /**
   std::vector<int64_t> kernel_size = {kernel_h, kernel_w};
   AddAttribute(node, "kernel_shape", kernel_size);
   std::vector<int64_t> strides = {stride_h, stride_w};
   AddAttribute(node, "strides", strides);
-  */
-  AddAttribute(node, "kernel_shape", k_size_);
-  AddAttribute(node, "strides", strides_);
+  // AddAttribute(node, "kernel_shape", k_size_);
+  // AddAttribute(node, "strides", strides_);
 
   if (helper_->GetOpsetVersion() > 10) {
     AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
