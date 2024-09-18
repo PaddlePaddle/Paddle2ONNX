@@ -27,10 +27,8 @@ class ElementwiseMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
 
-    op_mapper_["elementwise_add"] = "Add";
     op_mapper_["elementwise_sub"] = "Sub";
     op_mapper_["elementwise_div"] = "Div";
-    op_mapper_["elementwise_mul"] = "Mul";
     op_mapper_["elementwise_min"] = "Min";
     op_mapper_["elementwise_max"] = "Max";
     op_mapper_["elementwise_pow"] = "Pow";

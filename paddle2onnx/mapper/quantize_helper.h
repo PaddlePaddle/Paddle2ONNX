@@ -116,11 +116,11 @@ struct QuantizeModelProcessor {
                                  std::vector<int64_t>* zero);
 
   // Perform channel wise quantization, returning scale and zero
-  void GetChannelWiseQuantizeInfo(const std::vector<float>& tensor,
-                                  const std::vector<int64_t>& shapes,
-                                  int64_t quant_axis,
-                                  std::vector<float>* scale,
-                                  std::vector<int64_t>* zero);
+  void GetChannelWiseQuantizeInfo(const std::vector<float>& tensor, 
+                                const std::vector<int64_t>& shape,
+                                const int64_t& quant_axis, 
+                                std::vector<float>* scale,
+                                std::vector<int64_t>* zero);
 
   // Generate name2node_dict to save input name and its related nodes
   void UpdateInputNameToNodes();
