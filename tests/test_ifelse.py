@@ -64,8 +64,34 @@ def test_ifelse_2_false():
     obj.set_input_data("input_data", paddle.to_tensor(2), paddle.to_tensor(1))
     obj.run()
 
+class BaseNet3(paddle.nn.Layer):
+    def __init__(self):
+        super(BaseNet3, self).__init__()
+
+    def forward(self, inputs):
+        if inputs == 1:
+            return 1
+        else:
+            return 2
+
+def test_ifelse_3_true():
+    op = BaseNet3()
+    op.eval()
+    obj = APIOnnx(op, 'ifelse', [11])
+    obj.set_input_data("input_data", paddle.to_tensor(1))
+    obj.run()
+
+def test_ifelse_3_false():
+    op = BaseNet3()
+    op.eval()
+    obj = APIOnnx(op, 'ifelse', [11])
+    obj.set_input_data("input_data", paddle.to_tensor(2))
+    obj.run()
+
 if __name__ == "__main__":
-    test_ifelse_1_true()
-    test_ifelse_1_false()
-    test_ifelse_2_true()
-    test_ifelse_2_false()
+    # test_ifelse_1_true()
+    # test_ifelse_1_false()
+    # test_ifelse_2_true()
+    # test_ifelse_2_false()
+    test_ifelse_3_true()
+    test_ifelse_3_false()

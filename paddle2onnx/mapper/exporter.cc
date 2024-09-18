@@ -19,6 +19,7 @@
 
 #include <array>
 
+#include "onnx_helper.h"
 #include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/optimizer/convert_fp32_to_fp16.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
@@ -315,7 +316,40 @@ namespace paddle2onnx
       }
       temp_outputs.push_back(std::move(MakeValueInfo(out_info[index])));
     }
+    std::cout << "Enter ExportConditionalBlock" << std::endl;
     return std::move(ExportBlock(parser, sub_block_idx, temp_parameters, temp_inputs, temp_outputs));
+  }
+
+  ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(const PaddleParser &parser,
+                                                                   int32_t block_id,
+                                                                   int32_t op_id,
+                                                                   const std::string &output_names,
+                                                                   const std::string &out_name)
+  {
+    ONNX_NAMESPACE::GraphProto graph;
+    graph.set_name("PaddlePaddle fill_constant Graph " + std::to_string(op_id));
+    auto op = parser.GetOpDesc(block_id, op_id); // fill_constant
+    OnnxHelper temp_helper;
+
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
+    auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+    std::cout << "target output name: " << output_names << std::endl;
+    temp_inputs.push_back(std::move(MakeValueInfo(out_info[0])));
+
+
+    auto node = temp_helper.MakeNode("Identity", {output_names}, {out_name});
+
+    *(graph.add_input()) = (*MakeValueInfo(out_info[0]));
+    *(graph.add_output()) = (*MakeValueInfo(out_info[0]));
+    // ONNX_NAMESPACE::ValueInfoProto value_info = *graph.add_output();
+    // value_info.set_name(out_name);
+    *(graph.add_node()) = (*node);
+
+    for (auto &item : temp_helper.value_infos)
+    {
+      *(graph.add_value_info()) = (*item.get());
+    }
+    return std::move(graph);
   }
 
   ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(const PaddleParser &parser,
@@ -333,6 +367,7 @@ namespace paddle2onnx
     for (auto op_id = 0; op_id < num_ops; ++op_id)
     {
       auto op = parser.GetOpDesc(block_id, op_id);
+      std::cout <<"op name: "<< op.type() << std::endl;
       if (op.type() == "feed")
       {
         continue;
@@ -363,22 +398,48 @@ namespace paddle2onnx
         auto conditional_block_cood_it = sub_block_map_.find(else_node_name);
         Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input else_input node.");
         auto conditional_block_cood = conditional_block_cood_it->second;
-        auto else_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
+        ONNX_NAMESPACE::GraphProto else_graph, then_graph;
+        auto else_node = parser.GetOpDesc(conditional_block_cood.first, conditional_block_cood.second);
+        if (else_node.type().find("conditional_block") != std::string::npos) {
+          else_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
+          std::cout << "detect conditional_block" << std::endl;
+        } else {
+          std::string output_name = MapperHelper::Get()->GenName("fill_constant.identity");
+          else_graph = ExportFillConstant(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name, output_name);
+          std::cout << "detect fill_constant" << std::endl;
+          // *(op -> mutable_input) = output_name;
+        }
 
         // 构建 then 分支图
         auto then_node_name = input_info[1].name;
         conditional_block_cood_it = sub_block_map_.find(then_node_name);
         Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input then_input node.");
         conditional_block_cood = conditional_block_cood_it->second;
-        auto then_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name);
+        auto then_node = parser.GetOpDesc(conditional_block_cood.first, conditional_block_cood.second);
+        if (then_node.type().find("conditional_block") != std::string::npos) {
+          then_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name);
+          std::cout << "detect conditional_block" << std::endl;
+        } else {
+          std::string output_name = MapperHelper::Get()->GenName("fill_constant.identity");
+          then_graph = ExportFillConstant(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name, output_name);
+          std::cout << "detect fill_constant" << std::endl;
+          // *(op -> mutable_input + 1) = output_name;
+        }
+        std::cout << "else_node_name: " << else_node_name << std::endl;
+        std::cout << "then_node_name: " << then_node_name << std::endl;
 
         auto cond_info = parser.GetOpInput(block_id, op_id, "Mask");
         auto output_info = parser.GetOpOutput(block_id, op_id, "Out");
         auto cond_name = temp_helper.AutoCast(cond_info[0].name, cond_info[0].dtype, P2ODataType::BOOL);
+        std::cout << "cond_name: " << cond_name << std::endl;
         auto node = temp_helper.MakeNode("If", {cond_name}, {output_info[0].name});
         AddAttribute(node, "then_branch", then_graph);
         AddAttribute(node, "else_branch", else_graph);
         continue;
+      } else if (op.type() == "fill_constant")
+      {
+        auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+        sub_block_map_[out_info[0].name] = {block_id, op_id};
       }
       ExportOp(parser, &temp_helper, opset_version_, block_id, op_id, verbose_);
     }
