@@ -18,50 +18,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(dequantize_linear, DequantizeLinearMapper)
 
 int32_t DequantizeLinearMapper::GetMinOpsetVersion(bool verbose) {
-  if (!IsConstantInput("Scale")) {
-    Error() << "Input `Scale` requires to be a constant tensor." << std::endl;
-    return -1;
-  }
-  std::vector<float> scales;
-  if (!TryGetInputValue("Scale", &scales)) {
-    Error() << "Failed to read tensor value of `Scale`." << std::endl;
-    return -1;
-  }
-  if (bit_length_ != 8) {
-    Error() << "Only support bit_length = 8." << std::endl;
-    return -1;
-  }
-  if (scales.size() > 1) {
-    auto x_info = GetInput("X");
-    if (x_info[0].shape[quant_axis_] != scales.size()) {
-      Error() << "Scale size must equal to the size of input quantize axis."
-              << std::endl;
-      return -1;
-    }
-    Logger(verbose, 13) << "While size of scales greater than 1, "
-                        << RequireOpset(13) << std::endl;
-    return 13;
-  }
-  auto x_info = GetInput("X");
-  auto x_shape = x_info[0].shape;
-  if (x_shape.size() == 2) {
-    if (quant_axis_ != 1) {
-      Error() << "When the rank of input is 2, the attribute quant_axis "
-                 "requires to be 1."
-              << std::endl;
-      return -1;
-    }
-  } else if (x_shape.size() == 4) {
-    if (!(quant_axis_ == 1 || quant_axis_ == 0)) {
-      Error() << "When the rank of input is 4, the attribute quant_axis "
-                 "requires to be 0 or 1."
-              << std::endl;
-      return -1;
-    }
-  }
-
-  Logger(verbose, 10) << RequireOpset(10) << std::endl;
-  return 10;
+  return 13;
 }
 
 void DequantizeLinearMapper::ConvertInt8ToFp32(

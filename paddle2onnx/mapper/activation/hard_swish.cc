@@ -18,7 +18,6 @@ namespace paddle2onnx {
 REGISTER_MAPPER(hard_swish, HardSwishMapper)
 
 int32_t HardSwishMapper::GetMinOpsetVersion(bool verbose) {
-    Logger(verbose, 14) << RequireOpset(14) << std::endl;
     return 14;
 }
 

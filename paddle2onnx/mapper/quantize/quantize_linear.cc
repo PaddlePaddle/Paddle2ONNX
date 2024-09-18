@@ -18,36 +18,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(quantize_linear, QuantizeLinearMapper)
 
 int32_t QuantizeLinearMapper::GetMinOpsetVersion(bool verbose) {
-  if (!IsConstantInput("Scale")) {
-    Error() << "Input `Scale` requires to be a constant tensor." << std::endl;
-    return -1;
-  }
-  std::vector<float> scales;
-  if (!TryGetInputValue("Scale", &scales)) {
-    Error() << "Failed to read tensor value of `Scale`." << std::endl;
-    return -1;
-  }
-  if (bit_length_ != 8) {
-    Error() << "Only support bit_length = 8." << std::endl;
-    return -1;
-  }
-  if (round_type_ != 0) {
-    Error() << "The round_type attr of quantize_linear must be 0." << std::endl;
-    return -1;
-  }
-  if (scales.size() > 1) {
-    auto x_info = GetInput("X");
-    if (x_info[0].shape[quant_axis_] != scales.size()) {
-      Error() << "Scale size must equal to the size of input quantize axis."
-              << std::endl;
-      return -1;
-    }
-    Logger(verbose, 13) << "While size of scales greater than 1, "
-                        << RequireOpset(13) << std::endl;
-    return 13;
-  }
-  Logger(verbose, 10) << RequireOpset(10) << std::endl;
-  return 10;
+  return 13;
 }
 
 void QuantizeLinearMapper::Opset10() {

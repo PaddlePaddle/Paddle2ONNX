@@ -15,10 +15,8 @@
 
 namespace paddle2onnx {
 
-REGISTER_MAPPER(elementwise_add, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_sub, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_div, ElementwiseMapper)
-REGISTER_MAPPER(elementwise_mul, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_min, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_max, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_pow, ElementwiseMapper)
