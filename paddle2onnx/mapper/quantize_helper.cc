@@ -237,6 +237,7 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
                               "Reshape",
                               "Resize",
                               "Round",
+                              "Shape",
                               "Sigmoid",
                               "Sin",
                               "Sinh",
@@ -270,14 +271,14 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
           continue;
         }
 
-        std::vector<float> matmul_weight;
-        if (!GetTensorByName(name, &matmul_weight)) {
+        std::vector<float> weight;
+        if (!GetTensorByName(name, &weight)) {
           P2OLogger() << "Failed to GetTensorByName: " << node->op_type() << ";" << name << std::endl;
           continue;
         }
         
-        std::vector<int64_t> matmul_weight_shape;
-        if (!GetTensorShape(name, &matmul_weight_shape)) {
+        std::vector<int64_t> weight_shape;
+        if (!GetTensorShape(name, &weight_shape)) {
           P2OLogger() << "Failed to GetTensorShape: " << node->op_type() << ";" << name << std::endl;
           continue;
         }
@@ -285,20 +286,13 @@ void QuantizeModelProcessor::AddQDQForRKNN() {
         int64_t quantize_axis = 1;
         std::vector<float> scale;
         std::vector<int64_t> zeros;
-        if(matmul_weight_shape.size() == 1) {
-          quantize_axis = 0;
-        }
-        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape, quantize_axis, &scale, &zeros);
-        std::string scale_node, zero_node;
+        GetTensorWiseQuantizeInfo(weight, &scale, &zeros);
 
-        if (scale.size() == 1) {
-          scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
-          zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
-        } else {
-          scale_node = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
-          zero_node = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
-        }
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node, zero_node, quantize_axis);
+        std::string weight_scale_node, weight_zero_node;
+        weight_scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
+        weight_zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
+
+        QuantizeInfo matmul_weight_quantize_info(scale, zeros, weight_scale_node, weight_zero_node, quantize_axis);
         helper_->quantize_info[name] = matmul_weight_quantize_info;
       }
     } else if (node->op_type() == "BatchNormalization") {
@@ -1024,14 +1018,34 @@ bool QuantizeModelProcessor::GetTensorShape(const std::string& name,
     }
     for (auto i = 0; i < node.attribute_size(); i++) {
       auto attr = node.attribute(i);
-      if (attr.name() == "value") {
-        auto tensor = attr.mutable_t();
-        for (int64_t i = 0; i < tensor->dims_size(); i++) {
-          shape->push_back(tensor->dims(i));
-        }
+      if (attr.name() != "value") {
+        continue;
+      }
+      auto tensor = attr.mutable_t();
+      for (int64_t i = 0; i < tensor->dims_size(); i++) {
+        shape->push_back(tensor->dims(i));
       }
     }
   }
+
+  for (auto& item : *nodes_)
+  {
+    auto node = *(item.get());
+    if (node.output(0) != name) {
+      continue;
+    }
+    for (auto i = 0; i < node.attribute_size(); i++) {
+      auto attr = node.attribute(i);
+      if (attr.name() != "value") {
+        continue;
+      }
+      auto tensor = attr.mutable_t();
+      for (int64_t i = 0; i < tensor->dims_size(); i++) {
+        shape->push_back(tensor->dims(i));
+      }
+    }
+  }
+
   return !shape->empty();
 }
 
@@ -1051,21 +1065,18 @@ void QuantizeModelProcessor::GetTensorWiseQuantizeInfo(
   zero->push_back(0);
 }
 
-void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(const std::vector<float>& tensor, 
-                                                        const std::vector<int64_t>& shapes,
-                                                        int64_t quant_axis, 
-                                                        std::vector<float>* scale,
-                                                        std::vector<int64_t>* zero) {
-  int64_t channel_count = 1;
-  if (shapes.size() != 1) {
-    quant_axis = 1;
-  }
-  if (quant_axis == 0) {
-    for (int64_t i = 0; i < channel_count; i++) {
+void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(
+    const std::vector<float>& tensor, const std::vector<int64_t>& shape,
+    const int64_t& quant_axis, std::vector<float>* scale,
+    std::vector<int64_t>* zero) {
+  int64_t channel_count = shape[quant_axis];
+
+  for (int64_t i = 0; i < channel_count; i++) {
+    if (quant_axis == 0) {
       float max_val = -1;
       int64_t inner_offset = 1;
-      for (auto& shape : shapes) {
-        inner_offset *= shape;
+      for (auto& j : shape) {
+        inner_offset *= j;
       }
       inner_offset /= channel_count;
       int64_t index = i * inner_offset;
@@ -1074,19 +1085,36 @@ void QuantizeModelProcessor::GetChannelWiseQuantizeInfo(const std::vector<float>
           max_val = fabs(tensor[index + j]);
         }
       }
-      Assert(max_val >= 0, "[GetChannelWiseQuantizeInfo] Require the scale >= 0, but now it's " + std::to_string(max_val) + ".");
+      Assert(
+          max_val >= 0,
+          "[GetChannelWiseQuantizeInfo] Require the scale >= 0, but now it's " +
+              std::to_string(max_val) + ".");
       scale->push_back(max_val / 127);
       zero->push_back(0);
+    } else if (quant_axis == 1) {
+      float max_val = -1;
+      int64_t inner_offset = shape.size() == 4 ? shape[2] * shape[3] : 1;
+      for (int64_t outter = 0; outter < shape[0]; outter++) {
+        int64_t index = outter * channel_count * inner_offset;
+        for (int64_t inner = 0; inner < inner_offset; inner++) {
+          int64_t final_index = index + i * inner_offset + inner;
+          if (fabs(tensor[final_index]) > max_val) {
+            max_val = fabs(tensor[final_index]);
+          }
+        }
+      }
+      Assert(
+          max_val >= 0,
+          "[GetChannelWiseQuantizeInfo] Require the scale >= 0, but now it's " +
+              std::to_string(max_val) + ".");
+      scale->push_back(max_val / 127);
+      zero->push_back(0);
+    } else {
+      Assert(false,
+             "QuantizeModelProcessor::GetChannelWiseQuantizeInfo only supports "
+             "quant_axis equals to 0 or 1, but now it's " +
+                 std::to_string(quant_axis) + ".");
     }
-  } else if (quant_axis == 1) {
-    auto max_val = *std::max_element(tensor.begin(), tensor.end());
-    Assert(max_val >= 0, "[GetChannelWiseQuantizeInfo] Require the scale >= 0, but now it's " + std::to_string(max_val) + ".");
-    scale->push_back(max_val / 127);
-    zero->push_back(0);
-  } else {
-    Assert(false,
-            "QuantizeModelProcessor::GetChannelWiseQuantizeInfo only supports quant_axis equals to 0, 1, -1, "
-            "but now it's " + std::to_string(quant_axis) + ".");
   }
 }
 

@@ -81,6 +81,11 @@ namespace paddle2onnx
       }
     }
 
+    if (unsupported_ops.size() == 0)
+    {
+      return true;
+    }
+    
     auto logger = P2OLogger();
     logger << "Oops, there are some operators not supported yet, including ";
     for (auto &item : unsupported_ops)
@@ -88,7 +93,7 @@ namespace paddle2onnx
       logger << item << ",";
     }
     logger << std::endl;
-    return (unsupported_ops.size() == 0);
+    return false;
   }
 
   int32_t ModelExporter::GetMinOpsetVersion(const PaddleParser &parser)
