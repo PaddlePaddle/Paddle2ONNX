@@ -5,15 +5,16 @@ on:
     branches: [ "develop" ]
   pull_request:
     branches: [ "develop" ]
-
+  workflow_dispatch:
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: [ '3.8']
         architecture: [ 'x64' ]
 
