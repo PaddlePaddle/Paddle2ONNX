@@ -360,17 +360,46 @@ namespace paddle2onnx
 
         // 构建 else 分支图
         auto else_node_name = input_info[0].name;
-        auto conditional_block_cood_it = sub_block_map_.find(else_node_name);
-        Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input else_input node.");
-        auto conditional_block_cood = conditional_block_cood_it->second;
-        auto else_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
-
+        ONNX_NAMESPACE::GraphProto else_graph;
+        if (else_node_name.find("fill_constant") != std::string::npos) {
+          else_graph.set_name("PaddlePaddle Const SubGraph " +
+                              std::to_string(block_id) + " " +
+                              std::to_string(op_id) + "_0");
+          for (auto i = 0; i < temp_helper.nodes.size(); ++i) {
+            auto node = temp_helper.nodes[i];
+            if (node->output(0) == else_node_name) {
+              else_graph.add_node()->CopyFrom(*node.get());
+              else_graph.add_output()->set_name(else_node_name);
+              break;
+            }
+          }
+        } else {
+          auto conditional_block_cood_it = sub_block_map_.find(else_node_name);
+          Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input else_input node.");
+          auto conditional_block_cood = conditional_block_cood_it->second;
+          else_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
+        }
         // 构建 then 分支图
         auto then_node_name = input_info[1].name;
-        conditional_block_cood_it = sub_block_map_.find(then_node_name);
-        Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input then_input node.");
-        conditional_block_cood = conditional_block_cood_it->second;
-        auto then_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name);
+        ONNX_NAMESPACE::GraphProto then_graph;
+        if (then_node_name.find("fill_constant") != std::string::npos) {
+          then_graph.set_name("PaddlePaddle Const SubGraph " +
+                              std::to_string(block_id) + " " +
+                              std::to_string(op_id) + "_1");
+          for (auto i = 0; i < temp_helper.nodes.size(); ++i) {
+            auto node = temp_helper.nodes[i];
+            if (node->output(0) == then_node_name) {
+              then_graph.add_node()->CopyFrom(*node.get());
+              then_graph.add_output()->set_name(then_node_name);
+              break;
+            }
+          }
+        } else {
+          auto conditional_block_cood_it = sub_block_map_.find(then_node_name);
+          Assert(conditional_block_cood_it != sub_block_map_.end(), "Don't find select_input then_input node.");
+          auto conditional_block_cood = conditional_block_cood_it->second;
+          then_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name);
+        }
 
         auto cond_info = parser.GetOpInput(block_id, op_id, "Mask");
         auto output_info = parser.GetOpOutput(block_id, op_id, "Out");

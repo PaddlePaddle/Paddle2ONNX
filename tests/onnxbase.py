@@ -64,7 +64,10 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         # Convert Paddle Tensor to Numpy array
         if type(expect) == list:
             expect = expect[0]
-        expect = expect.numpy()
+        if isinstance(expect, paddle.Tensor):
+            expect = expect.numpy()
+        else:
+            expect = np.array(expect)
 
         # For result_shape is (1) and expect_shape shape is ()
         expect = expect.squeeze()
