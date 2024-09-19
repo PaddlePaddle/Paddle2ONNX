@@ -14,7 +14,6 @@
 
 import paddle
 from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -30,7 +29,7 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.fluid.layers.has_nan(inputs)
-        return x.astype('float32')
+        return x.astype("float32")
 
 
 def test_has_nan_base():
@@ -41,13 +40,11 @@ def test_has_nan_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'has_nan', [9, 10, 12])
+    obj = APIOnnx(op, "has_nan", [9, 10, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(([
-            float('-inf'), -2, 3.6,
-            float('inf'), 0,
-            float('-nan'),
-            float('nan')
-        ])))
+        paddle.to_tensor(
+            ([float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")])
+        ),
+    )
     obj.run()

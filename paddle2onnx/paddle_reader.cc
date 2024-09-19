@@ -1,8 +1,8 @@
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <string>
-#include <cstring>
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/parser/parser.h"
@@ -27,7 +27,7 @@ int32_t GetDataTypeFromPaddle(int dtype) {
   return -1;
 }
 
-PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
+PaddleReader::PaddleReader(const char *model_buffer, int buffer_size) {
   PaddleParser parser;
   Assert(parser.Init(model_buffer, buffer_size),
          "Failed to parse PaddlePaddle model.");
@@ -60,9 +60,10 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
     }
   }
   for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
-    if (parser.GetOpDesc(0, i).type().find("multiclass_nms3") != std::string::npos) {
+    if (parser.GetOpDesc(0, i).type().find("multiclass_nms3") !=
+        std::string::npos) {
       has_nms = true;
-      auto& op = parser.GetOpDesc(0, i);
+      auto &op = parser.GetOpDesc(0, i);
       parser.GetOpAttr(op, "background_label", &nms_params.background_label);
       parser.GetOpAttr(op, "keep_top_k", &nms_params.keep_top_k);
       parser.GetOpAttr(op, "nms_eta", &nms_params.nms_eta);

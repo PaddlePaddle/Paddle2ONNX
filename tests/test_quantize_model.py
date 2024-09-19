@@ -26,9 +26,9 @@ from paddle.static.quantization import PostTrainingQuantization
 import platform
 
 if platform.system() == "Windows":
-    os.system('set no_proxy=bcebos.com')
+    os.system("set no_proxy=bcebos.com")
 else:
-    os.system('export no_proxy=bcebos.com')
+    os.system("export no_proxy=bcebos.com")
 
 paddle.enable_static()
 
@@ -38,7 +38,7 @@ np.random.seed(0)
 DATA_DIM = 224
 THREAD = 1
 BUF_SIZE = 102400
-DATA_DIR = 'data/ILSVRC2012'
+DATA_DIR = "data/ILSVRC2012"
 
 img_mean = np.array([0.485, 0.456, 0.406]).reshape((3, 1, 1))
 img_std = np.array([0.229, 0.224, 0.225]).reshape((3, 1, 1))
@@ -72,20 +72,17 @@ def process_image(sample, mode, color_jitter, rotate):
     img = Image.open(img_path)
     img = resize_short(img, target_size=256)
     img = crop_image(img, target_size=DATA_DIM, center=True)
-    if img.mode != 'RGB':
-        img = img.convert('RGB')
-    img = np.array(img).astype('float32').transpose((2, 0, 1)) / 255
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    img = np.array(img).astype("float32").transpose((2, 0, 1)) / 255
     img -= img_mean
     img /= img_std
     return img, sample[1]
 
 
-def _reader_creator(file_list,
-                    mode,
-                    shuffle=False,
-                    color_jitter=False,
-                    rotate=False,
-                    data_dir=DATA_DIR):
+def _reader_creator(
+    file_list, mode, shuffle=False, color_jitter=False, rotate=False, data_dir=DATA_DIR
+):
     def reader():
         with open(file_list) as flist:
             full_lines = [line.strip() for line in flist]
@@ -101,54 +98,55 @@ def _reader_creator(file_list,
                 yield img_path, int(label)
 
     mapper = functools.partial(
-        process_image, mode=mode, color_jitter=color_jitter, rotate=rotate)
+        process_image, mode=mode, color_jitter=color_jitter, rotate=rotate
+    )
 
     return paddle.reader.xmap_readers(mapper, reader, THREAD, BUF_SIZE)
 
 
 def val(data_dir=DATA_DIR):
-    file_list = os.path.join(data_dir, 'val_list.txt')
-    return _reader_creator(file_list, 'val', shuffle=False, data_dir=data_dir)
+    file_list = os.path.join(data_dir, "val_list.txt")
+    return _reader_creator(file_list, "val", shuffle=False, data_dir=data_dir)
 
 
 class TestPostTrainingQuantization(unittest.TestCase):
     def setUp(self):
-        self.int8_download = 'int8/download'
-        self.cache_folder = os.path.expanduser('~/.cache/paddle/dataset/' +
-                                               self.int8_download)
-        self.data_cache_folder = ''
+        self.int8_download = "int8/download"
+        self.cache_folder = os.path.expanduser(
+            "~/.cache/paddle/dataset/" + self.int8_download
+        )
+        self.data_cache_folder = ""
         data_urls = []
         data_md5s = []
-        if os.environ.get('DATASET') == 'full':
+        if os.environ.get("DATASET") == "full":
             data_urls.append(
-                'https://paddle-inference-dist.bj.bcebos.com/int8/ILSVRC2012_img_val.tar.gz.partaa'
+                "https://paddle-inference-dist.bj.bcebos.com/int8/ILSVRC2012_img_val.tar.gz.partaa"
             )
-            data_md5s.append('60f6525b0e1d127f345641d75d41f0a8')
+            data_md5s.append("60f6525b0e1d127f345641d75d41f0a8")
             data_urls.append(
-                'https://paddle-inference-dist.bj.bcebos.com/int8/ILSVRC2012_img_val.tar.gz.partab'
+                "https://paddle-inference-dist.bj.bcebos.com/int8/ILSVRC2012_img_val.tar.gz.partab"
             )
-            data_md5s.append('1e9f15f64e015e58d6f9ec3210ed18b5')
-            self.data_cache_folder = self.download_data(data_urls, data_md5s,
-                                                        "full_data", False)
+            data_md5s.append("1e9f15f64e015e58d6f9ec3210ed18b5")
+            self.data_cache_folder = self.download_data(
+                data_urls, data_md5s, "full_data", False
+            )
         else:
             data_urls.append(
-                'http://paddle-inference-dist.bj.bcebos.com/int8/calibration_test_data.tar.gz'
+                "http://paddle-inference-dist.bj.bcebos.com/int8/calibration_test_data.tar.gz"
             )
-            data_md5s.append('1b6c1c434172cca1bf9ba1e4d7a3157d')
-            self.data_cache_folder = self.download_data(data_urls, data_md5s,
-                                                        "small_data", False)
+            data_md5s.append("1b6c1c434172cca1bf9ba1e4d7a3157d")
+            self.data_cache_folder = self.download_data(
+                data_urls, data_md5s, "small_data", False
+            )
 
         # reader/decorator.py requires the relative path to the data folder
         if not os.path.exists("./data/ILSVRC2012"):
-            cmd = 'rm -rf {0} && ln -s {1} {0}'.format("data",
-                                                       self.data_cache_folder)
+            cmd = "rm -rf {0} && ln -s {1} {0}".format("data", self.data_cache_folder)
             os.system(cmd)
 
-        self.batch_size = 1 if os.environ.get('DATASET') == 'full' else 50
-        self.sample_iterations = 50 if os.environ.get(
-            'DATASET') == 'full' else 2
-        self.infer_iterations = 50000 if os.environ.get(
-            'DATASET') == 'full' else 2
+        self.batch_size = 1 if os.environ.get("DATASET") == "full" else 50
+        self.sample_iterations = 50 if os.environ.get("DATASET") == "full" else 2
+        self.infer_iterations = 50000 if os.environ.get("DATASET") == "full" else 2
 
         self.int8_model = "./post_training_quantize_model/"
 
@@ -157,48 +155,47 @@ class TestPostTrainingQuantization(unittest.TestCase):
 
     def cache_unzipping(self, target_folder, zip_path):
         if not os.path.exists(target_folder):
-            cmd = 'mkdir {0} && tar xf {1} -C {0}'.format(target_folder,
-                                                          zip_path)
+            cmd = "mkdir {0} && tar xf {1} -C {0}".format(target_folder, zip_path)
             os.system(cmd)
 
     def download_data(self, data_urls, data_md5s, folder_name, is_model=True):
         data_cache_folder = os.path.join(self.cache_folder, folder_name)
-        zip_path = ''
-        if os.environ.get('DATASET') == 'full':
+        zip_path = ""
+        if os.environ.get("DATASET") == "full":
             file_names = []
             for i in range(0, len(data_urls)):
                 download(data_urls[i], self.int8_download, data_md5s[i])
-                file_names.append(data_urls[i].split('/')[-1])
+                file_names.append(data_urls[i].split("/")[-1])
 
-            zip_path = os.path.join(self.cache_folder,
-                                    'full_imagenet_val.tar.gz')
+            zip_path = os.path.join(self.cache_folder, "full_imagenet_val.tar.gz")
             if not os.path.exists(zip_path):
-                cat_command = 'cat'
+                cat_command = "cat"
                 for file_name in file_names:
-                    cat_command += ' ' + os.path.join(self.cache_folder,
-                                                      file_name)
-                cat_command += ' > ' + zip_path
+                    cat_command += " " + os.path.join(self.cache_folder, file_name)
+                cat_command += " > " + zip_path
                 os.system(cat_command)
 
-        if os.environ.get('DATASET') != 'full' or is_model:
+        if os.environ.get("DATASET") != "full" or is_model:
             download(data_urls[0], self.int8_download, data_md5s[0])
-            file_name = data_urls[0].split('/')[-1]
+            file_name = data_urls[0].split("/")[-1]
             zip_path = os.path.join(self.cache_folder, file_name)
 
-        print('Data is downloaded at {0}'.format(zip_path))
+        print("Data is downloaded at {0}".format(zip_path))
         self.cache_unzipping(data_cache_folder, zip_path)
         return data_cache_folder
 
     def download_model(self):
         pass
 
-    def run_program(self,
-                    model_path,
-                    batch_size,
-                    infer_iterations,
-                    model_filename="",
-                    params_filename="",
-                    run_onnxruntime=False):
+    def run_program(
+        self,
+        model_path,
+        batch_size,
+        infer_iterations,
+        model_filename="",
+        params_filename="",
+        run_onnxruntime=False,
+    ):
         image_shape = [3, 224, 224]
         infer_program = None
         feed_dict = None
@@ -209,23 +206,32 @@ class TestPostTrainingQuantization(unittest.TestCase):
         if run_onnxruntime:
             import onnxruntime as rt
             import paddle2onnx
+
             onnx_model = paddle2onnx.command.c_paddle_to_onnx(
                 model_file=model_path + model_filename,
                 params_file=model_path + params_filename,
                 opset_version=13,
-                enable_onnx_checker=True)
+                enable_onnx_checker=True,
+            )
             sess_options = rt.SessionOptions()
-            sess_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_DISABLE_ALL
+            sess_options.graph_optimization_level = (
+                rt.GraphOptimizationLevel.ORT_DISABLE_ALL
+            )
             sess = rt.InferenceSession(
-                onnx_model, sess_options, providers=['CPUExecutionProvider'])
+                onnx_model, sess_options, providers=["CPUExecutionProvider"]
+            )
             input_name = sess.get_inputs()[0].name
             label_name = sess.get_outputs()[0].name
             print("sess input/output name : ", input_name, label_name)
         else:
             place = paddle.CPUPlace()
             exe = paddle.base.Executor(place)
-            [infer_program, feed_dict, fetch_targets] = \
-                load_inference_model(model_path, exe, model_filename=model_filename, params_filename=params_filename)
+            [infer_program, feed_dict, fetch_targets] = load_inference_model(
+                model_path,
+                exe,
+                model_filename=model_filename,
+                params_filename=params_filename,
+            )
 
         val_reader = paddle.batch(val(), batch_size)
         iterations = infer_iterations
@@ -234,8 +240,9 @@ class TestPostTrainingQuantization(unittest.TestCase):
         periods = []
         results = []
         for batch_id, data in enumerate(val_reader()):
-            image = np.array(
-                [x[0].reshape(image_shape) for x in data]).astype("float32")
+            image = np.array([x[0].reshape(image_shape) for x in data]).astype(
+                "float32"
+            )
             label = np.array([x[1] for x in data]).astype("int64")
             label = label.reshape([-1, 1])
 
@@ -243,9 +250,9 @@ class TestPostTrainingQuantization(unittest.TestCase):
             if run_onnxruntime:
                 pred = sess.run(None, {input_name: image})
             else:
-                pred = exe.run(infer_program,
-                               feed={feed_dict[0]: image},
-                               fetch_list=fetch_targets)
+                pred = exe.run(
+                    infer_program, feed={feed_dict[0]: image}, fetch_list=fetch_targets
+                )
             t2 = time.time()
             period = t2 - t1
             periods.append(period)
@@ -270,21 +277,22 @@ class TestPostTrainingQuantization(unittest.TestCase):
         acc1 = result
         return (throughput, latency, acc1)
 
-    def generate_quantized_model(self,
-                                 model_path,
-                                 quantizable_op_type,
-                                 algo="mse",
-                                 is_full_quantize=False,
-                                 is_use_cache_file=False,
-                                 is_optimize_model=False,
-                                 onnx_format=False,
-                                 model_filename="__model__",
-                                 params_filename="__params__"):
+    def generate_quantized_model(
+        self,
+        model_path,
+        quantizable_op_type,
+        algo="mse",
+        is_full_quantize=False,
+        is_use_cache_file=False,
+        is_optimize_model=False,
+        onnx_format=False,
+        model_filename="__model__",
+        params_filename="__params__",
+    ):
         try:
             os.system("mkdir " + self.int8_model)
         except Exception as e:
-            print("Failed to create {} due to {}".format(self.int8_model,
-                                                         str(e)))
+            print("Failed to create {} due to {}".format(self.int8_model, str(e)))
             sys.exit(-1)
 
         place = paddle.CPUPlace()
@@ -302,69 +310,109 @@ class TestPostTrainingQuantization(unittest.TestCase):
             is_full_quantize=is_full_quantize,
             optimize_model=is_optimize_model,
             onnx_format=onnx_format,
-            is_use_cache_file=is_use_cache_file)
+            is_use_cache_file=is_use_cache_file,
+        )
         ptq.quantize()
         ptq.save_quantized_model(
             self.int8_model,
-            model_filename='model.pdmodel',
-            params_filename='model.pdiparams')
+            model_filename="model.pdmodel",
+            params_filename="model.pdiparams",
+        )
 
-    def run_test(self,
-                 model,
-                 algo,
-                 quantizable_op_type,
-                 is_full_quantize,
-                 is_use_cache_file,
-                 is_optimize_model,
-                 diff_threshold,
-                 onnx_format=False):
+    def run_test(
+        self,
+        model,
+        algo,
+        quantizable_op_type,
+        is_full_quantize,
+        is_use_cache_file,
+        is_optimize_model,
+        diff_threshold,
+        onnx_format=False,
+    ):
         infer_iterations = self.infer_iterations
         batch_size = self.batch_size
         sample_iterations = self.sample_iterations
 
         model_cache_folder = os.path.join(self.cache_folder, model)
 
-        print("Start FP32 inference for {0} on {1} images ...".format(
-            model, infer_iterations * batch_size))
+        print(
+            "Start FP32 inference for {0} on {1} images ...".format(
+                model, infer_iterations * batch_size
+            )
+        )
         (fp32_throughput, fp32_latency, fp32_acc1) = self.run_program(
-            model_cache_folder, batch_size, infer_iterations,
-            "inference.pdmodel", "inference.pdiparams")
+            model_cache_folder,
+            batch_size,
+            infer_iterations,
+            "inference.pdmodel",
+            "inference.pdiparams",
+        )
 
-        print("Start INT8 post training quantization for {0} on {1} images ...".
-              format(model, sample_iterations * batch_size))
+        print(
+            "Start INT8 post training quantization for {0} on {1} images ...".format(
+                model, sample_iterations * batch_size
+            )
+        )
         self.generate_quantized_model(
-            model_cache_folder, quantizable_op_type, algo, is_full_quantize,
-            is_use_cache_file, is_optimize_model, onnx_format,
-            "inference.pdmodel", "inference.pdiparams")
+            model_cache_folder,
+            quantizable_op_type,
+            algo,
+            is_full_quantize,
+            is_use_cache_file,
+            is_optimize_model,
+            onnx_format,
+            "inference.pdmodel",
+            "inference.pdiparams",
+        )
 
-        print("Start INT8 inference for {0} on {1} images ...".format(
-            model, infer_iterations * batch_size))
+        print(
+            "Start INT8 inference for {0} on {1} images ...".format(
+                model, infer_iterations * batch_size
+            )
+        )
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
-            self.int8_model, batch_size, infer_iterations, "model.pdmodel",
-            "model.pdiparams")
+            self.int8_model,
+            batch_size,
+            infer_iterations,
+            "model.pdmodel",
+            "model.pdiparams",
+        )
 
-        print("Start use ONNXRuntime inference for {0} on {1} images ...".
-              format(model, infer_iterations * batch_size))
-        (onnx_int8_throughput, onnx_int8_latency,
-         onnx_int8_acc1) = self.run_program(
-             self.int8_model,
-             batch_size,
-             infer_iterations,
-             "model.pdmodel",
-             "model.pdiparams",
-             run_onnxruntime=True)
+        print(
+            "Start use ONNXRuntime inference for {0} on {1} images ...".format(
+                model, infer_iterations * batch_size
+            )
+        )
+        (onnx_int8_throughput, onnx_int8_latency, onnx_int8_acc1) = self.run_program(
+            self.int8_model,
+            batch_size,
+            infer_iterations,
+            "model.pdmodel",
+            "model.pdiparams",
+            run_onnxruntime=True,
+        )
 
         print("---Post training quantization of {} method---".format(algo))
         print(
-            "FP32 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.".
-            format(model, batch_size, fp32_throughput, fp32_latency, fp32_acc1))
+            "FP32 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.".format(
+                model, batch_size, fp32_throughput, fp32_latency, fp32_acc1
+            )
+        )
         print(
-            "INT8 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.".
-            format(model, batch_size, int8_throughput, int8_latency, int8_acc1))
+            "INT8 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.".format(
+                model, batch_size, int8_throughput, int8_latency, int8_acc1
+            )
+        )
         print(
-            "ONNXRuntime INT8 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.\n".
-            format(model, batch_size, onnx_int8_throughput, onnx_int8_latency,
-                   onnx_int8_acc1))
+            "ONNXRuntime INT8 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.\n".format(
+                model,
+                batch_size,
+                onnx_int8_throughput,
+                onnx_int8_latency,
+                onnx_int8_acc1,
+            )
+        )
         sys.stdout.flush()
 
         delta_value = fp32_acc1 - int8_acc1
@@ -396,11 +444,11 @@ class TestPostTrainingHistKlAvgONNXFormatForMobilenetv1(TestPostTrainingQuantiza
             is_use_cache_file,
             is_optimize_model,
             diff_threshold,
-            onnx_format=onnx_format)
+            onnx_format=onnx_format,
+        )
 
 
-class TestPostTrainingHistKlAvgONNXFormatForResnet50(
-        TestPostTrainingQuantization):
+class TestPostTrainingHistKlAvgONNXFormatForResnet50(TestPostTrainingQuantization):
     def test_post_training_hist_kl_avg_onnx_format_resnet50(self):
         model = "ResNet50_infer"
         algos = ["hist", "KL", "avg", "mse"]
@@ -419,8 +467,9 @@ class TestPostTrainingHistKlAvgONNXFormatForResnet50(
             is_use_cache_file,
             is_optimize_model,
             diff_threshold,
-            onnx_format=onnx_format)
+            onnx_format=onnx_format,
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -34,7 +32,8 @@ class Net(BaseNet):
             self.config["kernel_size"],
             strides=self.config["strides"],
             paddings=self.config["paddings"],
-            dilations=self.config["dilations"])
+            dilations=self.config["dilations"],
+        )
         return x
 
 
@@ -46,45 +45,35 @@ class TestUnfoldConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=20, max_value=30), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=20, max_value=30), min_size=4, max_size=4)
+        )
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=2)
+        )
         if len(kernel_size) == 1:
             kernel_size = kernel_size[0]
 
         strides = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=2)
+        )
         if len(strides) == 1:
             strides = strides[0]
 
         if draw(st.booleans()):
             paddings = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=1,
-                    max_size=2))
+                st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=2)
+            )
             if len(paddings) == 1:
                 paddings = paddings[0]
         else:
             paddings = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=4,
-                    max_size=4))
+                st.lists(st.integers(min_value=1, max_value=5), min_size=4, max_size=4)
+            )
 
         dilations = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=3), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=3), min_size=1, max_size=2)
+        )
 
         if len(dilations) == 1:
             dilations = dilations[0]

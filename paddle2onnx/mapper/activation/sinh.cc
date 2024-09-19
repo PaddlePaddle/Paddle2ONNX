@@ -18,8 +18,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(sinh, SinhMapper)
 
 int32_t SinhMapper::GetMinOpsetVersion(bool verbose) {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
-    return 9;
+  Logger(verbose, 9) << RequireOpset(9) << std::endl;
+  return 9;
 }
 
 void SinhMapper::Opset9() {
@@ -27,4 +27,4 @@ void SinhMapper::Opset9() {
   auto output_info = GetOutput("Out");
   helper_->MakeNode("Sinh", {input_info[0].name}, {output_info[0].name});
 }
-}
+}  // namespace paddle2onnx

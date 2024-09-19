@@ -17,7 +17,7 @@ python prune_paddle_model.py --model_dir original_paddle_model  \
 ## 2. 修改 Paddle 模型输入 Shape
 
 以 OCR 模型为例，[点击下载](https://paddleocr.bj.bcebos.com/PP-OCRv2/chinese/ch_PP-OCRv2_det_infer.tar) OCR 的检测模型，通过 Netron 可视化这个模型，可以看到其输入名为 `x`，形状为 `[-1, 3, 960, 960]` ( ? 即为 -1 )
-![image-20220331162225040](imgs/origin.png)  
+![image-20220331162225040](imgs/origin.png)
 
 事实上，这个模型的结构是可以支持动态形态输入的，我们使用 `paddle_infer_shape.py` 脚本进行重新导出模型，再通过 Netron 查看模型，可以看到新模型的输入输出都已经更新了
 ```

@@ -47,7 +47,8 @@ void ArgsortMapper::Opset10() {
   auto dim_size = helper_->Slice(shape, {0}, {axis_}, {axis_ + 1});
 
   auto out_node =
-      helper_->MakeNode("TopK", {x_info[0].name, dim_size},
+      helper_->MakeNode("TopK",
+                        {x_info[0].name, dim_size},
                         {output_info[0].name, indices_info[0].name});
   AddAttribute(out_node, "axis", axis_);
   if (helper_->GetOpsetVersion() > 10) {

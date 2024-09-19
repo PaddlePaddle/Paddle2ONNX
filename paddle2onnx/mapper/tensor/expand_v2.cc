@@ -26,8 +26,8 @@ void ExpandV2Mapper::Opset8() {
   if (HasInput("Shape")) {
     auto shape_info = GetInput("Shape");
     dim_diff = shape_info[0].shape[0] - x_info[0].Rank();
-    shape = helper_->AutoCast(shape_info[0].name, shape_info[0].dtype,
-                              P2ODataType::INT64);
+    shape = helper_->AutoCast(
+        shape_info[0].name, shape_info[0].dtype, P2ODataType::INT64);
   } else if (HasInput("expand_shapes_tensor")) {
     auto shape_info = GetInput("expand_shapes_tensor");
     dim_diff = shape_info.size() - x_info[0].Rank();

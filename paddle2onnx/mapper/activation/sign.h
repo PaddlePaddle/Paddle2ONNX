@@ -13,22 +13,23 @@
 // limitations under the License.
 #pragma once
 
-
-#include "paddle2onnx/mapper/mapper.h"
-
 #include <cmath>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "paddle2onnx/mapper/mapper.h"
+
 namespace paddle2onnx {
 class SignMapper : public Mapper {
  public:
-  SignMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                   int64_t op_id)
+  SignMapper(const PaddleParser &p,
+             OnnxHelper *helper,
+             int64_t block_id,
+             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset9() override;
 };
-}
+}  // namespace paddle2onnx

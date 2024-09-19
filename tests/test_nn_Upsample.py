@@ -22,13 +22,15 @@ class Net(paddle.nn.Layer):
     simple Net
     """
 
-    def __init__(self,
-                 size=None,
-                 scale_factor=None,
-                 mode='nearest',
-                 align_corners=False,
-                 align_mode=0,
-                 data_format='NCHW'):
+    def __init__(
+        self,
+        size=None,
+        scale_factor=None,
+        mode="nearest",
+        align_corners=False,
+        align_mode=0,
+        data_format="NCHW",
+    ):
         super(Net, self).__init__()
         self.size = size
         self.scale_factor = scale_factor
@@ -48,7 +50,8 @@ class Net(paddle.nn.Layer):
             mode=self.mode,
             align_corners=self.align_corners,
             align_mode=self.align_mode,
-            data_format=self.data_format)
+            data_format=self.data_format,
+        )
         return x
 
 
@@ -61,11 +64,11 @@ def test_Upsample_size():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -97,11 +100,11 @@ def test_Upsample_scale_factor():
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -110,18 +113,15 @@ def test_Upsample_size_linear_tensor():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(size=[12],
-             mode='linear',
-             data_format='NCW',
-             align_mode=1)
+    op = Net(size=[12], mode="linear", data_format="NCW", align_mode=1)
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11])
+    obj = APIOnnx(op, "nn_Upsample", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [1, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [1, 1, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -130,19 +130,17 @@ def test_Upsample_size_linear():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(size=[12],
-             mode='linear',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCW")
+    op = Net(
+        size=[12], mode="linear", align_corners=False, align_mode=1, data_format="NCW"
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [1, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [1, 1, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -151,19 +149,21 @@ def test_Upsample_scale_factor_linear():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(scale_factor=[1.5],
-             mode='linear',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCW")
+    op = Net(
+        scale_factor=[1.5],
+        mode="linear",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [1, 1, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [1, 1, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -172,19 +172,21 @@ def test_Upsample_size_bilinear():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(size=[12, 15],
-             mode='bilinear',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCHW")
+    op = Net(
+        size=[12, 15],
+        mode="bilinear",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -193,19 +195,21 @@ def test_Upsample_scale_factor_bilinear():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(scale_factor=[2, 3],
-             mode='bilinear',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCHW")
+    op = Net(
+        scale_factor=[2, 3],
+        mode="bilinear",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -214,19 +218,21 @@ def test_Upsample_size_nearest():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(size=[12, 15],
-             mode='nearest',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCHW")
+    op = Net(
+        size=[12, 15],
+        mode="nearest",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -235,19 +241,21 @@ def test_Upsample_scale_factor_nearest():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(scale_factor=[2, 3],
-             mode='nearest',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCHW")
+    op = Net(
+        scale_factor=[2, 3],
+        mode="nearest",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -256,19 +264,21 @@ def test_Upsample_size_bicubic():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(size=[12, 15],
-             mode='bicubic',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCHW")
+    op = Net(
+        size=[12, 15],
+        mode="bicubic",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -277,19 +287,21 @@ def test_Upsample_scale_factor_bicubic():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(scale_factor=[2, 3],
-             mode='bicubic',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCHW")
+    op = Net(
+        scale_factor=[2, 3],
+        mode="bicubic",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -298,19 +310,23 @@ def test_Upsample_size_trilinear():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(size=[12, 15, 20],
-             mode='trilinear',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCDHW")
+    op = Net(
+        size=[12, 15, 20],
+        mode="trilinear",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCDHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10, 10]).astype('float32')))
+            randtool("float", -1, 1, [3, 1, 10, 10, 10]).astype("float32")
+        ),
+    )
     obj.run()
 
 
@@ -319,23 +335,27 @@ def test_Upsample_scale_factor_trilinear():
     api: paddle.nn.functional.upsample
     op version: 11, 12
     """
-    op = Net(scale_factor=[2, 3, 4],
-             mode='trilinear',
-             align_corners=False,
-             align_mode=1,
-             data_format="NCDHW")
+    op = Net(
+        scale_factor=[2, 3, 4],
+        mode="trilinear",
+        align_corners=False,
+        align_mode=1,
+        data_format="NCDHW",
+    )
 
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Upsample', [11, 12])
+    obj = APIOnnx(op, "nn_Upsample", [11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10, 10]).astype('float32')))
+            randtool("float", -1, 1, [3, 1, 10, 10, 10]).astype("float32")
+        ),
+    )
     obj.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_Upsample_size()
     test_Upsample_scale_factor()
     test_Upsample_size_linear_tensor()

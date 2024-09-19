@@ -5,28 +5,30 @@ import sys
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--model',
-        required=True,
-        help='Path of directory saved the input model.')
-    parser.add_argument(
-        '--origin_names',
-        required=True,
-        nargs='+',
-        help='The original name you want to modify.')
-    parser.add_argument(
-        '--new_names',
-        required=True,
-        nargs='+',
-        help='The new name you want change to, the number of new_names should be same with the number of origin_names'
+        "--model", required=True, help="Path of directory saved the input model."
     )
     parser.add_argument(
-        '--save_file', required=True, help='Path to save the new onnx model.')
+        "--origin_names",
+        required=True,
+        nargs="+",
+        help="The original name you want to modify.",
+    )
+    parser.add_argument(
+        "--new_names",
+        required=True,
+        nargs="+",
+        help="The new name you want change to, the number of new_names should be same with the number of origin_names",
+    )
+    parser.add_argument(
+        "--save_file", required=True, help="Path to save the new onnx model."
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_arguments()
     import onnx
+
     model = onnx.load(args.model)
     output_tensor_names = set()
     for ipt in model.graph.input:
@@ -37,8 +39,11 @@ if __name__ == '__main__':
 
     for origin_name in args.origin_names:
         if origin_name not in output_tensor_names:
-            print("[ERROR] Cannot find tensor name '{}' in onnx model graph.".
-                  format(origin_name))
+            print(
+                "[ERROR] Cannot find tensor name '{}' in onnx model graph.".format(
+                    origin_name
+                )
+            )
             sys.exit(-1)
     if len(set(args.origin_names)) < len(args.origin_names):
         print(
@@ -51,9 +56,7 @@ if __name__ == '__main__':
         )
         sys.exit(-1)
     if len(set(args.new_names)) < len(args.new_names):
-        print(
-            "[ERROR] There's dumplicate name in --new_names, which is not allowed."
-        )
+        print("[ERROR] There's dumplicate name in --new_names, which is not allowed.")
         sys.exit(-1)
     for new_name in args.new_names:
         if new_name in output_tensor_names:
@@ -85,7 +88,13 @@ if __name__ == '__main__':
     onnx.checker.check_model(model)
     onnx.save(model, args.save_file)
     print("[Finished] The new model saved in {}.".format(args.save_file))
-    print("[DEBUG INFO] The inputs of new model: {}".format(
-        [x.name for x in model.graph.input]))
-    print("[DEBUG INFO] The outputs of new model: {}".format(
-        [x.name for x in model.graph.output]))
+    print(
+        "[DEBUG INFO] The inputs of new model: {}".format(
+            [x.name for x in model.graph.input]
+        )
+    )
+    print(
+        "[DEBUG INFO] The outputs of new model: {}".format(
+            [x.name for x in model.graph.output]
+        )
+    )

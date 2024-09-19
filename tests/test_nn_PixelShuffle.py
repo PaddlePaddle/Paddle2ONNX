@@ -14,7 +14,6 @@
 
 import paddle
 from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -25,7 +24,8 @@ class Net(paddle.nn.Layer):
     def __init__(self):
         super(Net, self).__init__()
         self.shuffle = paddle.nn.PixelShuffle(
-            upscale_factor=3, data_format='NCHW', name=None)
+            upscale_factor=3, data_format="NCHW", name=None
+        )
 
     def forward(self, inputs):
         """
@@ -43,6 +43,6 @@ def test_PixelShuffle_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-10, rtol=1e-11
-    obj = APIOnnx(op, 'nn_PixelShuffle', [11, 12])
+    obj = APIOnnx(op, "nn_PixelShuffle", [11, 12])
     obj.set_input_data("input_data", paddle.rand((2, 9, 4, 4)))
     obj.run()

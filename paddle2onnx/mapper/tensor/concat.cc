@@ -43,7 +43,7 @@ void ConcatMapper::Opset7() {
   std::vector<std::string> casted_names =
       helper_->DtypeAlignment(input_info, &casted_dtype);
 
-  auto parse_axis_value = [&](const TensorInfo& tensor_info, int64_t& axis) {
+  auto parse_axis_value = [&](const TensorInfo &tensor_info, int64_t &axis) {
     std::vector<int64_t> value;
     TryGetValue(tensor_info, &value);
     axis = value[0];
@@ -65,8 +65,8 @@ void ConcatMapper::Opset7() {
   }
   auto node = helper_->MakeNode("Concat", casted_names);
   AddAttribute(node, "axis", axis);
-  helper_->AutoCast(node->output(0), output_info[0].name, casted_dtype,
-                    output_info[0].dtype);
+  helper_->AutoCast(
+      node->output(0), output_info[0].name, casted_dtype, output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

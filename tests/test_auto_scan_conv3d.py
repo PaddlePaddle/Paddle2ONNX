@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -36,7 +35,8 @@ class Net(BaseNet):
             padding=self.config["padding"],
             dilation=self.config["dilation"],
             groups=self.config["groups"],
-            data_format=self.config["data_format"])
+            data_format=self.config["data_format"],
+        )
         return x
 
 
@@ -50,14 +50,12 @@ class TestConv3dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=15, max_value=25), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=15, max_value=25), min_size=5, max_size=5)
+        )
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=5), min_size=5, max_size=5)
+        )
 
         data_format = "NCDHW"
 
@@ -79,11 +77,8 @@ class TestConv3dConvert(OPConvertAutoScanTest):
                 strides = kernel_size[4]
         else:
             strides = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=5), min_size=3, max_size=3)
+            )
             if strides[0] > kernel_size[2]:
                 strides[0] = kernel_size[2]
             if strides[1] > kernel_size[3]:
@@ -102,62 +97,63 @@ class TestConv3dConvert(OPConvertAutoScanTest):
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             padding2 = np.expand_dims(
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             padding3 = np.expand_dims(
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             padding = [[0, 0]] + [[0, 0]] + padding1 + padding2 + padding3
         elif padding_type == "list":
             if draw(st.booleans()):
                 padding = draw(
                     st.lists(
-                        st.integers(
-                            min_value=1, max_value=5),
-                        min_size=3,
-                        max_size=3))
+                        st.integers(min_value=1, max_value=5), min_size=3, max_size=3
+                    )
+                )
             else:
                 padding = draw(
                     st.lists(
-                        st.integers(
-                            min_value=1, max_value=5),
-                        min_size=6,
-                        max_size=6))
+                        st.integers(min_value=1, max_value=5), min_size=6, max_size=6
+                    )
+                )
 
         dilations_type = draw(st.sampled_from(["int", "tuple"]))
         dilations = None
         if dilations_type == "int":
             dilations = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=1,
-                    max_size=1))
+                st.lists(st.integers(min_value=1, max_value=3), min_size=1, max_size=1)
+            )
         else:
             dilations = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=3), min_size=3, max_size=3)
+            )
         if len(dilations) == 1:
             dilations = dilations[0]
         if padding == "SAME":
@@ -166,7 +162,7 @@ class TestConv3dConvert(OPConvertAutoScanTest):
         config = {
             "op_names": ["conv3d"],
             "test_data_shapes": [input_shape, kernel_size],
-            "test_data_types": [['float32'], ['float32']],
+            "test_data_types": [["float32"], ["float32"]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [[-1, input_shape[1], -1, -1, -1], kernel_size],
             "data_format": data_format,
@@ -177,7 +173,7 @@ class TestConv3dConvert(OPConvertAutoScanTest):
             "input_shape": input_shape,
             "kernel_size": kernel_size,
             "delta": 1e-4,
-            "rtol": 1e-4
+            "rtol": 1e-4,
         }
 
         models = Net(config)

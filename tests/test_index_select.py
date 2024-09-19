@@ -31,10 +31,8 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.index_select(
-            inputs,
-            index=paddle.to_tensor(
-                [1, 2], dtype="int64"),
-            axis=self.axis)
+            inputs, index=paddle.to_tensor([1, 2], dtype="int64"), axis=self.axis
+        )
         return x
 
 
@@ -46,10 +44,11 @@ def test_gather_9():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'gather', [9])
+    obj = APIOnnx(op, "gather", [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -61,10 +60,11 @@ def test_gather_10():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'gather', [10])
+    obj = APIOnnx(op, "gather", [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -76,10 +76,11 @@ def test_gather_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'gather', [11])
+    obj = APIOnnx(op, "gather", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -91,10 +92,11 @@ def test_gather_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'gather', [12])
+    obj = APIOnnx(op, "gather", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -106,8 +108,9 @@ def test_gather_axis():
     op = Net(axis=1)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'gather', [12])
+    obj = APIOnnx(op, "gather", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()

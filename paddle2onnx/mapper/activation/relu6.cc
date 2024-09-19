@@ -25,6 +25,10 @@ void Relu6Mapper::Opset7() {
   if (HasAttr("threshold")) {
     GetAttr("threshold", &threshold);
   }
-  helper_->Clip(input_info[0].name, output_info[0].name, min, threshold, input_info[0].dtype);
+  helper_->Clip(input_info[0].name,
+                output_info[0].name,
+                min,
+                threshold,
+                input_info[0].dtype);
 }
-}
+}  // namespace paddle2onnx

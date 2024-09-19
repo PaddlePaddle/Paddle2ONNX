@@ -28,15 +28,17 @@ class OnnxHelper;
   class op_name##Generator : public Generator {                         \
    public:                                                              \
     op_name##Generator() { MapperHelper::Get()->Push(#op_name, this); } \
-    void Touch() {};                                                    \
-    Mapper* Create(const PaddleParser& p, OnnxHelper* h, int64_t b,     \
+    void Touch() {}                                                     \
+    Mapper *Create(const PaddleParser &p,                               \
+                   OnnxHelper *h,                                       \
+                   int64_t b,                                           \
                    int64_t o) {                                         \
       auto m = new class_name(p, h, b, o);                              \
       m->name_ = #class_name;                                           \
       return m;                                                         \
     }                                                                   \
   };                                                                    \
-  op_name##Generator* op_name##inst = new op_name##Generator();         \
+  op_name##Generator *op_name##inst = new op_name##Generator();         \
   int Touch##op_name##class_name() {                                    \
     op_name##inst->Touch();                                             \
     return 0;                                                           \
@@ -44,19 +46,21 @@ class OnnxHelper;
 
 class Generator {
  public:
-  virtual Mapper* Create(const PaddleParser&, OnnxHelper* helper, int64_t,
+  virtual Mapper *Create(const PaddleParser &,
+                         OnnxHelper *helper,
+                         int64_t,
                          int64_t) = 0;
 };
 
 class MapperHelper {
  private:
-  std::map<std::string, Generator*> mappers;
+  std::map<std::string, Generator *> mappers;
   std::map<std::string, int64_t> name_counter;
   MapperHelper() {}
 
  public:
-  static MapperHelper* helper;
-  static MapperHelper* Get() {
+  static MapperHelper *helper;
+  static MapperHelper *Get() {
     if (nullptr == helper) {
       helper = new MapperHelper();
     }
@@ -71,7 +75,7 @@ class MapperHelper {
     return operators;
   }
 
-  bool IsRegistered(const std::string& op_name) {
+  bool IsRegistered(const std::string &op_name) {
     auto iter = mappers.find(op_name);
     if (mappers.end() == iter) {
       return false;
@@ -79,7 +83,7 @@ class MapperHelper {
     return true;
   }
 
-  std::string GenName(const std::string& op_name) {
+  std::string GenName(const std::string &op_name) {
     std::string key = "p2o." + op_name + ".";
     if (name_counter.find(key) == name_counter.end()) {
       name_counter[key] = 0;
@@ -91,14 +95,17 @@ class MapperHelper {
 
   void ClearNameCounter() { name_counter.clear(); }
 
-  Mapper* CreateMapper(const std::string& name, const PaddleParser& parser,
-                       OnnxHelper* helper, int64_t block_id, int64_t op_id) {
+  Mapper *CreateMapper(const std::string &name,
+                       const PaddleParser &parser,
+                       OnnxHelper *helper,
+                       int64_t block_id,
+                       int64_t op_id) {
     Assert(mappers.find(name) != mappers.end(),
            name + " cannot be found in registered mappers.");
     return mappers[name]->Create(parser, helper, block_id, op_id);
   }
 
-  void Push(const std::string& name, Generator* generator) {
+  void Push(const std::string &name, Generator *generator) {
     Assert(mappers.find(name) == mappers.end(),
            name + " has been registered before.");
     mappers[name] = generator;

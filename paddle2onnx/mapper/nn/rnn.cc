@@ -18,14 +18,15 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(rnn, RnnMapper)
 
-int32_t RnnMapper::GetMinOpsetVersion(bool verbose) {
-  return 7;
-}
+int32_t RnnMapper::GetMinOpsetVersion(bool verbose) { return 7; }
 
-std::string RnnMapper::ReformWeight(const std::string& weight, const int64_t& size, const std::vector<int64_t>& perm) {
+std::string RnnMapper::ReformWeight(const std::string &weight,
+                                    const int64_t &size,
+                                    const std::vector<int64_t> &perm) {
   std::vector<std::string> items;
   for (size_t i = 0; i < perm.size(); i += 2) {
-    auto item = helper_->Slice(weight, {1}, {perm[i] * size}, {perm[i + 1] * size});
+    auto item =
+        helper_->Slice(weight, {1}, {perm[i] * size}, {perm[i + 1] * size});
     items.push_back(item);
   }
   return helper_->Concat(items, 1);
@@ -35,20 +36,24 @@ std::vector<std::string> RnnMapper::MakeParamInputs(int64_t layer_index) {
   auto weight_list_info = GetInput("WeightList");
   int64_t bidirect_len = is_bidirec_ ? 4 : 2;
   int64_t all_layer_param_len = weight_list_info.size();
-  int64_t single_layer_param_len = std::floor(all_layer_param_len / num_layers_);
+  int64_t single_layer_param_len =
+      std::floor(all_layer_param_len / num_layers_);
   int64_t weight_start_idx = layer_index * bidirect_len;
   int64_t weight_end_idx = weight_start_idx + bidirect_len;
-  int64_t bias_start_idx = weight_start_idx + std::floor(all_layer_param_len / 2);
+  int64_t bias_start_idx =
+      weight_start_idx + std::floor(all_layer_param_len / 2);
   int64_t bias_end_idx = bias_start_idx + bidirect_len;
 
   std::vector<std::string> unsqueezed_weights;
   for (auto i = weight_start_idx; i < weight_end_idx; ++i) {
-    unsqueezed_weights.push_back(helper_->Unsqueeze(weight_list_info[i].name, {0}));
+    unsqueezed_weights.push_back(
+        helper_->Unsqueeze(weight_list_info[i].name, {0}));
   }
   for (auto i = bias_start_idx; i < bias_end_idx; ++i) {
-    unsqueezed_weights.push_back(helper_->Unsqueeze(weight_list_info[i].name, {0}));
+    unsqueezed_weights.push_back(
+        helper_->Unsqueeze(weight_list_info[i].name, {0}));
   }
-  
+
   std::vector<std::string> input_weight;
   std::vector<std::string> hidden_weight;
   for (size_t i = 0; i < bidirect_len; i += 2) {
@@ -79,15 +84,20 @@ std::vector<std::string> RnnMapper::MakeParamInputs(int64_t layer_index) {
     std::vector<int64_t> perm({1, 2, 0, 1, 2, 3});
     reform_permutation.assign(perm.begin(), perm.end());
   }
-  input_weight_tensor = ReformWeight(input_weight_tensor, hidden_size_, reform_permutation);
-  hidden_weight_tensor = ReformWeight(hidden_weight_tensor, hidden_size_, reform_permutation);
-  input_bias_tensor = ReformWeight(input_bias_tensor, hidden_size_, reform_permutation);
-  hidden_bias_tensor = ReformWeight(hidden_bias_tensor, hidden_size_, reform_permutation);
-  
+  input_weight_tensor =
+      ReformWeight(input_weight_tensor, hidden_size_, reform_permutation);
+  hidden_weight_tensor =
+      ReformWeight(hidden_weight_tensor, hidden_size_, reform_permutation);
+  input_bias_tensor =
+      ReformWeight(input_bias_tensor, hidden_size_, reform_permutation);
+  hidden_bias_tensor =
+      ReformWeight(hidden_bias_tensor, hidden_size_, reform_permutation);
+
   std::vector<std::string> outputs;
   outputs.push_back(input_weight_tensor);
   outputs.push_back(hidden_weight_tensor);
-  outputs.push_back(helper_->Concat({input_bias_tensor, hidden_bias_tensor}, 1));
+  outputs.push_back(
+      helper_->Concat({input_bias_tensor, hidden_bias_tensor}, 1));
   outputs.push_back("");
   return outputs;
 }
@@ -96,12 +106,18 @@ std::vector<std::string> RnnMapper::MakeInitParamInputs(int64_t layer_index) {
   std::vector<std::string> outputs;
   auto prestate_info = GetInput("PreState");
   int64_t bidirect_len = is_bidirec_ ? 2 : 1;
-  auto init_h = helper_->Slice(prestate_info[0].name, {0}, {layer_index * bidirect_len}, {layer_index * bidirect_len + bidirect_len});
+  auto init_h = helper_->Slice(prestate_info[0].name,
+                               {0},
+                               {layer_index * bidirect_len},
+                               {layer_index * bidirect_len + bidirect_len});
   outputs.push_back(init_h);
   if (mode_ == "GRU") {
     return outputs;
   }
-  auto init_c = helper_->Slice(prestate_info[1].name, {0}, {layer_index * bidirect_len}, {layer_index * bidirect_len + bidirect_len});
+  auto init_c = helper_->Slice(prestate_info[1].name,
+                               {0},
+                               {layer_index * bidirect_len},
+                               {layer_index * bidirect_len + bidirect_len});
   outputs.push_back(init_c);
   return outputs;
 }
@@ -119,7 +135,8 @@ void RnnMapper::Opset7() {
       auto init_param_inputs = MakeInitParamInputs(i);
       std::vector<std::string> inputs({input});
       inputs.insert(inputs.end(), param_inputs.begin(), param_inputs.end());
-      inputs.insert(inputs.end(), init_param_inputs.begin(), init_param_inputs.end());
+      inputs.insert(
+          inputs.end(), init_param_inputs.begin(), init_param_inputs.end());
       auto node = helper_->MakeNode("LSTM", inputs, 3);
       std::string direction = is_bidirec_ ? "bidirectional" : "forward";
       AddAttribute(node, "direction", direction);
@@ -139,7 +156,8 @@ void RnnMapper::Opset7() {
       auto init_param_inputs = MakeInitParamInputs(i);
       std::vector<std::string> inputs({input});
       inputs.insert(inputs.end(), param_inputs.begin(), param_inputs.end());
-      inputs.insert(inputs.end(), init_param_inputs.begin(), init_param_inputs.end());
+      inputs.insert(
+          inputs.end(), init_param_inputs.begin(), init_param_inputs.end());
       auto node = helper_->MakeNode("GRU", inputs, 2);
       std::string direction = is_bidirec_ ? "bidirectional" : "forward";
       AddAttribute(node, "direction", direction);

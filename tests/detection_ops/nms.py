@@ -5,19 +5,21 @@ from paddle.base.layer_helper import LayerHelper
 
 
 @paddle.jit.not_to_static
-def multiclass_nms(bboxes,
-                   scores,
-                   score_threshold,
-                   nms_top_k,
-                   keep_top_k,
-                   nms_threshold=0.3,
-                   normalized=True,
-                   nms_eta=1.,
-                   background_label=-1,
-                   return_index=False,
-                   return_rois_num=True,
-                   rois_num=None,
-                   name=None):
+def multiclass_nms(
+    bboxes,
+    scores,
+    score_threshold,
+    nms_top_k,
+    keep_top_k,
+    nms_threshold=0.3,
+    normalized=True,
+    nms_eta=1.0,
+    background_label=-1,
+    return_index=False,
+    return_rois_num=True,
+    rois_num=None,
+    name=None,
+):
     """
     This operator is to do multi-class non maximum suppression (NMS) on
     boxes and scores.
@@ -107,47 +109,60 @@ def multiclass_nms(bboxes,
                                             normalized=False,
                                             return_index=True)
     """
-    helper = LayerHelper('multiclass_nms3', **locals())
+    helper = LayerHelper("multiclass_nms3", **locals())
 
     if in_dygraph_mode():
-        attrs = ('background_label', background_label, 'score_threshold',
-                 score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
-                 nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
-                 'normalized', normalized)
-        output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
-                                                               rois_num, *attrs)
+        attrs = (
+            "background_label",
+            background_label,
+            "score_threshold",
+            score_threshold,
+            "nms_top_k",
+            nms_top_k,
+            "nms_threshold",
+            nms_threshold,
+            "keep_top_k",
+            keep_top_k,
+            "nms_eta",
+            nms_eta,
+            "normalized",
+            normalized,
+        )
+        output, index, nms_rois_num = core.ops.multiclass_nms3(
+            bboxes, scores, rois_num, *attrs
+        )
         if not return_index:
             index = None
         return output, nms_rois_num, index
 
     else:
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-        index = helper.create_variable_for_type_inference(dtype='int32')
+        index = helper.create_variable_for_type_inference(dtype="int32")
 
-        inputs = {'BBoxes': bboxes, 'Scores': scores}
-        outputs = {'Out': output, 'Index': index}
+        inputs = {"BBoxes": bboxes, "Scores": scores}
+        outputs = {"Out": output, "Index": index}
 
         if rois_num is not None:
-            inputs['RoisNum'] = rois_num
+            inputs["RoisNum"] = rois_num
 
         if return_rois_num:
-            nms_rois_num = helper.create_variable_for_type_inference(
-                dtype='int32')
-            outputs['NmsRoisNum'] = nms_rois_num
+            nms_rois_num = helper.create_variable_for_type_inference(dtype="int32")
+            outputs["NmsRoisNum"] = nms_rois_num
 
         helper.append_op(
             type="multiclass_nms3",
             inputs=inputs,
             attrs={
-                'background_label': background_label,
-                'score_threshold': score_threshold,
-                'nms_top_k': nms_top_k,
-                'nms_threshold': nms_threshold,
-                'keep_top_k': keep_top_k,
-                'nms_eta': nms_eta,
-                'normalized': normalized
+                "background_label": background_label,
+                "score_threshold": score_threshold,
+                "nms_top_k": nms_top_k,
+                "nms_threshold": nms_threshold,
+                "keep_top_k": keep_top_k,
+                "nms_eta": nms_eta,
+                "normalized": normalized,
             },
-            outputs=outputs)
+            outputs=outputs,
+        )
         output.stop_gradient = True
         index.stop_gradient = True
         if not return_index:
@@ -155,4 +170,7 @@ def multiclass_nms(bboxes,
         if not return_rois_num:
             nms_rois_num = None
 
-        return output, nms_rois_num,
+        return (
+            output,
+            nms_rois_num,
+        )

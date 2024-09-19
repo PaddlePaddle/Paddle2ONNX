@@ -18,13 +18,16 @@ class Net(BaseNet):
         input_shape = self.config["input_shape"]
         quant_axis = self.config["quant_axis"]
         self.scale = paddle.to_tensor(
-            randtool("float", -8, 8, input_shape[quant_axis]), dtype='float32')
+            randtool("float", -8, 8, input_shape[quant_axis]), dtype="float32"
+        )
         self.zero_points = paddle.to_tensor(
-            np.zeros(input_shape[quant_axis]), dtype='float32')
+            np.zeros(input_shape[quant_axis]), dtype="float32"
+        )
         self.weight = None
         if self.config["const_weight"]:
             self.weight = paddle.to_tensor(
-                randtool("int", -10, 10, input_shape), dtype='float32')
+                randtool("int", -10, 10, input_shape), dtype="float32"
+            )
 
     def forward(self, input):
         """
@@ -36,21 +39,24 @@ class Net(BaseNet):
                 self.scale,
                 self.zero_points,
                 bit_length=8,
-                quant_axis=self.config["quant_axis"])
+                quant_axis=self.config["quant_axis"],
+            )
         else:
             x = quantize_linear(
                 input,
                 self.scale,
                 self.zero_points,
                 bit_length=8,
-                quant_axis=self.config["quant_axis"])
+                quant_axis=self.config["quant_axis"],
+            )
             x = x * 1
             x = dequantize_linear(
                 x,
                 self.scale,
                 self.zero_points,
                 bit_length=8,
-                quant_axis=self.config["quant_axis"])
+                quant_axis=self.config["quant_axis"],
+            )
         return x + input
 
 
@@ -62,9 +68,8 @@ class TestDequantizeLinearConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=3, max_value=10), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=3, max_value=10), min_size=4, max_size=4)
+        )
 
         if draw(st.booleans()):
             quant_axis = 0
@@ -83,11 +88,8 @@ class TestDequantizeLinearConvert(OPConvertAutoScanTest):
         # input dim is 2
         if const_weight and draw(st.booleans()):
             input_shape = draw(
-                st.lists(
-                    st.integers(
-                        min_value=3, max_value=10),
-                    min_size=2,
-                    max_size=2))
+                st.lists(st.integers(min_value=3, max_value=10), min_size=2, max_size=2)
+            )
             quant_axis = 1
 
         def generator_data():
@@ -101,21 +103,20 @@ class TestDequantizeLinearConvert(OPConvertAutoScanTest):
         config = {
             "op_names": ["dequantize_linear"],
             "test_data_shapes": [generator_data],
-            "test_data_types": [['float32']],
+            "test_data_types": [["float32"]],
             "opset_version": [13, 15],
             "input_spec_shape": [],
             "quant_axis": quant_axis,
             "input_shape": input_shape,
             "const_weight": const_weight,
-            "delta":
-            1e1,  #TODO(yeliang) Can be remove after the quantize method of paddle updated
-            "rtol": 1e1
+            "delta": 1e1,  # TODO(yeliang) Can be remove after the quantize method of paddle updated
+            "rtol": 1e1,
         }
 
         models = Net(config)
 
         if not os.path.exists("calibration_table.txt"):
-            with open("calibration_table.txt", 'w') as txt_file:
+            with open("calibration_table.txt", "w") as txt_file:
                 txt_file.write("Fake_Quantize_Demo.")
 
         return (config, models)

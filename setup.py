@@ -29,13 +29,13 @@ import platform
 import multiprocessing
 
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
-SRC_DIR = os.path.join(TOP_DIR, 'paddle2onnx')
-CMAKE_BUILD_DIR = os.path.join(TOP_DIR, '.setuptools-cmake-build')
+SRC_DIR = os.path.join(TOP_DIR, "paddle2onnx")
+CMAKE_BUILD_DIR = os.path.join(TOP_DIR, ".setuptools-cmake-build")
 
-WINDOWS = (os.name == 'nt')
+WINDOWS = os.name == "nt"
 
-CMAKE = find_executable('cmake3') or find_executable('cmake')
-MAKE = find_executable('make')
+CMAKE = find_executable("cmake3") or find_executable("cmake")
+MAKE = find_executable("make")
 
 ################################################################################
 # Global variables for controlling the build variant
@@ -43,8 +43,8 @@ MAKE = find_executable('make')
 
 # Default value is set to TRUE\1 to keep the settings same as the current ones.
 # However going forward the recomemded way to is to set this to False\0
-USE_MSVC_STATIC_RUNTIME = bool(os.getenv('USE_MSVC_STATIC_RUNTIME', '1') == '1')
-ONNX_NAMESPACE = os.getenv('ONNX_NAMESPACE', 'onnx')
+USE_MSVC_STATIC_RUNTIME = bool(os.getenv("USE_MSVC_STATIC_RUNTIME", "1") == "1")
+ONNX_NAMESPACE = os.getenv("ONNX_NAMESPACE", "onnx")
 
 ################################################################################
 # Pre Check
@@ -60,7 +60,7 @@ assert CMAKE, 'Could not find "cmake" executable!'
 @contextmanager
 def cd(path):
     if not os.path.isabs(path):
-        raise RuntimeError('Can only cd to absolute path, got: {}'.format(path))
+        raise RuntimeError("Can only cd to absolute path, got: {}".format(path))
     orig_path = os.getcwd()
     os.chdir(path)
     try:
@@ -73,6 +73,7 @@ def cd(path):
 # Customized commands
 ################################################################################
 
+
 class cmake_build(setuptools.Command):
     """
     Compiles everything when `python setupmnm.py build` is run using cmake.
@@ -81,8 +82,10 @@ class cmake_build(setuptools.Command):
     The number of CPUs used by `make` can be specified by passing `-j<ncpus>`
     to `setup.py build`.  By default all CPUs are used.
     """
-    user_options = [(str('jobs='), str('j'),
-                     str('Specifies the number of jobs to use with make'))]
+
+    user_options = [
+        (str("jobs="), str("j"), str("Specifies the number of jobs to use with make"))
+    ]
 
     built = False
 
@@ -91,61 +94,65 @@ class cmake_build(setuptools.Command):
 
     def finalize_options(self):
         if sys.version_info[0] >= 3:
-            self.set_undefined_options('build', ('parallel', 'jobs'))
+            self.set_undefined_options("build", ("parallel", "jobs"))
         if self.jobs is None and os.getenv("MAX_JOBS") is not None:
             self.jobs = os.getenv("MAX_JOBS")
-        self.jobs = multiprocessing.cpu_count() if self.jobs is None else int(
-            self.jobs)
+        self.jobs = multiprocessing.cpu_count() if self.jobs is None else int(self.jobs)
 
     def run(self):
         os.makedirs(CMAKE_BUILD_DIR, exist_ok=True)
 
         with cd(CMAKE_BUILD_DIR):
-            build_type = 'Release'
+            build_type = "Release"
             # configure
             cmake_args = [
                 CMAKE,
-                '-DPYTHON_INCLUDE_DIR={}'.format(sysconfig.get_python_inc()),
-                '-DPYTHON_EXECUTABLE={}'.format(sys.executable),
-                '-DBUILD_PADDLE2ONNX_PYTHON=ON',
-                '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
-                '-DONNX_NAMESPACE={}'.format(ONNX_NAMESPACE),
-                '-DPY_EXT_SUFFIX={}'.format(sysconfig.get_config_var('EXT_SUFFIX') or ''),
+                "-DPYTHON_INCLUDE_DIR={}".format(sysconfig.get_python_inc()),
+                "-DPYTHON_EXECUTABLE={}".format(sys.executable),
+                "-DBUILD_PADDLE2ONNX_PYTHON=ON",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+                "-DONNX_NAMESPACE={}".format(ONNX_NAMESPACE),
+                "-DPY_EXT_SUFFIX={}".format(
+                    sysconfig.get_config_var("EXT_SUFFIX") or ""
+                ),
             ]
-            cmake_args.append('-DCMAKE_BUILD_TYPE=%s' % build_type)
+            cmake_args.append("-DCMAKE_BUILD_TYPE=%s" % build_type)
             if WINDOWS:
-                cmake_args.extend([
-                    # we need to link with libpython on windows, so
-                    # passing python version to window in order to
-                    # find python in cmake
-                    '-DPY_VERSION={}'.format('{0}.{1}'.format(* \
-                                                              sys.version_info[:2])),
-                ])
-                if platform.architecture()[0] == '64bit':
-                    cmake_args.extend(['-A', 'x64', '-T', 'host=x64'])
+                cmake_args.extend(
+                    [
+                        # we need to link with libpython on windows, so
+                        # passing python version to window in order to
+                        # find python in cmake
+                        "-DPY_VERSION={}".format(
+                            "{0}.{1}".format(*sys.version_info[:2])
+                        ),
+                    ]
+                )
+                if platform.architecture()[0] == "64bit":
+                    cmake_args.extend(["-A", "x64", "-T", "host=x64"])
                 else:
-                    cmake_args.extend(['-A', 'Win32', '-T', 'host=x86'])
-            if 'CMAKE_ARGS' in os.environ:
-                extra_cmake_args = shlex.split(os.environ['CMAKE_ARGS'])
+                    cmake_args.extend(["-A", "Win32", "-T", "host=x86"])
+            if "CMAKE_ARGS" in os.environ:
+                extra_cmake_args = shlex.split(os.environ["CMAKE_ARGS"])
                 # prevent crossfire with downstream scripts
-                del os.environ['CMAKE_ARGS']
-                log.info('Extra cmake args: {}'.format(extra_cmake_args))
+                del os.environ["CMAKE_ARGS"]
+                log.info("Extra cmake args: {}".format(extra_cmake_args))
                 cmake_args.extend(extra_cmake_args)
             cmake_args.append(TOP_DIR)
             subprocess.check_call(cmake_args)
 
-            build_args = [CMAKE, '--build', os.curdir]
+            build_args = [CMAKE, "--build", os.curdir]
             if WINDOWS:
-                build_args.extend(['--config', build_type])
-                build_args.extend(['--', '/maxcpucount:{}'.format(self.jobs)])
+                build_args.extend(["--config", build_type])
+                build_args.extend(["--", "/maxcpucount:{}".format(self.jobs)])
             else:
-                build_args.extend(['--', '-j', str(self.jobs)])
+                build_args.extend(["--", "-j", str(self.jobs)])
             subprocess.check_call(build_args)
 
 
 class build_ext(setuptools.command.build_ext.build_ext):
     def run(self):
-        self.run_command('cmake_build')
+        self.run_command("cmake_build")
         return super().run()
 
     def build_extensions(self):
@@ -167,12 +174,14 @@ class build_ext(setuptools.command.build_ext.build_ext):
                     lib_path = release_lib_dir
             src = os.path.join(lib_path, filename)
             dst = os.path.join(
-                os.path.realpath(self.build_lib), "paddle2onnx", filename)
+                os.path.realpath(self.build_lib), "paddle2onnx", filename
+            )
             self.copy_file(src, dst)
 
+
 cmdclass = {
-    'cmake_build': cmake_build,
-    'build_ext': build_ext,
+    "cmake_build": cmake_build,
+    "build_ext": build_ext,
 }
 
 ################################################################################
@@ -180,8 +189,7 @@ cmdclass = {
 ################################################################################
 
 ext_modules = [
-    setuptools.Extension(
-        name=str('paddle2onnx.paddle2onnx_cpp2py_export'), sources=[])
+    setuptools.Extension(name=str("paddle2onnx.paddle2onnx_cpp2py_export"), sources=[])
 ]
 
 ################################################################################

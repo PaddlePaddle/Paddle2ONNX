@@ -27,17 +27,17 @@ namespace paddle2onnx {
 struct proto_node {
  public:
   std::string node_type;  // model, graph, node, arribute
-  ONNX_NAMESPACE::ModelProto* model;
-  ONNX_NAMESPACE::GraphProto* graph;
-  ONNX_NAMESPACE::NodeProto* node;
-  ONNX_NAMESPACE::AttributeProto* attr;
+  ONNX_NAMESPACE::ModelProto *model;
+  ONNX_NAMESPACE::GraphProto *graph;
+  ONNX_NAMESPACE::NodeProto *node;
+  ONNX_NAMESPACE::AttributeProto *attr;
 
   explicit proto_node(ONNX_NAMESPACE::ModelProto new_model) {
     node_type = "model";
     model = &new_model;
   }
 
-  explicit proto_node(ONNX_NAMESPACE::ModelProto* new_model) {
+  explicit proto_node(ONNX_NAMESPACE::ModelProto *new_model) {
     node_type = "model";
     model = new_model;
   }
@@ -47,7 +47,7 @@ struct proto_node {
     graph = &new_graph;
   }
 
-  explicit proto_node(ONNX_NAMESPACE::GraphProto* new_graph) {
+  explicit proto_node(ONNX_NAMESPACE::GraphProto *new_graph) {
     node_type = "graph";
     graph = new_graph;
   }
@@ -57,7 +57,7 @@ struct proto_node {
     node = &new_node;
   }
 
-  explicit proto_node(ONNX_NAMESPACE::NodeProto* new_node) {
+  explicit proto_node(ONNX_NAMESPACE::NodeProto *new_node) {
     node_type = "node";
     node = new_node;
   }
@@ -67,7 +67,7 @@ struct proto_node {
     attr = &new_attribute;
   }
 
-  explicit proto_node(ONNX_NAMESPACE::AttributeProto* new_attribute) {
+  explicit proto_node(ONNX_NAMESPACE::AttributeProto *new_attribute) {
     node_type = "attribute";
     attr = new_attribute;
   }
@@ -75,11 +75,12 @@ struct proto_node {
 
 struct ConvertFp32ToFp16 {
  public:
-  ConvertFp32ToFp16(float min_positive_val = 1e-7, float max_finite_val = 1e4,
+  ConvertFp32ToFp16(float min_positive_val = 1e-7,
+                    float max_finite_val = 1e4,
                     bool keep_io_types = false,
                     bool disable_shape_infer = false,
-                    const std::vector<std::string>& op_block_list = {},
-                    const std::vector<std::string>& node_block_list = {}) {
+                    const std::vector<std::string> &op_block_list = {},
+                    const std::vector<std::string> &node_block_list = {}) {
     min_positive_val_ = min_positive_val;
     max_finite_val_ = max_finite_val;
     keep_io_types_ = keep_io_types;
@@ -88,48 +89,52 @@ struct ConvertFp32ToFp16 {
     node_block_list_ = node_block_list;
   }
 
-  void Convert(ONNX_NAMESPACE::ModelProto* model);
+  void Convert(ONNX_NAMESPACE::ModelProto *model);
 
-  ONNX_NAMESPACE::NodeProto* MakeCastNode(
-      const std::string& op_name, const std::vector<std::string>& inputs,
-      const std::vector<std::string>& outputs, int32_t to_dtype);
+  ONNX_NAMESPACE::NodeProto *MakeCastNode(
+      const std::string &op_name,
+      const std::vector<std::string> &inputs,
+      const std::vector<std::string> &outputs,
+      int32_t to_dtype);
 
-  ONNX_NAMESPACE::ValueInfoProto* MakeValueInfoFromTensor(
-      const ONNX_NAMESPACE::TensorProto& tensor);
+  ONNX_NAMESPACE::ValueInfoProto *MakeValueInfoFromTensor(
+      const ONNX_NAMESPACE::TensorProto &tensor);
 
-  void KeepIoType(ONNX_NAMESPACE::ModelProto* model);
+  void KeepIoType(ONNX_NAMESPACE::ModelProto *model);
 
-  void ConvertAttribute(ONNX_NAMESPACE::ModelProto* model);
+  void ConvertAttribute(ONNX_NAMESPACE::ModelProto *model);
 
-  void ConvertTensorFloatToFloat16(ONNX_NAMESPACE::TensorProto* tensor);
+  void ConvertTensorFloatToFloat16(ONNX_NAMESPACE::TensorProto *tensor);
 
   // return if keep the type of node
-  bool KeepNodeType(ONNX_NAMESPACE::NodeProto* node);
+  bool KeepNodeType(ONNX_NAMESPACE::NodeProto *node);
 
-  bool GetTensorValue(const ONNX_NAMESPACE::TensorProto& tensor,
-                      std::vector<float>* value);
+  bool GetTensorValue(const ONNX_NAMESPACE::TensorProto &tensor,
+                      std::vector<float> *value);
 
   // topo sort
-  void SortNodes(ONNX_NAMESPACE::ModelProto* model);
+  void SortNodes(ONNX_NAMESPACE::ModelProto *model);
 
-  void ConvertValToFloat16(float val, uint16_t* x);
+  void ConvertValToFloat16(float val, uint16_t *x);
 
   // return if the next node of name is Cast and its attr type is dtype.
-  bool CastedTo(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
+  bool CastedTo(const std::string &name,
+                ONNX_NAMESPACE::ModelProto &model,
                 int64_t dtype);
   // return if the pre node of name is Cast and its attr type is dtype.
-  bool CastedFrom(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
+  bool CastedFrom(const std::string &name,
+                  ONNX_NAMESPACE::ModelProto &model,
                   int64_t dtype);
   // return if the name is the input of DEFAULT_OP_BLOCK_LIST
-  bool IsInputOfOpBlock(const std::string& name,
-                        ONNX_NAMESPACE::ModelProto& model);
+  bool IsInputOfOpBlock(const std::string &name,
+                        ONNX_NAMESPACE::ModelProto &model);
 
   // return if the name is the input of DEFAULT_OP_BLOCK_LIST and
   // fp32_output_op_list
-  bool IsOutputOfOpBlockAndFP32Out(const std::string& name,
-                                   ONNX_NAMESPACE::ModelProto& model);
+  bool IsOutputOfOpBlockAndFP32Out(const std::string &name,
+                                   ONNX_NAMESPACE::ModelProto &model);
 
-  void SetCustomOps(const std::map<std::string, std::string>& custom_ops) {
+  void SetCustomOps(const std::map<std::string, std::string> &custom_ops) {
     if (custom_ops.size()) {
       custom_ops_.clear();
       for (auto op : custom_ops) {
@@ -138,12 +143,12 @@ struct ConvertFp32ToFp16 {
     }
   }
 
-  void AddDisabledOpTypes(const std::vector<std::string>& disable_fp16_ops) {
-    op_block_list_.insert(op_block_list_.end(), disable_fp16_ops.begin(),
-                          disable_fp16_ops.end());
+  void AddDisabledOpTypes(const std::vector<std::string> &disable_fp16_ops) {
+    op_block_list_.insert(
+        op_block_list_.end(), disable_fp16_ops.begin(), disable_fp16_ops.end());
   }
   // If the input ONNX model is a FP16 model, return True
-  bool IsFP16Model(const ONNX_NAMESPACE::ModelProto& model);
+  bool IsFP16Model(const ONNX_NAMESPACE::ModelProto &model);
 
  private:
   union Bits {
@@ -187,17 +192,17 @@ struct ConvertFp32ToFp16 {
 
   std::map<std::string, std::string> name_mapping;
   std::vector<std::string> graph_io_to_skip;
-  std::vector<ONNX_NAMESPACE::ValueInfoProto*> value_info_list;
+  std::vector<ONNX_NAMESPACE::ValueInfoProto *> value_info_list;
   std::vector<std::string> io_casts;
 
-  std::vector<ONNX_NAMESPACE::NodeProto*> node_list;
+  std::vector<ONNX_NAMESPACE::NodeProto *> node_list;
 
   std::vector<proto_node> queue;
   std::vector<proto_node> next_level;
 
   std::map<std::string, int64_t> name_index_mapper;
   // int64_t name_index = 0;
-  std::string GenName(const std::string& prefix);
+  std::string GenName(const std::string &prefix);
 
   // save the tensor names that should keep data type
   std::vector<std::string> keep_type_tensors;

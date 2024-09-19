@@ -30,9 +30,10 @@ void ScatterNdAddMapper::Opset16() {
 
   auto shape_node = helper_->MakeNode("Shape", {input_x_info[0].name});
 
-  std::string zeros_like_node = helper_->ConstOfShape(
-      shape_node->output(0), GetOnnxDtype(input_x_info[0].dtype),
-      static_cast<float>(0));
+  std::string zeros_like_node =
+      helper_->ConstOfShape(shape_node->output(0),
+                            GetOnnxDtype(input_x_info[0].dtype),
+                            static_cast<float>(0));
 
   std::string input_ids_node = helper_->AutoCast(
       input_ids_info[0].name, input_ids_info[0].dtype, P2ODataType::INT64);
@@ -41,7 +42,8 @@ void ScatterNdAddMapper::Opset16() {
       "ScatterND",
       {zeros_like_node, input_ids_node, input_updates_info[0].name});
   AddAttribute(scatter_nd_node, "reduction", "add");
-  helper_->MakeNode("Add", {input_x_info[0].name, scatter_nd_node->output(0)},
+  helper_->MakeNode("Add",
+                    {input_x_info[0].name, scatter_nd_node->output(0)},
                     {output_info[0].name});
 }
 

@@ -41,11 +41,12 @@ def test_logical_xor_7():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'logical_xor', [7])
+    obj = APIOnnx(op, "logical_xor", [7])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('bool')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('bool')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("bool")),
+        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype("bool")),
+    )
     obj.run()
 
 
@@ -57,11 +58,12 @@ def test_logical_xor_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'logical_xor', [11])
+    obj = APIOnnx(op, "logical_xor", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('bool')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('bool')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("bool")),
+        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype("bool")),
+    )
     obj.run()
 
 
@@ -73,9 +75,10 @@ def test_logical_xor_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'logical_xor', [12])
+    obj = APIOnnx(op, "logical_xor", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('bool')),
-        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype('bool')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("bool")),
+        paddle.to_tensor(randtool("float", 0, 1, [3, 10]).astype("bool")),
+    )
     obj.run()

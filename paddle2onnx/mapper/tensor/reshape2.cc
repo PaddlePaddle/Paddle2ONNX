@@ -36,17 +36,17 @@ void Reshape2Mapper::Opset7() {
     if (shape_info.size() > 1) {
       new_shape = helper_->ConcatIndices(shape_info);
     } else {
-      new_shape = helper_->AutoCast(shape_info[0].name, shape_info[0].dtype,
-                                    P2ODataType::INT64);
+      new_shape = helper_->AutoCast(
+          shape_info[0].name, shape_info[0].dtype, P2ODataType::INT64);
     }
   } else {
     std::vector<int64_t> value;
     GetAttr("shape", &value);
     new_shape = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, value);
   }
-  auto node = helper_->MakeNode("Reshape", {input_info[0].name, new_shape},
-                    {output_info[0].name});
-  if (helper_->GetOpsetVersion()>= 14) {
+  auto node = helper_->MakeNode(
+      "Reshape", {input_info[0].name, new_shape}, {output_info[0].name});
+  if (helper_->GetOpsetVersion() >= 14) {
     AddAttribute(node, "allowzero", int64_t(0));
   }
 }

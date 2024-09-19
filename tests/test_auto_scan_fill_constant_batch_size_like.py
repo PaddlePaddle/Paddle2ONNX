@@ -13,28 +13,25 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
-import numpy as np
 import unittest
-import paddle
 
 
 class Net(BaseNet):
     def forward(self):
         import paddle.fluid as fluid
+
         shape = self.config["shape"]
-        int_value = self.config['int_value']
-        float_value = self.config['float_value']
+        int_value = self.config["int_value"]
+        float_value = self.config["float_value"]
         dtype = self.config["dtype"]
-        like = fluid.layers.fill_constant(
-            shape=shape, value=int_value, dtype=dtype)
+        like = fluid.layers.fill_constant(shape=shape, value=int_value, dtype=dtype)
         value = float_value
-        if self.config['val_type']:
+        if self.config["val_type"]:
             value = int_value
         x = fluid.layers.fill_constant_batch_size_like(
-            input=like, shape=shape, value=value, dtype=dtype)
+            input=like, shape=shape, value=value, dtype=dtype
+        )
         return x
 
 
@@ -46,9 +43,8 @@ class TestFullConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=1, max_size=4)
+        )
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 

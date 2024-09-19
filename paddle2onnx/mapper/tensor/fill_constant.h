@@ -18,8 +18,10 @@ namespace paddle2onnx {
 
 class FillConstantMapper : public Mapper {
  public:
-  FillConstantMapper(const PaddleParser& p, OnnxHelper* helper,
-                     int64_t block_id, int64_t op_id)
+  FillConstantMapper(const PaddleParser &p,
+                     OnnxHelper *helper,
+                     int64_t block_id,
+                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("str_value", &str_value_);
     GetAttr("value", &value_);

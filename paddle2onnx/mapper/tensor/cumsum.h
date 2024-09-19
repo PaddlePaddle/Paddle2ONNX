@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class CumsumMapper : public Mapper {
  public:
-  CumsumMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  CumsumMapper(const PaddleParser &p,
+               OnnxHelper *helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("flatten", &flatten_);

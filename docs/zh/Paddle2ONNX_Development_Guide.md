@@ -36,19 +36,19 @@ Paddle2ONNX 开发的主要步骤为：
 通过 Netron 的可视化，我们已经知道该算子名字为 **roll** ，我们可以继续通过 [Paddle roll Docs](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/roll_cn.html#roll) 直接查询 Paddle OP 对应的 Paddle API，该算子核心文档如下：
 
 > paddle.roll(x, shifts, axis=None, name=None)
-> 
+>
 > 函数用途：
-> 
+>
 > 沿着指定维度 axis 对输入 x 进行循环滚动，当元素移动到最后位置时，会从第一个位置重新插入。如果 axis 为 None，则输入在被循环滚动之前，会先展平成 1-D Tensor，滚动操作完成后恢复成原来的形状。
-> 
+>
 > 参数：
-> 
+>
 > * x （Tensor）– 输入的 Tensor。
-> 
+>
 > * shifts (int|list|tuple) - 滚动位移。如果 shifts 是一个元组或者列表，则 axis 必须是相同大小的元组或者列表，输入 Tensor 将依次沿着每个维度滚动相应的数值。
-> 
+>
 > * axis (int|list|tuple，可选) – 滚动轴。默认值为 None。
-> 
+>
 > * name (str，可选) - 具体用法请参见 Name，一般无需设置，默认值为 None。
 
 通过 Netron 的可视化，可以看到， **ATTRIBUTES** 中的参数 **axis** 和 **shifts** 与核心文档中的输入参数一一对应。
@@ -63,7 +63,7 @@ Paddle2ONNX 开发的主要步骤为：
 
 ### 3.3 查阅 ONNX API 文档
 
-掌握 Paddle OP 的原理和使用方式后，查阅 [ONNX Operators Docs](https://onnx.ai/onnx/operators/index.html) 找到对应的实现，若 ONNX OP 和 Paddle OP 没有一对一的实现，则需要根据 Paddle OP 的原理使用多个 ONNX OP 组合实现。 
+掌握 Paddle OP 的原理和使用方式后，查阅 [ONNX Operators Docs](https://onnx.ai/onnx/operators/index.html) 找到对应的实现，若 ONNX OP 和 Paddle OP 没有一对一的实现，则需要根据 Paddle OP 的原理使用多个 ONNX OP 组合实现。
 当我们在 [ONNX Operators Docs](https://onnx.ai/onnx/operators/index.html) 中查找 roll 算子时，我们会发现 ONNX 并没有直接实现这个算子，因此我们需要把这个算子手动拆分为 ONNX 支持的形式。
 这里我参考了 [torch 导出 roll 算子](https://github.com/pytorch/pytorch/blob/d39790340db916e128b2b637cd12f4616fddb87d/torch/onnx/symbolic_opset9.py#L3261)，准备将roll算子用 **Slice** 和 **Concat** 来实现。
 
@@ -282,10 +282,10 @@ class Net(BaseNet):
 1. 单测类继承自 OPConvertAutoScanTest。
 2. sample_convert_config 函数首先根据测试 API 的文档随机生成所有可测的数值，然后将所有需要用到的数据放到 config 中，config 是一个 dict，需传入到组网类中，sample_convert_config 函数的返回值为 (config, model)
 3. sample_convert_config 函数中的 config 注意必须包括以下 key：
-> **op_names**：`list of str`，需要检查的 OP 名，如：["conv2d"]表示要测试的 OP 为 conv2d。  
-> **test_data_shapes**：`list of list`，测试数据的 shape，如：[[10, 32, 10, 10], [64, 32, 3, 3]]表示第一个输入的 shape 为 [10, 32, 10, 10]，第二个输入的 shape 为 [64, 32, 3, 3]。  
-> **test_data_types**：`list of list`，测试数据的数据类型，长度必须和 `test_data_shapes` 一致，如：[[“float32“, "float64"], ["int32",  "int64"]]表示第一个输入支持的数据类型为 “float32“ 和 "float64"，第二个输入支持的数据类型为 "int32" 和 "int64"。  
-> **opset_version**：`list`，表示需要测试的 opset version，只需要设置支持的最小 opset version 便可，如 [9] 表示测试opset version为 9～16 的转换。  
+> **op_names**：`list of str`，需要检查的 OP 名，如：["conv2d"]表示要测试的 OP 为 conv2d。
+> **test_data_shapes**：`list of list`，测试数据的 shape，如：[[10, 32, 10, 10], [64, 32, 3, 3]]表示第一个输入的 shape 为 [10, 32, 10, 10]，第二个输入的 shape 为 [64, 32, 3, 3]。
+> **test_data_types**：`list of list`，测试数据的数据类型，长度必须和 `test_data_shapes` 一致，如：[[“float32“, "float64"], ["int32",  "int64"]]表示第一个输入支持的数据类型为 “float32“ 和 "float64"，第二个输入支持的数据类型为 "int32" 和 "int64"。
+> **opset_version**：`list`，表示需要测试的 opset version，只需要设置支持的最小 opset version 便可，如 [9] 表示测试opset version为 9～16 的转换。
 > **input_spec_shape**：`list of list`，为了支持动态shape而设置，如 [[-1, 3, -1, -1],[-1, 3, -1, -1]] 表示两个输入都为动态 shape，如果不需要测试动态 shape 的转换，请直接设置为 []。
 4. 其他所有的参数都可以放到 config 中，然后在 Net 中取出需要的数据，同时 config 中的数据在运行单测时也会实时打印出来便于调试。
 5. 返回参数 `model` 是一个 Net() 对象或者 list of Net()，list of Net() 可以实现一个单测测试多个 OP 转换，具体可参考[`test_auto_scan_unary_ops.py`](https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/tests/test_auto_scan_unary_ops.py)

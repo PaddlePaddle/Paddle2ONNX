@@ -14,9 +14,7 @@
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from onnxbase import randtool
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -35,7 +33,8 @@ class Net_tensorlist(BaseNet):
             inputs,
             min=self.config["min"],
             max=self.config["max"],
-            dtype=self.config["out_dtype"])
+            dtype=self.config["out_dtype"],
+        )
         return x
 
 
@@ -47,9 +46,8 @@ class TestUniformRandomConvert_tensorlist(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=1), min_size=3, max_size=3))
+            st.lists(st.integers(min_value=1, max_value=1), min_size=3, max_size=3)
+        )
 
         min = draw(st.floats(min_value=-1.0, max_value=1.0))
 
@@ -73,8 +71,7 @@ class TestUniformRandomConvert_tensorlist(OPConvertAutoScanTest):
 
         config = {
             "op_names": ["uniform_random"],
-            "test_data_shapes":
-            [generator1_data, generator2_data, generator3_data],
+            "test_data_shapes": [generator1_data, generator2_data, generator3_data],
             "test_data_types": [[dtype], [dtype], [dtype]],
             "opset_version": [9, 15],
             "input_spec_shape": [],
@@ -82,7 +79,7 @@ class TestUniformRandomConvert_tensorlist(OPConvertAutoScanTest):
             "max": max,
             "out_dtype": out_dtype,
             "delta": 1e11,
-            "rtol": 1e11
+            "rtol": 1e11,
         }
 
         models = Net_tensorlist(config)
@@ -106,7 +103,8 @@ class Net(BaseNet):
             inputs,
             min=self.config["min"],
             max=self.config["max"],
-            dtype=self.config["out_dtype"])
+            dtype=self.config["out_dtype"],
+        )
         return x
 
 
@@ -118,9 +116,8 @@ class TestUniformRandomConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=9), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=1, max_value=9), min_size=1, max_size=1)
+        )
 
         min = draw(st.floats(min_value=0, max_value=1.0))
 
@@ -144,7 +141,7 @@ class TestUniformRandomConvert(OPConvertAutoScanTest):
             "max": max,
             "out_dtype": out_dtype,
             "delta": 1e11,
-            "rtol": 1e11
+            "rtol": 1e11,
         }
 
         models = Net(config)
@@ -168,7 +165,8 @@ class Net_list(BaseNet):
             shape=self.config["shape"],
             min=self.config["min"],
             max=self.config["max"],
-            dtype=self.config["out_dtype"])
+            dtype=self.config["out_dtype"],
+        )
         return x
 
 
@@ -180,9 +178,8 @@ class TestUniformRandomConvert_list(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=10), min_size=1, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=10), min_size=1, max_size=5)
+        )
 
         min = draw(st.floats(min_value=-1.0, max_value=1.0))
 
@@ -203,7 +200,7 @@ class TestUniformRandomConvert_list(OPConvertAutoScanTest):
             "shape": input_shape,
             "out_dtype": out_dtype,
             "delta": 1e11,
-            "rtol": 1e11
+            "rtol": 1e11,
         }
 
         models = Net_list(config)

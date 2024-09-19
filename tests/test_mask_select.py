@@ -14,7 +14,6 @@
 
 import paddle
 from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -41,10 +40,12 @@ def test_mask_select_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'mask_select', [11])
-    obj.set_input_data("input_data",
-                       paddle.to_tensor([10, 4, 5, 6]).astype('float32'),
-                       paddle.to_tensor([1, 0, 1, 0]).astype('bool'))
+    obj = APIOnnx(op, "mask_select", [11])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor([10, 4, 5, 6]).astype("float32"),
+        paddle.to_tensor([1, 0, 1, 0]).astype("bool"),
+    )
     obj.run()
 
 
@@ -56,8 +57,10 @@ def test_mask_select_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'mask_select', [12])
-    obj.set_input_data("input_data",
-                       paddle.to_tensor([10, 4, 5, 6]).astype('float32'),
-                       paddle.to_tensor([1, 0, 1, 0]).astype('bool'))
+    obj = APIOnnx(op, "mask_select", [12])
+    obj.set_input_data(
+        "input_data",
+        paddle.to_tensor([10, 4, 5, 6]).astype("float32"),
+        paddle.to_tensor([1, 0, 1, 0]).astype("bool"),
+    )
     obj.run()

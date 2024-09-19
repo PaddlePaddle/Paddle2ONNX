@@ -40,19 +40,20 @@ struct OptimizerOption {
 };
 
 ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
-    const ONNX_NAMESPACE::ModelProto& model);
+    const ONNX_NAMESPACE::ModelProto &model);
 
-bool OptimizePaddle2ONNX(const std::string& model_path,
-                         const std::string& optimized_model_path,
-                         const OptimizerOption& option = OptimizerOption());
+bool OptimizePaddle2ONNX(const std::string &model_path,
+                         const std::string &optimized_model_path,
+                         const OptimizerOption &option = OptimizerOption());
 
 bool OptimizePaddle2ONNX(
-    const std::string& model_path, const std::string& optimized_model_path,
-    const std::map<std::string, std::vector<int>>& shape_infos,
-    const OptimizerOption& option = OptimizerOption());
+    const std::string &model_path,
+    const std::string &optimized_model_path,
+    const std::map<std::string, std::vector<int>> &shape_infos,
+    const OptimizerOption &option = OptimizerOption());
 
-bool Paddle2ONNXFP32ToFP16(const std::string& model_path,
-                           const std::string& optimized_model_path);
+bool Paddle2ONNXFP32ToFP16(const std::string &model_path,
+                           const std::string &optimized_model_path);
 
 }  // namespace optimization
 }  // namespace ONNX_NAMESPACE

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -29,13 +27,13 @@ class Net(BaseNet):
         """
         forward
         """
-        if self.config["tensor_attr"] and self.config['axis'] is not None:
-            if isinstance(self.config['axis'], list):
-                axis = [paddle.to_tensor(i) for i in self.config['axis']]
+        if self.config["tensor_attr"] and self.config["axis"] is not None:
+            if isinstance(self.config["axis"], list):
+                axis = [paddle.to_tensor(i) for i in self.config["axis"]]
             else:
-                axis = paddle.to_tensor(self.config['axis'])
+                axis = paddle.to_tensor(self.config["axis"])
         else:
-            axis = self.config['axis']
+            axis = self.config["axis"]
         x = paddle.squeeze(inputs, axis=axis)
         return x
 
@@ -48,13 +46,14 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=3, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=3, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["bool", "float32", "float64", "int32", "int64"]))
 
-        axis = draw(st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1))
+        axis = draw(
+            st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1)
+        )
         if axis == 0:
             axis = [0, -1]
         else:
@@ -76,7 +75,7 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 15],
             "input_spec_shape": input_spec_shape,
             "axis": axis,
-            "tensor_attr": tensor_attr
+            "tensor_attr": tensor_attr,
         }
 
         models = Net(config)

@@ -22,14 +22,16 @@ namespace paddle2onnx {
 
 class EyeMapper : public Mapper {
  public:
-  EyeMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  EyeMapper(const PaddleParser &p,
+            OnnxHelper *helper,
+            int64_t block_id,
             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset9() override;
 
  private:
-  void ParseValue(const TensorInfo& tensor_info, int64_t* num_val);
+  void ParseValue(const TensorInfo &tensor_info, int64_t *num_val);
   int64_t num_rows_;
   int64_t num_columns_;
 };

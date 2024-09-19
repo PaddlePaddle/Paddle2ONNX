@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -30,14 +29,12 @@ class Net(BaseNet):
         """
         forward
         """
-        shape = self.config['shape']
-        if self.config['isTensor']:
-            shape = paddle.to_tensor(
-                np.array(shape).astype(self.config['shape_dtype']))
+        shape = self.config["shape"]
+        if self.config["isTensor"]:
+            shape = paddle.to_tensor(np.array(shape).astype(self.config["shape_dtype"]))
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
-        x = paddle.reshape(
-            x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
+        x = paddle.reshape(x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
         return x
 
 
@@ -49,9 +46,8 @@ class TestExpandConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=6), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=2, max_value=6), min_size=0, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isTensor = draw(st.booleans())  # future to valid
@@ -87,16 +83,12 @@ class Net1(BaseNet):
         """
         forward
         """
-        shape = [
-            2, 1, paddle.to_tensor(
-                2, dtype=self.config['shape_dtype']), 3, 2, 2
-        ]
+        shape = [2, 1, paddle.to_tensor(2, dtype=self.config["shape_dtype"]), 3, 2, 2]
         # not supported
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), paddle.to_tensor(2), paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)]
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
-        x = paddle.reshape(
-            x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
+        x = paddle.reshape(x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
         return x
 
 
@@ -108,9 +100,8 @@ class TestExpandConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=6), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=2, max_value=6), min_size=0, max_size=5)
+        )
         input_shape = [2, 2]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isTensor = draw(st.booleans())  # future to valid

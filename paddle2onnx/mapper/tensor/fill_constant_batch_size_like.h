@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class FillConstantBatchSizeLikeMapper : public Mapper {
  public:
-  FillConstantBatchSizeLikeMapper(const PaddleParser& p, OnnxHelper* helper,
-                                  int64_t block_id, int64_t op_id)
+  FillConstantBatchSizeLikeMapper(const PaddleParser &p,
+                                  OnnxHelper *helper,
+                                  int64_t block_id,
+                                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("dtype", &dtype_);
     GetAttr("value", &value_);

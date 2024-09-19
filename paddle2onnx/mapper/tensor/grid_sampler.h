@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class GridSamplerMapper : public Mapper {
  public:
-  GridSamplerMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  GridSamplerMapper(const PaddleParser &p,
+                    OnnxHelper *helper,
+                    int64_t block_id,
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("padding_mode", &padding_mode_);

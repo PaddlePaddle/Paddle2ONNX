@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -32,7 +30,8 @@ class Net0(BaseNet):
             hidden_size=self.config["hidden_size"],
             num_layers=self.config["num_layers"],
             direction=self.config["direction"],
-            time_major=self.config["time_major"])
+            time_major=self.config["time_major"],
+        )
 
     def forward(self, inputs, prev_h, prev_c):
         """
@@ -49,11 +48,13 @@ class Net1(BaseNet):
 
     def __init__(self, config=None):
         super(Net1, self).__init__(config)
-        self.gru = paddle.nn.GRU(input_size=self.config["input_size"],
-                                 hidden_size=self.config["hidden_size"],
-                                 num_layers=self.config["num_layers"],
-                                 direction=self.config["direction"],
-                                 time_major=self.config["time_major"])
+        self.gru = paddle.nn.GRU(
+            input_size=self.config["input_size"],
+            hidden_size=self.config["hidden_size"],
+            num_layers=self.config["num_layers"],
+            direction=self.config["direction"],
+            time_major=self.config["time_major"],
+        )
 
     def forward(self, inputs, prev_h):
         """
@@ -71,9 +72,8 @@ class TestRNNConvert0(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=3, max_size=3))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=3, max_size=3)
+        )
 
         dtype = draw(st.sampled_from(["float32"]))
         hidden_size = 32
@@ -122,9 +122,8 @@ class TestRNNConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=3, max_size=3))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=3, max_size=3)
+        )
 
         dtype = draw(st.sampled_from(["float32"]))
         hidden_size = 32

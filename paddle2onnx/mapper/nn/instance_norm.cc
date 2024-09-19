@@ -24,7 +24,9 @@ int32_t InstanceNormMapper::GetMinOpsetVersion(bool verbose) {
   auto input_info = GetInput("X");
   int num_groups = input_info[0].shape[1];
   if (num_groups < 0) {
-    Error() << "The dimension in axis=1 of input tensor must be known, but now it's unknown." << std::endl;
+    Error() << "The dimension in axis=1 of input tensor must be known, but now "
+               "it's unknown."
+            << std::endl;
     return -1;
   }
   return 7;
@@ -39,20 +41,21 @@ void InstanceNormMapper::Opset7() {
   if (HasInput("Scale")) {
     scale = GetInput("Scale")[0].name;
   } else {
-    scale = helper_->Constant(GetOnnxDtype(input_info[0].dtype), std::vector<float>(num_groups, 1.0));
+    scale = helper_->Constant(GetOnnxDtype(input_info[0].dtype),
+                              std::vector<float>(num_groups, 1.0));
   }
-  
+
   std::string bias = "";
   if (HasInput("Bias")) {
     bias = GetInput("Bias")[0].name;
   } else {
-    bias = helper_->Constant(GetOnnxDtype(input_info[0].dtype), std::vector<float>(num_groups, 0.0));
+    bias = helper_->Constant(GetOnnxDtype(input_info[0].dtype),
+                             std::vector<float>(num_groups, 0.0));
   }
 
-  auto node = helper_->MakeNode(
-      "InstanceNormalization",
-      {input_info[0].name, scale, bias},
-      {output_info[0].name});
+  auto node = helper_->MakeNode("InstanceNormalization",
+                                {input_info[0].name, scale, bias},
+                                {output_info[0].name});
   AddAttribute(node, "epsilon", epsilon_);
 }
 

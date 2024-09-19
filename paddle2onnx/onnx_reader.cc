@@ -1,8 +1,19 @@
-#include <fstream>
-#include <iostream>
-#include <set>
-#include <string>
+// Copyright (c) 2024 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <cstring>
+#include <string>
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/optimizer/paddle2onnx_optimizer.h"
@@ -25,11 +36,12 @@ int32_t GetDataTypeFromOnnx(int dtype) {
   } else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT16) {
     return 6;
   }
-  Assert(false, "Only support float/double/uint8/int32/int64/float16 in OnnxReader.");
+  Assert(false,
+         "Only support float/double/uint8/int32/int64/float16 in OnnxReader.");
   return -1;
 }
 
-OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
+OnnxReader::OnnxReader(const char *model_buffer, int buffer_size) {
   ONNX_NAMESPACE::ModelProto model;
   std::string content(model_buffer, model_buffer + buffer_size);
   model.ParseFromString(content);
@@ -53,10 +65,10 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
     Assert(num_inputs <= 100,
            "The number of inputs is exceed 100, unexpected situation.");
 
-    inputs[i].dtype =
-        GetDataTypeFromOnnx(model.graph().input(i).type().tensor_type().elem_type());
+    inputs[i].dtype = GetDataTypeFromOnnx(
+        model.graph().input(i).type().tensor_type().elem_type());
     std::strcpy(inputs[i].name, model.graph().input(i).name().c_str());
-    auto& shape = model.graph().input(i).type().tensor_type().shape();
+    auto &shape = model.graph().input(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
     inputs[i].rank = dim_size;
     inputs[i].shape = new int64_t[dim_size];
@@ -70,9 +82,9 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
 
   for (int i = 0; i < num_outputs; ++i) {
     std::strcpy(outputs[i].name, model.graph().output(i).name().c_str());
-    outputs[i].dtype =
-        GetDataTypeFromOnnx(model.graph().output(i).type().tensor_type().elem_type());
-    auto& shape = model.graph().output(i).type().tensor_type().shape();
+    outputs[i].dtype = GetDataTypeFromOnnx(
+        model.graph().output(i).type().tensor_type().elem_type());
+    auto &shape = model.graph().output(i).type().tensor_type().shape();
     int dim_size = shape.dim_size();
     outputs[i].rank = dim_size;
     outputs[i].shape = new int64_t[dim_size];
@@ -85,12 +97,14 @@ OnnxReader::OnnxReader(const char* model_buffer, int buffer_size) {
   }
 }
 
-bool RemoveMultiClassNMS(const char* model_buffer, int buffer_size,
-                         char** out_model, int* out_model_size) {
+bool RemoveMultiClassNMS(const char *model_buffer,
+                         int buffer_size,
+                         char **out_model,
+                         int *out_model_size) {
   ONNX_NAMESPACE::ModelProto model;
   std::string content(model_buffer, model_buffer + buffer_size);
   model.ParseFromString(content);
-  auto* graph = model.mutable_graph();
+  auto *graph = model.mutable_graph();
   int nms_index = -1;
   std::vector<std::string> inputs;
   for (int i = 0; i < graph->node_size(); ++i) {

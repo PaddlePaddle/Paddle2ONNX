@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 import random
@@ -48,9 +46,9 @@ class Net(BaseNet):
         forward
         """
         axis = self.config["dim"]
-        x = op_api_map[self.config["op_names"]](inputs,
-                                                axis=axis,
-                                                keepdim=self.config["keep_dim"])
+        x = op_api_map[self.config["op_names"]](
+            inputs, axis=axis, keepdim=self.config["keep_dim"]
+        )
         x = paddle.unsqueeze(x, axis=[0])
         return x
 
@@ -63,22 +61,24 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=10), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=10), min_size=1, max_size=4)
+        )
 
         input_spec = [-1] * len(input_shape)
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
-        axis_type = draw(st.sampled_from([
-            "list",
-            "int",
-        ]))
+        axis_type = draw(
+            st.sampled_from(
+                [
+                    "list",
+                    "int",
+                ]
+            )
+        )
         if axis_type == "int":
             axes = draw(
-                st.integers(
-                    min_value=-len(input_shape), max_value=len(input_shape) -
-                    1))
+                st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1)
+            )
         elif axis_type == "list":
             lenSize = random.randint(1, len(input_shape))
             axes = []
@@ -102,7 +102,7 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "delta": 1e-4,
             "rtol": 1e-4,
-            "axis_dtype": axis_dtype
+            "axis_dtype": axis_dtype,
         }
 
         models = list()

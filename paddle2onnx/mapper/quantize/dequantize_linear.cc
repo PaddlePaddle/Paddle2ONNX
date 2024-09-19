@@ -17,9 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(dequantize_linear, DequantizeLinearMapper)
 
-int32_t DequantizeLinearMapper::GetMinOpsetVersion(bool verbose) {
-  return 13;
-}
+int32_t DequantizeLinearMapper::GetMinOpsetVersion(bool verbose) { return 13; }
 
 void DequantizeLinearMapper::ConvertInt8ToFp32(
     const std::vector<float> &onnx_scales, std::vector<float> *weight) {
@@ -92,8 +90,8 @@ void DequantizeLinearMapper::Opset10() {
   std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
   std::string scale_node, zero_node;
   if (onnx_zeros.size() == 1) {
-    scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                   onnx_scales[0]);
+    scale_node = helper_->Constant(
+        {}, ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales[0]);
     zero_node =
         helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros[0]);
   } else {
@@ -112,15 +110,15 @@ void DequantizeLinearMapper::Opset10() {
     if (helper_->GetOpsetVersion() >= 13) {
       AddAttribute(node, "axis", quant_axis_);
     }
-    QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
-                               quant_axis_);
+    QuantizeInfo quantize_info(
+        onnx_scales, onnx_zeros, scale_node, zero_node, quant_axis_);
     helper_->quantize_info[GetOutput("Y")[0].name] = quantize_info;
     return;
   }
   ConvertInt8ToFp32(onnx_scales, &weight);
 
-  QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
-                             quant_axis_);
+  QuantizeInfo quantize_info(
+      onnx_scales, onnx_zeros, scale_node, zero_node, quant_axis_);
   helper_->quantize_info[x_info[0].name] = quantize_info;
   Weight fp32_weight;
   fp32_weight.set(P2ODataType::FP32, x_shape, weight);

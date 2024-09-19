@@ -19,8 +19,10 @@ namespace paddle2onnx {
 
 class DequantizeLinearMapper : public Mapper {
  public:
-  DequantizeLinearMapper(const PaddleParser& p, OnnxHelper* helper,
-                         int64_t block_id, int64_t op_id)
+  DequantizeLinearMapper(const PaddleParser &p,
+                         OnnxHelper *helper,
+                         int64_t block_id,
+                         int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("quant_axis", &quant_axis_);
     GetAttr("bit_length", &bit_length_);
@@ -33,8 +35,8 @@ class DequantizeLinearMapper : public Mapper {
   void Opset10() override;
 
  private:
-  void ConvertInt8ToFp32(const std::vector<float>& onnx_scales,
-                         std::vector<float>* weight);
+  void ConvertInt8ToFp32(const std::vector<float> &onnx_scales,
+                         std::vector<float> *weight);
   int64_t quant_axis_ = 1;
   int64_t bit_length_ = 8;
 };

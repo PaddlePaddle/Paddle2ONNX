@@ -19,7 +19,9 @@ namespace paddle2onnx {
 
 class NotEqualMapper : public Mapper {
  public:
-  NotEqualMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  NotEqualMapper(const PaddleParser &p,
+                 OnnxHelper *helper,
+                 int64_t block_id,
                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   int32_t GetMinOpsetVersion(bool verbose) override;

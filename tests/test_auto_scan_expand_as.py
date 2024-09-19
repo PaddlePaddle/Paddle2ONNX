@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 import random
@@ -42,9 +40,8 @@ class TestStackConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape1 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=0, max_size=5)
+        )
 
         n = random.randint(1, 6 - len(input_shape1))
         pre_shape = random.sample([1, 1, 2, 2, 3, 3], n)

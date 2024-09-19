@@ -13,36 +13,37 @@
 // limitations under the License.
 
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 #include "paddle2onnx/mapper/mapper.h"
 
-namespace paddle2onnx
-{
+namespace paddle2onnx {
 
-  class BitWiseMapper : public Mapper {
-  public:
-    BitWiseMapper(const PaddleParser &p, OnnxHelper *helper, int64_t block_id,
-                  int64_t op_id)
-        : Mapper(p, helper, block_id, op_id) {
-      op_mapper_["bitwise_and"] = "BitwiseAnd";
-      op_mapper_["bitwise_not"] = "BitwiseNot";
-      op_mapper_["bitwise_or"] = "BitwiseOr";
-      op_mapper_["bitwise_xor"] = "BitwiseXor";
-      paddle_type_ = OpType();
-      onnx_bitwise_type_ = op_mapper_.find(paddle_type_)->second;
-      onnx_elemwise_type_ = onnx_bitwise_type_.substr(7);
-    }
-    int32_t GetMinOpsetVersion(bool verbose) override;
-    void Opset7() override;
-    void Opset18() override;
+class BitWiseMapper : public Mapper {
+ public:
+  BitWiseMapper(const PaddleParser &p,
+                OnnxHelper *helper,
+                int64_t block_id,
+                int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    op_mapper_["bitwise_and"] = "BitwiseAnd";
+    op_mapper_["bitwise_not"] = "BitwiseNot";
+    op_mapper_["bitwise_or"] = "BitwiseOr";
+    op_mapper_["bitwise_xor"] = "BitwiseXor";
+    paddle_type_ = OpType();
+    onnx_bitwise_type_ = op_mapper_.find(paddle_type_)->second;
+    onnx_elemwise_type_ = onnx_bitwise_type_.substr(7);
+  }
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset7() override;
+  void Opset18() override;
 
-  private:
-    std::map<std::string, std::string> op_mapper_; 
-    std::string onnx_bitwise_type_;
-    std::string onnx_elemwise_type_;
-    std::string paddle_type_;
-  };
+ private:
+  std::map<std::string, std::string> op_mapper_;
+  std::string onnx_bitwise_type_;
+  std::string onnx_elemwise_type_;
+  std::string paddle_type_;
+};
 
-} // namespace paddle2onnx
+}  // namespace paddle2onnx

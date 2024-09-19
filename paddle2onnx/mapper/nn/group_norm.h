@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class GroupNormMapper : public Mapper {
  public:
-  GroupNormMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  GroupNormMapper(const PaddleParser &p,
+                  OnnxHelper *helper,
+                  int64_t block_id,
                   int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("groups", &groups_);

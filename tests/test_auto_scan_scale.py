@@ -13,12 +13,10 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
-import random
 
 
 class Net(BaseNet):
@@ -31,13 +29,14 @@ class Net(BaseNet):
         forward
         """
         scale = self.config["scale"]
-        if self.config['isTensor']:
-            scale = paddle.to_tensor(np.array(scale).astype('float32'))
+        if self.config["isTensor"]:
+            scale = paddle.to_tensor(np.array(scale).astype("float32"))
         x = paddle.scale(
             x,
             scale=scale,
             bias=self.config["bias"],
-            bias_after_scale=self.config["bias_after_scale"])
+            bias_after_scale=self.config["bias_after_scale"],
+        )
         return x
 
 
@@ -49,9 +48,8 @@ class TestScaleConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=0, max_size=5)
+        )
         # int32, int64 has a bug
         dtype = draw(st.sampled_from(["float32", "float64"]))
 

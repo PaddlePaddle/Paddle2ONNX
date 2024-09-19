@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class Conv2dTransposeMapper : public Mapper {
  public:
-  Conv2dTransposeMapper(const PaddleParser& p, OnnxHelper* helper,
-                        int64_t block_id, int64_t op_id)
+  Conv2dTransposeMapper(const PaddleParser &p,
+                        OnnxHelper *helper,
+                        int64_t block_id,
+                        int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("groups", &groups_);
     GetAttr("dilations", &dilations_);
@@ -32,7 +34,7 @@ class Conv2dTransposeMapper : public Mapper {
     GetAttr("padding_algorithm", &padding_algorithm_);
     GetAttr("data_format", &data_format_);
 
-    if (HasAttr("output_padding")){
+    if (HasAttr("output_padding")) {
       GetAttr("output_padding", &output_padding_);
     }
     GetAttr("output_size", &output_size_);

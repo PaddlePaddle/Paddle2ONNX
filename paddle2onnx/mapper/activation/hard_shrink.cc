@@ -18,14 +18,14 @@ namespace paddle2onnx {
 REGISTER_MAPPER(hard_shrink, HardShrinkMapper)
 
 int32_t HardShrinkMapper::GetMinOpsetVersion(bool verbose) {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
-    return 9;
+  Logger(verbose, 9) << RequireOpset(9) << std::endl;
+  return 9;
 }
 
 void HardShrinkMapper::Opset9() {
-  auto node = helper_->MakeNode("Shrink", {GetInput("X")[0].name},
-                                {GetOutput("Out")[0].name});
+  auto node = helper_->MakeNode(
+      "Shrink", {GetInput("X")[0].name}, {GetOutput("Out")[0].name});
   AddAttribute(node, "lambd", threshold_);
-  AddAttribute(node, "bias", float(0.0));
+  AddAttribute(node, "bias", static_cast<float>(0.0));
 }
-}
+}  // namespace paddle2onnx

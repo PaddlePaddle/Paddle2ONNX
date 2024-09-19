@@ -13,20 +13,21 @@
 // limitations under the License.
 #pragma once
 
-
-#include "paddle2onnx/mapper/mapper.h"
-
 #include <cmath>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "paddle2onnx/mapper/mapper.h"
+
 namespace paddle2onnx {
 class SigmoidMapper : public Mapper {
  public:
-  SigmoidMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
+  SigmoidMapper(const PaddleParser &p,
+                OnnxHelper *helper,
+                int64_t block_id,
+                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;
 };
-}
+}  // namespace paddle2onnx

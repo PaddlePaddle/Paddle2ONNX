@@ -33,14 +33,16 @@ void FlattenMapper::Opset7() {
   auto unknown_dim_node =
       helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, -1);
   if (start_axis_ == 0 && stop_axis_ == input_info[0].Rank() - 1) {
-    helper_->MakeNode("Reshape", {input_info[0].name, unknown_dim_node},
+    helper_->MakeNode("Reshape",
+                      {input_info[0].name, unknown_dim_node},
                       {output_info[0].name});
   } else {
     auto input_shape_node = helper_->MakeNode("Shape", {input_info[0].name});
     if (start_axis_ == 0) {
-      auto second_part_shape =
-          helper_->Slice(input_shape_node->output(0), {0}, {stop_axis_ + 1},
-                         {input_info[0].Rank()});
+      auto second_part_shape = helper_->Slice(input_shape_node->output(0),
+                                              {0},
+                                              {stop_axis_ + 1},
+                                              {input_info[0].Rank()});
       auto new_shape_node =
           helper_->MakeNode("Concat", {unknown_dim_node, second_part_shape});
       AddAttribute(new_shape_node, "axis", int64_t(0));
@@ -59,9 +61,10 @@ void FlattenMapper::Opset7() {
     } else {
       auto first_part_shape =
           helper_->Slice(input_shape_node->output(0), {0}, {0}, {start_axis_});
-      auto second_part_shape =
-          helper_->Slice(input_shape_node->output(0), {0}, {stop_axis_ + 1},
-                         {input_info[0].Rank()});
+      auto second_part_shape = helper_->Slice(input_shape_node->output(0),
+                                              {0},
+                                              {stop_axis_ + 1},
+                                              {input_info[0].Rank()});
       auto new_shape_node = helper_->MakeNode(
           "Concat", {first_part_shape, unknown_dim_node, second_part_shape});
       AddAttribute(new_shape_node, "axis", int64_t(0));

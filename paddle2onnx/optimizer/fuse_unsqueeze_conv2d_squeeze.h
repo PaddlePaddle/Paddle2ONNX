@@ -36,24 +36,26 @@ namespace optimization {
 
 struct FuseUnsqueezeConv2dSqueeze final : public PredicateBasedPass {
   explicit FuseUnsqueezeConv2dSqueeze()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
 
   std::string getPassName() const override {
     return "fuse_unsqueeze_conv2d_squeeze";
   }
 
-  bool patternMatchPredicate(Node* node) override {
+  bool patternMatchPredicate(Node *node) override {
     return node->kind() == kSqueeze &&
            node->inputs()[0]->node()->kind() == kConv &&
            node->inputs()[0]->node()->inputs()[0]->node()->kind() == kUnsqueeze;
   }
 
-  bool runTransform(Node* n, Graph& graph,
-                    NodeDestroyType& destroy_current) override {
-    Node* squeeze_node = n;
-    Node* conv_node = n->inputs()[0]->node();
-    Node* unsqueeze_node = conv_node->inputs()[0]->node();
+  bool runTransform(Node *n,
+                    Graph &graph,
+                    NodeDestroyType &destroy_current) override {
+    Node *squeeze_node = n;
+    Node *conv_node = n->inputs()[0]->node();
+    Node *unsqueeze_node = conv_node->inputs()[0]->node();
     if (squeeze_node->inputs()[0]->uses().size() > 1) {
       return false;
     }
@@ -61,7 +63,7 @@ struct FuseUnsqueezeConv2dSqueeze final : public PredicateBasedPass {
       return false;
     }
 
-    Node* weight_node = conv_node->inputs()[1]->node();
+    Node *weight_node = conv_node->inputs()[1]->node();
     if (weight_node->kind() != kConstant) {
       return false;
     }

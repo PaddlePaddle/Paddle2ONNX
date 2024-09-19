@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class RangeMapper : public Mapper {
  public:
-  RangeMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  RangeMapper(const PaddleParser &p,
+              OnnxHelper *helper,
+              int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 

@@ -23,7 +23,7 @@ REGISTER_MAPPER(linspace, LinspaceMapper)
 int32_t LinspaceMapper::GetMinOpsetVersion(bool verbose) {
   Logger(verbose, 9) << RequireOpset(9) << std::endl;
   return 9;
-};
+}
 
 void LinspaceMapper::Opset9() {
   auto start_info = GetInput("Start");
@@ -68,7 +68,9 @@ void LinspaceMapper::Opset9() {
 
   auto add_node = helper_->MakeNode("Add", {mul_node->output(0), cast_start});
 
-  helper_->AutoCast(add_node->output(0), output_info[0].name, P2ODataType::FP32,
+  helper_->AutoCast(add_node->output(0),
+                    output_info[0].name,
+                    P2ODataType::FP32,
                     output_info[0].dtype);
 }
 

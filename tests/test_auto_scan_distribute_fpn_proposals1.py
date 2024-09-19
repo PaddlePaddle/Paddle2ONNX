@@ -21,7 +21,7 @@ paddle.enable_static()
 import numpy as np
 import paddle
 import paddle.fluid as fluid
-from onnxbase import randtool, compare
+from onnxbase import compare
 
 
 def test_generate_proposals():
@@ -30,7 +30,8 @@ def test_generate_proposals():
 
     with paddle.static.program_guard(main_program, startup_program):
         fpn_rois = fluid.data(
-            name='fpn_rois', shape=[-1, 4], dtype='float32', lod_level=1)
+            name="fpn_rois", shape=[-1, 4], dtype="float32", lod_level=1
+        )
 
         def init_test_input():
             images_shape = [512, 512]
@@ -59,29 +60,33 @@ def test_generate_proposals():
         refer_scale = 224
 
         out = fluid.layers.distribute_fpn_proposals(
-            fpn_rois, min_level, max_level, refer_level, refer_scale)
+            fpn_rois, min_level, max_level, refer_level, refer_scale
+        )
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
-        fpn_rois_val = fluid.create_lod_tensor(fpn_rois_data,
-                                               [[fpn_rois_data.shape[0]]],
-                                               fluid.CPUPlace())
-        result = exe.run(feed={"fpn_rois": fpn_rois_val},
-                         fetch_list=list(out),
-                         return_numpy=False)
+        fpn_rois_val = fluid.create_lod_tensor(
+            fpn_rois_data, [[fpn_rois_data.shape[0]]], fluid.CPUPlace()
+        )
+        result = exe.run(
+            feed={"fpn_rois": fpn_rois_val}, fetch_list=list(out), return_numpy=False
+        )
         path_prefix = "./distribute_fpn_proposals"
         fluid.io.save_inference_model(
-            path_prefix, ["fpn_rois"],
-            [out[0][0], out[0][1], out[0][2], out[0][3], out[1]], exe)
+            path_prefix,
+            ["fpn_rois"],
+            [out[0][0], out[0][1], out[0][2], out[0][3], out[1]],
+            exe,
+        )
 
         onnx_path = path_prefix + "/model.onnx"
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=11,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
-        sess = rt.InferenceSession(
-            onnx_path, providers=['CPUExecutionProvider'])
+        sess = rt.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
         input_name1 = sess.get_inputs()[0].name
         pred_onnx = sess.run(None, {input_name1: fpn_rois_data})
 
@@ -94,12 +99,11 @@ def test_generate_proposalsOpWithRoisNum():
 
     with paddle.static.program_guard(main_program, startup_program):
         fpn_rois = fluid.layers.data(
-            name='fpn_rois',
-            shape=[-1, 4],
-            append_batch_size=False,
-            dtype='float32')
+            name="fpn_rois", shape=[-1, 4], append_batch_size=False, dtype="float32"
+        )
         rois_num = fluid.layers.data(
-            name='rois_num', shape=[1], append_batch_size=False, dtype='int32')
+            name="rois_num", shape=[1], append_batch_size=False, dtype="int32"
+        )
 
         def init_test_input():
             images_shape = [512, 512]
@@ -128,36 +132,52 @@ def test_generate_proposalsOpWithRoisNum():
         refer_level = 4
 
         out = fluid.layers.distribute_fpn_proposals(
-            fpn_rois, min_level, max_level, refer_level, refer_scale, rois_num)
+            fpn_rois, min_level, max_level, refer_level, refer_scale, rois_num
+        )
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
         result = exe.run(
-            feed={"fpn_rois": fpn_rois_data,
-                  "rois_num": rois_num_data},
+            feed={"fpn_rois": fpn_rois_data, "rois_num": rois_num_data},
             fetch_list=list(out),
-            return_numpy=False)
+            return_numpy=False,
+        )
         pass
         path_prefix = "./distribute_fpn_proposals1"
-        fluid.io.save_inference_model(path_prefix, ["fpn_rois", "rois_num"], [
-            out[0][0], out[0][1], out[0][2], out[0][3], out[1], out[2][0],
-            out[2][1], out[2][2], out[2][3]
-        ], exe)
+        fluid.io.save_inference_model(
+            path_prefix,
+            ["fpn_rois", "rois_num"],
+            [
+                out[0][0],
+                out[0][1],
+                out[0][2],
+                out[0][3],
+                out[1],
+                out[2][0],
+                out[2][1],
+                out[2][2],
+                out[2][3],
+            ],
+            exe,
+        )
 
         onnx_path = path_prefix + "/model.onnx"
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=12,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
-        sess = rt.InferenceSession(
-            onnx_path, providers=['CPUExecutionProvider'])
+        sess = rt.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
-        pred_onnx = sess.run(None, {
-            input_name1: fpn_rois_data,
-            input_name2: rois_num_data,
-        })
+        pred_onnx = sess.run(
+            None,
+            {
+                input_name1: fpn_rois_data,
+                input_name2: rois_num_data,
+            },
+        )
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 

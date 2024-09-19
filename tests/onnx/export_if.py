@@ -30,13 +30,9 @@ if __name__ == "__main__":
         value=onnx.numpy_helper.from_array(y),
     )
 
-    then_body = onnx.helper.make_graph(
-        [then_const_node], "then_body", [], [then_out]
-    )
+    then_body = onnx.helper.make_graph([then_const_node], "then_body", [], [then_out])
 
-    else_body = onnx.helper.make_graph(
-        [else_const_node], "else_body", [], [else_out]
-    )
+    else_body = onnx.helper.make_graph([else_const_node], "else_body", [], [else_out])
 
     if_node = onnx.helper.make_node(
         "If",

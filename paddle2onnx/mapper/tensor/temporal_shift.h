@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class TemporalShiftMapper : public Mapper {
  public:
-  TemporalShiftMapper(const PaddleParser& p, OnnxHelper* helper,
-                      int64_t block_id, int64_t op_id)
+  TemporalShiftMapper(const PaddleParser &p,
+                      OnnxHelper *helper,
+                      int64_t block_id,
+                      int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("data_format", &data_format_);
     GetAttr("shift_ratio", &shift_ratio_);

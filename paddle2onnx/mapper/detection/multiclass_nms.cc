@@ -48,7 +48,7 @@ int32_t NMSMapper::GetMinOpsetVersion(bool verbose) {
   return 10;
 }
 
-void NMSMapper::KeepTopK(const std::string& selected_indices) {
+void NMSMapper::KeepTopK(const std::string &selected_indices) {
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   auto out_info = GetOutput("Out");
@@ -126,9 +126,10 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
   if (keep_top_k_ > 0) {
     // get proper topk
     auto shape_of_scores = helper_->MakeNode("Shape", {final_scores});
-    auto num_of_boxes =
-        helper_->Slice(shape_of_scores->output(0), std::vector<int64_t>(1, 0),
-                       std::vector<int64_t>(1, 0), std::vector<int64_t>(1, 1));
+    auto num_of_boxes = helper_->Slice(shape_of_scores->output(0),
+                                       std::vector<int64_t>(1, 0),
+                                       std::vector<int64_t>(1, 0),
+                                       std::vector<int64_t>(1, 1));
     auto top_k =
         helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, keep_top_k_);
     auto ensemble_value = helper_->MakeNode("Concat", {num_of_boxes, top_k});
@@ -173,12 +174,13 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
 
   auto unsqueezed_class = helper_->Reshape({float_classes->output(0)}, shape);
 
-  auto box_result =
-      helper_->MakeNode("Concat", {unsqueezed_class, unsqueezed_scores,
-                                   gathered_selected_boxes->output(0)});
+  auto box_result = helper_->MakeNode("Concat",
+                                      {unsqueezed_class,
+                                       unsqueezed_scores,
+                                       gathered_selected_boxes->output(0)});
   AddAttribute(box_result, "axis", int64_t(2));
-  helper_->Squeeze({box_result->output(0)}, {out_info[0].name},
-                   std::vector<int64_t>(1, 0));
+  helper_->Squeeze(
+      {box_result->output(0)}, {out_info[0].name}, std::vector<int64_t>(1, 0));
 
   // other outputs, we don't use sometimes
   // there's lots of Cast in exporting
@@ -190,12 +192,14 @@ void NMSMapper::KeepTopK(const std::string& selected_indices) {
   AddAttribute(index_result, "to", GetOnnxDtype(index_info[0].dtype));
 
   auto out_box_shape = helper_->MakeNode("Shape", {out_info[0].name});
-  auto num_rois_result =
-      helper_->Slice({out_box_shape->output(0)}, std::vector<int64_t>(1, 0),
-                     std::vector<int64_t>(1, 0), std::vector<int64_t>(1, 1));
-  auto int32_num_rois_result =
-      helper_->AutoCast(num_rois_result, num_rois_info[0].name,
-                        P2ODataType::INT64, num_rois_info[0].dtype);
+  auto num_rois_result = helper_->Slice({out_box_shape->output(0)},
+                                        std::vector<int64_t>(1, 0),
+                                        std::vector<int64_t>(1, 0),
+                                        std::vector<int64_t>(1, 1));
+  auto int32_num_rois_result = helper_->AutoCast(num_rois_result,
+                                                 num_rois_info[0].name,
+                                                 P2ODataType::INT64,
+                                                 num_rois_info[0].dtype);
 }
 
 void NMSMapper::Opset10() {
@@ -221,14 +225,17 @@ void NMSMapper::Opset10() {
   auto selected_box_index = MapperHelper::Get()->GenName("nms.selected_index");
   if (normalized_) {
     helper_->MakeNode("NonMaxSuppression",
-                      {boxes_info[0].name, score_info[0].name, nms_top_k,
-                       nms_threshold, score_threshold},
+                      {boxes_info[0].name,
+                       score_info[0].name,
+                       nms_top_k,
+                       nms_threshold,
+                       score_threshold},
                       {selected_box_index});
   } else {
-    auto value_1 =
-        helper_->Constant({1}, GetOnnxDtype(boxes_info[0].dtype), float(1.0));
-    auto split_boxes = helper_->Split(boxes_info[0].name,
-                                      std::vector<int64_t>(4, 1), int64_t(2));
+    auto value_1 = helper_->Constant(
+        {1}, GetOnnxDtype(boxes_info[0].dtype), static_cast<float>(1.0));
+    auto split_boxes = helper_->Split(
+        boxes_info[0].name, std::vector<int64_t>(4, 1), int64_t(2));
     auto xmax = helper_->MakeNode("Add", {split_boxes[2], value_1});
     auto ymax = helper_->MakeNode("Add", {split_boxes[3], value_1});
     auto new_boxes = helper_->MakeNode(
@@ -236,8 +243,11 @@ void NMSMapper::Opset10() {
         {split_boxes[0], split_boxes[1], xmax->output(0), ymax->output(0)});
     AddAttribute(new_boxes, "axis", int64_t(2));
     helper_->MakeNode("NonMaxSuppression",
-                      {new_boxes->output(0), score_info[0].name, nms_top_k,
-                       nms_threshold, score_threshold},
+                      {new_boxes->output(0),
+                       score_info[0].name,
+                       nms_top_k,
+                       nms_threshold,
+                       score_threshold},
                       {selected_box_index});
   }
   KeepTopK(selected_box_index);
@@ -292,7 +302,9 @@ void NMSMapper::ExportForTensorRT() {
   nms_node->set_domain("Paddle");
 
   auto num_rois = helper_->Reshape(nms_node->output(0), {-1});
-  helper_->AutoCast(num_rois, num_rois_info[0].name, P2ODataType::INT32,
+  helper_->AutoCast(num_rois,
+                    num_rois_info[0].name,
+                    P2ODataType::INT32,
                     num_rois_info[0].dtype);
 
   auto out_classes = helper_->Reshape(nms_node->output(3), {-1, 1});

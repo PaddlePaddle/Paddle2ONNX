@@ -14,25 +14,25 @@
 from __future__ import absolute_import
 
 import argparse
-import sys
 from paddle2onnx.utils import logging
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--input_model_path',
-        required=True,
-        help='The path of input onnx model file.')
+        "--input_model_path", required=True, help="The path of input onnx model file."
+    )
     parser.add_argument(
-        '--output_model_path',
+        "--output_model_path",
         required=True,
-        help='The file path to write optimized onnx model file.')
+        help="The file path to write optimized onnx model file.",
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_arguments()
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+
     c_p2o.convert_to_fp16(args.input_model_path, args.output_model_path)
-    logging.info('FP16 model saved in {}.'.format(args.output_model_path))
+    logging.info("FP16 model saved in {}.".format(args.output_model_path))

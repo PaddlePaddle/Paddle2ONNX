@@ -37,7 +37,8 @@ settings.register_profile(
     deadline=None,
     print_blob=True,
     derandomize=True,
-    report_multiple_bugs=False)
+    report_multiple_bugs=False,
+)
 settings.register_profile(
     "dev",
     max_examples=1000,
@@ -45,9 +46,12 @@ settings.register_profile(
     deadline=None,
     print_blob=True,
     derandomize=True,
-    report_multiple_bugs=False)
-if float(os.getenv('TEST_NUM_PERCENT_CASES', default='1.0')) < 1 or \
-    os.getenv('HYPOTHESIS_TEST_PROFILE', 'dev') == 'ci':
+    report_multiple_bugs=False,
+)
+if (
+    float(os.getenv("TEST_NUM_PERCENT_CASES", default="1.0")) < 1
+    or os.getenv("HYPOTHESIS_TEST_PROFILE", "dev") == "ci"
+):
     settings.load_profile("ci")
 else:
     settings.load_profile("dev")
@@ -73,12 +77,14 @@ class OPConvertAutoScanTest(unittest.TestCase):
         paddle.enable_static()
         self.num_ran_models = 0
 
-    def run_and_statis(self,
-                       max_examples=100,
-                       opset_version=[7, 9, 15],
-                       reproduce=None,
-                       min_success_num=25,
-                       max_duration=-1):
+    def run_and_statis(
+        self,
+        max_examples=100,
+        opset_version=[7, 9, 15],
+        reproduce=None,
+        min_success_num=25,
+        max_duration=-1,
+    ):
         if os.getenv("CE_STAGE", "OFF") == "ON":
             max_examples *= 10
             min_success_num *= 10
@@ -92,7 +98,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             deadline=None,
             print_blob=True,
             derandomize=True,
-            report_multiple_bugs=False, )
+            report_multiple_bugs=False,
+        )
         settings.load_profile("ci")
 
         def sample_convert_generator(draw):
@@ -110,38 +117,43 @@ class OPConvertAutoScanTest(unittest.TestCase):
         paddle.disable_static()
         loop_func()
 
-        logging.info(
-            "===================Statistical Information===================")
-        logging.info("Number of Generated Programs: {}".format(
-            self.num_ran_models))
+        logging.info("===================Statistical Information===================")
+        logging.info("Number of Generated Programs: {}".format(self.num_ran_models))
         successful_ran_programs = int(self.num_ran_models)
         if successful_ran_programs < min_success_num:
             logging.warning("satisfied_programs = ran_programs")
             logging.error(
-                "At least {} programs need to ran successfully, but now only about {} programs satisfied.".
-                format(min_success_num, successful_ran_programs))
+                "At least {} programs need to ran successfully, but now only about {} programs satisfied.".format(
+                    min_success_num, successful_ran_programs
+                )
+            )
             assert False
         used_time = time.time() - start_time
         logging.info("Used time: {} s".format(round(used_time, 2)))
         if max_duration > 0 and used_time > max_duration:
             logging.error(
-                "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`.".
-                format(max_duration))
+                "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`.".format(
+                    max_duration
+                )
+            )
             assert False
 
     def run_test(self, configs):
         config, models = configs
         logging.info("Run configs: {}".format(config))
 
-        assert "op_names" in config.keys(
-        ), "config must include op_names in dict keys"
-        assert "test_data_shapes" in config.keys(
+        assert "op_names" in config.keys(), "config must include op_names in dict keys"
+        assert (
+            "test_data_shapes" in config.keys()
         ), "config must include test_data_shapes in dict keys"
-        assert "test_data_types" in config.keys(
+        assert (
+            "test_data_types" in config.keys()
         ), "config must include test_data_types in dict keys"
-        assert "opset_version" in config.keys(
+        assert (
+            "opset_version" in config.keys()
         ), "config must include opset_version in dict keys"
-        assert "input_spec_shape" in config.keys(
+        assert (
+            "input_spec_shape" in config.keys()
         ), "config must include input_spec_shape in dict keys"
 
         op_names = config["op_names"]
@@ -166,7 +178,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             opset_version = opset_version * len(models)
 
         assert len(models) == len(
-            op_names), "Length of models should be equal to length of op_names"
+            op_names
+        ), "Length of models should be equal to length of op_names"
 
         input_type_list = None
         if len(test_data_types) > 1:
@@ -188,8 +201,16 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         for i, model in enumerate(models):
             model.eval()
-            obj = APIOnnx(model, op_names[i], opset_version[i], op_names[i],
-                          input_specs, delta, rtol, use_gpu)
+            obj = APIOnnx(
+                model,
+                op_names[i],
+                opset_version[i],
+                op_names[i],
+                input_specs,
+                delta,
+                rtol,
+                use_gpu,
+            )
             for input_type in input_type_list:
                 input_tensors = list()
                 for j, shape in enumerate(test_data_shapes):
@@ -199,24 +220,28 @@ class OPConvertAutoScanTest(unittest.TestCase):
                         data = data.astype(input_type[j])
                         input_tensors.append(paddle.to_tensor(data))
                         continue
-                    if input_type[j].count('int') > 0:
+                    if input_type[j].count("int") > 0:
                         input_tensors.append(
                             paddle.to_tensor(
-                                randtool("int", -20, 20, shape).astype(
-                                    input_type[j])))
-                    elif input_type[j].count('bool') > 0:
+                                randtool("int", -20, 20, shape).astype(input_type[j])
+                            )
+                        )
+                    elif input_type[j].count("bool") > 0:
                         input_tensors.append(
                             paddle.to_tensor(
-                                randtool("bool", -2, 2, shape).astype(
-                                    input_type[j])))
+                                randtool("bool", -2, 2, shape).astype(input_type[j])
+                            )
+                        )
                     else:
                         input_tensors.append(
                             paddle.to_tensor(
-                                randtool("float", -2, 2, shape).astype(
-                                    input_type[j])))
+                                randtool("float", -2, 2, shape).astype(input_type[j])
+                            )
+                        )
                 obj.set_input_data("input_data", tuple(input_tensors))
-                logging.info("Now Run >>> dtype: {}, op_name: {}".format(
-                    input_type, op_names[i]))
+                logging.info(
+                    "Now Run >>> dtype: {}, op_name: {}".format(input_type, op_names[i])
+                )
                 obj.run()
             if len(input_type_list) == 0:
                 obj.run()

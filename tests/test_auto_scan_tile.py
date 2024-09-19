@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -29,13 +28,14 @@ class Net(BaseNet):
         """
         forward
         """
-        repeat_times = self.config['repeat_times']
-        if self.config['repeat_times_dtype'] == "list":
+        repeat_times = self.config["repeat_times"]
+        if self.config["repeat_times_dtype"] == "list":
             repeat_times = repeat_times
-        elif self.config['repeat_times_dtype'] == "Tensor":
+        elif self.config["repeat_times_dtype"] == "Tensor":
             repeat_times = paddle.to_tensor(
-                np.array(repeat_times).astype(self.config['shape_dtype']))
-        elif self.config['repeat_times_dtype'] == "int":
+                np.array(repeat_times).astype(self.config["shape_dtype"])
+            )
+        elif self.config["repeat_times_dtype"] == "int":
             repeat_times = [repeat_times[0]]
         x = paddle.tile(inputs, repeat_times=repeat_times)
         return x
@@ -49,9 +49,8 @@ class TestTileConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=5), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=2, max_value=5), min_size=0, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         # when repeat_times_dtype is tensor has a bug
@@ -90,10 +89,7 @@ class Net1(BaseNet):
         """
         forward
         """
-        repeat_times = [
-            4, paddle.to_tensor(
-                3, dtype=self.config['shape_dtype']), 2, 1
-        ]
+        repeat_times = [4, paddle.to_tensor(3, dtype=self.config["shape_dtype"]), 2, 1]
         # repeat_times = [4, 3, 2, 1]
         # repeat_times = paddle.to_tensor(
         #                     np.array([4, 3, 2, 1]).astype('int32'))
@@ -111,9 +107,8 @@ class TestTileConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=5), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=2, max_value=5), min_size=0, max_size=5)
+        )
         input_shape = [4, 3, 2, 1]
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))

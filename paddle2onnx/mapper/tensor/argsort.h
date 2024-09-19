@@ -19,7 +19,9 @@ namespace paddle2onnx {
 
 class ArgsortMapper : public Mapper {
  public:
-  ArgsortMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ArgsortMapper(const PaddleParser &p,
+                OnnxHelper *helper,
+                int64_t block_id,
                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("descending", &descending_);

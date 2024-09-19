@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class UnfoldMapper : public Mapper {
  public:
-  UnfoldMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  UnfoldMapper(const PaddleParser &p,
+               OnnxHelper *helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("dilations", &dilations_);
@@ -33,10 +35,20 @@ class UnfoldMapper : public Mapper {
 
   int32_t GetMinOpsetVersion(bool verbose = false);
   void Opset11();
-  std::string _get_im2col_indices_along_dim(std::string intput_d, int64_t kernel_size_d, int64_t dialation_d,  int64_t padding_d, int64_t stride_d);
-  std::string _get_im2col_output_shape(std::string & batch_dim, std::string & channel_dim, int64_t kernel_h, int64_t kernel_w);
-  std::string _get_im2col_padded_input(std::string & input_name, int64_t padding_h, int64_t padding_w);
-  std::vector<std::string> _get_shape(std::string & x);
+  std::string _get_im2col_indices_along_dim(std::string intput_d,
+                                            int64_t kernel_size_d,
+                                            int64_t dialation_d,
+                                            int64_t padding_d,
+                                            int64_t stride_d);
+  std::string _get_im2col_output_shape(std::string &batch_dim,
+                                       std::string &channel_dim,
+                                       int64_t kernel_h,
+                                       int64_t kernel_w);
+  std::string _get_im2col_padded_input(std::string &input_name,
+                                       int64_t padding_h,
+                                       int64_t padding_w);
+  std::vector<std::string> _get_shape(std::string &x);
+
  private:
   std::vector<int64_t> dilations_;
   std::vector<int64_t> strides_;

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -31,11 +29,12 @@ class Net(BaseNet):
         """
         x = paddle.unique(
             input,
-            return_index=self.config['return_index'],
-            return_inverse=self.config['return_inverse'],
-            return_counts=self.config['return_counts'],
-            axis=self.config['axis'],
-            dtype=self.config['dtype'])
+            return_index=self.config["return_index"],
+            return_inverse=self.config["return_inverse"],
+            return_counts=self.config["return_counts"],
+            axis=self.config["axis"],
+            dtype=self.config["dtype"],
+        )
 
         return x
 
@@ -48,9 +47,8 @@ class TestUniqueConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=10), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=10), min_size=0, max_size=4)
+        )
 
         return_index = draw(st.booleans())
         return_inverse = draw(st.booleans())
@@ -58,9 +56,7 @@ class TestUniqueConvert(OPConvertAutoScanTest):
 
         axis = None
         if draw(st.booleans()) and len(input_shape) > 0:
-            axis = draw(
-                st.integers(
-                    min_value=0, max_value=len(input_shape) - 1))
+            axis = draw(st.integers(min_value=0, max_value=len(input_shape) - 1))
         dtype = draw(st.sampled_from(["float32", "int64"]))
         xdtype = draw(st.sampled_from(["int64", "int32"]))
         config = {

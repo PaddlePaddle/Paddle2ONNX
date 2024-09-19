@@ -14,7 +14,6 @@
 
 import paddle
 from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -30,7 +29,8 @@ class Net(paddle.nn.Layer):
         forward
         """
         x, indices = paddle.topk(
-            inputs, k=1, axis=None, largest=True, sorted=True, name=None)
+            inputs, k=1, axis=None, largest=True, sorted=True, name=None
+        )
         return x + indices
 
 
@@ -42,7 +42,6 @@ def test_topk_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-10, rtol=1e-11
-    obj = APIOnnx(op, 'topk', [11, 12])
-    obj.set_input_data("input_data",
-                       paddle.to_tensor([[1, 4, 5, 7], [2, 6, 2, 5]]))
+    obj = APIOnnx(op, "topk", [11, 12])
+    obj.set_input_data("input_data", paddle.to_tensor([[1, 4, 5, 7], [2, 6, 2, 5]]))
     obj.run()

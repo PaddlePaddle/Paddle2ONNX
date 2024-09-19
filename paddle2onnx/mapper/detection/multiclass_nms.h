@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class NMSMapper : public Mapper {
  public:
-  NMSMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  NMSMapper(const PaddleParser &p,
+            OnnxHelper *helper,
+            int64_t block_id,
             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     // NMS is a post process operators for object detection
@@ -44,7 +46,7 @@ class NMSMapper : public Mapper {
   }
 
   int32_t GetMinOpsetVersion(bool verbose) override;
-  void KeepTopK(const std::string& selected_indices);
+  void KeepTopK(const std::string &selected_indices);
   void Opset10() override;
   void ExportForTensorRT();
 

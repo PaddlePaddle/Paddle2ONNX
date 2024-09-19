@@ -26,14 +26,15 @@ class Net(paddle.nn.Layer):
         super(Net, self).__init__()
         self.weight_attr = paddle.framework.ParamAttr(
             name="linear_weight",
-            initializer=paddle.nn.initializer.Uniform(
-                low=-0.5, high=0.5))
+            initializer=paddle.nn.initializer.Uniform(low=-0.5, high=0.5),
+        )
         self.bias_attr = paddle.framework.ParamAttr(
             name="linear_bias",
-            initializer=paddle.nn.initializer.Uniform(
-                low=-0.5, high=0.5))
+            initializer=paddle.nn.initializer.Uniform(low=-0.5, high=0.5),
+        )
         self._linear = paddle.nn.Linear(
-            2, 2, weight_attr=self.weight_attr, bias_attr=self.bias_attr)
+            2, 2, weight_attr=self.weight_attr, bias_attr=self.bias_attr
+        )
 
     def forward(self, inputs):
         """
@@ -51,9 +52,9 @@ def test_initializer_Uniform_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_initializer_Uniform', [9, 10, 11, 12])
+    obj = APIOnnx(op, "nn_initializer_Uniform", [9, 10, 11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 2]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 2]).astype("float32")),
+    )
     obj.run()

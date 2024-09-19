@@ -29,11 +29,13 @@ void PowMapper::Opset7() {
     std::string x_cast_name = helper_->AutoCast(
         {input_info[0].name}, input_info[0].dtype, P2ODataType::FP32);
     auto node = helper_->MakeNode("Pow", {x_cast_name, factor_node});
-    helper_->AutoCast(node->output(0), {output_info[0].name}, P2ODataType::FP32,
+    helper_->AutoCast(node->output(0),
+                      {output_info[0].name},
+                      P2ODataType::FP32,
                       input_info[0].dtype);
   } else {
-    helper_->MakeNode("Pow", {input_info[0].name, factor_node},
-                      {output_info[0].name});
+    helper_->MakeNode(
+        "Pow", {input_info[0].name, factor_node}, {output_info[0].name});
   }
 }
 

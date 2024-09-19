@@ -13,10 +13,8 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 from onnxbase import randtool
-import numpy as np
 import unittest
 import paddle
 
@@ -44,7 +42,8 @@ class Net(BaseNet):
             conf_thresh=conf_thresh,
             downsample_ratio=downsample_ratio,
             clip_bbox=clip_bbox,
-            scale_x_y=scale_x_y)
+            scale_x_y=scale_x_y,
+        )
         return x
 
 
@@ -56,9 +55,8 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=30), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=30), min_size=4, max_size=4)
+        )
         input_shape[0] = 1
         input_shape[2] = input_shape[3]
         img_size = [input_shape[0], 2]
@@ -67,10 +65,11 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
 
         anchors = draw(
             st.lists(
-                st.integers(
-                    min_value=2, max_value=5),
+                st.integers(min_value=2, max_value=5),
                 min_size=num * 2,
-                max_size=num * 2))
+                max_size=num * 2,
+            )
+        )
 
         class_num = draw(st.integers(min_value=2, max_value=5))
 
@@ -102,7 +101,7 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
             "downsample_ratio": downsample_ratio,
             "clip_bbox": clip_bbox,
             "scale_x_y": scale_x_y,
-            "use_gpu": False
+            "use_gpu": False,
         }
 
         models = Net(config)

@@ -50,12 +50,14 @@ void ScatterMapper::Opset11() {
 
   if (!overwrite_) {
     auto shape_node = helper_->MakeNode("Shape", {input_x_info[0].name});
-    std::string zeros_like_node = helper_->ConstOfShape(
-        shape_node->output(0), GetOnnxDtype(input_x_info[0].dtype),
-        static_cast<float>(0));
-    auto scatter_nd_node = helper_->MakeNode(
-        "ScatterND", {zeros_like_node, reshape_index_node->output(0),
-                      input_updates_info[0].name});
+    std::string zeros_like_node =
+        helper_->ConstOfShape(shape_node->output(0),
+                              GetOnnxDtype(input_x_info[0].dtype),
+                              static_cast<float>(0));
+    auto scatter_nd_node = helper_->MakeNode("ScatterND",
+                                             {zeros_like_node,
+                                              reshape_index_node->output(0),
+                                              input_updates_info[0].name});
     AddAttribute(scatter_nd_node, "reduction", "add");
 
     std::string zero_node = helper_->Constant(
@@ -72,11 +74,11 @@ void ScatterMapper::Opset11() {
         {condition_node, input_x_info[0].name, scatter_nd_node->output(0)},
         {output_info[0].name});
   } else {
-    auto node =
-        helper_->MakeNode("ScatterND",
-                          {input_x_info[0].name, reshape_index_node->output(0),
-                           input_updates_info[0].name},
-                          {output_info[0].name});
+    auto node = helper_->MakeNode("ScatterND",
+                                  {input_x_info[0].name,
+                                   reshape_index_node->output(0),
+                                   input_updates_info[0].name},
+                                  {output_info[0].name});
   }
 }
 

@@ -17,7 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(eye, EyeMapper)
 
-void EyeMapper::ParseValue(const TensorInfo& tensor_info, int64_t* num_val) {
+void EyeMapper::ParseValue(const TensorInfo &tensor_info, int64_t *num_val) {
   std::vector<int64_t> value;
   TryGetValue(tensor_info, &value);
   *num_val = value[0];

@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class ElementwiseMapper : public Mapper {
  public:
-  ElementwiseMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ElementwiseMapper(const PaddleParser &p,
+                    OnnxHelper *helper,
+                    int64_t block_id,
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
@@ -44,8 +46,10 @@ class ElementwiseMapper : public Mapper {
 
 class ElementWiseModMapper : public Mapper {
  public:
-  ElementWiseModMapper(const PaddleParser& p, OnnxHelper* helper,
-                       int64_t block_id, int64_t op_id)
+  ElementWiseModMapper(const PaddleParser &p,
+                       OnnxHelper *helper,
+                       int64_t block_id,
+                       int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override {
@@ -58,8 +62,10 @@ class ElementWiseModMapper : public Mapper {
 
 class ElementWiseFloordivMapper : public Mapper {
  public:
-  ElementWiseFloordivMapper(const PaddleParser& p, OnnxHelper* helper,
-                            int64_t block_id, int64_t op_id)
+  ElementWiseFloordivMapper(const PaddleParser &p,
+                            OnnxHelper *helper,
+                            int64_t block_id,
+                            int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }

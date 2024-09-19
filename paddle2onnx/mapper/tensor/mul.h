@@ -22,13 +22,16 @@ namespace paddle2onnx {
 
 class MulMapper : public Mapper {
  public:
-  MulMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  MulMapper(const PaddleParser &p,
+            OnnxHelper *helper,
+            int64_t block_id,
             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("x_num_col_dims", &x_num_col_dims_);
     GetAttr("y_num_col_dims", &y_num_col_dims_);
   }
   void Opset7() override;
+
  private:
   int64_t x_num_col_dims_ = 1;
   int64_t y_num_col_dims_ = 1;

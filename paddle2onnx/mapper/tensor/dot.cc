@@ -28,11 +28,11 @@ void DotMapper::Opset7() {
   if (helper_->GetOpsetVersion() >= 13) {
     std::string axes_node = helper_->Constant(
         {1}, GetOnnxDtype(P2ODataType::INT64), input_x_info[0].Rank() - 1);
-    helper_->MakeNode("ReduceSum", {mul_node->output(0), axes_node},
-                      {output_info[0].name});
+    helper_->MakeNode(
+        "ReduceSum", {mul_node->output(0), axes_node}, {output_info[0].name});
   } else {
-    auto reducesum_node = helper_->MakeNode("ReduceSum", {mul_node->output(0)},
-                                            {output_info[0].name});
+    auto reducesum_node = helper_->MakeNode(
+        "ReduceSum", {mul_node->output(0)}, {output_info[0].name});
     std::vector<int64_t> axes = {input_x_info[0].Rank() - 1};
     AddAttribute(reducesum_node, "axes", axes);
   }

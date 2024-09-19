@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -41,9 +39,8 @@ class TestTransposeConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=0, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
@@ -61,7 +58,7 @@ class TestTransposeConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "perm": perm
+            "perm": perm,
         }
 
         models = Net(config)

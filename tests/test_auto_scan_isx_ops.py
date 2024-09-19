@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
 import numpy as np
 import unittest
 import paddle
@@ -38,7 +36,7 @@ opset_version_map = {
 class Net(BaseNet):
     def forward(self, inputs):
         x = op_api_map[self.config["op_names"]](inputs)
-        return x.astype('float32')
+        return x.astype("float32")
 
 
 class TestLogicopsConvert(OPConvertAutoScanTest):
@@ -49,9 +47,8 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=1, max_size=4)
+        )
 
         dtype = "float32"
 
@@ -60,28 +57,24 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
             input_data = np.ones(shape=input_shape)
             inf_data = np.ones(shape=input_shape)
             inf_data = np.ones(shape=input_shape)
-            inf_data[:] = float('inf')
+            inf_data[:] = float("inf")
             inf_condition = np.random.randint(-2, 2, input_shape).astype("bool")
             input_data = np.where(inf_condition, input_data, inf_data)
             nan_data = np.ones(shape=input_shape)
             nan_data = np.ones(shape=input_shape)
-            nan_data[:] = float('nan')
+            nan_data[:] = float("nan")
             nan_condition = np.random.randint(-2, 2, input_shape).astype("bool")
             input_data = np.where(nan_condition, input_data, nan_data)
             minus_inf_data = np.ones(shape=input_shape)
             minus_inf_data = np.ones(shape=input_shape)
-            minus_inf_data[:] = float('-inf')
-            minus_inf_condition = np.random.randint(-2, 2,
-                                                    input_shape).astype("bool")
-            input_data = np.where(minus_inf_condition, input_data,
-                                  minus_inf_data)
+            minus_inf_data[:] = float("-inf")
+            minus_inf_condition = np.random.randint(-2, 2, input_shape).astype("bool")
+            input_data = np.where(minus_inf_condition, input_data, minus_inf_data)
             minus_nan_data = np.ones(shape=input_shape)
             minus_nan_data = np.ones(shape=input_shape)
-            minus_nan_data[:] = float('-nan')
-            minus_nan_condition = np.random.randint(-2, 2,
-                                                    input_shape).astype("bool")
-            input_data = np.where(minus_nan_condition, input_data,
-                                  minus_nan_data)
+            minus_nan_data[:] = float("-nan")
+            minus_nan_condition = np.random.randint(-2, 2, input_shape).astype("bool")
+            input_data = np.where(minus_nan_condition, input_data, minus_nan_data)
             return input_data
 
         config = {
@@ -89,7 +82,7 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
             "test_data_shapes": [generator_data],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": []
+            "input_spec_shape": [],
         }
 
         models = list()

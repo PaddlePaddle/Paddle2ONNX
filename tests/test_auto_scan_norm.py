@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -30,7 +28,8 @@ class Net(BaseNet):
         forward
         """
         x = paddle.nn.functional.normalize(
-            inputs, axis=self.config["axis"], epsilon=self.config["epsilon"])
+            inputs, axis=self.config["axis"], epsilon=self.config["epsilon"]
+        )
         return x
 
 
@@ -42,16 +41,14 @@ class TestNormConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=1, max_size=4)
+        )
 
         input_spec = [-1] * len(input_shape)
 
         axis = draw(
-            st.integers(
-                min_value=-len(input_shape) + 1, max_value=len(input_shape) -
-                1))
+            st.integers(min_value=-len(input_shape) + 1, max_value=len(input_shape) - 1)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
@@ -64,7 +61,7 @@ class TestNormConvert(OPConvertAutoScanTest):
             "opset_version": [9, 15],
             "input_spec_shape": [],
             "epsilon": epsilon,
-            "axis": axis
+            "axis": axis,
         }
 
         models = Net(config)

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 from onnxbase import randtool
 import paddle
@@ -45,9 +43,8 @@ class TestOneHotV2Convert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=1, max_size=4)
+        )
 
         num_classes = draw(st.integers(min_value=10, max_value=20))
 
@@ -65,7 +62,7 @@ class TestOneHotV2Convert(OPConvertAutoScanTest):
             "opset_version": [9, 13, 15],
             "input_spec_shape": [],
             "num_classes": num_classes,
-            "is_tensor": is_tensor
+            "is_tensor": is_tensor,
         }
 
         models = Net(config)

@@ -13,17 +13,19 @@
 // limitations under the License.
 
 #pragma once
+#include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "paddle2onnx/mapper/mapper.h"
-#include <unordered_map>
-#include <functional>
 
 namespace paddle2onnx {
 
 class AssignValueMapper : public Mapper {
  public:
-  AssignValueMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  AssignValueMapper(const PaddleParser &p,
+                    OnnxHelper *helper,
+                    int64_t block_id,
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("dtype", &dtype_);
@@ -34,37 +36,53 @@ class AssignValueMapper : public Mapper {
   void Opset7() override;
 
  private:
-  void GetAttrValues(){
+  void GetAttrValues() {
     int32_t dtype = static_cast<int32_t>(dtype_);
-    const std::string attr_name = HasAttr("values") ? "values" : GetAttrNameByDtype(dtype);
+    const std::string attr_name =
+        HasAttr("values") ? "values" : GetAttrNameByDtype(dtype);
     std::unordered_map<int32_t, std::function<void()>> type_handlers = {
-        {P2ODataType::INT32, [&](){
-            if (attr_name == "values") GetScalars(attr_name, &int64_values_);
-            else if (attr_name == "int32_values") GetAttr(attr_name, &int64_values_);
-        }},
-        {P2ODataType::INT64, [&](){
-            if (attr_name == "values") GetScalars(attr_name, &int64_values_);
-            else if (attr_name == "int64_values") GetAttr(attr_name, &int64_values_);
-        }},
-        {P2ODataType::FP32, [&](){
-            if (attr_name == "values") GetScalars(attr_name, &fp32_values_);
-            else if (attr_name == "fp32_values") GetAttr(attr_name, &fp32_values_);
-        }},
-        {P2ODataType::FP64, [&](){
-            if (attr_name == "values") GetScalars(attr_name, &double_values_);
-            else if (attr_name == "fp32_values") GetAttr(attr_name, &double_values_);
-        }},
-        {P2ODataType::BOOL, [&](){
-            if (attr_name == "values") GetScalars(attr_name, &bool_values_);
-            else if (attr_name == "bool_values") GetAttr(attr_name, &bool_values_);
-        }},
+        {P2ODataType::INT32,
+         [&]() {
+           if (attr_name == "values")
+             GetScalars(attr_name, &int64_values_);
+           else if (attr_name == "int32_values")
+             GetAttr(attr_name, &int64_values_);
+         }},
+        {P2ODataType::INT64,
+         [&]() {
+           if (attr_name == "values")
+             GetScalars(attr_name, &int64_values_);
+           else if (attr_name == "int64_values")
+             GetAttr(attr_name, &int64_values_);
+         }},
+        {P2ODataType::FP32,
+         [&]() {
+           if (attr_name == "values")
+             GetScalars(attr_name, &fp32_values_);
+           else if (attr_name == "fp32_values")
+             GetAttr(attr_name, &fp32_values_);
+         }},
+        {P2ODataType::FP64,
+         [&]() {
+           if (attr_name == "values")
+             GetScalars(attr_name, &double_values_);
+           else if (attr_name == "fp32_values")
+             GetAttr(attr_name, &double_values_);
+         }},
+        {P2ODataType::BOOL,
+         [&]() {
+           if (attr_name == "values")
+             GetScalars(attr_name, &bool_values_);
+           else if (attr_name == "bool_values")
+             GetAttr(attr_name, &bool_values_);
+         }},
     };
 
     auto handler = type_handlers.find(dtype);
     if (handler != type_handlers.end()) {
-        handler->second();
+      handler->second();
     } else {
-        Error() << "Unsupported dtype value" << std::endl;
+      Error() << "Unsupported dtype value" << std::endl;
     }
   }
 
@@ -73,7 +91,7 @@ class AssignValueMapper : public Mapper {
       return "int32_values";
     } else if (dtype == P2ODataType::INT64) {
       return "int64_values";
-    }else if (dtype == P2ODataType::FP32) {
+    } else if (dtype == P2ODataType::FP32) {
       return "fp32_values";
     } else if (dtype == P2ODataType::FP64) {
       return "double_values";
@@ -81,7 +99,6 @@ class AssignValueMapper : public Mapper {
       return "bool_values";
     }
     Error() << "Unsupported dtype value" << std::endl;
-
   }
 
   std::vector<float> fp32_values_;

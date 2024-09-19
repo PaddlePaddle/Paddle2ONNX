@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -54,8 +52,7 @@ class TestEyeConvert(OPConvertAutoScanTest):
             num_columns = draw(st.integers(min_value=5, max_value=20))
         dtype = None
         if draw(st.booleans()):
-            dtype = draw(
-                st.sampled_from(["float32", "float64", "int32", "int64"]))
+            dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         tensor_attr = draw(st.booleans())
 
@@ -68,7 +65,7 @@ class TestEyeConvert(OPConvertAutoScanTest):
             "num_rows": num_rows,
             "num_columns": num_columns,
             "dtype": dtype,
-            "tensor_attr": tensor_attr
+            "tensor_attr": tensor_attr,
         }
 
         models = Net(config)

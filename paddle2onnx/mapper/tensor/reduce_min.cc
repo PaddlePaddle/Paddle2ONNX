@@ -42,13 +42,15 @@ void ReduceMinMapper::Opset18() {
   if (!reduce_all_) {
     dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
   } else {
-    dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, Arange(0, x_info[0].Rank()));
+    dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                             Arange(0, x_info[0].Rank()));
   }
 
   auto input_node_name = x_info[0].name;
   auto input_tpye = x_info[0].dtype;
   if (x_info[0].dtype == P2ODataType::BOOL) {
-    input_node_name = helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
+    input_node_name =
+        helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
     input_tpye = P2ODataType::INT32;
   }
 
@@ -65,11 +67,13 @@ void ReduceMinMapper::Opset18() {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 
 void ReduceMinMapper::Opset12() {
-  // The implementation logic of Opset12 is the same as that of Opset11, with the difference being that Opset12 supports input data types as double.
+  // The implementation logic of Opset12 is the same as that of Opset11, with
+  // the difference being that Opset12 supports input data types as double.
   Opset11();
 }
 
@@ -106,6 +110,7 @@ void ReduceMinMapper::Opset11() {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 }  // namespace paddle2onnx

@@ -43,10 +43,11 @@ def test_argsort_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [11])
+    obj = APIOnnx(op, "argsort", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -58,10 +59,11 @@ def test_argsort_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [12])
+    obj = APIOnnx(op, "argsort", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -73,10 +75,11 @@ def test_argsort_axis():
     op = Net(axis=1)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [12])
+    obj = APIOnnx(op, "argsort", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -88,11 +91,11 @@ def test_argsort_descending():
     op = Net(descending=True)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [12])
+    obj = APIOnnx(op, "argsort", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -104,11 +107,11 @@ def test_argsort_descending_1():
     op = Net(descending=True)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [7])
+    obj = APIOnnx(op, "argsort", [7])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -120,9 +123,9 @@ def test_argsort_descending_1_axis():
     op = Net(descending=True, axis=1)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'argsort', [7])
+    obj = APIOnnx(op, "argsort", [7])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 10]).astype("float32")),
+    )
     obj.run()

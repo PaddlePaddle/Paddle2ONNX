@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class BmmMapper : public Mapper {
  public:
-  BmmMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  BmmMapper(const PaddleParser &p,
+            OnnxHelper *helper,
+            int64_t block_id,
             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;

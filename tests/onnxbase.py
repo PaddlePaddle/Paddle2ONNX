@@ -19,22 +19,26 @@ import os
 import numpy as np
 import paddle
 import paddle.static as static
-from paddle.static import Program
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 from paddle2onnx.convert import dygraph2onnx
 import shutil
 
 
 def compare_data(result_data, expect_data, delta, rtol):
-    res_data = np.allclose(result_data, expect_data, atol=delta, rtol=rtol, equal_nan=True)
+    res_data = np.allclose(
+        result_data, expect_data, atol=delta, rtol=rtol, equal_nan=True
+    )
     if res_data is True:
         return res_data
 
     # 输出错误类型
     # 输出数据类型错误
     if result_data.dtype != result_data.dtype:
-        logging.error("Different output data types! res type is: {}, and expect type is: {}".format(result_data.dtype,
-                                                                                                    expect_data.dtype))
+        logging.error(
+            "Different output data types! res type is: {}, and expect type is: {}".format(
+                result_data.dtype, expect_data.dtype
+            )
+        )
         return False
 
     # 输出数据大小错误
@@ -75,8 +79,12 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         res_shape = compare_shape(result, expect)
 
         assert res_data, "result: {} != expect: {}".format(result, expect)
-        assert res_shape, "result.shape: {} != expect.shape: {}".format(result.shape, expect.shape)
-        assert result.dtype == expect.dtype, "result.dtype: {} != expect.dtype: {}".format(result.dtype, expect.dtype)
+        assert res_shape, "result.shape: {} != expect.shape: {}".format(
+            result.shape, expect.shape
+        )
+        assert (
+            result.dtype == expect.dtype
+        ), "result.dtype: {} != expect.dtype: {}".format(result.dtype, expect.dtype)
     elif type(result) == list and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
@@ -150,19 +158,21 @@ dtype_map = {
 
 class APIOnnx(object):
     """
-     paddle API transfer to onnx
+    paddle API transfer to onnx
     """
 
-    def __init__(self,
-                 func,
-                 file_name,
-                 ver_list,
-                 ops=[],
-                 input_spec_shape=[],
-                 delta=1e-5,
-                 rtol=1e-5,
-                 use_gpu=True,
-                 **sup_params):
+    def __init__(
+        self,
+        func,
+        file_name,
+        ver_list,
+        ops=[],
+        input_spec_shape=[],
+        delta=1e-5,
+        rtol=1e-5,
+        use_gpu=True,
+        **sup_params,
+    ):
         self.ops = ops
         if isinstance(self.ops, str):
             self.ops = [self.ops]
@@ -171,9 +181,9 @@ class APIOnnx(object):
         paddle.seed(self.seed)
         self.func = func
         if use_gpu and paddle.device.is_compiled_with_cuda() is True:
-            self.places = ['gpu']
+            self.places = ["gpu"]
         else:
-            self.places = ['cpu']
+            self.places = ["cpu"]
         self.name = file_name
         self._version = ver_list
         self.pwd = os.getcwd()
@@ -213,10 +223,13 @@ class APIOnnx(object):
                         paddle.static.InputSpec(
                             shape=tensor_data.shape,
                             dtype=tensor_data.dtype,
-                            name=str(i)))
+                            name=str(i),
+                        )
+                    )
                     if len(tensor_data.shape) == 0:
                         self.input_feed[str(i)] = np.array(
-                            float(in_data), dtype=dtype_map[in_data.dtype])
+                            float(in_data), dtype=dtype_map[in_data.dtype]
+                        )
                     else:
                         self.input_feed[str(i)] = tensor_data.numpy()
                     i += 1
@@ -226,10 +239,13 @@ class APIOnnx(object):
                 self.input_dtype.append(in_data.dtype)
                 self.input_spec.append(
                     paddle.static.InputSpec(
-                        shape=in_data.shape, dtype=in_data.dtype, name=str(i)))
+                        shape=in_data.shape, dtype=in_data.dtype, name=str(i)
+                    )
+                )
                 if len(in_data.shape) == 0:
                     self.input_feed[str(i)] = np.array(
-                        float(in_data), dtype=dtype_map[in_data.dtype])
+                        float(in_data), dtype=dtype_map[in_data.dtype]
+                    )
                 else:
                     self.input_feed[str(i)] = in_data.numpy()
 
@@ -237,9 +253,9 @@ class APIOnnx(object):
 
     def set_device_mode(self, is_gpu=True):
         if paddle.device.is_compiled_with_cuda() is True and is_gpu:
-            self.places = ['gpu']
+            self.places = ["gpu"]
         else:
-            self.places = ['cpu']
+            self.places = ["cpu"]
 
     def set_input_spec(self):
         if len(self.input_spec_shape) == 0:
@@ -249,7 +265,9 @@ class APIOnnx(object):
         for shape in self.input_spec_shape:
             self.input_spec.append(
                 paddle.static.InputSpec(
-                    shape=shape, dtype=self.input_dtype[i], name=str(i)))
+                    shape=shape, dtype=self.input_dtype[i], name=str(i)
+                )
+            )
             i += 1
 
     def _mkdir(self):
@@ -278,12 +296,13 @@ class APIOnnx(object):
             enable_dev_version = False
         paddle.onnx.export(
             instance,
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver)),
+            os.path.join(self.pwd, self.name, self.name + "_" + str(ver)),
             input_spec=self.input_spec,
             opset_version=ver,
             enable_onnx_checker=True,
             auto_update_opset=False,
-            enable_dev_version=enable_dev_version)
+            enable_dev_version=enable_dev_version,
+        )
 
     def _dygraph_jit_save(self, instance):
         """
@@ -291,17 +310,18 @@ class APIOnnx(object):
         """
         paddle.jit.save(
             instance,
-            os.path.join(self.pwd, self.name, self.name + '_jit_save'),
-            input_spec=self.input_spec)
+            os.path.join(self.pwd, self.name, self.name + "_jit_save"),
+            input_spec=self.input_spec,
+        )
 
     def _mk_onnx_res(self, ver):
         """
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name,
-                         self.name + '_' + str(ver) + '.onnx'),
-            providers=['CPUExecutionProvider'])
+            os.path.join(self.pwd, self.name, self.name + "_" + str(ver) + ".onnx"),
+            providers=["CPUExecutionProvider"],
+        )
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         return ort_outs
 
@@ -320,7 +340,8 @@ class APIOnnx(object):
             input_spec=self.input_spec,
             opset_version=version,
             get_paddle_graph=True,
-            enable_dev_version=False)
+            enable_dev_version=False,
+        )
 
         included = False
         paddle_op_list = []
@@ -331,11 +352,12 @@ class APIOnnx(object):
             if op_type == self.ops[0]:
                 included = True
 
-        if len(paddle_graph.node_map.keys()) == 0 and self.ops[0] == '':
+        if len(paddle_graph.node_map.keys()) == 0 and self.ops[0] == "":
             included = True
 
         assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
-            self.ops, paddle_op_list)
+            self.ops, paddle_op_list
+        )
 
     # TODO: PaddlePaddle 2.6 has modified the ParseFromString API, and it cannot be simply replaced with
     #  parse_from_string. Considering that checking the OP name in the Paddle model has almost no impact on the CI
@@ -390,12 +412,16 @@ class APIOnnx(object):
             exp = self._mk_dygraph_exp(self._func)
             res_fict = {}
 
-            assert len(self.ops) <= 1, "Need to make sure the number of ops in config is 1."
+            assert (
+                len(self.ops) <= 1
+            ), "Need to make sure the number of ops in config is 1."
 
             # Save Paddle Inference model
             if os.path.exists(self.name):
                 shutil.rmtree(self.name)
-            paddle.jit.save(self._func, os.path.join(self.name, "model"), self.input_spec)
+            paddle.jit.save(
+                self._func, os.path.join(self.name, "model"), self.input_spec
+            )
 
             # Get PaddleInference model path
             pdmodel_path = os.path.join(self.name, "model.pdmodel")
@@ -414,21 +440,23 @@ class APIOnnx(object):
 
             for v in self._version:
                 onnx_model_str = c_p2o.export(
-                    model_file, # model_filename
-                    params_file, # params_filename
-                    v, # opset_version
-                    False, # auto_upgrade_opset
-                    True, # verbose
-                    True, # enable_onnx_checker
-                    True, # enable_experimental_op
-                    True, # enable_optimize
+                    model_file,  # model_filename
+                    params_file,  # params_filename
+                    v,  # opset_version
+                    False,  # auto_upgrade_opset
+                    True,  # verbose
+                    True,  # enable_onnx_checker
+                    True,  # enable_experimental_op
+                    True,  # enable_optimize
                     {},
-                    "onnxruntime", # deploy_backend
-                    "", # calibration_file
-                    "", # external_file
-                    False # export_fp16_model
+                    "onnxruntime",  # deploy_backend
+                    "",  # calibration_file
+                    "",  # external_file
+                    False,  # export_fp16_model
                 )
-                with open(os.path.join(self.name, self.name + '_' + str(v) + ".onnx"), "wb") as f:
+                with open(
+                    os.path.join(self.name, self.name + "_" + str(v) + ".onnx"), "wb"
+                ) as f:
                     f.write(onnx_model_str)
                 self.res_fict[str(v)] = self._mk_onnx_res(ver=v)
 

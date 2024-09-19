@@ -20,7 +20,9 @@ namespace paddle2onnx {
 
 class ScaleMapper : public Mapper {
  public:
-  ScaleMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ScaleMapper(const PaddleParser &p,
+              OnnxHelper *helper,
+              int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("scale", &scale_);

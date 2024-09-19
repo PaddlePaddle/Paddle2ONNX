@@ -19,7 +19,9 @@ namespace paddle2onnx {
 
 class TopKV2Mapper : public Mapper {
  public:
-  TopKV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  TopKV2Mapper(const PaddleParser &p,
+               OnnxHelper *helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("largest", &largest_);

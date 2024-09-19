@@ -13,13 +13,10 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
 import numpy as np
 import unittest
 import paddle
-from random import sample
 
 
 class Net(BaseNet):
@@ -36,7 +33,8 @@ class Net(BaseNet):
             label=label,
             soft_label=self.config["soft_label"],
             return_softmax=self.config["return_softmax"],
-            axis=self.config["axis"])
+            axis=self.config["axis"],
+        )
         return x
 
 
@@ -48,13 +46,11 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=3, max_value=20), min_size=2, max_size=3))
+            st.lists(st.integers(min_value=3, max_value=20), min_size=2, max_size=3)
+        )
         axis = draw(
-            st.integers(
-                min_value=-len(input_shape) + 1, max_value=len(input_shape) -
-                1))
+            st.integers(min_value=-len(input_shape) + 1, max_value=len(input_shape) - 1)
+        )
         soft_label = draw(st.booleans())
         return_softmax = draw(st.booleans())
 
@@ -71,8 +67,7 @@ class TestSoftmaxWithCrossEntropyConvert(OPConvertAutoScanTest):
                 label = np.random.random(label_shape)
             else:
                 label_shape[axis] = 1
-                label = np.random.randint(
-                    0, input_shape[axis], size=label_shape)
+                label = np.random.randint(0, input_shape[axis], size=label_shape)
             return label
 
         print("input:", input_shape)

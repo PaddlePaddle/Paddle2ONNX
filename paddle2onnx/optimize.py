@@ -14,31 +14,31 @@
 from __future__ import absolute_import
 
 import argparse
-import sys
 from paddle2onnx.utils import logging
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--input_model',
-        required=True,
-        help='The path of input onnx model file.')
+        "--input_model", required=True, help="The path of input onnx model file."
+    )
     parser.add_argument(
-        '--output_model',
+        "--output_model",
         required=True,
-        help='The file path to write optimized onnx model file.')
+        help="The file path to write optimized onnx model file.",
+    )
     parser.add_argument(
-        '--input_shape_dict',
+        "--input_shape_dict",
         default="",
-        help="The shape infos of inputs, e.g --input_shape_dict=\"{'image': [1, 3, 608, 608], 'scale_factor': [1, 2]}\""
+        help="The shape infos of inputs, e.g --input_shape_dict=\"{'image': [1, 3, 608, 608], 'scale_factor': [1, 2]}\"",
     )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_arguments()
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+
     shape_dict = {}
     if args.input_shape_dict != "":
         shape_dict = eval(args.input_shape_dict)

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -103,9 +101,8 @@ class TestUnaryOPConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=0, max_size=4)
+        )
         data_shapes = input_shape
         dtype = draw(st.sampled_from(["float32"]))
         config = {

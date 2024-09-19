@@ -17,6 +17,7 @@ from onnxbase import APIOnnx
 from onnxbase import randtool
 import paddle.nn.functional as F
 
+
 class Net(paddle.nn.Layer):
     """
     simple Net
@@ -31,7 +32,7 @@ class Net(paddle.nn.Layer):
         """
         x = F.unfold(x, [3, 3], 1, 1, 1)
         return x
-    
+
 
 def test_unfold_11():
     """
@@ -41,11 +42,11 @@ def test_unfold_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unfold', [11])
+    obj = APIOnnx(op, "unfold", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [2,3,16,16]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [2, 3, 16, 16]).astype("float32")),
+    )
     obj.run()
 
 
@@ -57,11 +58,12 @@ def test_unfold_11_2():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unfold', [11])
+    obj = APIOnnx(op, "unfold", [11])
     obj.set_input_data(
-        "input_data",
-        paddle.arange(16).view([1,1,4, 4]).cast(paddle.float32)
+        "input_data", paddle.arange(16).view([1, 1, 4, 4]).cast(paddle.float32)
     )
     obj.run()
+
+
 if __name__ == "__main__":
     test_unfold_11()

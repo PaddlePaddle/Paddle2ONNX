@@ -33,16 +33,18 @@ namespace optimization {
 
 struct FuseConstantReshape final : public PredicateBasedPass {
   explicit FuseConstantReshape()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_constant_reshape"; }
 
-  bool patternMatchPredicate(Node* node) override {
+  bool patternMatchPredicate(Node *node) override {
     return node->kind() == kReshape &&
            node->inputs()[0]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
-                    NodeDestroyType& destroy_current) override {
+  bool runTransform(Node *n,
+                    Graph &graph,
+                    NodeDestroyType &destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 
     // check if Constant is only used by Reshape
@@ -50,8 +52,8 @@ struct FuseConstantReshape final : public PredicateBasedPass {
       return false;
     }
 
-    Node* reshape = n;
-    Node* constant = n->inputs()[0]->node();
+    Node *reshape = n;
+    Node *constant = n->inputs()[0]->node();
 
     // Process 'reshape' data
     std::vector<int64_t> shape;
@@ -67,7 +69,7 @@ struct FuseConstantReshape final : public PredicateBasedPass {
       if (reshape->inputs()[1]->uses().size() > 1) {
         return false;
       }
-      Node* shape_const = reshape->inputs()[1]->node();
+      Node *shape_const = reshape->inputs()[1]->node();
       Tensor t = shape_const->t(kvalue);
       shape = ParseData<int64_t>(&t);
     }
@@ -79,7 +81,7 @@ struct FuseConstantReshape final : public PredicateBasedPass {
     }
 
     Tensor t = constant->t(kvalue);
-    const auto& ori_size = t.sizes();
+    const auto &ori_size = t.sizes();
 
     // process 0 in shape
     if (allow_zero != 0) {
@@ -107,18 +109,19 @@ struct FuseConstantReshape final : public PredicateBasedPass {
     if (count_of_unknown > 1) {
       return false;
     }
-    int64_t numel = std::accumulate(ori_size.begin(), ori_size.end(), 1,
-                                    std::multiplies<int>());
+    int64_t numel = std::accumulate(
+        ori_size.begin(), ori_size.end(), 1, std::multiplies<int>());
     if (index_of_unknown >= 0) {
-      int64_t value_of_unknown = -1 * numel /
-                                std::accumulate(shape.begin(), shape.end(), 1,
-                                                std::multiplies<int>());
+      int64_t value_of_unknown =
+          -1 * numel /
+          std::accumulate(
+              shape.begin(), shape.end(), 1, std::multiplies<int>());
       shape[index_of_unknown] = value_of_unknown;
     }
 
     t.sizes().clear();
-    t.sizes().insert(t.sizes().begin(), shape.begin(),
-                     shape.begin() + shape.size());
+    t.sizes().insert(
+        t.sizes().begin(), shape.begin(), shape.begin() + shape.size());
     constant->t_(kvalue, std::move(t));
 
     // update constant node

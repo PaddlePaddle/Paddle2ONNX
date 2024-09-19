@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class PixelShuffleMapper : public Mapper {
  public:
-  PixelShuffleMapper(const PaddleParser& p, OnnxHelper* helper,
-                     int64_t block_id, int64_t op_id)
+  PixelShuffleMapper(const PaddleParser &p,
+                     OnnxHelper *helper,
+                     int64_t block_id,
+                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("upscale_factor", &upscale_factor_);
   }

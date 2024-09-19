@@ -21,14 +21,14 @@
 
 namespace paddle2onnx {
 
-inline void Assert(bool condition, const std::string& message) {
+inline void Assert(bool condition, const std::string &message) {
   if (!condition) {
     fprintf(stderr, "[ERROR] %s\n", message.c_str());
     std::abort();
   }
 }
 
-inline const std::string RequireOpset(const int32_t& opset_version) {
+inline const std::string RequireOpset(const int32_t &opset_version) {
   return "Requires the minimal opset version of " +
          std::to_string(opset_version) + ".";
 }
@@ -41,14 +41,14 @@ class P2OLogger {
     verbose_ = true;
   }
   explicit P2OLogger(bool verbose,
-                     const std::string& prefix = "[Paddle2ONNX]") {
+                     const std::string &prefix = "[Paddle2ONNX]") {
     verbose_ = verbose;
     line_ = "";
     prefix_ = prefix;
   }
 
   template <typename T>
-  P2OLogger& operator<<(const T& val) {
+  P2OLogger &operator<<(const T &val) {
     if (!verbose_) {
       return *this;
     }
@@ -57,7 +57,7 @@ class P2OLogger {
     line_ += ss.str();
     return *this;
   }
-  P2OLogger& operator<<(std::ostream& (*os)(std::ostream&)) {
+  P2OLogger &operator<<(std::ostream &(*os)(std::ostream &)) {
     if (!verbose_) {
       return *this;
     }

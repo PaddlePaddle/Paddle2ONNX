@@ -17,8 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(einsum, EinsumMapper)
 
-int32_t EinsumMapper::GetMinOpsetVersion(bool verbose)
-{
+int32_t EinsumMapper::GetMinOpsetVersion(bool verbose) {
   constexpr int op_version = 12;
   Logger(verbose, op_version) << RequireOpset(op_version) << std::endl;
   return op_version;
@@ -30,14 +29,12 @@ void EinsumMapper::Opset12() {
   GetAttr("equation", &equation_);
 
   std::vector<std::string> input_info_names;
-  for (size_t i = 0; i < input_info.size(); i++)
-  {
+  for (size_t i = 0; i < input_info.size(); i++) {
     input_info_names.emplace_back(input_info[i].name);
   }
 
   std::vector<std::string> output_info_names;
-  for (size_t i = 0; i < output_info.size(); i++)
-  {
+  for (size_t i = 0; i < output_info.size(); i++) {
     output_info_names.emplace_back(output_info[i].name);
   }
   auto node = helper_->MakeNode("Einsum", input_info_names, output_info_names);

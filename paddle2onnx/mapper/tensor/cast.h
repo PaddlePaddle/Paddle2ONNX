@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class CastMapper : public Mapper {
  public:
-  CastMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  CastMapper(const PaddleParser &p,
+             OnnxHelper *helper,
+             int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("out_dtype", &out_dtype_);

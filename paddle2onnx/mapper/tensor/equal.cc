@@ -33,10 +33,10 @@ void EqualMapper::Opset7() {
   std::string input_x = input_x_info[0].name;
   std::string input_y = input_y_info[0].name;
   if (helper_->GetOpsetVersion() < 11) {
-    input_x = helper_->AutoCast(input_x_info[0].name, input_x_info[0].dtype,
-                                P2ODataType::INT32);
-    input_y = helper_->AutoCast(input_y_info[0].name, input_y_info[0].dtype,
-                                P2ODataType::INT32);
+    input_x = helper_->AutoCast(
+        input_x_info[0].name, input_x_info[0].dtype, P2ODataType::INT32);
+    input_y = helper_->AutoCast(
+        input_y_info[0].name, input_y_info[0].dtype, P2ODataType::INT32);
   }
   helper_->MakeNode("Equal", {input_x, input_y}, {output_info[0].name});
 }

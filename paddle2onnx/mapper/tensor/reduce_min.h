@@ -22,10 +22,11 @@ namespace paddle2onnx {
 
 class ReduceMinMapper : public Mapper {
  public:
-  ReduceMinMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-  }
+  ReduceMinMapper(const PaddleParser &p,
+                  OnnxHelper *helper,
+                  int64_t block_id,
+                  int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
 
   void Opset18() override;
   void Opset12() override;
@@ -33,7 +34,6 @@ class ReduceMinMapper : public Mapper {
   int32_t GetMinOpsetVersion(bool verbose) override;
 
  private:
-
   bool keep_dim_;
   bool reduce_all_;
   int64_t in_dtype_;

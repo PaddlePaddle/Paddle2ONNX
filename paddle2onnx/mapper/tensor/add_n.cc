@@ -21,17 +21,17 @@ void AddNMapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
   if (x_info.size() == 1) {
-    helper_->AutoCast(x_info[0].name, out_info[0].name, x_info[0].dtype,
-                      out_info[0].dtype);
+    helper_->AutoCast(
+        x_info[0].name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
   } else {
     std::vector<std::string> inputs;
     for (auto i = 0; i < x_info.size(); ++i) {
-      inputs.push_back(helper_->AutoCast(x_info[i].name, x_info[0].dtype,
-                                         P2ODataType::FP32));
+      inputs.push_back(helper_->AutoCast(
+          x_info[i].name, x_info[0].dtype, P2ODataType::FP32));
     }
     auto output = helper_->MakeNode("Sum", inputs)->output(0);
-    helper_->AutoCast(output, out_info[0].name, P2ODataType::FP32,
-                      out_info[0].dtype);
+    helper_->AutoCast(
+        output, out_info[0].name, P2ODataType::FP32, out_info[0].dtype);
   }
 }
 

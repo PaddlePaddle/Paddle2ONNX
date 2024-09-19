@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -34,7 +32,8 @@ class Net(BaseNet):
             grid,
             align_corners=self.config["align_corners"],
             padding_mode=self.config["padding_mode"],
-            mode=self.config["mode"])
+            mode=self.config["mode"],
+        )
         return out
 
 
@@ -46,14 +45,12 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=4, max_size=4)
+        )
 
         grid_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=4, max_size=4)
+        )
 
         grid_shape[0] = input_shape[0]
         grid_shape[-1] = 2
@@ -70,7 +67,7 @@ class TestGroupNormConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
             "align_corners": align_corners,
             "padding_mode": padding_mode,
-            "mode": mode
+            "mode": mode,
         }
 
         models = Net(config)

@@ -27,16 +27,16 @@ void TileMapper::Opset7() {
   // NOTE(Aurelius84): we need to deprecate this branch in the future.
   if (has_repeats_tensor) {
     auto repeats_info = GetInput("RepeatTimes");
-    repeats = helper_->AutoCast(repeats_info[0].name, repeats_info[0].dtype,
-                                P2ODataType::INT64);
+    repeats = helper_->AutoCast(
+        repeats_info[0].name, repeats_info[0].dtype, P2ODataType::INT64);
   } else if (has_repeats_tensor_list) {
     auto repeats_info = GetInput("repeat_times_tensor");
     repeats = helper_->ConcatIndices(repeats_info);
   } else if (IsAttrVar("repeat_times")) {
     auto repeats_info = GetAttrVar("repeat_times");
     if (repeats_info.size() == 1U) {  // repeat_times is a whole Tensor
-      repeats = helper_->AutoCast(repeats_info[0].name, repeats_info[0].dtype,
-                                  P2ODataType::INT64);
+      repeats = helper_->AutoCast(
+          repeats_info[0].name, repeats_info[0].dtype, P2ODataType::INT64);
     } else {  // repeat_times is a tensor list
       repeats = helper_->ConcatIndices(repeats_info);
     }

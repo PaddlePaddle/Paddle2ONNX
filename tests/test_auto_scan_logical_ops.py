@@ -13,10 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
-import numpy as np
 import unittest
 import paddle
 
@@ -47,15 +44,16 @@ opset_version_map = {
 
 class Net(BaseNet):
     def forward(self, inputs1, inputs2):
-        if self.config[
-                "op_names"] in ["logical_and", "logical_or", "logical_xor"]:
-            inputs1 = inputs1.astype('bool')
-            inputs2 = inputs2.astype('bool')
-        if self.config["op_names"] in [
-                "greater_equal", "greater_than", "less_equal", "less_than"
-        ] and inputs1.dtype == paddle.bool:
-            inputs1 = inputs1.astype('int32')
-            inputs2 = inputs2.astype('int32')
+        if self.config["op_names"] in ["logical_and", "logical_or", "logical_xor"]:
+            inputs1 = inputs1.astype("bool")
+            inputs2 = inputs2.astype("bool")
+        if (
+            self.config["op_names"]
+            in ["greater_equal", "greater_than", "less_equal", "less_than"]
+            and inputs1.dtype == paddle.bool
+        ):
+            inputs1 = inputs1.astype("int32")
+            inputs2 = inputs2.astype("int32")
         x = op_api_map[self.config["op_names"]](inputs1, inputs2)
         return x
 
@@ -68,9 +66,8 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input1_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=0, max_size=4)
+        )
 
         if len(input1_shape) > 0:
             if draw(st.booleans()):
@@ -93,10 +90,9 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
                 # [] + [N * N]
                 input2_shape = draw(
                     st.lists(
-                        st.integers(
-                            min_value=10, max_value=20),
-                        min_size=1,
-                        max_size=4))
+                        st.integers(min_value=10, max_value=20), min_size=1, max_size=4
+                    )
+                )
 
         dtype = draw(st.sampled_from(["float32", "int32", "int64", "bool"]))
 
@@ -105,7 +101,7 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[dtype], [dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": []
+            "input_spec_shape": [],
         }
 
         models = list()
@@ -128,7 +124,7 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
 class NetNot(BaseNet):
     def forward(self, inputs):
         x = paddle.logical_not(inputs)
-        return x.astype('float32')
+        return x.astype("float32")
 
 
 class TestLogicNotConvert(OPConvertAutoScanTest):
@@ -139,9 +135,8 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input1_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=0, max_size=4)
+        )
 
         dtype = "bool"
         config = {
@@ -149,7 +144,7 @@ class TestLogicNotConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input1_shape],
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
-            "input_spec_shape": []
+            "input_spec_shape": [],
         }
 
         model = NetNot(config)

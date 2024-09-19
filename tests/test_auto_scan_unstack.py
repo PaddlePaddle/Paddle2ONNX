@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -29,8 +27,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.unstack(
-            inputs, axis=self.config['axis'], num=self.config['num'])
+        x = paddle.unstack(inputs, axis=self.config["axis"], num=self.config["num"])
         return x
 
 
@@ -42,14 +39,13 @@ class TestUnstackConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=8), min_size=1, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=8), min_size=1, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
         axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+            st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1)
+        )
 
         axis_index = axis + len(input_shape) if axis < 0 else axis
         num = input_shape[axis_index] if draw(st.booleans()) else None

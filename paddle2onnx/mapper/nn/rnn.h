@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class RnnMapper : public Mapper {
  public:
-  RnnMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
+  RnnMapper(const PaddleParser &p,
+            OnnxHelper *helper,
+            int64_t block_id,
+            int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     MarkAsExperimentalOp();
     GetAttr("num_layers", &num_layers_);
@@ -44,7 +46,9 @@ class RnnMapper : public Mapper {
  private:
   std::vector<std::string> MakeParamInputs(int64_t layer_index);
   std::vector<std::string> MakeInitParamInputs(int64_t layer_index);
-  std::string ReformWeight(const std::string& weight, const int64_t& size, const std::vector<int64_t>& perm);
+  std::string ReformWeight(const std::string &weight,
+                           const int64_t &size,
+                           const std::vector<int64_t> &perm);
   int64_t num_layers_;
   int64_t input_size_;
   int64_t hidden_size_;

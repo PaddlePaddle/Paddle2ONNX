@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 from paddle import ParamAttr
@@ -28,32 +26,36 @@ class Net(BaseNet):
 
     def __init__(self, config=None):
         super(Net, self).__init__(config)
-        param_shape = [self.config['input_shape'][1]]
-        dtype = self.config['dtype']
+        param_shape = [self.config["input_shape"][1]]
+        dtype = self.config["dtype"]
 
         self.mean = self.create_parameter(
             dtype=dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(0.0),
                 trainable=False,
-                do_model_average=True),
-            shape=param_shape)
+                do_model_average=True,
+            ),
+            shape=param_shape,
+        )
 
         self.variance = self.create_parameter(
             dtype=dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(1.0),
                 trainable=False,
-                do_model_average=True),
-            shape=param_shape)
+                do_model_average=True,
+            ),
+            shape=param_shape,
+        )
 
         self.weight = self.create_parameter(
             shape=param_shape,
             dtype=dtype,
-            default_initializer=paddle.nn.initializer.Constant(1.0))
+            default_initializer=paddle.nn.initializer.Constant(1.0),
+        )
 
-        self.bias = self.create_parameter(
-            shape=param_shape, dtype=dtype, is_bias=True)
+        self.bias = self.create_parameter(shape=param_shape, dtype=dtype, is_bias=True)
 
     def forward(self, inputs):
         """
@@ -63,12 +65,13 @@ class Net(BaseNet):
             inputs,
             running_mean=self.mean,
             running_var=self.variance,
-            weight=self.weight if self.config['has_weight'] else None,
-            bias=self.bias if self.config['has_bias'] else None,
-            use_input_stats=self.config['use_input_stats'],
-            momentum=self.config['momentum'],
-            eps=self.config['epsilon'],
-            data_format=self.config['data_format'])
+            weight=self.weight if self.config["has_weight"] else None,
+            bias=self.bias if self.config["has_bias"] else None,
+            use_input_stats=self.config["use_input_stats"],
+            momentum=self.config["momentum"],
+            eps=self.config["epsilon"],
+            data_format=self.config["data_format"],
+        )
         return x
 
 
@@ -80,9 +83,8 @@ class TestInstanceNormConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=3, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=3, max_size=5)
+        )
 
         input_spec = [-1] * len(input_shape)
 

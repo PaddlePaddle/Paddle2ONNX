@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -41,14 +39,12 @@ class TestMeshgridConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape1 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape2 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
@@ -89,19 +85,16 @@ class TestMeshgridConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape1 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape2 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape3 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
@@ -142,37 +135,35 @@ class TestMeshgridConvert2(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape1 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape2 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape3 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape4 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         input_shape5 = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=1, max_size=1)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["meshgrid"],
             "test_data_shapes": [
-                input_shape1, input_shape2, input_shape3, input_shape4,
-                input_shape5
+                input_shape1,
+                input_shape2,
+                input_shape3,
+                input_shape4,
+                input_shape5,
             ],
             "test_data_types": [[dtype], [dtype], [dtype], [dtype], [dtype]],
             "opset_version": [8, 9, 15],

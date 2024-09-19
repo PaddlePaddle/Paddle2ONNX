@@ -13,23 +13,20 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
-import numpy as np
 import unittest
 import paddle
 
 op_api_map = {
     "hard_shrink": paddle.nn.functional.hardshrink,
     "softshrink": paddle.nn.functional.softshrink,
-    "tanh_shrink": paddle.nn.functional.tanhshrink
+    "tanh_shrink": paddle.nn.functional.tanhshrink,
 }
 
 opset_version_map = {
     "hard_shrink": [9, 15],
     "softshrink": [9, 15],
-    "tanh_shrink": [7, 15]
+    "tanh_shrink": [7, 15],
 }
 
 
@@ -39,7 +36,8 @@ class Net(BaseNet):
             x = op_api_map[self.config["op_names"]](inputs)
         else:
             x = op_api_map[self.config["op_names"]](
-                inputs, threshold=self.config["threshold"])
+                inputs, threshold=self.config["threshold"]
+            )
         return x
 
 
@@ -51,9 +49,8 @@ class TestShrinkopsConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input1_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=0, max_size=4)
+        )
 
         threshold = draw(st.floats(min_value=0.1, max_value=1.0))
 
@@ -65,7 +62,7 @@ class TestShrinkopsConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "threshold": threshold
+            "threshold": threshold,
         }
 
         models = list()

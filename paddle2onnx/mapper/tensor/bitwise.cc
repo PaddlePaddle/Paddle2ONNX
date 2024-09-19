@@ -23,33 +23,39 @@ REGISTER_MAPPER(bitwise_xor, BitWiseMapper)
 
 int32_t BitWiseMapper::GetMinOpsetVersion(bool verbose) {
   auto x_info = GetInput("X");
-  if(x_info[0].dtype == P2ODataType::BOOL){
+  if (x_info[0].dtype == P2ODataType::BOOL) {
     Logger(verbose, 7) << RequireOpset(7) << std::endl;
     return 7;
   }
   Logger(verbose, 18) << RequireOpset(18) << std::endl;
   return 18;
 }
-void BitWiseMapper::Opset7() { 
+void BitWiseMapper::Opset7() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
-  if (paddle_type_ == "bitwise_not"){
-    helper_->MakeNode(onnx_elemwise_type_, {x_info[0].name}, {out_info[0].name});
-  } else{
+  if (paddle_type_ == "bitwise_not") {
+    helper_->MakeNode(
+        onnx_elemwise_type_, {x_info[0].name}, {out_info[0].name});
+  } else {
     auto y_info = GetInput("Y");
-    helper_->MakeNode(onnx_elemwise_type_, {x_info[0].name, y_info[0].name}, {out_info[0].name});
+    helper_->MakeNode(onnx_elemwise_type_,
+                      {x_info[0].name, y_info[0].name},
+                      {out_info[0].name});
   }
 }
 
 void BitWiseMapper::Opset18() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
-  std::string node_name = x_info[0].dtype == P2ODataType::BOOL? onnx_elemwise_type_: onnx_bitwise_type_;
-  if(paddle_type_ == "bitwise_not"){
+  std::string node_name = x_info[0].dtype == P2ODataType::BOOL
+                              ? onnx_elemwise_type_
+                              : onnx_bitwise_type_;
+  if (paddle_type_ == "bitwise_not") {
     helper_->MakeNode(node_name, {x_info[0].name}, {out_info[0].name});
-  } else{
+  } else {
     auto y_info = GetInput("Y");
-    helper_->MakeNode(node_name, {x_info[0].name, y_info[0].name},{out_info[0].name});
+    helper_->MakeNode(
+        node_name, {x_info[0].name, y_info[0].name}, {out_info[0].name});
   }
 }
-}// namespace paddle2onnx
+}  // namespace paddle2onnx

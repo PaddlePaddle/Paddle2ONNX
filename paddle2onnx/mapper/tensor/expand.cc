@@ -27,14 +27,15 @@ void ExpandMapper::Opset7() {
     expand_times = helper_->ConcatIndices(info);
   } else if (HasInput("ExpandTimes")) {
     auto info = GetInput("ExpandTimes");
-    expand_times = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+    expand_times =
+        helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
   } else {
-    expand_times = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, expand_times_);
+    expand_times =
+        helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, expand_times_);
   }
 
-  helper_->MakeNode("Tile",
-                      {input_info[0].name, expand_times},
-                      {output_info[0].name});
+  helper_->MakeNode(
+      "Tile", {input_info[0].name, expand_times}, {output_info[0].name});
 }
 
 }  // namespace paddle2onnx

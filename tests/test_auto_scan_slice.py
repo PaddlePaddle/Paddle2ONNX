@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -29,12 +28,12 @@ class Net(BaseNet):
         """
         forward
         """
-        axes = self.config['axes']
-        starts = self.config['starts']
-        ends = self.config['ends']
-        if self.config['isStartsTensor']:
+        axes = self.config["axes"]
+        starts = self.config["starts"]
+        ends = self.config["ends"]
+        if self.config["isStartsTensor"]:
             starts = paddle.to_tensor(starts)
-        if self.config['isEndsTensor']:
+        if self.config["isEndsTensor"]:
             ends = paddle.to_tensor(ends)
         x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
         return x
@@ -48,9 +47,8 @@ class TestSliceConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=6), min_size=2, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=6), min_size=2, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isStartsTensor = draw(st.booleans())
@@ -92,12 +90,12 @@ class Net1(BaseNet):
         """
         forward
         """
-        axes = self.config['axes']
-        starts = self.config['starts']
-        ends = self.config['ends']
-        if self.config['isStartsTensor']:
+        axes = self.config["axes"]
+        starts = self.config["starts"]
+        ends = self.config["ends"]
+        if self.config["isStartsTensor"]:
             starts = paddle.to_tensor(starts)
-        if self.config['isEndsTensor']:
+        if self.config["isEndsTensor"]:
             ends = paddle.to_tensor(ends)
         x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
         return x
@@ -111,9 +109,8 @@ class TestSliceConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=6), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=6), min_size=4, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isStartsTensor = draw(st.booleans())
@@ -122,8 +119,10 @@ class TestSliceConvert1(OPConvertAutoScanTest):
         axes = [0, 1, 2, 3]
         starts = [1, 0, 0, 0]
         ends = [
-            input_shape[0] + 10, input_shape[1] + 10, input_shape[2] + 10,
-            input_shape[3] + 10
+            input_shape[0] + 10,
+            input_shape[1] + 10,
+            input_shape[2] + 10,
+            input_shape[3] + 10,
         ]
         if draw(st.booleans()):
             starts = [1, 0]
@@ -162,10 +161,10 @@ class Net2(BaseNet):
         """
         forward
         """
-        axes = self.config['axes']
-        starts = self.config['starts']
+        axes = self.config["axes"]
+        starts = self.config["starts"]
         starts = [1, 0, paddle.to_tensor(0), 0]
-        ends = self.config['ends']
+        ends = self.config["ends"]
         ends = [10, 10, paddle.to_tensor(10), 10]
         x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
         return x
@@ -179,9 +178,8 @@ class TestSliceConvert2(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=6), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=6), min_size=4, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isStartsTensor = draw(st.booleans())
@@ -220,19 +218,21 @@ class Net3(BaseNet):
         """
         forward
         """
-        axes = self.config['axes']
-        starts = self.config['starts']
+        axes = self.config["axes"]
+        starts = self.config["starts"]
         starts = [
-            1, paddle.to_tensor(np.array(0).astype("int64")),
-            paddle.to_tensor(0), 0
+            1,
+            paddle.to_tensor(np.array(0).astype("int64")),
+            paddle.to_tensor(0),
+            0,
         ]
-        ends = self.config['ends']
+        ends = self.config["ends"]
         # ends = [10, 10, paddle.to_tensor(np.array(10).astype("int64")), 10]
         ends = [
             paddle.to_tensor(np.array(10).astype("int64")),
             paddle.to_tensor(np.array(10).astype("int64")),
             paddle.to_tensor(np.array(10).astype("int64")),
-            paddle.to_tensor(np.array(10).astype("int64"))
+            paddle.to_tensor(np.array(10).astype("int64")),
         ]
         x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
         return x
@@ -246,9 +246,8 @@ class TestSliceConvert3(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=6), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=6), min_size=4, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         isStartsTensor = draw(st.booleans())
@@ -299,9 +298,8 @@ class TestSliceConvert4(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=6), min_size=2, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=6), min_size=2, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         input_shape = [5, 5, 5]

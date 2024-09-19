@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class AssignMapper : public Mapper {
  public:
-  AssignMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  AssignMapper(const PaddleParser &p,
+               OnnxHelper *helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;

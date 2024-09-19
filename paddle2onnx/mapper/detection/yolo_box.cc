@@ -29,8 +29,8 @@ void YoloBoxMapper::Opset11() {
   // handle the float64 input
   auto x_info = x_info_ori;
   if (x_info_ori[0].dtype != P2ODataType::FP32) {
-    x_info[0].name = helper_->AutoCast(x_info_ori[0].name, x_info_ori[0].dtype,
-                                       P2ODataType::FP32);
+    x_info[0].name = helper_->AutoCast(
+        x_info_ori[0].name, x_info_ori[0].dtype, P2ODataType::FP32);
     x_info[0].dtype = P2ODataType::FP32;
   }
 
@@ -58,7 +58,9 @@ void YoloBoxMapper::Opset11() {
     // ends This is a standared definition in ONNX However not sure all the
     // inference engines implements `Slice` this way Let's handle this issue
     // later
-    x_name = helper_->Slice(x_name, {0, 1, 2, 3}, {0, 0, 0, 0},
+    x_name = helper_->Slice(x_name,
+                            {0, 1, 2, 3},
+                            {0, 0, 0, 0},
                             {max_int, anchor_num, max_int, max_int});
   }
 
@@ -76,10 +78,10 @@ void YoloBoxMapper::Opset11() {
 
   // grid_x = np.tile(np.arange(w).reshape((1, w)), (h, 1))
   // grid_y = np.tile(np.arange(h).reshape((h, 1)), (1, w))
-  auto float_value_0 =
-      helper_->Constant({}, GetOnnxDtype(x_info[0].dtype), float(0.0));
-  auto float_value_1 =
-      helper_->Constant({}, GetOnnxDtype(x_info[0].dtype), float(1.0));
+  auto float_value_0 = helper_->Constant(
+      {}, GetOnnxDtype(x_info[0].dtype), static_cast<float>(0.0));
+  auto float_value_1 = helper_->Constant(
+      {}, GetOnnxDtype(x_info[0].dtype), static_cast<float>(1.0));
   auto scalar_float_w = helper_->Squeeze(float_w, {});
   auto scalar_float_h = helper_->Squeeze(float_h, {});
   auto grid_x_0 = helper_->MakeNode(
@@ -90,8 +92,8 @@ void YoloBoxMapper::Opset11() {
       "Tile", {grid_x_0->output(0), nchw[2]});  // shape is [w*h]
   auto grid_y_1 = helper_->MakeNode(
       "Tile", {grid_y_0->output(0), nchw[3]});  // shape is [h*w]
-  auto int_value_1 =
-      helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, float(1.0));
+  auto int_value_1 = helper_->Constant(
+      {1}, ONNX_NAMESPACE::TensorProto::INT64, static_cast<float>(1.0));
   auto grid_shape_x =
       helper_->MakeNode("Concat", {nchw[2], nchw[3], int_value_1});
   auto grid_shape_y =
@@ -115,9 +117,10 @@ void YoloBoxMapper::Opset11() {
   // pred_box[:, :, :, :, 0] = (grid_x + sigmoid(pred_box[:, :, :, :, 0]) *
   // scale_x_y + bias_x_y) / w pred_box[:, :, :, :, 1] = (grid_y +
   // sigmoid(pred_box[:, :, :, :, 1]) * scale_x_y + bias_x_y) / h
-  auto pred_box_xy =
-      helper_->Slice(transposed_x->output(0), {0, 1, 2, 3, 4}, {0, 0, 0, 0, 0},
-                     {max_int, max_int, max_int, max_int, 2});
+  auto pred_box_xy = helper_->Slice(transposed_x->output(0),
+                                    {0, 1, 2, 3, 4},
+                                    {0, 0, 0, 0, 0},
+                                    {max_int, max_int, max_int, max_int, 2});
   auto scale_x_y =
       helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), scale_x_y_);
   float bias_x_y_value = (1.0 - scale_x_y_) / 2.0;
@@ -157,9 +160,10 @@ void YoloBoxMapper::Opset11() {
   // anchor_w pred_box[:, :, :, :, 3] = np.exp(pred_box[:, :, :, :, 3]) *
   // anchor_h
   anchors = helper_->Reshape(anchors, {1, anchor_num, 1, 1, 2});
-  auto pred_box_wh =
-      helper_->Slice(transposed_x->output(0), {0, 1, 2, 3, 4}, {0, 0, 0, 0, 2},
-                     {max_int, max_int, max_int, max_int, 4});
+  auto pred_box_wh = helper_->Slice(transposed_x->output(0),
+                                    {0, 1, 2, 3, 4},
+                                    {0, 0, 0, 0, 2},
+                                    {max_int, max_int, max_int, max_int, 4});
   pred_box_wh = helper_->MakeNode("Exp", {pred_box_wh})->output(0);
   pred_box_wh = helper_->MakeNode("Mul", {pred_box_wh, anchors})->output(0);
 
@@ -168,20 +172,23 @@ void YoloBoxMapper::Opset11() {
   //         1 - iou_aware_factor) * sigmoid(ioup)**iou_aware_factor
   // else:
   //     pred_conf = sigmoid(x[:, :, :, :, 4:5])
-  auto confidence =
-      helper_->Slice(transposed_x->output(0), {0, 1, 2, 3, 4}, {0, 0, 0, 0, 4},
-                     {max_int, max_int, max_int, max_int, 5});
+  auto confidence = helper_->Slice(transposed_x->output(0),
+                                   {0, 1, 2, 3, 4},
+                                   {0, 0, 0, 0, 4},
+                                   {max_int, max_int, max_int, max_int, 5});
   std::string pred_conf = helper_->MakeNode("Sigmoid", {confidence})->output(0);
   if (iou_aware_) {
-    auto ioup = helper_->Slice(x_info[0].name, {0, 1, 2, 3}, {0, 0, 0, 0},
+    auto ioup = helper_->Slice(x_info[0].name,
+                               {0, 1, 2, 3},
+                               {0, 0, 0, 0},
                                {max_int, anchor_num, max_int, max_int});
     ioup = helper_->Unsqueeze(ioup, {4});
     ioup = helper_->MakeNode("Sigmoid", {ioup})->output(0);
     float power_value_0 = 1 - iou_aware_factor_;
     auto power_0 =
         helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), power_value_0);
-    auto power_1 = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype),
-                                     iou_aware_factor_);
+    auto power_1 = helper_->Constant(
+        {1}, GetOnnxDtype(x_info[0].dtype), iou_aware_factor_);
     ioup = helper_->MakeNode("Pow", {ioup, power_1})->output(0);
     pred_conf = helper_->MakeNode("Pow", {pred_conf, power_0})->output(0);
     pred_conf = helper_->MakeNode("Mul", {pred_conf, ioup})->output(0);
@@ -190,8 +197,8 @@ void YoloBoxMapper::Opset11() {
   // pred_conf[pred_conf < conf_thresh] = 0.
   // pred_score = sigmoid(x[:, :, :, :, 5:]) * pred_conf
   // pred_box = pred_box * (pred_conf > 0.).astype('float32')
-  auto value_2 =
-      helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), float(2.0));
+  auto value_2 = helper_->Constant(
+      {1}, GetOnnxDtype(x_info[0].dtype), static_cast<float>(2.0));
   auto center = helper_->MakeNode("Div", {pred_box_wh, value_2})->output(0);
   auto min_xy = helper_->MakeNode("Sub", {pred_box_xy, center})->output(0);
   auto max_xy = helper_->MakeNode("Add", {pred_box_xy, center})->output(0);
@@ -203,7 +210,9 @@ void YoloBoxMapper::Opset11() {
   filter = helper_->AutoCast(filter, P2ODataType::BOOL, x_info[0].dtype);
   pred_conf = helper_->MakeNode("Mul", {pred_conf, filter})->output(0);
   auto pred_score =
-      helper_->Slice(transposed_x->output(0), {0, 1, 2, 3, 4}, {0, 0, 0, 0, 5},
+      helper_->Slice(transposed_x->output(0),
+                     {0, 1, 2, 3, 4},
+                     {0, 0, 0, 0, 5},
                      {max_int, max_int, max_int, max_int, max_int});
   pred_score = helper_->MakeNode("Sigmoid", {pred_score})->output(0);
   pred_score = helper_->MakeNode("Mul", {pred_score, pred_conf})->output(0);
@@ -226,8 +235,8 @@ void YoloBoxMapper::Opset11() {
 
   if (!clip_bbox_) {
     auto out = helper_->MakeNode("Mul", {pred_box, im_whwh})->output(0);
-    helper_->AutoCast(out, boxes_info[0].name, x_info[0].dtype,
-                      boxes_info[0].dtype);
+    helper_->AutoCast(
+        out, boxes_info[0].name, x_info[0].dtype, boxes_info[0].dtype);
   } else {
     pred_box = helper_->MakeNode("Mul", {pred_box, im_whwh})->output(0);
     auto im_wh = helper_->Concat({split_im_hw[1], split_im_hw[0]}, 2);
@@ -238,8 +247,8 @@ void YoloBoxMapper::Opset11() {
     pred_box_xymin_xymax[1] =
         helper_->MakeNode("Min", {pred_box_xymin_xymax[1], im_wh})->output(0);
     auto out = helper_->Concat(pred_box_xymin_xymax, 2);
-    helper_->AutoCast(out, boxes_info[0].name, x_info[0].dtype,
-                      boxes_info[0].dtype);
+    helper_->AutoCast(
+        out, boxes_info[0].name, x_info[0].dtype, boxes_info[0].dtype);
   }
 
   auto class_num =
@@ -248,7 +257,7 @@ void YoloBoxMapper::Opset11() {
       helper_->Concat({nchw[0], value_neg_1, class_num}, int64_t(0));
   auto score_out =
       helper_->MakeNode("Reshape", {pred_score, score_out_shape})->output(0);
-  helper_->AutoCast(score_out, scores_info[0].name, x_info[0].dtype,
-                    scores_info[0].dtype);
+  helper_->AutoCast(
+      score_out, scores_info[0].name, x_info[0].dtype, scores_info[0].dtype);
 }
 }  // namespace paddle2onnx

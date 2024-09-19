@@ -1,5 +1,5 @@
 import paddle
-from onnxbase import APIOnnx, randtool
+from onnxbase import APIOnnx
 
 
 class Net(paddle.nn.Layer):
@@ -24,9 +24,9 @@ def test_deform_conv2d():
     op version: 19
     """
 
-    # [TODO] onnxruntime does not fully support DeformConv, by referring to 
+    # [TODO] onnxruntime does not fully support DeformConv, by referring to
     # https://github.com/onnx/onnx/issues/5451#issuecomment-1658439524
-    
+
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5

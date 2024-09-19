@@ -35,9 +35,9 @@ void IndexSampleMapper::Opset11() {
   auto x_info = GetInput("X");
   auto index_info = GetInput("Index");
   auto out_info = GetOutput("Out");
-  auto node =
-      helper_->MakeNode("GatherElements", {x_info[0].name, index_info[0].name},
-                        {out_info[0].name});
+  auto node = helper_->MakeNode("GatherElements",
+                                {x_info[0].name, index_info[0].name},
+                                {out_info[0].name});
   AddAttribute(node, "axis", static_cast<int64_t>(1));
 }
 

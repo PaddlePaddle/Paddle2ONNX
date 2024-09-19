@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -31,10 +30,10 @@ class Net(BaseNet):
         self.weight = self.create_parameter(
             attr=None,
             shape=param_shape,
-            default_initializer=paddle.nn.initializer.Constant(1.0))
+            default_initializer=paddle.nn.initializer.Constant(1.0),
+        )
 
-        self.bias = self.create_parameter(
-            attr=None, shape=param_shape, is_bias=True)
+        self.bias = self.create_parameter(attr=None, shape=param_shape, is_bias=True)
 
     def forward(self, inputs):
         """
@@ -42,10 +41,11 @@ class Net(BaseNet):
         """
         x = paddle.nn.functional.layer_norm(
             inputs,
-            weight=self.weight if self.config['has_weight_bias'] else None,
-            bias=self.bias if self.config['has_weight_bias'] else None,
+            weight=self.weight if self.config["has_weight_bias"] else None,
+            bias=self.bias if self.config["has_weight_bias"] else None,
             normalized_shape=self.config["normalized_shape"],
-            epsilon=self.config["epsilon"])
+            epsilon=self.config["epsilon"],
+        )
         return x
 
 
@@ -56,7 +56,9 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
     """
 
     def sample_convert_config(self, draw):
-        input_shape = draw(st.lists(st.integers(min_value=2, max_value=8), min_size=2, max_size=5))
+        input_shape = draw(
+            st.lists(st.integers(min_value=2, max_value=8), min_size=2, max_size=5)
+        )
         input_spec = [-1] * len(input_shape)
 
         # When the dims is 5 and the last dimension is too small, an error will be reported due to the optimization of ONNXRuntime
@@ -83,7 +85,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
             "epsilon": epsilon,
             "normalized_shape": normalized_shape,
             "has_weight_bias": has_weight_bias,
-            "use_gpu": False
+            "use_gpu": False,
         }
 
         models = Net(config)

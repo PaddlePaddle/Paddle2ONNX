@@ -33,24 +33,26 @@ namespace optimization {
 
 struct FuseConstantCast final : public PredicateBasedPass {
   explicit FuseConstantCast()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_constant_cast"; }
 
-  bool patternMatchPredicate(Node* node) override {
+  bool patternMatchPredicate(Node *node) override {
     return node->kind() == kCast &&
            node->inputs()[0]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
-                    NodeDestroyType& destroy_current) override {
+  bool runTransform(Node *n,
+                    Graph &graph,
+                    NodeDestroyType &destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 
     if (n->inputs()[0]->uses().size() > 1) {
       return false;
     }
 
-    Node* cast = n;
-    Node* constant = n->inputs()[0]->node();
+    Node *cast = n;
+    Node *constant = n->inputs()[0]->node();
     Tensor t = constant->t(kvalue);
     auto dtype = cast->i(kto);
     t.elem_type() = dtype;

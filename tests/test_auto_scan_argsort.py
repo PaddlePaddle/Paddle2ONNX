@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -31,9 +30,8 @@ class Net(BaseNet):
         """
 
         x = paddle.argsort(
-            input,
-            axis=self.config['axis'],
-            descending=self.config['descending'])
+            input, axis=self.config["axis"], descending=self.config["descending"]
+        )
         return x
 
 
@@ -45,20 +43,19 @@ class TestArgsortConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=5), min_size=2, max_size=5))
+            st.lists(st.integers(min_value=2, max_value=5), min_size=2, max_size=5)
+        )
 
         axis = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1))
+            st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         descending = draw(st.booleans())
 
         def generator_data():
             import random
-            import numpy as np
+
             t = 1
             for i in range(len(input_shape)):
                 t = t * input_shape[i]

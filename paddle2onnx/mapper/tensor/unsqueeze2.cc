@@ -86,8 +86,8 @@ void Unsqueeze2Mapper::Opset13() {
       axes_node =
           helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
     }
-    helper_->MakeNode("Unsqueeze", {input_info[0].name, axes_node},
-                      {output_info[0].name});
+    helper_->MakeNode(
+        "Unsqueeze", {input_info[0].name, axes_node}, {output_info[0].name});
   }
 }
 

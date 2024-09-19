@@ -25,9 +25,9 @@ void MVMapper::Opset7() {
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Vec");
   auto output_info = GetOutput("Out");
-  auto node =
-      helper_->MakeNode("MatMul", {input_x_info[0].name, input_y_info[0].name},
-                        {output_info[0].name});
+  auto node = helper_->MakeNode("MatMul",
+                                {input_x_info[0].name, input_y_info[0].name},
+                                {output_info[0].name});
 }
 
 }  // namespace paddle2onnx

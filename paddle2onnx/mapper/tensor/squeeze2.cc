@@ -45,13 +45,13 @@ void Squeeze2Mapper::Opset7() {
       auto axes_info = GetAttrVar("axes");
       std::string axes_name;
       if (axes_info.size() == 1U) {
-        axes_name = helper_->AutoCast(axes_info[0].name, axes_info[0].dtype,
-                                      P2ODataType::INT64);
+        axes_name = helper_->AutoCast(
+            axes_info[0].name, axes_info[0].dtype, P2ODataType::INT64);
       } else {
         axes_name = helper_->ConcatIndices(axes_info);
       }
-      helper_->MakeNode("Squeeze", {input_info[0].name, axes_name},
-                        {output_info[0].name});
+      helper_->MakeNode(
+          "Squeeze", {input_info[0].name, axes_name}, {output_info[0].name});
     } else {
       if (IsAttrVar("axes")) {
         auto axes_info = GetAttrVar("axes");

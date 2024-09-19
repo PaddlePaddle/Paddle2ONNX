@@ -81,7 +81,9 @@ void PartialOpsMapper::Opset7() {
   if (iter->second == "Concat") {
     AddAttribute(node, "axis", static_cast<int64_t>(1));
   }
-  helper_->AutoCast(node->output(0), {output_info[0].name}, P2ODataType::FP32,
+  helper_->AutoCast(node->output(0),
+                    {output_info[0].name},
+                    P2ODataType::FP32,
                     output_info[0].dtype);
 }
 

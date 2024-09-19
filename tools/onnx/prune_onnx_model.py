@@ -5,22 +5,21 @@ import sys
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--model',
-        required=True,
-        help='Path of directory saved the input model.')
+        "--model", required=True, help="Path of directory saved the input model."
+    )
     parser.add_argument(
-        '--output_names',
-        required=True,
-        nargs='+',
-        help='The outputs of pruned model.')
+        "--output_names", required=True, nargs="+", help="The outputs of pruned model."
+    )
     parser.add_argument(
-        '--save_file', required=True, help='Path to save the new onnx model.')
+        "--save_file", required=True, help="Path to save the new onnx model."
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_arguments()
     import onnx
+
     model = onnx.load(args.model)
     output_tensor_names = set()
     for node in model.graph.node:
@@ -30,8 +29,10 @@ if __name__ == '__main__':
     for output_name in args.output_names:
         if output_name not in output_tensor_names:
             print(
-                "[ERROR] Cannot find output tensor name '{}' in onnx model graph.".
-                format(output_name))
+                "[ERROR] Cannot find output tensor name '{}' in onnx model graph.".format(
+                    output_name
+                )
+            )
             sys.exit(-1)
     if len(set(args.output_names)) < len(args.output_names):
         print(
@@ -49,6 +50,7 @@ if __name__ == '__main__':
 
     # from outputs find all the ancestors
     import copy
+
     reserved_node_indices = copy.deepcopy(output_node_indices)
     reserved_inputs = set()
     new_output_node_indices = copy.deepcopy(output_node_indices)
@@ -79,12 +81,18 @@ if __name__ == '__main__':
         del model.graph.output[0]
 
     from onnx_infer_shape import SymbolicShapeInference
-    model = SymbolicShapeInference.infer_shapes(model, 2**31 - 1, True, False,
-                                                1)
+
+    model = SymbolicShapeInference.infer_shapes(model, 2**31 - 1, True, False, 1)
     onnx.checker.check_model(model)
     onnx.save(model, args.save_file)
     print("[Finished] The new model saved in {}.".format(args.save_file))
-    print("[DEBUG INFO] The inputs of new model: {}".format(
-        [x.name for x in model.graph.input]))
-    print("[DEBUG INFO] The outputs of new model: {}".format(
-        [x.name for x in model.graph.output]))
+    print(
+        "[DEBUG INFO] The inputs of new model: {}".format(
+            [x.name for x in model.graph.input]
+        )
+    )
+    print(
+        "[DEBUG INFO] The outputs of new model: {}".format(
+            [x.name for x in model.graph.output]
+        )
+    )

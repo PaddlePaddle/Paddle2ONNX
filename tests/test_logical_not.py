@@ -41,10 +41,10 @@ def test_logical_not_10():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'logical_not', [10])
+    obj = APIOnnx(op, "logical_not", [10])
     obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('bool')))
+        "input_data", paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("bool"))
+    )
     obj.run()
 
 
@@ -56,10 +56,10 @@ def test_logical_not_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'logical_not', [11])
+    obj = APIOnnx(op, "logical_not", [11])
     obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('bool')))
+        "input_data", paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("bool"))
+    )
     obj.run()
 
 
@@ -71,8 +71,8 @@ def test_logical_not_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'logical_not', [12])
+    obj = APIOnnx(op, "logical_not", [12])
     obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('bool')))
+        "input_data", paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("bool"))
+    )
     obj.run()

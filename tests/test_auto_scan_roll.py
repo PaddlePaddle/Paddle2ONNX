@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -29,13 +27,13 @@ class Net(BaseNet):
         """
         forward
         """
-        axis = self.config['axis']
-        shifts = self.config['shifts']
+        axis = self.config["axis"]
+        shifts = self.config["shifts"]
         # axis = [0, -1]
         # TODO not work
         # shifts = [paddle.to_tensor(-2), -2]
-        if self.config['is_shifts_tensor']:
-            shifts = paddle.to_tensor(shifts).astype(self.config['shift_dtype'])
+        if self.config["is_shifts_tensor"]:
+            shifts = paddle.to_tensor(shifts).astype(self.config["shift_dtype"])
         x = paddle.roll(inputs, shifts=shifts, axis=axis)
         return x
 
@@ -48,23 +46,22 @@ class TestRollConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=10), min_size=2, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=10), min_size=2, max_size=5)
+        )
 
         dtype = draw(st.sampled_from(["float32"]))
         axis_dtype = draw(st.sampled_from(["None", "int", "list"]))
         shift_dtype = draw(st.sampled_from(["int32", "int64"]))
         if axis_dtype == "int":
             axis = draw(
-                st.integers(
-                    min_value=-len(input_shape), max_value=len(input_shape) -
-                    1))
+                st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1)
+            )
             axis_idx = axis + len(input_shape) if axis < 0 else axis
             shifts = draw(
                 st.integers(
-                    min_value=-input_shape[axis_idx],
-                    max_value=-input_shape[axis_idx]))
+                    min_value=-input_shape[axis_idx], max_value=-input_shape[axis_idx]
+                )
+            )
         elif axis_dtype == "list":
             axis = [0, -1]
             axis_idx = [
@@ -75,18 +72,22 @@ class TestRollConvert(OPConvertAutoScanTest):
             sf0 = draw(
                 st.integers(
                     min_value=-input_shape[axis_idx[0]],
-                    max_value=-input_shape[axis_idx[0]]))
+                    max_value=-input_shape[axis_idx[0]],
+                )
+            )
             sf1 = draw(
                 st.integers(
                     min_value=-input_shape[axis_idx[1]],
-                    max_value=-input_shape[axis_idx[1]]))
+                    max_value=-input_shape[axis_idx[1]],
+                )
+            )
             shifts.append(sf0)
             shifts.append(sf1)
         else:
             axis = None
             shifts = draw(
-                st.integers(
-                    min_value=-input_shape[0], max_value=-input_shape[0]))
+                st.integers(min_value=-input_shape[0], max_value=-input_shape[0])
+            )
 
         is_shifts_tensor = draw(st.booleans())
 

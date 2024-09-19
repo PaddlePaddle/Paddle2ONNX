@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class Unsqueeze2Mapper : public Mapper {
  public:
-  Unsqueeze2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  Unsqueeze2Mapper(const PaddleParser &p,
+                   OnnxHelper *helper,
+                   int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axes", &axes_);

@@ -30,17 +30,19 @@ namespace optimization {
 
 struct FusePaddleConvBias final : public PredicateBasedPass {
   explicit FusePaddleConvBias()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_paddle_conv_bias"; }
 
-  bool patternMatchPredicate(Node* node) override {
+  bool patternMatchPredicate(Node *node) override {
     return node->kind() == kAdd && node->inputs()[0]->node()->kind() == kConv &&
            node->inputs()[1]->node()->kind() == kConstant &&
            node->inputs()[0]->node()->inputs()[1]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
-                    NodeDestroyType& destroy_current) override {
+  bool runTransform(Node *n,
+                    Graph &graph,
+                    NodeDestroyType &destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 
     // check if Conv is only used by Add
@@ -52,10 +54,10 @@ struct FusePaddleConvBias final : public PredicateBasedPass {
       return false;
     }
 
-    Node* add = n;
-    Node* conv = n->inputs()[0]->node();
-    Node* bias = n->inputs()[1]->node();
-    Node* weight = conv->inputs()[1]->node();
+    Node *add = n;
+    Node *conv = n->inputs()[0]->node();
+    Node *bias = n->inputs()[1]->node();
+    Node *weight = conv->inputs()[1]->node();
 
     if (conv->inputs().size() > 2) {
       return false;
@@ -63,8 +65,8 @@ struct FusePaddleConvBias final : public PredicateBasedPass {
 
     Tensor bias_tensor = bias->t(kvalue);
     Tensor weight_tensor = weight->t(kvalue);
-    const auto& bias_shape = bias_tensor.sizes();
-    const auto& weight_shape = weight_tensor.sizes();
+    const auto &bias_shape = bias_tensor.sizes();
+    const auto &weight_shape = weight_tensor.sizes();
     if (bias_shape.size() != 4 || bias_shape.size() != weight_shape.size()) {
       return false;
     }

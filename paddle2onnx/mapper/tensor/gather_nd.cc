@@ -30,8 +30,8 @@ void GatherNdMapper::Opset11() {
   std::string index_node = helper_->AutoCast(
       input_index_info[0].name, input_index_info[0].dtype, P2ODataType::INT64);
 
-  helper_->MakeNode("GatherND", {input_x_info[0].name, index_node},
-                    {output_info[0].name});
+  helper_->MakeNode(
+      "GatherND", {input_x_info[0].name, index_node}, {output_info[0].name});
 }
 
 }  // namespace paddle2onnx

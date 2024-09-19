@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
 import numpy as np
 import unittest
 import paddle
@@ -24,19 +22,16 @@ import paddle
 class Net(BaseNet):
     def forward(self):
         start = self.config["start"]
-        if self.config['is_tensor_start']:
-            start = paddle.to_tensor(np.array(start)).astype(self.config[
-                'index_dtype'])
+        if self.config["is_tensor_start"]:
+            start = paddle.to_tensor(np.array(start)).astype(self.config["index_dtype"])
 
         end = self.config["end"]
-        if self.config['is_tensor_end']:
-            end = paddle.to_tensor(np.array(end)).astype(self.config[
-                'index_dtype'])
+        if self.config["is_tensor_end"]:
+            end = paddle.to_tensor(np.array(end)).astype(self.config["index_dtype"])
 
         step = self.config["step"]
-        if self.config['is_tensor_step']:
-            step = paddle.to_tensor(np.array(step)).astype(self.config[
-                'index_dtype'])
+        if self.config["is_tensor_step"]:
+            step = paddle.to_tensor(np.array(step)).astype(self.config["index_dtype"])
 
         dtype = self.config["dtype"]
         x = paddle.arange(start=start, end=end, step=step, dtype=dtype)
@@ -64,10 +59,8 @@ class TestArangeConvert(OPConvertAutoScanTest):
 
         dtype = None
         if draw(st.booleans()):
-            dtype = draw(
-                st.sampled_from(["float32", "float64", "int32", "int64"]))
-        index_dtype = draw(
-            st.sampled_from(["float32", "float64", "int32", "int64"]))
+            dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
+        index_dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["range"],

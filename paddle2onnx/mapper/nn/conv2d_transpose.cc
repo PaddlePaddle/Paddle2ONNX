@@ -36,10 +36,10 @@ void Conv2dTransposeMapper::Opset7() {
   auto kernel_info = GetInput("Filter");
   auto input_info = GetInput("Input");
   auto output_info = GetOutput("Output");
-  auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                 P2ODataType::FP32);
-  auto kernel = helper_->AutoCast(kernel_info[0].name, kernel_info[0].dtype,
-                                  P2ODataType::FP32);
+  auto input = helper_->AutoCast(
+      input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
+  auto kernel = helper_->AutoCast(
+      kernel_info[0].name, kernel_info[0].dtype, P2ODataType::FP32);
   auto node = helper_->MakeNode("ConvTranspose", {input, kernel});
   AddAttribute(node, "dilations", dilations_);
   std::vector<int64_t> kernel_shape = {kernel_info[0].shape[2],
@@ -59,7 +59,9 @@ void Conv2dTransposeMapper::Opset7() {
   if (output_padding_.size() > 0) {
     AddAttribute(node, "output_padding", output_padding_);
   }
-  helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+  helper_->AutoCast(node->output(0),
+                    output_info[0].name,
+                    P2ODataType::FP32,
                     output_info[0].dtype);
 }
 

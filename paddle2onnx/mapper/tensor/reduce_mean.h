@@ -22,17 +22,17 @@ namespace paddle2onnx {
 
 class ReduceMeanMapper : public Mapper {
  public:
-  ReduceMeanMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-  }
+  ReduceMeanMapper(const PaddleParser &p,
+                   OnnxHelper *helper,
+                   int64_t block_id,
+                   int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
 
   void Opset18() override;
   void Opset11() override;
   int32_t GetMinOpsetVersion(bool verbose) override;
 
  private:
-
   bool keep_dim_;
   bool reduce_all_;
   int64_t in_dtype_;

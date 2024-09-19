@@ -19,8 +19,10 @@ namespace paddle2onnx {
 
 class GreaterEqualMapper : public Mapper {
  public:
-  GreaterEqualMapper(const PaddleParser& p, OnnxHelper* helper,
-                     int64_t block_id, int64_t op_id)
+  GreaterEqualMapper(const PaddleParser &p,
+                     OnnxHelper *helper,
+                     int64_t block_id,
+                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;
   void Opset12() override;

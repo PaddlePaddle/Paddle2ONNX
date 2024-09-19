@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -33,7 +31,8 @@ class Net(BaseNet):
             x,
             y,
             transpose_x=self.config["transpose_x"],
-            transpose_y=self.config["transpose_y"])
+            transpose_y=self.config["transpose_y"],
+        )
         return x
 
 
@@ -45,9 +44,8 @@ class TestMatmulConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape1 = draw(
-            st.lists(
-                st.integers(
-                    min_value=5, max_value=20), min_size=3, max_size=5))
+            st.lists(st.integers(min_value=5, max_value=20), min_size=3, max_size=5)
+        )
         # broadcast
         input_shape2 = input_shape1[-2:]
         input_shape2.reverse()

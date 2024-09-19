@@ -16,10 +16,6 @@ import os
 import time
 import sys
 import random
-import math
-import functools
-import tempfile
-import contextlib
 import numpy as np
 import paddle
 from fake_quant import post_quant_fake
@@ -35,11 +31,13 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.model_name = None
         self.quantize_model_dir = "./quantized_models/"
 
-    def run_program(self,
-                    model_path,
-                    model_filename='__model__',
-                    params_filename='__params__',
-                    threads_num=None):
+    def run_program(
+        self,
+        model_path,
+        model_filename="__model__",
+        params_filename="__params__",
+        threads_num=None,
+    ):
         print("test model path:" + model_path)
         import onnxruntime as rt
         import paddle2onnx
@@ -48,12 +46,14 @@ class TestPostTrainingQuantization(unittest.TestCase):
             model_file=model_path + "/" + model_filename,
             params_file=model_path + "/" + params_filename,
             opset_version=13,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
         sess_options = rt.SessionOptions()
         if threads_num is not None:
             sess_options.intra_op_num_threads = threads_num
         sess = rt.InferenceSession(
-            onnx_model, sess_options, providers=['CPUExecutionProvider'])
+            onnx_model, sess_options, providers=["CPUExecutionProvider"]
+        )
 
         input_names = [input.name for input in sess.get_inputs()]
         input_shape = [input.shape for input in sess.get_inputs()]
@@ -81,11 +81,13 @@ class TestPostTrainingQuantization(unittest.TestCase):
         latency = np.average(periods)
         return latency
 
-    def generate_quantized_model(self,
-                                 original_model_path,
-                                 quantize_model_path,
-                                 model_filename='__model__',
-                                 params_filename='__params__'):
+    def generate_quantized_model(
+        self,
+        original_model_path,
+        quantize_model_path,
+        model_filename="__model__",
+        params_filename="__params__",
+    ):
         paddle.enable_static()
         place = paddle.CPUPlace()
         exe = paddle.static.Executor(place)
@@ -96,39 +98,47 @@ class TestPostTrainingQuantization(unittest.TestCase):
             params_filename=params_filename,
             save_model_path=quantize_model_path,
             is_full_quantize=True,
-            onnx_format=True)
+            onnx_format=True,
+        )
 
-    def run_test(self,
-                 model_name,
-                 model_filename='__model__',
-                 params_filename='__params__',
-                 threads_num=None):
+    def run_test(
+        self,
+        model_name,
+        model_filename="__model__",
+        params_filename="__params__",
+        threads_num=None,
+    ):
         self.model_name = model_name
         origin_model_path = os.path.join(self.quantize_model_dir, model_name)
 
         print("Start FP32 inference for {0}  ...".format(model_name))
-        fp32_latency = self.run_program(origin_model_path, model_filename,
-                                        params_filename, threads_num)
+        fp32_latency = self.run_program(
+            origin_model_path, model_filename, params_filename, threads_num
+        )
 
-        print("Start INT8 post training quantization for {0} ...".format(
-            model_name))
-        quantize_model_path = os.path.join(self.quantize_model_dir,
-                                           model_name + "_quantized")
-        self.generate_quantized_model(origin_model_path, quantize_model_path,
-                                      model_filename, params_filename)
+        print("Start INT8 post training quantization for {0} ...".format(model_name))
+        quantize_model_path = os.path.join(
+            self.quantize_model_dir, model_name + "_quantized"
+        )
+        self.generate_quantized_model(
+            origin_model_path, quantize_model_path, model_filename, params_filename
+        )
 
         print("Start INT8 inference for {0}  ...".format(model_name))
-        if (".pdmodel" in model_filename):
-            int8_latency = self.run_program(quantize_model_path, model_filename,
-                                            params_filename, threads_num)
+        if ".pdmodel" in model_filename:
+            int8_latency = self.run_program(
+                quantize_model_path, model_filename, params_filename, threads_num
+            )
         else:
-            int8_latency = self.run_program(quantize_model_path,
-                                            "__model__.pdmodel",
-                                            "__model__.pdiparams", threads_num)
+            int8_latency = self.run_program(
+                quantize_model_path,
+                "__model__.pdmodel",
+                "__model__.pdiparams",
+                threads_num,
+            )
 
         print("---Post training quantization---")
-        print("FP32 lentency {0}: latency {1} s."
-              .format(model_name, fp32_latency))
+        print("FP32 lentency {0}: latency {1} s.".format(model_name, fp32_latency))
         print("INT8 {0}: latency {1} s.\n".format(model_name, int8_latency))
         sys.stdout.flush()
 
@@ -148,26 +158,23 @@ class TestPostTrainingFeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
         self.run_test(model_name, threads_num=1)
 
 
-class TestPostTrainingFeedasqNohadamaONNXFormatFullQuant(
-        TestPostTrainingQuantization):
+class TestPostTrainingFeedasqNohadamaONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_feedasq_nohadama_onnx_format_full_quant(self):
         model_name = "feedasq_nohadama"
         self.run_test(model_name, threads_num=1)
 
 
-class TestPostTrainingVideofeedasqONNXFormatFullQuant(
-        TestPostTrainingQuantization):
+class TestPostTrainingVideofeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_videofeedasq_onnx_format_full_quant(self):
         model_name = "videofeedasq"
         self.run_test(model_name, threads_num=1)
 
 
-class TestPostTrainingLiminghaoONNXFormatFullQuant(
-        TestPostTrainingQuantization):
+class TestPostTrainingLiminghaoONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_liminghao_onnx_format_full_quant(self):
         model_name = "liminghao"
         self.run_test(model_name, "model.pdmodel", "model.pdiparams", 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

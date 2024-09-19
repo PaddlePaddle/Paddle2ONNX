@@ -22,14 +22,16 @@ namespace paddle2onnx {
 
 class ExpandMapper : public Mapper {
  public:
-  ExpandMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ExpandMapper(const PaddleParser &p,
+               OnnxHelper *helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-        GetAttr("expand_times", &expand_times_);
-      }
+    GetAttr("expand_times", &expand_times_);
+  }
   void Opset7() override;
 
-  private:
+ private:
   std::vector<int64_t> expand_times_;
 };
 

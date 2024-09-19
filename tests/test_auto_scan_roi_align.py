@@ -21,25 +21,27 @@ paddle.enable_static()
 import numpy as np
 import paddle
 import paddle.fluid as fluid
-from onnxbase import randtool, compare
+from onnxbase import compare
 
 import paddle
 
-from paddle.fluid.framework import Variable, in_dygraph_mode
+from paddle.fluid.framework import in_dygraph_mode
 from paddle.fluid import core
 from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle.fluid.data_feeder import check_variable_and_dtype, check_type
 
 
 @paddle.jit.not_to_static
-def roi_align(input,
-              rois,
-              output_size,
-              spatial_scale=1.0,
-              sampling_ratio=-1,
-              rois_num=None,
-              aligned=True,
-              name=None):
+def roi_align(
+    input,
+    rois,
+    output_size,
+    spatial_scale=1.0,
+    sampling_ratio=-1,
+    rois_num=None,
+    aligned=True,
+    name=None,
+):
     """
 
     Region of interest align (also known as RoI align) is to perform
@@ -98,7 +100,7 @@ def roi_align(input,
                                                sampling_ratio=-1,
                                                rois_num=rois_num)
     """
-    check_type(output_size, 'output_size', (int, tuple), 'roi_align')
+    check_type(output_size, "output_size", (int, tuple), "roi_align")
     if isinstance(output_size, int):
         output_size = (output_size, output_size)
 
@@ -106,17 +108,26 @@ def roi_align(input,
     if in_dygraph_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         align_out = core.ops.roi_align(
-            input, rois, rois_num, "pooled_height", pooled_height,
-            "pooled_width", pooled_width, "spatial_scale", spatial_scale,
-            "sampling_ratio", sampling_ratio, "aligned", aligned)
+            input,
+            rois,
+            rois_num,
+            "pooled_height",
+            pooled_height,
+            "pooled_width",
+            pooled_width,
+            "spatial_scale",
+            spatial_scale,
+            "sampling_ratio",
+            sampling_ratio,
+            "aligned",
+            aligned,
+        )
         return align_out
 
     else:
-        check_variable_and_dtype(input, 'input', ['float32', 'float64'],
-                                 'roi_align')
-        check_variable_and_dtype(rois, 'rois', ['float32', 'float64'],
-                                 'roi_align')
-        helper = LayerHelper('roi_align', **locals())
+        check_variable_and_dtype(input, "input", ["float32", "float64"], "roi_align")
+        check_variable_and_dtype(rois, "rois", ["float32", "float64"], "roi_align")
+        helper = LayerHelper("roi_align", **locals())
         dtype = helper.input_dtype()
         align_out = helper.create_variable_for_type_inference(dtype)
         inputs = {
@@ -124,7 +135,7 @@ def roi_align(input,
             "ROIs": rois,
         }
         if rois_num is not None:
-            inputs['RoisNum'] = rois_num
+            inputs["RoisNum"] = rois_num
         helper.append_op(
             type="roi_align",
             inputs=inputs,
@@ -135,7 +146,8 @@ def roi_align(input,
                 "spatial_scale": spatial_scale,
                 "sampling_ratio": sampling_ratio,
                 "aligned": aligned,
-            })
+            },
+        )
         return align_out
 
 
@@ -156,22 +168,24 @@ def test_generate_roi_align_lod_aligned_true():
         aligned = False
 
         input = fluid.layers.data(
-            name='input',
+            name="input",
             shape=[-1, 256, -1, -1],
             append_batch_size=False,
-            dtype='float32',
-            lod_level=1)
+            dtype="float32",
+            lod_level=1,
+        )
         roi = fluid.layers.data(
-            name='roi',
+            name="roi",
             shape=[-1, 4],
             append_batch_size=False,
-            dtype='float32',
-            lod_level=1)
+            dtype="float32",
+            lod_level=1,
+        )
 
         def init_test_input():
             # n, c, h, w
             x_dim = (batch_size, channels, height, width)
-            x = np.random.random(x_dim).astype('float32')
+            x = np.random.random(x_dim).astype("float32")
 
             rois = []
             rois_lod = [[]]
@@ -179,14 +193,18 @@ def test_generate_roi_align_lod_aligned_true():
                 rois_lod[0].append(bno + 1)
                 for i in range(bno + 1):
                     x1 = np.random.random_integers(
-                        0, width // spatial_scale - pooled_width)
+                        0, width // spatial_scale - pooled_width
+                    )
                     y1 = np.random.random_integers(
-                        0, height // spatial_scale - pooled_height)
+                        0, height // spatial_scale - pooled_height
+                    )
 
-                    x2 = np.random.random_integers(x1 + pooled_width,
-                                                   width // spatial_scale)
-                    y2 = np.random.random_integers(y1 + pooled_height,
-                                                   height // spatial_scale)
+                    x2 = np.random.random_integers(
+                        x1 + pooled_width, width // spatial_scale
+                    )
+                    y2 = np.random.random_integers(
+                        y1 + pooled_height, height // spatial_scale
+                    )
 
                     roi = [bno, x1, y1, x2, y2]
                     rois.append(roi)
@@ -203,17 +221,19 @@ def test_generate_roi_align_lod_aligned_true():
             spatial_scale=spatial_scale,
             sampling_ratio=sampling_ratio,
             rois_num=None,
-            aligned=aligned)
+            aligned=aligned,
+        )
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
 
         input_val = fluid.create_lod_tensor(input_data, [[1]], fluid.CPUPlace())
         roi_val = fluid.create_lod_tensor(roi_data, [[1]], fluid.CPUPlace())
-        result = exe.run(feed={"input": input_val,
-                               "roi": roi_val},
-                         fetch_list=[out],
-                         return_numpy=False)
+        result = exe.run(
+            feed={"input": input_val, "roi": roi_val},
+            fetch_list=[out],
+            return_numpy=False,
+        )
 
         path_prefix = "./roi_align_v2"
         fluid.io.save_inference_model(path_prefix, ["input", "roi"], [out], exe)
@@ -223,15 +243,19 @@ def test_generate_roi_align_lod_aligned_true():
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=12,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
-        pred_onnx = sess.run(None, {
-            input_name1: input_data,
-            input_name2: roi_data,
-        })
+        pred_onnx = sess.run(
+            None,
+            {
+                input_name1: input_data,
+                input_name2: roi_data,
+            },
+        )
         compare(pred_onnx, result, 1e-5, 1e-5)
         print("Finish!!!")
 
@@ -253,22 +277,24 @@ def test_generate_roi_align_lod_aligned_false():
         aligned = False
 
         input = fluid.layers.data(
-            name='input',
+            name="input",
             shape=[-1, 256, -1, -1],
             append_batch_size=False,
-            dtype='float32',
-            lod_level=1)
+            dtype="float32",
+            lod_level=1,
+        )
         roi = fluid.layers.data(
-            name='roi',
+            name="roi",
             shape=[-1, 4],
             append_batch_size=False,
-            dtype='float32',
-            lod_level=1)
+            dtype="float32",
+            lod_level=1,
+        )
 
         def init_test_input():
             # n, c, h, w
             x_dim = (batch_size, channels, height, width)
-            x = np.random.random(x_dim).astype('float32')
+            x = np.random.random(x_dim).astype("float32")
 
             rois = []
             rois_lod = [[]]
@@ -276,14 +302,18 @@ def test_generate_roi_align_lod_aligned_false():
                 rois_lod[0].append(bno + 1)
                 for i in range(bno + 1):
                     x1 = np.random.random_integers(
-                        0, width // spatial_scale - pooled_width)
+                        0, width // spatial_scale - pooled_width
+                    )
                     y1 = np.random.random_integers(
-                        0, height // spatial_scale - pooled_height)
+                        0, height // spatial_scale - pooled_height
+                    )
 
-                    x2 = np.random.random_integers(x1 + pooled_width,
-                                                   width // spatial_scale)
-                    y2 = np.random.random_integers(y1 + pooled_height,
-                                                   height // spatial_scale)
+                    x2 = np.random.random_integers(
+                        x1 + pooled_width, width // spatial_scale
+                    )
+                    y2 = np.random.random_integers(
+                        y1 + pooled_height, height // spatial_scale
+                    )
 
                     roi = [bno, x1, y1, x2, y2]
                     rois.append(roi)
@@ -299,17 +329,19 @@ def test_generate_roi_align_lod_aligned_false():
             pooled_height=pooled_height,
             pooled_width=pooled_width,
             spatial_scale=spatial_scale,
-            sampling_ratio=sampling_ratio)
+            sampling_ratio=sampling_ratio,
+        )
 
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
 
         input_val = fluid.create_lod_tensor(input_data, [[1]], fluid.CPUPlace())
         roi_val = fluid.create_lod_tensor(roi_data, [[1]], fluid.CPUPlace())
-        result = exe.run(feed={"input": input_val,
-                               "roi": roi_val},
-                         fetch_list=[out],
-                         return_numpy=False)
+        result = exe.run(
+            feed={"input": input_val, "roi": roi_val},
+            fetch_list=[out],
+            return_numpy=False,
+        )
 
         path_prefix = "./roi_align"
         fluid.io.save_inference_model(path_prefix, ["input", "roi"], [out], exe)
@@ -319,15 +351,19 @@ def test_generate_roi_align_lod_aligned_false():
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=12,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
-        pred_onnx = sess.run(None, {
-            input_name1: input_data,
-            input_name2: roi_data,
-        })
+        pred_onnx = sess.run(
+            None,
+            {
+                input_name1: input_data,
+                input_name2: roi_data,
+            },
+        )
         compare(pred_onnx, result, 1e-5, 1e-5)
         print("Finish!!!")
 

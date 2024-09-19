@@ -30,7 +30,7 @@ int32_t ExpandAsMapper::GetMinOpsetVersion(bool verbose) {
   }
   Logger(verbose, 8) << RequireOpset(8) << std::endl;
   return 8;
-};
+}
 
 void ExpandAsMapper::Opset8() {
   auto input_info = GetInput("X");
@@ -45,8 +45,8 @@ void ExpandAsMapper::Opset8() {
         helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, target_shape_);
   }
 
-  helper_->MakeNode("Expand", {input_info[0].name, target_shape},
-                    {output_info[0].name});
+  helper_->MakeNode(
+      "Expand", {input_info[0].name, target_shape}, {output_info[0].name});
 }
 
 }  // namespace paddle2onnx

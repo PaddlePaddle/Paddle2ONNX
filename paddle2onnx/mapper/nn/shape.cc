@@ -22,8 +22,8 @@ void ShapeMapper::Opset7() {
   auto output_info = GetOutput("Out");
 
   auto shape_out = helper_->MakeNode("Shape", {input_info[0].name})->output(0);
-  helper_->AutoCast(shape_out, output_info[0].name, P2ODataType::INT64,
-                    output_info[0].dtype);
+  helper_->AutoCast(
+      shape_out, output_info[0].name, P2ODataType::INT64, output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

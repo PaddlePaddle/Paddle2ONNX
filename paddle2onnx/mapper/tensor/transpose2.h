@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class Transpose2Mapper : public Mapper {
  public:
-  Transpose2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  Transpose2Mapper(const PaddleParser &p,
+                   OnnxHelper *helper,
+                   int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;

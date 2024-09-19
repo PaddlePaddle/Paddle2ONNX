@@ -21,23 +21,25 @@ paddle.enable_static()
 import numpy as np
 import paddle
 import paddle.fluid as fluid
-from onnxbase import randtool, compare
+from onnxbase import compare
 
-from paddle.fluid.framework import Variable, in_dygraph_mode
+from paddle.fluid.framework import in_dygraph_mode
 from paddle.fluid import core
 from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle.fluid.data_feeder import check_variable_and_dtype
 
 
 @paddle.jit.not_to_static
-def distribute_fpn_proposals(fpn_rois,
-                             min_level,
-                             max_level,
-                             refer_level,
-                             refer_scale,
-                             pixel_offset=False,
-                             rois_num=None,
-                             name=None):
+def distribute_fpn_proposals(
+    fpn_rois,
+    min_level,
+    max_level,
+    refer_level,
+    refer_scale,
+    pixel_offset=False,
+    rois_num=None,
+    name=None,
+):
     r"""
 
     **This op only takes LoDTensor as input.** In Feature Pyramid Networks
@@ -109,50 +111,61 @@ def distribute_fpn_proposals(fpn_rois,
 
     if in_dygraph_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
-                 refer_level, 'refer_scale', refer_scale, 'pixel_offset',
-                 pixel_offset)
+        attrs = (
+            "min_level",
+            min_level,
+            "max_level",
+            max_level,
+            "refer_level",
+            refer_level,
+            "refer_scale",
+            refer_scale,
+            "pixel_offset",
+            pixel_offset,
+        )
         multi_rois, restore_ind, rois_num_per_level = core.ops.distribute_fpn_proposals(
-            fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
+            fpn_rois, rois_num, num_lvl, num_lvl, *attrs
+        )
         return multi_rois, restore_ind, rois_num_per_level
 
     else:
-        check_variable_and_dtype(fpn_rois, 'fpn_rois', ['float32', 'float64'],
-                                 'distribute_fpn_proposals')
-        helper = LayerHelper('distribute_fpn_proposals', **locals())
-        dtype = helper.input_dtype('fpn_rois')
+        check_variable_and_dtype(
+            fpn_rois, "fpn_rois", ["float32", "float64"], "distribute_fpn_proposals"
+        )
+        helper = LayerHelper("distribute_fpn_proposals", **locals())
+        dtype = helper.input_dtype("fpn_rois")
         multi_rois = [
-            helper.create_variable_for_type_inference(dtype)
-            for i in range(num_lvl)
+            helper.create_variable_for_type_inference(dtype) for i in range(num_lvl)
         ]
 
-        restore_ind = helper.create_variable_for_type_inference(dtype='int32')
+        restore_ind = helper.create_variable_for_type_inference(dtype="int32")
 
-        inputs = {'FpnRois': fpn_rois}
+        inputs = {"FpnRois": fpn_rois}
         outputs = {
-            'MultiFpnRois': multi_rois,
-            'RestoreIndex': restore_ind,
+            "MultiFpnRois": multi_rois,
+            "RestoreIndex": restore_ind,
         }
 
         if rois_num is not None:
-            inputs['RoisNum'] = rois_num
+            inputs["RoisNum"] = rois_num
             rois_num_per_level = [
-                helper.create_variable_for_type_inference(dtype='int32')
+                helper.create_variable_for_type_inference(dtype="int32")
                 for i in range(num_lvl)
             ]
-            outputs['MultiLevelRoIsNum'] = rois_num_per_level
+            outputs["MultiLevelRoIsNum"] = rois_num_per_level
 
         helper.append_op(
-            type='distribute_fpn_proposals',
+            type="distribute_fpn_proposals",
             inputs=inputs,
             outputs=outputs,
             attrs={
-                'min_level': min_level,
-                'max_level': max_level,
-                'refer_level': refer_level,
-                'refer_scale': refer_scale,
-                'pixel_offset': pixel_offset
-            })
+                "min_level": min_level,
+                "max_level": max_level,
+                "refer_level": refer_level,
+                "refer_scale": refer_scale,
+                "pixel_offset": pixel_offset,
+            },
+        )
 
         if rois_num is not None:
             return multi_rois, restore_ind, rois_num_per_level
@@ -165,7 +178,8 @@ def test_generate_proposals():
 
     with paddle.static.program_guard(main_program, startup_program):
         fpn_rois = fluid.data(
-            name='fpn_rois', shape=[-1, 4], dtype='float32', lod_level=1)
+            name="fpn_rois", shape=[-1, 4], dtype="float32", lod_level=1
+        )
 
         def init_test_input():
             images_shape = [512, 512]
@@ -193,27 +207,32 @@ def test_generate_proposals():
         refer_level = 4
         refer_scale = 224
 
-        out = distribute_fpn_proposals(fpn_rois, min_level, max_level,
-                                       refer_level, refer_scale)
+        out = distribute_fpn_proposals(
+            fpn_rois, min_level, max_level, refer_level, refer_scale
+        )
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
-        fpn_rois_val = fluid.create_lod_tensor(fpn_rois_data,
-                                               [[fpn_rois_data.shape[0]]],
-                                               fluid.CPUPlace())
-        result = exe.run(feed={"fpn_rois": fpn_rois_val},
-                         fetch_list=list(out),
-                         return_numpy=False)
+        fpn_rois_val = fluid.create_lod_tensor(
+            fpn_rois_data, [[fpn_rois_data.shape[0]]], fluid.CPUPlace()
+        )
+        result = exe.run(
+            feed={"fpn_rois": fpn_rois_val}, fetch_list=list(out), return_numpy=False
+        )
         path_prefix = "./distribute_fpn_proposals"
         fluid.io.save_inference_model(
-            path_prefix, ["fpn_rois"],
-            [out[0][0], out[0][1], out[0][2], out[0][3], out[1]], exe)
+            path_prefix,
+            ["fpn_rois"],
+            [out[0][0], out[0][1], out[0][2], out[0][3], out[1]],
+            exe,
+        )
 
         onnx_path = path_prefix + "/model.onnx"
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=11,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
@@ -228,12 +247,11 @@ def test_generate_proposalsOpWithRoisNum():
 
     with paddle.static.program_guard(main_program, startup_program):
         fpn_rois = fluid.layers.data(
-            name='fpn_rois',
-            shape=[-1, 4],
-            append_batch_size=False,
-            dtype='float32')
+            name="fpn_rois", shape=[-1, 4], append_batch_size=False, dtype="float32"
+        )
         rois_num = fluid.layers.data(
-            name='rois_num', shape=[1], append_batch_size=False, dtype='int32')
+            name="rois_num", shape=[1], append_batch_size=False, dtype="int32"
+        )
 
         def init_test_input():
             images_shape = [512, 512]
@@ -262,37 +280,59 @@ def test_generate_proposalsOpWithRoisNum():
         refer_level = 4
         pixel_offset = True
 
-        out = distribute_fpn_proposals(fpn_rois, min_level, max_level,
-                                       refer_level, refer_scale, pixel_offset,
-                                       rois_num)
+        out = distribute_fpn_proposals(
+            fpn_rois,
+            min_level,
+            max_level,
+            refer_level,
+            refer_scale,
+            pixel_offset,
+            rois_num,
+        )
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
         result = exe.run(
-            feed={"fpn_rois": fpn_rois_data,
-                  "rois_num": rois_num_data},
+            feed={"fpn_rois": fpn_rois_data, "rois_num": rois_num_data},
             fetch_list=list(out),
-            return_numpy=False)
+            return_numpy=False,
+        )
         pass
         path_prefix = "./distribute_fpn_proposals2"
-        fluid.io.save_inference_model(path_prefix, ["fpn_rois", "rois_num"], [
-            out[0][0], out[0][1], out[0][2], out[0][3], out[1], out[2][0],
-            out[2][1], out[2][2], out[2][3]
-        ], exe)
+        fluid.io.save_inference_model(
+            path_prefix,
+            ["fpn_rois", "rois_num"],
+            [
+                out[0][0],
+                out[0][1],
+                out[0][2],
+                out[0][3],
+                out[1],
+                out[2][0],
+                out[2][1],
+                out[2][2],
+                out[2][3],
+            ],
+            exe,
+        )
 
         onnx_path = path_prefix + "/model.onnx"
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=12,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
-        pred_onnx = sess.run(None, {
-            input_name1: fpn_rois_data,
-            input_name2: rois_num_data,
-        })
+        pred_onnx = sess.run(
+            None,
+            {
+                input_name1: fpn_rois_data,
+                input_name2: rois_num_data,
+            },
+        )
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 
@@ -302,12 +342,11 @@ def test_generate_proposalsOpNoOffset():
 
     with paddle.static.program_guard(main_program, startup_program):
         fpn_rois = fluid.layers.data(
-            name='fpn_rois',
-            shape=[-1, 4],
-            append_batch_size=False,
-            dtype='float32')
+            name="fpn_rois", shape=[-1, 4], append_batch_size=False, dtype="float32"
+        )
         rois_num = fluid.layers.data(
-            name='rois_num', shape=[1], append_batch_size=False, dtype='int32')
+            name="rois_num", shape=[1], append_batch_size=False, dtype="int32"
+        )
 
         def init_test_input():
             images_shape = [512, 512]
@@ -336,37 +375,59 @@ def test_generate_proposalsOpNoOffset():
         refer_level = 4
         pixel_offset = False
 
-        out = distribute_fpn_proposals(fpn_rois, min_level, max_level,
-                                       refer_level, refer_scale, pixel_offset,
-                                       rois_num)
+        out = distribute_fpn_proposals(
+            fpn_rois,
+            min_level,
+            max_level,
+            refer_level,
+            refer_scale,
+            pixel_offset,
+            rois_num,
+        )
         exe = paddle.static.Executor(paddle.CPUPlace())
         exe.run(paddle.static.default_startup_program())
         result = exe.run(
-            feed={"fpn_rois": fpn_rois_data,
-                  "rois_num": rois_num_data},
+            feed={"fpn_rois": fpn_rois_data, "rois_num": rois_num_data},
             fetch_list=list(out),
-            return_numpy=False)
+            return_numpy=False,
+        )
         pass
         path_prefix = "./distribute_fpn_proposals2"
-        fluid.io.save_inference_model(path_prefix, ["fpn_rois", "rois_num"], [
-            out[0][0], out[0][1], out[0][2], out[0][3], out[1], out[2][0],
-            out[2][1], out[2][2], out[2][3]
-        ], exe)
+        fluid.io.save_inference_model(
+            path_prefix,
+            ["fpn_rois", "rois_num"],
+            [
+                out[0][0],
+                out[0][1],
+                out[0][2],
+                out[0][3],
+                out[1],
+                out[2][0],
+                out[2][1],
+                out[2][2],
+                out[2][3],
+            ],
+            exe,
+        )
 
         onnx_path = path_prefix + "/model.onnx"
         program2onnx(
             model_dir=path_prefix,
             save_file=onnx_path,
             opset_version=12,
-            enable_onnx_checker=True)
+            enable_onnx_checker=True,
+        )
 
         sess = rt.InferenceSession(onnx_path)
         input_name1 = sess.get_inputs()[0].name
         input_name2 = sess.get_inputs()[1].name
-        pred_onnx = sess.run(None, {
-            input_name1: fpn_rois_data,
-            input_name2: rois_num_data,
-        })
+        pred_onnx = sess.run(
+            None,
+            {
+                input_name1: fpn_rois_data,
+                input_name2: rois_num_data,
+            },
+        )
         compare(pred_onnx, result, 1e-5, 1e-5)
 
 

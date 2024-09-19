@@ -13,18 +13,19 @@
 // limitations under the License.
 #pragma once
 
-
-#include "paddle2onnx/mapper/mapper.h"
-
 #include <cmath>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "paddle2onnx/mapper/mapper.h"
+
 namespace paddle2onnx {
 class HardSwishMapper : public Mapper {
  public:
-  HardSwishMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  HardSwishMapper(const PaddleParser &p,
+                  OnnxHelper *helper,
+                  int64_t block_id,
                   int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("scale", &scale_);
@@ -42,4 +43,4 @@ class HardSwishMapper : public Mapper {
   float offset_;
   float threshold_;
 };
-}
+}  // namespace paddle2onnx

@@ -22,4 +22,4 @@ void SigmoidMapper::Opset7() {
   auto output_info = GetOutput("Out");
   helper_->MakeNode("Sigmoid", {input_info[0].name}, {output_info[0].name});
 }
-}
+}  // namespace paddle2onnx

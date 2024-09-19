@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class LogicalNotMapper : public Mapper {
  public:
-  LogicalNotMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  LogicalNotMapper(const PaddleParser &p,
+                   OnnxHelper *helper,
+                   int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
   void Opset7() override;

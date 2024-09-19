@@ -133,17 +133,14 @@ void SplitMapper::Opset13() {
     output_names[i] = output_info[i].name;
   }
   if (splits != "") {
-
     auto node =
         helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
     AddAttribute(node, "axis", axis);
   } else {
-
     auto node = helper_->MakeNode("Split", {input_info[0].name}, output_names);
     AddAttribute(node, "axis", axis);
   }
 }
-
 
 void SplitMapper::Opset18() {
   auto input_info = GetInput("X");
@@ -187,19 +184,21 @@ void SplitMapper::Opset18() {
     output_names[i] = output_info[i].name;
   }
   if (splits != "") {
-    auto node = helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
+    auto node =
+        helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
     AddAttribute(node, "axis", axis);
-    return ;
-  } 
-  // [num] attribute -> [split] input
-  int64_t num = input_info[0].shape[axis_]; // default
-  if (HasAttr("num")){
-     GetAttr("num", &num);
+    return;
   }
-  // Question: Why do we need to call helper->Split() instead of helper->MakeNode("Split")?
-  // Answer: Split-18 requires either a split input or the num_ouputs attribute. Here we choose to add split input.
-  int64_t each_part_size = input_info[0].shape[axis_] / num ;
-  std::vector<int64_t> splits_size = std::vector<int64_t>(num, each_part_size) ;
+  // [num] attribute -> [split] input
+  int64_t num = input_info[0].shape[axis_];  // default
+  if (HasAttr("num")) {
+    GetAttr("num", &num);
+  }
+  // Question: Why do we need to call helper->Split() instead of
+  // helper->MakeNode("Split")? Answer: Split-18 requires either a split input
+  // or the num_ouputs attribute. Here we choose to add split input.
+  int64_t each_part_size = input_info[0].shape[axis_] / num;
+  std::vector<int64_t> splits_size = std::vector<int64_t>(num, each_part_size);
   helper_->Split(input_info[0].name, output_names, splits_size, axis_);
 }
 

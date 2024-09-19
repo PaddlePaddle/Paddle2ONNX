@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class ElementwiseMulMapper : public Mapper {
  public:
-  ElementwiseMulMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-                    int64_t op_id)
+  ElementwiseMulMapper(const PaddleParser &p,
+                       OnnxHelper *helper,
+                       int64_t block_id,
+                       int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -41,20 +39,19 @@ class TestFlattenConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=20), min_size=0, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=20), min_size=0, max_size=5)
+        )
 
-        dtype = draw(
-            st.sampled_from(["bool", "int32", "int64", "float32", "float64"]))
+        dtype = draw(st.sampled_from(["bool", "int32", "int64", "float32", "float64"]))
 
         if len(input_shape) > 0:
             axis = draw(
                 st.lists(
-                    st.integers(
-                        min_value=0, max_value=len(input_shape) - 1),
+                    st.integers(min_value=0, max_value=len(input_shape) - 1),
                     min_size=1,
-                    max_size=len(input_shape)))
+                    max_size=len(input_shape),
+                )
+            )
             axis = list(set(axis))
 
             for i in range(len(axis)):
@@ -74,7 +71,7 @@ class TestFlattenConvert(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 15],
             "input_spec_shape": [input_spec_shape],
-            "axis": axis
+            "axis": axis,
         }
 
         models = Net(config)

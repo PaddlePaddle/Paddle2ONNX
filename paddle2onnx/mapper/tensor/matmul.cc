@@ -18,11 +18,12 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(matmul, MatmulMapper)
 
-std::string MatmulMapper::GetTrans(std::vector<TensorInfo>& input_info) {
+std::string MatmulMapper::GetTrans(std::vector<TensorInfo> &input_info) {
   std::string castd_name = input_info[0].name;
-  if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) == kNoNeedCastTypesOpSet7.end()) {
-    castd_name = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                   P2ODataType::FP32);
+  if (kNoNeedCastTypesOpSet7.find(input_info[0].dtype) ==
+      kNoNeedCastTypesOpSet7.end()) {
+    castd_name = helper_->AutoCast(
+        input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
   }
   std::vector<int64_t> perm = Arange(0, input_info[0].Rank());
   std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
@@ -44,36 +45,34 @@ void MatmulMapper::Opset7() {
     input_y = GetTrans(input_y_info);
   }
 
-  if (kNoNeedCastTypesOpSet7.find(input_x_info[0].dtype) != kNoNeedCastTypesOpSet7.end())
-  {
-    if (fabs(alpha_ - 1.0) < 1e-6)
-    {
-      auto node = helper_->MakeNode("MatMul", {input_x, input_y}, {output_info[0].name});
-    }
-    else
-    {
+  if (kNoNeedCastTypesOpSet7.find(input_x_info[0].dtype) !=
+      kNoNeedCastTypesOpSet7.end()) {
+    if (fabs(alpha_ - 1.0) < 1e-6) {
+      auto node = helper_->MakeNode(
+          "MatMul", {input_x, input_y}, {output_info[0].name});
+    } else {
       auto mutmul_node = helper_->MakeNode("MatMul", {input_x, input_y});
       std::string scale_node =
           helper_->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
-      auto mul_node =
-          helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node}, {output_info[0].name});
+      auto mul_node = helper_->MakeNode(
+          "Mul", {mutmul_node->output(0), scale_node}, {output_info[0].name});
     }
-  }
-  else if (fabs(alpha_ - 1.0) < 1e-6)
-  {
+  } else if (fabs(alpha_ - 1.0) < 1e-6) {
     auto node = helper_->MakeNode("MatMul", {input_x, input_y});
-    helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+    helper_->AutoCast(node->output(0),
+                      output_info[0].name,
+                      P2ODataType::FP32,
                       input_y_info[0].dtype);
-  }
-  else
-  {
+  } else {
     auto mutmul_node = helper_->MakeNode("MatMul", {input_x, input_y});
     std::string scale_node =
         helper_->Constant({1}, GetOnnxDtype(input_x_info[0].dtype), alpha_);
     auto mul_node =
         helper_->MakeNode("Mul", {mutmul_node->output(0), scale_node});
-    helper_->AutoCast(mul_node->output(0), output_info[0].name,
-                      P2ODataType::FP32, input_y_info[0].dtype);
+    helper_->AutoCast(mul_node->output(0),
+                      output_info[0].name,
+                      P2ODataType::FP32,
+                      input_y_info[0].dtype);
   }
 }
 

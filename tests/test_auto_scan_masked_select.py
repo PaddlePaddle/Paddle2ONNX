@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -41,16 +39,15 @@ class TestMaskedselectConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=20), min_size=1, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
         config = {
             "op_names": ["masked_select"],
             "test_data_shapes": [input_shape, input_shape],
-            "test_data_types": [[dtype], ['bool']],
+            "test_data_types": [[dtype], ["bool"]],
             "opset_version": [11, 15],
             "input_spec_shape": [],
         }

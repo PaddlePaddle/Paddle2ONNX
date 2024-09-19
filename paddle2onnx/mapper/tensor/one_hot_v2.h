@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class OneHotV2Mapper : public Mapper {
  public:
-  OneHotV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  OneHotV2Mapper(const PaddleParser &p,
+                 OnnxHelper *helper,
+                 int64_t block_id,
                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("allow_out_of_range", &allow_out_of_range_);

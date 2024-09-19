@@ -13,10 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from onnxbase import randtool
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -35,7 +32,8 @@ class Net(BaseNet):
             shape=self.config["shape"],
             min=self.config["min"],
             max=self.config["max"],
-            dtype=self.config["out_dtype"])
+            dtype=self.config["out_dtype"],
+        )
         return x
 
 
@@ -47,9 +45,8 @@ class TestUniformRandomBaTchSizeLikeConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=9), min_size=1, max_size=1))
+            st.lists(st.integers(min_value=1, max_value=9), min_size=1, max_size=1)
+        )
 
         min = draw(st.floats(min_value=0, max_value=1.0))
 
@@ -69,7 +66,7 @@ class TestUniformRandomBaTchSizeLikeConvert(OPConvertAutoScanTest):
             "max": max,
             "out_dtype": out_dtype,
             "delta": 1e11,
-            "rtol": 1e11
+            "rtol": 1e11,
         }
 
         models = Net(config)

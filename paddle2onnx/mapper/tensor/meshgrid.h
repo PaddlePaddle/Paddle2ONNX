@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class MeshgridMapper : public Mapper {
  public:
-  MeshgridMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  MeshgridMapper(const PaddleParser &p,
+                 OnnxHelper *helper,
+                 int64_t block_id,
                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     MarkAsExperimentalOp();

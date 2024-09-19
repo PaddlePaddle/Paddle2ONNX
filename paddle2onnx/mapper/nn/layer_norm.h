@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class LayerNormMapper : public Mapper {
  public:
-  LayerNormMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  LayerNormMapper(const PaddleParser &p,
+                  OnnxHelper *helper,
+                  int64_t block_id,
                   int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("begin_norm_axis", &begin_norm_axis_);

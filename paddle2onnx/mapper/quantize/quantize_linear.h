@@ -19,8 +19,10 @@ namespace paddle2onnx {
 
 class QuantizeLinearMapper : public Mapper {
  public:
-  QuantizeLinearMapper(const PaddleParser& p, OnnxHelper* helper,
-                       int64_t block_id, int64_t op_id)
+  QuantizeLinearMapper(const PaddleParser &p,
+                       OnnxHelper *helper,
+                       int64_t block_id,
+                       int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("quant_axis", &quant_axis_);
     GetAttr("bit_length", &bit_length_);

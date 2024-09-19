@@ -33,16 +33,18 @@ namespace optimization {
 
 struct FuseConstantUnsqueeze final : public PredicateBasedPass {
   explicit FuseConstantUnsqueeze()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_constant_unsqueeze"; }
 
-  bool patternMatchPredicate(Node* node) override {
+  bool patternMatchPredicate(Node *node) override {
     return node->kind() == kUnsqueeze &&
            node->inputs()[0]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
-                    NodeDestroyType& destroy_current) override {
+  bool runTransform(Node *n,
+                    Graph &graph,
+                    NodeDestroyType &destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 
     // check if Constant is only used by Reshape
@@ -50,8 +52,8 @@ struct FuseConstantUnsqueeze final : public PredicateBasedPass {
       return false;
     }
 
-    Node* unsqueeze = n;
-    Node* constant = n->inputs()[0]->node();
+    Node *unsqueeze = n;
+    Node *constant = n->inputs()[0]->node();
 
     // Process 'axes' data
     std::vector<int64_t> axes;
@@ -67,13 +69,13 @@ struct FuseConstantUnsqueeze final : public PredicateBasedPass {
       if (unsqueeze->inputs()[1]->uses().size() > 1) {
         return false;
       }
-      Node* axes_const = unsqueeze->inputs()[1]->node();
+      Node *axes_const = unsqueeze->inputs()[1]->node();
       Tensor t = axes_const->t(kvalue);
       axes = ParseData<int64_t>(&t);
     }
 
     Tensor t = constant->t(kvalue);
-    const auto& ori_size = t.sizes();
+    const auto &ori_size = t.sizes();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0) {
         axes[i] = axes[i] + ori_size.size() + i + 1;
@@ -86,7 +88,8 @@ struct FuseConstantUnsqueeze final : public PredicateBasedPass {
     }
 
     t.sizes().clear();
-    t.sizes().insert(t.sizes().begin(), new_size.begin(),
+    t.sizes().insert(t.sizes().begin(),
+                     new_size.begin(),
                      new_size.begin() + new_size.size());
     constant->t_(kvalue, std::move(t));
 

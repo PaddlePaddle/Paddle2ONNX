@@ -19,7 +19,9 @@ namespace paddle2onnx {
 
 class FlipMapper : public Mapper {
  public:
-  FlipMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  FlipMapper(const PaddleParser &p,
+             OnnxHelper *helper,
+             int64_t block_id,
              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axes_);

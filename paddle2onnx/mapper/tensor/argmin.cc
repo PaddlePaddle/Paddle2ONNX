@@ -60,11 +60,13 @@ void ArgMinMapper::Opset7() {
     if (flatten_) {
       out = helper_->Reshape(arg_node->output(0), shape);
     }
-    helper_->AutoCast(out, output_info[0].name, P2ODataType::INT64,
-                      output_info[0].dtype);
+    helper_->AutoCast(
+        out, output_info[0].name, P2ODataType::INT64, output_info[0].dtype);
   } else {
-    helper_->AutoCast(arg_node->output(0), output_info[0].name,
-                      P2ODataType::INT64, output_info[0].dtype);
+    helper_->AutoCast(arg_node->output(0),
+                      output_info[0].name,
+                      P2ODataType::INT64,
+                      output_info[0].dtype);
   }
 }
 

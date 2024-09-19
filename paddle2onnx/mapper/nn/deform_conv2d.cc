@@ -20,9 +20,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(deformable_conv, DeformConv2dMapper)
 
-int32_t DeformConv2dMapper::GetMinOpsetVersion(bool verbose) {
-  return 19;
-}
+int32_t DeformConv2dMapper::GetMinOpsetVersion(bool verbose) { return 19; }
 
 void DeformConv2dMapper::Opset19() {
   auto input_info = GetInput("Input");
@@ -30,11 +28,16 @@ void DeformConv2dMapper::Opset19() {
   auto offset_info = GetInput("Offset");
   auto mask_info = GetInput("Mask");
   auto output_info = GetOutput("Output");
-  std::string bias_name = helper_->Constant({kernel_info[0].shape[0]}, GetOnnxDtype(input_info[0].dtype), static_cast<float>(0.0));
-  auto node = helper_->MakeNode(
-    "DeformConv",
-    {input_info[0].name, kernel_info[0].name, offset_info[0].name, bias_name, mask_info[0].name},
-    {output_info[0].name});
+  std::string bias_name = helper_->Constant({kernel_info[0].shape[0]},
+                                            GetOnnxDtype(input_info[0].dtype),
+                                            static_cast<float>(0.0));
+  auto node = helper_->MakeNode("DeformConv",
+                                {input_info[0].name,
+                                 kernel_info[0].name,
+                                 offset_info[0].name,
+                                 bias_name,
+                                 mask_info[0].name},
+                                {output_info[0].name});
 
   AddAttribute(node, "dilations", dilations_);
   AddAttribute(node, "group", groups_);
@@ -55,4 +58,4 @@ void DeformConv2dMapper::Opset19() {
   AddAttribute(node, "pads", paddings);
   AddAttribute(node, "strides", strides_);
 }
-} // namespace paddle2onnx
+}  // namespace paddle2onnx

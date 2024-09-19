@@ -72,8 +72,8 @@ void Atan2Mapper::Opset9() {
   auto add_node =
       helper_->MakeNode("Add", {atan->output(0), where_node->output(0)});
 
-  helper_->AutoCast(add_node->output(0), out_info[0].name, dtype,
-                    out_info[0].dtype);
+  helper_->AutoCast(
+      add_node->output(0), out_info[0].name, dtype, out_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

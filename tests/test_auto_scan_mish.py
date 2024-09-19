@@ -13,10 +13,8 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 from onnxbase import randtool
-import numpy as np
 import unittest
 import paddle
 
@@ -42,9 +40,8 @@ class TestMishConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=5, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=5, max_value=20), min_size=0, max_size=4)
+        )
 
         def generator_data():
             input_data = randtool("float", -100, 100, input_shape)

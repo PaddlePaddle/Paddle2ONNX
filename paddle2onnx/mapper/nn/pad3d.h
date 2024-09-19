@@ -22,8 +22,10 @@ namespace paddle2onnx {
 
 class Pad3DMapper : public Mapper {
  public:
-  Pad3DMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
+  Pad3DMapper(const PaddleParser &p,
+              OnnxHelper *helper,
+              int64_t block_id,
+              int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("data_format", &data_format_);
     GetAttr("mode", &mode_);
@@ -35,7 +37,8 @@ class Pad3DMapper : public Mapper {
   void Opset11() override;
 
  private:
-  std::vector<int64_t> ConvertPaddingParameter(const std::vector<int64_t>& paddings);
+  std::vector<int64_t> ConvertPaddingParameter(
+      const std::vector<int64_t> &paddings);
   std::string data_format_;
   std::string mode_;
   std::vector<int64_t> paddings_;

@@ -22,16 +22,16 @@ namespace paddle2onnx {
 
 class ReduceMapperSum : public Mapper {
  public:
-  ReduceMapperSum(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-  }
+  ReduceMapperSum(const PaddleParser &p,
+                  OnnxHelper *helper,
+                  int64_t block_id,
+                  int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
 
   void Opset13() override;
   int32_t GetMinOpsetVersion(bool verbose) override;
 
  private:
-
   bool keep_dim_;
   bool reduce_all_;
   int64_t in_dtype_;

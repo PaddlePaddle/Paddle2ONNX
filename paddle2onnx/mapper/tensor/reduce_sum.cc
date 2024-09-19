@@ -45,7 +45,8 @@ void ReduceMapperSum::Opset13() {
     if (!reduce_all_) {
       dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, dim_);
     } else {
-      dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, Arange(0, x_info[0].Rank()));
+      dims = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                               Arange(0, x_info[0].Rank()));
     }
   }
 
@@ -62,6 +63,7 @@ void ReduceMapperSum::Opset13() {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
 }
 }  // namespace paddle2onnx

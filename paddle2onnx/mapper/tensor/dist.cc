@@ -22,7 +22,8 @@ namespace paddle2onnx {
 REGISTER_MAPPER(dist, DistMapper)
 
 const int g_NegIntInfinity = 0xFF800000;
-const float g_NegFloatInfinity = *((float *)&g_NegIntInfinity);
+const float g_NegFloatInfinity =
+    *reinterpret_cast<const float *>(&g_NegFloatInfinity);
 
 void DistMapper::Opset7() {
   auto x_info = GetInput("X");
@@ -37,20 +38,20 @@ void DistMapper::Opset7() {
     auto sum_node = helper_->MakeNode("ReduceSum", {sign_node->output(0)});
     AddAttribute(sum_node, "keepdims", static_cast<int64_t>(0));
     auto s_sum_node = helper_->Reshape(sum_node->output(0), {-1});
-    helper_->AutoCast(s_sum_node, output_info[0].name, x_info[0].dtype,
-                      output_info[0].dtype);
+    helper_->AutoCast(
+        s_sum_node, output_info[0].name, x_info[0].dtype, output_info[0].dtype);
   } else if (p_ == std::numeric_limits<float>::infinity()) {
     auto max_node = helper_->MakeNode("ReduceMax", {abs_node->output(0)});
     AddAttribute(max_node, "keepdims", static_cast<int64_t>(0));
     auto s_max_node = helper_->Reshape(max_node->output(0), {-1});
-    helper_->AutoCast(s_max_node, output_info[0].name, x_info[0].dtype,
-                      output_info[0].dtype);
+    helper_->AutoCast(
+        s_max_node, output_info[0].name, x_info[0].dtype, output_info[0].dtype);
   } else if (p_ == g_NegFloatInfinity) {
     auto min_node = helper_->MakeNode("ReduceMin", {abs_node->output(0)});
     AddAttribute(min_node, "keepdims", static_cast<int64_t>(0));
     auto s_min_node = helper_->Reshape(min_node->output(0), {-1});
-    helper_->AutoCast(s_min_node, output_info[0].name, x_info[0].dtype,
-                      output_info[0].dtype);
+    helper_->AutoCast(
+        s_min_node, output_info[0].name, x_info[0].dtype, output_info[0].dtype);
   } else {
     std::string p = helper_->Constant({1}, GetOnnxDtype(x_info[0].dtype), p_);
     auto pow_node = helper_->MakeNode("Pow", {abs_node->output(0), p});

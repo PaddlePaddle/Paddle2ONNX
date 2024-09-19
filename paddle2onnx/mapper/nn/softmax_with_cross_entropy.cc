@@ -88,8 +88,8 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
   } else {
     if (axis_ == 1) {
       auto squeeze_node = helper_->Squeeze(labels[0].name, {axis_});
-      auto node = helper_->MakeNode("SoftmaxCrossEntropyLoss",
-                                    {logits[0].name, squeeze_node}, 2);
+      auto node = helper_->MakeNode(
+          "SoftmaxCrossEntropyLoss", {logits[0].name, squeeze_node}, 2);
       AddAttribute(node, "ignore_index", ignore_index_);
       AddAttribute(node, "reduction", "none");
       auto loss_node =
@@ -107,7 +107,8 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
       auto squeeze_labels = helper_->Squeeze(transpose_labels->output(0), {1});
       auto node =
           helper_->MakeNode("SoftmaxCrossEntropyLoss",
-                            {transpose_logits->output(0), squeeze_labels}, 2);
+                            {transpose_logits->output(0), squeeze_labels},
+                            2);
       AddAttribute(node, "ignore_index", ignore_index_);
       AddAttribute(node, "reduction", "none");
       auto unsqueeze_node = helper_->Unsqueeze(node->output(0), {1});
@@ -118,8 +119,8 @@ void SoftmaxCrossEntropyLossMapper::Opset12() {
           helper_->MakeNode("Transpose", {node->output(1)});
       AddAttribute(revert_transpose_softmax, "perm", perm);
       // onnx output is log(softmax), but paddle output is softmax
-      helper_->MakeNode("Exp", {revert_transpose_softmax->output(0)},
-                        {softmax[0].name});
+      helper_->MakeNode(
+          "Exp", {revert_transpose_softmax->output(0)}, {softmax[0].name});
     }
   }
 }

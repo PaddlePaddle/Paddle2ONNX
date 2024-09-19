@@ -15,7 +15,7 @@
 import paddle
 from onnxbase import APIOnnx
 from onnxbase import randtool
-import numpy as np
+
 
 class Net(paddle.nn.Layer):
     """
@@ -41,15 +41,14 @@ def test_triu_14_1():
     """
     op = Net()
     op.eval()
-    obj = APIOnnx(op, 'trilu', [14])
-    input_data = paddle.to_tensor(randtool("float", -1, 1, [4,5]).astype('float32'))
+    obj = APIOnnx(op, "trilu", [14])
+    input_data = paddle.to_tensor(randtool("float", -1, 1, [4, 5]).astype("float32"))
     print(input_data)
     obj.set_input_data(
         "input_data",
         input_data,
-        )
+    )
     obj.run()
-
 
 
 class Net2(paddle.nn.Layer):
@@ -76,15 +75,14 @@ def test_triu_14_2():
     """
     op = Net2()
     op.eval()
-    obj = APIOnnx(op, 'trilu_2', [14])
-    input_data = paddle.to_tensor(randtool("float", -1, 1, [4,5]).astype('float32'))
+    obj = APIOnnx(op, "trilu_2", [14])
+    input_data = paddle.to_tensor(randtool("float", -1, 1, [4, 5]).astype("float32"))
     print(input_data)
     obj.set_input_data(
         "input_data",
         input_data,
-        )
+    )
     obj.run()
-
 
 
 class Net3(paddle.nn.Layer):
@@ -102,7 +100,8 @@ class Net3(paddle.nn.Layer):
         x = paddle.triu(inputs, diagonal=2)
         print(x)
         return x
-    
+
+
 def test_triu_14_3():
     """
     api: paddle.triu
@@ -110,13 +109,13 @@ def test_triu_14_3():
     """
     op = Net3()
     op.eval()
-    obj = APIOnnx(op, 'trilu_3', [14])
-    input_data = paddle.to_tensor(randtool("float", -1, 1, [4,5]).astype('float32'))
+    obj = APIOnnx(op, "trilu_3", [14])
+    input_data = paddle.to_tensor(randtool("float", -1, 1, [4, 5]).astype("float32"))
     print(input_data)
     obj.set_input_data(
         "input_data",
         input_data,
-        )
+    )
     obj.run()
 
 
@@ -136,6 +135,7 @@ class Net4(paddle.nn.Layer):
         print(x)
         return x
 
+
 def test_triu_14_4():
     """
     api: paddle.tril
@@ -143,14 +143,16 @@ def test_triu_14_4():
     """
     op = Net4()
     op.eval()
-    obj = APIOnnx(op, 'trilu_4', [14])
-    input_data = paddle.to_tensor(randtool("float", -1, 1, [4,5]).astype('float32'))
+    obj = APIOnnx(op, "trilu_4", [14])
+    input_data = paddle.to_tensor(randtool("float", -1, 1, [4, 5]).astype("float32"))
     print(input_data)
     obj.set_input_data(
         "input_data",
         input_data,
-        )
+    )
     obj.run()
+
+
 # def test_triu_14_2():
 #     """
 #     api: paddle.triu

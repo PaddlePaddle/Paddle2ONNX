@@ -17,9 +17,7 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(quantize_linear, QuantizeLinearMapper)
 
-int32_t QuantizeLinearMapper::GetMinOpsetVersion(bool verbose) {
-  return 13;
-}
+int32_t QuantizeLinearMapper::GetMinOpsetVersion(bool verbose) { return 13; }
 
 void QuantizeLinearMapper::Opset10() {
   auto x_info = GetInput("X");
@@ -35,8 +33,8 @@ void QuantizeLinearMapper::Opset10() {
 
   std::string scale_node, zero_node;
   if (onnx_scales.size() == 1) {
-    scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                   onnx_scales[0]);
+    scale_node = helper_->Constant(
+        {}, ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales[0]);
     zero_node =
         helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros[0]);
   } else {
@@ -52,8 +50,8 @@ void QuantizeLinearMapper::Opset10() {
   if (helper_->GetOpsetVersion() >= 13) {
     AddAttribute(node, "axis", quant_axis_);
   }
-  QuantizeInfo quantize_info(onnx_scales, onnx_zeros, scale_node, zero_node,
-                             quant_axis_);
+  QuantizeInfo quantize_info(
+      onnx_scales, onnx_zeros, scale_node, zero_node, quant_axis_);
   helper_->quantize_info[x_info[0].name] = quantize_info;
 }
 }  // namespace paddle2onnx

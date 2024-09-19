@@ -13,10 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from onnxbase import randtool
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -33,7 +30,8 @@ class Net(BaseNet):
         x = paddle.nn.functional.temporal_shift(
             inputs,
             seg_num=self.config["seg_num"],
-            shift_ratio=self.config["shift_ratio"])
+            shift_ratio=self.config["shift_ratio"],
+        )
         return x
 
 
@@ -45,9 +43,8 @@ class TestTemporal_shiftConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=30), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=30), min_size=4, max_size=4)
+        )
 
         seg_num = draw(st.integers(min_value=1, max_value=10))
 
@@ -66,7 +63,7 @@ class TestTemporal_shiftConvert(OPConvertAutoScanTest):
             "opset_version": [7, 15],
             "input_spec_shape": [],
             "seg_num": seg_num,
-            "shift_ratio": shift_ratio
+            "shift_ratio": shift_ratio,
         }
 
         models = Net(config)

@@ -21,8 +21,8 @@ void IndexSelectMapper::Opset7() {
   auto x_info = GetInput("X");
   auto index_info = GetInput("Index");
   auto out_info = GetOutput("Out");
-  auto node = helper_->MakeNode("Gather", {x_info[0].name, index_info[0].name},
-                                {out_info[0].name});
+  auto node = helper_->MakeNode(
+      "Gather", {x_info[0].name, index_info[0].name}, {out_info[0].name});
   AddAttribute(node, "axis", axis_);
 }
 

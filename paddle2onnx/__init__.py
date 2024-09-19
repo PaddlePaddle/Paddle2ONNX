@@ -16,3 +16,9 @@ from .convert import export
 from .convert import dygraph2onnx
 
 __version__ = version
+
+__all__ = [
+    "version",
+    "export",
+    "dygraph2onnx",
+]
