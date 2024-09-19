@@ -58,7 +58,7 @@ paddle2onnx --model_dir saved_inference_model \
 | --opset_version            | **[可选]** 配置转换为 ONNX 的 OpSet 版本，目前支持 7~16 等多个版本，默认为 9                                                            |
 | --enable_onnx_checker      | **[可选]**  配置是否检查导出为 ONNX 模型的正确性, 建议打开此开关， 默认为 False                                                             |
 | --enable_auto_update_opset | **[可选]**  是否开启 opset version 自动升级功能，当低版本 opset 无法转换时，自动选择更高版本的 opset进行转换， 默认为 True                              |
-| --deploy_backend           | **[可选]** 量化模型部署的推理引擎，支持 onnxruntime、tensorrt 或 others，当选择 others 时，所有的量化信息存储于 max_range.txt 文件中，默认为 onnxruntime |
+| --deploy_backend           | **[可选]** 量化模型部署的推理引擎，支持 onnxruntime/rknn/tensorrt, 默认为 onnxruntime |
 | --save_calibration_file    | **[可选]** TensorRT 8.X版本部署量化模型需要读取的 cache 文件的保存路径，默认为 calibration.cache                                          |
 | --version                  | **[可选]** 查看 paddle2onnx 版本                                                                                      |
 | --external_filename        | **[可选]** 当导出的 ONNX 模型大于 2G 时，需要设置 external data 的存储路径，推荐设置为：external_data                                       |

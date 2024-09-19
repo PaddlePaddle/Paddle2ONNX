@@ -65,7 +65,7 @@ class ModelExporter {
   bool verbose_ = false;
   // The _deploy_backend will pass to Mapper to influence the conversion
   std::string deploy_backend_ = "onnxruntime";
-  BaseQuantizeProcessor quantize_processer_;
+  BaseQuantizeProcessor *quantize_processer_ = nullptr;
   std::string *calibration_cache_ = nullptr;
   int32_t opset_version_ = 7;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
+// Copyright (c) 2024 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@
 
 #include "paddle2onnx/mapper/mapper.h"
 #include "paddle2onnx/parser/parser.h"
-namespace paddle2onnx {
 
+namespace paddle2onnx {
 class BaseQuantizeProcessor {
  public:
   BaseQuantizeProcessor() = default;
@@ -34,91 +34,86 @@ class BaseQuantizeProcessor {
 
   // Convert to different model formats based on backend, backend can be
   // TensorRT, ONNXRuntime and Others
-  void ProcessQuantizeModel(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-      OnnxHelper* helper, const std::string& deploy_backend,
-      const PaddleParser& parser, std::string* calibration_cache = nullptr);
-
+  virtual void ProcessQuantizeModel(
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
+      OnnxHelper *helper, const std::string &deploy_backend,
+      const PaddleParser &parser, std::string *calibration_cache = nullptr);
 
   // If all tensors in tensor_names have quantize info and all the next nodes
   // can be quantized, return True, otherwise
   // return false
-  bool CanBeQuantize(const std::vector<std::string>& tensor_names,
-                     const std::vector<int64_t>& output_index = {-1});
+  bool CanBeQuantize(const std::vector<std::string> &tensor_names,
+                     const std::vector<int64_t> &output_index = {-1});
   // only_dequantize records those tensors that only need to add the dequantize
   // op
-  void AppendQuantizeTensor(const std::string& tensor,
-                            const bool& only_dequantize = false);
-
+  void AppendQuantizeTensor(const std::string &tensor,
+                            const bool &only_dequantize = false);
 
   // Determine if the tensor is directly linked to the output by identity
-  bool ConnectToOutput(const std::string& output_name);
+  bool ConnectToOutput(const std::string &output_name);
 
   // Generate cache file for TensorRT8.X int8 deploy
-  void GenerateCache(std::string* calibration_cache);
+  void GenerateCache(std::string *calibration_cache);
 
   void QuantizeInfoBroadcast();
   void RemoveAllQuantizeOps();
   void MergeConvAdd();
   void MergeConvBN();
-  void AddQDQForORT();  // For ORT according to: https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-  void AddTrtQDQ();  // For TRT according to: https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
-  void AddQDQForRKNN();
 
-  void PerchannelToPerlayerForRKNN();
+  virtual void AddQDQ();
 
   void RemoveIdentityOp();
 
   // Add quantize related op in model according to tensor names
-  void AddQDQInModel(const std::vector<std::string>& tensors_to_be_quantize);
+  void AddQDQInModel(const std::vector<std::string> &tensors_to_be_quantize);
 
   // Determine whether a tensor is an output
-  bool IsGraphOutput(const std::string& name);
+  bool IsGraphOutput(const std::string &name);
 
   // Because processing the quantize model will add new nodes, which will
   // destroy the topo sorting of nodes, this function will sort the nodes again
   void SortNodes();
 
-  bool GetTensorShape(const std::string& name, std::vector<int64_t>* shape);
+  bool GetTensorShape(const std::string &name, std::vector<int64_t> *shape);
 
   // return the value of tensor by name
   template <typename T>
-  bool GetTensorByName(const std::string& name, std::vector<T>* value);
+  bool GetTensorByName(const std::string &name, std::vector<T> *value);
 
   // Perform tensor wise quantization, returning scale and zero
-  void GetTensorWiseQuantizeInfo(const std::vector<float>& tensor,
-                                 std::vector<float>* scale,
-                                 std::vector<int64_t>* zero);
+  void GetTensorWiseQuantizeInfo(const std::vector<float> &tensor,
+                                 std::vector<float> *scale,
+                                 std::vector<int64_t> *zero);
 
   // Perform channel wise quantization, returning scale and zero
-  void GetChannelWiseQuantizeInfo(const std::vector<float>& tensor, 
-                                const std::vector<int64_t>& shape,
-                                const int64_t& quant_axis, 
-                                std::vector<float>* scale,
-                                std::vector<int64_t>* zero);
+  void GetChannelWiseQuantizeInfo(const std::vector<float> &tensor,
+                                  const std::vector<int64_t> &shape,
+                                  const int64_t &quant_axis,
+                                  std::vector<float> *scale,
+                                  std::vector<int64_t> *zero);
 
   // Generate name2node_dict to save input name and its related nodes
   void UpdateInputNameToNodes();
 
-  void RemoveNodeByName(const std::string& name, const bool& update_io = true);
+  void RemoveNodeByName(const std::string &name, const bool &update_io = true);
 
   void ReplaceInputOfAllNodes(
-      const std::string& old_name, const std::string& new_name,
-      const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>&
-          except_nodes = {});
+      const std::string &old_name, const std::string &new_name,
+      const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>
+          &except_nodes = {});
 
-
-  private:
-    const PaddleParser* parser_;
-    OnnxHelper* helper_;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters_;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs_;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs_;
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes_;
-    std::vector<std::string> supported_quantize_type_;
-    std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>> name2node_dict_;
+ protected:
+  const PaddleParser *parser_;
+  OnnxHelper *helper_;
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *parameters_;
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs_;
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs_;
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes_;
+  std::vector<std::string> supported_quantize_type_;
+  std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
+      name2node_dict_;
 };
 }  // namespace paddle2onnx

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
+// Copyright (c) 2024 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 namespace paddle2onnx {
 void BaseQuantizeProcessor::RemoveNodeByName(const std::string& name,
-                                              const bool& update_io) {
+                                             const bool& update_io) {
   if (name.empty()) {
     return;
   }
@@ -83,106 +83,16 @@ void BaseQuantizeProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-    OnnxHelper* helper, 
-    const std::string& deploy_backend,
-    const PaddleParser& parser, 
-    std::string* calibration_cache) {
-  // Determine whether the model contains quantization related OPs, if not, exit directly
-  bool quantized_model = false;
-  for (auto& node : *nodes) {
-    if (node->op_type() == "QuantizeLinear" ||
-        node->op_type() == "DequantizeLinear") {
-      quantized_model = true;
-      break;
-    }
-  }
-
-  if (!quantized_model) {
-    return;
-  }
-  
+    OnnxHelper* helper, const std::string& deploy_backend,
+    const PaddleParser& parser, std::string* calibration_cache) {
   parser_ = &parser;
   helper_ = helper;
   parameters_ = parameters;
   inputs_ = inputs;
   outputs_ = outputs;
   nodes_ = nodes;
-  P2OLogger() << "[Info] Quantize model deploy backend is: " << deploy_backend << std::endl;
-
-  // Determine the format of the exported ONNX quantization model according to the deploy_backend
-  if (deploy_backend == "others") {
-    // If deploy_backend is others, the quantization model is exported as a float model + quantization table.
-    RemoveAllQuantizeOps();
-    std::ofstream outfile;
-    outfile.open("max_range.txt", std::ios::out);
-    if (!outfile.is_open()) {
-      P2OLogger() << "[WARNING] Quantize model processer failed to write range "
-                     "information in current location."
-                  << std::endl;
-      return;
-    }
-    for (auto iter = helper_->quantize_info.begin();
-         iter != helper_->quantize_info.end(); iter++) {
-      std::string log = iter->first;
-      auto scale = iter->second.scale_;
-      if (scale.size() == 1) {
-        log = log + ": " + std::to_string(scale[0] * 127);
-        outfile << log << std::endl;
-      }
-    }
-    outfile.close();
-  } else if (deploy_backend == "onnxruntime") {
-    // When deploy_backend is ONNXRuntime, use the follow four steps to process:
-    // 1. broadcast quantize info
-    // 2. remove all quantize ops
-    // 3. merge conv and add
-    // 4. merge conv and bn
-    // 5. add Q and DQ according ONNXRuntime quantize OP fuse patten.
-    // 6. use topo sort in nodes
-    QuantizeInfoBroadcast();
-    RemoveAllQuantizeOps();
-    MergeConvAdd();
-    MergeConvBN();
-    AddQDQForORT();
-    SortNodes();
-  } else if (deploy_backend == "tensorrt") {
-    // When deploy_backend is TensorRT, use the follow four steps to process:
-    // For Explicit Quantization
-    // 1. broadcast quantize info
-    // 2. remove all quantize ops
-    // 3. add Q and DQ before conv and matmul.
-    // 4. use topo sort in nodes
-
-    // For Implicit Quantization
-    // 1. remove all quantize ops
-    // 2. broadcast quantize info
-    // 3. save float onnx model and alibration.cache
-    QuantizeInfoBroadcast();
-    RemoveAllQuantizeOps();
-    // Add qdq for Explicit Quantization
-    // AddTrtQDQ();
-    // SortNodes();
-
-    // Genarate calibration.cache for Implicit Quantization
-    // convert float to hex
-    GenerateCache(calibration_cache);
-  } else if (deploy_backend == "rknn") {
-    // When deploy_backend is RKNN, use the follow four steps to process:
-    // 1. broadcast quantize info
-    // 2. remove all quantize ops
-    // 3. add Q and DQ
-    // 4. use topo sort in nodes
-    QuantizeInfoBroadcast();
-    RemoveAllQuantizeOps();
-    RemoveIdentityOp();
-    // MergeConvAdd();
-    // MergeConvBN();
-    AddQDQForRKNN();
-    SortNodes();
-  } else {
-    Assert(false,
-           "[BaseQuantizeProcessor] Only support 'onnxruntime'  / 'tensorrt' / 'others' as backend now, but now the backend is: " + deploy_backend + ".");
-  }
+  P2OLogger() << "Quantize model deploy backend is: " << deploy_backend
+              << std::endl;
 }
 
 void BaseQuantizeProcessor::RemoveIdentityOp() {
@@ -196,129 +106,6 @@ void BaseQuantizeProcessor::RemoveIdentityOp() {
       iter++;
     }
   }
-}
-
-void BaseQuantizeProcessor::AddQDQForRKNN() {
-  UpdateInputNameToNodes();
-  supported_quantize_type_ = {"Abs",
-                              "Acos",
-                              "Add",
-                              "Asin",
-                              "Atan",
-                              "AveragePool",
-                              "BatchNormalization",
-                              "Ceil",
-                              "Clip",
-                              "Conv",
-                              "ConvTranspose",
-                              "Cos",
-                              "Cosh",
-                              "Concat",
-                              "Div",
-                              "Elu",
-                              "Erf",
-                              "Exp",
-                              "Floor",
-                              "Gemm",
-                              "GlobalAveragePool",
-                              "HardSigmoid",
-                              "HardSwish",
-                              "InstanceNormalization",
-                              "IsInf",
-                              "IsNaN",
-                              "Log",
-                              "MatMul",
-                              "MaxPool",
-                              "Mul",
-                              "Neg",
-                              "ReduceMean",
-                              "Relu",
-                              "Reshape",
-                              "Resize",
-                              "Round",
-                              "Shape",
-                              "Sigmoid",
-                              "Sin",
-                              "Sinh",
-                              "Slice",
-                              "Softmax",
-                              "Split",
-                              "Sqrt",
-                              "Tan",
-                              "Tanh",
-                              "Transpose"};
-  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
-    auto node = *iter;
-    auto type_iter = std::find(supported_quantize_type_.begin(), supported_quantize_type_.end(), node->op_type());
-    if (!supported_quantize_type_.empty() && type_iter == supported_quantize_type_.end()) {
-      continue;
-    }
-
-    std::vector<std::string> tensor_names = {};
-    for (size_t i = 0; i < node->input_size(); ++i) {
-      std::string node_input = node->input(i);
-      tensor_names.push_back(node_input);
-    }
-    for (size_t i = 0; i < node->output_size(); ++i) {
-      std::string node_output = node->output(i);
-      tensor_names.push_back(node_output);
-    }
-
-    if (node->op_type() == "MatMul" || node->op_type() == "Add" || node->op_type() == "Mul") {
-      for (auto& name : tensor_names) {
-        if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
-          continue;
-        }
-
-        std::vector<float> weight;
-        if (!GetTensorByName(name, &weight)) {
-          P2OLogger() << "Failed to GetTensorByName: " << node->name() << ";" << name << std::endl;
-          continue;
-        }
-        
-        std::vector<int64_t> weight_shape;
-        if (!GetTensorShape(name, &weight_shape)) {
-          P2OLogger() << "Failed to GetTensorShape: " << node->name() << ";" << name << std::endl;
-          continue;
-        }
-
-        int64_t quantize_axis = 1;
-        std::vector<float> scale;
-        std::vector<int64_t> zeros;
-        GetTensorWiseQuantizeInfo(weight, &scale, &zeros);
-
-        std::string weight_scale_node, weight_zero_node;
-        weight_scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
-        weight_zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
-
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, weight_scale_node, weight_zero_node, quantize_axis);
-        helper_->quantize_info[name] = matmul_weight_quantize_info;
-      }
-    } else if (node->op_type() == "BatchNormalization") {
-      // BatchNormalization only need quntize X and Y.
-      // when opset > 9, tensor_names is {X, scale, B, input_mean, input_var, Y, running_mean, running_var}
-      // when opset <= 9, tensor_names is {X, scale, B, mean, var, Y, mean, var, saved_mean, saved_var}
-      tensor_names.erase(tensor_names.begin() + 1, tensor_names.begin() + 5);
-      tensor_names.erase(tensor_names.begin() + 2, tensor_names.end());
-    }
-
-    if (!CanBeQuantize(tensor_names)) {
-      continue;
-    }
-
-    for (auto& name : tensor_names) {
-      AppendQuantizeTensor(name);
-    }
-  }
-
-  // update name2node_dict for the change of Relu op.
-  UpdateInputNameToNodes();
-  // Add QDQ in model
-  AddQDQInModel(tensors_to_be_quantize);
-}
-
-void BaseQuantizeProcessor::PerchannelToPerlayerForRKNN() {
-
 }
 
 void BaseQuantizeProcessor::GenerateCache(std::string* calibration_cache) {
@@ -345,195 +132,7 @@ void BaseQuantizeProcessor::GenerateCache(std::string* calibration_cache) {
   }
 }
 
-// In TensorRT, all quantized op: Conv, ConvTranspose, liner(MatMul), MaxPool,
-// AvgPool, AdaptiveAvgPool, rnn(not support now)
-// https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
-void BaseQuantizeProcessor::AddTrtQDQ() {
-  UpdateInputNameToNodes();
-  std::vector<std::string>
-      quantize_tensors;  // save the tensor names that need add quantize ops
-  std::vector<std::string> pool_types = {"MaxPool", "AvgPool",
-                                         "AdaptiveAvgPool"};
-  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
-    quantize_tensors.clear();
-    auto node = *iter;
-    if (node->op_type() == "Conv" || node->op_type() == "ConvTranspose") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1)};
-      if (!CanBeQuantize(tensor_names)) {
-        continue;
-      }
-      quantize_tensors = tensor_names;
-    }
-    if (node->op_type() == "MatMul") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1)};
-      for (auto& name : tensor_names) {
-        if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
-          continue;
-        }
-        std::vector<float> matmul_weight;
-        if (!GetTensorByName(name, &matmul_weight)) {
-          continue;
-        }
-        std::vector<int64_t> matmul_weight_shape;
-        if (!GetTensorShape(name, &matmul_weight_shape)) {
-          continue;
-        }
-        int64_t quantize_axis = 1;
-        std::vector<float> scale;
-        std::vector<int64_t> zeros;
-        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape,
-                                   quantize_axis, &scale, &zeros);
-        auto scale_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
-        auto zero_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node,
-                                                 zero_node, quantize_axis);
-        helper_->quantize_info[name] = matmul_weight_quantize_info;
-      }
-      if (!CanBeQuantize(tensor_names)) {
-        continue;
-      }
-      quantize_tensors = tensor_names;
-    }
-    auto type_iter =
-        std::find(pool_types.begin(), pool_types.end(), node->op_type());
-    if (type_iter != pool_types.end()) {
-      std::vector<std::string> tensor_names = {node->input(0)};
-      if (!CanBeQuantize(tensor_names)) {
-        continue;
-      }
-      quantize_tensors = tensor_names;
-    }
-
-    std::string negative_scale_tensor = "";
-    for (std::string& name : quantize_tensors) {
-      Assert(
-          helper_->quantize_info.find(name) != helper_->quantize_info.end(),
-          "[BaseQuantizeProcessor] Can not find quantize info for tensor: " +
-              name);
-      QuantizeInfo quantize_info = helper_->quantize_info[name];
-      std::vector<float> scales = quantize_info.scale_;
-      for (auto& i : scales) {
-        if (i <= 1e-10) {
-          negative_scale_tensor = negative_scale_tensor + " " + name;
-        }
-      }
-    }
-    if (negative_scale_tensor.size() > 0) {
-      P2OLogger()
-          << "[Warning] The scale of tensors: [ " + negative_scale_tensor +
-                 " ] contains negative scale, so this OP will not be quantized."
-          << std::endl;
-      continue;
-    }
-    // An OP requires a separate quantize op
-    for (std::string& name : quantize_tensors) {
-      if (IsGraphOutput(name)) {
-        continue;
-      }
-      QuantizeInfo quantize_info = helper_->quantize_info[name];
-      std::string scale_node = quantize_info.scale_node_;
-      std::string zeros_node = quantize_info.zeros_node_;
-      int64_t quantize_axis = quantize_info.quantize_axis_;
-      auto q_node =
-          helper_->MakeNode("QuantizeLinear", {name, scale_node, zeros_node});
-      if (helper_->GetOpsetVersion() >= 13) {
-        AddAttribute(q_node, "axis", quantize_axis);
-      }
-      auto dq_node = helper_->MakeNode(
-          "DequantizeLinear", {q_node->output(0), scale_node, zeros_node});
-      if (helper_->GetOpsetVersion() >= 13) {
-        AddAttribute(dq_node, "axis", quantize_axis);
-      }
-      for (size_t i = 0; i < node->input_size(); ++i) {
-        if (node->input(i) == name) {
-          node->set_input(i, dq_node->output(0));
-        }
-      }
-    }
-  }
-}
-
-// According to:
-// https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-void BaseQuantizeProcessor::AddQDQForORT() {
-  UpdateInputNameToNodes();
-  supported_quantize_type_ = {"Add",
-                              "Conv", 
-                              "LeakyRelu"
-                              "MatMul",
-                              "Mul", 
-                              "Relu",
-                              "Sigmoid",};
-  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
-    auto node = *iter;
-    auto type_iter = std::find(supported_quantize_type_.begin(),
-                               supported_quantize_type_.end(), node->op_type());
-    if (!supported_quantize_type_.empty() &&
-        type_iter == supported_quantize_type_.end()) {
-      continue;
-    }
-    if (node->op_type() == "MatMul") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
-                                               node->output(0)};
-      for (auto& name : tensor_names) {
-        if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
-          continue;
-        }
-        std::vector<float> matmul_weight;
-        if (!GetTensorByName(name, &matmul_weight)) {
-          continue;
-        }
-        std::vector<int64_t> matmul_weight_shape;
-        if (!GetTensorShape(name, &matmul_weight_shape)) {
-          continue;
-        }
-        int64_t quantize_axis = 1;
-        std::vector<float> scale;
-        std::vector<int64_t> zeros;
-        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape,
-                                   quantize_axis, &scale, &zeros);
-        auto scale_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
-        auto zero_node =
-            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node,
-                                                 zero_node, quantize_axis);
-        helper_->quantize_info[name] = matmul_weight_quantize_info;
-      }
-      if (!CanBeQuantize(tensor_names)) {
-        tensor_names.pop_back();
-        if (!CanBeQuantize(tensor_names)) {
-          continue;
-        }
-      }
-      for (auto& name : tensor_names) {
-        AppendQuantizeTensor(name);
-      }
-    }
-
-    std::vector<std::string> tensor_names;
-    for (size_t i = 0; i < node->input_size(); ++i) {
-      std::string node_input = node->input(i);
-      tensor_names.push_back(node_input);
-    }
-    for (size_t i = 0; i < node->output_size(); ++i) {
-      std::string node_output = node->output(i);
-      tensor_names.push_back(node_output);
-    }
-    if (!CanBeQuantize(tensor_names)) {
-      continue;
-    }
-    for (auto& name : tensor_names) {
-      AppendQuantizeTensor(name);
-    }
-  }
-  // update name2node_dict for the change of Relu op.
-  UpdateInputNameToNodes();
-  // Add QDQ in model
-  AddQDQInModel(tensors_to_be_quantize);
-}
+void BaseQuantizeProcessor::AddQDQ() { UpdateInputNameToNodes(); }
 
 void BaseQuantizeProcessor::AddQDQInModel(
     const std::vector<std::string>& tensors_to_be_quantize) {
@@ -762,13 +361,16 @@ void BaseQuantizeProcessor::MergeConvAdd() {
       continue;
     }
     // if act input of conv does not have quantize info, continue
-    bool act_has_quantize_info = helper_->quantize_info.find(node->input(0)) != helper_->quantize_info.end();
+    bool act_has_quantize_info = helper_->quantize_info.find(node->input(0)) !=
+                                 helper_->quantize_info.end();
     if (!act_has_quantize_info) {
       continue;
     }
 
     // if weight of conv does not have quantize info, continue
-    bool weight_has_quantize_info = helper_->quantize_info.find(node->input(1)) != helper_->quantize_info.end();
+    bool weight_has_quantize_info =
+        helper_->quantize_info.find(node->input(1)) !=
+        helper_->quantize_info.end();
     if (!weight_has_quantize_info) {
       continue;
     }
@@ -813,15 +415,18 @@ void BaseQuantizeProcessor::MergeConvAdd() {
       continue;
     }
     // continue if shape_val != [1, bias_val.size(), 1, 1]
-    std::vector<int64_t> target = {1, static_cast<int64_t>(bias_val.size()), 1, 1};
+    std::vector<int64_t> target = {1, static_cast<int64_t>(bias_val.size()), 1,
+                                   1};
     if (target != shape_val) {
       continue;
     }
     // remove Reshape op
     RemoveNodeByName(before_nodes[0]->name());
     // add scale for bias
-    std::vector<float> weight_scale = helper_->quantize_info[node->input(1)].scale_;
-    std::vector<float> act_scale = helper_->quantize_info[node->input(0)].scale_;
+    std::vector<float> weight_scale =
+        helper_->quantize_info[node->input(1)].scale_;
+    std::vector<float> act_scale =
+        helper_->quantize_info[node->input(0)].scale_;
     std::vector<float> bias_scale;
     for (int64_t i = 0; i < weight_scale.size(); i++) {
       bias_scale.push_back(weight_scale[i] * act_scale[0]);
@@ -832,7 +437,8 @@ void BaseQuantizeProcessor::MergeConvAdd() {
     auto zero_node =
         helper_->Constant(ONNX_NAMESPACE::TensorProto::INT32, onnx_zeros);
 
-    QuantizeInfo quantize_info(bias_scale, onnx_zeros, scale_node, zero_node, 0);
+    QuantizeInfo quantize_info(bias_scale, onnx_zeros, scale_node, zero_node,
+                               0);
 
     helper_->quantize_info[bias_node] = quantize_info;
     AppendQuantizeTensor(bias_node, true);
@@ -1014,7 +620,7 @@ bool BaseQuantizeProcessor::IsGraphOutput(const std::string& name) {
 
 // Try get tensor shape value
 bool BaseQuantizeProcessor::GetTensorShape(const std::string& name,
-                                            std::vector<int64_t>* shape) {
+                                           std::vector<int64_t>* shape) {
   for (auto& item : *parameters_) {
     auto node = *(item.get());
     if (node.output(0) != name) {
@@ -1032,8 +638,7 @@ bool BaseQuantizeProcessor::GetTensorShape(const std::string& name,
     }
   }
 
-  for (auto& item : *nodes_)
-  {
+  for (auto& item : *nodes_) {
     auto node = *(item.get());
     if (node.output(0) != name) {
       continue;
@@ -1124,7 +729,7 @@ void BaseQuantizeProcessor::GetChannelWiseQuantizeInfo(
 
 template <typename T>
 bool BaseQuantizeProcessor::GetTensorByName(const std::string& name,
-                                             std::vector<T>* value) {
+                                            std::vector<T>* value) {
   // Find tensor values in the following order, if found, store the data in
   // value, and return true：
   // 1. updated_parameters, the weight of conv or matmul.
@@ -1171,7 +776,8 @@ bool BaseQuantizeProcessor::CanBeQuantize(
     }
   }
 
-  // If there is an OP linked to the output by identity, it needs to be skipped, do not quantize the OP
+  // If there is an OP linked to the output by identity, it needs to be skipped,
+  // do not quantize the OP
   for (auto i = 0; i < output_index.size(); i++) {
     int64_t index = output_index[i];
     if (index == -1) {
@@ -1188,7 +794,7 @@ bool BaseQuantizeProcessor::CanBeQuantize(
 }
 
 void BaseQuantizeProcessor::AppendQuantizeTensor(const std::string& tensor,
-                                                  const bool& only_dequantize) {
+                                                 const bool& only_dequantize) {
   if (only_dequantize) {
     if (std::find(only_dequantize_tensors.begin(),
                   only_dequantize_tensors.end(),
