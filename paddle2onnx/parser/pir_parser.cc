@@ -318,6 +318,7 @@ void PaddlePirParser::GetGlobalBlocksOps() {
   auto global_block = pir_program_->block();
   for (auto& op : global_block->ops()) {
     if (op->name() != "builtin.parameter") {
+      P2OLogger() << "GetGlobalBlockOp : " << op->name() << std::endl;
       global_blocks_ops.push_back(op);
     }
   }
