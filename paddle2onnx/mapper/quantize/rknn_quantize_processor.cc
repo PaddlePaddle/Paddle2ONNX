@@ -85,8 +85,33 @@ void RKNNQuantizeProcessor::AddQDQ() {
       tensor_names.push_back(node_output);
     }
 
-    if (node->op_type() == "MatMul" || node->op_type() == "Add" ||
-        node->op_type() == "Mul") {
+    if (node->op_type() == "MatMul" || node->op_type() == "Mul") {
+      for (auto& name : tensor_names) {
+        if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
+          continue;
+        }
+        std::vector<float> matmul_weight;
+        if (!GetTensorByName(name, &matmul_weight)) {
+          continue;
+        }
+        std::vector<int64_t> matmul_weight_shape;
+        if (!GetTensorShape(name, &matmul_weight_shape)) {
+          continue;
+        }
+        int64_t quantize_axis = 1;
+        std::vector<float> scale;
+        std::vector<int64_t> zeros;
+        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape,
+                                   quantize_axis, &scale, &zeros);
+        auto scale_node =
+            helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
+        auto zero_node =
+            helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
+        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node,
+                                                 zero_node, quantize_axis);
+        helper_->quantize_info[name] = matmul_weight_quantize_info;
+      }
+    } else if (node->op_type() == "Add") {
       for (auto& name : tensor_names) {
         if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
           continue;
@@ -138,8 +163,19 @@ void RKNNQuantizeProcessor::PerchannelToPerlayer() {
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
 
-    if (node->op_type() != "MatMul" && node->op_type() != "Add" &&
-        node->op_type() != "Mul") {
+    if (node->op_type() != "MatMul" && node->op_type() != "Mul") {
+      continue;
+    }
+
+    auto next_nodes = name2node_dict_[node->output(0)];
+    if (next_nodes.size() > 1 || IsGraphOutput(node->output(0))) {
+      P2OLogger() << "Type1" << std::endl;
+      continue;
+    }
+
+    auto add_node = next_nodes[0];
+    if (add_node->op_type() != "Add" || IsGraphOutput(add_node->output(0))) {
+      P2OLogger() << "Type2" << std::endl;
       continue;
     }
 
@@ -172,8 +208,8 @@ void RKNNQuantizeProcessor::PerchannelToPerlayer() {
       zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8,
                                     now_zeros[0]);
 
-      QuantizeInfo now_quantize_info(now_scale, now_zeros, scale_node, zero_node,
-                                 now_quantize_axis);
+      QuantizeInfo now_quantize_info(now_scale, now_zeros, scale_node,
+                                     zero_node, now_quantize_axis);
       helper_->quantize_info[name] = now_quantize_info;
     }
   }

@@ -47,6 +47,8 @@ class BaseQuantizeProcessor {
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes_;
   std::vector<std::string> tensors_to_be_quantize_;
   std::vector<std::string> supported_quantize_type_;
+  std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
+      name2node_dict_;
 
   void QuantizeInfoBroadcast();
   void RemoveAllQuantizeOps();
@@ -90,8 +92,6 @@ class BaseQuantizeProcessor {
 
  private:
   std::vector<std::string> only_dequantize_tensors_;
-  std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
-      name2node_dict_;
 
   // Determine if the tensor is directly linked to the output by identity
   bool ConnectToOutput(const std::string &output_name);
