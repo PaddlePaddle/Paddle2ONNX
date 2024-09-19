@@ -11,27 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
 
+#include "paddle2onnx/mapper/tensor/full_int_array.h"
 
-#include "paddle2onnx/mapper/mapper.h"
-
-#include <cmath>
-#include <map>
+#include <iostream>
 #include <string>
 #include <vector>
 
 namespace paddle2onnx {
-class Relu6Mapper : public Mapper {
- public:
-  Relu6Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  
-  Relu6Mapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
-      : Mapper(p, helper, op_id) { in_pir_mode = true; }
+REGISTER_PIR_MAPPER(full_int_array, FullIntArrayMapper)
 
-  void Opset7() override;
-  void SetOpInputOutputIndex() override;
-};
+void FullIntArrayMapper::SetOpInputOutputIndex() {
+    input_idx_ = {};
+    output_idx_ = {
+      {"Out", 0},
+    };
+}
+void FullIntArrayMapper::Opset7() {
+  SetOpInputOutputIndex();
+  auto output_info = GetOutput("Out");
+  int64_t shape_dim = shape_values_.size();
+  std::vector<int64_t> shape_ = {shape_dim};
+  helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
+                  shape_, shape_values_);
+}
+
 }

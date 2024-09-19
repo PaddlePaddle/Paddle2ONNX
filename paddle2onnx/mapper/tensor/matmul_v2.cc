@@ -20,6 +20,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(matmul_v2, MatmulV2Mapper)
+REGISTER_PIR_MAPPER(matmul_v2, MatmulV2Mapper)
 
 std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info) {
   std::string castd_name = input_info[0].name;
@@ -36,7 +37,18 @@ std::string MatmulV2Mapper::GetTrans(std::vector<TensorInfo>& input_info) {
   return transpose_node->output(0);
 }
 
+void MatmulV2Mapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"Y", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+
+}
 void MatmulV2Mapper::Opset7() {
+  SetOpInputOutputIndex();
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");

@@ -11,27 +11,32 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
-
-
-#include "paddle2onnx/mapper/mapper.h"
-
-#include <cmath>
-#include <map>
 #include <string>
 #include <vector>
 
+#include "paddle2onnx/mapper/mapper.h"
+
 namespace paddle2onnx {
-class Relu6Mapper : public Mapper {
+
+class FullIntArrayMapper : public Mapper {
  public:
-  Relu6Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {}
-  
-  Relu6Mapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
-      : Mapper(p, helper, op_id) { in_pir_mode = true; }
+  // Only for PIR
+  FullIntArrayMapper(const PaddlePirParser& p, OnnxHelper* helper, 
+                 int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    GetAttr("dtype", &dtype_);
+    GetAttr("value", &shape_values_);
+  }
 
   void Opset7() override;
   void SetOpInputOutputIndex() override;
+
+ private:
+  std::string dtype_;
+  std::vector<int64_t> shape_values_;
 };
-}
+
+}  // namespace paddle2onnx

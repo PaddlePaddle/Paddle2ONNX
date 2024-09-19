@@ -19,8 +19,18 @@
 namespace paddle2onnx {
 
 REGISTER_MAPPER(flatten_contiguous_range, FlattenMapper)
+REGISTER_PIR_MAPPER(flatten_contiguous_range, FlattenMapper)
 
+void FlattenMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
 void FlattenMapper::Opset7() {
+  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   if (start_axis_ < 0) {
     start_axis_ += input_info[0].Rank();

@@ -88,6 +88,70 @@ phi::DataType TransToPhiDataType(pir::Type dtype) {
 }
 
 namespace paddle2onnx {
+  std::string PaddlePirParser::GenOpInputOutputName(const std::string& name) const
+  {
+    std::string new_name = "p2o." + name;
+    if(_name_counter.find(new_name) != _name_counter.end()) {
+      _name_counter[new_name] += 1;
+    }
+    else {
+      _name_counter[new_name] = 0;
+    }
+    new_name += "." + std::to_string(_name_counter[new_name]);
+    return new_name;
+  }
+  void PaddlePirParser::AddOpOutputName(pir::Operation *op, std::string var_name, int64_t output_idx) const {
+    if(_op_outputs.count(op) == 0) {
+      int num_outputs = op->num_results();
+      _op_outputs[op] = std::vector<std::string>(num_outputs, "");
+    }
+    _op_outputs[op][output_idx] = var_name;
+  }
+  
+  std::string PaddlePirParser::GetOpOutputName(const pir::OpOperand& operand) const {
+    auto op = operand.source().defining_op();
+    auto output_idx = operand.source().dyn_cast<pir::OpResult>().index();
+    if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
+      std::cout << "input is a parameter" << std::endl;
+      return op->result(0).defining_op<pir::ParameterOp>().param_name();
+      // std::cerr << "Can not find output name" << std::endl;
+    }
+    return _op_outputs[op][output_idx];
+  }
+
+  void PaddlePirParser::GetGlobalBlockInputValueName() {
+    for (auto op : global_blocks_ops) {
+      if (op->name() == "pd_op.data") {
+        std::string var_name =
+            op->attribute<pir::StrAttribute>("name").AsString();
+        AddOpOutputName(op, var_name, 0);
+      }
+    }
+  }
+  void PaddlePirParser::GetGlobalBlockOutputValueName() {
+    for (auto op : global_blocks_ops) {
+      if (op->name() == "pd_op.fetch") {
+        std::string var_name =
+            op->attribute<pir::StrAttribute>("name").AsString();
+        auto value = op->operand(0).source();
+        AddOpOutputName(value.defining_op(), var_name, value.dyn_cast<pir::OpResult>().index());
+      }
+    }
+  }
+
+  void PaddlePirParser::GetAllOpOutputName() {
+    GetGlobalBlockInputValueName();
+    for(auto op : global_blocks_ops) {
+      if(op->name() == "pd_op.data" || op->name() == "pd_op.fetch") continue;
+      std::string var_name = GenOpInputOutputName(op->name());
+      int num_outputs = op->num_results();
+      for(int i = 0; i < num_outputs; ++i) {
+        var_name = var_name + "." + std::to_string(i);
+        AddOpOutputName(op, var_name, i);
+      }
+    }
+    GetGlobalBlockOutputValueName();
+  }
 bool PaddlePirParser::LoadProgram(const std::string& model) {
   pir::IrContext* ctx = pir::IrContext::Instance();
   ctx->GetOrRegisterDialect<paddle::dialect::OperatorDialect>();
@@ -98,6 +162,10 @@ bool PaddlePirParser::LoadProgram(const std::string& model) {
     P2OLogger() << "Failed to deserialize PaddlePaddle model." << std::endl;
     return false;
   }
+  std::ostringstream print_stream;
+  pir_program_.get()->Print(print_stream);
+  P2OLogger() << "PIR Program: \n" 
+              << print_stream.str() << std::endl;
   return true;
 }
 bool PaddlePirParser::GetParamValueName(std::vector<std::string>* var_names) {
@@ -112,6 +180,7 @@ bool PaddlePirParser::GetParamValueName(std::vector<std::string>* var_names) {
       auto attrs = op->attribute(kAttrIsPersistable)
                        .dyn_cast<pir::ArrayAttribute>()
                        .AsVector();
+      // builtin.paramter 的输出大小会>1嘛？？？
       for (uint32_t i = 0; i < attrs.size(); i++) {
         bool is_persistable = attrs[i].dyn_cast<pir::BoolAttribute>().data();
         if (is_persistable) {
@@ -140,7 +209,7 @@ bool PaddlePirParser::LoadParams(const std::string& path) {
   is.seekg(0, std::ios::beg);
   std::vector<std::string> var_names;
   GetParamValueName(&var_names);
-  P2OLogger() << "getting paramas value name from pir::program successfully"
+  P2OLogger() << "Getting paramas value name from pir::program successfully"
               << std::endl;
 
   int64_t read_size = 0;
@@ -212,14 +281,14 @@ bool PaddlePirParser::Init(const std::string& _model,
                            const std::string& _params) {
   std::vector<Weight> weights;
   if (!LoadProgram(_model)) {
-    P2OLogger() << "Failed to load program of PaddlePaddle pir model ."
+    P2OLogger() << "Failed to load program of PaddlePaddle pir model"
                 << std::endl;
     return false;
   }
-  P2OLogger() << "load PaddlePaddle pir model successfully ." << std::endl;
+  P2OLogger() << "Load PaddlePaddle pir model successfully" << std::endl;
   if (_params != "") {
     if (!LoadParams(_params)) {
-      P2OLogger() << "Failed to load parameters of PaddlePaddle model."
+      P2OLogger() << "Failed to load parameters of PaddlePaddle model"
                   << std::endl;
       return false;
     }
@@ -228,6 +297,7 @@ bool PaddlePirParser::Init(const std::string& _model,
   // InitBlock();
   GetGlobalBlocksOps();
   GetGlobalBlockInputOutputInfo();
+  GetAllOpOutputName();
   return true;
 }
 int PaddlePirParser::NumOfBlocks() const {
@@ -252,8 +322,10 @@ void PaddlePirParser::GetGlobalBlocksOps() {
     }
   }
 }
+
 TensorInfo PaddlePirParser::GetTensorInfo(std::string name,
                                           const pir::Operation* op) {
+  // TODO: need double check
   if (op->result(0).type().isa<pir::DenseTensorType>()) {
     TensorInfo info;
     // get info.name
@@ -299,6 +371,40 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   }
 }
 
+bool PaddlePirParser::IsAttrVar(const pir::Operation *op, 
+                                const int64_t &attr_id) const {
+  // TODO: For Resnet50, this interface always return false.
+  return false;
+}
+
+bool PaddlePirParser::OpIsAttrVar(int64_t op_id,
+                                  const std::string &name) const {
+  bool is_attr_var = false;
+  auto &op = global_blocks_ops[op_id];
+  int32_t i = 0;
+  for (auto [key, value] : op->attributes()) {
+    if (key == name && IsAttrVar(op, i)) {
+      is_attr_var = true;
+      break;
+    }
+    i ++;
+  }
+
+  return is_attr_var;
+}
+
+bool PaddlePirParser::OpHasInput(int64_t op_id,
+                                 int64_t input_idx) const {
+  auto &op = global_blocks_ops[op_id];
+  return input_idx < op->num_operands();
+}
+
+bool PaddlePirParser::OpHasOutput(int64_t op_id,
+                                  int64_t output_idx) const {
+  auto &op = global_blocks_ops[op_id];
+  return output_idx < op->num_results();
+}
+
 bool PaddlePirParser::OpHasAttr(pir::Operation* op,
                                 const std::string& name) const {
   return op->HasAttribute(name);
@@ -335,6 +441,26 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
       found = true;
       if (pair.second.isa<pir::FloatAttribute>()) {
         *res = pair.second.dyn_cast<::pir::FloatAttribute>().data();
+        break;
+      }
+    }
+  }
+  PADDLE_ENFORCE_EQ(
+      found,
+      true,
+      common::errors::InvalidArgument(
+          "Cannot found attribute %s in op %s", name, op->name()));
+}
+
+void PaddlePirParser::GetOpAttr(const pir::Operation* op,
+                                const std::string& name,
+                                double* res) const {
+  bool found = false;
+  for (auto& pair : op->attributes()) {
+    if (pair.first == name) {
+      found = true;
+      if (pair.second.isa<pir::DoubleAttribute>()) {
+        *res = pair.second.dyn_cast<::pir::DoubleAttribute>().data();
         break;
       }
     }
@@ -397,14 +523,21 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
+          // TODO: Need double check.
           PADDLE_ENFORCE_EQ(
-              array_list[0].isa<::pir::Int64Attribute>(),
+              array_list[0].isa<::pir::Int64Attribute>() 
+                  || array_list[0].isa<::pir::Int32Attribute>(),
               true,
               ::common::errors::Unimplemented(
                   "the 0th elementwise MUST be ir::Int64Attribute"));
           for (size_t i = 0; i < array_list.size(); ++i) {
-            res->push_back(
+            if (array_list[0].isa<::pir::Int64Attribute>()) {
+              res->push_back(
                 array_list[i].dyn_cast<::pir::Int64Attribute>().data());
+            } else {
+              res->push_back(
+                array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+            }
           }
         }
 
@@ -484,4 +617,79 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
       common::errors::InvalidArgument(
           "Cannot found attribute %s in op %s", name, op->name()));
 }
+
+std::vector<TensorInfo> PaddlePirParser::GetOpInput(
+  int64_t op_id, int64_t input_idx) const {
+      pir::Operation* op = global_blocks_ops[op_id];
+      PADDLE_ENFORCE_LT(input_idx, op->num_operands(),
+        common::errors::InvalidArgument(
+          "input index %d is out of range, the input size is %d",
+          input_idx, op->num_operands()));
+      // bool found = false;
+      std::vector<TensorInfo> inputs;
+      auto operand = op->operand(input_idx);
+      TensorInfo info;
+      info.name = GetOpOutputName(operand);
+      std::cout << "input name: " << info.name << std::endl;
+      // info.name = GenOpInputOutputName(name); // todo(wangingkai02) 修改name 和上一个op输出保持一致
+      if(operand.type().isa<pir::DenseTensorType>()){
+        auto dense_tensor = operand.type().cast<pir::DenseTensorType>();
+        info.shape = common::vectorize(dense_tensor.dims());
+        auto data_type = TransToPhiDataType(dense_tensor.dtype());
+        auto it = pir_dtype_to_onnx_dtype.find(data_type);
+        if (it != pir_dtype_to_onnx_dtype.end()) {
+          info.dtype = it->second;
+        } else {
+          std::cerr << "data_type not found" << std::endl;
+        }
+        inputs.push_back(info);
+      }
+      else {
+        std::cerr << "input type not supported" << std::endl;
+      }
+      return inputs;
+      
+}
+std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
+    int64_t op_id, int64_t output_idx) const {
+      pir::Operation* op = global_blocks_ops[op_id];
+      PADDLE_ENFORCE_LT(output_idx, op->num_results(),
+        common::errors::InvalidArgument(
+          "output index %d is out of range, the output size is %d",
+          output_idx, op->num_results()));
+      bool found = false;
+      std::vector<TensorInfo> outputs;
+      pir::Value value = op->result(output_idx);
+      TensorInfo info;
+      // info.name = GenOpInputOutputName(name);
+      info.name = _op_outputs[op][output_idx];
+      if(value.type().isa<pir::DenseTensorType>()){
+        auto dense_tensor = value.type().cast<pir::DenseTensorType>();
+        info.shape = common::vectorize(dense_tensor.dims());
+        auto data_type = TransToPhiDataType(dense_tensor.dtype());
+        auto it = pir_dtype_to_onnx_dtype.find(data_type);
+        if (it != pir_dtype_to_onnx_dtype.end()) {
+          info.dtype = it->second;
+        } else {
+          std::cerr << "data_type not found" << std::endl;
+        }
+        outputs.push_back(info);
+      }
+      else {
+        std::cerr << "output type not supported" << std::endl;
+      }
+      return outputs;
+      
+}
+
+  std::vector<int64_t> PaddlePirParser::GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const {
+    pir::Operation* op = global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
+    std::vector<int64_t> result;
+    GetOpAttr(op, name, &result);
+    for(auto i : result)
+    {
+      std::cout << "attr: " << i << std::endl;
+    }
+    return result;
+  }
 }  // namespace paddle2onnx

@@ -51,11 +51,17 @@ class OnnxHelper;
     op_name##PirGenerator() { MapperHelper::Get()->Push(#op_name, this); } \
     void Touch() {}                                                        \
     Mapper* Create(const PaddlePirParser& p, OnnxHelper* h, int64_t i) {   \
+      P2OLogger() << "Construct operation : " #op_name << std::endl;       \
       auto m = new class_name(p, h, i);                                    \
       m->name_ = #class_name;                                              \
       return m;                                                            \
     }                                                                      \
-  };
+  };                                                                       \
+  op_name##PirGenerator* op_name##Pirinst = new op_name##PirGenerator();   \
+  int TouchPir##op_name##class_name() {                                    \
+    op_name##Pirinst->Touch();                                             \
+    return 0;                                                              \
+  }
 
 class Generator {
  public:
@@ -105,10 +111,23 @@ class MapperHelper {
   }
 
   bool IsRegistered(const std::string& op_name) {
+    auto logger = P2OLogger();
+    // Search in PIR mappers first.
+    auto iter_pir = pir_mappers.find(op_name);
+    if (pir_mappers.end() != iter_pir) {
+      logger << "Find " << op_name << " in PIR mappers" << std::endl;
+      return true;
+    }
+
+    // If we can't find op in PIR mappers, then try to 
+    // find it in old mappers
     auto iter = mappers.find(op_name);
     if (mappers.end() == iter) {
+      logger << "Not Founded! " << op_name 
+             << " is not registered" << std::endl;
       return false;
     }
+    logger << "Find " << op_name << " in old mappers" << std::endl;
     return true;
   }
 

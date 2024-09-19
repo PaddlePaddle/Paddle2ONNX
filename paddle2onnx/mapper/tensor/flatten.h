@@ -28,7 +28,15 @@ class FlattenMapper : public Mapper {
     GetAttr("stop_axis", &stop_axis_);
   }
 
+  FlattenMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    GetAttr("start_axis", &start_axis_);
+    GetAttr("stop_axis", &stop_axis_);
+  }
+
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   int64_t start_axis_;

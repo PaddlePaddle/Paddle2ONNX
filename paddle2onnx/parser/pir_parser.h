@@ -37,12 +37,21 @@ class PaddlePirParser {
   int NumOfProgramOps() const;
   // recoring set of operators for pir global block
   TensorInfo GetTensorInfo(std::string name, const pir::Operation *op);
+  bool OpIsAttrVar(int64_t op_id,
+                   const std::string &name) const;
+  bool OpHasInput(int64_t op_id,
+                  int64_t input_idx) const;
+  bool OpHasOutput(int64_t op_id,
+                   int64_t output_idx) const;
   void GetOpAttr(const pir::Operation *op,
                  const std::string &name,
                  int64_t *res) const;
   void GetOpAttr(const pir::Operation *op,
                  const std::string &name,
                  float *res) const;
+  void GetOpAttr(const pir::Operation *op,
+                 const std::string &name,
+                 double *res) const;
   void GetOpAttr(const pir::Operation *op,
                  const std::string &name,
                  bool *res) const;
@@ -59,13 +68,28 @@ class PaddlePirParser {
                  const std::string &name,
                  std::vector<double> *res) const;
   bool OpHasAttr(pir::Operation *op, const std::string &name) const;
+  std::vector<TensorInfo> GetOpInput(int64_t op_id, int64_t input_idx) const;
+  std::vector<TensorInfo> GetOpOutput(int64_t op_id, int64_t output_idx) const;
+  std::vector<int64_t> GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const;
+  
 
  private:
+  bool IsAttrVar(const pir::Operation *op, const int64_t &attr_id) const;
   bool LoadProgram(const std::string &model);
   bool LoadParams(const std::string &path);
   bool GetParamValueName(std::vector<std::string> *var_names);
   void GetGlobalBlocksOps();
   void GetGlobalBlockInputOutputInfo();
+  void GetGlobalBlockInputValueName();
+  void GetGlobalBlockOutputValueName();
+  void GetAllOpOutputName();
+  std::string GenOpInputOutputName(const std::string& name) const;
+  void AddOpOutputName(pir::Operation *op, std::string var_name, int64_t output_idx) const;
+  std::string GetOpOutputName(const pir::OpOperand& operand) const;
   std::vector<std::map<std::string, int64_t>> _constant_ops;
+  mutable std::unordered_map<std::string, int64_t> _name_counter;
+  mutable std::unordered_map<pir::Operation *, std::vector<std::string>> _op_outputs;
+  // mutable std::unordered_map<pir::Operation *, std::vector<std::string>> _op_outputs;
+  
 };
 }  // namespace paddle2onnx

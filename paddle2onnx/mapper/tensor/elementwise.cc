@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "paddle2onnx/mapper/tensor/elementwise.h"
-
+#include "paddle2onnx/mapper/exporter.h"
 namespace paddle2onnx {
 
 REGISTER_MAPPER(elementwise_add, ElementwiseMapper)
@@ -25,6 +25,16 @@ REGISTER_MAPPER(elementwise_pow, ElementwiseMapper)
 REGISTER_MAPPER(elementwise_mod, ElementWiseModMapper)
 REGISTER_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
 
+REGISTER_PIR_MAPPER(elementwise_add, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_sub, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_div, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_mul, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_min, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_max, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_pow, ElementwiseMapper)
+REGISTER_PIR_MAPPER(elementwise_mod, ElementWiseModMapper)
+REGISTER_PIR_MAPPER(elementwise_floordiv, ElementWiseFloordivMapper)
+
 int32_t ElementwiseMapper::GetMinOpsetVersion(bool verbose) {
   if (OpType() == "elementwise_min" || OpType() == "elementwise_max") {
     Logger(verbose, 8) << RequireOpset(8) << std::endl;
@@ -33,13 +43,24 @@ int32_t ElementwiseMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
+void ElementwiseMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"Y", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
+
 void ElementwiseMapper::Opset7() {
+  SetOpInputOutputIndex();
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");
-  auto iter = op_mapper_.find(OpType());
+  auto iter = op_mapper_.find(convert_pir_op_name(OpType()));
   Assert(op_mapper_.end() != iter,
-         "Cannot find " + OpType() + " in elementwise op_mapper.");
+         "Cannot find " + convert_pir_op_name(OpType()) + " in elementwise op_mapper.");
 
   auto x_name = input_x_info[0].name;
   auto y_name = input_y_info[0].name;
@@ -75,8 +96,18 @@ void ElementwiseMapper::Opset7() {
     helper_->MakeNode("Identity", {output_name}, {output_info[0].name});
   }
 }
+void ElementWiseModMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"Y", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
 
 void ElementWiseModMapper::Opset10() {
+  SetOpInputOutputIndex();
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");
@@ -143,9 +174,20 @@ void ElementWiseModMapper::Opset10() {
                     {output_info[0].name});
 }
 
+void ElementWiseFloordivMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"Y", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
+
 void ElementWiseFloordivMapper::Opset7() {
-  auto input_x_info = GetInput("X");
-  auto input_y_info = GetInput("Y");
+  SetOpInputOutputIndex();
+  auto input_x_info =  GetInput("X");
+  auto input_y_info =  GetInput("Y");
   auto output_info = GetOutput("Out");
 
   auto div_input_0 = helper_->AutoCast(input_x_info[0].name, input_x_info[0].dtype, P2ODataType::FP32);

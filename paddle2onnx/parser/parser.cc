@@ -580,7 +580,9 @@ bool PaddleParser::OpIsAttrVar(int64_t block_id, int64_t op_id,
                                const std::string &name) const {
   bool is_attr_var = false;
   auto &op = GetOpDesc(block_id, op_id);
+  P2OLogger() << " Operation : " << op.type() << std::endl;
   for (auto i = 0; i < op.attrs_size(); ++i) {
+    P2OLogger() << "Attr " << i << " , " << op.attrs(i).name() << std::endl;
     if (op.attrs(i).name() == name && IsAttrVar(op, i)) {
       is_attr_var = true;
       break;
@@ -672,6 +674,22 @@ void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc &op,
       Assert(op.attrs(i).has_f(), "Cannot find float data from attr: " + name +
                                       " in op: " + op.type());
       *res = op.attrs(i).f();
+      break;
+    }
+  }
+  Assert(found, "Cannot found attribute " + name + " in op: " + op.type());
+}
+void PaddleParser::GetOpAttr(const paddle2onnx::framework::proto::OpDesc &op,
+                             const std::string &name, double *res) const {
+  bool found = false;
+  for (auto i = 0; i < op.attrs_size(); ++i) {
+    if (op.attrs(i).name() == name) {
+      found = true;
+      if (IsAttrVar(op, i))
+        break;
+      Assert(op.attrs(i).has_float64(), "Cannot find float64 data from attr: " + name +
+                                      " in op: " + op.type());
+      *res = op.attrs(i).float64();
       break;
     }
   }

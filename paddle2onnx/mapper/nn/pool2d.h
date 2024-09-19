@@ -52,8 +52,39 @@ class Pool2dMapper : public Mapper {
       exclusive_ = !exclusive_;
     }
   }
+
+  Pool2dMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    op_mapper_["max"] = {"MaxPool", "GlobalMaxPool"};
+    op_mapper_["avg"] = {"AveragePool", "GlobalAveragePool"};
+    GetAttr("global_pooling", &global_pooling_);
+    if (HasAttr("adaptive")) {
+      GetAttr("adaptive", &adaptive_);
+    } else {
+      adaptive_ = false;
+    }
+    GetAttr("strides", &strides_);
+    GetAttr("paddings", &pads_);
+    // TODO: need double check
+    GetAttr("pooling_type", &pooling_type_);
+    GetAttr("data_format", &data_format_);
+    GetAttr("ceil_mode", &ceil_mode_);
+    if (HasAttr("padding_algorithm")) {
+      GetAttr("padding_algorithm", &padding_algorithm_);
+    } else {
+      padding_algorithm_ = "EXPLICIT";
+    }
+    if (HasAttr("exclusive")) {
+      GetAttr("exclusive", &exclusive_);
+    } else {
+      exclusive_ = true;
+    }
+    exclusive_ = !exclusive_;
+  }
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   bool IsSameSpan(const int64_t& in_size, const int64_t& out_size);
