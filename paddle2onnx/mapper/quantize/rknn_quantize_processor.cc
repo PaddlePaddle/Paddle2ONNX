@@ -143,7 +143,6 @@ void RKNNQuantizeProcessor::AddQDQ() {
   AddQDQInModel(tensors_to_be_quantize);
 }
 
-
 void RKNNQuantizeProcessor::PerchannelToPerlayer() {}
 
 void RKNNQuantizeProcessor::ProcessQuantizeModel(
@@ -151,11 +150,10 @@ void RKNNQuantizeProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-    OnnxHelper* helper, const std::string& deploy_backend,
-    const PaddleParser& parser, std::string* calibration_cache) {
-  BaseQuantizeProcessor::ProcessQuantizeModel(parameters, inputs, outputs,
-                                              nodes, helper, deploy_backend,
-                                              parser, calibration_cache);
+    OnnxHelper* helper, const PaddleParser& parser,
+    std::string* calibration_cache) {
+  BaseQuantizeProcessor::ProcessQuantizeModel(
+      parameters, inputs, outputs, nodes, helper, parser, calibration_cache);
 
   // When deploy_backend is RKNN, use the follow four steps to process:
   // 1. broadcast quantize info

@@ -83,16 +83,14 @@ void BaseQuantizeProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-    OnnxHelper* helper, const std::string& deploy_backend,
-    const PaddleParser& parser, std::string* calibration_cache) {
+    OnnxHelper* helper, const PaddleParser& parser,
+    std::string* calibration_cache) {
   parser_ = &parser;
   helper_ = helper;
   parameters_ = parameters;
   inputs_ = inputs;
   outputs_ = outputs;
   nodes_ = nodes;
-  P2OLogger() << "Quantize model deploy backend is: " << deploy_backend
-              << std::endl;
 }
 
 void BaseQuantizeProcessor::RemoveIdentityOp() {
@@ -104,30 +102,6 @@ void BaseQuantizeProcessor::RemoveIdentityOp() {
       RemoveNodeByName(node->name());
     } else {
       iter++;
-    }
-  }
-}
-
-void BaseQuantizeProcessor::GenerateCache(std::string* calibration_cache) {
-  union {
-    float f;
-    unsigned char farray[4];
-  } un;
-  *calibration_cache += "TRT-8XXX-EntropyCalibration2 \n";
-  for (auto iter = helper_->quantize_info.rbegin();
-       iter != helper_->quantize_info.rend(); iter++) {
-    std::string tensor_name = iter->first;
-    QuantizeInfo quantize_info = iter->second;
-    if (quantize_info.scale_.size() == 1) {
-      float val = quantize_info.scale_[0];
-      un.f = val;
-      *calibration_cache += (tensor_name + ": ");
-      std::stringstream enc;
-      for (int64_t i = 3; i >= 0; i--) {
-        enc << std::hex << std::setw(2) << std::setfill('0')
-            << (int)(un.farray[i]);
-      }
-      *calibration_cache = *calibration_cache + enc.str() + "\n";
     }
   }
 }

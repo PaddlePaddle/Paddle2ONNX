@@ -28,7 +28,6 @@ class BaseQuantizeProcessor {
   BaseQuantizeProcessor() = default;
   virtual ~BaseQuantizeProcessor() = default;
 
-  std::vector<QuantizeInfo> quantize_info;
   std::vector<std::string> tensors_to_be_quantize;
   std::vector<std::string> only_dequantize_tensors;
 
@@ -39,8 +38,8 @@ class BaseQuantizeProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
-      OnnxHelper *helper, const std::string &deploy_backend,
-      const PaddleParser &parser, std::string *calibration_cache = nullptr);
+      OnnxHelper *helper, const PaddleParser &parser,
+      std::string *calibration_cache = nullptr);
 
   // If all tensors in tensor_names have quantize info and all the next nodes
   // can be quantized, return True, otherwise
@@ -55,15 +54,10 @@ class BaseQuantizeProcessor {
   // Determine if the tensor is directly linked to the output by identity
   bool ConnectToOutput(const std::string &output_name);
 
-  // Generate cache file for TensorRT8.X int8 deploy
-  void GenerateCache(std::string *calibration_cache);
-
   void QuantizeInfoBroadcast();
   void RemoveAllQuantizeOps();
   void MergeConvAdd();
   void MergeConvBN();
-
-  virtual void AddQDQ();
 
   void RemoveIdentityOp();
 
@@ -115,5 +109,7 @@ class BaseQuantizeProcessor {
   std::vector<std::string> supported_quantize_type_;
   std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
       name2node_dict_;
+
+  virtual void AddQDQ();
 };
 }  // namespace paddle2onnx

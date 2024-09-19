@@ -378,9 +378,10 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
              "now the backend is: " +
                  deploy_backend_ + ".");
     }
-    quantize_processer_->ProcessQuantizeModel(
-        &parameters, &inputs, &outputs, &temp_helper.nodes, &temp_helper,
-        deploy_backend_, parser, calibration_cache_);
+    P2OLogger() << "Deploy backend is: " << deploy_backend_ << std::endl;
+    quantize_processer_->ProcessQuantizeModel(&parameters, &inputs, &outputs,
+                                              &temp_helper.nodes, &temp_helper,
+                                              parser, calibration_cache_);
     delete quantize_processer_;
     quantize_processer_ = nullptr;
 
