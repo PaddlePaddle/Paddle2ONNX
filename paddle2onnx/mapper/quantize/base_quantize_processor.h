@@ -23,27 +23,15 @@
 #include "paddle2onnx/parser/parser.h"
 namespace paddle2onnx {
 
-struct QuantizeModelProcessor {
+class BaseQuantizeProcessor {
  public:
+  BaseQuantizeProcessor() = default;
+  virtual ~BaseQuantizeProcessor() = default;
+
   std::vector<QuantizeInfo> quantize_info;
-  const PaddleParser* parser_;
-  OnnxHelper* helper_;
+  std::vector<std::string> tensors_to_be_quantize;
+  std::vector<std::string> only_dequantize_tensors;
 
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters_;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs_;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs_;
-  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes_;
-  // All types that support quantization
-  std::vector<std::string> supported_quantize_type_;
-
-  std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>>
-      name2node_dict_;
-  std::vector<std::string> tensors_to_be_quantize;  // records those tensors
-                                                    // that need to add quantize
-                                                    // and dequantize op
-  std::vector<std::string> only_dequantize_tensors;  // records those tensors
-                                                     // that only need to add
-                                                     // the dequantize op
   // Convert to different model formats based on backend, backend can be
   // TensorRT, ONNXRuntime and Others
   void ProcessQuantizeModel(
@@ -54,8 +42,6 @@ struct QuantizeModelProcessor {
       OnnxHelper* helper, const std::string& deploy_backend,
       const PaddleParser& parser, std::string* calibration_cache = nullptr);
 
-  // Remove all Quantize and Dequantize ops
-  void RemoveAllQuantizeOps();
 
   // If all tensors in tensor_names have quantize info and all the next nodes
   // can be quantized, return True, otherwise
@@ -67,9 +53,6 @@ struct QuantizeModelProcessor {
   void AppendQuantizeTensor(const std::string& tensor,
                             const bool& only_dequantize = false);
 
-  // Add QDQ for ORT according to:
-  // https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-  void AddQDQForORT();
 
   // Determine if the tensor is directly linked to the output by identity
   bool ConnectToOutput(const std::string& output_name);
@@ -77,25 +60,20 @@ struct QuantizeModelProcessor {
   // Generate cache file for TensorRT8.X int8 deploy
   void GenerateCache(std::string* calibration_cache);
 
-  // Add QDQ for TRT according to:
-  // https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
-  void AddTrtQDQ();
-
-  // Add QDQ for RKNN
+  void QuantizeInfoBroadcast();
+  void RemoveAllQuantizeOps();
+  void MergeConvAdd();
+  void MergeConvBN();
+  void AddQDQForORT();  // For ORT according to: https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
+  void AddTrtQDQ();  // For TRT according to: https://github.com/NVIDIA/TensorRT/tree/main/tools/pytorch-quantization/pytorch_quantization/nn/modules
   void AddQDQForRKNN();
+
+  void PerchannelToPerlayerForRKNN();
 
   void RemoveIdentityOp();
 
   // Add quantize related op in model according to tensor names
   void AddQDQInModel(const std::vector<std::string>& tensors_to_be_quantize);
-
-  void QuantizeInfoBroadcast();
-
-  // merge conv + add
-  void MergeConvAdd();
-
-  // merge conv + BN
-  void MergeConvBN();
 
   // Determine whether a tensor is an output
   bool IsGraphOutput(const std::string& name);
@@ -131,5 +109,16 @@ struct QuantizeModelProcessor {
       const std::string& old_name, const std::string& new_name,
       const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>&
           except_nodes = {});
+
+
+  private:
+    const PaddleParser* parser_;
+    OnnxHelper* helper_;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters_;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs_;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs_;
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes_;
+    std::vector<std::string> supported_quantize_type_;
+    std::map<std::string, std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>> name2node_dict_;
 };
 }  // namespace paddle2onnx
