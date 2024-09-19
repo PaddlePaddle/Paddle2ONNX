@@ -19,7 +19,7 @@
 namespace paddle2onnx {
 class ORTQuantizeProcessor : public BaseQuantizeProcessor {
  public:
-  ORTQuantizeProcessor() = default;
+  ORTQuantizeProcessor();
   virtual ~ORTQuantizeProcessor() = default;
 
   // According to:

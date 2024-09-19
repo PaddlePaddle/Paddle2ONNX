@@ -15,10 +15,7 @@
 #include "paddle2onnx/mapper/quantize/ort_quantize_processor.h"
 
 namespace paddle2onnx {
-// According to:
-// https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
-void ORTQuantizeProcessor::AddQDQ() {
-  BaseQuantizeProcessor::AddQDQ();
+ORTQuantizeProcessor::ORTQuantizeProcessor() {
   supported_quantize_type_ = {
       "Add",
       "Conv",
@@ -28,6 +25,12 @@ void ORTQuantizeProcessor::AddQDQ() {
       "Relu",
       "Sigmoid",
   };
+}
+
+// According to:
+// https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/optimizer/qdq_transformer/selectors_actions/qdq_selector_action_transformer.cc
+void ORTQuantizeProcessor::AddQDQ() {
+  BaseQuantizeProcessor::AddQDQ();
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
     auto type_iter = std::find(supported_quantize_type_.begin(),
@@ -94,7 +97,7 @@ void ORTQuantizeProcessor::AddQDQ() {
   // update name2node_dict for the change of Relu op.
   UpdateInputNameToNodes();
   // Add QDQ in model
-  AddQDQInModel(tensors_to_be_quantize);
+  AddQDQInModel();
 }
 
 void ORTQuantizeProcessor::ProcessQuantizeModel(

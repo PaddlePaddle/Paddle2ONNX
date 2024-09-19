@@ -108,10 +108,9 @@ void BaseQuantizeProcessor::RemoveIdentityOp() {
 
 void BaseQuantizeProcessor::AddQDQ() { UpdateInputNameToNodes(); }
 
-void BaseQuantizeProcessor::AddQDQInModel(
-    const std::vector<std::string>& tensors_to_be_quantize) {
+void BaseQuantizeProcessor::AddQDQInModel() {
   // add Q and DQ according to tensors_to_be_quantize
-  for (auto& name : tensors_to_be_quantize) {
+  for (auto& name : tensors_to_be_quantize_) {
     if (IsGraphOutput(name)) {
       continue;
     }
@@ -122,9 +121,9 @@ void BaseQuantizeProcessor::AddQDQInModel(
     std::string scale_node = quantize_info.scale_node_;
     std::string zeros_node = quantize_info.zeros_node_;
     int64_t quantize_axis = quantize_info.quantize_axis_;
-    auto iter = std::find(only_dequantize_tensors.begin(),
-                          only_dequantize_tensors.end(), name);
-    if (iter != only_dequantize_tensors.end()) {
+    auto iter = std::find(only_dequantize_tensors_.begin(),
+                          only_dequantize_tensors_.end(), name);
+    if (iter != only_dequantize_tensors_.end()) {
       // if only add DequantizeLinear
       std::vector<float> scale = quantize_info.scale_;
       std::vector<float> bias;
@@ -770,15 +769,15 @@ bool BaseQuantizeProcessor::CanBeQuantize(
 void BaseQuantizeProcessor::AppendQuantizeTensor(const std::string& tensor,
                                                  const bool& only_dequantize) {
   if (only_dequantize) {
-    if (std::find(only_dequantize_tensors.begin(),
-                  only_dequantize_tensors.end(),
-                  tensor) == only_dequantize_tensors.end()) {
-      only_dequantize_tensors.push_back(tensor);
+    if (std::find(only_dequantize_tensors_.begin(),
+                  only_dequantize_tensors_.end(),
+                  tensor) == only_dequantize_tensors_.end()) {
+      only_dequantize_tensors_.push_back(tensor);
     }
   } else {
-    if (std::find(tensors_to_be_quantize.begin(), tensors_to_be_quantize.end(),
-                  tensor) == tensors_to_be_quantize.end()) {
-      tensors_to_be_quantize.push_back(tensor);
+    if (std::find(tensors_to_be_quantize_.begin(), tensors_to_be_quantize_.end(),
+                  tensor) == tensors_to_be_quantize_.end()) {
+      tensors_to_be_quantize_.push_back(tensor);
     }
   }
 }

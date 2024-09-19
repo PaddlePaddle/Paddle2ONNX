@@ -15,8 +15,7 @@
 #include "paddle2onnx/mapper/quantize/rknn_quantize_processor.h"
 
 namespace paddle2onnx {
-void RKNNQuantizeProcessor::AddQDQ() {
-  BaseQuantizeProcessor::AddQDQ();
+RKNNQuantizeProcessor::RKNNQuantizeProcessor() {
   supported_quantize_type_ = {"Abs",
                               "Acos",
                               "Add",
@@ -64,6 +63,10 @@ void RKNNQuantizeProcessor::AddQDQ() {
                               "Tan",
                               "Tanh",
                               "Transpose"};
+}
+
+void RKNNQuantizeProcessor::AddQDQ() {
+  BaseQuantizeProcessor::AddQDQ();
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
     auto type_iter = std::find(supported_quantize_type_.begin(),
@@ -140,7 +143,7 @@ void RKNNQuantizeProcessor::AddQDQ() {
   // update name2node_dict for the change of Relu op.
   UpdateInputNameToNodes();
   // Add QDQ in model
-  AddQDQInModel(tensors_to_be_quantize);
+  AddQDQInModel();
 }
 
 void RKNNQuantizeProcessor::PerchannelToPerlayer() {}

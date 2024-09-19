@@ -19,7 +19,7 @@
 namespace paddle2onnx {
 class RKNNQuantizeProcessor : public BaseQuantizeProcessor {
  public:
-  RKNNQuantizeProcessor() = default;
+  RKNNQuantizeProcessor();
   virtual ~RKNNQuantizeProcessor() = default;
 
   void AddQDQ() override;
