@@ -19,7 +19,6 @@
 
 #include <array>
 
-#include "onnx_helper.h"
 #include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/optimizer/convert_fp32_to_fp16.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
@@ -86,7 +85,7 @@ namespace paddle2onnx
     {
       return true;
     }
-    
+
     auto logger = P2OLogger();
     logger << "Oops, there are some operators not supported yet, including ";
     for (auto &item : unsupported_ops)
@@ -325,19 +324,17 @@ namespace paddle2onnx
   }
 
   ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(const PaddleParser &parser,
-                                                                OnnxHelper *temp_helper,
-                                                                   int32_t block_id,
-                                                                   int32_t op_id,
-                                                                   const std::string &output_names)
+                                                              OnnxHelper *temp_helper,
+                                                              int32_t block_id,
+                                                              int32_t op_id,
+                                                              const std::string &output_names)
   {
     ONNX_NAMESPACE::GraphProto graph;
     graph.set_name("PaddlePaddle fill_constant Graph " + std::to_string(op_id));
     auto op = parser.GetOpDesc(block_id, op_id); // fill_constant
-
     auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
 
     *(graph.add_output()) = (*MakeValueInfo(out_info[0]));
-
     for (auto &item: temp_helper->nodes) {
       if (item -> output(0) == output_names) {
         *(graph.add_node()) = (*item.get());
@@ -382,31 +379,32 @@ namespace paddle2onnx
       }
       else if (op.type() == "select_input")
       {
-        // 如果找到，则输出对应的值；否则输出错误信息
-        // 遍历输入Tensor
         auto input_info = parser.GetOpInput(block_id, op_id, "X");
 
         Assert(input_info.size() == 2, "Only support when number of select_input's input_node is 2.");
 
-        // 构建 else 分支图
+        // Build else sub graph
         auto else_node_name = input_info[0].name;
         auto conditional_block_cood_it = sub_block_map_.find(else_node_name);
-        Assert(conditional_block_cood_it != sub_block_map_.end(), "Con't find select_input else_input node.");
+        Assert(conditional_block_cood_it != sub_block_map_.end(), "Can't find select_input else_input node.");
         auto conditional_block_cood = conditional_block_cood_it->second;
         ONNX_NAMESPACE::GraphProto else_graph, then_graph;
         auto else_node = parser.GetOpDesc(conditional_block_cood.first, conditional_block_cood.second);
+
         if (else_node.type().find("conditional_block") != std::string::npos) {
           else_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
         } else {
           else_graph = ExportFillConstant(parser, &temp_helper, conditional_block_cood.first, conditional_block_cood.second, else_node_name);
         }
 
-        // 构建 then 分支图
+        // Build then sub graph
         auto then_node_name = input_info[1].name;
         conditional_block_cood_it = sub_block_map_.find(then_node_name);
-        Assert(conditional_block_cood_it != sub_block_map_.end(), "Con't find select_input then_input node.");
+        Assert(conditional_block_cood_it != sub_block_map_.end(), "Can't find select_input then_input node.");
         conditional_block_cood = conditional_block_cood_it->second;
         auto then_node = parser.GetOpDesc(conditional_block_cood.first, conditional_block_cood.second);
+
+        // use node.type() to make sure correctness
         if (then_node.type().find("conditional_block") != std::string::npos) {
           then_graph = ExportConditionalBlock(parser, conditional_block_cood.first, conditional_block_cood.second, then_node_name);
         } else {
