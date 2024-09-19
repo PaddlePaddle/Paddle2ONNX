@@ -634,12 +634,10 @@ bool BaseQuantizeProcessor::GetTensorShape(const std::string& name,
 void BaseQuantizeProcessor::GetTensorWiseQuantizeInfo(
     const std::vector<float>& tensor, std::vector<float>* scale,
     std::vector<int64_t>* zero) {
-  float max_val = -1;
-  for (int64_t i = 0; i < tensor.size(); i++) {
-    if (fabs(tensor[i]) > max_val) {
-      max_val = fabs(tensor[i]);
-    }
-  }
+  Assert(!tensor.empty(),
+         "[GetTensorWiseQuantizeInfo] Require weight is not empty.");
+
+  float max_val = *std::max_element(tensor.begin(), tensor.end());
   Assert(max_val >= 0,
          "[GetTensorWiseQuantizeInfo] Require the scale >= 0, but now it's " +
              std::to_string(max_val) + ".");
@@ -775,7 +773,8 @@ void BaseQuantizeProcessor::AppendQuantizeTensor(const std::string& tensor,
       only_dequantize_tensors_.push_back(tensor);
     }
   } else {
-    if (std::find(tensors_to_be_quantize_.begin(), tensors_to_be_quantize_.end(),
+    if (std::find(tensors_to_be_quantize_.begin(),
+                  tensors_to_be_quantize_.end(),
                   tensor) == tensors_to_be_quantize_.end()) {
       tensors_to_be_quantize_.push_back(tensor);
     }

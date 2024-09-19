@@ -94,10 +94,6 @@ void ORTQuantizeProcessor::AddQDQ() {
       AppendQuantizeTensor(name);
     }
   }
-  // update name2node_dict for the change of Relu op.
-  UpdateInputNameToNodes();
-  // Add QDQ in model
-  AddQDQInModel();
 }
 
 void ORTQuantizeProcessor::ProcessQuantizeModel(
@@ -122,6 +118,8 @@ void ORTQuantizeProcessor::ProcessQuantizeModel(
   MergeConvAdd();
   MergeConvBN();
   AddQDQ();
+  UpdateInputNameToNodes();
+  AddQDQInModel();
   SortNodes();
 }
 }  // namespace paddle2onnx

@@ -71,8 +71,7 @@ void RKNNQuantizeProcessor::AddQDQ() {
     auto node = *iter;
     auto type_iter = std::find(supported_quantize_type_.begin(),
                                supported_quantize_type_.end(), node->op_type());
-    if (!supported_quantize_type_.empty() &&
-        type_iter == supported_quantize_type_.end()) {
+    if (type_iter == supported_quantize_type_.end()) {
       continue;
     }
 
@@ -100,27 +99,20 @@ void RKNNQuantizeProcessor::AddQDQ() {
           continue;
         }
 
-        std::vector<int64_t> weight_shape;
-        if (!GetTensorShape(name, &weight_shape)) {
-          P2OLogger() << "Failed to GetTensorShape: " << node->name() << ";"
-                      << name << std::endl;
-          continue;
-        }
-
         int64_t quantize_axis = 1;
         std::vector<float> scale;
         std::vector<int64_t> zeros;
         GetTensorWiseQuantizeInfo(weight, &scale, &zeros);
 
-        std::string weight_scale_node, weight_zero_node;
-        weight_scale_node =
+        std::string scale_node, zero_node;
+        scale_node =
             helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
-        weight_zero_node =
+        zero_node =
             helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
 
-        QuantizeInfo matmul_weight_quantize_info(
-            scale, zeros, weight_scale_node, weight_zero_node, quantize_axis);
-        helper_->quantize_info[name] = matmul_weight_quantize_info;
+        QuantizeInfo quantize_info(scale, zeros, scale_node, zero_node,
+                                   quantize_axis);
+        helper_->quantize_info[name] = quantize_info;
       }
     } else if (node->op_type() == "BatchNormalization") {
       // BatchNormalization only need quntize X and Y.
@@ -139,14 +131,53 @@ void RKNNQuantizeProcessor::AddQDQ() {
       AppendQuantizeTensor(name);
     }
   }
-
-  // update name2node_dict for the change of Relu op.
-  UpdateInputNameToNodes();
-  // Add QDQ in model
-  AddQDQInModel();
 }
 
-void RKNNQuantizeProcessor::PerchannelToPerlayer() {}
+void RKNNQuantizeProcessor::PerchannelToPerlayer() {
+  UpdateInputNameToNodes();
+  for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
+    auto node = *iter;
+
+    if (node->op_type() != "MatMul" && node->op_type() != "Add" &&
+        node->op_type() != "Mul") {
+      continue;
+    }
+
+    std::vector<std::string> tensor_names = {};
+    for (size_t i = 0; i < node->input_size(); ++i) {
+      std::string node_input = node->input(i);
+      tensor_names.push_back(node_input);
+    }
+    for (size_t i = 0; i < node->output_size(); ++i) {
+      std::string node_output = node->output(i);
+      tensor_names.push_back(node_output);
+    }
+
+    for (auto& name : tensor_names) {
+      if (helper_->quantize_info.find(name) == helper_->quantize_info.end()) {
+        continue;
+      }
+
+      auto ori_quantize_info = helper_->quantize_info[name];
+      auto ori_scale = ori_quantize_info.scale_;
+
+      int64_t now_quantize_axis = 1;
+      std::vector<float> now_scale = {
+          *std::max_element(ori_scale.begin(), ori_scale.end())};
+      std::vector<int64_t> now_zeros = {0};
+
+      std::string scale_node, zero_node;
+      scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
+                                     now_scale[0]);
+      zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8,
+                                    now_zeros[0]);
+
+      QuantizeInfo now_quantize_info(now_scale, now_zeros, scale_node, zero_node,
+                                 now_quantize_axis);
+      helper_->quantize_info[name] = now_quantize_info;
+    }
+  }
+}
 
 void RKNNQuantizeProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
@@ -169,6 +200,9 @@ void RKNNQuantizeProcessor::ProcessQuantizeModel(
   // MergeConvAdd();
   // MergeConvBN();
   AddQDQ();
+  PerchannelToPerlayer();
+  UpdateInputNameToNodes();
+  AddQDQInModel();
   SortNodes();
 }
 }  // namespace paddle2onnx
