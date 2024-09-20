@@ -299,6 +299,24 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
                                temp_inputs, temp_outputs));
 }
 
+ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(
+    const PaddleParser &parser, OnnxHelper *temp_helper, int32_t block_id,
+    int32_t op_id, const std::string &output_names) {
+  ONNX_NAMESPACE::GraphProto graph;
+  graph.set_name("PaddlePaddle fill_constant Graph " + std::to_string(op_id));
+  auto op = parser.GetOpDesc(block_id, op_id); // fill_constant
+  auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+
+  *(graph.add_output()) = (*MakeValueInfo(out_info[0]));
+  for (auto &item : temp_helper->nodes) {
+    if (item->output(0) == output_names) {
+      *(graph.add_node()) = (*item.get());
+      break;
+    }
+  }
+
+  return std::move(graph);
+}
 ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     const PaddleParser &parser, int32_t block_id,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
@@ -328,23 +346,45 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       Assert(input_info.size() == 2,
              "Only support when number of select_input's input_node is 2.");
 
+      // Build else sub graph
       auto else_node_name = input_info[0].name;
       auto conditional_block_cood_it = sub_block_map_.find(else_node_name);
       Assert(conditional_block_cood_it != sub_block_map_.end(),
-             "Don't find select_input else_input node.");
+             "Can't find select_input else_input node.");
       auto conditional_block_cood = conditional_block_cood_it->second;
-      auto else_graph =
-          ExportConditionalBlock(parser, conditional_block_cood.first,
-                                 conditional_block_cood.second, else_node_name);
+      ONNX_NAMESPACE::GraphProto else_graph, then_graph;
+      auto else_node = parser.GetOpDesc(conditional_block_cood.first,
+                                        conditional_block_cood.second);
 
+      if (else_node.type().find("conditional_block") != std::string::npos) {
+        else_graph = ExportConditionalBlock(
+            parser, conditional_block_cood.first, conditional_block_cood.second,
+            else_node_name);
+      } else {
+        else_graph = ExportFillConstant(
+            parser, &temp_helper, conditional_block_cood.first,
+            conditional_block_cood.second, else_node_name);
+      }
+
+      // Build then sub graph
       auto then_node_name = input_info[1].name;
       conditional_block_cood_it = sub_block_map_.find(then_node_name);
       Assert(conditional_block_cood_it != sub_block_map_.end(),
-             "Don't find select_input then_input node.");
+             "Can't find select_input then_input node.");
       conditional_block_cood = conditional_block_cood_it->second;
-      auto then_graph =
-          ExportConditionalBlock(parser, conditional_block_cood.first,
-                                 conditional_block_cood.second, then_node_name);
+      auto then_node = parser.GetOpDesc(conditional_block_cood.first,
+                                        conditional_block_cood.second);
+
+      // use node.type() to make sure correctness
+      if (then_node.type().find("conditional_block") != std::string::npos) {
+        then_graph = ExportConditionalBlock(
+            parser, conditional_block_cood.first, conditional_block_cood.second,
+            then_node_name);
+      } else {
+        then_graph = ExportFillConstant(
+            parser, &temp_helper, conditional_block_cood.first,
+            conditional_block_cood.second, then_node_name);
+      }
 
       auto cond_info = parser.GetOpInput(block_id, op_id, "Mask");
       auto output_info = parser.GetOpOutput(block_id, op_id, "Out");
@@ -355,6 +395,9 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       AddAttribute(node, "then_branch", then_graph);
       AddAttribute(node, "else_branch", else_graph);
       continue;
+    } else if (op.type() == "fill_constant") {
+      auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+      sub_block_map_[out_info[0].name] = {block_id, op_id};
     }
     ExportOp(parser, &temp_helper, opset_version_, block_id, op_id, verbose_);
   }
@@ -784,4 +827,4 @@ ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 
-}  // namespace paddle2onnx
+} // namespace paddle2onnx
