@@ -34,12 +34,12 @@
 #endif
 
 inline std::string convert_pir_op_name(const std::string pir_op_name) {
-    std::unordered_map<std::string, std::string> op_name_mappings = {
-        {"matmul", "matmul_v2"},
-        {"relu", "relu6"},
-        {"batch_norm_", "batch_norm"},
-        {"flatten", "flatten_contiguous_range"},
-        {"add", "elementwise_add"}};
+  std::unordered_map<std::string, std::string> op_name_mappings = {
+      {"matmul", "matmul_v2"},
+      {"relu", "relu6"},
+      {"batch_norm_", "batch_norm"},
+      {"flatten", "flatten_contiguous_range"},
+      {"add", "elementwise_add"}};
   std::string op_name = pir_op_name;
   std::string prefix = "pd_op.";
 

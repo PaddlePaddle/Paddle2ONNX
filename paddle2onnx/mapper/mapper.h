@@ -177,6 +177,7 @@ class Mapper {
 
   std::string OpType() const {
     if (in_pir_mode) {
+      // TODO: we need convert pir op name to previous op name here
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
       return op->name();
     } else {

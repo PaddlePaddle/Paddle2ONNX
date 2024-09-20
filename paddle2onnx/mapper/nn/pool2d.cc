@@ -48,12 +48,12 @@ void Pool2dMapper::AdaptivePool(const std::vector<TensorInfo>& input_info,
   int64_t kernel_h = input_h - (output_h - 1) * stride_h;
   int64_t kernel_w = input_w - (output_w - 1) * stride_w;
   std::string onnx_pool_type;
-  // if (OpType() == "max_pool2d_with_index") {
-  //   onnx_pool_type = "MaxPool";
-  // } else {
-  //   auto iter = op_mapper_.find(pooling_type_);
-  //   onnx_pool_type = iter->second[0];
-  // }
+  if (OpType() == "max_pool2d_with_index") {
+    onnx_pool_type = "MaxPool";
+  } else {
+    auto iter = op_mapper_.find(pooling_type_);
+    onnx_pool_type = iter->second[0];
+  }
   auto iter = op_mapper_.find(pooling_type_);
   Assert(iter != op_mapper_.end(), "Pooling not found");
   onnx_pool_type = iter->second[0];
@@ -149,12 +149,12 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
     pads_.resize(4, 0);
   }
   std::string onnx_pool_type;
-  // if (OpType() == "max_pool2d_with_index") {
-  //   onnx_pool_type = "MaxPool";
-  // } else {
-  //   auto iter = op_mapper_.find(pooling_type_);
-  //   onnx_pool_type = iter->second[0];
-  // }
+  if (OpType() == "max_pool2d_with_index") {
+    onnx_pool_type = "MaxPool";
+  } else {
+    auto iter = op_mapper_.find(pooling_type_);
+    onnx_pool_type = iter->second[0];
+  }
   auto iter = op_mapper_.find(pooling_type_);
   Assert(iter != op_mapper_.end(), "Pooling not found");
   onnx_pool_type = iter->second[0];
@@ -183,12 +183,12 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
     AddAttribute(node, "pads", pads_);
   }
   // TODO: Need double check
-  // if (OpType() != "max_pool2d_with_index" && helper_->GetOpsetVersion() >= 10) {
-  //   AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
-  // }
-  // if (OpType() != "max_pool2d_with_index" && pooling_type_ == "avg") {
-  //   AddAttribute(node, "count_include_pad", static_cast<int64_t>(exclusive_));
-  // }
+  if (OpType() != "max_pool2d_with_index" && helper_->GetOpsetVersion() >= 10) {
+    AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
+  }
+  if (OpType() != "max_pool2d_with_index" && pooling_type_ == "avg") {
+    AddAttribute(node, "count_include_pad", static_cast<int64_t>(exclusive_));
+  }
   if (helper_->GetOpsetVersion() >= 10) {
     AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
   }
@@ -212,6 +212,10 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
     for (auto i = 0; i < ksize.shape.size(); ++ i) {
       k_size_.push_back(ksize.shape[i]);
     }
+    if (k_size_.size() == 1) {
+      k_size_.push_back(k_size_[0]);
+    }
+    Assert(k_size_.size() == 2, "Pool2d Kernel size must equal to 2");
   } else {
     if (IsAttrVar("ksize")) {
       Error() << "While Attribute(ksize)'s type is Tensor, it's not "
@@ -296,7 +300,6 @@ void Pool2dMapper::Opset7() {
   } else{
     GetAttr("ksize", &k_size_);
   }
-
 
   bool is_1x1_kernel = true;
   for (auto i : k_size_) {
