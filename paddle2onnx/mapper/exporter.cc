@@ -191,41 +191,41 @@ void ModelExporter::SetOpsetVersion(const PaddleParser &parser,
 inline ONNX_NAMESPACE::Version ModelExporter::GetIRVersion() const {
   int ir_version = 0;
   switch (opset_version_) {
-    case 7:
-    case 8:
-      ir_version = 3;
-      break;
-    case 9:
-      ir_version = 4;
-      break;
-    case 10:
-      ir_version = 5;
-      break;
-    case 11:
-      ir_version = 6;
-      break;
-    case 12:
-    case 13:
-    case 14:
-      ir_version = 7;
-      break;
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-      ir_version = 8;
-      break;
-    case 19:
-    case 20:
-      ir_version = 9;
-      break;
-    case 21:
-      ir_version = 10;
-      break;
-    default:
-      P2OLogger(verbose_) << "The Opset Version must be between 7 and 21."
-                          << std::endl;
-      Assert(false, "Due to opset version, the model exporting is aborted.");
+  case 7:
+  case 8:
+    ir_version = 3;
+    break;
+  case 9:
+    ir_version = 4;
+    break;
+  case 10:
+    ir_version = 5;
+    break;
+  case 11:
+    ir_version = 6;
+    break;
+  case 12:
+  case 13:
+  case 14:
+    ir_version = 7;
+    break;
+  case 15:
+  case 16:
+  case 17:
+  case 18:
+    ir_version = 8;
+    break;
+  case 19:
+  case 20:
+    ir_version = 9;
+    break;
+  case 21:
+    ir_version = 10;
+    break;
+  default:
+    P2OLogger(verbose_) << "The Opset Version must be between 7 and 21."
+                        << std::endl;
+    Assert(false, "Due to opset version, the model exporting is aborted.");
   }
   return static_cast<ONNX_NAMESPACE::Version>(ir_version);
 }
@@ -262,9 +262,10 @@ void ModelExporter::ExportParameters(
   }
 }
 
-ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
-    const PaddleParser &parser, int32_t block_id, int32_t op_id,
-    const std::string &output_names) {
+ONNX_NAMESPACE::GraphProto
+ModelExporter::ExportConditionalBlock(const PaddleParser &parser,
+                                      int32_t block_id, int32_t op_id,
+                                      const std::string &output_names) {
   auto op = parser.GetOpDesc(block_id, op_id);
 
   // Get sub_block_idx
@@ -299,6 +300,24 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
                                temp_inputs, temp_outputs));
 }
 
+ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(
+    const PaddleParser &parser, OnnxHelper *temp_helper, int32_t block_id,
+    int32_t op_id, const std::string &output_names) {
+  ONNX_NAMESPACE::GraphProto graph;
+  graph.set_name("PaddlePaddle fill_constant Graph " + std::to_string(op_id));
+  auto op = parser.GetOpDesc(block_id, op_id); // fill_constant
+  auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+
+  *(graph.add_output()) = (*MakeValueInfo(out_info[0]));
+  for (auto &item : temp_helper->nodes) {
+    if (item->output(0) == output_names) {
+      *(graph.add_node()) = (*item.get());
+      break;
+    }
+  }
+
+  return std::move(graph);
+}
 ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     const PaddleParser &parser, int32_t block_id,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
@@ -378,8 +397,8 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       AddAttribute(node, "else_branch", else_graph);
       continue;
     } else if (op.type() == "fill_constant") {
-        auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
-        sub_block_map_[out_info[0].name] = {block_id, op_id};
+      auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
+      sub_block_map_[out_info[0].name] = {block_id, op_id};
     }
     ExportOp(parser, &temp_helper, opset_version_, block_id, op_id, verbose_);
   }
@@ -780,8 +799,8 @@ std::string ModelExporter::Run(
   return out;
 }
 
-ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
-    const ONNX_NAMESPACE::ModelProto &model) {
+ONNX_NAMESPACE::ModelProto
+ModelExporter::Optimize(const ONNX_NAMESPACE::ModelProto &model) {
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantReshape>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
@@ -809,4 +828,4 @@ ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
   return ONNX_NAMESPACE::optimization::Optimize(model, passes);
 }
 
-}  // namespace paddle2onnx
+} // namespace paddle2onnx
