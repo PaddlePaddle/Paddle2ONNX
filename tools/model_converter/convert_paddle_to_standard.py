@@ -173,6 +173,7 @@ def convert_model(paddle_model, save_dir, params2val_dict):
         graph.forward_block_idx = block.forward_block_idx
 
     model_save_path = os.path.join(save_dir, "standard_model.model")
+    print("new_model: ", new_model, flush=1)
     model_str = new_model.SerializeToString()
     with open(model_save_path, "wb") as writable:
         writable.write(model_str)
@@ -184,5 +185,7 @@ if __name__ == '__main__':
     paddle.set_device("cpu")
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
-    params2val_dict, _ = convert_params(args.paddle_model, args.save_dir)
+    # params2val_dict, _ = convert_params(args.paddle_model, args.save_dir)
+    params2val_dict = {}
     convert_model(args.paddle_model, args.save_dir, params2val_dict)
+
