@@ -169,13 +169,11 @@ void RKNNQuantizeProcessor::PerchannelToPerlayer() {
 
     auto next_nodes = name2node_dict_[node->output(0)];
     if (next_nodes.size() > 1 || IsGraphOutput(node->output(0))) {
-      P2OLogger() << "Type1" << std::endl;
       continue;
     }
 
     auto add_node = next_nodes[0];
     if (add_node->op_type() != "Add" || IsGraphOutput(add_node->output(0))) {
-      P2OLogger() << "Type2" << std::endl;
       continue;
     }
 
