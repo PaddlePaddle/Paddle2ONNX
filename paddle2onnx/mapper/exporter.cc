@@ -798,8 +798,8 @@ std::string ModelExporter::Run(
   return out;
 }
 
-ONNX_NAMESPACE::ModelProto
-ModelExporter::Optimize(const ONNX_NAMESPACE::ModelProto &model) {
+ONNX_NAMESPACE::ModelProto ModelExporter::Optimize(
+    const ONNX_NAMESPACE::ModelProto &model) {
   ONNX_NAMESPACE::optimization::Optimizer::passes
       .registerPass<ONNX_NAMESPACE::optimization::FuseConstantReshape>();
   ONNX_NAMESPACE::optimization::Optimizer::passes
