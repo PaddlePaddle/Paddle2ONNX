@@ -23,6 +23,16 @@ from paddle.static import Program
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 from paddle2onnx.convert import dygraph2onnx
 import shutil
+from functools import wraps
+
+def _test_with_pir(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with paddle.pir_utils.DygraphOldIrGuard():
+            func(*args, **kwargs)
+        with paddle.pir_utils.DygraphPirGuard():
+            func(*args, **kwargs)
+    return wrapper
 
 
 def compare_data(result_data, expect_data, delta, rtol):
@@ -146,6 +156,7 @@ dtype_map = {
     paddle.int8: np.int8,
     paddle.bool: np.bool_,
 }
+
 
 
 class APIOnnx(object):
@@ -398,7 +409,10 @@ class APIOnnx(object):
             paddle.jit.save(self._func, os.path.join(self.name, "model"), self.input_spec)
 
             # Get PaddleInference model path
-            pdmodel_path = os.path.join(self.name, "model.pdmodel")
+            default_model_name = "model.pdmodel"
+            if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
+                default_model_name = "model.json"
+            pdmodel_path = os.path.join(self.name, default_model_name)
             pdiparams_path = os.path.join(self.name, "model.pdiparams")
             if len(self.ops) > 0:
                 self.dev_check_ops(self.ops[0], pdmodel_path)
@@ -409,8 +423,12 @@ class APIOnnx(object):
                 params_file = ""
 
             # clip extra
-            model_file = os.path.join(self.name, "cliped_model.pdmodel")
-            self.clip_extra_program_only(original_model_file, model_file)
+            model_file = None
+            if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
+                model_file = original_model_file
+            else:
+                model_file = os.path.join(self.name, "cliped_model.pdmodel") 
+                self.clip_extra_program_only(original_model_file, model_file)
 
             for v in self._version:
                 onnx_model_str = c_p2o.export(

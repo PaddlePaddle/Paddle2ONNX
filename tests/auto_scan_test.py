@@ -25,6 +25,7 @@ from onnxbase import APIOnnx, randtool
 from itertools import product
 import copy
 from inspect import isfunction
+from onnxbase import _test_with_pir
 
 paddle.set_device("cpu")
 
@@ -73,6 +74,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
         paddle.enable_static()
         self.num_ran_models = 0
 
+    # @_test_with_pir
     def run_and_statis(self,
                        max_examples=100,
                        opset_version=[7, 9, 15],

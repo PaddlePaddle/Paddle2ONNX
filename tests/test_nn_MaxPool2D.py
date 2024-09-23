@@ -15,6 +15,7 @@
 import paddle
 from onnxbase import APIOnnx
 from onnxbase import randtool
+from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -48,6 +49,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
+@_test_with_pir
 def test_MaxPool2D_base():
     """
     api: paddle.MaxPool2D
@@ -64,6 +66,7 @@ def test_MaxPool2D_base():
     obj.run()
 
 
+@_test_with_pir
 def test_MaxPool2D_base_VALID():
     """
     api: paddle.MaxPool2D
@@ -80,6 +83,7 @@ def test_MaxPool2D_base_VALID():
     obj.run()
 
 
+@_test_with_pir
 def test_MaxPool2D_base_SAME():
     """
     api: paddle.MaxPool2D
@@ -96,6 +100,7 @@ def test_MaxPool2D_base_SAME():
     obj.run()
 
 
+@_test_with_pir
 def test_MaxPool2D_base_Padding_0():
     """
     api: paddle.MaxPool2D
@@ -112,6 +117,7 @@ def test_MaxPool2D_base_Padding_0():
     obj.run()
 
 
+@_test_with_pir
 def test_MaxPool2D_base_Padding_1():
     """
     api: paddle.MaxPool2D
@@ -128,6 +134,7 @@ def test_MaxPool2D_base_Padding_1():
     obj.run()
 
 
+@_test_with_pir
 def test_MaxPool2D_base_Padding_2():
     """
     api: paddle.MaxPool2D
@@ -144,6 +151,7 @@ def test_MaxPool2D_base_Padding_2():
     obj.run()
 
 
+@_test_with_pir
 def test_MaxPool2D_base_Padding_3():
     """
     api: paddle.MaxPool2D
