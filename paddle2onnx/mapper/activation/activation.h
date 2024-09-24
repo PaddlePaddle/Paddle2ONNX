@@ -47,8 +47,33 @@ class ActivationMapper : public Mapper {
     op_mapper_["reciprocal"] = "Reciprocal";
   }
 
+  ActivationMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
+      : Mapper(p, helper, i) {
+    in_pir_mode = true;
+    op_mapper_["relu"] = "Relu";
+    op_mapper_["tanh"] = "Tanh";
+    op_mapper_["log"] = "Log";
+    op_mapper_["sqrt"] = "Sqrt";
+    op_mapper_["softplus"] = "Softplus";
+    op_mapper_["exp"] = "Exp";
+    op_mapper_["floor"] = "Floor";
+    op_mapper_["cos"] = "Cos";
+    op_mapper_["sin"] = "Sin";
+    op_mapper_["round"] = "Round";
+    op_mapper_["abs"] = "Abs";
+    op_mapper_["acos"] = "Acos";
+    op_mapper_["asin"] = "Asin";
+    op_mapper_["atan"] = "Atan";
+    op_mapper_["tan"] = "Tan";
+    op_mapper_["ceil"] = "Ceil";
+    op_mapper_["erf"] = "Erf";
+    op_mapper_["softsign"] = "Softsign";
+    op_mapper_["reciprocal"] = "Reciprocal";
+  }
+
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   std::map<std::string, std::string> op_mapper_;

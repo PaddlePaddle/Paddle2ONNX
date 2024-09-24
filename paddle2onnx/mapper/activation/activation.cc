@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "paddle2onnx/mapper/activation/activation.h"
+#include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
 
@@ -38,6 +39,7 @@ REGISTER_MAPPER(mish, MishMapper)
 REGISTER_MAPPER(prelu, PReluMapper)
 REGISTER_MAPPER(reciprocal, ActivationMapper)
 REGISTER_MAPPER(relu, ActivationMapper)
+REGISTER_PIR_MAPPER(relu, ActivationMapper)
 REGISTER_MAPPER(round, ActivationMapper)
 REGISTER_MAPPER(rsqrt, RsqrtMapper)
 REGISTER_MAPPER(sel, ActivationMapper)
@@ -58,7 +60,7 @@ REGISTER_MAPPER(thresholded_relu, ThresholdedReluMapper)
 
 
 int32_t ActivationMapper::GetMinOpsetVersion(bool verbose) {
-  if (OpType() == "softplus") {
+  if (convert_pir_op_name(OpType()) == "softplus") {
     float beta = 0.0;
     float threshold = 20.0;
     GetAttr("beta", &beta);
@@ -70,20 +72,30 @@ int32_t ActivationMapper::GetMinOpsetVersion(bool verbose) {
       return -1;
     }
   }
-  if (OpType() == "round") {
+  if (convert_pir_op_name(OpType()) == "round") {
     Logger(verbose, 11) << RequireOpset(11) << std::endl;
     return 11;
   }
   return 7;
 }
 
+void ActivationMapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
+
 void ActivationMapper::Opset7() {
+  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto iter = op_mapper_.find(OpType());
+  auto iter = op_mapper_.find(convert_pir_op_name(OpType()));
   Assert(op_mapper_.end() != iter,
-         "Cannot find " + OpType() + " in activation op_mapper.");
-  if (OpType() == "erf") {
+         "Cannot find " + convert_pir_op_name(OpType()) + " in activation op_mapper.");
+  if (convert_pir_op_name(OpType()) == "erf") {
     auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
                                    P2ODataType::FP32);
     auto output = helper_->MakeNode(iter->second, {input})->output(0);
