@@ -15,6 +15,7 @@
 import paddle
 from onnxbase import APIOnnx
 from onnxbase import randtool
+from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -55,6 +56,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
+@_test_with_pir
 def test_Conv2D_9():
     """
     api: paddle.Conv2D
@@ -69,8 +71,10 @@ def test_Conv2D_9():
         paddle.to_tensor(
             randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
     obj.run()
+    print("finish")
 
 
+@_test_with_pir
 def test_Conv2D_10():
     """
     api: paddle.nn.Conv2D
@@ -87,6 +91,7 @@ def test_Conv2D_10():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_11():
     """
     api: paddle.nn.Conv2D
@@ -103,6 +108,7 @@ def test_Conv2D_11():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_12():
     """
     api: paddle.nn.Conv2D
@@ -119,6 +125,7 @@ def test_Conv2D_12():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_padding_0_9():
     """
     api: paddle.nn.Conv2D
@@ -135,6 +142,7 @@ def test_Conv2D_padding_0_9():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_padding_1_9():
     """
     api: paddle.nn.Conv3D
@@ -151,6 +159,7 @@ def test_Conv2D_padding_1_9():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_padding_2_9():
     """
     api: paddle.nn.Conv2D
@@ -167,6 +176,7 @@ def test_Conv2D_padding_2_9():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_groups_1_9():
     """
     api: paddle.nn.Conv2D
@@ -183,6 +193,7 @@ def test_Conv2D_groups_1_9():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_groups_2_9():
     """
     api: paddle.nn.Conv2D
@@ -199,6 +210,7 @@ def test_Conv2D_groups_2_9():
     obj.run()
 
 
+@_test_with_pir
 def test_Conv2D_dilation_2_9():
     """
     api: paddle.nn.Conv2D

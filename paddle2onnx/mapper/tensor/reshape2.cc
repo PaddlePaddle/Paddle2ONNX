@@ -20,8 +20,20 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(reshape2, Reshape2Mapper)
+REGISTER_PIR_MAPPER(reshape, Reshape2Mapper)
 
+void Reshape2Mapper::SetOpInputOutputIndex() {
+  input_idx_ = {
+    {"X", 0},
+    {"Shape", 1},
+    {"ShapeTensor", 1},
+  };
+  output_idx_ = {
+    {"Out", 0},
+  };
+}
 void Reshape2Mapper::Opset7() {
+  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
 

@@ -15,6 +15,7 @@
 import paddle
 from onnxbase import APIOnnx
 from onnxbase import randtool
+from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -33,6 +34,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
+@_test_with_pir
 def test_matmul_9():
     """
     api: paddle.matmul
@@ -49,6 +51,7 @@ def test_matmul_9():
     obj.run()
 
 
+@_test_with_pir
 def test_matmul_10():
     """
     api: paddle.matmul
@@ -65,6 +68,7 @@ def test_matmul_10():
     obj.run()
 
 
+@_test_with_pir
 def test_matmul_11():
     """
     api: paddle.matmul
@@ -81,6 +85,7 @@ def test_matmul_11():
     obj.run()
 
 
+@_test_with_pir
 def test_matmul_12():
     """
     api: paddle.matmul

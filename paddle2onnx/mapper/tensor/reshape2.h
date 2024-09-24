@@ -26,7 +26,13 @@ class Reshape2Mapper : public Mapper {
                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
+  Reshape2Mapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
+      : Mapper(p, helper, i) {
+      in_pir_mode = true;
+  }
+
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 };
 
 }  // namespace paddle2onnx

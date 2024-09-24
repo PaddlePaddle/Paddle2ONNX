@@ -15,6 +15,7 @@
 import paddle
 from onnxbase import APIOnnx
 from onnxbase import randtool
+from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -33,6 +34,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
+@_test_with_pir
 def test_avg_pool2d_9():
     """
     api: paddle.nn.functional.avg_pool2d
@@ -49,6 +51,7 @@ def test_avg_pool2d_9():
     obj.run()
 
 
+@_test_with_pir
 def test_avg_pool2d_10():
     """
     api: paddle.nn.functional.avg_pool2d
@@ -64,7 +67,7 @@ def test_avg_pool2d_10():
             randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
     obj.run()
 
-
+@_test_with_pir
 def test_avg_pool2d_11():
     """
     api: paddle.nn.functional.avg_pool2d
@@ -80,7 +83,7 @@ def test_avg_pool2d_11():
             randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
     obj.run()
 
-
+@_test_with_pir
 def test_avg_pool2d_12():
     """
     api: paddle.nn.functional.avg_pool2d
