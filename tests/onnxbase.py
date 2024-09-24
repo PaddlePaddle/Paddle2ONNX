@@ -147,14 +147,23 @@ class BuildClass(paddle.nn.Layer):
 
 
 dtype_map = {
-    paddle.float32: np.float32,
-    paddle.float16: np.float16,
-    paddle.float64: np.float64,
-    paddle.int64: np.int64,
-    paddle.int32: np.int32,
-    paddle.int16: np.int16,
-    paddle.int8: np.int8,
-    paddle.bool: np.bool_,
+    paddle.base.core.VarDesc.VarType.FP32: np.float32,
+    paddle.base.core.VarDesc.VarType.FP16: np.float16,
+    paddle.base.core.VarDesc.VarType.FP64: np.float64,
+    paddle.base.core.VarDesc.VarType.INT64: np.int64,
+    paddle.base.core.VarDesc.VarType.INT32: np.int32,
+    paddle.base.core.VarDesc.VarType.INT16: np.int16,
+    paddle.base.core.VarDesc.VarType.INT8: np.int8,
+    paddle.base.core.VarDesc.VarType.BOOL: np.bool_,
+
+    paddle.base.core.DataType.FLOAT32: np.float32,
+    paddle.base.core.DataType.FLOAT16: np.float16,
+    paddle.base.core.DataType.FLOAT64: np.float64,
+    paddle.base.core.DataType.INT64: np.int64,
+    paddle.base.core.DataType.INT32: np.int32,
+    paddle.base.core.DataType.INT16: np.int16,
+    paddle.base.core.DataType.INT8: np.int8,
+    paddle.base.core.DataType.BOOL: np.bool_,
 }
 
 

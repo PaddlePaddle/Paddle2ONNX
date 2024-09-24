@@ -81,6 +81,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
                        reproduce=None,
                        min_success_num=25,
                        max_duration=-1):
+        self.num_ran_models = 0
         if os.getenv("CE_STAGE", "OFF") == "ON":
             max_examples *= 10
             min_success_num *= 10
