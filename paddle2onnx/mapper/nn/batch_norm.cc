@@ -25,10 +25,10 @@ void BatchNormMapper::SetOpInputOutputIndex()
 {
   input_idx_ = {
     {"X", 0},
-    {"Scale", 1}, 
-    {"Bias", 2},
-    {"Mean", 3},
-    {"Variance", 4},
+    {"Mean", 1},
+    {"Variance", 2},
+    {"Scale", 3}, 
+    {"Bias", 4},
   };
   output_idx_ = {{"Y", 0}};
 }
