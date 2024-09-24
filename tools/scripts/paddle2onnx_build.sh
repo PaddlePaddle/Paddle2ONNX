@@ -71,7 +71,7 @@ function build_paddle2onnx(){
     cd ${PADDLE2ONNX_ROOT}
     $1 -m pip install --upgrade pip
     $1 -m pip install build
-    $1 -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
+    $1 -m pip install --pre paddlepaddle==3.0.0.dev20240904  -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 
     #build paddle2onnx
     export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
