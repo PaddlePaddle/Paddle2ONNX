@@ -37,6 +37,8 @@ def convert_params(paddle_model, save_dir):
     all_val_name_set = sorted(all_val_name_set)
 
     params2val_dict = {}
+    if not os.path.exists(paddle_model + ".pdiparams"):
+        return {}, {}
     params_file = open(paddle_model + ".pdiparams", 'rb')
     for name in all_val_name_set:
         _ = numpy.fromfile(params_file, dtype='int32', count=1)
@@ -173,7 +175,6 @@ def convert_model(paddle_model, save_dir, params2val_dict):
         graph.forward_block_idx = block.forward_block_idx
 
     model_save_path = os.path.join(save_dir, "standard_model.model")
-    print("new_model: ", new_model, flush=1)
     model_str = new_model.SerializeToString()
     with open(model_save_path, "wb") as writable:
         writable.write(model_str)
@@ -185,7 +186,6 @@ if __name__ == '__main__':
     paddle.set_device("cpu")
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
-    # params2val_dict, _ = convert_params(args.paddle_model, args.save_dir)
-    params2val_dict = {}
+    params2val_dict, _ = convert_params(args.paddle_model, args.save_dir)
     convert_model(args.paddle_model, args.save_dir, params2val_dict)
 

@@ -43,6 +43,8 @@ class StandardModel(object):
 
     def load_params(self):
         params_file_path = self.model_path + ".params"
+        if not os.path.exists(params_file_path):
+            return
         file = open(params_file_path, 'rb')
         layer_name = None
         numpy_val = None
