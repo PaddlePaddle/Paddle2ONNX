@@ -26,8 +26,16 @@ class DropoutMapper : public Mapper {
     GetAttr("dropout_implementation", &dropout_implementation_);
   }
 
+  DropoutMapper(const PaddlePirParser& p, OnnxHelper* helper,
+                int64_t op_id)
+      : Mapper(p, helper, op_id) {
+    in_pir_mode = true;
+    GetAttr("mode", &dropout_implementation_);
+  }
+
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
+  void SetOpInputOutputIndex() override;
 
  private:
   float dropout_prob_ = 0.0;
