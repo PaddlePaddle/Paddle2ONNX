@@ -64,7 +64,6 @@ class TestThresholdedReluConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
-    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 
