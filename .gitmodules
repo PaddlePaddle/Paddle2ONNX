@@ -10,3 +10,6 @@
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
 	branch = 3e9dfa2866941655c56877882565e7577de6fc7b
+[submodule "third_party/glog"]
+	path = third_party/glog
+	url = https://github.com/google/glog.git

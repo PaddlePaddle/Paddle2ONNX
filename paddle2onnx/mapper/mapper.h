@@ -201,13 +201,17 @@ class Mapper {
   }
   std::vector<TensorInfo> GetInput(const std::string &name) const {
     if (in_pir_mode) {
-      return pir_parser_->GetOpInput(pir_op_idx_, input_idx_.at(name));
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true);
+      // Assert(value_idx == input_idx_.at(name), "Input index not match\n");
+      return pir_parser_->GetOpInput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpInput(block_idx_, op_idx_, name);
   }
   std::vector<TensorInfo> GetOutput(const std::string &name) const {
     if (in_pir_mode) {
-      return pir_parser_->GetOpOutput(pir_op_idx_, output_idx_.at(name));
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
+      // Assert(value_idx == output_idx_.at(name), "Output index not match\n");
+      return pir_parser_->GetOpOutput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpOutput(block_idx_, op_idx_, name);
   }

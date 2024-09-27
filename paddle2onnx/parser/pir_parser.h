@@ -71,6 +71,7 @@ class PaddlePirParser {
   std::vector<TensorInfo> GetOpInput(int64_t op_id, int64_t input_idx) const;
   std::vector<TensorInfo> GetOpOutput(int64_t op_id, int64_t output_idx) const;
   std::vector<int64_t> GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const;
+  int32_t GetOpInputOutputName2Idx(int64_t op_id, std::string name, bool is_input) const;
   
 
  private:
@@ -86,9 +87,11 @@ class PaddlePirParser {
   std::string GenOpInputOutputName(const std::string& name) const;
   void AddOpOutputName(pir::Operation *op, std::string var_name, int64_t output_idx) const;
   std::string GetOpOutputName(const pir::OpOperand& operand) const;
+  void GetOpArgNameMappings();
   std::vector<std::map<std::string, int64_t>> _constant_ops;
   mutable std::unordered_map<std::string, int64_t> _name_counter;
   mutable std::unordered_map<pir::Operation *, std::vector<std::string>> _op_outputs;
+  std::unordered_map<std::string, std::unordered_map<std::string, std::string>> _op_arg_name_mappings;
   // mutable std::unordered_map<pir::Operation *, std::vector<std::string>> _op_outputs;
   
 };
