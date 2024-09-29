@@ -22,7 +22,7 @@ namespace paddle2onnx {
 REGISTER_PIR_MAPPER(full_int_array, FullIntArrayMapper)
 
 void FullIntArrayMapper::Opset7() {
-  auto output_info = GetOutput("Out");
+  auto output_info = GetOutput("out");
   int64_t shape_dim = shape_values_.size();
   std::vector<int64_t> shape_ = {shape_dim};
   helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),

@@ -214,7 +214,7 @@ namespace paddle2onnx {
           exist,
           true,
           common::errors::InvalidArgument(
-              "Cannot find input/output name %s in op yaml info of %s.",
+              "Cannot find input/output name '%s' in op yaml info of %s.",
               name, op_name));
       return is_input ? yaml_parser.InputName2Id().at(name) : yaml_parser.OutputName2Id().at(name);
   }
