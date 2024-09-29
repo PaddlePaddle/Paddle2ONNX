@@ -20,17 +20,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(scale, ScaleMapper)
 REGISTER_PIR_MAPPER(scale, ScaleMapper)
 
-void ScaleMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-    {"ScaleTensor", 1},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
 void ScaleMapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   bool has_scale_tensor = HasInput("ScaleTensor");

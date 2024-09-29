@@ -18,6 +18,7 @@
 namespace paddle2onnx {
 
 REGISTER_MAPPER(dropout, DropoutMapper)
+REGISTER_PIR_MAPPER(dropout, DropoutMapper)
 
 int32_t DropoutMapper::GetMinOpsetVersion(bool verbose) {
   if (dropout_implementation_ != "downgrade_in_infer" &&
@@ -47,13 +48,20 @@ void DropoutMapper::Opset7() {
   if (dropout_implementation_ == "upscale_in_train") {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    if (IsAttrVar("dropout_prob")) {
-      auto prob_info = GetAttrVar("dropout_prob");
+    if (in_pir_mode) {
       std::vector<float> temp;
+      auto prob_info = GetInput("Prob");
       TryGetValue(prob_info[0], &temp);
       dropout_prob_ = temp[0];
     } else {
-      GetAttr("dropout_prob", &dropout_prob_);
+      if (IsAttrVar("dropout_prob")) {
+        auto prob_info = GetAttrVar("dropout_prob");
+        std::vector<float> temp;
+        TryGetValue(prob_info[0], &temp);
+        dropout_prob_ = temp[0];
+      } else {
+        GetAttr("dropout_prob", &dropout_prob_);
+      }
     }
     std::string scale_node = helper_->Constant(
         {}, GetOnnxDtype(input_info[0].dtype), 1 - dropout_prob_);

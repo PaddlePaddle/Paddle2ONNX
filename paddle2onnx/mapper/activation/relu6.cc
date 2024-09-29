@@ -18,17 +18,7 @@ namespace paddle2onnx {
 REGISTER_MAPPER(relu6, Relu6Mapper)
 REGISTER_PIR_MAPPER(relu6, Relu6Mapper)
 
-void Relu6Mapper::SetOpInputOutputIndex() {
-  input_idx_ =  {
-    {"X", 0},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
-
 void Relu6Mapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   float min = 0.0;

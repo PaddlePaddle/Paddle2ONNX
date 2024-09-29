@@ -45,7 +45,6 @@ class Mapper {
     helper_ = helper;
     name_ = name;
     pir_op_idx_ = op_id;
-    // TODO(by wangmingkai02) call SetOpInputOutputIndex()
   }
 
   // [exported_op_name, domain]
@@ -165,15 +164,6 @@ class Mapper {
   int32_t op_idx_;
   int32_t pir_op_idx_;
   std::string name_;  // op transform name
-  std::unordered_map<std::string, int64_t> input_idx_;
-  std::unordered_map<std::string, int64_t> output_idx_;
-  virtual void SetOpInputOutputIndex() {
-    Assert(false,
-           "The error occurred because the " + name_ +
-           " Mapper class did not override the "
-           "SetOpInputOutputIndex function. Please double-check if the SetOpInputOutputIndex function is "
-           "implemented correctly.");
-  }
 
   std::string OpType() const {
     if (in_pir_mode) {
@@ -192,17 +182,22 @@ class Mapper {
   std::string Name() const { return name_; }
 
   bool HasInput(const std::string &name) const {
-    if (in_pir_mode) return pir_parser_->OpHasInput(pir_op_idx_, input_idx_.at(name));
+    if (in_pir_mode) {
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true);
+      return pir_parser_->OpHasInput(pir_op_idx_, value_idx);
+    }
     return parser_->OpHasInput(block_idx_, op_idx_, name);
   }
   bool HasOutput(const std::string &name) const {
-    if (in_pir_mode) return pir_parser_->OpHasOutput(pir_op_idx_, output_idx_.at(name));
+    if (in_pir_mode) {
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
+      return pir_parser_->OpHasOutput(pir_op_idx_, value_idx);
+    }
     return parser_->OpHasOutput(block_idx_, op_idx_, name);
   }
   std::vector<TensorInfo> GetInput(const std::string &name) const {
     if (in_pir_mode) {
       int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true);
-      // Assert(value_idx == input_idx_.at(name), "Input index not match\n");
       return pir_parser_->GetOpInput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpInput(block_idx_, op_idx_, name);
@@ -210,7 +205,6 @@ class Mapper {
   std::vector<TensorInfo> GetOutput(const std::string &name) const {
     if (in_pir_mode) {
       int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
-      // Assert(value_idx == output_idx_.at(name), "Output index not match\n");
       return pir_parser_->GetOpOutput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpOutput(block_idx_, op_idx_, name);
@@ -227,7 +221,8 @@ class Mapper {
   }
 
   std::vector<int64_t> GetInputAttrVar(const std::string &input_name, const std::string &attr_name) const {
-    return pir_parser_->GetOpAttrVar(pir_op_idx_, input_idx_.at(input_name), attr_name);
+    int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_name, true);
+    return pir_parser_->GetOpAttrVar(pir_op_idx_, value_idx, attr_name);
   }
   
 

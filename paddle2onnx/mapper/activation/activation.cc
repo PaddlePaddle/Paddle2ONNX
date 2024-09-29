@@ -79,17 +79,8 @@ int32_t ActivationMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
-void ActivationMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
 
 void ActivationMapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   auto iter = op_mapper_.find(convert_pir_op_name(OpType()));

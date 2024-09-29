@@ -32,7 +32,6 @@ class Reshape2Mapper : public Mapper {
   }
 
   void Opset7() override;
-  void SetOpInputOutputIndex() override;
 };
 
 }  // namespace paddle2onnx

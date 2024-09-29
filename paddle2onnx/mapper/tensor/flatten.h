@@ -36,7 +36,6 @@ class FlattenMapper : public Mapper {
   }
 
   void Opset7() override;
-  void SetOpInputOutputIndex() override;
 
  private:
   int64_t start_axis_;
