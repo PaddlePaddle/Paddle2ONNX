@@ -184,7 +184,7 @@ namespace paddle2onnx {
       }
     }
   }
-  
+
   int32_t PaddlePirParser::GetOpInputOutputName2Idx(int64_t op_id, std::string name, bool is_input) const {
       auto& op = global_blocks_ops[op_id];
       pir::IrContext* ctx = pir::IrContext::Instance();
@@ -194,6 +194,10 @@ namespace paddle2onnx {
                     .at("op_name")
                     .dyn_cast<pir::StrAttribute>()
                     .AsString();
+      }
+      std::string builtin_prefix = "builtin.";
+      if(op_name.substr(0, builtin_prefix.size()) == builtin_prefix) {
+          Assert(false, "builtin op " + op_name + " is not supported by GetOpInputOutputName2Idx.");
       }
       if(_op_arg_name_mappings.count(op_name)) {
         name = _op_arg_name_mappings.at(op_name).count(name) ? _op_arg_name_mappings.at(op_name).at(name) : name;

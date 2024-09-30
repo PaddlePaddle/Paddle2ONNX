@@ -201,7 +201,7 @@ class Mapper {
       return pir_parser_->GetOpInput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpInput(block_idx_, op_idx_, name);
-  }
+  } 
   std::vector<TensorInfo> GetOutput(const std::string &name) const {
     if (in_pir_mode) {
       int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
@@ -209,6 +209,17 @@ class Mapper {
     }
     return parser_->GetOpOutput(block_idx_, op_idx_, name);
   }
+
+  std::vector<TensorInfo> GetInput(int64_t input_idx) const {
+    Assert(in_pir_mode, "Only support PIR mode");
+    return pir_parser_->GetOpInput(pir_op_idx_, input_idx);
+  }
+
+  std::vector<TensorInfo> GetOutput(int64_t input_idx) const {
+    Assert(in_pir_mode, "Only support PIR mode");
+    return pir_parser_->GetOpOutput(pir_op_idx_, input_idx);
+  }
+
   // Judge whether Attribute(name)'s type is Var or Vars.
   bool IsAttrVar(const std::string &name) const {
     if (in_pir_mode) return pir_parser_->OpIsAttrVar(pir_op_idx_, name);
