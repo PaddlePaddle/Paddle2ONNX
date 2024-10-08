@@ -86,6 +86,9 @@ else()
   # add pybind11
   add_subdirectory(third_party/pybind11)
 
+  # add glog
+  add_subdirectory(third_party/glog)
+
   # find Python site-packages dir
   execute_process(
     COMMAND ${PYTHON_EXECUTABLE} -c
@@ -118,7 +121,7 @@ else()
   endif()
   set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
   target_link_libraries(paddle2onnx ${PADDLE_LIB} p2o_paddle_proto onnx
-                        pybind11::embed)
+                        pybind11::embed glog::glog)
 endif()
 
 if(WIN32)
@@ -194,7 +197,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
   endif()
 
   target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PADDLE_LIB}
-                                                          p2o_paddle_proto onnx)
+                                                          p2o_paddle_proto onnx glog::glog)
 
   if(MSVC)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})

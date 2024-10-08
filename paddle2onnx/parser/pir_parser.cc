@@ -24,6 +24,9 @@
 #include "paddle/pir/include/core/builtin_dialect.h"
 #include "paddle/pir/include/core/ir_context.h"
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
+#include "paddle/fluid/pir/dialect/operator/utils/op_yaml_info_parser.h"
+#include "paddle/fluid/pir/dialect/operator/utils/utils.h"
+#include "paddle/fluid/ir_adaptor/translator/op_compat_info.h"
 
 std::unordered_map<phi::DataType, paddle2onnx::framework::proto::VarType_Type>
     pir_dtype_to_onnx_dtype = {
@@ -151,6 +154,69 @@ namespace paddle2onnx {
       }
     }
     GetGlobalBlockOutputValueName();
+  }
+
+  void PaddlePirParser::GetOpArgNameMappings() {
+    const std::string pir_op_name_prefix = "pd_op.";
+    auto& normalizer = paddle::translator::OpNameNormalizer::instance();
+    const auto& op_name_mappings = normalizer.GetOpNameMappings();
+    const auto& op_arg_name_mappings = normalizer.GetOpArgNameMappings();
+    const auto& op_mutable_attribute_infos = normalizer.GetOpMutableAttributeInfos();
+    for(auto& item : op_arg_name_mappings) {
+      std::string op_name = pir_op_name_prefix + (op_name_mappings.count(item.first) ? op_name_mappings.at(item.first) : item.first );
+      std::unordered_map<std::string, std::string> arg_name_mapping;
+      for(auto& arg : item.second) {
+        arg_name_mapping[arg.second] = arg.first;
+      }
+      _op_arg_name_mappings[op_name] = arg_name_mapping;
+    }
+    
+    // mutable attibute name mappings
+    for(auto& item : op_mutable_attribute_infos) {
+      std::string op_name = pir_op_name_prefix + (op_name_mappings.count(item.first) ? op_name_mappings.at(item.first) : item.first );
+      for(auto& attr : item.second) {
+        for(auto& attr_item : attr.second)
+        {
+          _op_arg_name_mappings[op_name][attr_item] = attr.first;
+        }
+      }
+    }
+  }
+  
+  int32_t PaddlePirParser::GetOpInputOutputName2Idx(int64_t op_id, std::string name, bool is_input) const {
+      auto& op = global_blocks_ops[op_id];
+      pir::IrContext* ctx = pir::IrContext::Instance();
+      std::string op_name = op->name();
+      if (op->attributes().count("op_name")) {
+          op_name = op->attributes()
+                    .at("op_name")
+                    .dyn_cast<pir::StrAttribute>()
+                    .AsString();
+      }
+      if(_op_arg_name_mappings.count(op_name)) {
+        name = _op_arg_name_mappings.at(op_name).count(name) ? _op_arg_name_mappings.at(op_name).at(name) : name;
+      }
+      else {
+        if(op_name[op_name.size() - 1] == '_') {
+          std::string temp_op_name = op_name.substr(0, op_name.size() - 1);
+          if(_op_arg_name_mappings.count(temp_op_name)) {
+            name = _op_arg_name_mappings.at(temp_op_name).count(name) ? _op_arg_name_mappings.at(temp_op_name).at(name) : name;
+          }
+        }
+      }
+      pir::OpInfo op_info = ctx->GetRegisteredOpInfo(op_name);
+      paddle::dialect::OpYamlInfoParser yaml_parser(
+          op_info.GetInterfaceImpl<paddle::dialect::OpYamlInfoInterface>()->get_op_info_(op_name),
+          // paddle::dialect::IsLegacyOp(op_name));
+          false);
+      bool exist = is_input ? yaml_parser.InputName2Id().count(name) : yaml_parser.OutputName2Id().count(name);
+      PADDLE_ENFORCE_EQ(
+          exist,
+          true,
+          common::errors::InvalidArgument(
+              "Cannot find input/output name '%s' in op yaml info of %s.",
+              name, op_name));
+      return is_input ? yaml_parser.InputName2Id().at(name) : yaml_parser.OutputName2Id().at(name);
   }
 bool PaddlePirParser::LoadProgram(const std::string& model) {
   pir::IrContext* ctx = pir::IrContext::Instance();
@@ -298,6 +364,7 @@ bool PaddlePirParser::Init(const std::string& _model,
   GetGlobalBlocksOps();
   GetGlobalBlockInputOutputInfo();
   GetAllOpOutputName();
+  GetOpArgNameMappings();
   return true;
 }
 int PaddlePirParser::NumOfBlocks() const {

@@ -198,7 +198,6 @@ void Pool2dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
 }
 
 int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
-  SetOpInputOutputIndex();
   // NHWC is not supported : todo support NHWC
   if (data_format_ == "NHWC") {
     Error() << "NHWC format is not supported." << std::endl;
@@ -270,17 +269,7 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
-void Pool2dMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-    {"ksize", 1},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
 void Pool2dMapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
   if (in_pir_mode) {

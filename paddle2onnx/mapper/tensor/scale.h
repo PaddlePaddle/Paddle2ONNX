@@ -38,7 +38,6 @@ class ScaleMapper : public Mapper {
   }
 
   void Opset7() override;
-  void SetOpInputOutputIndex() override;
 
  private:
   float scale_ = 1.0;

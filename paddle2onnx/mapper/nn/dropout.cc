@@ -41,18 +41,7 @@ int32_t DropoutMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
-void DropoutMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-    {"Prob", 2},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
-
 void DropoutMapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
 

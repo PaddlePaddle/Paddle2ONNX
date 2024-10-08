@@ -73,7 +73,6 @@ class ActivationMapper : public Mapper {
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
-  void SetOpInputOutputIndex() override;
 
  private:
   std::map<std::string, std::string> op_mapper_;

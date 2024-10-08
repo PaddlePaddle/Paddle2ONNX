@@ -35,7 +35,6 @@ class DropoutMapper : public Mapper {
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
-  void SetOpInputOutputIndex() override;
 
  private:
   float dropout_prob_ = 0.0;

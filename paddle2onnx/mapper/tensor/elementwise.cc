@@ -43,18 +43,8 @@ int32_t ElementwiseMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
-void ElementwiseMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-    {"Y", 1},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
 
 void ElementwiseMapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");
@@ -96,18 +86,8 @@ void ElementwiseMapper::Opset7() {
     helper_->MakeNode("Identity", {output_name}, {output_info[0].name});
   }
 }
-void ElementWiseModMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-    {"Y", 1},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
 
 void ElementWiseModMapper::Opset10() {
-  SetOpInputOutputIndex();
   auto input_x_info = GetInput("X");
   auto input_y_info = GetInput("Y");
   auto output_info = GetOutput("Out");
@@ -174,18 +154,8 @@ void ElementWiseModMapper::Opset10() {
                     {output_info[0].name});
 }
 
-void ElementWiseFloordivMapper::SetOpInputOutputIndex() {
-  input_idx_ = {
-    {"X", 0},
-    {"Y", 1},
-  };
-  output_idx_ = {
-    {"Out", 0},
-  };
-}
 
 void ElementWiseFloordivMapper::Opset7() {
-  SetOpInputOutputIndex();
   auto input_x_info =  GetInput("X");
   auto input_y_info =  GetInput("Y");
   auto output_info = GetOutput("Out");
