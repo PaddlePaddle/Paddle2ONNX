@@ -71,9 +71,71 @@ class PaddlePirParser {
   bool OpHasAttr(pir::Operation *op, const std::string &name) const;
   std::vector<TensorInfo> GetOpInput(int64_t op_id, int64_t input_idx) const;
   std::vector<TensorInfo> GetOpOutput(int64_t op_id, int64_t output_idx) const;
-  std::vector<int64_t> GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const;
+  std::string GetOpArgName(int64_t op_id, std::string name) const;
   int32_t GetOpInputOutputName2Idx(int64_t op_id, std::string name, bool is_input) const;
-  
+  bool IsConstantTensor(int64_t op_id, int64_t input_idx) const;
+
+  template<typename T> 
+  bool TryGetTensorValue(int64_t op_id, int64_t input_idx, std::vector<T> *data) const {
+    PADDLE_ENFORCE_GT(
+      input_idx,
+      -1,
+      common::errors::InvalidArgument(
+        "input_idx should be greater than -1 in TryGetTensorValue."));
+    TensorInfo tensor_info = GetTensorInfo(global_blocks_ops[op_id]->operand(input_idx).source())[0];
+    auto iter = params.find(tensor_info.name);
+    if (iter != params.end()) {
+      (iter->second).get(data);
+      return true;
+    }
+    pir::Operation* op = global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
+    int32_t dtype = tensor_info.dtype;
+    if (dtype == P2ODataType::INT64 || dtype == P2ODataType::INT32) {
+      std::vector<int64_t> value;
+      GetOpAttr(op, "value", &value);
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::FP32) {
+      std::vector<float> value;
+      GetOpAttr(op, "value", &value);
+      data->assign(value.begin(), value.end());
+    } else if (dtype == P2ODataType::FP64) {
+      std::vector<double> value;
+      GetOpAttr(op, "value", &value);
+      data->assign(value.begin(), value.end());
+    } else {
+      Assert(false, "Only support int32/int64/float32/float64 data type now.");
+    }
+    return true;
+  }
+
+  template<typename T> 
+  bool TryGetTensorValue(int64_t op_id, int64_t input_idx, T *data) const {
+    PADDLE_ENFORCE_GT(
+      input_idx,
+      -1,
+      common::errors::InvalidArgument(
+        "input_idx should be greater than -1 in TryGetTensorValue."));
+    TensorInfo tensor_info = GetTensorInfo(global_blocks_ops[op_id]->operand(input_idx).source())[0];
+    pir::Operation* op = global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
+    PADDLE_ENFORCE_EQ(
+      op->HasAttribute("value"),
+      true,
+      common::errors::InvalidArgument(
+        "Cannot found attribute 'value' in op %s", op->name()));
+    auto value = op->attribute("value");
+    if (value.isa<pir::Int32Attribute>()) {
+      *data = value.dyn_cast<::pir::Int32Attribute>().data();
+    } else if(value.isa<pir::Int64Attribute>()) {
+      *data = value.dyn_cast<::pir::Int64Attribute>().data();
+    } else if(value.isa<pir::FloatAttribute>()) {
+      *data = value.dyn_cast<::pir::FloatAttribute>().data();
+    } else if(value.isa<pir::DoubleAttribute>()) {
+      *data = value.dyn_cast<::pir::DoubleAttribute>().data();
+    } else {
+      Assert(false, "Only support int32/int64/float32/float64 data type now.");
+    } 
+    return true;
+  }
 
  private:
   bool IsAttrVar(const pir::Operation *op, const int64_t &attr_id) const;
