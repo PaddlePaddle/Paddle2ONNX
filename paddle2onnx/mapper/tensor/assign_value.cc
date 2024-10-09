@@ -20,6 +20,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(assign_value, AssignValueMapper)
+REGISTER_PIR_MAPPER(assign_value_, AssignValueMapper)
 
 int32_t AssignValueMapper::GetMinOpsetVersion(bool verbose) {
   int32_t dtype = static_cast<int32_t>(dtype_);
@@ -34,15 +35,15 @@ int32_t AssignValueMapper::GetMinOpsetVersion(bool verbose) {
 void AssignValueMapper::Opset7() {
   auto output_info = GetOutput("Out");
   int32_t dtype = static_cast<int32_t>(dtype_);
-  if (dtype == P2ODataType::INT32) {
+  if (int64_values_.size() > 0) {
     helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
                     shape_, int64_values_);
-  } else if (dtype == P2ODataType::FP32) {
+  } else if (fp32_values_.size() > 0) {
     helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
                     shape_, fp32_values_);
-  } else if (dtype == P2ODataType::INT64) {
+  } else if (fp64_values_.size() > 0) {
     helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
-                    shape_, int64_values_);
+                    shape_, fp64_values_);
   }
 }
 
