@@ -27,6 +27,11 @@ class ConcatMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }
+  ConcatMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
+      : Mapper(p, helper, i) {
+    in_pir_mode = true;
+    // GetAttr("axis", &axis_); axis serves as input in PIR
+  }
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
 

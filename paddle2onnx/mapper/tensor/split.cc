@@ -16,21 +16,32 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(split, SplitMapper)
+REGISTER_PIR_MAPPER(split, SplitMapper)
 
 int32_t SplitMapper::GetMinOpsetVersion(bool verbose) {
   int64_t axis = axis_;
-  if (HasInput("AxisTensor")) {
-    std::vector<int64_t> value;
-    if (!TryGetInputValue("AxisTensor", &value)) {
-      Error() << "While AxisTensor as the input and it's not a constant "
-                 "tensor, the conversion is not supported yet."
-              << std::endl;
-      return -1;
+  if (HasInput("axis") || HasInput("AxisTensor")) {
+    if(in_pir_mode) {
+      double value = 0;
+      TryGetInputValue("axis", &value);
+      axis = (int64_t)value;
     }
-    axis = value[0];
+    else {
+      std::vector<int64_t> value;
+      if (!TryGetInputValue("AxisTensor", &value)) {
+        Error() << "While AxisTensor as the input and it's not a constant "
+                   "tensor, the conversion is not supported yet."
+                << std::endl;
+        return -1;
+      }
+      axis = value[0];
+    }
   }
 
-  if (HasInput("SectionsTensorList")) {
+  if (HasInput("sections") || HasInput("SectionsTensorList")) {
+    if(in_pir_mode) {
+      TryGetInputValue("sections", &sections_);
+    }
     Logger(verbose, 13) << "While has input SectionsTensorList, "
                         << RequireOpset(13) << std::endl;
     return 13;
@@ -53,13 +64,21 @@ int32_t SplitMapper::GetMinOpsetVersion(bool verbose) {
 void SplitMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
+  std::cout << "output_info size: " << output_info.size() << std::endl;
 
   int64_t axis = axis_;
-  if (HasInput("AxisTensor")) {
-    std::vector<int64_t> value;
-    Assert(TryGetInputValue("AxisTensor", &value),
-           "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
-    axis = value[0];
+  if (HasInput("axis") || HasInput("AxisTensor")) {
+    if(in_pir_mode) {
+      double value = 0;
+      TryGetInputValue("axis", &value);
+      axis = (int64_t)value;
+    }
+    else {
+      std::vector<int64_t> value;
+      Assert(TryGetInputValue("AxisTensor", &value),
+             "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
+      axis = value[0];
+    }
   }
   if (axis < 0) {
     axis += input_info[0].Rank();
@@ -96,20 +115,32 @@ void SplitMapper::Opset13() {
   auto output_info = GetOutput("Out");
 
   int64_t axis = axis_;
-  if (HasInput("AxisTensor")) {
-    std::vector<int64_t> value;
-    Assert(TryGetInputValue("AxisTensor", &value),
-           "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
-    axis = value[0];
+  if (HasInput("axis") || HasInput("AxisTensor")) {
+    if(in_pir_mode) {
+      double value = 0;
+      TryGetInputValue("axis", &value);
+      axis = (int64_t)value;
+    }
+    else {
+      std::vector<int64_t> value;
+      Assert(TryGetInputValue("AxisTensor", &value),
+             "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
+      axis = value[0];
+    }
   }
   if (axis < 0) {
     axis += input_info[0].Rank();
   }
 
   std::string splits = "";
-  if (HasInput("SectionsTensorList")) {
-    auto info = GetInput("SectionsTensorList");
-    splits = helper_->ConcatIndices(info);
+  if (HasInput("sections") || HasInput("SectionsTensorList")) {
+    if(in_pir_mode) {
+      auto info = GetInput("sections");
+      splits = helper_->ConcatIndices(info);
+    } else {
+      auto info = GetInput("SectionsTensorList");
+      splits = helper_->ConcatIndices(info);
+    }
   } else if (sections_.size() > 0) {
     int sum_of_kown_dim = 0;
     for (size_t i = 0; i < sections_.size(); ++i) {
@@ -133,12 +164,10 @@ void SplitMapper::Opset13() {
     output_names[i] = output_info[i].name;
   }
   if (splits != "") {
-
     auto node =
         helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
     AddAttribute(node, "axis", axis);
   } else {
-
     auto node = helper_->MakeNode("Split", {input_info[0].name}, output_names);
     AddAttribute(node, "axis", axis);
   }
@@ -150,20 +179,32 @@ void SplitMapper::Opset18() {
   auto output_info = GetOutput("Out");
 
   int64_t axis = axis_;
-  if (HasInput("AxisTensor")) {
-    std::vector<int64_t> value;
-    Assert(TryGetInputValue("AxisTensor", &value),
-           "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
-    axis = value[0];
+  if (HasInput("axis") || HasInput("AxisTensor")) {
+    if(in_pir_mode) {
+      double value = 0;
+      TryGetInputValue("axis", &value);
+      axis = (int64_t)value;
+    }
+    else {
+      std::vector<int64_t> value;
+      Assert(TryGetInputValue("AxisTensor", &value),
+             "[Paddle2ONNX](split) Cannot get constant value from AxisTensor.");
+      axis = value[0];
+    }
   }
   if (axis < 0) {
     axis += input_info[0].Rank();
   }
   // sections attribute
   std::string splits = "";
-  if (HasInput("SectionsTensorList")) {
-    auto info = GetInput("SectionsTensorList");
-    splits = helper_->ConcatIndices(info);
+  if (HasInput("sections") || HasInput("SectionsTensorList")) {
+    if(in_pir_mode) {
+      auto info = GetInput("sections");
+      splits = helper_->ConcatIndices(info);
+    } else {
+      auto info = GetInput("SectionsTensorList");
+      splits = helper_->ConcatIndices(info);
+    }
   } else if (sections_.size() > 0) {
     int sum_of_kown_dim = 0;
     for (size_t i = 0; i < sections_.size(); ++i) {
