@@ -56,12 +56,20 @@ class Mapper {
     if (opset_version <= helper_->GetOpsetVersion()) {
       v = false;
     }
-    auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
     std::string output_name = "";
-    if (op.outputs(0).arguments_size() > 0) {
-      output_name = op.outputs(0).arguments(0);
+    std::string op_type = "";
+    if(in_pir_mode) {
+      auto &op = pir_parser_-> global_blocks_ops[pir_op_idx_];
+      output_name = GetOutput(0)[0].name;
+      op_type = op->name();
     }
-    std::string op_type = op.type();
+    else {
+      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      if (op.outputs(0).arguments_size() > 0) {
+        output_name = op.outputs(0).arguments(0);
+      }
+      op_type = op.type();
+    }
     std::string prefix = "[Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(v, prefix);
   }
@@ -183,15 +191,13 @@ class Mapper {
 
   bool HasInput(const std::string &name) const {
     if (in_pir_mode) {
-      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true);
-      return pir_parser_->OpHasInput(pir_op_idx_, value_idx);
+      return pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true) != -1;
     }
     return parser_->OpHasInput(block_idx_, op_idx_, name);
   }
   bool HasOutput(const std::string &name) const {
     if (in_pir_mode) {
-      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
-      return pir_parser_->OpHasOutput(pir_op_idx_, value_idx);
+      return pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false) != -1;
     }
     return parser_->OpHasOutput(block_idx_, op_idx_, name);
   }
@@ -201,7 +207,7 @@ class Mapper {
       return pir_parser_->GetOpInput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpInput(block_idx_, op_idx_, name);
-  }
+  } 
   std::vector<TensorInfo> GetOutput(const std::string &name) const {
     if (in_pir_mode) {
       int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
@@ -209,6 +215,17 @@ class Mapper {
     }
     return parser_->GetOpOutput(block_idx_, op_idx_, name);
   }
+
+  std::vector<TensorInfo> GetInput(int64_t input_idx) const {
+    Assert(in_pir_mode, "Only support PIR mode");
+    return pir_parser_->GetOpInput(pir_op_idx_, input_idx);
+  }
+
+  std::vector<TensorInfo> GetOutput(int64_t input_idx) const {
+    Assert(in_pir_mode, "Only support PIR mode");
+    return pir_parser_->GetOpOutput(pir_op_idx_, input_idx);
+  }
+
   // Judge whether Attribute(name)'s type is Var or Vars.
   bool IsAttrVar(const std::string &name) const {
     if (in_pir_mode) return pir_parser_->OpIsAttrVar(pir_op_idx_, name);
@@ -220,10 +237,13 @@ class Mapper {
     return parser_->GetOpAttrVar(block_idx_, op_idx_, name);
   }
 
+  /*
+   * todo(wangmingkai02): add GetInputAttrVar function.
   std::vector<int64_t> GetInputAttrVar(const std::string &input_name, const std::string &attr_name) const {
     int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_name, true);
     return pir_parser_->GetOpAttrVar(pir_op_idx_, value_idx, attr_name);
   }
+  */
   
 
   bool HasAttr(const std::string &name) const {
@@ -239,7 +259,7 @@ class Mapper {
   void GetAttr(const std::string &name, int64_t *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -248,7 +268,7 @@ class Mapper {
   void GetAttr(const std::string &name, float *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -257,7 +277,7 @@ class Mapper {
   void GetAttr(const std::string &name, double *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -266,7 +286,7 @@ class Mapper {
   void GetAttr(const std::string &name, bool *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -275,7 +295,7 @@ class Mapper {
   void GetAttr(const std::string &name, std::string *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -284,7 +304,7 @@ class Mapper {
   void GetAttr(const std::string &name, std::vector<int64_t> *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -293,7 +313,7 @@ class Mapper {
   void GetAttr(const std::string &name, std::vector<float> *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -302,7 +322,7 @@ class Mapper {
   void GetAttr(const std::string &name, std::vector<double> *val) {
     if (in_pir_mode) {
       auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, name, val);
+      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
     } else {
       auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
@@ -310,8 +330,14 @@ class Mapper {
   }
 
   bool IsConstantInput(const std::string &input_key) const {
-    auto input_info = GetInput(input_key);
-    return parser_->IsConstantTensor(block_idx_, input_info[0].name);
+    if(in_pir_mode) {
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_key, true);
+      return pir_parser_->IsConstantTensor(pir_op_idx_, value_idx);
+    }
+    else {
+      auto input_info = GetInput(input_key);
+      return parser_->IsConstantTensor(block_idx_, input_info[0].name);
+    }
   }
 
   bool IsConstant(const TensorInfo &info) const {
@@ -320,8 +346,23 @@ class Mapper {
 
   template <typename T>
   bool TryGetInputValue(const std::string &input_key, std::vector<T> *data) {
-    auto input_info = GetInput(input_key);
-    return parser_->TryGetTensorValue(block_idx_, input_info[0].name, data);
+    if(in_pir_mode) {
+      return pir_parser_->TryGetTensorValue(pir_op_idx_, pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_key, true), data);
+    }
+    else {
+      auto input_info = GetInput(input_key);
+      return parser_->TryGetTensorValue(block_idx_, input_info[0].name, data);
+    }
+  }
+
+  template <typename T>
+  bool TryGetInputValue(const std::string &input_key, T *data) {
+    if(in_pir_mode) {
+      return pir_parser_->TryGetTensorValue(pir_op_idx_, pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_key, true), data);
+    }
+    else {
+      Assert(false, "Not support in old IR.");
+    }
   }
 
   template <typename T>

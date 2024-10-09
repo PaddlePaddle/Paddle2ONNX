@@ -280,8 +280,8 @@ void Pool2dMapper::Opset7() {
       k_size_.push_back(ksize.shape[i]);
     }
     */
-   k_size_ = GetInputAttrVar("ksize", "value");
-    
+    // k_size_ = GetInputAttrVar("ksize", "value");
+    TryGetInputValue("ksize", &k_size_);
   } else{
     GetAttr("ksize", &k_size_);
   }

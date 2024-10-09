@@ -42,10 +42,16 @@ inline std::string convert_pir_op_name(const std::string pir_op_name) {
         {"add", "elementwise_add"}};
   std::string op_name = pir_op_name;
   std::string prefix = "pd_op.";
+  std::string builtin_prefix = "builtin.";
 
   size_t prefix_pos = op_name.find(prefix);
   if (prefix_pos != std::string::npos) {
     op_name = op_name.substr(prefix_pos + prefix.size());
+  }
+  else {
+    if(op_name.substr(0, builtin_prefix.size()) == builtin_prefix) {
+        op_name[builtin_prefix.size() - 1] = '_';
+    }
   }
   auto it = op_name_mappings.find(op_name);
   if (it != op_name_mappings.end()) {
