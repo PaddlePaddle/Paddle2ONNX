@@ -525,9 +525,9 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
       found = true;
       if (pair.second.isa<pir::Int32Attribute>()) {
         *res = pair.second.dyn_cast<::pir::Int32Attribute>().data();
-      } else {
+      } else if (pair.second.isa<pir::Int64Attribute>()) {
         *res = pair.second.dyn_cast<::pir::Int64Attribute>().data();
-      }
+      } 
       break;
     }
   }
