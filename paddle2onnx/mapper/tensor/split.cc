@@ -17,13 +17,16 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(split, SplitMapper)
 REGISTER_PIR_MAPPER(split, SplitMapper)
+REGISTER_PIR_MAPPER(split_with_num, SplitMapper)
 
 int32_t SplitMapper::GetMinOpsetVersion(bool verbose) {
   int64_t axis = axis_;
   if (HasInput("axis") || HasInput("AxisTensor")) {
     if(in_pir_mode) {
       double value = 0;
-      TryGetInputValue("axis", &value);
+      std::string attr_name = "AxisTensor";
+      if(HasInput("axis")) attr_name = "axis";
+      TryGetInputValue(attr_name, &value);
       axis = (int64_t)value;
     }
     else {
@@ -62,15 +65,27 @@ int32_t SplitMapper::GetMinOpsetVersion(bool verbose) {
 }
 
 void SplitMapper::Opset7() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
-  std::cout << "output_info size: " << output_info.size() << std::endl;
-
+  std::vector<TensorInfo> input_info;
+  std::vector<TensorInfo> output_info;
+  if(HasInput("X")) {
+    input_info = GetInput("X");
+  }
+  else{
+    input_info = GetInput("x");
+  }
+  if(HasOutput("Out")) {
+    output_info = GetOutput("Out");
+  }
+  else {
+    output_info = GetOutput("out");
+  }
   int64_t axis = axis_;
   if (HasInput("axis") || HasInput("AxisTensor")) {
     if(in_pir_mode) {
       double value = 0;
-      TryGetInputValue("axis", &value);
+      std::string attr_name = "AxisTensor";
+      if(HasInput("axis")) attr_name = "axis";
+      TryGetInputValue(attr_name, &value);
       axis = (int64_t)value;
     }
     else {
@@ -87,19 +102,30 @@ void SplitMapper::Opset7() {
          "[Paddle2ONNX](split) While SectionTensorList as input, requires "
          "opset_version >= 13.");
 
-  int sum_of_kown_dim = 0;
-  for (size_t i = 0; i < sections_.size(); ++i) {
-    if (sections_[i] > 0) {
-      sum_of_kown_dim += sections_[i];
-    }
+  if(HasInput("sections")) {
+    TryGetInputValue("sections", &sections_);
   }
-  for (size_t i = 0; i < sections_.size(); ++i) {
-    if (sections_[i] < 0) {
-      Assert(input_info[0].shape[axis] > 0,
-             "Cannot convert split op, while there's -1 in sections and cannot "
-             "be infered by input shape.");
-      sections_[i] = input_info[0].shape[axis] - sum_of_kown_dim;
+
+  if(sections_.size() > 0) {
+    int sum_of_kown_dim = 0;
+    for (size_t i = 0; i < sections_.size(); ++i) {
+      if (sections_[i] > 0) {
+        sum_of_kown_dim += sections_[i];
+      }
     }
+    for (size_t i = 0; i < sections_.size(); ++i) {
+      if (sections_[i] < 0) {
+        Assert(input_info[0].shape[axis] > 0,
+               "Cannot convert split op, while there's -1 in sections and cannot "
+               "be infered by input shape.");
+        sections_[i] = input_info[0].shape[axis] - sum_of_kown_dim;
+      }
+    }
+  } else {
+    GetAttr("num", &num_);
+    int64_t each_part_size = input_info[0].shape[axis] / num_ ;
+    sections_ = std::vector<int64_t>(num_, each_part_size) ;
+    sections_[num_ - 1] += input_info[0].shape[axis] % num_;
   }
 
   std::vector<std::string> output_names(output_info.size());
@@ -111,14 +137,28 @@ void SplitMapper::Opset7() {
 }
 
 void SplitMapper::Opset13() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  std::vector<TensorInfo> input_info;
+  std::vector<TensorInfo> output_info;
+  if(HasInput("X")) {
+    input_info = GetInput("X");
+  }
+  else{
+    input_info = GetInput("x");
+  }
+  if(HasOutput("Out")) {
+    output_info = GetOutput("Out");
+  }
+  else {
+    output_info = GetOutput("out");
+  }
 
   int64_t axis = axis_;
   if (HasInput("axis") || HasInput("AxisTensor")) {
     if(in_pir_mode) {
       double value = 0;
-      TryGetInputValue("axis", &value);
+      std::string attr_name = "AxisTensor";
+      if(HasInput("axis")) attr_name = "axis";
+      TryGetInputValue(attr_name, &value);
       axis = (int64_t)value;
     }
     else {
@@ -133,15 +173,13 @@ void SplitMapper::Opset13() {
   }
 
   std::string splits = "";
-  if (HasInput("sections") || HasInput("SectionsTensorList")) {
-    if(in_pir_mode) {
-      auto info = GetInput("sections");
-      splits = helper_->ConcatIndices(info);
-    } else {
-      auto info = GetInput("SectionsTensorList");
-      splits = helper_->ConcatIndices(info);
+  if (HasInput("SectionsTensorList")) {
+    auto info = GetInput("SectionsTensorList");
+    splits = helper_->ConcatIndices(info);
+  } else if (sections_.size() > 0 || HasInput("sections")) {
+    if(HasInput("sections")) {
+      TryGetInputValue("sections", &sections_);
     }
-  } else if (sections_.size() > 0) {
     int sum_of_kown_dim = 0;
     for (size_t i = 0; i < sections_.size(); ++i) {
       if (sections_[i] > 0) {
@@ -157,7 +195,15 @@ void SplitMapper::Opset13() {
       }
     }
     splits = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, sections_);
+  } else {
+    if(HasAttr("num")) {
+      GetAttr("num", &num_);
+      int64_t each_part_size = input_info[0].shape[axis] / num_ ;
+      sections_ = std::vector<int64_t>(num_, each_part_size);
+      sections_[num_ - 1] += input_info[0].shape[axis] % num_;
+    }
   }
+  
 
   std::vector<std::string> output_names(output_info.size());
   for (size_t i = 0; i < output_info.size(); ++i) {
@@ -168,21 +214,40 @@ void SplitMapper::Opset13() {
         helper_->MakeNode("Split", {input_info[0].name, splits}, output_names);
     AddAttribute(node, "axis", axis);
   } else {
-    auto node = helper_->MakeNode("Split", {input_info[0].name}, output_names);
-    AddAttribute(node, "axis", axis);
+    if(HasAttr("num")) {
+      helper_->Split(input_info[0].name, output_names, sections_, axis);
+    }
+    else {
+      auto node = helper_->MakeNode("Split", {input_info[0].name}, output_names);
+      AddAttribute(node, "axis", axis);
+    }
   }
 }
 
 
 void SplitMapper::Opset18() {
-  auto input_info = GetInput("X");
-  auto output_info = GetOutput("Out");
+  std::vector<TensorInfo> input_info;
+  std::vector<TensorInfo> output_info;
+  if(HasInput("X")) {
+    input_info = GetInput("X");
+  }
+  else{
+    input_info = GetInput("x");
+  }
+  if(HasOutput("Out")) {
+    output_info = GetOutput("Out");
+  }
+  else {
+    output_info = GetOutput("out");
+  }
 
   int64_t axis = axis_;
   if (HasInput("axis") || HasInput("AxisTensor")) {
     if(in_pir_mode) {
       double value = 0;
-      TryGetInputValue("axis", &value);
+      std::string attr_name = "AxisTensor";
+      if(HasInput("axis")) attr_name = "axis";
+      TryGetInputValue(attr_name, &value);
       axis = (int64_t)value;
     }
     else {
@@ -233,15 +298,15 @@ void SplitMapper::Opset18() {
     return ;
   } 
   // [num] attribute -> [split] input
-  int64_t num = input_info[0].shape[axis_]; // default
+  int64_t num = input_info[0].shape[axis]; // default
   if (HasAttr("num")){
      GetAttr("num", &num);
   }
   // Question: Why do we need to call helper->Split() instead of helper->MakeNode("Split")?
   // Answer: Split-18 requires either a split input or the num_ouputs attribute. Here we choose to add split input.
-  int64_t each_part_size = input_info[0].shape[axis_] / num ;
+  int64_t each_part_size = input_info[0].shape[axis] / num ;
   std::vector<int64_t> splits_size = std::vector<int64_t>(num, each_part_size) ;
-  helper_->Split(input_info[0].name, output_names, splits_size, axis_);
+  helper_->Split(input_info[0].name, output_names, splits_size, axis);
 }
 
 }  // namespace paddle2onnx
