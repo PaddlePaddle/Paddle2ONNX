@@ -35,6 +35,14 @@ def _test_with_pir(func):
     return wrapper
 
 
+def _test_only_pir(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with paddle.pir_utils.DygraphPirGuard():
+            func(*args, **kwargs)
+    return wrapper
+
+
 def compare_data(result_data, expect_data, delta, rtol):
     res_data = np.allclose(result_data, expect_data, atol=delta, rtol=rtol, equal_nan=True)
     if res_data is True:
