@@ -19,6 +19,7 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(transpose2, Transpose2Mapper)
+REGISTER_PIR_MAPPER(transpose, Transpose2Mapper)
 
 void Transpose2Mapper::Opset7() {
   auto input_info = GetInput("X");

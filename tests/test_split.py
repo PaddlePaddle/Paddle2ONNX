@@ -15,6 +15,7 @@
 import paddle
 from onnxbase import APIOnnx
 from onnxbase import randtool
+from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -47,6 +48,7 @@ class Net2(paddle.nn.Layer):
         x = paddle.split(inputs, num_or_sections=[2,3,5], axis=-1)
         return x
     
+@_test_with_pir
 def test_split_v7_1():
     """
     api: paddle.split
@@ -63,6 +65,7 @@ def test_split_v7_1():
 
 
 
+@_test_with_pir
 def test_split_v7_2():
     """
     api: paddle.split
@@ -76,6 +79,7 @@ def test_split_v7_2():
                            randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
+@_test_with_pir
 def test_split_v13_1():
     """
     api: paddle.split
@@ -91,6 +95,7 @@ def test_split_v13_1():
     obj.run()
 
 
+@_test_with_pir
 def test_split_v13_2():
     """
     api: paddle.split
@@ -105,6 +110,8 @@ def test_split_v13_2():
                            randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
+
+@_test_with_pir
 def test_split_v18_1():
     """
     api: paddle.split
@@ -120,6 +127,7 @@ def test_split_v18_1():
     obj.run()
 
 
+@_test_with_pir
 def test_split_v18_2():
     """
     api: paddle.split
