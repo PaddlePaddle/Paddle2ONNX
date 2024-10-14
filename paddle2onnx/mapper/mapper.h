@@ -204,6 +204,7 @@ class Mapper {
   std::vector<TensorInfo> GetInput(const std::string &name) const {
     if (in_pir_mode) {
       int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true);
+      P2OLogger() << "Input: name=" << name << " , value_idx=" << value_idx << std::endl;
       return pir_parser_->GetOpInput(pir_op_idx_, value_idx);
     }
     return parser_->GetOpInput(block_idx_, op_idx_, name);

@@ -229,6 +229,11 @@ namespace paddle2onnx {
           // paddle::dialect::IsLegacyOp(op_name));
           false);
       name = GetOpArgName(op_id, name);
+      P2OLogger() << "Op name : " << op_name << std::endl;
+      for (auto [k, v] : yaml_parser.InputName2Id()) {
+        P2OLogger() << "  Arg name : " << k << " , idx : " << v << std::endl;
+      }
+      P2OLogger() << "  Arg name : " << name << std::endl;
       bool exist = is_input ? yaml_parser.InputName2Id().count(name) : yaml_parser.OutputName2Id().count(name);
       if (!exist) {
         P2OLogger() << "Cannot find input/output name '" << name
