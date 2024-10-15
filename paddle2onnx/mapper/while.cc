@@ -39,19 +39,17 @@ void ModelExporter::ExportWhile(const PaddleParser& parser,
   std::vector<std::string> output_names;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
 
-  // make loop iter
-  //   auto iter_name = MapperHelper::Get()->GenName("loop.iter");
-  //   TensorInfo iter_info(iter_name, std::vector<int64_t>(1, 1),
-  //   P2ODataType::INT64);
-  //   inputs.push_back(std::move(MakeValueInfo(iter_info)));
+  auto iter_name = MapperHelper::Get()->GenName("loop.iter");
+  TensorInfo iter_info(iter_name, std::vector<int64_t>(1, 1),
+                       P2ODataType::INT64);
+  inputs.push_back(std::move(MakeValueInfo(iter_info)));
 
-  // make cond
+  // Make cond
   input_names.push_back(cond_info[0].name);
   inputs.push_back(std::move(MakeValueInfo(cond_info[0])));
-  output_names.push_back(cond_info[0].name);
   outputs.push_back(std::move(std::move(MakeValueInfo(cond_info[0]))));
 
-  // other inputs
+  // Make other inputs
   for (size_t i = 0; i < x_info.size(); ++i) {
     if (std::find(input_names.begin(), input_names.end(), x_info[i].name) !=
         input_names.end()) {
@@ -61,28 +59,23 @@ void ModelExporter::ExportWhile(const PaddleParser& parser,
     if (x_info[i].is_tensor_array) {
       continue;
     }
+
     input_names.push_back(x_info[i].name);
     inputs.push_back(std::move(MakeValueInfo(x_info[i])));
-  }
-
-  for (size_t i = 0; i < out_info.size(); i++) {
-    if (std::find(output_names.begin(), output_names.end(), out_info[i].name) !=
-        output_names.end()) {
-      continue;
-    }
-    if (out_info[i].is_tensor_array) {
-      continue;
-    }
-    output_names.push_back(out_info[i].name);
-    outputs.push_back(std::move(MakeValueInfo(out_info[i])));
+    outputs.push_back(std::move(MakeValueInfo(x_info[i])));
   }
 
   graph = ExportBlock(parser, sub_block_idx, parameters, inputs, outputs, true);
 
   /********************* Creat Body Gragh *********************/
+  // Make Fake iter
   auto fake_iter = temp_helper->Constant(ONNX_NAMESPACE::TensorProto::INT64,
                                          std::vector<int64_t>(1, 1024));
   input_names.insert(input_names.begin(), fake_iter);
+  for(int i=2;i<input_names.size();i++) {
+    output_names.push_back(input_names[i]);
+  }
+  
   auto loop_node = temp_helper->MakeNode("Loop", input_names, output_names);
   AddAttribute(loop_node, "body", graph);
 }

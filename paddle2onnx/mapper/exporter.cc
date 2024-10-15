@@ -524,31 +524,24 @@ void ModelExporter::ProcessGraphDumplicateNames(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
     std::map<std::string, QuantizeInfo> &quantize_info) {
-  std::set<std::string> tensor_names;
   std::map<std::string, std::string> renamer;
   for (auto &item : parameters) {
     for (size_t i = 0; i < item->output_size(); ++i) {
-      P2OLogger(true) << "tenser_name:" << item->output(i) << std::endl;
-    }
-  }
-
-  for (auto &item : parameters) {
-    for (size_t i = 0; i < item->output_size(); ++i) {
-      if (tensor_names.find(item->output(i)) != tensor_names.end()) {
-        P2OLogger(true) << "tenser_name:" << item->output(i) << std::endl;
-        Assert(false, "There's dumplicate names in exported parameters.");
+      if (tensor_names_.find(item->output(i)) != tensor_names_.end()) {
+        P2OLogger() << "[WARNING] There's dumplicate names in exported parameters.";
+        continue;
       }
-      tensor_names.insert(item->output(i));
+      tensor_names_.insert(item->output(i));
     }
   }
 
   for (auto &item : inputs) {
-    if (tensor_names.find(item->name()) != tensor_names.end()) {
+    if (tensor_names_.find(item->name()) != tensor_names_.end()) {
       continue;
       // Assert(false, "There's dumplicate names:" + item->name() + " in
       // exported parameters and inputs.");
     }
-    tensor_names.insert(item->name());
+    tensor_names_.insert(item->name());
   }
 
   for (auto &item : nodes) {
@@ -566,7 +559,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
     // if there's dumplicate name , it will generate new name and replace the
     // dumplicate name
     for (size_t i = 0; i < item->output_size(); ++i) {
-      if (tensor_names.find(item->output(i)) != tensor_names.end()) {
+      if (tensor_names_.find(item->output(i)) != tensor_names_.end()) {
         std::string renamed_tensor_name = item->output(i);
         while (renamer.find(renamed_tensor_name) != renamer.end()) {
           renamed_tensor_name = renamer[renamed_tensor_name];
@@ -582,7 +575,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
         *(item->mutable_output(i)) = new_tensor_name;
         renamer[renamed_tensor_name] = new_tensor_name;
       }
-      tensor_names.insert(item->output(i));
+      tensor_names_.insert(item->output(i));
     }
   }
 
@@ -700,6 +693,7 @@ std::string ModelExporter::Run(
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> outputs;
   ExportInputOutputs(parser, inputs, outputs);
 
+  tensor_names_.clear();
   auto share_graph = ExportBlock(parser, 0, parameters, inputs, outputs);
   *onnx_model_.mutable_graph() = share_graph;
 

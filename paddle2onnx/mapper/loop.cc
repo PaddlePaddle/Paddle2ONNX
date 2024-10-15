@@ -16,7 +16,6 @@
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
-
 void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
                                int32_t opset_version, int64_t block_id,
                                int64_t op_id, bool verbose) {
@@ -164,6 +163,5 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
   attr->set_type(ONNX_NAMESPACE::AttributeProto::GRAPH);
   *(attr->mutable_g()) = *(graph.get());
 }
-
 }  // namespace paddle2onnx
 #endif

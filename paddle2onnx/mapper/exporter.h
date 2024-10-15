@@ -87,6 +87,7 @@ class ModelExporter {
   void ExportParameters(
       const PaddleParser &parser,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
+  std::set<std::string> tensor_names_;
   void ProcessGraphDumplicateNames(
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
