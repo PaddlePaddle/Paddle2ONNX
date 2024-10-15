@@ -100,7 +100,7 @@ class PaddlePirParser {
       common::errors::InvalidArgument(
         "Cannot found attribute '%s' in op %s", attr_name, op->name()));
 
-    auto array_list = op->attribute(attr_name).dyn_cast<::pir::ArrayAttribute>().AsVector();;
+    auto array_list = op->attribute(attr_name).dyn_cast<::pir::ArrayAttribute>().AsVector();
     if (array_list.size() > 0) {
       if(array_list[0].isa<::pir::FloatAttribute>()) {
         std::vector<float> res;
