@@ -114,16 +114,11 @@ class PaddlePirParser {
       (iter->second).get(data);
       return true;
     }
-<<<<<<< HEAD
-    pir::Operation* op =
-        global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
-=======
     std::string attr_name = "value";
     pir::Operation* op = global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
     if(op->name() == "pd_op.assign_value_") {
       attr_name = "values";
     }
->>>>>>> d654ae9637c40e361ea2546b7f84661dcddff2e2
     int32_t dtype = tensor_info.dtype;
     PADDLE_ENFORCE_EQ(
       op->HasAttribute(attr_name),
