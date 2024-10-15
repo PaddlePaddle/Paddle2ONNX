@@ -36,10 +36,45 @@ class AssignValueMapper : public Mapper {
       GetAttr("int64_values", &int64_values_);
     }
   }
+
+  AssignValueMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
+      : Mapper(p, helper, i) {
+    in_pir_mode = true;
+    // GetAttr("dtype", &dtype_);
+    dtype_ = GetOutput("Out")[0].dtype;
+    GetAttr("shape", &shape_);
+    int32_t dtype = static_cast<int32_t>(dtype_);
+    auto array_list = p.global_blocks_ops[i]->attribute("values").dyn_cast<::pir::ArrayAttribute>().AsVector();;
+    if (array_list.size() > 0) {
+      if(array_list[0].isa<::pir::FloatAttribute>()) {
+        auto res = &fp32_values_;
+        for (size_t i = 0; i < array_list.size(); ++i) {
+          res->push_back(
+            array_list[i].dyn_cast<::pir::FloatAttribute>().data());
+        }
+      } else if (array_list[0].isa<::pir::DoubleAttribute>()) {
+        auto res = &fp64_values_;
+        for (size_t i = 0; i < array_list.size(); ++i) {
+          res->push_back(array_list[i].dyn_cast<::pir::DoubleAttribute>().data());
+        }
+      } else if (array_list[0].isa<::pir::Int32Attribute>()){
+        auto res = &int64_values_;
+        for (size_t i = 0; i < array_list.size(); ++i) {
+          res->push_back(array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+        }
+      } else if (array_list[0].isa<::pir::Int64Attribute>()) {
+        auto res = &int64_values_;
+        for (size_t i = 0; i < array_list.size(); ++i) {
+          res->push_back(array_list[i].dyn_cast<::pir::Int64Attribute>().data());
+        }
+      }
+    }
+  }
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
 
  private:
+  std::vector<double> fp64_values_;
   std::vector<float> fp32_values_;
   std::vector<int64_t> int64_values_;
   std::vector<int64_t> shape_;

@@ -49,10 +49,7 @@ void DropoutMapper::Opset7() {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
     if (in_pir_mode) {
-      std::vector<float> temp;
-      auto prob_info = GetInput("Prob");
-      TryGetValue(prob_info[0], &temp);
-      dropout_prob_ = temp[0];
+      TryGetInputValue("dropout_prob", &dropout_prob_);
     } else {
       if (IsAttrVar("dropout_prob")) {
         auto prob_info = GetAttrVar("dropout_prob");

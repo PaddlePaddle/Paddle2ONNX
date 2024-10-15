@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+from onnxbase import _test_with_pir
 
 
 class Net(BaseNet):

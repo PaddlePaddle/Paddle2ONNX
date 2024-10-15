@@ -18,6 +18,7 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 import paddle
+from onnxbase import _test_with_pir
 
 
 class Net(BaseNet):
@@ -68,6 +69,7 @@ class TestTransposeConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 

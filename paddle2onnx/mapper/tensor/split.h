@@ -30,6 +30,14 @@ class SplitMapper : public Mapper {
     GetAttr("num", &num_);
   }
 
+  SplitMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
+      : Mapper(p, helper, i) {
+      in_pir_mode = true;
+    // GetAttr("axis", &axis_);
+    // GetAttr("sections", &sections_);
+    // GetAttr("num", &num_);
+  }
+
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
   void Opset13() override;

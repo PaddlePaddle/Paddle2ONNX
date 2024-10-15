@@ -19,6 +19,7 @@ import numpy as np
 import unittest
 import paddle
 import random
+from onnxbase import _test_only_pir
 
 
 class Net(BaseNet):
@@ -93,6 +94,7 @@ class TestSplitConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_only_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 

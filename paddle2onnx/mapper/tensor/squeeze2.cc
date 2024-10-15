@@ -16,8 +16,16 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(squeeze2, Squeeze2Mapper)
+REGISTER_PIR_MAPPER(squeeze, Squeeze2Mapper)
 
 int32_t Squeeze2Mapper::GetMinOpsetVersion(bool verbose) {
+  if (in_pir_mode) {
+    if (HasInput("axis")) {
+      return 13;
+    }
+    return 7;
+  }
+
   if (IsAttrVar("axes")) {
     auto infos = GetAttrVar("axes");
     for (auto &info : infos) {
@@ -41,8 +49,9 @@ void Squeeze2Mapper::Opset7() {
   if (ret.size() == input_info[0].Rank()) {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    if (helper_->GetOpsetVersion() >= 13 && IsAttrVar("axes")) {
-      auto axes_info = GetAttrVar("axes");
+    bool with_axis = in_pir_mode ? HasInput("axis") : IsAttrVar("axes");
+    if (helper_->GetOpsetVersion() >= 13 && with_axis) {
+      auto axes_info = in_pir_mode ? GetInput("axis") : GetAttrVar("axes");
       std::string axes_name;
       if (axes_info.size() == 1U) {
         axes_name = helper_->AutoCast(axes_info[0].name, axes_info[0].dtype,
@@ -53,11 +62,15 @@ void Squeeze2Mapper::Opset7() {
       helper_->MakeNode("Squeeze", {input_info[0].name, axes_name},
                         {output_info[0].name});
     } else {
-      if (IsAttrVar("axes")) {
-        auto axes_info = GetAttrVar("axes");
+      if (with_axis) {
+        auto axes_info = in_pir_mode ? GetInput("axis") : GetAttrVar("axes");
         for (int64_t index = 0; index < axes_info.size(); index++) {
           std::vector<int64_t> temp;
-          TryGetValue(axes_info[index], &temp);
+          if (in_pir_mode) {
+            TryGetInputValue("axis", &temp);
+          } else {
+            TryGetValue(axes_info[index], &temp);
+          }
           for (auto &data : temp) {
             axes_.push_back(data);
           }
