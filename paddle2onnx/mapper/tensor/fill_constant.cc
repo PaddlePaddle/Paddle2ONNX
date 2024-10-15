@@ -36,11 +36,9 @@ int32_t FillConstantMapper::GetMinOpsetVersion(bool verbose) {
     return -1;
   }
   if (HasInput("ShapeTensorList")) {
-    Logger(verbose, 9) << "While ShapeTensorList as input, " << RequireOpset(9) << std::endl;
     return 9;
   }
   if (HasInput("ShapeTensor") && !IsConstantInput("ShapeTensor")) {
-    Logger(verbose, 9) << "While ShapeTensor as input and it's not a constant tensor, " << RequireOpset(9) << std::endl;
     return 9;
   }
   return 7;

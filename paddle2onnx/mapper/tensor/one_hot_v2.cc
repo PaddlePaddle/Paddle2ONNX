@@ -28,7 +28,6 @@ int32_t OneHotV2Mapper::GetMinOpsetVersion(bool verbose) {
     Error() << "dtype attribute and output dtype do not match." << std::endl;
     return -1;
   }
-  Logger(verbose, 9) << RequireOpset(9) << std::endl;
   return 9;
 }
 

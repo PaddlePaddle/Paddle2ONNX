@@ -45,6 +45,10 @@ paddle2onnx --model_dir saved_inference_model \
             --model_filename model.pdmodel \
             --params_filename model.pdiparams \
             --save_file model.onnx
+paddle2onnx --model_dir ch_ppstructure_mobile_v2.0_SLANet_infer \
+            --model_filename inference.pdmodel \
+            --params_filename inference.pdiparams \
+            --save_file inference.onnx
 ```
 
 可调整的转换参数如下表:
