@@ -23,10 +23,11 @@ namespace paddle2onnx {
 class FullIntArrayMapper : public Mapper {
  public:
   // Only for PIR
-  FullIntArrayMapper(const PaddlePirParser& p, OnnxHelper* helper, 
-                 int64_t op_id)
-      : Mapper(p, helper, op_id) {
-    in_pir_mode = true;
+  FullIntArrayMapper(const PaddlePirParser& p,
+                     OnnxHelper* helper,
+                     int64_t op_id,
+                     bool c)
+      : Mapper(p, helper, op_id, c) {
     GetAttr("dtype", &dtype_);
     GetAttr("value", &shape_values_);
   }

@@ -20,13 +20,12 @@
 #include "paddle2onnx/parser/parser.h"
 #include "paddle2onnx/parser/pir_parser.h"
 
-
 namespace paddle2onnx {
 class Mapper {
  public:
   Mapper() {}
-  Mapper(const PaddleParser &p,
-         OnnxHelper *helper,
+  Mapper(const PaddleParser& p,
+         OnnxHelper* helper,
          int32_t block_id,
          int32_t op_id,
          std::string name = {})
@@ -37,34 +36,36 @@ class Mapper {
     name_ = name;
   }
 
-  Mapper(const PaddlePirParser &p,
-         OnnxHelper *helper,
+  Mapper(const PaddlePirParser& p,
+         OnnxHelper* helper,
          int32_t op_id,
+         bool in_contro_flow_block = false,
          std::string name = {})
       : pir_parser_(&p) {
     helper_ = helper;
     name_ = name;
     pir_op_idx_ = op_id;
+    in_pir_mode = true;
+    if_in_cf_block = in_contro_flow_block;
   }
 
   // [exported_op_name, domain]
   std::string custom_op_name;
   std::string deploy_backend;
 
-  P2OLogger Logger(const bool &verbose, const int32_t &opset_version = 100) {
+  P2OLogger Logger(const bool& verbose, const int32_t& opset_version = 100) {
     bool v = verbose;
     if (opset_version <= helper_->GetOpsetVersion()) {
       v = false;
     }
     std::string output_name = "";
     std::string op_type = "";
-    if(in_pir_mode) {
-      auto &op = pir_parser_-> global_blocks_ops[pir_op_idx_];
+    if (in_pir_mode) {
+      auto& op = pir_parser_->global_blocks_ops[pir_op_idx_];
       output_name = GetOutput(0)[0].name;
       op_type = op->name();
-    }
-    else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+    } else {
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       if (op.outputs(0).arguments_size() > 0) {
         output_name = op.outputs(0).arguments(0);
       }
@@ -75,7 +76,7 @@ class Mapper {
   }
 
   P2OLogger Error() {
-    auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
     std::string output_name = "";
     if (op.outputs(0).arguments_size() > 0) {
       output_name = op.outputs(0).arguments(0);
@@ -87,7 +88,7 @@ class Mapper {
   }
 
   P2OLogger Warn() {
-    auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+    auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
     std::string output_name = "";
     if (op.outputs(0).arguments_size() > 0) {
       output_name = op.outputs(0).arguments(0);
@@ -106,7 +107,7 @@ class Mapper {
   // the return value in [7, MAX_ONNX_OPSET_VERSION], represent the minimum
   // opset_version
   // if return value < 0, means the op is not supported.
-  virtual int32_t GetMinOpsetVersion(bool verbose) {return 7; }
+  virtual int32_t GetMinOpsetVersion(bool verbose) { return 7; }
 
   void Run() {
     int32_t opset_version = helper_->GetOpsetVersion();
@@ -165,9 +166,10 @@ class Mapper {
   virtual ~Mapper() = default;
   bool is_experimental_op_ = false;
   bool in_pir_mode = false;
-  const PaddleParser *parser_;
-  const PaddlePirParser *pir_parser_;
-  OnnxHelper *helper_;
+  bool if_in_cf_block = false;
+  const PaddleParser* parser_;
+  const PaddlePirParser* pir_parser_;
+  OnnxHelper* helper_;
   int32_t block_idx_;
   int32_t op_idx_;
   int32_t pir_op_idx_;
@@ -175,10 +177,16 @@ class Mapper {
 
   std::string OpType() const {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      return op->name();
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        return op->name();
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        return op->name();
+      }
+
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       return op.type();
     }
   }
@@ -189,184 +197,257 @@ class Mapper {
 
   std::string Name() const { return name_; }
 
-  bool HasInput(const std::string &name) const {
+  bool HasInput(const std::string& name) const {
     if (in_pir_mode) {
-      return pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true) != -1;
+      return pir_parser_->GetOpInputOutputName2Idx(
+                 pir_op_idx_, name, true, if_in_cf_block) != -1;
     }
     return parser_->OpHasInput(block_idx_, op_idx_, name);
   }
-  bool HasOutput(const std::string &name) const {
+  bool HasOutput(const std::string& name) const {
     if (in_pir_mode) {
-      return pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false) != -1;
+      return pir_parser_->GetOpInputOutputName2Idx(
+                 pir_op_idx_, name, false, if_in_cf_block) != -1;
     }
     return parser_->OpHasOutput(block_idx_, op_idx_, name);
   }
-  std::vector<TensorInfo> GetInput(const std::string &name) const {
+  std::vector<TensorInfo> GetInput(const std::string& name) const {
     if (in_pir_mode) {
-      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, true);
-      return pir_parser_->GetOpInput(pir_op_idx_, value_idx);
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(
+          pir_op_idx_, name, true, if_in_cf_block);
+      return pir_parser_->GetOpInput(pir_op_idx_, value_idx, if_in_cf_block);
     }
     return parser_->GetOpInput(block_idx_, op_idx_, name);
-  } 
-  std::vector<TensorInfo> GetOutput(const std::string &name) const {
+  }
+  std::vector<TensorInfo> GetOutput(const std::string& name) const {
     if (in_pir_mode) {
-      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, name, false);
-      return pir_parser_->GetOpOutput(pir_op_idx_, value_idx);
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(
+          pir_op_idx_, name, false, if_in_cf_block);
+      return pir_parser_->GetOpOutput(pir_op_idx_, value_idx, if_in_cf_block);
     }
     return parser_->GetOpOutput(block_idx_, op_idx_, name);
   }
 
   std::vector<TensorInfo> GetInput(int64_t input_idx) const {
     Assert(in_pir_mode, "Only support PIR mode");
-    return pir_parser_->GetOpInput(pir_op_idx_, input_idx);
+    return pir_parser_->GetOpInput(pir_op_idx_, input_idx, if_in_cf_block);
   }
 
   std::vector<TensorInfo> GetOutput(int64_t input_idx) const {
     Assert(in_pir_mode, "Only support PIR mode");
-    return pir_parser_->GetOpOutput(pir_op_idx_, input_idx);
+    return pir_parser_->GetOpOutput(pir_op_idx_, input_idx, if_in_cf_block);
   }
 
   // Judge whether Attribute(name)'s type is Var or Vars.
-  bool IsAttrVar(const std::string &name) const {
-    if (in_pir_mode) return pir_parser_->OpIsAttrVar(pir_op_idx_, name);
+  bool IsAttrVar(const std::string& name) const {
+    if (in_pir_mode)
+      return pir_parser_->OpIsAttrVar(pir_op_idx_, name, if_in_cf_block);
     return parser_->OpIsAttrVar(block_idx_, op_idx_, name);
   }
 
   // Get TensorInfo(s) from Attribute Var or Vars.
-  std::vector<TensorInfo> GetAttrVar(const std::string &name) const {
+  std::vector<TensorInfo> GetAttrVar(const std::string& name) const {
     return parser_->GetOpAttrVar(block_idx_, op_idx_, name);
   }
 
   /*
    * todo(wangmingkai02): add GetInputAttrVar function.
-  std::vector<int64_t> GetInputAttrVar(const std::string &input_name, const std::string &attr_name) const {
-    int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_name, true);
-    return pir_parser_->GetOpAttrVar(pir_op_idx_, value_idx, attr_name);
+  std::vector<int64_t> GetInputAttrVar(const std::string &input_name, const
+  std::string &attr_name) const { int32_t value_idx =
+  pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_name, true); return
+  pir_parser_->GetOpAttrVar(pir_op_idx_, value_idx, attr_name);
   }
   */
-  
 
-  bool HasAttr(const std::string &name) const {
+  bool HasAttr(const std::string& name) const {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      return pir_parser_->OpHasAttr(op, name);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        return pir_parser_->OpHasAttr(op, name, true);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        return pir_parser_->OpHasAttr(op, name, false);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       return parser_->OpHasAttr(op, name);
     }
   }
 
-  void GetAttr(const std::string &name, int64_t *val) {
+  void GetAttr(const std::string& name, int64_t* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, float *val) {
+  void GetAttr(const std::string& name, float* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, double *val) {
+  void GetAttr(const std::string& name, double* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, bool *val) {
+  void GetAttr(const std::string& name, bool* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, std::string *val) {
+  void GetAttr(const std::string& name, std::string* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, std::vector<int64_t> *val) {
+  void GetAttr(const std::string& name, std::vector<int64_t>* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, std::vector<float> *val) {
+  void GetAttr(const std::string& name, std::vector<float>* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
-  void GetAttr(const std::string &name, std::vector<double> *val) {
+  void GetAttr(const std::string& name, std::vector<double>* val) {
     if (in_pir_mode) {
-      auto &op = pir_parser_->global_blocks_ops[pir_op_idx_];
-      pir_parser_->GetOpAttr(op, pir_parser_->GetOpArgName(pir_op_idx_, name), val);
+      if (if_in_cf_block) {
+        auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, true), val);
+      } else {
+        auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
+        pir_parser_->GetOpAttr(
+            op, pir_parser_->GetOpArgName(pir_op_idx_, name, false), val);
+      }
     } else {
-      auto &op = parser_->GetOpDesc(block_idx_, op_idx_);
+      auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       parser_->GetOpAttr(op, name, val);
     }
   }
 
-  bool IsConstantInput(const std::string &input_key) const {
-    if(in_pir_mode) {
-      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_key, true);
-      return pir_parser_->IsConstantTensor(pir_op_idx_, value_idx);
-    }
-    else {
+  bool IsConstantInput(const std::string& input_key) const {
+    if (in_pir_mode) {
+      int32_t value_idx = pir_parser_->GetOpInputOutputName2Idx(
+          pir_op_idx_, input_key, true, if_in_cf_block);
+      return pir_parser_->IsConstantTensor(
+          pir_op_idx_, value_idx, if_in_cf_block);
+    } else {
       auto input_info = GetInput(input_key);
       return parser_->IsConstantTensor(block_idx_, input_info[0].name);
     }
   }
 
-  bool IsConstant(const TensorInfo &info) const {
+  bool IsConstant(const TensorInfo& info) const {
     return parser_->IsConstantTensor(block_idx_, info.name);
   }
 
   template <typename T>
-  bool TryGetInputValue(const std::string &input_key, std::vector<T> *data) {
-    if(in_pir_mode) {
-      return pir_parser_->TryGetTensorValue(pir_op_idx_, pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_key, true), data);
-    }
-    else {
+  bool TryGetInputValue(const std::string& input_key, std::vector<T>* data) {
+    if (in_pir_mode) {
+      return pir_parser_->TryGetTensorValue(
+          pir_op_idx_,
+          pir_parser_->GetOpInputOutputName2Idx(
+              pir_op_idx_, input_key, true, if_in_cf_block),
+          data);
+    } else {
       auto input_info = GetInput(input_key);
       return parser_->TryGetTensorValue(block_idx_, input_info[0].name, data);
     }
   }
 
   template <typename T>
-  bool TryGetInputValue(const std::string &input_key, T *data) {
-    if(in_pir_mode) {
-      return pir_parser_->TryGetTensorValue(pir_op_idx_, pir_parser_->GetOpInputOutputName2Idx(pir_op_idx_, input_key, true), data);
-    }
-    else {
+  bool TryGetInputValue(const std::string& input_key, T* data) {
+    if (in_pir_mode) {
+      return pir_parser_->TryGetTensorValue(
+          pir_op_idx_,
+          pir_parser_->GetOpInputOutputName2Idx(
+              pir_op_idx_, input_key, true, if_in_cf_block),
+          data);
+    } else {
       Assert(false, "Not support in old IR.");
     }
   }
 
   template <typename T>
-  bool TryGetValue(const TensorInfo &info, std::vector<T> *data) {
+  bool TryGetValue(const TensorInfo& info, std::vector<T>* data) {
     return parser_->TryGetTensorValue(block_idx_, info.name, data);
   }
 };
