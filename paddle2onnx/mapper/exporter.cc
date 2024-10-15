@@ -173,8 +173,6 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser& pir_parser) {
       continue;
     }
     int current_opset = 7;
-    // P2OLogger() << "GetMinOpsetVersion : i " << std::to_string(i) << " ,
-    // op : " << op_name << std::endl;
     auto mapper = MapperHelper::Get()->CreateMapper(
         convert_pir_op_name(op_name), pir_parser, &helper, i, false);
     current_opset = mapper->GetMinOpsetVersion(verbose_);
@@ -375,7 +373,6 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
-  // std::vector<pir::Operation *> sub_blocks_ops;
   pir_parser.sub_blocks_ops.clear();
   for (auto& op : block.ops()) {
     if (op->name() != "builtin.parameter") {
@@ -394,7 +391,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
       temp_outputs.push_back(std::move(MakeValueInfo(cond_info[0])));
     }
   } else {
-    // 处理 sub_blocks_ops 为空的情况
+    // sub_blocks_ops is empty
     PADDLE_ENFORCE_NE(pir_parser.sub_blocks_ops.size(),
                       0,
                       ::common::errors::InvalidArgument(
@@ -428,11 +425,6 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
 
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
-  // auto input_info = parser.GetOpInput(block_id, op_id, "Input");
-  // for (int index = 0; index < input_info.size(); index++)
-  // {
-  //   temp_inputs.push_back(std::move(MakeValueInfo(input_info[index])));
-  // }
 
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
   auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
@@ -475,7 +467,6 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       bool needExport = false;
       for (auto it = op->result(0).use_begin(); it != op->result(0).use_end();
            ++it) {
-        // if (!(it->owner()->isa<paddle::dialect::Pool2dOp>())) {
         if (!(it->owner()->name() == "pd_op.pool2d")) {
           needExport = true;
           break;
