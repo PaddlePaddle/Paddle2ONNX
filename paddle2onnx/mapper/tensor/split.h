@@ -30,8 +30,9 @@ class SplitMapper : public Mapper {
     GetAttr("num", &num_);
   }
 
-  SplitMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
-      : Mapper(p, helper, i) {
+  SplitMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
+              bool c)
+      : Mapper(p, helper, i, c) {
       in_pir_mode = true;
     // GetAttr("axis", &axis_);
     // GetAttr("sections", &sections_);

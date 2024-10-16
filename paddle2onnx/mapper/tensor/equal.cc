@@ -16,9 +16,10 @@
 
 namespace paddle2onnx {
 REGISTER_MAPPER(equal, EqualMapper)
+REGISTER_PIR_MAPPER(equal, EqualMapper)
 
 int32_t EqualMapper::GetMinOpsetVersion(bool verbose) {
-  if (axis_ != -1) {
+  if (axis_ != -1 && in_pir_mode == false) {
     Error() << "axis attribute must be -1 in operator equal." << std::endl;
     return -1;
   }
@@ -33,10 +34,10 @@ void EqualMapper::Opset7() {
   std::string input_x = input_x_info[0].name;
   std::string input_y = input_y_info[0].name;
   if (helper_->GetOpsetVersion() < 11) {
-    input_x = helper_->AutoCast(input_x_info[0].name, input_x_info[0].dtype,
-                                P2ODataType::INT32);
-    input_y = helper_->AutoCast(input_y_info[0].name, input_y_info[0].dtype,
-                                P2ODataType::INT32);
+    input_x = helper_->AutoCast(
+        input_x_info[0].name, input_x_info[0].dtype, P2ODataType::INT32);
+    input_y = helper_->AutoCast(
+        input_y_info[0].name, input_y_info[0].dtype, P2ODataType::INT32);
   }
   helper_->MakeNode("Equal", {input_x, input_y}, {output_info[0].name});
 }

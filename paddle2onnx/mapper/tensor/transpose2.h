@@ -25,8 +25,9 @@ class Transpose2Mapper : public Mapper {
   Transpose2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
-  Transpose2Mapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
-      : Mapper(p, helper, i) {
+  Transpose2Mapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
+                  bool c)
+      : Mapper(p, helper, i, c) {
         in_pir_mode = true;
       }
   void Opset7() override;

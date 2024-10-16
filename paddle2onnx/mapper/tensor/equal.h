@@ -22,10 +22,18 @@ namespace paddle2onnx {
 
 class EqualMapper : public Mapper {
  public:
-  EqualMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  EqualMapper(const PaddleParser& p,
+              OnnxHelper* helper,
+              int64_t block_id,
               int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
+  }
+  EqualMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
+      : Mapper(p, helper, i, c) {
+    if (HasAttr("axis")) {
+      GetAttr("axis", &axis_);
+    }
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;

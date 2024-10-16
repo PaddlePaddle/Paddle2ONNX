@@ -12,23 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "paddle2onnx/parser/pir_parser.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
 #include "paddle/common/ddim.h"
+#include "paddle/fluid/ir_adaptor/translator/op_compat_info.h"
 #include "paddle/fluid/pir/dialect/operator/ir/op_dialect.h"
+#include "paddle/fluid/pir/dialect/operator/ir/op_type.h"
+#include "paddle/fluid/pir/dialect/operator/utils/op_yaml_info_parser.h"
+#include "paddle/fluid/pir/dialect/operator/utils/utils.h"
 #include "paddle/fluid/pir/serialize_deserialize/include/interface.h"
 #include "paddle/phi/common/data_type.h"
 #include "paddle/pir/include/core/builtin_dialect.h"
+#include "paddle/pir/include/core/builtin_op.h"
 #include "paddle/pir/include/core/ir_context.h"
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
-#include "paddle/fluid/pir/dialect/operator/utils/op_yaml_info_parser.h"
-#include "paddle/fluid/pir/dialect/operator/utils/utils.h"
-#include "paddle/fluid/ir_adaptor/translator/op_compat_info.h"
-#include "paddle/pir/include/core/builtin_op.h"
-#include "paddle/fluid/pir/dialect/operator/ir/op_type.h"
 
 std::unordered_map<phi::DataType, paddle2onnx::framework::proto::VarType_Type>
     pir_dtype_to_onnx_dtype = {
@@ -89,160 +91,237 @@ phi::DataType TransToPhiDataType(pir::Type dtype) {
     return phi::DataType::FLOAT8_E5M2;
   } else {
     std::cerr << "Unsupported data type: " << dtype << std::endl;
+    return phi::DataType::UNDEFINED;
   }
 }
 
 namespace paddle2onnx {
-  std::string PaddlePirParser::GenOpInputOutputName(const std::string& name) const
-  {
-    std::string new_name = "p2o." + name;
-    if(_name_counter.find(new_name) != _name_counter.end()) {
-      _name_counter[new_name] += 1;
-    }
-    else {
-      _name_counter[new_name] = 0;
-    }
-    new_name += "." + std::to_string(_name_counter[new_name]);
-    return new_name;
+std::string PaddlePirParser::GenOpInputOutputName(
+    const std::string& name) const {
+  std::string new_name = "p2o." + name;
+  if (_name_counter.find(new_name) != _name_counter.end()) {
+    _name_counter[new_name] += 1;
+  } else {
+    _name_counter[new_name] = 0;
   }
-  void PaddlePirParser::AddOpOutputName(pir::Operation *op, std::string var_name, int64_t output_idx) const {
-    if(_op_outputs.count(op) == 0) {
-      int num_outputs = op->num_results();
-      _op_outputs[op] = std::vector<std::string>(num_outputs, "");
-    }
-    _op_outputs[op][output_idx] = var_name;
+  new_name += "." + std::to_string(_name_counter[new_name]);
+  return new_name;
+}
+void PaddlePirParser::AddOpOutputName(pir::Operation* op,
+                                      std::string var_name,
+                                      int64_t output_idx) const {
+  if (_op_outputs.count(op) == 0) {
+    int num_outputs = op->num_results();
+    _op_outputs[op] = std::vector<std::string>(num_outputs, "");
   }
-  
-  std::string PaddlePirParser::GetOpOutputName(const pir::Value& source) const {
-    auto op = source.defining_op();
-    auto output_idx = source.dyn_cast<pir::OpResult>().index();
+  _op_outputs[op][output_idx] = var_name;
+}
+
+std::string PaddlePirParser::GetOpOutputName(const pir::Value& source) const {
+  auto op = source.defining_op();
+  auto output_idx = source.dyn_cast<pir::OpResult>().index();
+  if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
+    P2OLogger() << "input is a parameter" << std::endl;
+    return op->result(0).defining_op<pir::ParameterOp>().param_name();
+    // std::cerr << "Can not find output name" << std::endl;
+  }
+  return _op_outputs[op][output_idx];
+}
+
+std::string PaddlePirParser::GetSubBlockOpOutputName(
+    const pir::Value& source) const {
+  auto op = source.defining_op();
+  auto output_idx = source.dyn_cast<pir::OpResult>().index();
+  if (op->name() == "pd_op.data") {
     if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
-      std::cout << "input is a parameter" << std::endl;
+      P2OLogger() << "input is a parameter" << std::endl;
       return op->result(0).defining_op<pir::ParameterOp>().param_name();
       // std::cerr << "Can not find output name" << std::endl;
     }
     return _op_outputs[op][output_idx];
+  } else {
+    if (sub_block_op_outputs.count(op) == 0 ||
+        sub_block_op_outputs.at(op).size() <= output_idx) {
+      P2OLogger() << "input is a parameter" << std::endl;
+      return op->result(0).defining_op<pir::ParameterOp>().param_name();
+      // std::cerr << "Can not find output name" << std::endl;
+    }
+    return sub_block_op_outputs[op][output_idx];
+  }
+}
+
+void PaddlePirParser::GetGlobalBlockInputValueName() {
+  for (auto op : global_blocks_ops) {
+    if (op->name() == "pd_op.data") {
+      std::string var_name =
+          op->attribute<pir::StrAttribute>("name").AsString();
+      AddOpOutputName(op, var_name, 0);
+    }
+  }
+}
+void PaddlePirParser::GetGlobalBlockOutputValueName() {
+  for (auto op : global_blocks_ops) {
+    if (op->name() == "pd_op.fetch") {
+      std::string var_name =
+          op->attribute<pir::StrAttribute>("name").AsString();
+      auto value = op->operand(0).source();
+      AddOpOutputName(value.defining_op(),
+                      var_name,
+                      value.dyn_cast<pir::OpResult>().index());
+    }
+  }
+}
+void PaddlePirParser::GetALLSubBlockOpOutputName(
+    std::vector<pir::Operation*> block_op_lists) const {
+  // std::unordered_map<pir::Operation *, std::vector<std::string>>
+  // block_op_outputs_name_map;
+  std::unordered_map<std::string, int64_t> sub_block_name_counter;
+  sub_block_op_outputs.clear();
+  sub_block_name_counter.clear();
+  for (auto op : block_op_lists) {
+    std::string new_name = "p2o.sub_block" + op->name();
+    if (sub_block_name_counter.find(new_name) != _name_counter.end()) {
+      sub_block_name_counter[new_name] += 1;
+    } else {
+      sub_block_name_counter[new_name] = 0;
+    }
+    new_name += "." + std::to_string(sub_block_name_counter[new_name]);
+    int num_outputs = op->num_results();
+    for (int i = 0; i < num_outputs; ++i) {
+      std::string var_name = new_name + "." + std::to_string(i);
+      if (sub_block_op_outputs.count(op) == 0) {
+        int num_outputs = op->num_results();
+        sub_block_op_outputs[op] = std::vector<std::string>(num_outputs, "");
+      }
+      sub_block_op_outputs[op][i] = var_name;
+    }
+  }
+}
+void PaddlePirParser::GetAllOpOutputName() {
+  GetGlobalBlockInputValueName();
+  for (auto op : global_blocks_ops) {
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") continue;
+    std::string var_name = GenOpInputOutputName(op->name());
+    int num_outputs = op->num_results();
+    for (int i = 0; i < num_outputs; ++i) {
+      var_name = var_name + "." + std::to_string(i);
+      AddOpOutputName(op, var_name, i);
+    }
+  }
+  GetGlobalBlockOutputValueName();
+}
+
+void PaddlePirParser::GetOpArgNameMappings() {
+  const std::string pir_op_name_prefix = "pd_op.";
+  auto& normalizer = paddle::translator::OpNameNormalizer::instance();
+  const auto& op_name_mappings = normalizer.GetOpNameMappings();
+  const auto& op_arg_name_mappings = normalizer.GetOpArgNameMappings();
+  const auto& op_mutable_attribute_infos =
+      normalizer.GetOpMutableAttributeInfos();
+  for (auto& item : op_arg_name_mappings) {
+    std::string op_name =
+        pir_op_name_prefix + (op_name_mappings.count(item.first)
+                                  ? op_name_mappings.at(item.first)
+                                  : item.first);
+    std::unordered_map<std::string, std::string> arg_name_mapping;
+    for (auto& arg : item.second) {
+      arg_name_mapping[arg.second] = arg.first;
+    }
+    _op_arg_name_mappings[op_name] = arg_name_mapping;
   }
 
-  void PaddlePirParser::GetGlobalBlockInputValueName() {
-    for (auto op : global_blocks_ops) {
-      if (op->name() == "pd_op.data") {
-        std::string var_name =
-            op->attribute<pir::StrAttribute>("name").AsString();
-        AddOpOutputName(op, var_name, 0);
+  // mutable attibute name mappings
+  for (auto& item : op_mutable_attribute_infos) {
+    std::string op_name =
+        pir_op_name_prefix + (op_name_mappings.count(item.first)
+                                  ? op_name_mappings.at(item.first)
+                                  : item.first);
+    for (auto& attr : item.second) {
+      for (auto& attr_item : attr.second) {
+        _op_arg_name_mappings[op_name][attr_item] = attr.first;
       }
     }
   }
-  void PaddlePirParser::GetGlobalBlockOutputValueName() {
-    for (auto op : global_blocks_ops) {
-      if (op->name() == "pd_op.fetch") {
-        std::string var_name =
-            op->attribute<pir::StrAttribute>("name").AsString();
-        auto value = op->operand(0).source();
-        AddOpOutputName(value.defining_op(), var_name, value.dyn_cast<pir::OpResult>().index());
+}
+
+std::string PaddlePirParser::GetOpArgName(int64_t op_id,
+                                          std::string name,
+                                          bool if_in_sub_block) const {
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
+  }
+
+  pir::IrContext* ctx = pir::IrContext::Instance();
+  std::string op_name = op->name();
+  if (op->attributes().count("op_name")) {
+    op_name =
+        op->attributes().at("op_name").dyn_cast<pir::StrAttribute>().AsString();
+  }
+  std::string builtin_prefix = "builtin.";
+  if (op_name.substr(0, builtin_prefix.size()) == builtin_prefix) {
+    Assert(false,
+           "builtin op " + op_name +
+               " is not supported by GetOpInputOutputName2Idx.");
+  }
+  if (_op_arg_name_mappings.count(op_name)) {
+    name = _op_arg_name_mappings.at(op_name).count(name)
+               ? _op_arg_name_mappings.at(op_name).at(name)
+               : name;
+  } else {
+    if (op_name[op_name.size() - 1] == '_') {
+      std::string temp_op_name = op_name.substr(0, op_name.size() - 1);
+      if (_op_arg_name_mappings.count(temp_op_name)) {
+        name = _op_arg_name_mappings.at(temp_op_name).count(name)
+                   ? _op_arg_name_mappings.at(temp_op_name).at(name)
+                   : name;
       }
     }
   }
+  return name;
+}
 
-  void PaddlePirParser::GetAllOpOutputName() {
-    GetGlobalBlockInputValueName();
-    for(auto op : global_blocks_ops) {
-      if(op->name() == "pd_op.data" || op->name() == "pd_op.fetch") continue;
-      std::string var_name = GenOpInputOutputName(op->name());
-      int num_outputs = op->num_results();
-      for(int i = 0; i < num_outputs; ++i) {
-        var_name = var_name + "." + std::to_string(i);
-        AddOpOutputName(op, var_name, i);
-      }
-    }
-    GetGlobalBlockOutputValueName();
+int32_t PaddlePirParser::GetOpInputOutputName2Idx(int64_t op_id,
+                                                  std::string name,
+                                                  bool is_input,
+                                                  bool if_in_subblock) const {
+  pir::Operation* op;
+  if (if_in_subblock) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
   }
-
-  void PaddlePirParser::GetOpArgNameMappings() {
-    const std::string pir_op_name_prefix = "pd_op.";
-    auto& normalizer = paddle::translator::OpNameNormalizer::instance();
-    const auto& op_name_mappings = normalizer.GetOpNameMappings();
-    const auto& op_arg_name_mappings = normalizer.GetOpArgNameMappings();
-    const auto& op_mutable_attribute_infos = normalizer.GetOpMutableAttributeInfos();
-    for(auto& item : op_arg_name_mappings) {
-      std::string op_name = pir_op_name_prefix + (op_name_mappings.count(item.first) ? op_name_mappings.at(item.first) : item.first );
-      std::unordered_map<std::string, std::string> arg_name_mapping;
-      for(auto& arg : item.second) {
-        arg_name_mapping[arg.second] = arg.first;
-      }
-      _op_arg_name_mappings[op_name] = arg_name_mapping;
-    }
-    
-    // mutable attibute name mappings
-    for(auto& item : op_mutable_attribute_infos) {
-      std::string op_name = pir_op_name_prefix + (op_name_mappings.count(item.first) ? op_name_mappings.at(item.first) : item.first );
-      for(auto& attr : item.second) {
-        for(auto& attr_item : attr.second)
-        {
-          _op_arg_name_mappings[op_name][attr_item] = attr.first;
-        }
-      }
-    }
+  pir::IrContext* ctx = pir::IrContext::Instance();
+  std::string op_name = op->name();
+  if (op->attributes().count("op_name")) {
+    op_name =
+        op->attributes().at("op_name").dyn_cast<pir::StrAttribute>().AsString();
   }
-
-  std::string PaddlePirParser::GetOpArgName(int64_t op_id, std::string name) const {
-    auto& op = global_blocks_ops[op_id];
-      pir::IrContext* ctx = pir::IrContext::Instance();
-      std::string op_name = op->name();
-      if (op->attributes().count("op_name")) {
-          op_name = op->attributes()
-                    .at("op_name")
-                    .dyn_cast<pir::StrAttribute>()
-                    .AsString();
-      }
-      std::string builtin_prefix = "builtin.";
-      if(op_name.substr(0, builtin_prefix.size()) == builtin_prefix) {
-          Assert(false, "builtin op " + op_name + " is not supported by GetOpInputOutputName2Idx.");
-      }
-      if(_op_arg_name_mappings.count(op_name)) {
-        name = _op_arg_name_mappings.at(op_name).count(name) ? _op_arg_name_mappings.at(op_name).at(name) : name;
-      }
-      else {
-        if(op_name[op_name.size() - 1] == '_') {
-          std::string temp_op_name = op_name.substr(0, op_name.size() - 1);
-          if(_op_arg_name_mappings.count(temp_op_name)) {
-            name = _op_arg_name_mappings.at(temp_op_name).count(name) ? _op_arg_name_mappings.at(temp_op_name).at(name) : name;
-          }
-        }
-      }
-      return name;
+  pir::OpInfo op_info = ctx->GetRegisteredOpInfo(op_name);
+  paddle::dialect::OpYamlInfoParser yaml_parser(
+      op_info.GetInterfaceImpl<paddle::dialect::OpYamlInfoInterface>()
+          ->get_op_info_(op_name),
+      // paddle::dialect::IsLegacyOp(op_name));
+      false);
+  name = GetOpArgName(op_id, name, if_in_subblock);
+  bool exist = is_input ? yaml_parser.InputName2Id().count(name)
+                        : yaml_parser.OutputName2Id().count(name);
+  if (!exist) {
+    P2OLogger() << "Cannot find input/output name '" << name
+                << "' in op yaml info of " << op_name << std::endl;
+    return -1;
   }
-
-  int32_t PaddlePirParser::GetOpInputOutputName2Idx(int64_t op_id, std::string name, bool is_input) const {
-      auto& op = global_blocks_ops[op_id];
-      pir::IrContext* ctx = pir::IrContext::Instance();
-      std::string op_name = op->name();
-      if (op->attributes().count("op_name")) {
-          op_name = op->attributes()
-                    .at("op_name")
-                    .dyn_cast<pir::StrAttribute>()
-                    .AsString();
-      }
-      pir::OpInfo op_info = ctx->GetRegisteredOpInfo(op_name);
-      paddle::dialect::OpYamlInfoParser yaml_parser(
-          op_info.GetInterfaceImpl<paddle::dialect::OpYamlInfoInterface>()->get_op_info_(op_name),
-          // paddle::dialect::IsLegacyOp(op_name));
-          false);
-      name = GetOpArgName(op_id, name);
-      bool exist = is_input ? yaml_parser.InputName2Id().count(name) : yaml_parser.OutputName2Id().count(name);
-      if (!exist) {
-        P2OLogger() << "Cannot find input/output name '" << name
-                      << "' in op yaml info of " << op_name << std::endl;
-        return -1;
-      }
-      // PADDLE_ENFORCE_EQ(
-      //     exist,
-      //     true,
-      //     common::errors::InvalidArgument(
-      //         "Cannot find input/output name '%s' in op yaml info of %s.",
-      //         name, op_name));
-      return is_input ? yaml_parser.InputName2Id().at(name) : yaml_parser.OutputName2Id().at(name);
-  }
+  // PADDLE_ENFORCE_EQ(
+  //     exist,
+  //     true,
+  //     common::errors::InvalidArgument(
+  //         "Cannot find input/output name '%s' in op yaml info of %s.",
+  //         name, op_name));
+  return is_input ? yaml_parser.InputName2Id().at(name)
+                  : yaml_parser.OutputName2Id().at(name);
+}
 
 bool PaddlePirParser::LoadProgram(const std::string& model) {
   pir::IrContext* ctx = pir::IrContext::Instance();
@@ -256,8 +335,7 @@ bool PaddlePirParser::LoadProgram(const std::string& model) {
   }
   std::ostringstream print_stream;
   pir_program_.get()->Print(print_stream);
-  P2OLogger() << "PIR Program: \n" 
-              << print_stream.str() << std::endl;
+  P2OLogger() << "PIR Program: \n" << print_stream.str() << std::endl;
   return true;
 }
 bool PaddlePirParser::GetParamValueName(std::vector<std::string>* var_names) {
@@ -416,9 +494,10 @@ void PaddlePirParser::GetGlobalBlocksOps() {
   }
 }
 
-TensorInfo PaddlePirParser::GetTensorInfo(const std::string& name, const pir::Type& value_type) const {
+TensorInfo PaddlePirParser::GetTensorInfo(const std::string& name,
+                                          const pir::Type& value_type) const {
+  TensorInfo info;
   if (value_type.isa<pir::DenseTensorType>()) {
-    TensorInfo info;
     // get info.name
     info.name = name;
     // get info.dtype
@@ -431,16 +510,18 @@ TensorInfo PaddlePirParser::GetTensorInfo(const std::string& name, const pir::Ty
       std::cerr << "data_type not found" << std::endl;
     }
     // get info.shape
-    std::vector<int64_t> dims = common::vectorize(
-        value_type.cast<pir::DenseTensorType>().dims());
+    std::vector<int64_t> dims =
+        common::vectorize(value_type.cast<pir::DenseTensorType>().dims());
     info.shape = dims;
     return info;
   } else {
     std::cerr << "only support dense tensor type" << std::endl;
+    return info;
   }
 }
 
-std::vector<TensorInfo> PaddlePirParser::GetTensorInfo(const pir::Value& value) const {
+std::vector<TensorInfo> PaddlePirParser::GetTensorInfo(
+    const pir::Value& value) const {
   std::vector<TensorInfo> results;
   if (value.type().isa<pir::VectorType>()) {
     auto vec_type = value.type().cast<pir::VectorType>();
@@ -450,8 +531,25 @@ std::vector<TensorInfo> PaddlePirParser::GetTensorInfo(const pir::Value& value) 
       results.push_back(GetTensorInfo(name, vec_type[idx]));
     }
   } else {
-      std::string name = GetOpOutputName(value);
-      results.push_back(GetTensorInfo(name, value.type()));
+    std::string name = GetOpOutputName(value);
+    results.push_back(GetTensorInfo(name, value.type()));
+  }
+  return results;
+}
+
+std::vector<TensorInfo> PaddlePirParser::GetSubBlockValueTensorInfo(
+    const pir::Value& value) const {
+  std::vector<TensorInfo> results;
+  if (value.type().isa<pir::VectorType>()) {
+    auto vec_type = value.type().cast<pir::VectorType>();
+    std::string prefix = GetSubBlockOpOutputName(value);
+    for (int32_t idx = 0; idx < vec_type.size(); idx++) {
+      std::string name = prefix + "_" + std::to_string(idx);
+      results.push_back(GetTensorInfo(name, vec_type[idx]));
+    }
+  } else {
+    std::string name = GetSubBlockOpOutputName(value);
+    results.push_back(GetTensorInfo(name, value.type()));
   }
   return results;
 }
@@ -463,7 +561,8 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   // std::ostringstream print_stream;
   // print_stream << "ForwardProgram is :\n";
   // pir_program_->Print(print_stream);
-  // std::cout << "Program (fwd | bwd): \n" << print_stream.str() << std::endl;
+  // std::cout << "Program (fwd | bwd): \n" << print_stream.str() <<
+  // std::endl;
   for (auto op : global_blocks_ops) {
     if (op->name() == "pd_op.data") {
       std::string var_name =
@@ -477,42 +576,62 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   }
 }
 
-bool PaddlePirParser::IsAttrVar(const pir::Operation *op, 
-                                const int64_t &attr_id) const {
+bool PaddlePirParser::IsAttrVar(const pir::Operation* op,
+                                const int64_t& attr_id) const {
   // TODO: For Resnet50, this interface always return false.
   return false;
 }
 
 bool PaddlePirParser::OpIsAttrVar(int64_t op_id,
-                                  const std::string &name) const {
+                                  const std::string& name,
+                                  bool if_in_sub_block) const {
   bool is_attr_var = false;
-  auto &op = global_blocks_ops[op_id];
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
+  }
+
   int32_t i = 0;
   for (auto [key, value] : op->attributes()) {
     if (key == name && IsAttrVar(op, i)) {
       is_attr_var = true;
       break;
     }
-    i ++;
+    i++;
   }
 
   return is_attr_var;
 }
 
 bool PaddlePirParser::OpHasInput(int64_t op_id,
-                                 int64_t input_idx) const {
-  auto &op = global_blocks_ops[op_id];
+                                 int64_t input_idx,
+                                 bool if_in_sub_block) const {
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
+  }
   return input_idx < op->num_operands();
 }
 
 bool PaddlePirParser::OpHasOutput(int64_t op_id,
-                                  int64_t output_idx) const {
-  auto &op = global_blocks_ops[op_id];
+                                  int64_t output_idx,
+                                  bool if_in_sub_block) const {
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
+  }
   return output_idx < op->num_results();
 }
 
 bool PaddlePirParser::OpHasAttr(pir::Operation* op,
-                                const std::string& name) const {
+                                const std::string& name,
+                                bool if_in_sub_block) const {
   return op->HasAttribute(name);
 }
 
@@ -631,18 +750,18 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
         if (array_list.size() > 0) {
           // TODO: Need double check.
           PADDLE_ENFORCE_EQ(
-              array_list[0].isa<::pir::Int64Attribute>() 
-                  || array_list[0].isa<::pir::Int32Attribute>(),
+              array_list[0].isa<::pir::Int64Attribute>() ||
+                  array_list[0].isa<::pir::Int32Attribute>(),
               true,
-              ::common::errors::Unimplemented(
-                  "the 0th elementwise MUST be ir::Int64Attribute"));
+              ::common::errors::Unimplemented("the 0th elementwise MUST be "
+                                              "ir::Int64Attribute"));
           for (size_t i = 0; i < array_list.size(); ++i) {
             if (array_list[0].isa<::pir::Int64Attribute>()) {
               res->push_back(
-                array_list[i].dyn_cast<::pir::Int64Attribute>().data());
+                  array_list[i].dyn_cast<::pir::Int64Attribute>().data());
             } else {
               res->push_back(
-                array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+                  array_list[i].dyn_cast<::pir::Int32Attribute>().data());
             }
           }
         }
@@ -672,8 +791,8 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
           PADDLE_ENFORCE_EQ(
               array_list[0].isa<::pir::FloatAttribute>(),
               true,
-              ::common::errors::Unimplemented(
-                  "the 0th elementwise MUST be ir::FloatAttribute"));
+              ::common::errors::Unimplemented("the 0th elementwise MUST be "
+                                              "ir::FloatAttribute"));
           for (size_t i = 0; i < array_list.size(); ++i) {
             res->push_back(
                 array_list[i].dyn_cast<::pir::FloatAttribute>().data());
@@ -705,8 +824,8 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
           PADDLE_ENFORCE_EQ(
               array_list[0].isa<::pir::DoubleAttribute>(),
               true,
-              ::common::errors::Unimplemented(
-                  "the 0th elementwise MUST be ir::DoubleAttribute"));
+              ::common::errors::Unimplemented("the 0th elementwise MUST be "
+                                              "ir::DoubleAttribute"));
           for (size_t i = 0; i < array_list.size(); ++i) {
             res->push_back(
                 array_list[i].dyn_cast<::pir::DoubleAttribute>().data());
@@ -725,57 +844,86 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
 }
 
 std::vector<TensorInfo> PaddlePirParser::GetOpInput(
-  int64_t op_id, int64_t input_idx) const {
-    PADDLE_ENFORCE_GT(
-      input_idx,
-      -1,
-      common::errors::InvalidArgument(
-        "input_idx should be greater than -1 in GetOpInput."));
-      pir::Operation* op = global_blocks_ops[op_id];
-      PADDLE_ENFORCE_LT(input_idx, op->num_operands(),
-        common::errors::InvalidArgument(
-          "input index %d is out of range, the input size is %d",
-          input_idx, op->num_operands()));
-      return GetTensorInfo(op->operand(input_idx).source());
+    int64_t op_id, int64_t input_idx, bool if_in_sub_block) const {
+  PADDLE_ENFORCE_GT(input_idx,
+                    -1,
+                    common::errors::InvalidArgument(
+                        "input_idx should be greater than -1 in GetOpInput."));
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
+  }
+  PADDLE_ENFORCE_LT(input_idx,
+                    op->num_operands(),
+                    common::errors::InvalidArgument(
+                        "input index %d is out of range, the input size is %d",
+                        input_idx,
+                        op->num_operands()));
+  if (if_in_sub_block) {
+    return GetSubBlockValueTensorInfo(op->operand(input_idx).source());
+  } else {
+    return GetTensorInfo(op->operand(input_idx).source());
+  }
 }
 
 std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
-    int64_t op_id, int64_t output_idx) const {
-    PADDLE_ENFORCE_GT(
+    int64_t op_id, int64_t output_idx, bool if_in_sub_block) const {
+  PADDLE_ENFORCE_GT(
       output_idx,
       -1,
       common::errors::InvalidArgument(
-        "output_idx should be greater than -1 in GetOpOutput."));
-      pir::Operation* op = global_blocks_ops[op_id];
-    PADDLE_ENFORCE_LT(
+          "output_idx should be greater than -1 in GetOpOutput."));
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
+  }
+  PADDLE_ENFORCE_LT(
       output_idx,
-       op->num_results(),
-       common::errors::InvalidArgument(
-        "output index %d is out of range, the output size is %d",
-        output_idx, op->num_results()));
-      return GetTensorInfo(op->result(output_idx));
+      op->num_results(),
+      common::errors::InvalidArgument(
+          "output index %d is out of range, the output size is %d",
+          output_idx,
+          op->num_results()));
+  if (if_in_sub_block) {
+    return GetSubBlockValueTensorInfo(op->result(output_idx));
+  } else {
+    return GetTensorInfo(op->result(output_idx));
+  }
 }
 
-  /**
-  std::vector<int64_t> PaddlePirParser::GetOpAttrVar(int64_t op_id, int64_t input_idx, const std::string &name) const {
-    pir::Operation* op = global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
-    std::vector<int64_t> result;
-    GetOpAttr(op, name, &result);
-    for(auto i : result)
-    {
-      std::cout << "attr: " << i << std::endl;
-    }
-    return result;
+/**
+std::vector<int64_t> PaddlePirParser::GetOpAttrVar(int64_t op_id, int64_t
+input_idx, const std::string &name) const { pir::Operation* op =
+global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
+  std::vector<int64_t> result;
+  GetOpAttr(op, name, &result);
+  for(auto i : result)
+  {
+    std::cout << "attr: " << i << std::endl;
   }
-  */
+  return result;
+}
+*/
 
-  bool PaddlePirParser::IsConstantTensor(int64_t op_id, int64_t input_idx) const {
-    PADDLE_ENFORCE_GT(
+bool PaddlePirParser::IsConstantTensor(int64_t op_id,
+                                       int64_t input_idx,
+                                       bool if_in_sub_block) const {
+  PADDLE_ENFORCE_GT(
       input_idx,
       -1,
       common::errors::InvalidArgument(
-        "input_idx should be greater than -1 in IsConstantTensor."));
-    // todo(wangmingkai02): need to check
-    return global_blocks_ops[op_id]->operand(input_idx).source().defining_op()->num_operands() == 0;
+          "input_idx should be greater than -1 in IsConstantTensor."));
+  // todo(wangmingkai02): need to check
+  pir::Operation* op;
+  if (if_in_sub_block) {
+    op = sub_blocks_ops[op_id];
+  } else {
+    op = global_blocks_ops[op_id];
   }
+  return op->operand(input_idx).source().defining_op()->num_operands() == 0;
+}
 }  // namespace paddle2onnx

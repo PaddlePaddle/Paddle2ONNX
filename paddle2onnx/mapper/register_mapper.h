@@ -50,9 +50,12 @@ class OnnxHelper;
    public:                                                                 \
     op_name##PirGenerator() { MapperHelper::Get()->Push(#op_name, this); } \
     void Touch() {}                                                        \
-    Mapper* Create(const PaddlePirParser& p, OnnxHelper* h, int64_t i) {   \
+    Mapper* Create(const PaddlePirParser& p,                               \
+                   OnnxHelper* h,                                          \
+                   int64_t i,                                              \
+                   bool c) {                                               \
       P2OLogger() << "Construct operation : " #op_name << std::endl;       \
-      auto m = new class_name(p, h, i);                                    \
+      auto m = new class_name(p, h, i, c);                                 \
       m->name_ = #class_name;                                              \
       return m;                                                            \
     }                                                                      \
@@ -75,7 +78,8 @@ class PirGenerator {
  public:
   virtual Mapper* Create(const PaddlePirParser&,
                          OnnxHelper* helper,
-                         int64_t) = 0;
+                         int64_t op_idx,
+                         bool if_in_subblock) = 0;
 };
 
 class MapperHelper {
@@ -104,7 +108,7 @@ class MapperHelper {
       outfile << iter->first << std::endl;
     }
     outfile << "Total OPs: " << mappers.size() << std::endl;
-    std::cout << " [ * Paddle2ONNX * ] All Registered OPs saved in "
+    P2OLogger() << " [ * Paddle2ONNX * ] All Registered OPs saved in "
               << file_path << std::endl;
     outfile.close();
     return mappers.size();
@@ -119,12 +123,11 @@ class MapperHelper {
       return true;
     }
 
-    // If we can't find op in PIR mappers, then try to 
+    // If we can't find op in PIR mappers, then try to
     // find it in old mappers
     auto iter = mappers.find(op_name);
     if (mappers.end() == iter) {
-      logger << "Not Founded! " << op_name 
-             << " is not registered" << std::endl;
+      logger << "Not Founded! " << op_name << " is not registered" << std::endl;
       return false;
     }
     logger << "Find " << op_name << " in old mappers" << std::endl;
@@ -156,10 +159,11 @@ class MapperHelper {
   Mapper* CreateMapper(const std::string& name,
                        const PaddlePirParser& pir_parser,
                        OnnxHelper* helper,
-                       int64_t i) {
+                       int64_t i,
+                       bool if_in_subblock) {
     Assert(pir_mappers.find(name) != pir_mappers.end(),
            name + " cannot be found in registered mappers.");
-    return pir_mappers[name]->Create(pir_parser, helper, i);
+    return pir_mappers[name]->Create(pir_parser, helper, i, if_in_subblock);
   }
 
   void Push(const std::string& name, Generator* generator) {

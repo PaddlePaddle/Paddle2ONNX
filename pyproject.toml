@@ -4,7 +4,7 @@ requires = [
     "wheel",
     "cmake>=3.16",
     "setuptools-scm",
-    "paddlepaddle==3.0.0.dev20240927",
+    "paddlepaddle==3.0.0.dev20241015",
 ]
 build-backend = "setuptools.build_meta"
 

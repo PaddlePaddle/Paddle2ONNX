@@ -20,16 +20,19 @@ namespace paddle2onnx {
 
 class DropoutMapper : public Mapper {
  public:
-  DropoutMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  DropoutMapper(const PaddleParser& p,
+                OnnxHelper* helper,
+                int64_t block_id,
                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("dropout_implementation", &dropout_implementation_);
   }
 
-  DropoutMapper(const PaddlePirParser& p, OnnxHelper* helper,
-                int64_t op_id)
-      : Mapper(p, helper, op_id) {
-    in_pir_mode = true;
+  DropoutMapper(const PaddlePirParser& p,
+                OnnxHelper* helper,
+                int64_t op_id,
+                bool c)
+      : Mapper(p, helper, op_id, c) {
     GetAttr("mode", &dropout_implementation_);
   }
 

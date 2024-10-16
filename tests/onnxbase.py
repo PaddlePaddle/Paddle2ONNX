@@ -431,6 +431,8 @@ class APIOnnx(object):
                 default_model_name = "model.json"
             pdmodel_path = os.path.join(self.name, default_model_name)
             pdiparams_path = os.path.join(self.name, "model.pdiparams")
+            # model = paddle.jit.load(os.path.join(self.name, "model"))
+            # print("program:", model.program())
             if len(self.ops) > 0:
                 self.dev_check_ops(self.ops[0], pdmodel_path)
 

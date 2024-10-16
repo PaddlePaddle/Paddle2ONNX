@@ -22,17 +22,20 @@ namespace paddle2onnx {
 
 class MatmulV2Mapper : public Mapper {
  public:
-  MatmulV2Mapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  MatmulV2Mapper(const PaddleParser& p,
+                 OnnxHelper* helper,
+                 int64_t block_id,
                  int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("trans_x", &trans_x_);
     GetAttr("trans_y", &trans_y_);
   }
 
-  MatmulV2Mapper(const PaddlePirParser& p, OnnxHelper* helper,
-                 int64_t op_id)
-      : Mapper(p, helper, op_id) {
-    in_pir_mode = true;
+  MatmulV2Mapper(const PaddlePirParser& p,
+                 OnnxHelper* helper,
+                 int64_t op_id,
+                 bool c)
+      : Mapper(p, helper, op_id, c) {
     GetAttr("transpose_x", &trans_x_);
     GetAttr("transpose_y", &trans_y_);
   }
@@ -41,7 +44,10 @@ class MatmulV2Mapper : public Mapper {
 
  private:
   std::string GetTrans(std::vector<TensorInfo>& input_info);
-  const std::unordered_set<int32_t> kNoNeedCastTypesOpSet7{P2ODataType::FP16, P2ODataType::FP32, P2ODataType::INT32, P2ODataType::INT64};
+  const std::unordered_set<int32_t> kNoNeedCastTypesOpSet7{P2ODataType::FP16,
+                                                           P2ODataType::FP32,
+                                                           P2ODataType::INT32,
+                                                           P2ODataType::INT64};
   bool trans_x_ = false;
   bool trans_y_ = false;
 };

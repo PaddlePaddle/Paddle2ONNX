@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(paddle2onnx C CXX)
-# ONNX 1.16 requires C++17
+# ONNX 1.16 requires C++ 17
 set(CMAKE_CXX_STANDARD 17)
-# Build the libraries with -fPIC
+# Build the libraries with - fPIC
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# Always link with libstdc++fs.a when using GCC 8. See
-# https://discourse.cmake.org/t/correct-way-to-link-std-filesystem-with-gcc-8/4121/5
-# for detail.
+# Always link with libstdc++ fs.a when using GCC 8.
 link_libraries(
   "$<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:-lstdc++fs>"
 )
@@ -20,8 +18,7 @@ if(PADDLE2ONNX_DEBUG)
 endif()
 
 # Set max opset version for onnx if you build from other version of onnx this
-# should be modified. Refer to
-# https://github.com/onnx/onnx/blob/main/docs/Versioning.md#released-versions
+# should be modified.
 add_definitions(-DMAX_ONNX_OPSET_VERSION=19)
 add_definitions(-DPADDLE2ONNX_LIB)
 
@@ -38,7 +35,7 @@ include(cmake/utils.cmake)
 configure_file(${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h.in
                ${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h)
 
-# Third dependency: onnx
+# Third dependency : onnx
 if(NOT TARGET onnx_proto)
   if(NOT ONNX_NAMESPACE)
     set(ONNX_NAMESPACE "onnx")
@@ -97,7 +94,9 @@ else()
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   message(STATUS "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")
 
-  set(PADDLE_LIB ${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so)
+  # set(PADDLE_LIB ${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so)
+  set(PADDLE_LIB
+      "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
   if(EXISTS ${PADDLE_LIB})
     message(STATUS "found libpaddle.so : ${PADDLE_LIB}")
   else()
@@ -196,8 +195,8 @@ if(BUILD_PADDLE2ONNX_PYTHON)
                           PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
   endif()
 
-  target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PADDLE_LIB}
-                                                          p2o_paddle_proto onnx glog::glog)
+  target_link_libraries(paddle2onnx_cpp2py_export
+                        PRIVATE ${PADDLE_LIB} p2o_paddle_proto onnx glog::glog)
 
   if(MSVC)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})
