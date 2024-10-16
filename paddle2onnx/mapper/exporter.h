@@ -88,12 +88,14 @@ class ModelExporter {
       const PaddleParser &parser,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters);
   std::set<std::string> tensor_names_;
+  std::set<std::string> while_tensor_names_;
   void ProcessGraphDumplicateNames(
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
-      std::map<std::string, QuantizeInfo> &quantize_info);
+      std::map<std::string, QuantizeInfo> &quantize_info,
+      bool is_while_block = false);
   // Update constant node in parameters. When process quantize model, the weight
   // dtype may be int8, it should be convet to float32 and use this function to
   // update converted params.
@@ -118,7 +120,7 @@ class ModelExporter {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
-      bool is_while_block = false);
+      OnnxHelper *helper = nullptr, bool is_while_block = false);
 
   void ExportOp(const PaddleParser &parser, OnnxHelper *helper,
                 int32_t opset_version, int64_t block_id, int64_t op_id,

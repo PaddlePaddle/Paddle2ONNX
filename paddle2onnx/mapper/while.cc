@@ -56,16 +56,15 @@ void ModelExporter::ExportWhile(const PaddleParser& parser,
       continue;
     }
 
-    if (x_info[i].is_tensor_array) {
-      continue;
+    if (!(x_info[i].is_tensor_array)) {
+      // P2OLogger() << x_info[i].name << "is tensor array" << std::endl;
+      inputs.push_back(std::move(MakeValueInfo(x_info[i])));
     }
-
     input_names.push_back(x_info[i].name);
-    inputs.push_back(std::move(MakeValueInfo(x_info[i])));
     outputs.push_back(std::move(MakeValueInfo(x_info[i])));
   }
 
-  graph = ExportBlock(parser, sub_block_idx, parameters, inputs, outputs, true);
+  graph = ExportBlock(parser, sub_block_idx, parameters, inputs, outputs, nullptr, true);
 
   /********************* Creat Body Gragh *********************/
   // Make Fake iter

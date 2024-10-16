@@ -80,7 +80,8 @@ class MapperHelper {
   }
 
   std::string GenName(const std::string& op_name) {
-    std::string key = "p2o." + op_name + ".";
+    // std::string key = "p2o." + op_name + ".";
+    std::string key = op_name + ".";
     if (name_counter.find(key) == name_counter.end()) {
       name_counter[key] = 0;
     } else {

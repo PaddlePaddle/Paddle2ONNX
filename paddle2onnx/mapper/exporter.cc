@@ -289,13 +289,21 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
-    bool is_while_block) {
+    OnnxHelper *helper, bool is_while_block) {
   ONNX_NAMESPACE::GraphProto graph;
   graph.set_name("PaddlePaddle Graph " + std::to_string(block_id));
-  OnnxHelper temp_helper;
   auto num_ops = parser.NumOfOps(block_id);
-  temp_helper.nodes.reserve(num_ops * 3);
-  temp_helper.Clear();
+
+  // Init ONNXHelp
+  OnnxHelper *temp_helper = nullptr;
+  if (helper == nullptr) {
+    temp_helper = new OnnxHelper();
+    temp_helper->nodes.reserve(num_ops * 3);
+    temp_helper->Clear();
+  } else {
+    temp_helper = helper;
+  }
+
   for (auto op_id = 0; op_id < num_ops; ++op_id) {
     auto op = parser.GetOpDesc(block_id, op_id);
     if (op.type() == "feed") {
@@ -309,49 +317,20 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       }
       continue;
     } else if (op.type() == "select_input") {
-      ExportSelectInput(parser, &temp_helper, block_id, op_id);
+      ExportSelectInput(parser, temp_helper, block_id, op_id);
       continue;
     } else if (op.type() == "fill_constant") {
       auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
       sub_block_map_[out_info[0].name] = {block_id, op_id};
     } else if (op.type() == "while") {
-      ExportWhile(parser, &temp_helper, block_id, op_id);
+      ExportWhile(parser, temp_helper, block_id, op_id);
       continue;
     }
-    ExportOp(parser, &temp_helper, opset_version_, block_id, op_id, verbose_);
+    ExportOp(parser, temp_helper, opset_version_, block_id, op_id, verbose_);
   }
 
-  ProcessGraphDumplicateNames(parameters, inputs, outputs, temp_helper.nodes,
-                              temp_helper.quantize_info);
-
-  if (is_while_block) {
-    std::map<std::string, std::string> renamer;
-    for (auto &item : inputs) {
-      auto name = MapperHelper::Get()->GenName("loop.input");
-      renamer[item->name()] = name;
-      item->set_name(name);
-    }
-    for (auto &item : temp_helper.nodes) {
-      for (size_t i = 0; i < item->input_size(); ++i) {
-        if (renamer.find(item->input(i)) != renamer.end()) {
-          auto updated_name = renamer[item->input(i)];
-          while (renamer.find(updated_name) != renamer.end()) {
-            updated_name = renamer[updated_name];
-          }
-          *(item->mutable_input(i)) = updated_name;
-        }
-      }
-    }
-    for (auto &item : outputs) {
-      if (renamer.find(item->name()) != renamer.end()) {
-        auto updated_name = renamer[item->name()];
-        while (renamer.find(updated_name) != renamer.end()) {
-          updated_name = renamer[updated_name];
-        }
-        item->set_name(updated_name);
-      }
-    }
-  }
+  ProcessGraphDumplicateNames(parameters, inputs, outputs, temp_helper->nodes,
+                              temp_helper->quantize_info, is_while_block);
 
   // Process the model according to deploy_mackend_
   if (parser.is_quantized_model) {
@@ -370,14 +349,14 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
                  deploy_backend_ + ".");
     }
     P2OLogger() << "Deploy backend is: " << deploy_backend_ << std::endl;
-    quantize_processer_->ProcessQuantizeModel(&parameters, &inputs, &outputs,
-                                              &temp_helper.nodes, &temp_helper,
-                                              parser, calibration_cache_);
+    quantize_processer_->ProcessQuantizeModel(
+        &parameters, &inputs, &outputs, &(temp_helper->nodes), temp_helper,
+        parser, calibration_cache_);
     delete quantize_processer_;
     quantize_processer_ = nullptr;
 
     // Update int8 weights in quantized OP to float32
-    UpdateParameters(temp_helper.updated_params, parameters);
+    UpdateParameters(temp_helper->updated_params, parameters);
   }
 
   for (auto &item : parameters) {
@@ -392,14 +371,17 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     *(graph.add_output()) = (*item.get());
   }
 
-  for (auto &item : temp_helper.nodes) {
+  for (auto &item : temp_helper->nodes) {
     *(graph.add_node()) = (*item.get());
   }
 
-  for (auto &item : temp_helper.value_infos) {
+  for (auto &item : temp_helper->value_infos) {
     *(graph.add_value_info()) = (*item.get());
   }
 
+  if (helper == nullptr) {
+    delete temp_helper;
+  }
   return std::move(graph);
 }
 
@@ -523,12 +505,33 @@ void ModelExporter::ProcessGraphDumplicateNames(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
-    std::map<std::string, QuantizeInfo> &quantize_info) {
-  std::map<std::string, std::string> renamer;
+    std::map<std::string, QuantizeInfo> &quantize_info, bool is_while_block) {
+  /********************* Create Tensor Names *********************/
+  for (auto &item : nodes) {
+    for (size_t i = 0; i < item->input_size(); ++i) {
+      if (item->name().find("Loop") != std::string::npos) {
+        // P2OLogger() << "nodes item input:" << item->input(i) << std::endl;
+        while_tensor_names_.insert(item->input(i));
+      }
+    }
+    for (size_t i = 0; i < item->output_size(); ++i) {
+      if (item->name().find("Loop") != std::string::npos) {
+        // P2OLogger() << "nodes item output:" << item->output(i) << std::endl;
+        while_tensor_names_.insert(item->output(i));
+      }
+    }
+  }
+  // for (const auto& tensor_name : while_tensor_names_) {
+  //   tensor_names_.erase(tensor_name);
+  // }
+  /********************* Create Tensor Names *********************/
+
+  /********************* Rename *********************/
   for (auto &item : parameters) {
     for (size_t i = 0; i < item->output_size(); ++i) {
       if (tensor_names_.find(item->output(i)) != tensor_names_.end()) {
-        P2OLogger() << "[WARNING] There's dumplicate names in exported parameters.";
+        P2OLogger()
+            << "[WARNING] There's dumplicate names in exported parameters.";
         continue;
       }
       tensor_names_.insert(item->output(i));
@@ -536,14 +539,9 @@ void ModelExporter::ProcessGraphDumplicateNames(
   }
 
   for (auto &item : inputs) {
-    if (tensor_names_.find(item->name()) != tensor_names_.end()) {
-      continue;
-      // Assert(false, "There's dumplicate names:" + item->name() + " in
-      // exported parameters and inputs.");
-    }
     tensor_names_.insert(item->name());
   }
-
+  std::map<std::string, std::string> renamer;
   for (auto &item : nodes) {
     // update node inputs
     for (size_t i = 0; i < item->input_size(); ++i) {
@@ -560,15 +558,17 @@ void ModelExporter::ProcessGraphDumplicateNames(
     // dumplicate name
     for (size_t i = 0; i < item->output_size(); ++i) {
       if (tensor_names_.find(item->output(i)) != tensor_names_.end()) {
+        if (is_while_block) {
+          if (while_tensor_names_.find(item->output(i)) != while_tensor_names_.end()) {
+            // P2OLogger() << "Skip: " << item->output(i) << std::endl;
+            continue;
+          }
+        }
         std::string renamed_tensor_name = item->output(i);
         while (renamer.find(renamed_tensor_name) != renamer.end()) {
           renamed_tensor_name = renamer[renamed_tensor_name];
         }
-        auto new_tensor_name =
-            MapperHelper::Get()->GenName(renamed_tensor_name);
-        // P2OLogger() << "Find dumplicate output name '" << renamed_tensor_name
-        //             << "', it will rename to '" << new_tensor_name << "'."
-        //             << std::endl;
+        auto new_tensor_name = MapperHelper::Get()->GenName(renamed_tensor_name);
         if (quantize_info.find(renamed_tensor_name) != quantize_info.end()) {
           quantize_info[new_tensor_name] = quantize_info[renamed_tensor_name];
         }
@@ -588,6 +588,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
       item->set_name(updated_name);
     }
   }
+  /********************* Rename *********************/
 }
 
 void ModelExporter::SaveExternalData(::ONNX_NAMESPACE::GraphProto *graph,

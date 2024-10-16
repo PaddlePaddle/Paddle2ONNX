@@ -14,19 +14,21 @@
 
 #include "paddle2onnx/mapper/exporter.h"
 namespace paddle2onnx {
-ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(const PaddleParser &parser,
-                                              OnnxHelper *temp_helper,
-                                              int32_t block_id, int32_t op_id,
-                                              const std::string &output_name) {
+ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(
+    const PaddleParser &parser, OnnxHelper *temp_helper, int32_t block_id,
+    int32_t op_id, const std::string &output_name) {
   ONNX_NAMESPACE::GraphProto graph;
   graph.set_name("PaddlePaddle fill_constant Graph " + std::to_string(op_id));
 
   // Add input
 
   // Add node
-  for (auto &item : temp_helper->nodes) {
+  auto &nodes = temp_helper->nodes;
+  for (int i = 0; i < nodes.size(); i++) {
+    auto &item = nodes[i];
     if (item->output(0) == output_name) {
       *(graph.add_node()) = (*item.get());
+      nodes.erase(nodes.begin() + i);
       break;
     }
   }
@@ -57,11 +59,10 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
-
   auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
   for (int index = 0; index < out_info.size(); index++) {
     if (out_info[index].name != output_name) {
-    continue;
+      continue;
     }
     temp_outputs.push_back(std::move(MakeValueInfo(out_info[index])));
   }
