@@ -14,7 +14,7 @@
 
 import paddle
 from onnxbase import APIOnnx
-from onnxbase import randtool
+
 
 class BaseNet1(paddle.nn.Layer):
     def __init__(self):
@@ -26,19 +26,22 @@ class BaseNet1(paddle.nn.Layer):
         else:
             return inputs * 3
 
+
 def test_ifelse_1_true():
     op = BaseNet1()
     op.eval()
-    obj = APIOnnx(op, 'ifelse', [11])
+    obj = APIOnnx(op, "ifelse", [11])
     obj.set_input_data("input_data", paddle.to_tensor(1))
     obj.run()
+
 
 def test_ifelse_1_false():
     op = BaseNet1()
     op.eval()
-    obj = APIOnnx(op, 'ifelse', [11])
+    obj = APIOnnx(op, "ifelse", [11])
     obj.set_input_data("input_data", paddle.to_tensor(2))
     obj.run()
+
 
 class BaseNet2(paddle.nn.Layer):
     def __init__(self):
@@ -46,26 +49,116 @@ class BaseNet2(paddle.nn.Layer):
 
     def forward(self, cond, inputs):
         if cond == 1:
-            return inputs * 1, inputs * 2 
+            return inputs * 1, inputs * 2
         else:
             return inputs * 3, inputs * 4
+
 
 def test_ifelse_2_true():
     op = BaseNet2()
     op.eval()
-    obj = APIOnnx(op, 'ifelse', [11])
+    obj = APIOnnx(op, "ifelse", [11])
     obj.set_input_data("input_data", paddle.to_tensor(1), paddle.to_tensor(1))
     obj.run()
+
 
 def test_ifelse_2_false():
     op = BaseNet2()
     op.eval()
-    obj = APIOnnx(op, 'ifelse', [11])
+    obj = APIOnnx(op, "ifelse", [11])
     obj.set_input_data("input_data", paddle.to_tensor(2), paddle.to_tensor(1))
     obj.run()
+
+
+class BaseNet3(paddle.nn.Layer):
+    def __init__(self):
+        super(BaseNet3, self).__init__()
+
+    def forward(self, inputs):
+        if inputs == 1:
+            return 1
+        else:
+            return 2
+
+
+def test_ifelse_3_true():
+    op = BaseNet3()
+    op.eval()
+    obj = APIOnnx(op, "ifelse", [11])
+    obj.set_input_data("input_data", paddle.to_tensor(1))
+    obj.run()
+
+
+def test_ifelse_3_false():
+    op = BaseNet3()
+    op.eval()
+    obj = APIOnnx(op, "ifelse", [11])
+    obj.set_input_data("input_data", paddle.to_tensor(2))
+    obj.run()
+
+
+class BaseNet4(paddle.nn.Layer):
+    def __init__(self):
+        super(BaseNet4, self).__init__()
+
+    def forward(self, inputs):
+        if inputs == 1:
+            return inputs + 1
+        else:
+            return 2
+
+
+def test_ifelse_4_true():
+    op = BaseNet4()
+    op.eval()
+    obj = APIOnnx(op, "ifelse", [11])
+    obj.set_input_data("input_data", paddle.to_tensor(1))
+    obj.run()
+
+
+def test_ifelse_4_false():
+    op = BaseNet4()
+    op.eval()
+    obj = APIOnnx(op, "ifelse", [11])
+    obj.set_input_data("input_data", paddle.to_tensor(2))
+    obj.run()
+
+
+class BaseNet5(paddle.nn.Layer):
+    def __init__(self):
+        super(BaseNet5, self).__init__()
+
+    def forward(self, inputs):
+        if inputs == 1:
+            return 1, 2
+        else:
+            return 2, 3
+
+
+def test_ifelse_5_true():
+    op = BaseNet5()
+    op.eval()
+    obj = APIOnnx(op, "ifelse", [11])
+    obj.set_input_data("input_data", paddle.to_tensor(1))
+    obj.run()
+
+
+def test_ifelse_5_false():
+    op = BaseNet5()
+    op.eval()
+    obj = APIOnnx(op, "ifelse", [11])
+    obj.set_input_data("input_data", paddle.to_tensor(2))
+    obj.run()
+
 
 if __name__ == "__main__":
     test_ifelse_1_true()
     test_ifelse_1_false()
     test_ifelse_2_true()
     test_ifelse_2_false()
+    test_ifelse_3_true()
+    test_ifelse_3_false()
+    test_ifelse_4_true()
+    test_ifelse_4_false()
+    test_ifelse_5_true()
+    test_ifelse_5_false()
