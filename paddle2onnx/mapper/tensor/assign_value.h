@@ -37,8 +37,9 @@ class AssignValueMapper : public Mapper {
     }
   }
 
-  AssignValueMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i)
-      : Mapper(p, helper, i) {
+  AssignValueMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
+                    bool c)
+      : Mapper(p, helper, i, c) {
     in_pir_mode = true;
     // GetAttr("dtype", &dtype_);
     dtype_ = GetOutput("Out")[0].dtype;
