@@ -96,7 +96,7 @@ else()
 
   # set(PADDLE_LIB ${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so)
   set(PADDLE_LIB
-      "/usr/local/lib/python3.10/dist-packages/paddle/base/libpaddle.so")
+      "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
   if(EXISTS ${PADDLE_LIB})
     message(STATUS "found libpaddle.so : ${PADDLE_LIB}")
   else()
