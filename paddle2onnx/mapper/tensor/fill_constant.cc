@@ -36,11 +36,9 @@ int32_t FillConstantMapper::GetMinOpsetVersion(bool verbose) {
     return -1;
   }
   if (HasInput("ShapeTensorList")) {
-    Logger(verbose, 9) << "While ShapeTensorList as input, " << RequireOpset(9) << std::endl;
     return 9;
   }
   if (HasInput("ShapeTensor") && !IsConstantInput("ShapeTensor")) {
-    Logger(verbose, 9) << "While ShapeTensor as input and it's not a constant tensor, " << RequireOpset(9) << std::endl;
     return 9;
   }
   return 7;
@@ -108,12 +106,17 @@ void FillConstantMapper::Opset9() {
       shape_name = helper_->ConcatIndices(shape_info);
     }
 
-    auto node = helper_->MakeNode("ConstantOfShape", {shape_name});
+    std::shared_ptr<ONNX_NAMESPACE::NodeProto> node;
+    if (value_is_tensor) {
+      node = helper_->MakeNode("ConstantOfShape", {shape_name});
+    } else {
+      node = helper_->MakeNode("ConstantOfShape", {shape_name}, {out_info[0].name});
+    }
     auto attr = node->add_attribute();
     attr->set_name("value");
     attr->set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
     auto tensor = attr->mutable_t();
-    tensor->set_name(out_info[0].name);
+    tensor->set_name(MapperHelper::Get()->GenName("ConstantOfShape.tensor"));
     tensor->set_data_type(onnx_dtype);
     tensor->add_dims(1);
     if (onnx_dtype == ONNX_NAMESPACE::TensorProto::INT32) {
@@ -145,13 +148,16 @@ void FillConstantMapper::Opset9() {
   } else {
     std::vector<int64_t> shape;
     GetAttr("shape", &shape);
-    out = helper_->Constant(shape, onnx_dtype, value);
+    if (value_is_tensor) {
+      out = helper_->Constant(shape, onnx_dtype, value);
+    } else {
+      out = helper_->Constant(out_info[0].name, shape, onnx_dtype, value);
+    }
   }
+
   if (value_is_tensor) {
     auto value_info = GetInput("ValueTensor");
     helper_->MakeNode("Add", {out, value_info[0].name}, {out_info[0].name});
-  } else {
-    helper_->MakeNode("Identity", {out}, {out_info[0].name});
   }
 }
 

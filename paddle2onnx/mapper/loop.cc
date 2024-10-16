@@ -16,35 +16,6 @@
 #include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
-
-bool ModelExporter::IsLoopSupported(const PaddleParser& parser,
-                                    const int64_t& block_id,
-                                    const int64_t& op_id) {
-  auto x_info = parser.GetOpInput(block_id, op_id, "X");
-  auto out_info = parser.GetOpOutput(block_id, op_id, "Out");
-  auto cond_info = parser.GetOpInput(block_id, op_id, "Condition");
-  std::set<std::string> input_names;
-  for (size_t i = 0; i < x_info.size(); ++i) {
-    input_names.insert(x_info[i].name);
-  }
-  input_names.insert(cond_info[0].name);
-
-  for (size_t i = 0; i < out_info.size(); ++i) {
-    auto iter = input_names.find(out_info[i].name);
-    if (iter == input_names.end()) {
-      P2OLogger() << "Cannot find output:" << out_info[i].name << " in input tensors while converting operator 'while', Paddle2ONNX doesn't support this situation now." << std::endl;
-      return false;
-    }
-  }
-  for (size_t i = 0; i < x_info.size(); ++i) {
-    if (x_info[i].is_tensor_array) {
-      P2OLogger() << "LodTensorArray is not supported." << std::endl;
-      return false;
-    }
-  }
-  return true;
-}
-
 void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
                                int32_t opset_version, int64_t block_id,
                                int64_t op_id, bool verbose) {
@@ -192,6 +163,5 @@ void ModelExporter::ExportLoop(const PaddleParser& parser, OnnxHelper* helper,
   attr->set_type(ONNX_NAMESPACE::AttributeProto::GRAPH);
   *(attr->mutable_g()) = *(graph.get());
 }
-
 }  // namespace paddle2onnx
 #endif

@@ -34,7 +34,6 @@ int32_t InterpolateMapper::GetMinOpsetVersion(bool verbose) {
             << x_info[0].Rank() << std::endl;
     return -1;
   }
-  Logger(verbose, 11) << RequireOpset(11) << std::endl;
   return 11;
 }
 
