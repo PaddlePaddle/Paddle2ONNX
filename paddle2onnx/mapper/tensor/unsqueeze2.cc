@@ -70,9 +70,7 @@ void Unsqueeze2Mapper::Opset13() {
   std::vector<int64_t> axes;
   if (axes_.empty()) {
     if (HasInput("AxesTensor")) {
-      Assert(TryGetInputValue("AxesTensor", &axes),
-             "While unsqueeze2 has input AxesTensor, it cannot be exported by "
-             "Paddle2ONNX");
+      TryGetInputValue("AxesTensor", &axes);
     } else {
       Warn() << "AxesTensor not found, using Identity instead of Unsqueeze."
              << std::endl;
