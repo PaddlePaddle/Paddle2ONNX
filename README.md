@@ -41,9 +41,9 @@ Paddle2ONNX 在导出模型时，需要传入部署模型格式，包括两个�
 你可以通过使用命令行并通过以下命令将Paddle模型转换为ONNX模型
 
 ```bash
-paddle2onnx --model_dir saved_inference_model \
-            --model_filename model.pdmodel \
-            --params_filename model.pdiparams \
+paddle2onnx --model_dir model_dir \
+            --model_filename inference.pdmodel \
+            --params_filename inference.pdiparams \
             --save_file model.onnx
 ```
 
@@ -72,9 +72,9 @@ paddle2onnx --model_dir saved_inference_model \
 
 ## 4.5 优化ONNX
 
-如你对导出的 ONNX 模型有优化的需求，推荐使用 `onnx-simplifier`，也可使用如下命令对模型进行优化
+如你对导出的 ONNX 模型有优化的需求，推荐使用 `onnxslim` 对模型进行优化:
 
-```
+```bash
 pip install onnxslim
 onnxslim model.onnx slim.onnx
 ```

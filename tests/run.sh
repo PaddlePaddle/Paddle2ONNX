@@ -57,7 +57,6 @@ ignore="test_auto_scan_multiclass_nms.py
         test_nn_Upsample.py \
         test_normalize.py \
         test_scatter_nd_add.py \
-        test_unsqueeze.py \
         test_quantize_model.py \
         test_quantize_model_minist.py \
         test_quantize_model_speedup.py \

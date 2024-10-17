@@ -21,28 +21,21 @@
 namespace paddle2onnx {
 REGISTER_MAPPER(assign_value, AssignValueMapper)
 
-int32_t AssignValueMapper::GetMinOpsetVersion(bool verbose) {
-  int32_t dtype = static_cast<int32_t>(dtype_);
-  if (dtype != P2ODataType::INT32 && dtype != P2ODataType::INT64 &&
-      dtype != P2ODataType::FP32) {
-    Error() << "Only supports int32/int64/float32." << std::endl;
-    return -1;
-  }
-  return 7;
-}
-
 void AssignValueMapper::Opset7() {
   auto output_info = GetOutput("Out");
   int32_t dtype = static_cast<int32_t>(dtype_);
   if (dtype == P2ODataType::INT32) {
     helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
                     shape_, int64_values_);
-  } else if (dtype == P2ODataType::FP32) {
-    helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
-                    shape_, fp32_values_);
   } else if (dtype == P2ODataType::INT64) {
     helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
                     shape_, int64_values_);
+  } else if (dtype == P2ODataType::FP32) {
+    helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
+                    shape_, fp32_values_);
+  } else if (dtype == P2ODataType::FP64) {
+    helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
+                    shape_, double_values_);
   }
 }
 
