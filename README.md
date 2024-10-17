@@ -41,10 +41,10 @@ Paddle2ONNX 在导出模型时，需要传入部署模型格式，包括两个�
 你可以通过使用命令行并通过以下命令将Paddle模型转换为ONNX模型
 
 ```bash
-paddle2onnx --model_dir models \
+paddle2onnx --model_dir model_dir \
             --model_filename inference.pdmodel \
             --params_filename inference.pdiparams \
-            --save_file inference.onnx
+            --save_file model.onnx
 ```
 
 可调整的转换参数如下表:
