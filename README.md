@@ -10,7 +10,7 @@ Paddle2ONNX 支持将 **PaddlePaddle** 模型格式转化到 **ONNX** 模型格�
 
 Paddle2ONNX 本身不依赖其他组件，但是我们建议您在以下环境下使用 Paddle2ONNX ：
 
-- PaddlePaddle == 3.0.0b1
+- PaddlePaddle == 2.6.0
 - onnxruntime >= 1.10.0
 
 # 3 安装 Paddle2ONNX

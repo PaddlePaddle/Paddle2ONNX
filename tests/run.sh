@@ -68,7 +68,7 @@ bug=0
 export PY_CMD=$1
 $PY_CMD -m pip install pytest
 $PY_CMD -m pip install onnx onnxruntime tqdm filelock
-$PY_CMD -m pip install paddlepaddle==3.0.0b1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+$PY_CMD -m pip install paddlepaddle==2.6.0
 $PY_CMD -m pip install six hypothesis
 
 
