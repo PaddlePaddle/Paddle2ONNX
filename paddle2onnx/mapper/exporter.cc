@@ -61,7 +61,7 @@ bool ModelExporter::IsWhileSupported(const PaddleParser &parser,
 
   for (size_t i = 0; i < x_info.size(); ++i) {
     if (x_info[i].is_tensor_array) {
-      P2OLogger() << "LodTensorArray is not supported." << std::endl;
+      P2OLogger() << "DenseTensorArray is not supported." << std::endl;
       return false;
     }
   }
