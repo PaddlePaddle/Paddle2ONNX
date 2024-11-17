@@ -46,13 +46,11 @@ jobs:
       run: |
         $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
         python -m build --wheel
-        dir dist
     
     # Install Paddle2ONNX
     - name: Install Paddle2ONNX
       run: |
-        dir dist
-        python -m pip install dist/*.whl
+        Get-ChildItem -Path dist/*.whl | foreach {python -m pip install --upgrade $_.fullname}
 
     # Install Test
     - name: Run Test
