@@ -26,11 +26,13 @@ jobs:
     - name: Set Protobuf to PATH
       run: |
         echo "PATH=${{ github.workspace }}/protobuf/bin:$PATH" >> $GITHUB_PATH
-        export PATH="${{ github.workspace }}/protobuf/bin:$PATH"
 
     # Step 3: Verify Protobuf installation
     - name: Verify Protobuf installation
-      run: protoc --version
+      run: |
+        $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
+        echo $Env:PATH
+        protoc --version
   
     # Checkout the latest branch of Paddle2ONNX.
     - name: Checkout Paddle2ONNX
