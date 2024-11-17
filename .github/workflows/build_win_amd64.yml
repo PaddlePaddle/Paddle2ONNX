@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        python-version: [ '3.9' ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: [ 'x64' ]
 
     steps:
@@ -22,18 +22,18 @@ jobs:
       with:
         submodules: true
 
-    # Step 1: Download and extract protobuf
+    # Download and extract protobuf
     - name: Download and extract protobuf
       run: |
         curl -L -o protobuf.zip https://bj.bcebos.com/fastdeploy/third_libs/protobuf-win-x64-3.16.0.zip
         powershell -Command "Expand-Archive -Path protobuf.zip -DestinationPath $PWD/protobuf"
 
-    # Step 2: Set environment variable for Protobuf
+    # Set environment variable for Protobuf
     - name: Set Protobuf to PATH
       run: |
         echo "PATH=${{ github.workspace }}/protobuf/bin:$PATH" >> $GITHUB_PATH
 
-    # Step 3: Verify Protobuf installation
+    # Verify Protobuf installation
     - name: Verify Protobuf installation
       run: |
         $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
@@ -55,9 +55,5 @@ jobs:
     
     - name: Build package
       run: |
-        $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
-        echo $Env:PATH
-        dir "${{ github.workspace }}\protobuf\bin"
-        protoc --version
         python -m build --wheel
       
