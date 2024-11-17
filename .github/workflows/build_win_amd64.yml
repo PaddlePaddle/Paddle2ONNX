@@ -28,18 +28,6 @@ jobs:
         curl -L -o protobuf.zip https://bj.bcebos.com/fastdeploy/third_libs/protobuf-win-x64-3.16.0.zip
         powershell -Command "Expand-Archive -Path protobuf.zip -DestinationPath $PWD/protobuf"
 
-    # Set environment variable for Protobuf
-    - name: Set Protobuf to PATH
-      run: |
-        echo "PATH=${{ github.workspace }}/protobuf/bin:$PATH" >> $GITHUB_PATH
-
-    # Verify Protobuf installation
-    - name: Verify Protobuf installation
-      run: |
-        $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
-        echo $Env:PATH
-        protoc --version
-
     # Setup Python
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
@@ -56,8 +44,5 @@ jobs:
     - name: Build package
       run: |
         $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
-        echo $Env:PATH
-        dir "${{ github.workspace }}\protobuf\bin"
-        protoc --version
         python -m build --wheel
       
