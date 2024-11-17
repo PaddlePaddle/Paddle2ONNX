@@ -16,6 +16,12 @@ jobs:
         architecture: [ 'x64' ]
 
     steps:
+    # Checkout the latest branch of Paddle2ONNX.
+    - name: Checkout Paddle2ONNX
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
     # Step 1: Download and extract protobuf
     - name: Download and extract protobuf
       run: |
@@ -33,12 +39,6 @@ jobs:
         $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
         echo $Env:PATH
         protoc --version
-  
-    # Checkout the latest branch of Paddle2ONNX.
-    - name: Checkout Paddle2ONNX
-      uses: actions/checkout@v4
-      with:
-        submodules: true
 
     # Setup Python
     - name: Set up Python ${{ matrix.python-version }}
