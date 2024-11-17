@@ -40,9 +40,23 @@ jobs:
       run: |
         python -m pip install -q --upgrade pip
         python -m pip install setuptools wheel auditwheel auditwheel-symbols build
-    
+
+    # Build package
     - name: Build package
       run: |
         $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
         python -m build --wheel
+        dir dist
+    
+    # Install Paddle2ONNX
+    - name: Install Paddle2ONNX
+      run: |
+        dir dist
+        python -m pip install dist/*.whl
+
+    # Install Test
+    - name: Run Test
+      working-directory: ./tests
+      run: |
+        run.bat python
       
