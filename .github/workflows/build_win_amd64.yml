@@ -56,5 +56,6 @@ jobs:
     - name: Run Test
       working-directory: ./tests
       run: |
-        run.bat python
+        dir
+        .\run.bat python
       
