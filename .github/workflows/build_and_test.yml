@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build_on_linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -45,3 +45,53 @@ jobs:
         working-directory: ./tests
         run: |
           bash run.sh python
+
+  build_on_windows:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: [ '3.8' ]
+        architecture: [ 'x64' ]
+
+    steps:
+    # Checkout the latest branch of Paddle2ONNX.
+    - name: Checkout Paddle2ONNX
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    # Download and extract protobuf
+    - name: Download and extract protobuf
+      run: |
+        curl -L -o protobuf.zip https://bj.bcebos.com/fastdeploy/third_libs/protobuf-win-x64-3.16.0.zip
+        powershell -Command "Expand-Archive -Path protobuf.zip -DestinationPath $PWD/protobuf"
+
+    # Setup Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
+    
+    # Install Python dependencies
+    - name: Install Python dependencies
+      run: |
+        python -m pip install -q --upgrade pip
+        python -m pip install setuptools wheel auditwheel auditwheel-symbols build
+
+    # Build package
+    - name: Build package
+      run: |
+        $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
+        python -m build --wheel
+    
+    # Install Paddle2ONNX
+    - name: Install Paddle2ONNX
+      run: |
+        Get-ChildItem -Path dist/*.whl | foreach {python -m pip install --upgrade $_.fullname}
+
+    # Install Test
+    - name: Run Test
+      working-directory: ./tests
+      run: |
+        .\run.bat python
