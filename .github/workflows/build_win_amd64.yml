@@ -9,26 +9,26 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: [ '3.9' ]
         architecture: [ 'x64' ]
 
     steps:
-    # Download protobuf
-    - name: Download protobuf
+    # Step 1: Download and extract protobuf
+    - name: Download and extract protobuf
       run: |
         curl -L -o protobuf.zip https://bj.bcebos.com/fastdeploy/third_libs/protobuf-win-x64-3.16.0.zip
-
-    # Extract protobuf
-    - name: Extract protobuf
-      run: |
         powershell -Command "Expand-Archive -Path protobuf.zip -DestinationPath $PWD/protobuf"
 
-    # Set environment variables for Protobuf
-    - name: Set environment variables for Protobuf
-      run: echo "PATH=$PATH:${{ github.workspace }}/protobuf/bin" >> $GITHUB_ENV
+    # Step 2: Set environment variable for Protobuf
+    - name: Set Protobuf to PATH
+      run: echo "PATH=${{ github.workspace }}/protobuf/bin:$PATH" >> $GITHUB_ENV
+
+    # Step 3: Verify Protobuf installation
+    - name: Verify Protobuf installation
+      run: protoc --version
   
     # Checkout the latest branch of Paddle2ONNX.
     - name: Checkout Paddle2ONNX
@@ -50,5 +50,5 @@ jobs:
         python -m pip install setuptools wheel auditwheel auditwheel-symbols build
     
     - name: Build package
-      run: python -m build
+      run: python -m build --wheel
       
