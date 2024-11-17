@@ -33,25 +33,25 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_assign_9():
+def test_assign_int32():
     """
     api: paddle.assign
-    op version: 9
+    op version: 7
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'assign', [9])
+    obj = APIOnnx(op, 'assign', [7])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('int32')))
     obj.run()
 
 
-def test_assign_10():
+def test_assign_int64():
     """
     api: paddle.assign
-    op version: 10
+    op version: 7
     """
     op = Net()
     op.eval()
@@ -59,14 +59,14 @@ def test_assign_10():
     obj = APIOnnx(op, 'assign', [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('int64')))
     obj.run()
 
 
-def test_assign_11():
+def test_assign_fp32():
     """
     api: paddle.assign
-    op version: 11
+    op version: 7
     """
     op = Net()
     op.eval()
@@ -78,7 +78,7 @@ def test_assign_11():
     obj.run()
 
 
-def test_assign_12():
+def test_assign_fp64():
     """
     api: paddle.assign
     op version: 12
@@ -89,5 +89,12 @@ def test_assign_12():
     obj = APIOnnx(op, 'assign', [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float64')))
     obj.run()
+
+
+if __name__ == "__main__":
+    test_assign_int32()
+    test_assign_int64()
+    test_assign_fp32()
+    test_assign_fp64()

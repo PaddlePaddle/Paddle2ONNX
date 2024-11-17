@@ -24,6 +24,7 @@ protobuf-*
 *.pdmodel
 *.pdiparams
 *.pdiparams.info
+*inference.yml
 *.onnx
 *.temptxt
 tests/__pycache_*

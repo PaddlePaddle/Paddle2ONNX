@@ -34,7 +34,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_unsqueeze_9():
+def test_unsqueeze_7():
     """
     api: paddle.unsqueeze
     op version: 9
@@ -49,7 +49,7 @@ def test_unsqueeze_9():
     obj.run()
 
 
-def test_unsqueeze_10():
+def test_unsqueeze_13():
     """
     api: paddle.unsqueeze
     op version: 10
@@ -64,52 +64,7 @@ def test_unsqueeze_10():
     obj.run()
 
 
-def test_unsqueeze_11():
-    """
-    api: paddle.unsqueeze
-    op version: 11
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unsqueeze', [11])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
-    obj.run()
-
-
-def test_unsqueeze_12():
-    """
-    api: paddle.unsqueeze
-    op version: 12
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unsqueeze', [12])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
-    obj.run()
-
-
-def test_unsqueeze_axis_13():
-    """
-    api: paddle.unsqueeze
-    op version: 13
-    """
-    op = Net(axis=paddle.to_tensor(1))
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unsqueeze', [13])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
-    obj.run()
-
-
-def test_unsqueeze_13_two_tensor_axis():
+def test_unsqueeze_two_tensor_axis():
     """
     api: paddle.unsqueeze
     op version: 13
@@ -124,7 +79,7 @@ def test_unsqueeze_13_two_tensor_axis():
     obj.run()
 
 
-def test_unsqueeze_9_two_axis():
+def test_unsqueeze_two_axis():
     """
     api: paddle.unsqueeze
     op version: 9
@@ -132,14 +87,14 @@ def test_unsqueeze_9_two_axis():
     op = Net(axis=[0, -1])
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unsqueeze', [9, 10, 11, 12, 13])
+    obj = APIOnnx(op, 'unsqueeze', [7, 13])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
     obj.run()
 
 
-def test_unsqueeze_9_multil_axis():
+def test_unsqueeze_multil_axis():
     """
     api: paddle.unsqueeze
     op version: 9
@@ -147,14 +102,14 @@ def test_unsqueeze_9_multil_axis():
     op = Net(axis=[1, 2, 3, 4])
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unsqueeze', [9, 10, 11, 12, 13])
+    obj = APIOnnx(op, 'unsqueeze', [7, 13])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [5, 10]).astype('float32')))
     obj.run()
 
 
-def test_unsqueeze_9_multil_negative_axis():
+def test_unsqueeze_multil_negative_axis():
     """
     api: paddle.unsqueeze
     op version: 9
@@ -162,20 +117,17 @@ def test_unsqueeze_9_multil_negative_axis():
     op = Net(axis=[1, 2, 3, -1])
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'unsqueeze', [9, 10, 11, 12, 13])
+    obj = APIOnnx(op, 'unsqueeze', [7, 13])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(randtool("float", -1, 1, [5, 10]).astype('float32')))
     obj.run()
 
 
-# if __name__ == '__main__':
-#     test_unsqueeze_9()
-#     test_unsqueeze_10()
-#     test_unsqueeze_11()
-#     test_unsqueeze_12()
-#     test_unsqueeze_axis_12()
-#     test_unsqueeze_9_two_tensor_axis()
-#     test_unsqueeze_9_two_axis()
-#     test_unsqueeze_9_multil_axis()
-#     test_unsqueeze_9_multil_negative_axis()
+if __name__ == '__main__':
+    test_unsqueeze_7()
+    test_unsqueeze_13()
+    test_unsqueeze_two_tensor_axis()
+    test_unsqueeze_two_axis()
+    test_unsqueeze_multil_axis()
+    test_unsqueeze_multil_negative_axis()

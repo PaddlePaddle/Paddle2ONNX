@@ -18,24 +18,21 @@ namespace paddle2onnx {
 REGISTER_MAPPER(unsqueeze2, Unsqueeze2Mapper)
 
 int32_t Unsqueeze2Mapper::GetMinOpsetVersion(bool verbose) {
-  if (axes_.size() == 0) {
-    if (HasInput("AxesTensorList")) {
-      Logger(verbose, 13) << "While AxisTensorList as input, "
-                          << RequireOpset(13) << std::endl;
-      return 13;
-    } else if (HasInput("AxesTensor")) {
-      auto info = GetInput("AxesTensor");
-      if (!IsConstantInput("AxesTensor")) {
-        Logger(verbose, 13)
-            << "While AxesTensor as input, and it's not a constant tensor, "
-            << RequireOpset(13) << std::endl;
-        return 13;
-      } else {
-        return 7;
-      }
+  int32_t opset = 7;
+  if (!axes_.empty()) {
+    return opset;
+  }
+
+  opset = 13;
+  if (HasInput("AxesTensorList")) {
+    opset = 13;
+  } else if (HasInput("AxesTensor")) {
+    auto info = GetInput("AxesTensor");
+    if (!IsConstantInput("AxesTensor")) {
+      opset = 13;
     }
   }
-  return 7;
+  return opset;
 }
 
 void Unsqueeze2Mapper::Opset7() {
@@ -44,9 +41,17 @@ void Unsqueeze2Mapper::Opset7() {
 
   std::vector<int64_t> axes;
   if (axes_.empty()) {
-    Assert(TryGetInputValue("AxesTensor", &axes),
-           "While unsqueeze2 has input AxesTensor, it cannot be exported by "
-           "Paddle2ONNX");
+    if (HasInput("AxesTensor")) {
+      Assert(TryGetInputValue("AxesTensor", &axes),
+             "While unsqueeze2 has input AxesTensor, it cannot be exported by "
+             "Paddle2ONNX");
+    } else {
+      Warn() << "AxesTensor not found, using Identity instead of Unsqueeze."
+             << std::endl;
+      helper_->MakeNode("Identity", {input_info[0].name},
+                        {output_info[0].name});
+      return;
+    }
   } else {
     axes.assign(axes_.begin(), axes_.end());
   }
@@ -64,10 +69,19 @@ void Unsqueeze2Mapper::Opset13() {
 
   std::vector<int64_t> axes;
   if (axes_.empty()) {
-    TryGetInputValue("AxesTensor", &axes);
+    if (HasInput("AxesTensor")) {
+      TryGetInputValue("AxesTensor", &axes);
+    } else {
+      Warn() << "AxesTensor not found, using Identity instead of Unsqueeze."
+             << std::endl;
+      helper_->MakeNode("Identity", {input_info[0].name},
+                        {output_info[0].name});
+      return;
+    }
   } else {
     axes.assign(axes_.begin(), axes_.end());
   }
+
   for (size_t i = 0; i < axes.size(); ++i) {
     if (axes[i] < 0) {
       axes[i] = axes[i] + input_info[0].Rank() + i + 1;
@@ -81,10 +95,17 @@ void Unsqueeze2Mapper::Opset13() {
     if (HasInput("AxesTensorList")) {
       auto info = GetInput("AxesTensorList");
       axes_node = helper_->ConcatIndices(info);
-    } else {
+    } else if (HasInput("AxesTensor")) {
       auto info = GetInput("AxesTensor");
       axes_node =
           helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+    } else {
+      Warn() << "AxesTensor or AxesTensor not found, using Identity "
+                "instead of Unsqueeze."
+             << std::endl;
+      helper_->MakeNode("Identity", {input_info[0].name},
+                        {output_info[0].name});
+      return;
     }
     helper_->MakeNode("Unsqueeze", {input_info[0].name, axes_node},
                       {output_info[0].name});
