@@ -54,5 +54,9 @@ jobs:
         python -m pip install setuptools wheel auditwheel auditwheel-symbols build
     
     - name: Build package
-      run: python -m build --wheel
+      run: |
+        $Env:PATH = "${{ github.workspace }}\protobuf\bin;" + $Env:PATH
+        echo $Env:PATH
+        protoc --version
+        python -m build --wheel
       
