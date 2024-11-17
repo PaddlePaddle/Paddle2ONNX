@@ -1,0 +1,54 @@
+name: Build_Win_amd64
+
+on:
+  push:
+    branches: [ "release-windows" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        architecture: [ 'x64' ]
+
+    steps:
+    # Download protobuf
+    - name: Download protobuf
+      run: |
+        curl -L -o protobuf.zip https://bj.bcebos.com/fastdeploy/third_libs/protobuf-win-x64-3.16.0.zip
+
+    # Extract protobuf
+    - name: Extract protobuf
+      run: |
+        powershell -Command "Expand-Archive -Path protobuf.zip -DestinationPath $PWD/protobuf"
+
+    # Set environment variables for Protobuf
+    - name: Set environment variables for Protobuf
+      run: echo "PATH=$PATH:${{ github.workspace }}/protobuf/bin" >> $GITHUB_ENV
+  
+    # Checkout the latest branch of Paddle2ONNX.
+    - name: Checkout Paddle2ONNX
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    # Setup Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
+    
+    # Install Python dependencies
+    - name: Install Python dependencies
+      run: |
+        python -m pip install -q --upgrade pip
+        python -m pip install setuptools wheel auditwheel auditwheel-symbols build
+    
+    - name: Build package
+      run: python -m build
+      
