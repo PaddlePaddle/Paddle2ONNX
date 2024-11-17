@@ -24,7 +24,9 @@ jobs:
 
     # Step 2: Set environment variable for Protobuf
     - name: Set Protobuf to PATH
-      run: echo "PATH=${{ github.workspace }}/protobuf/bin:$PATH" >> $GITHUB_PATH
+      run: |
+        echo "PATH=${{ github.workspace }}/protobuf/bin:$PATH" >> $GITHUB_PATH
+        export PATH="${{ github.workspace }}/protobuf/bin:$PATH"
 
     # Step 3: Verify Protobuf installation
     - name: Verify Protobuf installation
