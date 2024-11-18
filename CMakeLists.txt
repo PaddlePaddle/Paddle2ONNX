@@ -118,7 +118,7 @@ if (BUILD_PADDLE2ONNX_PYTHON)
             set(PY_EXT_SUFFIX ".so")
         endif ()
     endif ()
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
     add_library(paddle2onnx_cpp2py_export MODULE ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc ${ALL_SRCS})
     set_target_properties(paddle2onnx_cpp2py_export PROPERTIES PREFIX "")
     set_target_properties(paddle2onnx_cpp2py_export PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
@@ -128,7 +128,7 @@ if (BUILD_PADDLE2ONNX_PYTHON)
             $<BUILD_INTERFACE:${ONNX_ROOT}>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
             $<INSTALL_INTERFACE:include>
-            ${Python3_INCLUDE_DIRS})
+            ${PYTHON_INCLUDE_DIR})
 
     if (EXISTS ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
         target_include_directories(paddle2onnx_cpp2py_export PUBLIC ${PROJECT_SOURCE_DIR}/third_party/pybind11/include)
@@ -151,6 +151,7 @@ if (BUILD_PADDLE2ONNX_PYTHON)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx)
 
     if (MSVC)
+        find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
         target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${Python3_LIBRARIES})
         target_compile_options(paddle2onnx_cpp2py_export
                 PRIVATE /MP
