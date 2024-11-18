@@ -136,7 +136,6 @@ class ModelExporter {
                   bool* save_external = nullptr,
                   bool export_fp16_model = false,
                   std::vector<std::string> disable_fp16_op_types = {});
-
  private:
   bool verbose_ = false;
   // The _deploy_backend will pass to Mapper to influence the conversion
@@ -144,6 +143,9 @@ class ModelExporter {
   std::string* calibration_cache_ = nullptr;
   int32_t opset_version_ = 7;
 
+  void ExportWhile(PaddlePirParser& pir_parser,
+                                OnnxHelper* temp_helper,
+                                pir::Operation* op);
   bool IsOpsRegistered(const PaddleParser& parser, bool enable_experimental_op);
   bool IsOpsRegistered(const PaddlePirParser& parser,
                        bool enable_experimental_op);
@@ -227,13 +229,10 @@ class ModelExporter {
       PaddlePirParser
         & pir_parser,
       pir::Block* block,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>
-        & parameters,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
-        & inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>
-        & outputs,
-      bool if_in_subblock);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs,
+      bool if_in_subblock,bool is_while_block);
 
   void ExportOp(const PaddleParser& parser,
                 OnnxHelper* helper,

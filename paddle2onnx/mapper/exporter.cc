@@ -33,7 +33,6 @@
 namespace paddle2onnx {
 MapperHelper* MapperHelper::helper = nullptr;
 int32_t OnnxHelper::opset_version = 7;
-
 bool ModelExporter::IsOpsRegistered(const PaddlePirParser& pir_parser,
                                     bool enable_experimental_op) {
   OnnxHelper temp_helper;
@@ -43,6 +42,9 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser& pir_parser,
       continue;
     }
     if (op->name() == "pd_op.if") {
+      continue;
+    }
+    if (op->name() == "pd_op.while") {
       continue;
     }
     std::string op_name = convert_pir_op_name(op->name());
@@ -373,21 +375,22 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> temp_parameters;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_inputs;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> temp_outputs;
+  std::vector<pir::Operation*> sub_blocks_ops_copy(pir_parser.sub_blocks_ops);
   pir_parser.sub_blocks_ops.clear();
   for (auto& op : block.ops()) {
     if (op->name() != "builtin.parameter") {
       pir_parser.sub_blocks_ops.push_back(op);
     }
   }
-  pir_parser.GetALLSubBlockOpOutputName(pir_parser.sub_blocks_ops);
+  pir_parser.GetAllSubBlockOpOutputName(pir_parser.sub_blocks_ops);
   if (!pir_parser.sub_blocks_ops.empty()) {
     // get cf.yeild op input
     pir::Operation* cf_yield_op = pir_parser.sub_blocks_ops.back();
-    std::vector<std::string> sub_block_outpus;
+    // std::vector<std::string> sub_block_outpus;
     for (auto oprand : cf_yield_op->operands()) {
       pir::Value value = oprand.source();
       auto cond_info = pir_parser.GetSubBlockValueTensorInfo(value);
-      sub_block_outpus.push_back(cond_info[0].name);
+      // sub_block_outpus.push_back(cond_info[0].name);
       temp_outputs.push_back(std::move(MakeValueInfo(cond_info[0])));
     }
   } else {
@@ -400,8 +403,11 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
   }
 
   pir::Block* blockPtr = &block;
-  return std::move(ExportBlock(
-      pir_parser, blockPtr, temp_parameters, temp_inputs, temp_outputs, true));
+  auto graph = std::move(ExportBlock(
+      pir_parser, blockPtr, temp_parameters, temp_inputs, temp_outputs, true, false));
+  pir_parser.sub_blocks_ops.clear();
+  pir_parser.sub_blocks_ops = sub_blocks_ops_copy;
+  return graph;
 }
 
 ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
@@ -444,9 +450,9 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs,
-    bool if_in_subblock) {
+    bool if_in_subblock, bool is_while_block) {
   ONNX_NAMESPACE::GraphProto graph;
-  graph.set_name("PaddlePaddle Graph in pir mode");
+  graph.set_name("PaddlePaddle Graph in PIR mode");
   OnnxHelper temp_helper;
   std::vector<pir::Operation*> block_ops;
   for (auto& op : block->ops()) {
@@ -459,11 +465,10 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
   temp_helper.Clear();
   for (auto i = 0; i < num_ops; ++i) {
     auto op = block_ops[i];
-    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch" ||
-        op->name() == "cf.yield") {
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch" || op->name() == "cf.yield") {
       continue;
     }
-    if (op->name() == "pd_op.full_int_array") {
+    if (op->name() == "pd_op.full_int_array") { // this is a trick
       bool needExport = false;
       for (auto it = op->result(0).use_begin(); it != op->result(0).use_end();
            ++it) {
@@ -489,14 +494,9 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       // get if op output
       auto num_results = if_op.num_results();
       std::vector<std::string> if_op_output_name;
-      if (num_results > 1) {
-        for (int i = 0; i < num_results; ++i) {
-          auto value = if_op.result(i);
-          auto out_info = pir_parser.GetTensorInfo(value);
-          if_op_output_name.push_back(out_info[0].name);
-        }
-      } else {
-        auto out_info = pir_parser.GetTensorInfo(if_op.result(0));
+      for (int i = 0; i < num_results; ++i) {
+        auto value = if_op.result(i);
+        auto out_info = pir_parser.GetTensorInfo(value);
         if_op_output_name.push_back(out_info[0].name);
       }
       auto node = temp_helper.MakeNode("If", {cond_name}, if_op_output_name);
@@ -505,6 +505,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       continue;
     }
     if (op->name() == "pd_op.while") {
+      ExportWhile(pir_parser,&temp_helper,op);
       continue;
     }
 
@@ -624,23 +625,23 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     UpdateParameters(temp_helper.updated_params, parameters);
   }
 
-  for (auto& item : parameters) {
+  for (auto &item : parameters) {
     *(graph.add_node()) = *(item.get());
   }
 
-  for (auto& item : inputs) {
+  for (auto &item : inputs) {
     *(graph.add_input()) = *(item.get());
   }
 
-  for (auto& item : outputs) {
+  for (auto &item : outputs) {
     *(graph.add_output()) = (*item.get());
   }
 
-  for (auto& item : temp_helper.nodes) {
+  for (auto &item : temp_helper.nodes) {
     *(graph.add_node()) = (*item.get());
   }
 
-  for (auto& item : temp_helper.value_infos) {
+  for (auto &item : temp_helper.value_infos) {
     *(graph.add_value_info()) = (*item.get());
   }
 
@@ -706,11 +707,11 @@ void ModelExporter::ExportOp(const PaddleParser& parser,
 }
 
 void ModelExporter::ProcessGraphDumplicateNames(
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs,
-    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& nodes,
-    std::map<std::string, QuantizeInfo>& quantize_info) {
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &parameters,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &inputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> &outputs,
+    std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> &nodes,
+    std::map<std::string, QuantizeInfo> &quantize_info) {
   std::map<std::string, std::string> renamer;
   for (auto& item : parameters) {
     for (size_t i = 0; i < item->output_size(); ++i) {
@@ -765,7 +766,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
     }
   }
 
-  for (auto& item : outputs) {
+  for (auto &item : outputs) {
     if (renamer.find(item->name()) != renamer.end()) {
       auto updated_name = renamer[item->name()];
       while (renamer.find(updated_name) != renamer.end()) {
@@ -887,6 +888,7 @@ std::string ModelExporter::Run(PaddlePirParser& pir_parser,
                                  parameters,
                                  inputs,
                                  outputs,
+                                 false,
                                  false);
   *onnx_model_.mutable_graph() = share_graph;
   if (enable_onnx_checker) {

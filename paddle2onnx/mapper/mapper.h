@@ -262,10 +262,10 @@ class Mapper {
     if (in_pir_mode) {
       if (if_in_cf_block) {
         auto op = pir_parser_->sub_blocks_ops[pir_op_idx_];
-        return pir_parser_->OpHasAttr(op, name, true);
+        return pir_parser_->OpHasAttr(op, name);
       } else {
         auto op = pir_parser_->global_blocks_ops[pir_op_idx_];
-        return pir_parser_->OpHasAttr(op, name, false);
+        return pir_parser_->OpHasAttr(op, name);
       }
     } else {
       auto& op = parser_->GetOpDesc(block_idx_, op_idx_);

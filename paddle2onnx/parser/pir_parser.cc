@@ -131,24 +131,22 @@ std::string PaddlePirParser::GetOpOutputName(const pir::Value& source) const {
 
 std::string PaddlePirParser::GetSubBlockOpOutputName(
     const pir::Value& source) const {
-  auto op = source.defining_op();
-  auto output_idx = source.dyn_cast<pir::OpResult>().index();
-  if (op->name() == "pd_op.data") {
-    if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
-      P2OLogger() << "input is a parameter" << std::endl;
-      return op->result(0).defining_op<pir::ParameterOp>().param_name();
-      // std::cerr << "Can not find output name" << std::endl;
-    }
-    return _op_outputs[op][output_idx];
+  auto it = while_op_input_value_map.find(&(*(source.impl())));
+  pir::Operation* op;
+  uint32_t output_idx;
+  if (it != while_op_input_value_map.end()) {
+    pir::Value value(it->second);
+    op = value.defining_op();
+    output_idx = value.dyn_cast<pir::OpResult>().index();
   } else {
-    if (sub_block_op_outputs.count(op) == 0 ||
-        sub_block_op_outputs.at(op).size() <= output_idx) {
-      P2OLogger() << "input is a parameter" << std::endl;
-      return op->result(0).defining_op<pir::ParameterOp>().param_name();
-      // std::cerr << "Can not find output name" << std::endl;
-    }
-    return sub_block_op_outputs[op][output_idx];
+    op = source.defining_op();
+    output_idx = source.dyn_cast<pir::OpResult>().index();
   }
+  if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
+    P2OLogger() << "input is a parameter" << std::endl;
+    return op->result(0).defining_op<pir::ParameterOp>().param_name();
+  }
+  return _op_outputs[op][output_idx];
 }
 
 void PaddlePirParser::GetGlobalBlockInputValueName() {
@@ -172,29 +170,23 @@ void PaddlePirParser::GetGlobalBlockOutputValueName() {
     }
   }
 }
-void PaddlePirParser::GetALLSubBlockOpOutputName(
+void PaddlePirParser::GetAllSubBlockOpOutputName(
     std::vector<pir::Operation*> block_op_lists) const {
-  // std::unordered_map<pir::Operation *, std::vector<std::string>>
-  // block_op_outputs_name_map;
-  std::unordered_map<std::string, int64_t> sub_block_name_counter;
-  sub_block_op_outputs.clear();
-  sub_block_name_counter.clear();
   for (auto op : block_op_lists) {
     std::string new_name = "p2o.sub_block" + op->name();
-    if (sub_block_name_counter.find(new_name) != _name_counter.end()) {
-      sub_block_name_counter[new_name] += 1;
+    if (_name_counter.find(new_name) != _name_counter.end()) {
+      _name_counter[new_name] += 1;
     } else {
-      sub_block_name_counter[new_name] = 0;
+      _name_counter[new_name] = 0;
     }
-    new_name += "." + std::to_string(sub_block_name_counter[new_name]);
+    new_name += "." + std::to_string(_name_counter[new_name]);
     int num_outputs = op->num_results();
     for (int i = 0; i < num_outputs; ++i) {
       std::string var_name = new_name + "." + std::to_string(i);
-      if (sub_block_op_outputs.count(op) == 0) {
-        int num_outputs = op->num_results();
-        sub_block_op_outputs[op] = std::vector<std::string>(num_outputs, "");
+      if (_op_outputs.count(op) == 0) {
+        _op_outputs[op] = std::vector<std::string>(num_outputs, "");
       }
-      sub_block_op_outputs[op][i] = var_name;
+      _op_outputs[op][i] = var_name;
     }
   }
 }
@@ -205,8 +197,8 @@ void PaddlePirParser::GetAllOpOutputName() {
     std::string var_name = GenOpInputOutputName(op->name());
     int num_outputs = op->num_results();
     for (int i = 0; i < num_outputs; ++i) {
-      var_name = var_name + "." + std::to_string(i);
-      AddOpOutputName(op, var_name, i);
+      auto tmp_var_name = var_name + "." + std::to_string(i);
+      AddOpOutputName(op, tmp_var_name, i);
     }
   }
   GetGlobalBlockOutputValueName();
@@ -538,6 +530,21 @@ std::vector<TensorInfo> PaddlePirParser::GetTensorInfo(
   return results;
 }
 
+std::vector<TensorInfo> PaddlePirParser::GetTensorInfo(
+    const pir::Value& value,std::string name) const {
+  std::vector<TensorInfo> results;
+  if (value.type().isa<pir::VectorType>()) {
+    auto vec_type = value.type().cast<pir::VectorType>();
+    std::string prefix = GetOpOutputName(value);
+    for (int32_t idx = 0; idx < vec_type.size(); idx++) {
+      results.push_back(GetTensorInfo(name, vec_type[idx]));
+    }
+  } else {
+    results.push_back(GetTensorInfo(name, value.type()));
+  }
+  return results;
+}
+
 std::vector<TensorInfo> PaddlePirParser::GetSubBlockValueTensorInfo(
     const pir::Value& value) const {
   std::vector<TensorInfo> results;
@@ -635,8 +642,7 @@ bool PaddlePirParser::OpHasOutput(int64_t op_id,
 }
 
 bool PaddlePirParser::OpHasAttr(pir::Operation* op,
-                                const std::string& name,
-                                bool if_in_sub_block) const {
+                                const std::string& name) const {
   return op->HasAttribute(name);
 }
 
