@@ -53,7 +53,7 @@ jobs:
 
       - name: Publish package
         run: |
-          python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+          python -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PADDLE2ONNX_API_TOKEN }}
