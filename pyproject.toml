@@ -8,7 +8,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "paddle2onnx-win"
+name = "paddle2onnx"
 dynamic = ["version"]
 description = "Export PaddlePaddle to ONNX"
 readme = "README.md"
