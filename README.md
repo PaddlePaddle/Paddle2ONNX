@@ -55,7 +55,7 @@ paddle2onnx --model_dir model_dir \
 | --model_filename           | **[可选]** 配置位于 `--model_dir` 下存储网络结构的文件名                                                                         |
 | --params_filename          | **[可选]** 配置位于 `--model_dir` 下存储模型参数的文件名称                                                                        |
 | --save_file                | 指定转换后的模型保存目录路径                                                                                                  |
-| --opset_version            | **[可选]** 配置转换为 ONNX 的 OpSet 版本，目前支持 7~16 等多个版本，默认为 9                                                            |
+| --opset_version            | **[可选]** 配置转换为 ONNX 的 OpSet 版本，目前支持 7~18，默认为 9                                                            |
 | --enable_onnx_checker      | **[可选]**  配置是否检查导出为 ONNX 模型的正确性, 建议打开此开关， 默认为 True                                                             |
 | --enable_auto_update_opset | **[可选]**  是否开启 opset version 自动升级功能，当低版本 opset 无法转换时，自动选择更高版本的 opset进行转换， 默认为 True                              |
 | --deploy_backend           | **[可选]** 量化模型部署的推理引擎，支持 onnxruntime/rknn/tensorrt, 默认为 onnxruntime |
