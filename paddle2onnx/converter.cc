@@ -117,69 +117,10 @@ PADDLE2ONNX_DECL bool Export(const char *model_filename,
     }
     return true;
   } else {
-    auto parser = PaddleParser();
-    P2OLogger(verbose) << "Start to parsing Paddle model..." << std::endl;
-    if (!parser.Init(model_filename, params_filename)) {
-      P2OLogger(verbose) << "Paddle model parsing failed." << std::endl;
-      return false;
-    }
-    paddle2onnx::ModelExporter me;
-    // Add custom operator information
-    if (ops != nullptr && op_count > 0) {
-      for (int i = 0; i < op_count; ++i) {
-        std::string op_name(ops[i].op_name, strlen(ops[i].op_name));
-        std::string export_op_name(ops[i].export_op_name,
-                                   strlen(ops[i].export_op_name));
-        if (export_op_name == "paddle2onnx_null") {
-          export_op_name = op_name;
-        }
-        me.custom_ops[op_name] = export_op_name;
-      }
-    }
-
-    // Add disabled fp16 op information
-    std::vector<std::string> disable_op_types;
-    if (disable_fp16_op_types != nullptr && disable_fp16_op_types_count > 0) {
-      for (int i = 0; i < disable_fp16_op_types_count; ++i) {
-        std::string disable_op_type(disable_fp16_op_types[i],
-                                    strlen(disable_fp16_op_types[i]));
-        disable_op_types.push_back(disable_op_type);
-      }
-    }
-    std::string calibration_str;
-    std::string result = me.Run(parser,
-                                opset_version,
-                                auto_upgrade_opset,
-                                verbose,
-                                enable_onnx_checker,
-                                enable_experimental_op,
-                                enable_optimize,
-                                deploy_backend,
-                                &calibration_str,
-                                external_file,
-                                save_external,
-                                export_fp16_model,
-                                disable_op_types);
-    if (result.empty()) {
-      P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
-      return false;
-    }
-    if (parser.is_quantized_model &&
-        "tensorrt" == std::string(deploy_backend) && calibration_str.empty()) {
-      P2OLogger(verbose) << "Can not generate calibration cache for TensorRT "
-                            "deploy backend when export quantize model."
-                         << std::endl;
-      return false;
-    }
-    *out_size = result.size();
-    *out = new char[*out_size]();
-    memcpy(*out, result.data(), *out_size);
-    if (calibration_str.size()) {
-      *calibration_size = calibration_str.size();
-      *calibration_cache = new char[*calibration_size]();
-      memcpy(*calibration_cache, calibration_str.data(), *calibration_size);
-    }
-    return true;
+    P2OLogger(verbose)
+        << "Invalid model_filename. It must be a Paddle pir::model file, but got "<< model_file
+        << std::endl;
+    return false;
   }
 }
 

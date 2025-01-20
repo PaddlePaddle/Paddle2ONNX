@@ -14,6 +14,7 @@
 
 import os
 import paddle
+import tempfile
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 from paddle2onnx.utils import logging, paddle_jit_save_configs
 from contextlib import contextmanager
@@ -49,6 +50,45 @@ def export(
     external_file="",
     export_fp16_model=False,
 ):
+    # check model_filename
+    assert os.path.exists(
+        model_filename
+    ), f"Model file {model_filename} does not exist."
+    # check params_filename
+    assert os.path.exists(
+        params_filename
+    ), f"Params file {params_filename} does not exist."
+
+    # translate old ir program to pir
+    if model_filename.endswith(".pdmodel"):
+        dir_and_file, extension = os.path.splitext(model_filename)
+        filename = os.path.basename(model_filename)
+        filename_without_extension, _ = os.path.splitext(filename)
+        tmp_dir = tempfile.mkdtemp()
+        paddle.enable_static()
+        place = paddle.CPUPlace()
+        exe = paddle.static.Executor(place)
+        with paddle.pir_utils.OldIrGuard():
+            [inference_program, feed_target_names, fetch_targets] = (
+                paddle.static.load_inference_model(dir_and_file, exe)
+            )
+        program = paddle.pir.translate_to_pir(inference_program.desc)
+        for op in program.global_block().ops:
+            if op.name() == "pd_op.feed":
+                feed = op.results()
+            if op.name() == "pd_op.fetch":
+                fetch = op.operands_source()
+        save_dir = os.path.join(tmp_dir, filename_without_extension)
+        paddle.static.save_inference_model(save_dir, feed, fetch, exe, program=program)
+        model_filename = save_dir + ".json"
+        params_filename = save_dir + ".pdiparams"
+        assert os.path.exists(
+            model_filename
+        ), f"Pir Model file {model_filename} does not exist."
+        assert os.path.exists(
+            params_filename
+        ), f"Pir Params file {params_filename} does not exist."
+
     deploy_backend = deploy_backend.lower()
     if custom_op_info is None:
         onnx_model_str = c_p2o.export(

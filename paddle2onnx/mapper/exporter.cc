@@ -42,7 +42,7 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser& pir_parser,
   OnnxHelper temp_helper;
   std::set<std::string> unsupported_ops;
   for (auto op : pir_parser.global_blocks_ops) {
-    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") {
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.feed" || op->name() == "pd_op.fetch") {
       continue;
     }
     if (op->name() == "pd_op.if") {
@@ -207,7 +207,7 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser& pir_parser) {
   // TODO(wangmingkai02): consider the case of cf op
   for (auto i = 0; i < pir_parser.global_blocks_ops.size(); i++) {
     std::string op_name = pir_parser.global_blocks_ops[i]->name();
-    if (op_name == "pd_op.data" || op_name == "pd_op.fetch") {
+    if (op_name == "pd_op.data" || op_name == "pd_op.feed" ||op_name == "pd_op.fetch") {
       continue;
     }
     if (op_name == "pd_op.if" || op_name == "pd_op.while") {
@@ -487,7 +487,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
   temp_helper.Clear();
   for (auto i = 0; i < num_ops; ++i) {
     auto op = block_ops[i];
-    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch" ||
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.feed" || op->name() == "pd_op.fetch" ||
         op->name() == "cf.yield") {
       continue;
     }

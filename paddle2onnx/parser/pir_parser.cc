@@ -125,7 +125,7 @@ std::string PaddlePirParser::GetSubBlockOpOutputName(
 
 void PaddlePirParser::GetGlobalBlockInputValueName() {
   for (auto op : global_blocks_ops) {
-    if (op->name() == "pd_op.data") {
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.feed") {
       std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();
       AddOpOutputName(op, var_name, 0);
@@ -167,7 +167,7 @@ void PaddlePirParser::GetAllSubBlockOpOutputName(
 void PaddlePirParser::GetAllOpOutputName() {
   GetGlobalBlockInputValueName();
   for (auto op : global_blocks_ops) {
-    if (op->name() == "pd_op.data" || op->name() == "pd_op.fetch") continue;
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.feed"|| op->name() == "pd_op.fetch") continue;
     std::string var_name = GenOpInputOutputName(op->name());
     int num_outputs = op->num_results();
     for (int i = 0; i < num_outputs; ++i) {
@@ -302,7 +302,7 @@ bool PaddlePirParser::LoadProgram(const std::string& model) {
   }
   std::ostringstream print_stream;
   pir_program_.get()->Print(print_stream);
-  P2OLogger() << "PIR Program: \n" << print_stream.str() << std::endl;
+  // P2OLogger() << "PIR Program: \n" << print_stream.str() << std::endl;
   return true;
 }
 bool PaddlePirParser::GetParamValueName(std::vector<std::string>* var_names) {
@@ -547,7 +547,7 @@ void PaddlePirParser::GetGlobalBlockInputOutputInfo() {
   // std::cout << "Program (fwd | bwd): \n" << print_stream.str() <<
   // std::endl;
   for (auto op : global_blocks_ops) {
-    if (op->name() == "pd_op.data") {
+    if (op->name() == "pd_op.data" || op->name() == "pd_op.feed"|| op->name() == "pd_op.feed") {
       std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();
       inputs.push_back(GetTensorInfo(var_name, op->result(0).type()));
