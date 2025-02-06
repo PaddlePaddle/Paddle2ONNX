@@ -2,9 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ "test_pir" ]
+    branches: [ "develop" ]
   pull_request:
-    branches: [ "test_pir" ]
+    branches: [ "develop" ]
 
 permissions:
   contents: read

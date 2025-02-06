@@ -32,7 +32,7 @@ python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/pack
 ### 1.3 Install Paddle2ONNX
 
 ```bash
-git clone -b test_pir https://github.com/PaddlePaddle/Paddle2ONNX.git
+git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 git submodule update --init
 export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
@@ -70,7 +70,7 @@ set PATH=%CD%\protobuf_install\bin;%PATH%
 ### 2.3 Install Paddle2ONNX
 
 ```bash
-git clone -b test_pir https://github.com/PaddlePaddle/Paddle2ONNX.git
+git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
 git submodule update --init
 set PIP_EXTRA_INDEX_URL=https://www.paddlepaddle.org.cn/packages/nightly/cpu/
