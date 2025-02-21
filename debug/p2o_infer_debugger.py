@@ -34,6 +34,9 @@ def parse_arguments():
         shapes = [list(map(int, match.split(","))) for match in matches]
         return shapes
 
+    def parse_comma_separated_list(s):
+        return [int(x) for x in s.split(",")]
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model_dir", required=True, help="Path of directory saved the input model."
@@ -63,6 +66,11 @@ def parse_arguments():
         nargs="+",
         choices=["float64", "float32", "int64", "int32"],
         help="Data types of input tensors.",
+    )
+    parser.add_argument(
+        "--fixed_positions",
+        type=parse_comma_separated_list,
+        help="Comma-separated positions of ops, e.g., 100,101,200.",
     )
     args = parser.parse_args()
     if args.input_nums != 0 and not args.input_shapes:
@@ -110,7 +118,7 @@ def compare_results(paddle_model_path: str, onnx_model_path: str, inputs_data: t
     for idx, input_name in enumerate(input_names):
         input_feed[input_name.name] = inputs_data[idx]
     result = session.run(output_names=None, input_feed=input_feed)
-    onnxbase.compare(result[:1], expect, 1e-5, 1e-5)
+    onnxbase.compare(result[:-1], expect, 1e-5, 1e-5)
     print("Successfully !!!!")
 
 
@@ -159,59 +167,95 @@ def save_program(program : Program, model_file : str):
 """
 
 
+def check_operator(program, model_file, idx, input_shapes, input_dtypes):
+    op = program.blocks[0].ops[idx]
+    paddle.base.libpaddle.pir.append_shadow_outputs(
+        program, op.results(), idx + 1, f"debug_output_{op.name()}_"
+    )
+    paddle2onnx.load_parameter(program)
+    new_model_file = paddle2onnx.save_program(program, model_file)
+    new_params_file = os.path.splitext(new_model_file)[0] + ".pdiparams"
+    onnx_model_file = os.path.splitext(new_model_file)[0] + ".onnx"
+    paddle2onnx.export(new_model_file, new_params_file, onnx_model_file)
+    compare_results(
+        os.path.splitext(new_model_file)[0],
+        onnx_model_file,
+        gerenate_random_inputs(input_shapes, input_dtypes),
+    )
+
+
+def locate_issue(
+    program,
+    model_file,
+    input_shapes,
+    input_dtypes,
+    candidates: list[int] = None,
+):
+    if candidates is not None and len(candidates) > 0:
+        for idx in candidates:
+            try:
+                clone_program = program.clone()
+                check_operator(
+                    clone_program, model_file, idx, input_shapes, input_dtypes
+                )
+            except (AssertionError, Exception) as err:
+                print(
+                    f"Failed at index {idx}, op_name {program.blocks[0].ops[idx].name()}, error: {err}"
+                )
+            else:
+                print(
+                    f"Success at index {idx}, op_name {program.blocks[0].ops[idx].name()}"
+                )
+    else:
+        left, right = 0, len(program.blocks[0].ops)
+        skip_forward_op_list = ["pd_op.feed", "pd_op.data", "builtin.parameter"]
+        skip_backward_op_list = ["pd_op.fetch"]
+        white_list = ["pd_op.full", "pd_op.full_with_tensor", "pd_op.full_like"]
+        offset = 0
+        while left < right:
+            clone_program = program.clone()
+            idx = (left + right) // 2 + offset
+            if idx < left:
+                left = idx - offset + 1
+            op = clone_program.blocks[0].ops[idx]
+            if op.name() in skip_forward_op_list:
+                left = idx + 1
+            elif op.name() in skip_backward_op_list:
+                right = idx - 1
+            elif op.name() in white_list or op.name().startswith(
+                "builtin."
+            ):  # combine, split, slice
+                offset = offset - 1
+            else:
+                try:
+                    offset = 0
+                    check_operator(
+                        clone_program, model_file, idx, input_shapes, input_dtypes
+                    )
+                except (AssertionError, Exception) as err:
+                    print(f"Failed at index {idx}, op_name {op.name()}, error: {err}")
+                    right = idx - 1
+                else:
+                    print(f"Success at index {idx}, op_name {op.name()}")
+                    left = idx + 1
+
+
 def main():
     args = parse_arguments()
     print("Inputs shapes: ", args.input_shapes)
-    path = os.path.join(args.model_dir, args.model_filename)
-    model = paddle.jit.load(path)
+    model_file_path = os.path.join(args.model_dir, args.model_filename)
+    model = paddle.jit.load(model_file_path)
     program = model.program()
     assert program.num_blocks == 1, "Only support single block model."
     for idx, op in enumerate(program.blocks[0].ops):
         print(f"idx: {idx}, op: {op.name()}")
-    left, right = 0, len(program.blocks[0].ops)
-    skip_forward_op_list = ["pd_op.feed", "pd_op.data", "builtin.parameter"]
-    skip_backward_op_list = ["pd_op.fetch"]
-    white_list = ["pd_op.full", "pd_op.full_with_tensor", "pd_op.full_like"]
-    offset = 0
-    # for op in program.blocks[0].ops:
-    #     print(op.name())
-
-    while left < right:
-        clone_program = program.clone()
-        idx = (left + right) // 2 + offset
-        if idx < left:
-            break
-        op = clone_program.blocks[0].ops[idx]
-        if op.name() in skip_forward_op_list:
-            left = idx + 1
-        elif op.name() in skip_backward_op_list:
-            right = idx - 1
-        elif op.name() in white_list or op.name().startswith(
-            "builtin."
-        ):  # combine, split, slice
-            offset = offset - 1
-        else:
-            try:
-                offset = 0
-                paddle.base.libpaddle.pir.append_shadow_outputs(
-                    clone_program, op.results(), idx + 1, f"debug_output_{op.name()}_"
-                )
-                paddle2onnx.load_parameter(clone_program)
-                new_model_file = paddle2onnx.save_program(clone_program, path)
-                new_params_file = os.path.splitext(new_model_file)[0] + ".pdiparams"
-                onnx_model_file = os.path.splitext(new_model_file)[0] + ".onnx"
-                paddle2onnx.export(new_model_file, new_params_file, onnx_model_file)
-                compare_results(
-                    os.path.splitext(new_model_file)[0],
-                    onnx_model_file,
-                    gerenate_random_inputs(args.input_shapes, args.input_dtypes),
-                )
-            except (AssertionError, Exception) as err:
-                print(f"Failed at index {idx}, op_name {op.name()}, error: {err}")
-                right = idx - 1
-            else:
-                print(f"Success at index {idx}, op_name {op.name()}")
-                left = idx + 1
+    locate_issue(
+        program,
+        model_file_path,
+        args.input_shapes,
+        args.input_dtypes,
+        args.fixed_positions,
+    )
 
 
 if __name__ == "__main__":
