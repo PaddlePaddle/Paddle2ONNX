@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
+from onnxbase import APIOnnx, randtool, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -31,7 +30,8 @@ class Net(paddle.nn.Layer):
             weight_attr=None,
             bias_attr=None,
             data_format="NCDHW",
-            name=None)
+            name=None,
+        )
 
     def forward(self, inputs):
         """
@@ -41,6 +41,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
+@_test_with_pir
 def test_InstanceNorm_base():
     """
     api: paddle.InstanceNorm
@@ -49,9 +50,9 @@ def test_InstanceNorm_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_InstanceNorm', [9, 10, 11, 12])
+    obj = APIOnnx(op, "nn_InstanceNorm", [9, 10, 11, 12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [2, 2, 2, 2, 3]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [2, 2, 2, 2, 3]).astype("float32")),
+    )
     obj.run()

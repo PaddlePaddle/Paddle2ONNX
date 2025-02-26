@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
+from onnxbase import APIOnnx, randtool, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -30,10 +29,12 @@ class Net(paddle.nn.Layer):
         forward
         """
         x = paddle.nn.functional.normalize(
-            inputs, p=2, axis=1, epsilon=1e-12, name=None)
+            inputs, p=2, axis=1, epsilon=1e-12, name=None
+        )
         return x
 
 
+@_test_with_pir
 def test_normalize_7():
     """
     api: paddle.normalize
@@ -42,11 +43,11 @@ def test_normalize_7():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'normalize', [8])
+    obj = APIOnnx(op, "normalize", [8])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 3, 3]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 3, 3]).astype("float32")),
+    )
     obj.run()
 
 

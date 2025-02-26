@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
+from onnxbase import APIOnnx, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -33,35 +32,20 @@ class Net(paddle.nn.Layer):
         return x
 
 
-def test_scatter_nd_add_11():
+@_test_with_pir
+def test_scatter_nd_add_16():
     """
     api: paddle.scatter_nd_add
-    op version: 11
+    op version: 16
     """
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'scatter_nd_add', [11])
+    obj = APIOnnx(op, "scatter_nd_add", [16])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'),
-        paddle.to_tensor([[2], [1], [0]]).astype('int64'),
-        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'))
-    obj.run()
-
-
-def test_scatter_nd_add_12():
-    """
-    api: paddle.scatter_nd_add
-    op version: 12
-    """
-    op = Net()
-    op.eval()
-    # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'scatter_nd_add', [12])
-    obj.set_input_data(
-        "input_data",
-        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'),
-        paddle.to_tensor([[2], [1], [0]]).astype('int64'),
-        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype('float32'))
+        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype("float32"),
+        paddle.to_tensor([[2], [1], [0]]).astype("int64"),
+        paddle.to_tensor([[1, 1], [2, 2], [3, 3]]).astype("float32"),
+    )
     obj.run()
