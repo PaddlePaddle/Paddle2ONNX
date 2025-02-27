@@ -33,7 +33,6 @@ for /R %%i in (test*.py) do (
 REM List of files to ignore
 set ignore=test_auto_scan_multiclass_nms.py
 set ignore=!ignore! test_auto_scan_roi_align.py
-set ignore=!ignore! test_auto_scan_pool_adaptive_max_ops.py
 set ignore=!ignore! test_auto_scan_pad2d.py
 set ignore=!ignore! test_auto_scan_uniform_random_batch_size_like.py
 set ignore=!ignore! test_auto_scan_uniform_random.py
