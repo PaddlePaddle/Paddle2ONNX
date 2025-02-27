@@ -14,7 +14,7 @@
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 import hypothesis.strategies as st
-from onnxbase import _test_only_pir
+from onnxbase import _test_with_pir
 import numpy as np
 import unittest
 import paddle
@@ -54,14 +54,11 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
         data_format = None
         if len(input_shape) == 3:
-            #            data_format = draw(st.sampled_from(["NCL", "NLC"]))
-            data_format = "NCL"
+            data_format = draw(st.sampled_from(["NCL", "NLC"]))
         elif len(input_shape) == 4:
-            #            data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
-            data_format = "NCHW"
+            data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
         else:
-            #            data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
-            data_format = "NCDHW"
+            data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
 
         pad = None
         if len(input_shape) == 3:
@@ -95,7 +92,7 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
         return (config, model)
 
-    @_test_only_pir
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=25, max_duration=-1)
 
@@ -134,8 +131,7 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
         value = draw(st.floats(min_value=0, max_value=10))
 
         data_format = None
-        # data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
-        data_format = "NCDHW"
+        data_format = draw(st.sampled_from(["NCDHW", "NDHWC"]))
 
         pad = draw(
             st.lists(st.integers(min_value=0, max_value=4), min_size=6, max_size=6)
@@ -159,7 +155,7 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
 
         return (config, model)
 
-    @_test_only_pir
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=25, max_duration=-1)
 

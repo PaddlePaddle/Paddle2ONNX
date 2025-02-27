@@ -37,9 +37,6 @@ void GaussianRandomMapper::Opset7() {
   auto out_info = GetOutput("Out");
   std::string shape_tensor_name = "";
   std::vector<int64_t> shape;
-  std::cout << "HasInput(ShapeTensor):" << HasInput("ShapeTensor")
-            << ", HasInput(ShapeTensorList)" << HasInput("ShapeTensorList")
-            << std::endl;
   if (HasInput("ShapeTensor")) {
     if (!TryGetInputValue("ShapeTensor", &shape)) {
       auto shape_info = GetInput("ShapeTensor");
