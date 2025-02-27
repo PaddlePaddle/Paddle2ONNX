@@ -184,7 +184,7 @@ void Pool3dMapper::NoAdaptivePool(const std::vector<TensorInfo>& input_info,
   } else {
     AddAttribute(node, "pads", pads_);
   }
-  if (OpType() != "max_pool3d_with_index" && helper_->GetOpsetVersion() >= 10) {
+  if (helper_->GetOpsetVersion() >= 10) {
     AddAttribute(node, "ceil_mode", static_cast<int64_t>(ceil_mode_));
   }
   if (pooling_type_ == "avg") {
@@ -235,7 +235,7 @@ int32_t Pool3dMapper::GetMinOpsetVersion(bool verbose) {
       return -1;
     }
   }
-  if (OpType() == "max_pool3d_with_index") {
+  if (convert_pir_op_name(OpType()) == "max_pool3d_with_index") {
     return 9;
   }
   auto iter = op_mapper_.find(pooling_type_);
