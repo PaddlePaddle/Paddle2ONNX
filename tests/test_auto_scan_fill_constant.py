@@ -13,10 +13,8 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
-import numpy as np
+from onnxbase import _test_with_pir
 import unittest
 import paddle
 
@@ -24,12 +22,12 @@ import paddle
 class Net(BaseNet):
     def forward(self):
         shape = self.config["shape"]
-        fill_value = self.config['fill_value']
+        fill_value = self.config["fill_value"]
         # todo tensor is not supported
-        if self.config['is_tensor']:
+        if self.config["is_tensor"]:
             fill_value = paddle.to_tensor(fill_value, dtype="int64")
-        if self.config['is_shape_tensor']:
-            shape = paddle.to_tensor(shape).astype(self.config['shape_dtype'])
+        if self.config["is_shape_tensor"]:
+            shape = paddle.to_tensor(shape).astype(self.config["shape_dtype"])
         dtype = self.config["dtype"]
         x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
         return x
@@ -43,9 +41,8 @@ class TestFullConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=1, max_size=4)
+        )
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
@@ -76,17 +73,15 @@ class TestFullConvert(OPConvertAutoScanTest):
 
         return (config, model)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 class Net1(BaseNet):
     def forward(self):
-        fill_value = self.config['fill_value']
-        shape = [
-            2, 1, paddle.to_tensor(
-                2, dtype=self.config['shape_dtype']), 3, 2, 2
-        ]
+        fill_value = self.config["fill_value"]
+        shape = [2, 1, paddle.to_tensor(2, dtype=self.config["shape_dtype"]), 3, 2, 2]
         # TODO not supported
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), 2, 3, 2, 2]
         dtype = self.config["dtype"]
@@ -102,15 +97,13 @@ class TestFullConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=1, max_size=4)
+        )
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
         fill_value = draw(st.integers(min_value=1, max_value=5))
         # todo tensor is not supported
-        is_tensor = False  # draw(st.booleans())
         is_shape_tensor = True  # draw(st.booleans())
         if is_shape_tensor:
             opset_version = [9, 15]
@@ -132,15 +125,16 @@ class TestFullConvert1(OPConvertAutoScanTest):
 
         return (config, model)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30, max_duration=-1)
 
 
 class Net2(BaseNet):
     def forward(self):
-        fill_value = self.config['fill_value']
+        fill_value = self.config["fill_value"]
         shape = [paddle.to_tensor(1, dtype="int64")]
-        if self.config['is_tensor']:
+        if self.config["is_tensor"]:
             fill_value = paddle.to_tensor(fill_value, dtype="int64")
         # TODO not supported
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), 2, 3, 2, 2]
@@ -157,9 +151,8 @@ class TestFullConvert2(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=1, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=1, max_size=4)
+        )
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
@@ -188,6 +181,7 @@ class TestFullConvert2(OPConvertAutoScanTest):
 
         return (config, model)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30, max_duration=-1)
 

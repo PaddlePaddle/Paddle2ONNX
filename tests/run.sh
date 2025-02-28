@@ -31,7 +31,6 @@ ignore="test_auto_scan_multiclass_nms.py
         test_auto_scan_uniform_random.py \
         test_auto_scan_distribute_fpn_proposals1.py \
         test_auto_scan_distribute_fpn_proposals_v2.py \
-        test_auto_scan_fill_constant_batch_size_like.py \
         test_auto_scan_generate_proposals.py \
         test_uniform.py \
         test_deform_conv2d.py \
@@ -43,8 +42,7 @@ ignore="test_auto_scan_multiclass_nms.py
         test_auto_scan_dequantize_linear.py \
         test_auto_scan_quantize_linear.py \
         test_quantize_model_speedup.py \
-        test_resnet_fp16.py \
-        test_auto_scan_fill_constant.py"
+        test_resnet_fp16.py"
 bug=0
 
 # Install Python Packet
