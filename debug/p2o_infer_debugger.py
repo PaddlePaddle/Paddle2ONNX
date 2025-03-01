@@ -24,6 +24,8 @@ import paddle
 import paddle2onnx
 from prune_onnx_model import prune_onnx_model
 from contextlib import contextmanager
+import traceback
+import queue
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 tests_dir = os.path.join(current_dir, "..", "tests")
@@ -49,6 +51,7 @@ formatter = logging.Formatter(
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False
+CANDIDATE_STATUS = None
 
 
 def parse_arguments():
@@ -59,7 +62,7 @@ def parse_arguments():
         return shapes
 
     def parse_comma_separated_list(s):
-        return [int(x) for x in s.split(",")]
+        return [int(x.strip()) for x in s.split(",")]
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -70,7 +73,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--save_dir",
-        required=True,
+        # required=True,
         help="Path of directory to save the new exported model.",
     )
     parser.add_argument(
@@ -92,9 +95,9 @@ def parse_arguments():
         help="Data types of input tensors.",
     )
     parser.add_argument(
-        "--fixed_positions",
+        "--checked_op_ids",
         type=parse_comma_separated_list,
-        help="Comma-separated positions of ops, e.g., 100,101,200.",
+        help="Comma-separated ids of ops, e.g., 100,101,200.",
     )
     parser.add_argument(
         "--has_control_flow",
@@ -107,6 +110,12 @@ def parse_arguments():
         default=False,
         action="store_true",
         help="Whether check all ops by linear search.",
+    )
+    parser.add_argument(
+        "--traversal",
+        default=False,
+        action="store_true",
+        help="Locate the issue by traversing from a specific op.",
     )
     args = parser.parse_args()
     if args.input_nums != 0 and not args.input_shapes:
@@ -125,7 +134,12 @@ def parse_arguments():
     return args
 
 
-def gerenate_random_inputs(input_shapes: list, input_dtypes: list[str]):
+def update_candidate_status(new_status: bool):
+    global CANDIDATE_STATUS
+    CANDIDATE_STATUS = new_status
+
+
+def generate_random_inputs(input_shapes: list, input_dtypes: list[str]):
     def str2dtype(dtype: str):
         dtype_map = {
             "float64": np.float64,
@@ -138,58 +152,29 @@ def gerenate_random_inputs(input_shapes: list, input_dtypes: list[str]):
     inputs = []
     np_dtype_list = list(map(str2dtype, input_dtypes))
     for idx, shape in enumerate(input_shapes):
-        inputs.append(np.random.randn(*shape).astype(np_dtype_list[idx]))
+        if shape == [0]:
+            shape = ()
+        if input_dtypes[idx].startswith("int"):
+            inputs.append(
+                np.random.randint(1, 10, size=shape).astype(np_dtype_list[idx])
+            )
+        else:
+            inputs.append(np.random.randn(*shape).astype(np_dtype_list[idx]))
     return tuple(inputs)
-
-
-def compare_results(paddle_model_path: str, onnx_model_path: str, inputs_data: tuple):
-    paddle_model = paddle.jit.load(paddle_model_path)
-    expect = paddle_model(*inputs_data)
-    session = InferenceSession(
-        onnx_model_path,
-        providers=["CPUExecutionProvider"],
-    )
-    input_names = session.get_inputs()
-    input_feed = dict()
-    for idx, input_name in enumerate(input_names):
-        input_feed[input_name.name] = inputs_data[idx]
-    result = session.run(output_names=None, input_feed=input_feed)
-    onnxbase.compare(result[:-1], expect, 1e-5, 1e-5)
 
 
 def save_and_export(program, model_file):
     paddle2onnx.load_parameter(program)
     new_model_file = paddle2onnx.save_program(program, model_file)
+    origin_params_file = os.path.splitext(model_file)[0] + ".pdiparams"
     new_params_file = os.path.splitext(new_model_file)[0] + ".pdiparams"
+    if os.path.exists(origin_params_file):
+        shutil.copy(origin_params_file, new_params_file)
+    if not os.path.exists(new_params_file):
+        new_params_file = ""
     onnx_model_file = os.path.splitext(new_model_file)[0] + ".onnx"
     paddle2onnx.export(new_model_file, new_params_file, onnx_model_file)
     return new_model_file, onnx_model_file
-
-
-def check_operator_with_shadow_output(
-    program, model_file, idx, input_shapes, input_dtypes
-):
-    op = program.blocks[0].ops[idx]
-    op_results = []
-    for i, res in enumerate(op.results()):
-        if not res.use_empty():
-            op_results.append(res)
-        else:
-            logger.info(
-                "Skip the %d result of operator %s which is not used by other ops.",
-                i,
-                op.name(),
-            )
-    paddle.base.libpaddle.pir.append_shadow_outputs(
-        program, op_results, idx + 1, f"debug_output_{op.name()}_"
-    )
-    new_model_file, onnx_model_file = save_and_export(program, model_file)
-    compare_results(
-        os.path.splitext(new_model_file)[0],
-        onnx_model_file,
-        gerenate_random_inputs(input_shapes, input_dtypes),
-    )
-    shutil.rmtree(os.path.dirname(new_model_file))
 
 
 def check_operator_with_print(
@@ -202,23 +187,29 @@ def check_operator_with_print(
     linear_search=False,
 ):
     skip_op_list = SKIP_FORWARD_OP_LIST + SKIP_BACKWARD_OP_LIST + WHITE_LIST
+    temp_file_dir = ""
 
     @contextmanager
     def _redirect_stdout_to_file(filename):
         original_stdout_fd = os.dup(sys.stdout.fileno())
         try:
-            with open(filename, "w") as f:
+            sys.stdout.flush()
+            with open(filename, "w", encoding="utf-8") as f:
                 os.dup2(f.fileno(), sys.stdout.fileno())
-                sys.stdout.flush()
                 yield
         finally:
+            sys.stdout.flush()
             os.dup2(original_stdout_fd, sys.stdout.fileno())
             os.close(original_stdout_fd)
 
     def _compare_results(paddle_model_path, onnx_model_path, inputs_data: tuple):
         paddle_model = paddle.jit.load(paddle_model_path)
-        with _redirect_stdout_to_file("./print.log"):
+        # log_file = f"./print_{uuid.uuid4().hex}.log"
+        log_file = "./print.log"
+        logger.info("Log File: %s", log_file)
+        with _redirect_stdout_to_file(log_file):
             paddle_model(*inputs_data)
+            sys.stdout.flush()
         pattern = re.compile(
             r"Variable:.*?- shape:\s.*?\[(.*?)\].*?- dtype:\s*(\w+).*?- data:\s*\[(.*?)\].*?",
             flags=re.DOTALL,
@@ -226,7 +217,7 @@ def check_operator_with_print(
         # TODO(wangmingkai02): adjust n according to the number of print op
         n = 8
         shape_list, dtype, data_list = [], None, []
-        with open("./print.log", "r", encoding="utf-8") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = []
             for _ in range(n):
                 line = f.readline()
@@ -236,8 +227,8 @@ def check_operator_with_print(
             text = "\n".join(lines)
             for match in pattern.finditer(text):
                 shape, dtype, data = match.groups()
-                shape_list = [int(x) for x in shape.split(",")]
-                data_list = [float(x) for x in data.split(",")]
+                shape_list = [int(x) for x in shape.split(",")] if shape != "" else []
+                data_list = [float(x) for x in data.split(" ")] if data != "" else []
 
         # modify onnx model
         modified_onnx_model = prune_onnx_model(
@@ -261,43 +252,57 @@ def check_operator_with_print(
         expect = paddle.reshape(expect, shape_list)
         # TODO(wangmingkai02): adjust start pos of result
         onnxbase.compare(result[1:], expect, 1e-5, 1e-5)
-        shutil.rmtree(os.path.dirname(onnx_model_path))
-        return True
 
     def _check_operator(program, block, idx):
-        op = block.ops[idx]
+        testing_op = block.ops[idx]
         op_results = []
-        for i, res in enumerate(op.results()):
+        for i, res in enumerate(testing_op.results()):
             if not res.use_empty():
-                op_results.append(res)
+                op_results.append((i, res))
             else:
-                logger.info("Skip the %d result of operator %s.", i, op.name())
+                logger.info(
+                    "Skip the %d result of operator %s, op_id %d which is not used by other ops.",
+                    i,
+                    testing_op.name(),
+                    testing_op.id(),
+                )
 
-        paddle.base.libpaddle.pir.append_prints(
-            program,
-            op_results,
-            1,
-            f"Print ({idx}, {op.name()}) outputs:",
-            -1,
-            True,
-            True,
-            True,
-            True,
-            True,
-            "FORWARD",
-            True,
-            idx + 1,
-        )
-        new_model_file, onnx_model_file = save_and_export(program, model_file)
-        for op in block.ops:
-            if op.name() == "pd_op.print":
-                block.remove_op(op)
-        # TODO(wangmingkai02): compare results
-        return _compare_results(
-            os.path.splitext(new_model_file)[0],
-            onnx_model_file,
-            gerenate_random_inputs(input_shapes, input_dtypes),
-        )
+        for i, op_result in op_results:
+            logger.info(
+                "Processing the %d result of op %s, op_id %d, using idx %d",
+                i,
+                testing_op.name(),
+                testing_op.id(),
+                idx,
+            )
+            paddle.base.libpaddle.pir.append_print(
+                program,
+                op_result,
+                1,
+                f"Print ({idx}, {testing_op.name()}) outputs:",
+                -1,
+                True,
+                True,
+                True,
+                True,
+                True,
+                "FORWARD",
+                True,
+                idx + 1,
+            )
+            new_model_file, onnx_model_file = save_and_export(program, model_file)
+            nonlocal temp_file_dir
+            temp_file_dir = os.path.dirname(new_model_file)
+            # remove print op
+            for _op in block.ops:
+                if _op.name() == "pd_op.print":
+                    block.remove_op(_op)
+            # TODO(wangmingkai02): compare results
+            _compare_results(
+                os.path.splitext(new_model_file)[0],
+                onnx_model_file,
+                generate_random_inputs(input_shapes, input_dtypes),
+            )
 
     def _binary_search(program, block):
         block_res = True
@@ -339,34 +344,32 @@ def check_operator_with_print(
                 offset = 0
             else:
                 try:
-                    is_correct = _check_operator(program, block, idx)
-                    if is_correct:
-                        left = idx - offset + 1
-                        logger.debug(
-                            "[Binary Search] Success at index %d, op_name %s, op_id %d",
-                            idx,
-                            op.name(),
-                            op.id(),
-                        )
-                    else:
-                        block_res = False
-                        right = idx - 1
-                        logger.debug(
-                            "[Binary Search] Failed at index %d, op_name %s, op_id %d",
-                            idx,
-                            op.name(),
-                            op.id(),
-                        )
-                    offset = 0
-
+                    _check_operator(program, block, idx)
                 except Exception as err:
-                    logger.error(
-                        "[Binary Search] Errors occurred at index %d, op_name %s, op_id %d, error: %s",
+                    block_res = False
+                    right = idx - 1
+                    logger.debug(
+                        "[Binary Search] Failed at idx %d, op_name %s, op_id %d, err %s\n%s",
                         idx,
                         op.name(),
                         op.id(),
                         str(err),
+                        traceback.format_exc(),
                     )
+                else:
+                    left = idx - offset + 1
+                    logger.debug(
+                        "[Binary Search] Success at idx %d, op_name %s, op_id %d",
+                        idx,
+                        op.name(),
+                        op.id(),
+                    )
+                finally:
+                    offset = 0
+                    nonlocal temp_file_dir
+                    if os.path.exists(temp_file_dir):
+                        shutil.rmtree(temp_file_dir)
+
         return block_res
 
     def _linear_search(program, block):
@@ -388,19 +391,24 @@ def check_operator_with_print(
                     _check_operator(program, block, idx)
                 except Exception as err:
                     logger.debug(
-                        "[Linear Search] Failed at index %d, op_name %s, op_id %d, error: %s",
+                        "[Linear Search] Failed at idx %d, op_name %s, op_id %d, error: %s\n%s",
                         idx,
                         op.name(),
                         op.id(),
                         str(err),
+                        traceback.format_exc(),
                     )
                 else:
                     logger.debug(
-                        "[Linear Search] Success at index %d, op_name %s, op_idx %d",
+                        "[Linear Search] Success at idx %d, op_name %s, op_id %d",
                         idx,
                         op.name(),
                         op.id(),
                     )
+                finally:
+                    nonlocal temp_file_dir
+                    if os.path.exists(temp_file_dir):
+                        shutil.rmtree(temp_file_dir)
 
     def _check_block_ops(program, block):
         if linear_search:
@@ -417,13 +425,15 @@ def check_operator_with_print(
             try:
                 _check_operator(program, block, idx)
             except Exception as err:
+                update_candidate_status(False)
                 logger.debug(
-                    "Failed at index %d, idx %d, op_name %s, op_id %d, error: %s",
+                    "Failed at index %d, idx %d, op_name %s, op_id %d, error: %s\n%s",
                     index,
                     idx,
                     op.name(),
                     op.id(),
                     str(err),
+                    traceback.format_exc(),
                 )
             else:
                 logger.debug(
@@ -433,71 +443,114 @@ def check_operator_with_print(
                     op.name(),
                     op.id(),
                 )
-        return
+            finally:
+                if os.path.exists(temp_file_dir):
+                    shutil.rmtree(temp_file_dir)
 
-    # skip global block ops excluding while and if op
-    for idx, _ in enumerate(program.blocks[0].ops):
-        clone_program = program.clone()
-        op = clone_program.blocks[0].ops[idx]
-        if op.name() == "pd_op.while":
-            body_block = op.as_while_op().body()
-            _check_block_ops(clone_program, body_block)
-        elif op.name() == "pd_op.if":
-            true_block = op.as_if_op().true_block()
-            _check_block_ops(clone_program, true_block)
-            false_block = op.as_if_op().false_block()
-            _check_block_ops(clone_program, false_block)
-        else:
-            continue
+    else:
+        # skip global block ops excluding while and if op
+        for idx, _ in enumerate(program.blocks[0].ops):
+            clone_program = program.clone()
+            op = clone_program.blocks[0].ops[idx]
+            if op.name() == "pd_op.while":
+                body_block = op.as_while_op().body()
+                _check_block_ops(clone_program, body_block)
+            elif op.name() == "pd_op.if":
+                true_block = op.as_if_op().true_block()
+                _check_block_ops(clone_program, true_block)
+                false_block = op.as_if_op().false_block()
+                _check_block_ops(clone_program, false_block)
+            else:
+                continue
 
 
-def locate_issue(
+def check_operator_with_shadow_output(
     program,
     model_file,
     input_shapes,
     input_dtypes,
     index_mapping,
-    candidates: list[int] = None,
-    has_cf=False,
-    binary_search=False,
+    candidates,
+    linear_search=False,
 ):
-    if has_cf:
-        check_operator_with_print(
-            program,
-            model_file,
-            input_shapes,
-            input_dtypes,
-            index_mapping,
-            candidates,
-            binary_search,
+    temp_file_dir = ""
+
+    def _compare_results(
+        paddle_model_path: str, onnx_model_path: str, inputs_data: tuple
+    ):
+        paddle_model = paddle.jit.load(paddle_model_path)
+        expect = paddle_model(*inputs_data)
+        session = InferenceSession(
+            onnx_model_path,
+            providers=["CPUExecutionProvider"],
         )
-        return
+        input_names = session.get_inputs()
+        input_feed = dict()
+        for idx, input_name in enumerate(input_names):
+            input_feed[input_name.name] = inputs_data[idx]
+        result = session.run(output_names=None, input_feed=input_feed)
+        onnxbase.compare(result[:-1], expect, 1e-5, 1e-5)
+
+    def _check_operator(program, model_file, idx, input_shapes, input_dtypes):
+        op = program.blocks[0].ops[idx]
+        op_results = []
+        for i, res in enumerate(op.results()):
+            if not res.use_empty():
+                op_results.append(res)
+            else:
+                logger.info(
+                    "Skip the %d result of operator %s, op_id %d which is not used by other ops.",
+                    i,
+                    op.name(),
+                    op.id(),
+                )
+        paddle.base.libpaddle.pir.append_shadow_outputs(
+            program, op_results, idx + 1, f"debug_output_{op.name()}_"
+        )
+        new_model_file, onnx_model_file = save_and_export(program, model_file)
+        nonlocal temp_file_dir
+        temp_file_dir = os.path.dirname(new_model_file)
+        _compare_results(
+            os.path.splitext(new_model_file)[0],
+            onnx_model_file,
+            generate_random_inputs(input_shapes, input_dtypes),
+        )
+
     if candidates is not None and len(candidates) > 0:
         for index in candidates:
             if index_mapping[str(index)][1] != program.blocks[0]:
-                logger.warning("Skip index %d which belongs to cf block", index)
+                logger.warning(
+                    "Skip index %d which doesn't belong to global block", index
+                )
                 continue
             idx = index_mapping[str(index)][2]
             try:
                 clone_program = program.clone()
-                check_operator_with_shadow_output(
+                _check_operator(
                     clone_program, model_file, idx, input_shapes, input_dtypes
                 )
             except (AssertionError, Exception) as err:
+                update_candidate_status(False)
                 logger.debug(
-                    "Failed at index %d, op_name %s, op_id  %d, error: %s",
+                    "Failed at index %d, idx %d, op_name %s, op_id  %d, error: %s\n%s",
+                    index,
                     idx,
                     program.blocks[0].ops[idx].name(),
                     program.blocks[0].ops[idx].id(),
                     str(err),
+                    traceback.format_exc(),
                 )
             else:
                 logger.debug(
-                    "Success at index %d, op_name %s, op_idx %d",
+                    "Success at index %d, idx %d, op_name %s, op_idx %d",
+                    index,
                     idx,
                     program.blocks[0].ops[idx].name(),
                     program.blocks[0].ops[idx].id(),
                 )
+            finally:
+                if os.path.exists(temp_file_dir):
+                    shutil.rmtree(temp_file_dir)
     else:
         left, right = 0, len(program.blocks[0].ops) - 1
         offset = 0
@@ -520,61 +573,90 @@ def locate_issue(
                 offset = offset - 1
             else:
                 try:
-                    check_operator_with_shadow_output(
+                    _check_operator(
                         clone_program, model_file, idx, input_shapes, input_dtypes
                     )
                 except (AssertionError, Exception) as err:
                     right = idx - 1
                     logger.debug(
-                        "Failed at index %d, op_name %s, op_id  %d, error: %s",
+                        "Failed at idx %d, op_name %s, op_id  %d, error: %s\n%s",
                         idx,
                         op.name(),
                         op.id(),
                         str(err),
+                        traceback.format_exc(),
                     )
                 else:
                     left = idx - offset + 1
                     logger.debug(
-                        "Success at index %d, op_name %s, op_idx %d",
+                        "Success at idx %d, op_name %s, op_idx %d",
                         idx,
                         op.name(),
                         op.id(),
                     )
                 finally:
                     offset = 0
+                    if os.path.exists(temp_file_dir):
+                        shutil.rmtree(temp_file_dir)
+
+
+def locate_issue(
+    program,
+    index_mapping,
+    model_file,
+    input_shapes,
+    input_dtypes,
+    candidates: list[int] = None,
+    has_cf=False,
+    binary_search=False,
+):
+    if has_cf:
+        check_operator_with_print(
+            program,
+            model_file,
+            input_shapes,
+            input_dtypes,
+            index_mapping,
+            candidates,
+            binary_search,
+        )
+    else:
+        check_operator_with_shadow_output(
+            program,
+            model_file,
+            input_shapes,
+            input_dtypes,
+            index_mapping,
+            candidates,
+            binary_search,
+        )
 
 
 def get_op_statistics(program):
-    def _dfs(block, count, mapping):
+    def _dfs(block, mapping):
         op_set = set()
         for idx, op in enumerate(block.ops):
             if op.name() == "pd_op.while":
-                count, op_set_tmp = _dfs(op.as_while_op().body(), count, mapping)
-                op_set |= op_set_tmp
+                op_set |= _dfs(op.as_while_op().body(), mapping)
             elif op.name() == "pd_op.if":
-                count, op_set_tmp = _dfs(op.as_if_op().true_block(), count, mapping)
-                op_set |= op_set_tmp
-                count, op_set_tmp = _dfs(op.as_if_op().false_block(), count, mapping)
-                op_set |= op_set_tmp
+                op_set |= _dfs(op.as_if_op().true_block(), mapping)
+                op_set |= _dfs(op.as_if_op().false_block(), mapping)
             op_set.add(op.name())
-            if str(count) in mapping:
+            if str(str(op.id())) in mapping:
                 raise ValueError(
-                    f"Duplicate op found: {op.name()}, {mapping[str(count)]}"
+                    f"Duplicate op found: {op.name()}, {mapping[str(op.id())]}"
                 )
-            mapping[str(count)] = (op, block, idx)
-            count += 1
-        return count, op_set
+            mapping[str(op.id())] = (op, block, idx)
+        return op_set
 
     def _get_mapping_and_uniq_set(program):
-        # map: index -> (block, op, op_idx_in_block)
-        count = 0
+        # mapping: op_id -> (op, block, op_idx_in_block)
         index_mapping = {}
         ops = set()
         global_ops = set()
         global_res = list()
         for block in program.blocks:
-            count, ops_tmp = _dfs(block, count, index_mapping)
-            ops |= ops_tmp
+            ops |= _dfs(block, index_mapping)
         for idx, op in enumerate(program.blocks[0].ops):
             if op.name() in global_ops:
                 continue
@@ -585,13 +667,182 @@ def get_op_statistics(program):
     return _get_mapping_and_uniq_set(program)
 
 
+def find_defined_op_index(
+    index_list, index_mapping, max_depth=2, op_index_mapping=None
+):
+    new_index_mapping = {}
+    if op_index_mapping is None:
+        for k, v in index_mapping.items():
+            new_index_mapping[v[0]] = int(k)
+    else:
+        new_index_mapping = op_index_mapping
+    ret = []
+    cur_res = []
+    visited_op_set = set()
+    q = queue.Queue()
+    for index in index_list:
+        _op = index_mapping[str(index)][0]
+        q.put(_op)
+    count = len(index_list)
+    depth = 0
+    count_next = 0
+    while not q.empty():
+        cur_op = q.get()
+        if cur_op not in visited_op_set:
+            cur_res.append(new_index_mapping[cur_op])
+            visited_op_set.add(cur_op)
+            for val in cur_op.operands():
+                if val.source().get_defining_op() is None:
+                    continue
+                q.put(val.source().get_defining_op())
+                count_next += 1
+        count -= 1
+        if count == 0:
+            depth += 1
+            if depth > max_depth:
+                break
+            count = count_next
+            count_next = 0
+            ret.append(cur_res)
+            cur_res = []
+    return ret
+
+
+def find_used_op_index(index_list, index_mapping, op_index_mapping=None):
+    """
+    ret: dict[int, list[list[int]]]
+    """
+    ret = {}
+    new_index_mapping = {}
+    if op_index_mapping is None:
+        for k, v in index_mapping.items():
+            new_index_mapping[v[0]] = int(k)
+    else:
+        new_index_mapping = op_index_mapping
+    for index in index_list:
+        cur_op = index_mapping[str(index)][0]
+        cur_ret = []
+        for val in cur_op.results():
+            cur_res = []
+            # for uop in val.all_used_ops_in_same_block():
+            for uop in val.all_used_ops():
+                cur_res.append(new_index_mapping[uop])
+            cur_ret.append(cur_res)
+        ret[index] = cur_ret
+    return ret
+
+
+# def find_defined_op_index_all(index_list, index_mapping, max_depth=2):
+#     for index in index_list:
+#         print(find_defined_op_index([index], index_mapping, max_depth))
+
+
+def locate_issue_by_traversal(
+    index, index_mapping, program, model_file_path, input_shapes, input_dtypes
+):
+    update_candidate_status(True)
+    new_index_mapping = {}
+    for k, v in index_mapping.items():
+        new_index_mapping[v[0]] = int(k)
+    op = index_mapping[str(index)][0]
+    need_check_list = [index]
+    if op.name() == "cf.yield":
+        need_check_list = find_defined_op_index(
+            index_list=[index],
+            index_mapping=index_mapping,
+            max_depth=2,
+            op_index_mapping=new_index_mapping,
+        )[1]
+    q = queue.Queue()
+    for op_id in need_check_list:
+        q.put(op_id)
+
+    error_op_id_list = []
+    visited_op_id_set = set()
+    while not q.empty():
+        cur_op_id = q.get()
+        if cur_op_id in visited_op_id_set:
+            continue
+        visited_op_id_set.add(cur_op_id)
+        locate_issue(
+            program=program,
+            index_mapping=index_mapping,
+            model_file=model_file_path,
+            input_shapes=input_shapes,
+            input_dtypes=input_dtypes,
+            candidates=[cur_op_id],
+            has_cf=index_mapping[str(cur_op_id)][1] != program.blocks[0],
+        )
+        if not CANDIDATE_STATUS:
+            error_op_id_list.append(cur_op_id)
+            next_check_list = find_defined_op_index(
+                index_list=[cur_op_id],
+                index_mapping=index_mapping,
+                max_depth=2,
+                op_index_mapping=new_index_mapping,
+            )
+            if len(next_check_list) > 1:
+                next_check_list = next_check_list[1]
+            for next_id in next_check_list:
+                if index_mapping[str(next_id)][0].name() in [
+                    "builtin.parameter",
+                    "pd_op.data",
+                ]:
+                    continue
+                q.put(next_id)
+        update_candidate_status(True)
+
+    # check op which uses the result of wrong op
+    exclude_op_id_list = []
+    used_op_error_id_list = []
+    for op_id in error_op_id_list:
+        used_list = find_used_op_index([op_id], index_mapping, new_index_mapping)[op_id]
+        is_correct = True
+        for each_value_used_list in used_list:
+            for used_op_id in each_value_used_list:
+                if (
+                    used_op_id in error_op_id_list
+                    or used_op_id in used_op_error_id_list
+                ):
+                    is_correct = False
+                    break
+                if used_op_id in visited_op_id_set:
+                    continue
+                visited_op_id_set.add(used_op_id)
+                locate_issue(
+                    program=program,
+                    index_mapping=index_mapping,
+                    model_file=model_file_path,
+                    input_shapes=input_shapes,
+                    input_dtypes=input_dtypes,
+                    candidates=[used_op_id],
+                    has_cf=index_mapping[str(used_op_id)][1] != program.blocks[0],
+                )
+                if not CANDIDATE_STATUS:
+                    update_candidate_status(True)
+                    used_op_error_id_list.append(used_op_id)
+                    is_correct = False
+                    break
+            if not is_correct:
+                break
+        if is_correct:
+            exclude_op_id_list.append(op_id)
+    return error_op_id_list, exclude_op_id_list
+
+
 def main():
     args = parse_arguments()
     logger.info("Start to locate issue...")
     model_file_path = os.path.join(args.model_dir, args.model_filename)
     model = paddle.jit.load(model_file_path)
     program = model.program()
+    # TODO(wangmingkai02): Add a check for print op
     assert program.num_blocks == 1, "Only support single block model."
+    logger.info("Initial Program: \n%s", str(program))
+    if os.environ.get("FLAGS_print_ir", None) is not None and os.environ.get(
+        "FLAGS_print_ir", None
+    ).lower() in ["1", "true", "on"]:
+        sys.exit(0)
     index_mapping, uniq_ops, global_uniq_ops = get_op_statistics(program)
     logger.info(
         "*********************** uniq ops: %d *************************", len(uniq_ops)
@@ -613,17 +864,30 @@ def main():
             v[2],
             v[1] == program.blocks[0],
         )
-
-    locate_issue(
-        program,
-        model_file_path,
-        args.input_shapes,
-        args.input_dtypes,
-        index_mapping,
-        args.fixed_positions,
-        args.has_control_flow,
-        args.linear_search,
-    )
+    if args.traversal:
+        err_list, exclude_list = locate_issue_by_traversal(
+            index=args.checked_op_ids[0],
+            index_mapping=index_mapping,
+            program=program,
+            model_file_path=model_file_path,
+            input_shapes=args.input_shapes,
+            input_dtypes=args.input_dtypes,
+        )
+        logger.info("Error op id list:\n%s\n", ",".join([str(x) for x in err_list]))
+        logger.info(
+            "Exclude op id list:\n%s\n", ",".join([str(x) for x in exclude_list])
+        )
+    else:
+        locate_issue(
+            program,
+            index_mapping,
+            model_file_path,
+            args.input_shapes,
+            args.input_dtypes,
+            args.checked_op_ids,
+            args.has_control_flow,
+            args.linear_search,
+        )
 
 
 if __name__ == "__main__":

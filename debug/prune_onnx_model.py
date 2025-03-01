@@ -48,16 +48,18 @@ def prune_onnx_model(
                 if sub_n.name.startswith(target_node_name):
                     target_node_output = sub_n.output[0]
                     break
-        elif n.op_type == "If":
-            continue
-        else:
-            continue
+    if target_node_output is None:
+        raise ValueError(f"Cannot find target node '{target_node_name}' in Loop.")
     first_iter_initial_name = "first_iter_initial"
     first_iter_initial = helper.make_tensor(
         name=first_iter_initial_name,
         data_type=dtype_map[target_dtype][0],
-        dims=target_dims,
-        vals=[dtype_map[target_dtype][1](0) for _ in range(math.prod(target_dims))],
+        dims=target_dims if len(target_dims) > 0 else (),
+        vals=(
+            [dtype_map[target_dtype][1](0) for _ in range(math.prod(target_dims))]
+            if len(target_dims) > 0
+            else [dtype_map[target_dtype][1](0)]
+        ),
     )
     model.graph.initializer.append(first_iter_initial)
 
