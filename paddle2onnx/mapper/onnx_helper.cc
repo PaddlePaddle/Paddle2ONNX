@@ -101,7 +101,7 @@ void AddAttribute(std::shared_ptr<ONNX_NAMESPACE::NodeProto> node,
 
 ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
   Assert((paddle_dtype >= 0 && paddle_dtype <= 7) ||
-             (paddle_dtype >= 20 && paddle_dtype <= 24),
+             (paddle_dtype >= 20 && paddle_dtype <= 26),
          "Unknow paddle data type: " + std::to_string(paddle_dtype) +
              " While call GetOnnxDtype.");
   auto onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT;
@@ -131,6 +131,10 @@ ONNX_NAMESPACE::TensorProto_DataType GetOnnxDtype(int32_t paddle_dtype) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::COMPLEX64;
   } else if (paddle_dtype == P2ODataType::COMPLEX128) {
     onnx_dtype = ONNX_NAMESPACE::TensorProto::COMPLEX128;
+  } else if (paddle_dtype == P2ODataType::FLOAT8E4M3FN) {
+    onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT8E4M3FN;
+  } else if (paddle_dtype == P2ODataType::FLOAT8E5M2) {
+    onnx_dtype = ONNX_NAMESPACE::TensorProto::FLOAT8E5M2;
   }
   return onnx_dtype;
 }

@@ -50,7 +50,9 @@ enum P2ODataType {
   INT8,
   BF16,
   COMPLEX64,
-  COMPLEX128
+  COMPLEX128,
+  FLOAT8E4M3FN,
+  FLOAT8E5M2
 };
 int32_t PaddleDataTypeSize(int32_t paddle_dtype);
 

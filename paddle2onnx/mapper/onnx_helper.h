@@ -308,6 +308,26 @@ namespace paddle2onnx
       tensor->set_raw_data(std::string((const char *)(data), numel));
       delete[] data;
     }
+     else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT8E4M3FN)
+    {
+      std::vector<int8_t> data;
+      data.reserve(numel);
+      for (auto &i : value)
+      {
+        data.push_back(static_cast<int8_t>(i));
+      }
+      tensor->set_raw_data(std::string((const char *)(data.data()), numel));
+    }
+     else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT8E5M2)
+    {
+      std::vector<int8_t> data;
+      data.reserve(numel);
+      for (auto &i : value)
+      {
+        data.push_back(static_cast<int8_t>(i));
+      }
+      tensor->set_raw_data(std::string((const char *)(data.data()), numel));
+    }
     else
     {
       Assert(false,
@@ -396,6 +416,26 @@ namespace paddle2onnx
       }
       tensor->set_raw_data(std::string((const char *)(data.data()), numel));
     }
+     else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT8E4M3FN)
+    {
+      std::vector<int8_t> data;
+      data.reserve(numel);
+      for (auto &i : value)
+      {
+        data.push_back(static_cast<int8_t>(i));
+      }
+      tensor->set_raw_data(std::string((const char *)(data.data()), numel));
+    }
+     else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT8E5M2)
+    {
+      std::vector<int8_t> data;
+      data.reserve(numel);
+      for (auto &i : value)
+      {
+        data.push_back(static_cast<int8_t>(i));
+      }
+      tensor->set_raw_data(std::string((const char *)(data.data()), numel));
+    }
     else
     {
       Assert(false,
@@ -473,6 +513,16 @@ namespace paddle2onnx
     else if (dtype == ONNX_NAMESPACE::TensorProto::UINT8)
     {
       std::vector<uint8_t> data(numel, static_cast<uint8_t>(value));
+      tensor->set_raw_data(std::string((const char *)(data.data()), numel));
+    }
+    else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT8E4M3FN)
+    {
+      std::vector<int8_t> data(numel, static_cast<int8_t>(value));
+      tensor->set_raw_data(std::string((const char *)(data.data()), numel));
+    }
+    else if (dtype == ONNX_NAMESPACE::TensorProto::FLOAT8E5M2)
+    {
+      std::vector<int8_t> data(numel, static_cast<int8_t>(value));
       tensor->set_raw_data(std::string((const char *)(data.data()), numel));
     }
     else

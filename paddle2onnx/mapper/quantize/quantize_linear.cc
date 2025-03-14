@@ -18,41 +18,53 @@ namespace paddle2onnx {
 REGISTER_MAPPER(quantize_linear, QuantizeLinearMapper)
 REGISTER_PIR_MAPPER(quantize_linear, QuantizeLinearMapper)
 
-int32_t QuantizeLinearMapper::GetMinOpsetVersion(bool verbose) { return 13; }
+int32_t QuantizeLinearMapper::GetMinOpsetVersion(bool verbose) { return 19; }
 
-void QuantizeLinearMapper::Opset10() {
-  auto x_info = GetInput("X");
-  std::vector<float> scales;
-  Assert(TryGetInputValue("Scale", &scales),
-         "Failed to read tensor value of `Scale`.");
-  std::vector<float> onnx_scales;
-  onnx_scales.reserve(scales.size());
-  for (auto i : scales) {
-    onnx_scales.push_back(i / 127);
-  }
-  std::vector<int64_t> onnx_zeros(onnx_scales.size(), 0);
-
-  std::string scale_node, zero_node;
-  if (onnx_scales.size() == 1) {
-    scale_node = helper_->Constant(
-        {}, ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales[0]);
-    zero_node =
-        helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros[0]);
+template <typename T>
+std::string QuantizeLinearMapper::CreateConstantNode(
+    const std::vector<T>& values, ONNX_NAMESPACE::TensorProto_DataType type) {
+  if (values.size() == 1) {
+    return helper_->Constant({}, type, static_cast<T>(values[0]));
   } else {
-    scale_node =
-        helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, onnx_scales);
-    zero_node =
-        helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, onnx_zeros);
+    return helper_->Constant(type, values);
+  }
+}
+
+void QuantizeLinearMapper::Opset19() {
+  auto x_info = GetInput("x");
+  auto y_info = GetOutput("y");
+  auto scale_info = GetInput("scale");
+  auto zero_point_info = GetInput("zero_point");
+
+  auto output_paddle_dtype = P2ODataType::FLOAT8E4M3FN;
+  if (qmax_ == 57344) {
+    output_paddle_dtype = P2ODataType::FLOAT8E5M2;
   }
 
-  auto node = helper_->MakeNode("QuantizeLinear",
-                                {x_info[0].name, scale_node, zero_node},
-                                {GetOutput("Y")[0].name});
+  std::vector<float> denominator_value = {qmax_};
+  std::string denominator_node =
+      CreateConstantNode(denominator_value, ONNX_NAMESPACE::TensorProto::FLOAT);
+
+  std::string scale_div_node =
+      helper_->MakeNode("Div", {scale_info[0].name, denominator_node})
+          ->output(0);
+
+  auto zero_point_node = helper_->AutoCast(
+        zero_point_info[0].name, zero_point_info[0].dtype, output_paddle_dtype);
+
+  auto QuantizeLinear_node = helper_->MakeNode(
+      "QuantizeLinear", {x_info[0].name, scale_div_node, zero_point_node});
   if (helper_->GetOpsetVersion() >= 13) {
-    AddAttribute(node, "axis", quant_axis_);
+    AddAttribute(QuantizeLinear_node, "axis", quant_axis_);
   }
-  QuantizeInfo quantize_info(
-      onnx_scales, onnx_zeros, scale_node, zero_node, quant_axis_);
-  helper_->quantize_info[x_info[0].name] = quantize_info;
+  helper_->AutoCast(QuantizeLinear_node->output(0),
+                    y_info[0].name,
+                    output_paddle_dtype,
+                    P2ODataType::FP32);
+
+  //   QuantizeInfo quantize_info(
+  //       onnx_scales, onnx_zeros, onnx_scales, zero_node, quant_axis_);
+  //   helper_->quantize_info[x_info[0].name] = quantize_info;
+  // }
 }
 }  // namespace paddle2onnx
