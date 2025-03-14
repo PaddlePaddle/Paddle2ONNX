@@ -36,6 +36,9 @@ void QuantizeLinearMapper::Opset19() {
   auto scale_info = GetInput("scale");
   auto zero_point_info = GetInput("zero_point");
 
+  Assert(qmax_ == 448 || qmax_ == 57344,
+         "Paddle2ONNX: Only support e4m3 or e5m2 now.");
+
   auto output_paddle_dtype = P2ODataType::FLOAT8E4M3FN;
   if (qmax_ == 57344) {
     output_paddle_dtype = P2ODataType::FLOAT8E5M2;
@@ -50,7 +53,7 @@ void QuantizeLinearMapper::Opset19() {
           ->output(0);
 
   auto zero_point_node = helper_->AutoCast(
-        zero_point_info[0].name, zero_point_info[0].dtype, output_paddle_dtype);
+      zero_point_info[0].name, zero_point_info[0].dtype, output_paddle_dtype);
 
   auto QuantizeLinear_node = helper_->MakeNode(
       "QuantizeLinear", {x_info[0].name, scale_div_node, zero_point_node});

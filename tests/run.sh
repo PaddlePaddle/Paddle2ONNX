@@ -43,8 +43,6 @@ ignore="test_auto_scan_multiclass_nms.py
         test_quantize_model_minist.py \
         test_auto_scan_partial_ops.py \
         test_dygraph2onnx.py \
-        test_auto_scan_dequantize_linear.py \
-        test_auto_scan_quantize_linear.py \
         test_quantize_model_speedup.py \
         test_resnet_fp16.py \
         test_auto_scan_fill_constant.py"
