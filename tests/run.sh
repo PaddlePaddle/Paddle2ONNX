@@ -26,14 +26,7 @@
 
 cases=$(find . -name "test*.py" | sort)
 ignore="test_auto_scan_multiclass_nms.py                        # input shuold be xxx, but received Value
-        test_auto_scan_roi_align.py \                           # need to be rewrite
-        test_auto_scan_uniform_random_batch_size_like.py \      # due to the different random number engines, the generated random numbers cannot be compared
-        test_auto_scan_uniform_random.py \                      # same as uniform_random_batch_size_like
-        test_auto_scan_distribute_fpn_proposals1.py \           # need to be rewrite, There is no distribute_fpn_proposals Mapper
-        test_auto_scan_distribute_fpn_proposals_v2.py \         # same as distribute_fpn_proposals1
         test_auto_scan_generate_proposals.py \                  # need to be rewrite, There is no generate_proposals Mapper
-        test_uniform.py \                                       # same as uniform_random_batch_size_like
-        test_deform_conv2d.py \                                 # onnxruntime is not supported right now
         test_quantize_model.py \
         test_quantize_model_minist.py \
         test_auto_scan_partial_ops.py \                         # input shuold be xxx, but received Value
