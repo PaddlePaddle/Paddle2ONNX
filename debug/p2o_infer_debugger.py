@@ -130,6 +130,8 @@ def parse_arguments():
         parser.error(
             "--input_dtypes must have the same number of elements as --input_nums."
         )
+    if args.traversal and not args.checked_op_ids:
+        parser.error("--checked_op_ids is required when --traversal is set.")
 
     return args
 
@@ -191,26 +193,66 @@ def check_operator_with_print(
     temp_file_dir = ""
 
     @contextmanager
+    def _redirect_paddle_output_to_file(
+        paddle_model_file, log_file, inputs_data: tuple
+    ):
+        import subprocess
+        import pickle
+        import tempfile
+
+        temp_filename = None
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            pickle.dump(inputs_data, temp_file)
+            temp_filename = temp_file.name
+            command = f"""
+import pickle
+import paddle
+# 从临时文件中加载参数
+with open('{temp_filename}', 'rb') as f:
+    inputs_data = pickle.load(f)
+    paddle_model = paddle.jit.load('{paddle_model_file}')
+    paddle_model(*inputs_data)
+"""
+        try:
+            with open(log_file, "w") as f:
+                process = subprocess.Popen(
+                    [sys.executable, "-c", command], stdout=f, stderr=subprocess.PIPE
+                )
+                _, stderr = process.communicate()
+                if stderr:
+                    print(stderr.decode(), file=sys.stderr)
+                yield
+        finally:
+            if os.path.exists(temp_filename):
+                os.remove(temp_filename)
+
+    @contextmanager
     def _redirect_stdout_to_file(filename):
         original_stdout_fd = os.dup(sys.stdout.fileno())
+        original_stdout = sys.stdout
         try:
             sys.stdout.flush()
             with open(filename, "w", encoding="utf-8") as f:
                 os.dup2(f.fileno(), sys.stdout.fileno())
+                sys.stdout = open(
+                    os.dup(sys.stdout.fileno()), "w", encoding="utf-8", errors="ignore"
+                )
                 yield
         finally:
             sys.stdout.flush()
             os.dup2(original_stdout_fd, sys.stdout.fileno())
+            sys.stdout.close()
+            sys.stdout = original_stdout
             os.close(original_stdout_fd)
 
     def _compare_results(paddle_model_path, onnx_model_path, inputs_data: tuple):
-        paddle_model = paddle.jit.load(paddle_model_path)
-        # log_file = f"./print_{uuid.uuid4().hex}.log"
-        # logger.info("Log File: %s", log_file)
         log_file = "./print.log"
-        with _redirect_stdout_to_file(log_file):
-            paddle_model(*inputs_data)
-            sys.stdout.flush()
+        with _redirect_paddle_output_to_file(paddle_model_path, log_file, inputs_data):
+            pass
+        paddle_model = paddle.jit.load(paddle_model_path)
+        # with _redirect_stdout_to_file(log_file):
+        #     paddle_model(*inputs_data)
+        #     sys.stdout.flush()
         pattern = re.compile(
             r"Variable:.*?- shape:\s.*?\[(.*?)\].*?- dtype:\s*(\w+).*?- data:\s*\[(.*?)\].*?",
             flags=re.DOTALL,
@@ -873,6 +915,11 @@ def main():
             v[1] == program.blocks[0],
         )
     if args.traversal:
+        if len(args.checked_op_ids) > 1:
+            logger.warning(
+                "Traverse only supports one checked op at most once!, ops %s will be ignored.",
+                repr(args.checked_op_ids[1:]),
+            )
         err_list, exclude_list = locate_issue_by_traversal(
             index=args.checked_op_ids[0],
             index_mapping=index_mapping,
