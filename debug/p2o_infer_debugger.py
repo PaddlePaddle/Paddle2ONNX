@@ -33,7 +33,7 @@ sys.path.insert(0, tests_dir)
 import onnxbase
 
 SKIP_FORWARD_OP_LIST = ["pd_op.feed", "pd_op.data", "builtin.parameter"]
-SKIP_BACKWARD_OP_LIST = ["pd_op.fetch", "pd_op.shadow_output", "cf.yield"]
+SKIP_BACKWARD_OP_LIST = ["pd_op.fetch", "builtin.shadow_output", "cf.yield"]
 WHITE_LIST = [
     "pd_op.full",
     "pd_op.full_with_tensor",
@@ -184,7 +184,8 @@ def check_operator_with_print(
     input_dtypes,
     index_mapping,
     candidates,
-    linear_search=False,
+    linear_search,
+    output_num,
 ):
     skip_op_list = SKIP_FORWARD_OP_LIST + SKIP_BACKWARD_OP_LIST + WHITE_LIST
     temp_file_dir = ""
@@ -205,8 +206,8 @@ def check_operator_with_print(
     def _compare_results(paddle_model_path, onnx_model_path, inputs_data: tuple):
         paddle_model = paddle.jit.load(paddle_model_path)
         # log_file = f"./print_{uuid.uuid4().hex}.log"
+        # logger.info("Log File: %s", log_file)
         log_file = "./print.log"
-        logger.info("Log File: %s", log_file)
         with _redirect_stdout_to_file(log_file):
             paddle_model(*inputs_data)
             sys.stdout.flush()
@@ -246,12 +247,10 @@ def check_operator_with_print(
         for idx, input_name in enumerate(input_names):
             input_feed[input_name.name] = inputs_data[idx]
         result = session.run(output_names=None, input_feed=input_feed)
-        # print(result)
         # construct expect data
         expect = paddle.to_tensor(data_list).astype(dtype)
         expect = paddle.reshape(expect, shape_list)
-        # TODO(wangmingkai02): adjust start pos of result
-        onnxbase.compare(result[1:], expect, 1e-5, 1e-5)
+        onnxbase.compare(result[output_num:], expect, 1e-5, 1e-5)
 
     def _check_operator(program, block, idx):
         testing_op = block.ops[idx]
@@ -471,7 +470,8 @@ def check_operator_with_shadow_output(
     input_dtypes,
     index_mapping,
     candidates,
-    linear_search=False,
+    linear_search,
+    output_num,
 ):
     temp_file_dir = ""
 
@@ -489,7 +489,7 @@ def check_operator_with_shadow_output(
         for idx, input_name in enumerate(input_names):
             input_feed[input_name.name] = inputs_data[idx]
         result = session.run(output_names=None, input_feed=input_feed)
-        onnxbase.compare(result[:-1], expect, 1e-5, 1e-5)
+        onnxbase.compare(result[:-output_num], expect, 1e-5, 1e-5)
 
     def _check_operator(program, model_file, idx, input_shapes, input_dtypes):
         op = program.blocks[0].ops[idx]
@@ -609,6 +609,7 @@ def locate_issue(
     candidates: list[int] = None,
     has_cf=False,
     binary_search=False,
+    output_num=1,
 ):
     if has_cf:
         check_operator_with_print(
@@ -619,6 +620,7 @@ def locate_issue(
             index_mapping,
             candidates,
             binary_search,
+            output_num,
         )
     else:
         check_operator_with_shadow_output(
@@ -629,6 +631,7 @@ def locate_issue(
             index_mapping,
             candidates,
             binary_search,
+            output_num,
         )
 
 
@@ -655,14 +658,17 @@ def get_op_statistics(program):
         ops = set()
         global_ops = set()
         global_res = list()
+        shadow_output_op_num = 0
         for block in program.blocks:
             ops |= _dfs(block, index_mapping)
         for idx, op in enumerate(program.blocks[0].ops):
+            if op.name() == "builtin.shadow_output":
+                shadow_output_op_num += 1
             if op.name() in global_ops:
                 continue
             global_ops.add(op.name())
             global_res.append((idx, op.name()))
-        return index_mapping, ops, global_res
+        return index_mapping, ops, global_res, shadow_output_op_num
 
     return _get_mapping_and_uniq_set(program)
 
@@ -732,13 +738,14 @@ def find_used_op_index(index_list, index_mapping, op_index_mapping=None):
     return ret
 
 
-# def find_defined_op_index_all(index_list, index_mapping, max_depth=2):
-#     for index in index_list:
-#         print(find_defined_op_index([index], index_mapping, max_depth))
-
-
 def locate_issue_by_traversal(
-    index, index_mapping, program, model_file_path, input_shapes, input_dtypes
+    index,
+    index_mapping,
+    program,
+    model_file_path,
+    input_shapes,
+    input_dtypes,
+    output_num,
 ):
     update_candidate_status(True)
     new_index_mapping = {}
@@ -772,6 +779,7 @@ def locate_issue_by_traversal(
             input_dtypes=input_dtypes,
             candidates=[cur_op_id],
             has_cf=index_mapping[str(cur_op_id)][1] != program.blocks[0],
+            output_num=output_num,
         )
         if not CANDIDATE_STATUS:
             error_op_id_list.append(cur_op_id)
@@ -843,7 +851,7 @@ def main():
         "FLAGS_print_ir", None
     ).lower() in ["1", "true", "on"]:
         sys.exit(0)
-    index_mapping, uniq_ops, global_uniq_ops = get_op_statistics(program)
+    index_mapping, uniq_ops, global_uniq_ops, output_num = get_op_statistics(program)
     logger.info(
         "*********************** uniq ops: %d *************************", len(uniq_ops)
     )
@@ -872,6 +880,7 @@ def main():
             model_file_path=model_file_path,
             input_shapes=args.input_shapes,
             input_dtypes=args.input_dtypes,
+            output_num=output_num,
         )
         logger.info("Error op id list:\n%s\n", ",".join([str(x) for x in err_list]))
         logger.info(
@@ -887,6 +896,7 @@ def main():
             args.checked_op_ids,
             args.has_control_flow,
             args.linear_search,
+            output_num,
         )
 
 
