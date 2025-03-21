@@ -23,8 +23,9 @@ jobs:
         with:
           submodules: true
           fetch-depth: 1000
-      # Merge target branch
-      - name: Merge ${{ github.event.pull_request.base.ref }} branch
+      # Merge base branch
+      - name: Merge base branch
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
@@ -66,8 +67,9 @@ jobs:
           submodules: true
           fetch-depth: 1000
 
-      # Merge target branch
-      - name: Merge ${{ github.event.pull_request.base.ref }} branch
+      # Merge base branch
+      - name: Merge base branch
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
@@ -136,8 +138,9 @@ jobs:
           submodules: true
           fetch-depth: 1000
 
-      # Merge target branch
-      - name: Merge ${{ github.event.pull_request.base.ref }} branch
+      # Merge base branch
+      - name: Merge base branch
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
