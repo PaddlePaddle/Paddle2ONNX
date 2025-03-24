@@ -19,6 +19,7 @@ import paddle2onnx
 import unittest
 import onnxruntime as ort
 from paddle.base import unique_name
+from onnxbase import _test_only_pir
 
 
 def convert_scale_to_paddle(onnx_scale, qmax):
@@ -138,9 +139,11 @@ def compare_paddle_and_onnx(
     np.testing.assert_allclose(paddle_result, onnx_result, rtol=1e-5, atol=1e-5)
 
 
-# except output [0.0, 1.0, 2.0, 896.0, -208.0]
 class TestDequantizeLinear(unittest.TestCase):
-    def test_dequantize_linear_float8_e4m3fn(self):
+    @_test_only_pir
+    def test_dequantize_linear_float8_e4m3fn(
+        self,
+    ):  # except output [0.0, 1.0, 2.0, 896.0, -208.0]
         qmin = -448  # float8_e4m3fn
         qmax = 448  # float8_e4m3fn
         input_data = np.array([0, 0.5, 1, 448, -104]).astype(np.float32)
@@ -167,8 +170,10 @@ class TestDequantizeLinear(unittest.TestCase):
             opset_version=19,
         )
 
-    # except output [0.0, 1.0, 2.0, 98304.0, -192.0]
-    def test_dequantize_linear_float8_e5m2(self):
+    @_test_only_pir
+    def test_dequantize_linear_float8_e5m2(
+        self,
+    ):  # except output [0.0, 1.0, 2.0, 98304.0, -192.0]
         qmin = -57344  # float8_e5m2
         qmax = 57344  # float8_e5m2
         input_data = np.array([0, 0.5, 1, 49152, -96]).astype(np.float32)

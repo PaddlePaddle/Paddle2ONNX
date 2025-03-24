@@ -44,7 +44,7 @@ void QuantizeLinearMapper::Opset19() {
     output_paddle_dtype = P2ODataType::FLOAT8E5M2;
   }
 
-  std::vector<float> denominator_value = {qmax_};
+  std::vector<float> denominator_value = {static_cast<float>(qmax_)};
   std::string denominator_node =
       CreateConstantNode(denominator_value, ONNX_NAMESPACE::TensorProto::FLOAT);
 
