@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 from paddle import ParamAttr
@@ -29,35 +27,39 @@ class Net(BaseNet):
 
     def __init__(self, config=None):
         super(Net, self).__init__(config)
-        if self.config['data_format'] in ["NC", "NCL", "NCHW", "NCDHW", "NCHW"]:
-            param_shape = [self.config['input_shape'][1]]
+        if self.config["data_format"] in ["NC", "NCL", "NCHW", "NCDHW", "NCHW"]:
+            param_shape = [self.config["input_shape"][1]]
         else:
-            param_shape = [self.config['input_shape'][-1]]
-        dtype = self.config['dtype']
+            param_shape = [self.config["input_shape"][-1]]
+        dtype = self.config["dtype"]
 
         self.mean = self.create_parameter(
             dtype=dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(0.0),
                 trainable=False,
-                do_model_average=True),
-            shape=param_shape)
+                do_model_average=True,
+            ),
+            shape=param_shape,
+        )
 
         self.variance = self.create_parameter(
             dtype=dtype,
             attr=ParamAttr(
                 initializer=paddle.nn.initializer.Constant(1.0),
                 trainable=False,
-                do_model_average=True),
-            shape=param_shape)
+                do_model_average=True,
+            ),
+            shape=param_shape,
+        )
 
         self.weight = self.create_parameter(
             shape=param_shape,
             dtype=dtype,
-            default_initializer=paddle.nn.initializer.Constant(1.0))
+            default_initializer=paddle.nn.initializer.Constant(1.0),
+        )
 
-        self.bias = self.create_parameter(
-            shape=param_shape, dtype=dtype, is_bias=True)
+        self.bias = self.create_parameter(shape=param_shape, dtype=dtype, is_bias=True)
 
     def forward(self, inputs):
         """
@@ -69,10 +71,11 @@ class Net(BaseNet):
             running_var=self.variance,
             weight=self.weight,
             bias=self.bias,
-            momentum=self.config['momentum'],
-            epsilon=self.config['epsilon'],
-            data_format=self.config['data_format'],
-            use_global_stats=self.config['use_global_stats'])
+            momentum=self.config["momentum"],
+            epsilon=self.config["epsilon"],
+            data_format=self.config["data_format"],
+            use_global_stats=self.config["use_global_stats"],
+        )
         return x
 
 
@@ -84,11 +87,9 @@ class TestBatchNormConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=8), min_size=2, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=8), min_size=2, max_size=5)
+        )
 
-        input_spec = [-1] * len(input_shape)
         dtype = draw(st.sampled_from(["float32", "float64"]))
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))
         momentum = draw(st.floats(min_value=0.1, max_value=0.9))
@@ -103,7 +104,7 @@ class TestBatchNormConvert(OPConvertAutoScanTest):
         use_global_stats = None
         is_use_global_stats = draw(st.sampled_from(["None", "False", "True"]))
         if is_use_global_stats == "False":
-            use_global_stats = None  # has a diff
+            use_global_stats = False
         elif is_use_global_stats == "True":
             use_global_stats = True
 
@@ -111,7 +112,7 @@ class TestBatchNormConvert(OPConvertAutoScanTest):
             "op_names": ["batch_norm"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [7, 9] if use_global_stats else [14, 15],
             "input_spec_shape": [],
             "epsilon": epsilon,
             "momentum": momentum,

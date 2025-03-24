@@ -116,6 +116,12 @@ namespace paddle2onnx
         const std::vector<std::string> &inputs,
         int num_outputs = 1);
 
+    std::shared_ptr<ONNX_NAMESPACE::NodeProto> MakeNode(
+        const std::string &name,
+        const std::string &op_type,
+        const std::vector<std::string> &inputs,
+        const std::vector<std::string> &outputs);
+
     template <typename T>
     std::string ConstOfShape(const std::string &input,
                              const std::string &output,

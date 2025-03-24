@@ -29,6 +29,7 @@ class BatchNormMapper : public Mapper {
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("epsilon", &epsilon_);
     GetAttr("momentum", &momentum_);
+    GetAttr("use_global_stats", &use_global_stats_);
   }
 
   BatchNormMapper(const PaddlePirParser& p,
@@ -44,7 +45,9 @@ class BatchNormMapper : public Mapper {
     GetAttr("data_format", &data_format_);
   }
 
+  int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
+  void Opset14() override;
 
  private:
   bool is_test_;
