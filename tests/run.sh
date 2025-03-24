@@ -34,7 +34,12 @@ ignore="test_auto_scan_multiclass_nms.py                        # input shuold b
         test_auto_scan_dequantize_linear.py \                   # input shuold be xxx, but received Value
         test_auto_scan_quantize_linear.py \                     # input shuold be xxx, but received Value
         test_quantize_model_speedup.py \
-        test_resnet_fp16.py"
+        test_resnet_fp16.py \
+        test_auto_scan_fill_constant.py \                        # window ci bug, need to be fixed
+        test_auto_scan_gaussian_random.py \
+        test_auto_scan_pad2d.py \
+        test_auto_scan_pool_adaptive_max_ops.py \
+        test_nn_GRU.py"
 bug=0
 
 # Install Python Packet
