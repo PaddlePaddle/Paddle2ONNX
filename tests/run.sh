@@ -25,27 +25,14 @@
 #tar xf quantized_models.tar.gz
 
 cases=$(find . -name "test*.py" | sort)
-ignore="test_auto_scan_multiclass_nms.py
-        test_auto_scan_roi_align.py \ # need to be rewrite
-        test_auto_scan_pool_adaptive_max_ops.py \
-        test_auto_scan_pad2d.py \
-        test_auto_scan_uniform_random_batch_size_like.py \
-        test_auto_scan_uniform_random.py \
-        test_auto_scan_gaussian_random.py \
-        test_auto_scan_distribute_fpn_proposals1.py \
-        test_auto_scan_distribute_fpn_proposals_v2.py \
-        test_auto_scan_fill_constant_batch_size_like.py \
-        test_auto_scan_generate_proposals.py \
-        test_uniform.py \
-        test_deform_conv2d.py \
-        test_nn_GRU.py \
+ignore="test_auto_scan_multiclass_nms.py                        # input shuold be xxx, but received Value
+        test_auto_scan_generate_proposals.py \                  # need to be rewrite, There is no generate_proposals Mapper
         test_quantize_model.py \
         test_quantize_model_minist.py \
-        test_auto_scan_partial_ops.py \
+        test_auto_scan_partial_ops.py \                         # input shuold be xxx, but received Value
         test_dygraph2onnx.py \
         test_quantize_model_speedup.py \
-        test_resnet_fp16.py \
-        test_auto_scan_fill_constant.py"
+        test_resnet_fp16.py"
 bug=0
 
 # Install Python Packet

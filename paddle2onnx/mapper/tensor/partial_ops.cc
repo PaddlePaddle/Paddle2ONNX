@@ -13,10 +13,13 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/partial_ops.h"
+#include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
 REGISTER_MAPPER(partial_sum, PartialOpsMapper)
 REGISTER_MAPPER(partial_concat, PartialOpsMapper)
+REGISTER_PIR_MAPPER(partial_sum, PartialOpsMapper)
+REGISTER_PIR_MAPPER(partial_concat, PartialOpsMapper)
 
 int32_t PartialOpsMapper::GetMinOpsetVersion(bool verbose) {
   auto input_info = GetInput("X");
@@ -51,7 +54,7 @@ int32_t PartialOpsMapper::GetMinOpsetVersion(bool verbose) {
             << std::endl;
     return -1;
   }
-  auto iter = op_mapper_.find(OpType());
+  auto iter = op_mapper_.find(convert_pir_op_name(OpType()));
   if (op_mapper_.end() == iter) {
     Error() << "Cannot find " + OpType() + " in partial op_mapper."
             << std::endl;
@@ -76,7 +79,7 @@ void PartialOpsMapper::Opset7() {
         helper_->AutoCast(out, in.dtype, P2ODataType::FP32);
     slice_outputs.push_back(casted_node);
   }
-  auto iter = op_mapper_.find(OpType());
+  auto iter = op_mapper_.find(convert_pir_op_name(OpType()));
   auto node = helper_->MakeNode(iter->second, slice_outputs);
   if (iter->second == "Concat") {
     AddAttribute(node, "axis", static_cast<int64_t>(1));

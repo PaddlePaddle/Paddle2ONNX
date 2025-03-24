@@ -13,11 +13,10 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
+from onnxbase import _test_with_pir
 
 
 class NetAvgPool1d(BaseNet):
@@ -29,23 +28,23 @@ class NetAvgPool1d(BaseNet):
         """
         forward
         """
-        output_size = self.config['output_size']
+        output_size = self.config["output_size"]
         x = paddle.nn.functional.adaptive_max_pool1d(
-            inputs, output_size=output_size, return_mask=False)
+            inputs, output_size=output_size, return_mask=False
+        )
         return x
 
 
 class TestAdaptiveAvgPool1dConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.adaptive_avg_pool1d
-    OPset version: 7, 9, 15
+    OPset version: 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=12), min_size=3, max_size=3))
+            st.lists(st.integers(min_value=10, max_value=12), min_size=3, max_size=3)
+        )
 
         if input_shape[2] % 2 != 0:
             input_shape[2] = input_shape[2] + 1
@@ -58,7 +57,7 @@ class TestAdaptiveAvgPool1dConvert(OPConvertAutoScanTest):
             "op_names": ["max_pool2d_with_index"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
             "output_size": output_size,
         }
@@ -67,6 +66,7 @@ class TestAdaptiveAvgPool1dConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 
@@ -81,23 +81,23 @@ class NetAvgPool2d(BaseNet):
         """
         forward
         """
-        output_size = self.config['output_size']
+        output_size = self.config["output_size"]
         x = paddle.nn.functional.adaptive_max_pool2d(
-            inputs, output_size, return_mask=False)
+            inputs, output_size, return_mask=False
+        )
         return x
 
 
 class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.adaptive_avg_pool2d
-    OPset version: 7, 9, 15
+    OPset version: 9, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=12), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=12), min_size=4, max_size=4)
+        )
 
         if input_shape[2] % 2 != 0:
             input_shape[2] = input_shape[2] + 1
@@ -112,16 +112,13 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
             output_size = draw(st.integers(min_value=1, max_value=3))
         elif output_type == "list":
             output_size = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=2,
-                    max_size=2))
+                st.lists(st.integers(min_value=1, max_value=3), min_size=2, max_size=2)
+            )
         config = {
             "op_names": ["max_pool2d_with_index"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [9, 15],
             "input_spec_shape": [],
             "output_size": output_size,
             "data_format": data_format,
@@ -131,6 +128,7 @@ class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 
@@ -145,23 +143,23 @@ class NetAvgPool3d(BaseNet):
         """
         forward
         """
-        output_size = self.config['output_size']
+        output_size = self.config["output_size"]
         x = paddle.nn.functional.adaptive_max_pool3d(
-            inputs, output_size=output_size, return_mask=False)
+            inputs, output_size=output_size, return_mask=False
+        )
         return x
 
 
 class TestAdaptiveAvgPool3dConvert(OPConvertAutoScanTest):
     """
     api: paddle.nn.functional.adaptive_avg_pool3d
-    OPset version: 7, 9, 15
+    OPset version: 10, 15
     """
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=12), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=10, max_value=12), min_size=5, max_size=5)
+        )
 
         if input_shape[2] % 2 != 0:
             input_shape[2] = input_shape[2] + 1
@@ -178,17 +176,14 @@ class TestAdaptiveAvgPool3dConvert(OPConvertAutoScanTest):
             output_size = draw(st.integers(min_value=1, max_value=3))
         elif output_type == "list":
             output_size = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=3), min_size=3, max_size=3)
+            )
 
         config = {
             "op_names": ["max_pool3d_with_index"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 9, 15],
+            "opset_version": [10, 15],
             "input_spec_shape": [],
             "output_size": output_size,
             "data_format": data_format,
@@ -198,6 +193,7 @@ class TestAdaptiveAvgPool3dConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 

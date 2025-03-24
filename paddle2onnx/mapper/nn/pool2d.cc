@@ -257,7 +257,7 @@ int32_t Pool2dMapper::GetMinOpsetVersion(bool verbose) {
       return -1;
     }
   }
-  if (OpType() == "max_pool2d_with_index") {
+  if (convert_pir_op_name(OpType()) == "max_pool2d_with_index") {
     return 9;
   }
   auto iter = op_mapper_.find(pooling_type_);

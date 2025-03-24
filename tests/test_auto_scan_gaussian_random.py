@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from onnxbase import randtool
+from onnxbase import randtool, _test_with_pir
 import hypothesis.strategies as st
 import unittest
 import paddle
@@ -87,6 +87,7 @@ class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 
@@ -150,6 +151,7 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 
@@ -208,6 +210,7 @@ class TestGaussianRandomConvert_list(OPConvertAutoScanTest):
 
         return (config, models)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
 

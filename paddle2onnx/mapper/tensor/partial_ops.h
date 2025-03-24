@@ -22,7 +22,19 @@ namespace paddle2onnx {
 
 class PartialOpsMapper : public Mapper {
  public:
-  PartialOpsMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  PartialOpsMapper(const PaddleParser& p,
+                   OnnxHelper* helper,
+                   int64_t block_id,
+                   int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {
+    GetAttr("start_index", &start_index_);
+    GetAttr("length", &length_);
+    op_mapper_["partial_sum"] = "Sum";
+    op_mapper_["partial_concat"] = "Concat";
+  }
+  PartialOpsMapper(const PaddlePirParser& p,
+                   OnnxHelper* helper,
+                   int64_t block_id,
                    int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("start_index", &start_index_);

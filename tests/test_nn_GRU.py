@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import paddle
-from onnxbase import APIOnnx
+from onnxbase import APIOnnx, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -33,6 +33,7 @@ class Net(paddle.nn.Layer):
         return x
 
 
+@_test_with_pir
 def test_GRU_base():
     """
     api: paddle.nn.GRU

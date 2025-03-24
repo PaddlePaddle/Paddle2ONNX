@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
+from onnxbase import randtool, _test_with_pir
 import numpy as np
 import unittest
 import paddle
@@ -27,12 +26,9 @@ class Net(BaseNet):
         mode = self.config["mode"]
         pad_value = self.config["pad_value"]
         data_format = self.config["data_format"]
-        x = paddle.fluid.layers.pad2d(
-            inputs,
-            paddings=paddings,
-            mode=mode,
-            pad_value=pad_value,
-            data_format=data_format)
+        x = paddle.nn.functional.pad(
+            inputs, pad=paddings, mode=mode, value=pad_value, data_format=data_format
+        )
         return x
 
 
@@ -44,18 +40,16 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=4, max_size=4)
+        )
 
         dtype = "float32"
 
         paddings = draw(
-            st.lists(
-                st.integers(
-                    min_value=0, max_value=4), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=0, max_value=4), min_size=4, max_size=4)
+        )
 
-        mode = draw(st.sampled_from(["constant", "reflect", "edge"]))
+        mode = draw(st.sampled_from(["constant", "reflect", "replicate", "circular"]))
 
         pad_value = draw(st.floats(min_value=10, max_value=20))
 
@@ -65,18 +59,21 @@ class TestPadopsConvert(OPConvertAutoScanTest):
             "op_names": ["pad2d"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 11, 15],
+            "opset_version": [11, 15],
             "input_spec_shape": [],
             "mode": mode,
             "pad_value": pad_value,
             "paddings": paddings,
-            "data_format": data_format
+            "data_format": data_format,
         }
+        if mode == "circular":
+            config["opset_version"] = [19]
 
         model = Net(config)
 
         return (config, model)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30, max_duration=-1)
 
@@ -86,12 +83,9 @@ class Net2(BaseNet):
         mode = self.config["mode"]
         pad_value = self.config["pad_value"]
         data_format = self.config["data_format"]
-        x = paddle.fluid.layers.pad2d(
-            inputs,
-            padding,
-            mode=mode,
-            pad_value=pad_value,
-            data_format=data_format)
+        x = paddle.nn.functional.pad(
+            inputs, pad=padding, mode=mode, value=pad_value, data_format=data_format
+        )
         return x
 
 
@@ -103,15 +97,14 @@ class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=4, max_size=4)
+        )
 
         dtype = "float32"
 
         paddings = [4]
 
-        mode = draw(st.sampled_from(["constant", "reflect", "edge"]))
+        mode = draw(st.sampled_from(["constant", "reflect", "replicate", "circular"]))
 
         pad_value = draw(st.floats(min_value=10, max_value=20))
 
@@ -130,13 +123,16 @@ class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
             "mode": mode,
             "pad_value": pad_value,
             "paddings": paddings,
-            "data_format": data_format
+            "data_format": data_format,
         }
+        if mode == "circular":
+            config["opset_version"] = [19]
 
         model = Net2(config)
 
         return (config, model)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30, max_duration=-1)
 
@@ -144,16 +140,13 @@ class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
 class Net3(BaseNet):
     def forward(self, inputs):
         data = np.ones(shape=[4], dtype="int32")
-        padding = paddle.to_tensor(data, dtype='int32')
+        padding = paddle.to_tensor(data, dtype="int32")
         mode = self.config["mode"]
         pad_value = self.config["pad_value"]
         data_format = self.config["data_format"]
-        x = paddle.fluid.layers.pad2d(
-            inputs,
-            padding,
-            mode=mode,
-            pad_value=pad_value,
-            data_format=data_format)
+        x = paddle.nn.functional.pad(
+            inputs, pad=padding, mode=mode, value=pad_value, data_format=data_format
+        )
         return x
 
 
@@ -165,15 +158,14 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=4, max_size=4)
+        )
 
         dtype = "float32"
 
         paddings = [4]
 
-        mode = draw(st.sampled_from(["constant", "reflect", "edge"]))
+        mode = draw(st.sampled_from(["constant", "reflect", "replicate", "circular"]))
 
         pad_value = draw(st.floats(min_value=10, max_value=20))
 
@@ -183,18 +175,21 @@ class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):
             "op_names": ["pad2d"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [9, 11],
+            "opset_version": [11],
             "input_spec_shape": [],
             "mode": mode,
             "pad_value": pad_value,
             "paddings": paddings,
-            "data_format": data_format
+            "data_format": data_format,
         }
+        if mode == "circular":
+            config["opset_version"] = [19]
 
         model = Net3(config)
 
         return (config, model)
 
+    @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=25, max_duration=-1)
 

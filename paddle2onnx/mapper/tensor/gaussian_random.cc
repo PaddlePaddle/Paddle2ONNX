@@ -40,12 +40,13 @@ void GaussianRandomMapper::Opset7() {
   if (HasInput("ShapeTensor")) {
     if (!TryGetInputValue("ShapeTensor", &shape)) {
       auto shape_info = GetInput("ShapeTensor");
-      shape_tensor_name = helper_->AutoCast(
-          shape_info[0].name, shape_info[0].dtype, P2ODataType::INT64);
+      if (shape_info.size() != 1) {  // ShapeTensorList case
+        shape_tensor_name = helper_->ConcatIndices(shape_info);
+      } else {
+        shape_tensor_name = helper_->AutoCast(
+            shape_info[0].name, shape_info[0].dtype, P2ODataType::INT64);
+      }
     }
-  } else if (HasInput("ShapeTensorList")) {
-    auto shape_info = GetInput("ShapeTensorList");
-    shape_tensor_name = helper_->ConcatIndices(shape_info);
   } else {
     shape.assign(shape_.begin(), shape_.end());
   }
@@ -65,14 +66,15 @@ void GaussianRandomMapper::Opset7() {
     AddAttribute(node, "dtype", GetOnnxDtype(out_info[0].dtype));
     AddAttribute(node, "mean", mean_);
     AddAttribute(node, "scale", std_);
-    if (in_pir_mode){
+    if (in_pir_mode) {
       TryGetInputValue("shape", &shape_);
     }
     AddAttribute(node, "shape", shape_);
     AddAttribute(node, "seed", static_cast<float>(seed_));
   } else {
-    auto tensor = helper_->ConstOfShape(
-        shape_tensor_name, GetOnnxDtype(out_info[0].dtype), float(0));
+    auto tensor = helper_->ConstOfShape(shape_tensor_name,
+                                        GetOnnxDtype(out_info[0].dtype),
+                                        static_cast<float>(0));
     auto node =
         helper_->MakeNode("RandomNormalLike", {tensor}, {out_info[0].name});
     AddAttribute(node, "dtype", GetOnnxDtype(out_info[0].dtype));
