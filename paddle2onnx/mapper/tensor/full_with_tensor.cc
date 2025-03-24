@@ -31,6 +31,10 @@ void FullWithTensorMapper::Opset8() {
   auto shape = helper_->AutoCast(
       shape_info[0].name, shape_info[0].dtype, P2ODataType::INT64);
 
+  if (shape_info[0].Rank() == 0) {
+    shape = helper_->Reshape(shape, {1});
+  }
+
   auto expand_node = helper_->MakeNode("Expand", {value_info[0].name, shape});
 
   helper_->AutoCast(expand_node->output(0),

@@ -23,12 +23,22 @@ void ModelExporter::ExportWhile(PaddlePirParser& pir_parser,
   // ================================
   std::vector<TensorInfo> inputs_info;
   std::vector<TensorInfo> outputs_info;
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> extra_nodes;
   auto while_op = op->dyn_cast<paddle::dialect::WhileOp>();
   auto cond_info = pir_parser.GetTensorInfo(while_op.cond());
+  std::unordered_set<std::string> names;
   for (int index = 1; index < while_op.num_operands(); index++) {
     const pir::Value& value = while_op.operand_source(index);
-    inputs_info.push_back(pir_parser.GetTensorInfo(
-        pir_parser.GetSubBlockOpOutputName(value), value.type()));
+    std::string name = pir_parser.GetSubBlockOpOutputName(value);
+    if (names.count(name)) {
+      // there are duplicated varianble names in while op's operands.
+      name = temp_helper->MakeNode("Identity", {name})->output(0);
+      pir_parser.while_op_args_name_map[&(
+          *((while_op.block_args()[index - 1]).impl()))] = name;
+    } else {
+      names.insert(name);
+    }
+    inputs_info.push_back(pir_parser.GetTensorInfo(name, value.type()));
   }
   pir_parser.GetWhileInputValuesAndArgsMappings(&while_op);
 
@@ -53,10 +63,23 @@ void ModelExporter::ExportWhile(PaddlePirParser& pir_parser,
             "The last op of a control flow sub-block must be cf.yield"));
     for (auto oprand : cf_yield_op->operands()) {
       pir::Value value = oprand.source();
-      auto info = pir_parser.GetSubBlockValueTensorInfo(value);
-      outputs_info.push_back(info[0]);
+      if (value.defining_op()->GetParent() != cf_yield_op->GetParent()) {
+        std::string name = pir_parser.GetSubBlockOpOutputName(value);
+        auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+        auto node_name = MapperHelper::Get()->GenName("Identity");
+        node->set_name(node_name);
+        node->set_op_type("Identity");
+        node->add_input(name);
+        node->add_output(MapperHelper::Get()->GenName("Identity"));
+        extra_nodes.push_back(node);
+        TensorInfo info =
+            pir_parser.GetTensorInfo(node->output(0), value.type());
+        outputs_info.push_back(info);
+      } else {
+        auto info = pir_parser.GetSubBlockValueTensorInfo(value);
+        outputs_info.push_back(info[0]);
+      }
     }
-
   } else {
     // sub_blocks_ops is empty
     PADDLE_ENFORCE_NE(pir_parser.sub_blocks_ops.size(),
@@ -86,6 +109,10 @@ void ModelExporter::ExportWhile(PaddlePirParser& pir_parser,
   pir::Block* blockPtr = &body_block;
   graph = ExportBlock(
       pir_parser, blockPtr, parameters, inputs, outputs, true, true);
+  for (auto& item : extra_nodes) {
+    *(graph.add_node()) = (*item.get());
+  }
+
   pir_parser.sub_blocks_ops.clear();
   pir_parser.sub_blocks_ops = sub_blocks_ops_copy;
 

@@ -275,6 +275,32 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
   return node;
 }
 
+std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
+    const std::string &name,
+    const std::string &op_type,
+    const std::vector<std::string> &inputs,
+    const std::vector<std::string> &outputs) {
+#ifdef PADDLE2ONNX_DEBUG
+  P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
+#endif
+  auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
+  auto node_name = MapperHelper::Get()->GenName(name);
+  node->set_name(node_name);
+  node->set_op_type(op_type);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    node->add_input(inputs[i]);
+  }
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    node->add_output(outputs[i]);
+  }
+  if (op_type == "Reshape" && GetOpsetVersion() >= 14) {
+    AddAttribute(node, "allowzero", int64_t(0));
+  }
+
+  nodes.push_back(node);
+  return node;
+}
+
 std::string OnnxHelper::AutoCast(const std::string &input,
                                  int32_t input_paddle_dtype,
                                  int32_t to_paddle_dtype) {

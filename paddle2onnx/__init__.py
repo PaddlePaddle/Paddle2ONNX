@@ -84,5 +84,7 @@ if sys.platform == "win32":
 from .version import version
 from .convert import export
 from .convert import dygraph2onnx
+from .convert import load_parameter
+from .convert import save_program
 
 __version__ = version

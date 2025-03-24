@@ -37,6 +37,7 @@ void MultinomialMapper::Opset7() {
       helper_->MakeNode("Multinomial", {x_info[0].name}, {out_info[0].name});
   AddAttribute(node, "dtype", GetOnnxDtype(out_info[0].dtype));
   AddAttribute(node, "sample_size", static_cast<int64_t>(num_samples));
+  AddAttribute(node, "seed", static_cast<float>(0.0));
 }
 
 }  // namespace paddle2onnx

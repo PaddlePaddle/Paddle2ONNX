@@ -29,13 +29,19 @@ class Conv2dTransposeMapper : public Mapper {
     GetAttr("dilations", &dilations_);
     GetAttr("strides", &strides_);
     GetAttr("paddings", &paddings_);
-    GetAttr("padding_algorithm", &padding_algorithm_);
+    if (HasAttr("padding_algorithm")) {
+      GetAttr("padding_algorithm", &padding_algorithm_);
+    } else {
+      padding_algorithm_ = "EXPLICIT";
+    }
     GetAttr("data_format", &data_format_);
 
     if (HasAttr("output_padding")) {
       GetAttr("output_padding", &output_padding_);
     }
-    GetAttr("output_size", &output_size_);
+    if (HasAttr("output_size")) {
+      GetAttr("output_size", &output_size_);
+    }
     if (paddings_.size() == 2) {
       paddings_.push_back(paddings_[0]);
       paddings_.push_back(paddings_[1]);

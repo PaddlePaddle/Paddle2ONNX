@@ -45,6 +45,8 @@ class PaddlePirParser {
   // recording args of while op body name info
   mutable std::unordered_map<pir::detail::ValueImpl*, pir::detail::ValueImpl*>
       while_op_values_args_map;
+  mutable std::unordered_map<pir::detail::ValueImpl*, std::string>
+      while_op_args_name_map;
   int NumOfBlocks() const;
   // int NumOfOps(int block_idx) const;
   int NumOfProgramOps() const;

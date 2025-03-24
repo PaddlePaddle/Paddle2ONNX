@@ -107,11 +107,15 @@ std::string PaddlePirParser::GetOpOutputName(const pir::Value& source) const {
 
 std::string PaddlePirParser::GetSubBlockOpOutputName(
     const pir::Value& source) const {
-  auto it = while_op_values_args_map.find(&(*(source.impl())));
+  auto name_iter = while_op_args_name_map.find(&(*(source.impl())));
+  if (name_iter != while_op_args_name_map.end()) {
+    return name_iter->second;
+  }
+  auto value_iter = while_op_values_args_map.find(&(*(source.impl())));
   pir::Operation* op;
   uint32_t output_idx;
-  if (it != while_op_values_args_map.end()) {
-    pir::Value value(it->second);
+  if (value_iter != while_op_values_args_map.end()) {
+    pir::Value value(value_iter->second);
     op = value.defining_op();
     output_idx = value.dyn_cast<pir::OpResult>().index();
   } else {
