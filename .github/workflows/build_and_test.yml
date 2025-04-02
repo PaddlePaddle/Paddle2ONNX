@@ -27,6 +27,8 @@ jobs:
       - name: Merge base branch
         if: ${{ github.event_name == 'pull_request' }}
         run: |
+          git config --global user.name "Paddle2onnxCI"
+          git config --global user.email "Paddle2onnxCI@example.com"
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
 
@@ -71,6 +73,8 @@ jobs:
       - name: Merge base branch
         if: ${{ github.event_name == 'pull_request' }}
         run: |
+          git config --global user.name "Paddle2onnxCI"
+          git config --global user.email "Paddle2onnxCI@example.com"
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
 
@@ -142,6 +146,8 @@ jobs:
       - name: Merge base branch
         if: ${{ github.event_name == 'pull_request' }}
         run: |
+          git config --global user.name "Paddle2onnxCI"
+          git config --global user.email "Paddle2onnxCI@example.com"
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
 
