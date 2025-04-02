@@ -122,6 +122,7 @@ class cmake_build(setuptools.Command):
                 ),
             ]
             cmake_args.append("-DCMAKE_BUILD_TYPE=%s" % build_type)
+            cmake_args.append("-DCMAKE_POLICY_VERSION_MINIMUM=3.5")
             if WINDOWS:
                 cmake_args.extend(
                     [
