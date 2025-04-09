@@ -116,6 +116,12 @@ def arg_parser():
         default="{}",
         help='Ops that needs to be converted to custom op, e.g --custom_ops \'{"paddle_op":"onnx_op"}\', default {}',
     )
+    parser.add_argument(
+        "--enable_optimization",
+        type=ast.literal_eval,
+        default=False,
+        help="whether enable onnx optimization, default False",
+    )
     return parser
 
 
@@ -176,6 +182,7 @@ def main():
         calibration_file=calibration_file,
         external_file=external_file,
         export_fp16_model=args.export_fp16_model,
+        enable_polygraphy=args.enable_optimization,
     )
 
 
