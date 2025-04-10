@@ -52,7 +52,7 @@ void ModelExporter::ExportWhile(PaddlePirParser& pir_parser,
   }
 
   // generate sub-block op outputs names in GetMinOpSetVersion() function.
-  // pir_parser.GetAllSubBlockOpOutputName(pir_parser.sub_blocks_ops);
+  // pir_parser.GetSubBlockOpOutputName(pir_parser.sub_blocks_ops);
   if (!pir_parser.sub_blocks_ops.empty()) {
     // get cf.yeild op input
     pir::Operation* cf_yield_op = pir_parser.sub_blocks_ops.back();

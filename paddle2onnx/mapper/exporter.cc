@@ -214,7 +214,7 @@ int32_t ModelExporter::GetCfBlockMinOpsetVersion(
   }
   // Must generate All sub_block's op output names must be generated here
   // because it's may used in OPMapper.GetMinOpsetVersion function.
-  pir_parser.GetAllSubBlockOpOutputName(pir_parser.sub_blocks_ops);
+  pir_parser.GetSubBlockOpOutputName(pir_parser.sub_blocks_ops);
   auto max_opset = GetMinOpsetVersion(pir_parser, &block, true);
   pir_parser.sub_blocks_ops.clear();
   pir_parser.sub_blocks_ops = sub_blocks_ops_copy;
@@ -477,7 +477,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
     }
   }
   // generate sub-block op outputs names in GetMinOpSetVersion() function.
-  // pir_parser.GetAllSubBlockOpOutputName(pir_parser.sub_blocks_ops);
+  // pir_parser.GetSubBlockOpOutputName(pir_parser.sub_blocks_ops);
   if (!pir_parser.sub_blocks_ops.empty()) {
     // get cf.yield op input
     pir::Operation* cf_yield_op = pir_parser.sub_blocks_ops.back();

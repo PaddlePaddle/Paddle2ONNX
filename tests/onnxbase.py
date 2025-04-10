@@ -284,7 +284,6 @@ class APIOnnx(object):
                     self.input_feed[str(i)] = in_data.numpy()
 
                 i += 1
-        self.input_feed_backup = self.input_feed
 
     def set_device_mode(self, is_gpu=True):
         if paddle.device.is_compiled_with_cuda() is True and is_gpu:
@@ -353,10 +352,6 @@ class APIOnnx(object):
         """
         make onnx res
         """
-
-        def _get_origin_name(ort_input):
-            return ort_input.name.split(".")[0]
-
         model_path = os.path.join(
             self.pwd, self.name, self.name + "_" + str(ver) + ".onnx"
         )
@@ -365,13 +360,6 @@ class APIOnnx(object):
             model_path,
             providers=["CPUExecutionProvider"],
         )
-        origin_input_names = list(map(_get_origin_name, sess.get_inputs()))
-        temp_dict = {}
-        self.input_feed = self.input_feed_backup
-        for idx, name in enumerate(origin_input_names):
-            temp_dict[sess.get_inputs()[idx].name] = self.input_feed[name]
-        self.input_feed = temp_dict
-
         input_feed = {}
         if len(model.graph.input) == 0:
             return sess.run(output_names=None, input_feed=input_feed)

@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "paddle/common/ddim.h"
@@ -129,7 +130,7 @@ std::string PaddlePirParser::GetSubBlockOpOutputName(
   return _op_outputs[op][output_idx];
 }
 
-void PaddlePirParser::GetAllSubBlockOpOutputName(
+void PaddlePirParser::GetSubBlockOpOutputName(
     std::vector<pir::Operation*> block_op_lists) const {
   for (auto op : block_op_lists) {
     std::string new_name = "p2o.sub_block." + op->name();
@@ -149,22 +150,22 @@ void PaddlePirParser::GetAllSubBlockOpOutputName(
     }
   }
 }
-void PaddlePirParser::GetAllOpOutputName() {
+void PaddlePirParser::GetGlobalBlockOpOutputName() {
   inputs.clear();
   outputs.clear();
   for (auto op : global_blocks_ops) {
     if (op->name() == "pd_op.data" || op->name() == "pd_op.feed") {
       std::string input_name =
           op->attribute<pir::StrAttribute>("name").AsString();
-      std::string var_name =
-          input_name + "." + GenOpInputOutputName(op->name());
-      inputs.push_back(GetTensorInfo(var_name, op->result(0).type()));
-      AddOpOutputName(op, var_name, 0);
+      inputs.push_back(GetTensorInfo(input_name, op->result(0).type()));
+      AddOpOutputName(op, input_name, 0);
     } else if (op->name() == "pd_op.fetch") {
+      std::string output_name =
+          op->attribute<pir::StrAttribute>("name").AsString();
+      outputs.push_back(GetTensorInfo(output_name, op->result(0).type()));
       auto value = op->operand(0).source();
       auto output_idx = value.dyn_cast<pir::OpResult>().index();
-      std::string var_name = _op_outputs[value.defining_op()][output_idx];
-      outputs.push_back(GetTensorInfo(var_name, op->result(0).type()));
+      AddOpOutputName(value.defining_op(), output_name, output_idx);
     } else {
       std::string var_name = GenOpInputOutputName(op->name());
       int num_outputs = op->num_results();
@@ -445,7 +446,7 @@ bool PaddlePirParser::Init(const std::string& _model,
 
   // InitBlock();
   GetGlobalBlocksOps();
-  GetAllOpOutputName();
+  GetGlobalBlockOpOutputName();
   GetOpArgNameMappings();
   GetAllBlocksOpsSet(pir_program_->block());
   return true;

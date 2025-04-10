@@ -114,7 +114,7 @@ class PaddlePirParser {
                                    std::string name,
                                    bool is_input,
                                    bool if_in_subblock) const;
-  void GetAllSubBlockOpOutputName(
+  void GetSubBlockOpOutputName(
       std::vector<pir::Operation*> block_op_lists) const;
 
   bool IsConstantTensor(int64_t op_id,
@@ -288,7 +288,7 @@ class PaddlePirParser {
   void GetGlobalBlockInputOutputInfo();
   void GetGlobalBlockInputValueName();
   void GetGlobalBlockOutputValueName();
-  void GetAllOpOutputName();
+  void GetGlobalBlockOpOutputName();
   void AddOpOutputName(pir::Operation* op,
                        std::string var_name,
                        int64_t output_idx) const;
