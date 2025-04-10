@@ -59,7 +59,7 @@ REM Install Python packages
 set PY_CMD=%1
 %PY_CMD% -m pip install pytest
 %PY_CMD% -m pip install tqdm filelock
-%PY_CMD% -m pip install onnx==1.16.0 onnxruntime==1.20.1
+%PY_CMD% -m pip install onnx==1.16.0 onnxruntime==1.19.0
 %PY_CMD% -m pip install six hypothesis
 REM %PY_CMD% -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 %PY_CMD% -m pip install https://paddle2onnx.bj.bcebos.com/paddle_windows/paddlepaddle_gpu-0.0.0-cp310-cp310-win_amd64.whl
