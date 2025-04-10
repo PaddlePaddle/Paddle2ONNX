@@ -225,15 +225,22 @@ def export(
         )
     if save_file is not None:
         if enable_polygraphy:
-            os.environ["POLYGRAPHY_AUTOINSTALL_DEPS"] = "1"
-            import io
-            import onnx
-            from polygraphy.backend.onnx import fold_constants
+            try:
+                os.environ["POLYGRAPHY_AUTOINSTALL_DEPS"] = "1"
+                import io
+                import onnx
+                from polygraphy.backend.onnx import fold_constants
 
-            model_stream = io.BytesIO(onnx_model_str)
-            onnx_model = onnx.load_model(model_stream)
-            folded_model = fold_constants(onnx_model)
-            onnx.save(folded_model, save_file)
+                model_stream = io.BytesIO(onnx_model_str)
+                onnx_model = onnx.load_model(model_stream)
+                folded_model = fold_constants(onnx_model)
+                onnx.save(folded_model, save_file)
+            except Exception as error:
+                logging.warning(
+                    f"Fail to fold onnx model with error: {error}. Skip folding."
+                )
+                with open(save_file, "wb") as f:
+                    f.write(onnx_model_str)
         else:
             with open(save_file, "wb") as f:
                 f.write(onnx_model_str)

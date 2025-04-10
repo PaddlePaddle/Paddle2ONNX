@@ -119,8 +119,8 @@ def arg_parser():
     parser.add_argument(
         "--enable_optimization",
         type=ast.literal_eval,
-        default=False,
-        help="whether enable onnx optimization, default False",
+        default=True,
+        help="whether enable onnx optimization, default True",
     )
     return parser
 
