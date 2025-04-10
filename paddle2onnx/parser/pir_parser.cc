@@ -150,21 +150,58 @@ void PaddlePirParser::GetSubBlockOpOutputName(
     }
   }
 }
+
 void PaddlePirParser::GetGlobalBlockOpOutputName() {
+  /**
+   * Input names must be the same as those in the Paddle Model.
+   * However, output names may be changed in cases where an output name
+   * is the same as one of the input names and other operations exist.
+   *
+   * The new name's format is: {original name}.p2o.pd_op.fetch.{idx}
+   *
+   * Examples:
+   * 1. The following case, which can be reproduced in `test_while`
+   *    will change the output names.
+   * {
+   *   (%0) = "pd_op.feed" () {col:1,name:"0", ...} : () -> ...
+   *   (%1) = "pd_op.full" () {...} : () -> ...
+   *   (%3) = "pd_op.less_equal" (%1, %2) {...} : ... -> ...
+   *   (%4) = "pd_op.fetch" (%3) {col:0,name:"1", ...} : ... -> ...
+   * }
+   * 2. The following case, which can be reproduced in `test_auto_scan_dropout`
+   *    will not change the output names.
+   * {
+   *   (%0) = "pd_op.data" () {dtype:float32,name:"0", ...} () -> ...
+   *   (%1) = "pd_op.fetch" (%0) {col:0,name:"0", ...} : ... -> ...
+   * }
+   */
   inputs.clear();
   outputs.clear();
+  // determine whether to generate new name for outputs
+  std::unordered_set<std::string> input_names;
   for (auto op : global_blocks_ops) {
     if (op->name() == "pd_op.data" || op->name() == "pd_op.feed") {
       std::string input_name =
           op->attribute<pir::StrAttribute>("name").AsString();
       inputs.push_back(GetTensorInfo(input_name, op->result(0).type()));
       AddOpOutputName(op, input_name, 0);
+      input_names.insert(input_name);
     } else if (op->name() == "pd_op.fetch") {
-      std::string output_name =
+      std::string var_name =
           op->attribute<pir::StrAttribute>("name").AsString();
-      outputs.push_back(GetTensorInfo(output_name, op->result(0).type()));
+      std::string output_name;
       auto value = op->operand(0).source();
+      std::string def_op_name = value.defining_op()->name();
+      if (input_names.count(var_name) && def_op_name != "pd_op.data" &&
+          def_op_name != "pd_op.feed") {
+        output_name = var_name + "." + GenOpInputOutputName(op->name());
+      } else {
+        output_name = var_name;
+      }
       auto output_idx = value.dyn_cast<pir::OpResult>().index();
+      outputs.push_back(GetTensorInfo(output_name, op->result(0).type()));
+      // It's not necessary add output name of fetch op, but need to modify it's
+      // defining op here.
       AddOpOutputName(value.defining_op(), output_name, output_idx);
     } else {
       std::string var_name = GenOpInputOutputName(op->name());
