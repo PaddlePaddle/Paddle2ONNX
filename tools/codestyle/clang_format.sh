@@ -12,12 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly VERSION="1.6.0"
+set -e
 
-version=$(cpplint --version)
+readonly VERSION="13.0.0"
 
-if ! [[ $version == *"$VERSION"* ]]; then
-    pip install cpplint==1.6.0
+version=$(clang-format -version)
+
+if ! [[ $(python -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $1$2}') -ge 36 ]]; then
+    echo "clang-format installation by pip need python version great equal 3.6,
+          please change the default python to higher version."
+    exit 1
 fi
 
-cpplint $@
+if ! [[ $version == *"$VERSION"* ]]; then
+    # low version of pip may not have the source of clang-format whl
+    pip install --upgrade pip
+    pip install clang-format==13.0.0
+fi
+
+clang-format $@
