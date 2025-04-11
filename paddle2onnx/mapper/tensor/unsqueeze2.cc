@@ -114,8 +114,8 @@ void Unsqueeze2Mapper::Opset13() {
       axes_node =
           helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
     } else {
-      Warn() << "AxesTensor or AxesTensor not found, using Identity "
-                "instead of Unsqueeze."
+      Warn() << "AxesTensor or AxesTensor not found, using Identity instead of "
+                "Unsqueeze."
              << std::endl;
       helper_->MakeNode(
           "Identity", {input_info[0].name}, {output_info[0].name});

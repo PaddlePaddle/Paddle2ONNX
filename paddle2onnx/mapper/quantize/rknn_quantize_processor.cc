@@ -129,8 +129,8 @@ void RKNNQuantizeProcessor::AddQDQ() {
 
         std::vector<float> weight;
         if (!GetTensorByName(name, &weight)) {
-          P2OLogger() << "Failed to GetTensorByName: " << node->name() << ";"
-                      << name << std::endl;
+          P2OLogger() << "[ERROR] Failed to GetTensorByName: " << node->name()
+                      << ";" << name << std::endl;
           continue;
         }
 

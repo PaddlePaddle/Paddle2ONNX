@@ -47,6 +47,8 @@ class PaddlePirParser {
       while_op_values_args_map;
   mutable std::unordered_map<pir::detail::ValueImpl*, std::string>
       while_op_args_name_map;
+
+  explicit PaddlePirParser(bool verbose) : verbose_(verbose) {}
   int NumOfBlocks() const;
   // int NumOfOps(int block_idx) const;
   int NumOfProgramOps() const;
@@ -157,11 +159,6 @@ class PaddlePirParser {
       return false;
     }
     int32_t dtype = tensor_info.dtype;
-    // PADDLE_ENFORCE_EQ(
-    //     op->HasAttribute(attr_name),
-    //     true,
-    //     common::errors::InvalidArgument(
-    //         "Cannot found attribute '%s' in op %s", attr_name, op->name()));
 
     auto array_list =
         op->attribute(attr_name).dyn_cast<::pir::ArrayAttribute>().AsVector();
@@ -279,6 +276,7 @@ class PaddlePirParser {
       paddle::dialect::WhileOp *while_op) const;
 
  private:
+  bool verbose_;
   bool IsAttrVar(const pir::Operation* op, const int64_t& attr_id) const;
   bool LoadProgram(const std::string& model);
   bool LoadParams(const std::string& path);

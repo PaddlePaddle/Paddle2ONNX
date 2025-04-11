@@ -175,7 +175,7 @@ def save_and_export(program, model_file):
     if not os.path.exists(new_params_file):
         new_params_file = ""
     onnx_model_file = os.path.splitext(new_model_file)[0] + ".onnx"
-    paddle2onnx.export(new_model_file, new_params_file, onnx_model_file)
+    paddle2onnx.export(new_model_file, new_params_file, onnx_model_file, verbose=True)
     return new_model_file, onnx_model_file
 
 

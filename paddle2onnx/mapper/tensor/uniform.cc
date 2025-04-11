@@ -26,9 +26,7 @@ void UniformMapper::Opset7() {
   auto max_info = GetInput("max");
 
   if (min_info[0].Rank() != 0 || max_info[0].Rank() != 0) {
-    Error() << "[ERROR] min/max must be scalar tensors for op "
-               "uniform "
-            << std::endl;
+    Error() << "min/max must be scalar tensors for op uniform " << std::endl;
   }
   std::vector<float> min_val{0.0f}, max_val{1.0f};
   bool is_min_const =

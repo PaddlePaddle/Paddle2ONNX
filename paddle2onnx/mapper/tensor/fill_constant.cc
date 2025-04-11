@@ -29,10 +29,9 @@ int32_t FillConstantMapper::GetMinOpsetVersion(bool verbose) {
       onnx_dtype != ONNX_NAMESPACE::TensorProto::FLOAT &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::DOUBLE &&
       onnx_dtype != ONNX_NAMESPACE::TensorProto::BOOL) {
-    Error()
-        << "Only support int32/int64/float16/float32/float64/bool data type in "
-           "fill_constant operator."
-        << std::endl;
+    Error() << "Only support int32/int64/float16/float32/float64/bool data "
+               "type in fill_constant operator."
+            << std::endl;
     return -1;
   }
   if (HasInput("ShapeTensorList")) {

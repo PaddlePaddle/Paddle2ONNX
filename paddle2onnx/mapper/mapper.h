@@ -64,59 +64,54 @@ class Mapper {
     if (opset_version <= helper_->GetOpsetVersion()) {
       v = false;
     }
-    std::string output_name = "";
-    std::string op_type = "";
+    std::string prefix;
     if (in_pir_mode) {
       auto& op = if_in_cf_block ? pir_parser_->sub_blocks_ops[pir_op_idx_]
                                 : pir_parser_->global_blocks_ops[pir_op_idx_];
-      output_name = GetOutput(0)[0].name;
-      op_type = op->name();
+      prefix = "[Paddle2ONNX] [OP: " + op->name() + "]";
     } else {
+      std::string output_name;
       auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       if (op.outputs(0).arguments_size() > 0) {
         output_name = op.outputs(0).arguments(0);
       }
-      op_type = op.type();
+      prefix = "[Paddle2ONNX] [" + op.type() + ": " + output_name + "]";
     }
-    std::string prefix = "[Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(v, prefix);
   }
 
   P2OLogger Error() {
-    std::string output_name = "";
-    std::string op_type = "";
+    std::string prefix;
     if (in_pir_mode) {
       auto& op = if_in_cf_block ? pir_parser_->sub_blocks_ops[pir_op_idx_]
                                 : pir_parser_->global_blocks_ops[pir_op_idx_];
-      op_type = op->name();
+      prefix = "[ERROR][Paddle2ONNX] [OP: " + op->name() + "]";
     } else {
+      std::string output_name;
       auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       if (op.outputs(0).arguments_size() > 0) {
         output_name = op.outputs(0).arguments(0);
       }
-      op_type = op.type();
+      prefix = "[ERROR][Paddle2ONNX] [" + op.type() + ": " + output_name + "]";
     }
-    std::string prefix =
-        "[ERROR][Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(true, prefix);
   }
 
   P2OLogger Warn() {
-    std::string output_name = "";
-    std::string op_type = "";
+    std::string prefix;
     if (in_pir_mode) {
       auto& op = if_in_cf_block ? pir_parser_->sub_blocks_ops[pir_op_idx_]
                                 : pir_parser_->global_blocks_ops[pir_op_idx_];
-      op_type = op->name();
+      prefix = "[WARNING][Paddle2ONNX] [OP: " + op->name() + "]";
     } else {
+      std::string output_name = "";
       auto& op = parser_->GetOpDesc(block_idx_, op_idx_);
       if (op.outputs(0).arguments_size() > 0) {
         output_name = op.outputs(0).arguments(0);
       }
-      op_type = op.type();
+      prefix =
+          "[WARNING][Paddle2ONNX] [" + op.type() + ": " + output_name + "]";
     }
-    std::string prefix =
-        "[WARN][Paddle2ONNX] [" + op_type + ": " + output_name + "]";
     return P2OLogger(true, prefix);
   }
 

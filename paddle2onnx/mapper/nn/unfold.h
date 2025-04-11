@@ -41,7 +41,7 @@ class UnfoldMapper : public Mapper {
     GetAttr("kernel_sizes", &kernel_sizes_);
   }
 
-  int32_t GetMinOpsetVersion(bool verbose = false);
+  int32_t GetMinOpsetVersion(bool verbose);
   void Opset11();
   std::string _get_im2col_indices_along_dim(std::string intput_d,
                                             int64_t kernel_size_d,

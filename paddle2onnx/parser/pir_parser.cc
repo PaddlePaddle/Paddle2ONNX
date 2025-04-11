@@ -99,9 +99,7 @@ std::string PaddlePirParser::GetOpOutputName(const pir::Value& source) const {
   auto op = source.defining_op();
   auto output_idx = source.dyn_cast<pir::OpResult>().index();
   if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
-    P2OLogger() << "input is a parameter" << std::endl;
     return op->result(0).defining_op<pir::ParameterOp>().param_name();
-    // std::cerr << "Can not find output name" << std::endl;
   }
   return _op_outputs[op][output_idx];
 }
@@ -124,7 +122,6 @@ std::string PaddlePirParser::GetSubBlockOpOutputName(
     output_idx = source.dyn_cast<pir::OpResult>().index();
   }
   if (_op_outputs.count(op) == 0 || _op_outputs.at(op).size() <= output_idx) {
-    P2OLogger() << "input is a parameter" << std::endl;
     return op->result(0).defining_op<pir::ParameterOp>().param_name();
   }
   return _op_outputs[op][output_idx];
@@ -325,7 +322,7 @@ int32_t PaddlePirParser::GetOpInputOutputName2Idx(int64_t op_id,
   bool exist = is_input ? yaml_parser.InputName2Id().count(name)
                         : yaml_parser.OutputName2Id().count(name);
   if (!exist) {
-    P2OLogger() << "Cannot find input/output name '" << name
+    P2OLogger(verbose_) << "[WARNING] Can not find input/output name '" << name
                 << "' in op yaml info of " << op_name << std::endl;
     return -1;
   }
@@ -345,18 +342,19 @@ bool PaddlePirParser::LoadProgram(const std::string& model) {
   ctx->GetOrRegisterDialect<pir::BuiltinDialect>();
   pir_program_ = std::make_shared<pir::Program>(ctx);
   if (!pir::ReadModule(model, pir_program_.get(), /*pir_version*/ 1)) {
-    P2OLogger() << "Failed to deserialize PaddlePaddle model." << std::endl;
+    P2OLogger() << "[ERROR] Failed to deserialize PaddlePaddle model."
+                << std::endl;
     return false;
   }
   std::ostringstream print_stream;
   pir_program_.get()->Print(print_stream);
-  P2OLogger() << "PIR Program: \n" << print_stream.str() << std::endl;
+  P2OLogger(verbose_) << "PIR Program: \n" << print_stream.str() << std::endl;
   return true;
 }
 bool PaddlePirParser::GetParamValueName(std::vector<std::string>* var_names) {
   var_names->clear();
-  P2OLogger() << "Start getting paramas value name from pir::program"
-              << std::endl;
+  P2OLogger(verbose_) << "Start getting paramas value name from pir::program"
+                      << std::endl;
   auto global_block = pir_program_->block();
   std::vector<pir::Value> value_list;
   for (auto& op : global_block->ops()) {
@@ -385,7 +383,8 @@ bool PaddlePirParser::LoadParams(const std::string& path) {
   params.clear();
   std::ifstream is(path, std::ios::in | std::ios::binary);
   if (!is.is_open()) {
-    P2OLogger() << "Cannot open file " << path << " to read." << std::endl;
+    P2OLogger() << "[ERROR] Cannot open file " << path << " to read."
+                << std::endl;
     return false;
   }
   is.seekg(0, std::ios::end);
@@ -393,9 +392,9 @@ bool PaddlePirParser::LoadParams(const std::string& path) {
   is.seekg(0, std::ios::beg);
   std::vector<std::string> var_names;
   GetParamValueName(&var_names);
-  P2OLogger() << "Getting parama's attribute 'param_namefrom' from "
-                 "pir::program successfully"
-              << std::endl;
+  P2OLogger(verbose_)
+      << "Get param's attribute 'param_namefrom' from pir::program successfully"
+      << std::endl;
 
   int64_t read_size = 0;
   while (read_size < total_size) {
@@ -450,8 +449,8 @@ bool PaddlePirParser::LoadParams(const std::string& path) {
       is.read(weight.buffer.data(), numel * PaddleDataTypeSize(data_type));
       auto index = params.size();
       if (index >= var_names.size()) {
-        P2OLogger() << "Unexcepted situation happend while reading parameters "
-                       "of PaddlePaddle pir model."
+        P2OLogger() << "[ERROR] Unexcepted situation happend while reading "
+                       "parameters of PaddlePaddle pir model."
                     << std::endl;
         return false;
       }
@@ -466,18 +465,18 @@ bool PaddlePirParser::Init(const std::string& _model,
                            const std::string& _params) {
   std::vector<Weight> weights;
   if (!LoadProgram(_model)) {
-    P2OLogger() << "Failed to load " << _model << std::endl;
+    P2OLogger() << "[ERROR] Failed to load " << _model << std::endl;
     return false;
   }
-  P2OLogger() << "Load PaddlePaddle pir model " << _model << "successfully"
-              << std::endl;
+  P2OLogger(verbose_) << "Load PaddlePaddle model " << _model
+                      << " successfully." << std::endl;
   if (_params != "") {
     if (!LoadParams(_params)) {
-      P2OLogger() << "Failed to load parameters of PaddlePaddle model"
+      P2OLogger() << "[ERROR] Failed to load parameters of PaddlePaddle model."
                   << std::endl;
       return false;
     }
-    P2OLogger() << "Load parameters " << _params << " successfully"
+    P2OLogger(verbose_) << "Load parameters " << _params << " successfully."
                 << std::endl;
   }
 
@@ -977,20 +976,6 @@ std::vector<TensorInfo> PaddlePirParser::GetOpOutput(
   return if_in_sub_block ? GetSubBlockValueTensorInfo(op->result(output_idx))
                          : GetTensorInfo(op->result(output_idx));
 }
-
-/**
-std::vector<int64_t> PaddlePirParser::GetOpAttrVar(int64_t op_id, int64_t
-input_idx, const std::string &name) const { pir::Operation* op =
-global_blocks_ops[op_id]->operand(input_idx).source().defining_op();
-  std::vector<int64_t> result;
-  GetOpAttr(op, name, &result);
-  for(auto i : result)
-  {
-    std::cout << "attr: " << i << std::endl;
-  }
-  return result;
-}
-*/
 
 bool PaddlePirParser::IsConstantTensor(int64_t op_id,
                                        int64_t input_idx,

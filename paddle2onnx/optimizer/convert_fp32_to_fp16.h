@@ -75,11 +75,14 @@ struct proto_node {
 
 struct ConvertFp32ToFp16 {
  public:
-  ConvertFp32ToFp16(float min_positive_val = 1e-7, float max_finite_val = 1e4,
+  ConvertFp32ToFp16(bool verbose,
+                    float min_positive_val = 1e-7,
+                    float max_finite_val = 1e4,
                     bool keep_io_types = false,
                     bool disable_shape_infer = false,
                     const std::vector<std::string>& op_block_list = {},
                     const std::vector<std::string>& node_block_list = {}) {
+    verbose_ = verbose;
     min_positive_val_ = min_positive_val;
     max_finite_val_ = max_finite_val;
     keep_io_types_ = keep_io_types;
@@ -176,6 +179,7 @@ struct ConvertFp32ToFp16 {
 
   float min_positive_val_ = 1e-7;
   float max_finite_val_ = 1e4;
+  bool verbose_ = false;
   bool keep_io_types_ = false;
   bool disable_shape_infer_ = false;
   std::vector<std::string> op_block_list_ = {};

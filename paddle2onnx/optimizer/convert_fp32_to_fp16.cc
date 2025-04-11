@@ -169,7 +169,7 @@ ONNX_NAMESPACE::ValueInfoProto* ConvertFp32ToFp16::MakeValueInfoFromTensor(
   value_info->set_name(tensor.name());
   auto type_proto = value_info->mutable_type();
   auto tensor_type_proto = type_proto->mutable_tensor_type();
-  tensor_type_proto->set_elem_type(tensor.data_type());  // TODO
+  tensor_type_proto->set_elem_type(tensor.data_type());
   auto shape = tensor_type_proto->mutable_shape();
   for (auto i = 0; i < tensor.dims_size(); i++) {
     auto dim = tensor.dims(i);
@@ -294,22 +294,22 @@ void ConvertFp32ToFp16::ConvertTensorFloatToFloat16(
         ConvertValToFloat16(fp32_val[i], &fp16_val[i]);
       }
       if (pos_min_val < max_finite_val_ - 1) {
-        P2OLogger() << "[Info] the float32 number: " << pos_min_val
+        P2OLogger(verbose_) << "[Info] The float32 number: " << pos_min_val
                     << " will be truncated to: " << min_positive_val_
                     << std::endl;
       }
       if (pos_max_val > min_positive_val_ + 1) {
-        P2OLogger() << "[Info] the float32 number: " << pos_max_val
+        P2OLogger(verbose_) << "[Info] The float32 number: " << pos_max_val
                     << " will be truncated to: " << max_finite_val_
                     << std::endl;
       }
       if (neg_min_val > -1 * max_finite_val_ + 1) {
-        P2OLogger() << "[Info] the float32 number: " << neg_min_val
+        P2OLogger(verbose_) << "[Info] The float32 number: " << neg_min_val
                     << " will be truncated to: " << -1 * min_positive_val_
                     << std::endl;
       }
       if (neg_max_val < -1 * min_positive_val_ - 1) {
-        P2OLogger() << "[Info] the float32 number: " << neg_max_val
+        P2OLogger(verbose_) << "[Info] The float32 number: " << neg_max_val
                     << " will be truncated to: " << -1 * max_finite_val_
                     << std::endl;
       }
@@ -826,7 +826,8 @@ void ConvertFp32ToFp16::Convert(ONNX_NAMESPACE::ModelProto* model) {
   ONNX_NAMESPACE::shape_inference::InferShapes(*model);
   // 1 if it is a FP16 model, skip this
   if (IsFP16Model(*model)) {
-    P2OLogger() << "[Info] The input ONNX Model is a FP16 model." << std::endl;
+    P2OLogger(verbose_) << "[Info] The input ONNX Model is a FP16 model."
+                        << std::endl;
     return;
   }
   // 2 keep IO types

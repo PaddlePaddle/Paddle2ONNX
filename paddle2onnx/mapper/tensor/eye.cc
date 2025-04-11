@@ -37,10 +37,9 @@ int32_t EyeMapper::GetMinOpsetVersion(bool verbose) {
   } else {
     if (IsAttrVar("num_rows")) {
       if (!IsConstant(GetAttrVar("num_rows")[0])) {
-        Error()
-            << "While Attribute(num_rows)'s type is Tensor, it's not supported "
-               "unless it's a constant tensor."
-            << std::endl;
+        Error() << "While Attribute(num_rows)'s type is Tensor, it's not "
+                   "supported unless it's a constant tensor."
+                << std::endl;
         return -1;
       } else {
         auto info = GetAttrVar("num_rows");

@@ -65,7 +65,7 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> LoadModelFromFile(
   std::ifstream fin(file_path, std::ios::in | std::ios::binary);
   if (!fin.is_open()) {
     P2OLogger(true)
-        << "Failed to read model file: " << file_path
+        << "[ERROR] Failed to read model file: " << file_path
         << ", please make sure your model file or file path is valid."
         << std::endl;
     return model_proto;
@@ -79,7 +79,8 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> LoadModelFromFile(
   fin.close();
 
   if (!model_proto->ParseFromString(contents)) {
-    P2OLogger(true) << "Failed to load ONNX model from file." << std::endl;
+    P2OLogger(true) << "[ERROR] Failed to load ONNX model from file."
+                    << std::endl;
     return model_proto;
   }
   return model_proto;
@@ -110,14 +111,15 @@ bool OptimizePaddle2ONNX(const std::string& model_path,
       *(model_proto.get()), option.passes);
   std::string optimized_model_str;
   if (!optimized_model_proto.SerializeToString(&optimized_model_str)) {
-    P2OLogger(true) << "Failed to serialize the optimized model protobuf."
-                    << std::endl;
+    P2OLogger(true)
+        << "[ERROR] Failed to serialize the optimized model protobuf."
+        << std::endl;
     return false;
   }
 
   std::fstream out(optimized_model_path, std::ios::out | std::ios::binary);
   if (!out) {
-    P2OLogger(true) << "Failed to write the optimized model to disk at "
+    P2OLogger(true) << "[ERROR] Failed to write the optimized model to disk at "
                     << optimized_model_path << "." << std::endl;
     return false;
   }
@@ -186,14 +188,14 @@ bool OptimizePaddle2ONNX(
       *(model_proto.get()), option.passes);
   std::string optimized_model_str;
   if (!optimized_model_proto.SerializeToString(&optimized_model_str)) {
-    P2OLogger(true) << "Failed to serialize the optimized model protobuf."
-                    << std::endl;
+    P2OLogger() << "[ERROR] Failed to serialize the optimized model protobuf."
+                << std::endl;
     return false;
   }
 
   std::fstream out(optimized_model_path, std::ios::out | std::ios::binary);
   if (!out) {
-    P2OLogger(true) << "Failed to write the optimized model to disk at "
+    P2OLogger(true) << "[ERROR] Failed to write the optimized model to disk at "
                     << optimized_model_path << "." << std::endl;
     return false;
   }
@@ -203,11 +205,12 @@ bool OptimizePaddle2ONNX(
 }
 
 bool Paddle2ONNXFP32ToFP16(const std::string& model_path,
-                           const std::string& converted_model_path) {
+                           const std::string& converted_model_path,
+                           bool verbose) {
   std::ifstream fin(model_path, std::ios::in | std::ios::binary);
   if (!fin.is_open()) {
     P2OLogger(true)
-        << "Failed to read model file: " << model_path
+        << "[ERROR] Failed to read model file: " << model_path
         << ", please make sure your model file or file path is valid."
         << std::endl;
     return false;
@@ -222,12 +225,13 @@ bool Paddle2ONNXFP32ToFP16(const std::string& model_path,
 
   char* out_model_ptr = nullptr;
   int size = 0;
-  ConvertFP32ToFP16(contents.c_str(), contents.size(), &out_model_ptr, &size);
+  ConvertFP32ToFP16(
+      contents.c_str(), contents.size(), &out_model_ptr, &size, verbose);
   std::string onnx_proto(out_model_ptr, out_model_ptr + size);
 
   std::fstream out(converted_model_path, std::ios::out | std::ios::binary);
   if (!out) {
-    P2OLogger(true) << "Failed to write the optimized model to disk at "
+    P2OLogger(true) << "[ERROR] Failed to write the optimized model to disk at "
                     << converted_model_path << "." << std::endl;
     return false;
   }

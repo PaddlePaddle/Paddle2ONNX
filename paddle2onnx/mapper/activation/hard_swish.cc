@@ -18,7 +18,10 @@ namespace paddle2onnx {
 REGISTER_MAPPER(hard_swish, HardSwishMapper)
 REGISTER_PIR_MAPPER(hard_swish, HardSwishMapper)
 
-int32_t HardSwishMapper::GetMinOpsetVersion(bool verbose) { return 14; }
+int32_t HardSwishMapper::GetMinOpsetVersion(bool verbose) {
+  Logger(verbose, 14) << RequireOpset(14) << std::endl;
+  return 14;
+}
 
 void HardSwishMapper::Opset7() {
   auto input_info = GetInput("X");
@@ -43,17 +46,17 @@ inline bool IsAlmostEqual(float a, float b) {
 
 void HardSwishMapper::Opset14() {
   if (!IsAlmostEqual(offset_, 3.0)) {
-    P2OLogger() << "offset != 3.0, using Opset7()" << std::endl;
+    Warn() << "offset != 3.0, using Opset7()" << std::endl;
     return Opset7();
   }
 
   if (!IsAlmostEqual(scale_, 6.0)) {
-    P2OLogger() << "scale_ != 6.0, using Opset7()" << std::endl;
+    Warn() << "scale_ != 6.0, using Opset7()" << std::endl;
     return Opset7();
   }
 
   if (!IsAlmostEqual(threshold_, 6.0)) {
-    P2OLogger() << "offset != 3.0, using Opset7()" << std::endl;
+    Warn() << "offset != 3.0, using Opset7()" << std::endl;
     return Opset7();
   }
   auto input_info = GetInput("X");

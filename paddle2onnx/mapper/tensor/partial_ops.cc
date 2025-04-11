@@ -36,27 +36,24 @@ int32_t PartialOpsMapper::GetMinOpsetVersion(bool verbose) {
   int64_t max_length = input_info[0].shape[1];
   for (auto &in : input_info) {
     if (in.shape[0] != batch_size || in.shape[1] != max_length) {
-      Error()
-          << "The batch_size and max_length of all inputs must be same in " +
-                 OpType() + " OP."
-          << std::endl;
+      Error() << "The batch_size and max_length of all inputs must be same in "
+              << OpType() << " OP." << std::endl;
       return -1;
     }
   }
   if (max_length < start_index_) {
-    Error() << "start_index must be less than input len in " + OpType() + " OP."
-            << std::endl;
+    Error() << "start_index must be less than input len in " << OpType()
+            << " OP." << std::endl;
     return -1;
   }
   if (length_ > 0 && start_index_ + length_ > max_length) {
-    Error() << "start_index + length is larger than input length in " +
-                   OpType() + " OP."
-            << std::endl;
+    Error() << "start_index + length is larger than input length in "
+            << OpType() << " OP." << std::endl;
     return -1;
   }
   auto iter = op_mapper_.find(convert_pir_op_name(OpType()));
   if (op_mapper_.end() == iter) {
-    Error() << "Cannot find " + OpType() + " in partial op_mapper."
+    Error() << "Cannot find " << OpType() << " in partial op_mapper."
             << std::endl;
     return -1;
   }

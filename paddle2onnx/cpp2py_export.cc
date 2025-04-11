@@ -33,7 +33,7 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
            const std::string& params_filename,
            int opset_version = 7,
            bool auto_upgrade_opset = true,
-           bool verbose = true,
+           bool verbose = false,
            bool enable_onnx_checker = true,
            bool enable_experimental_op = true,
            bool enable_optimize = true,
@@ -150,9 +150,10 @@ PYBIND11_MODULE(paddle2onnx_cpp2py_export, m) {
         });
   m.def("convert_to_fp16",
         [](const std::string& fp32_model_path,
-           const std::string& fp16_model_path) {
-          ONNX_NAMESPACE::optimization::Paddle2ONNXFP32ToFP16(fp32_model_path,
-                                                              fp16_model_path);
+           const std::string& fp16_model_path,
+           bool verbose = false) {
+          ONNX_NAMESPACE::optimization::Paddle2ONNXFP32ToFP16(
+              fp32_model_path, fp16_model_path, verbose);
         });
   m.def("get_all_supported_operators", []() {
     auto operators = MapperHelper::Get()->GetAllOps(false);

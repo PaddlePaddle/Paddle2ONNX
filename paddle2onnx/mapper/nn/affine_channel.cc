@@ -20,7 +20,7 @@ REGISTER_MAPPER(affine_channel, AffineChannelMapper)
 int32_t AffineChannelMapper::GetMinOpsetVersion(bool verbose) {
   if (data_layout_ == "NHWC") {
     Error() << "Data format NHWC is not supported." << std::endl;
-    return false;
+    return -1;
   }
   return 7;
 }

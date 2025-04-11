@@ -19,8 +19,7 @@ REGISTER_PIR_MAPPER(conv3d_transpose, Conv3dTransposeMapper)
 
 int32_t Conv3dTransposeMapper::GetMinOpsetVersion(bool verbose) {
   if (data_format_ != "NCHW" && data_format_ != "NHWC") {
-    Error() << "[ERROR] only support NCDHW or NDHWC format for "
-               "conv3d_transpose "
+    Error() << "Only support NCDHW or NDHWC format for conv3d_transpose."
             << std::endl;
     return -1;
   }

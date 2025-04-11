@@ -115,7 +115,7 @@ class MapperHelper {
     return mappers.find(op_name) != mappers.end();
   }
 
-  bool IsRegisteredInPir(const std::string& op_name) {
+  bool IsRegisteredInPir(const std::string& op_name, bool verbose) {
     static std::set<std::string> log_infos;
     auto iter_pir = pir_mappers.find(op_name);
     if (pir_mappers.end() != iter_pir) {
@@ -128,7 +128,7 @@ class MapperHelper {
           " is not registered in new ir mappers, but found in old ir mappers.";
       if (!log_infos.count(log_info)) {
         log_infos.insert(log_info);
-        P2OLogger() << log_info << std::endl;
+        P2OLogger(verbose) << log_info << std::endl;
       }
       return false;
     }
@@ -163,7 +163,7 @@ class MapperHelper {
                        int64_t i,
                        bool if_in_subblock) {
     Assert(pir_mappers.find(name) != pir_mappers.end(),
-           name + " cannot be found in registered mappers.");
+           name + " can not be found in registered mappers.");
     return pir_mappers[name]->Create(pir_parser, helper, i, if_in_subblock);
   }
 

@@ -122,6 +122,12 @@ def arg_parser():
         default=True,
         help="whether enable onnx optimization, default True",
     )
+    parser.add_argument(
+        "--enable_verbose",
+        type=ast.literal_eval,
+        default=False,
+        help="whether show verbose logs, default False",
+    )
     return parser
 
 
@@ -173,7 +179,7 @@ def main():
         opset_version=args.opset_version,
         auto_upgrade_opset=args.enable_auto_update_opset,
         dist_prim_all=args.enable_dist_prim_all,
-        verbose=True,
+        verbose=args.enable_verbose,
         enable_onnx_checker=args.enable_onnx_checker,
         enable_experimental_op=True,
         enable_optimize=True,

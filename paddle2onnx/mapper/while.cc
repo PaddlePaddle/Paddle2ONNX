@@ -177,7 +177,6 @@ void ModelExporter::ExportWhile(const PaddleParser& parser,
     }
 
     if (!(x_info[i].is_tensor_array)) {
-      // P2OLogger() << x_info[i].name << "is tensor array" << std::endl;
       inputs.push_back(std::move(MakeValueInfo(x_info[i])));
     }
     input_names.push_back(x_info[i].name);

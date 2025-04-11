@@ -86,7 +86,8 @@ PADDLE2ONNX_DECL bool RemoveMultiClassNMS(const char *onnx_model,
 PADDLE2ONNX_DECL bool ConvertFP32ToFP16(const char *onnx_model,
                                         int model_size,
                                         char **out_model,
-                                        int *out_model_size);
+                                        int *out_model_size,
+                                        bool verbose);
 
 struct PADDLE2ONNX_DECL ModelTensorInfo {
   char name[100] = "";

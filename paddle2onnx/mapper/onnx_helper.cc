@@ -231,7 +231,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::vector<std::string> &inputs,
     const std::vector<std::string> &outputs) {
 #ifdef PADDLE2ONNX_DEBUG
-  P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
+  P2OLogger(verbose_) << "ONNX Node: " << op_type << std::endl;
 #endif
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   auto node_name = MapperHelper::Get()->GenName(op_type);
@@ -256,7 +256,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::vector<std::string> &inputs,
     int num_outputs) {
 #ifdef PADDLE2ONNX_DEBUG
-  P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
+  P2OLogger(verbose_) << "ONNX Node: " << op_type << std::endl;
 #endif
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   auto node_name = MapperHelper::Get()->GenName(op_type);
@@ -285,7 +285,7 @@ std::shared_ptr<ONNX_NAMESPACE::NodeProto> OnnxHelper::MakeNode(
     const std::vector<std::string> &inputs,
     const std::vector<std::string> &outputs) {
 #ifdef PADDLE2ONNX_DEBUG
-  P2OLogger(true) << "ONNX Node: " << op_type << std::endl;
+  P2OLogger(verbose_) << "ONNX Node: " << op_type << std::endl;
 #endif
   auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
   auto node_name = MapperHelper::Get()->GenName(name);

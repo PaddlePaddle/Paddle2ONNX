@@ -52,7 +52,8 @@ bool OptimizePaddle2ONNX(
     const OptimizerOption& option = OptimizerOption());
 
 bool Paddle2ONNXFP32ToFP16(const std::string& model_path,
-                           const std::string& optimized_model_path);
+                           const std::string& optimized_model_path,
+                           bool verbose);
 
 }  // namespace optimization
 }  // namespace ONNX_NAMESPACE

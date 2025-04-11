@@ -80,6 +80,7 @@ namespace paddle2onnx
   class OnnxHelper
   {
   public:
+    bool verbose_;
     static int32_t opset_version;
     static void SetOpsetVersion(int32_t op_v) { opset_version = op_v; }
     static int32_t GetOpsetVersion() { return opset_version; }
@@ -92,6 +93,7 @@ namespace paddle2onnx
     // zero information corresponding to each tensor
     std::map<std::string, QuantizeInfo> quantize_info;
 
+    OnnxHelper(bool verbose = false): verbose_(verbose) {}
     void Clear() { nodes.clear(); }
 
     template <typename T>
@@ -758,8 +760,10 @@ namespace paddle2onnx
         }
         else
         {
-          P2OLogger() << "[WARNING] OnnxHelper function TryGetTensorValue only support get int64_t/int32_t/float/double value from Constant now."
-                      << std::endl;
+          P2OLogger(verbose_)
+              << "[WARNING] OnnxHelper function TryGetTensorValue only support "
+                 "get int64_t/int32_t/float/double value from Constant now."
+              << std::endl;
           return false;
         }
       }

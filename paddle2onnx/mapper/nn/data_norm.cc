@@ -19,7 +19,7 @@ REGISTER_MAPPER(data_norm, DataNormMapper)
 
 int32_t DataNormMapper::GetMinOpsetVersion(bool verbose) {
   if (slot_dim_ > 0) {
-    Error() << "slot_dim > 0 is not supported." << std::endl;
+    Error() << "slot_dim > 0 is not supported currently." << std::endl;
     return -1;
   }
   return 7;

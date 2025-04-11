@@ -99,15 +99,12 @@ def decompose_program(model_filename):
     if compare_programs(model.program(), new_program):
         return model_filename
 
-    # logging.info(f"Origin program: {model.program()}")
-    # logging.info(f"Decomposed program: {new_program}")
-
     load_parameter(new_program)
     return save_program(new_program, model_filename)
 
 
 def get_old_ir_guard():
-    # For old version of PaddlePaddle, donothing guard is returned.
+    # For old version of PaddlePaddle, do nothing guard is returned.
     @contextmanager
     def dummy_guard():
         yield
@@ -127,7 +124,7 @@ def export(
     opset_version=7,
     auto_upgrade_opset=True,
     dist_prim_all=False,
-    verbose=True,
+    verbose=False,
     enable_onnx_checker=True,
     enable_experimental_op=True,
     enable_optimize=True,
@@ -136,7 +133,7 @@ def export(
     calibration_file="",
     external_file="",
     export_fp16_model=False,
-    enable_polygraphy=False,
+    enable_polygraphy=True,
 ):
     # check model_filename
     assert os.path.exists(
@@ -226,6 +223,9 @@ def export(
     if save_file is not None:
         if enable_polygraphy:
             try:
+                logging.info(
+                    "Try to perform constant folding on the ONNX model with Polygraphy."
+                )
                 os.environ["POLYGRAPHY_AUTOINSTALL_DEPS"] = "1"
                 import io
                 import onnx
@@ -244,6 +244,7 @@ def export(
         else:
             with open(save_file, "wb") as f:
                 f.write(onnx_model_str)
+        logging.info("ONNX model saved in {}.".format(save_file))
     else:
         return onnx_model_str
 

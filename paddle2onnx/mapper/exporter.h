@@ -109,8 +109,7 @@ class ModelExporter {
                         const std::string& external_file_path,
                         bool* save_external = nullptr);
 
-  void ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
-                   const bool& verbose);
+  void ONNXChecker(const ONNX_NAMESPACE::ModelProto& model);
 
   std::string Run(const PaddleParser& parser,
                   int opset_version = 9,

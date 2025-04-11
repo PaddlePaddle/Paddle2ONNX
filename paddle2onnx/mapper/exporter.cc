@@ -13,12 +13,9 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/exporter.h"
-
 #include <google/protobuf/message.h>
 #include <onnx/checker.h>
-
 #include <array>
-
 #include "onnxoptimizer/optimize.h"
 #include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
 #include "paddle/phi/core/enforce.h"
@@ -41,31 +38,23 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser& pir_parser,
                                     bool enable_experimental_op) {
   OnnxHelper temp_helper;
   std::set<std::string> unsupported_ops;
+  std::unordered_set<std::string> skip_set = {
+      "pd_op.data", "pd_op.feed", "pd_op.fetch", "pd_op.if", "pd_op.while",
+      "cf.yield", "pd_op.print"};
   for (auto op : pir_parser.total_blocks_ops) {
-    if (op->name() == "pd_op.data" || op->name() == "pd_op.feed" ||
-        op->name() == "pd_op.fetch") {
-      continue;
-    }
-    if (op->name() == "pd_op.if" || op->name() == "pd_op.while" ||
-        op->name() == "cf.yield") {
-      continue;
-    }
-    if (op->name() == "pd_op.print") {
-      continue;
-    }
+    if(skip_set.count(op->name())) continue;
     std::string op_name = convert_pir_op_name(op->name());
-    if (!MapperHelper::Get()->IsRegisteredInPir(op_name)) {
+    if (!MapperHelper::Get()->IsRegisteredInPir(op_name, verbose_)) {
       unsupported_ops.insert(op_name);
     }
   }
   // TODO(wangmingkai02) : judge op whether is experimental op
   if (unsupported_ops.size() != 0) {
-    auto logger = P2OLogger();
-    logger << "There are some ops not supported yet, including ";
+    P2OLogger() << "There are some ops not supported yet, including ";
     for (auto& item : unsupported_ops) {
-      logger << item << ",";
+      P2OLogger() << item << ",";
     }
-    logger << std::endl;
+    P2OLogger() << std::endl;
   }
   return (unsupported_ops.size() == 0);
 }
@@ -140,19 +129,18 @@ bool ModelExporter::IsOpsRegistered(const PaddleParser& parser,
     return true;
   }
 
-  auto logger = P2OLogger();
-  logger << "Oops, there are some operators not supported yet, including ";
+  P2OLogger() << "Oops, there are some operators not supported yet, including ";
   for (auto& item : unsupported_ops) {
-    logger << item << ",";
+    P2OLogger() << item << ",";
   }
-  logger << std::endl;
+  P2OLogger() << std::endl;
   return false;
 }
 
 int32_t ModelExporter::GetMinOpsetVersion(const PaddleParser& parser) {
   int32_t max_opset = 7;
   std::set<std::string> verbose_log;
-  OnnxHelper helper;
+  OnnxHelper helper(verbose_);
   for (auto i = 0; i < parser.NumOfBlocks(); ++i) {
     for (auto j = 0; j < parser.NumOfOps(i); ++j) {
       auto op = parser.GetOpDesc(i, j);
@@ -168,13 +156,13 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddleParser& parser) {
 
       int current_opset = 7;
       if (op.type() == "select_input") {
-        P2OLogger() << "Detected there's control flow "
-                       "op('conditional_block/select_input') in your model, "
-                    << "this requires the minimal opset version of 11."
-                    << std::endl;
+        P2OLogger(verbose_)
+            << "Detected there's control flow "
+               "op('conditional_block/select_input') in your model, "
+            << "this requires the minimal opset version of 11." << std::endl;
         current_opset = 11;
       } else if (op.type() == "while") {
-        P2OLogger()
+        P2OLogger(verbose_)
             << "Detected there's control flow 'while' op in your model, "
             << "this requires the minimal opset version of 13." << std::endl;
         current_opset = 13;
@@ -226,7 +214,7 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser& pir_parser,
                                           bool if_in_sublock) {
   int32_t max_opset = 7;
   std::set<std::string> verbose_log;
-  OnnxHelper helper;
+  OnnxHelper helper(verbose_);
   std::vector<pir::Operation*> block_ops;
   // it's  necessary to be same with global/sub_blocks_ops
   for (auto& op : block->ops()) {
@@ -266,6 +254,7 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser& pir_parser,
           convert_pir_op_name(op_name), pir_parser, &helper, i, if_in_sublock);
       current_opset = mapper->GetMinOpsetVersion(verbose_);
       delete mapper;
+      Assert(current_opset > 0, "There are unsupported features.");
     }
     if (current_opset > max_opset) {
       max_opset = current_opset;
@@ -293,13 +282,13 @@ void ModelExporter::SetOpsetVersion(const PaddlePirParser& pir_parser,
   int32_t min_opset =
       GetMinOpsetVersion(pir_parser, pir_parser.pir_program_->block(), false);
   if (min_opset < 7 || min_opset > MAX_ONNX_OPSET_VERSION) {
-    P2OLogger(verbose_) << "The Opset Version must be between 7 and "
+    P2OLogger() << "The Opset Version must be between 7 and "
                         << MAX_ONNX_OPSET_VERSION << std::endl;
     opset_is_legal = false;
   }
   if (!auto_upgrade_opset) {
     if (min_opset > opset_version_) {
-      P2OLogger(verbose_) << "Please set the opset_version to "
+      P2OLogger() << "Please set the opset_version to "
                           << std::to_string(min_opset)
                           << " or set auto_upgrade_opset=true." << std::endl;
       opset_is_legal = false;
@@ -319,8 +308,8 @@ void ModelExporter::SetOpsetVersion(const PaddlePirParser& pir_parser,
   auto opset_import = onnx_model_.add_opset_import();
   opset_import->set_domain("");
   opset_import->set_version(opset_version_);
-  P2OLogger(verbose_) << "Use opset_version = " << opset_version_
-                      << " for ONNX export." << std::endl;
+  P2OLogger() << "Use opset_version = " << opset_version_ << " for ONNX export."
+              << std::endl;
 }
 
 void ModelExporter::SetOpsetVersion(const PaddleParser& parser,
@@ -329,13 +318,13 @@ void ModelExporter::SetOpsetVersion(const PaddleParser& parser,
   bool opset_is_legal = true;
   int32_t min_opset = GetMinOpsetVersion(parser);
   if (min_opset < 7 || min_opset >= MAX_ONNX_OPSET_VERSION) {
-    P2OLogger(verbose_) << "The Opset Version must be between 7 and "
+    P2OLogger() << "The Opset Version must be between 7 and "
                         << MAX_ONNX_OPSET_VERSION - 1 << std::endl;
     opset_is_legal = false;
   }
   if (!auto_upgrade_opset) {
     if (min_opset > opset_version_) {
-      P2OLogger(verbose_) << "Please set the opset_version to "
+      P2OLogger() << "Please set the opset_version to "
                           << std::to_string(opset_version_)
                           << " or set auto_upgrade_opset=true." << std::endl;
       opset_is_legal = false;
@@ -355,8 +344,8 @@ void ModelExporter::SetOpsetVersion(const PaddleParser& parser,
   auto opset_import = onnx_model_.add_opset_import();
   opset_import->set_domain("");
   opset_import->set_version(opset_version_);
-  P2OLogger(verbose_) << "Use opset_version = " << opset_version_
-                      << " for ONNX export." << std::endl;
+  P2OLogger() << "Use opset_version = " << opset_version_ << " for ONNX export."
+              << std::endl;
   if (custom_ops.size()) {
     auto opset_paddle_id = onnx_model_.add_opset_import();
     opset_paddle_id->set_domain("Paddle");
@@ -399,7 +388,7 @@ inline ONNX_NAMESPACE::Version ModelExporter::GetIRVersion() const {
       ir_version = 10;
       break;
     default:
-      P2OLogger(verbose_) << "The Opset Version must be between 7 and 21."
+      P2OLogger() << "[ERROR] The Opset Version must be between 7 and 21."
                           << std::endl;
       Assert(false, "Due to opset version, the model exporting is aborted.");
   }
@@ -527,7 +516,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
     bool is_while_block) {
   ONNX_NAMESPACE::GraphProto graph;
   graph.set_name("PaddlePaddle Graph in PIR mode");
-  OnnxHelper temp_helper;
+  OnnxHelper temp_helper(verbose_);
   std::vector<pir::Operation*> block_ops;
   for (auto& op : block->ops()) {
     if (op->name() != "builtin.parameter") {
@@ -688,7 +677,8 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
              "now the backend is: " +
                  deploy_backend_ + ".");
     }
-    P2OLogger() << "Deploy backend is: " << deploy_backend_ << std::endl;
+    P2OLogger(verbose_) << "Deploy backend is: " << deploy_backend_
+                        << std::endl;
     quantize_processer_->ProcessQuantizeModel(&parameters,
                                               &inputs,
                                               &outputs,
@@ -837,8 +827,8 @@ void ModelExporter::CovertCustomOps(const PaddleParser& parser,
       AddAttribute(node, attr_name, fp32_vec);
     }
   }
-  P2OLogger(true) << op.type() << " is exported as custom operator: "
-                  << custom_ops[op.type()] << std::endl;
+  P2OLogger(verbose_) << op.type() << " is exported as custom operator: "
+                      << custom_ops[op.type()] << std::endl;
 }
 
 void ModelExporter::ExportOp(const PaddleParser& parser,
@@ -876,13 +866,11 @@ void ModelExporter::ProcessGraphDumplicateNames(
   for (auto& item : nodes) {
     for (size_t i = 0; i < item->input_size(); ++i) {
       if (item->name().find("Loop") != std::string::npos) {
-        // P2OLogger() << "nodes item input:" << item->input(i) << std::endl;
         while_tensor_names_.insert(item->input(i));
       }
     }
     for (size_t i = 0; i < item->output_size(); ++i) {
       if (item->name().find("Loop") != std::string::npos) {
-        // P2OLogger() << "nodes item output:" << item->output(i) << std::endl;
         while_tensor_names_.insert(item->output(i));
       }
     }
@@ -896,7 +884,7 @@ void ModelExporter::ProcessGraphDumplicateNames(
   for (auto& item : parameters) {
     for (size_t i = 0; i < item->output_size(); ++i) {
       if (tensor_names_.find(item->output(i)) != tensor_names_.end()) {
-        P2OLogger()
+        P2OLogger(verbose_)
             << "[WARNING] There's dumplicate names in exported parameters.";
         continue;
       }
@@ -927,7 +915,6 @@ void ModelExporter::ProcessGraphDumplicateNames(
         if (is_while_block) {
           if (while_tensor_names_.find(item->output(i)) !=
               while_tensor_names_.end()) {
-            // P2OLogger() << "Skip: " << item->output(i) << std::endl;
             continue;
           }
         }
@@ -962,9 +949,9 @@ void ModelExporter::ProcessGraphDumplicateNames(
 void ModelExporter::SaveExternalData(::ONNX_NAMESPACE::GraphProto* graph,
                                      const std::string& external_file_path,
                                      bool* save_external) {
-  P2OLogger() << "The exported ONNX model is bigger than 2G, external data "
-                 "will save to file: "
-              << external_file_path << std::endl;
+  P2OLogger(verbose_) << "The exported ONNX model is bigger than 2G, external "
+                         "data will save to file: "
+                      << external_file_path << std::endl;
   std::string file_name = GetFilenameFromPath(external_file_path);
   if (save_external) {
     *save_external = true;
@@ -1010,8 +997,7 @@ void ModelExporter::SaveExternalData(::ONNX_NAMESPACE::GraphProto* graph,
   }
   f.close();
 }
-void ModelExporter::ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
-                                const bool& verbose) {
+void ModelExporter::ONNXChecker(const ONNX_NAMESPACE::ModelProto& model) {
   // TODO(jiangjiajun)
   // If we need to integrate with framework
   // this check will return a information
@@ -1021,11 +1007,11 @@ void ModelExporter::ONNXChecker(const ONNX_NAMESPACE::ModelProto& model,
     // ONNX_NAMESPACE::checker::check_model(*(model.get()));
     ONNX_NAMESPACE::checker::check_model(model);
   } catch (const std::exception& e) {
-    P2OLogger(verbose) << "The exported ONNX model is invalid." << std::endl;
-    P2OLogger(verbose) << "Model checker error log: " << e.what() << std::endl;
+    P2OLogger() << "[ERROR] The exported ONNX model is invalid." << std::endl;
+    P2OLogger() << "[ERROR] Model checker error log: " << e.what() << std::endl;
   }
-  P2OLogger(verbose) << "PaddlePaddle model is exported as ONNX format now."
-                     << std::endl;
+  P2OLogger() << "PaddlePaddle model is exported as ONNX format now."
+              << std::endl;
 }
 
 std::string ModelExporter::Run(PaddlePirParser& pir_parser,
@@ -1044,13 +1030,9 @@ std::string ModelExporter::Run(PaddlePirParser& pir_parser,
   verbose_ = verbose;
   deploy_backend_ = deploy_backend;
   calibration_cache_ = calibration_cache;
-  // Clear name_counter, this use to generate unique name for intermdiate
-  // while converting all the op
   MapperHelper::Get()->ClearNameCounter();
-  if (!IsOpsRegistered(pir_parser, enable_experimental_op)) {
-    Assert(false,
-           "Due to the unsupported operators, the conversion is aborted.");
-  }
+  Assert(IsOpsRegistered(pir_parser, enable_experimental_op),
+         "Due to the unsupported operators, the conversion is aborted.");
   // Set ONNX Opset Version
   opset_version_ = opset_version;
   SetOpsetVersion(pir_parser, auto_upgrade_opset);
@@ -1073,12 +1055,12 @@ std::string ModelExporter::Run(PaddlePirParser& pir_parser,
                                  false);
   *onnx_model_.mutable_graph() = share_graph;
   if (enable_onnx_checker) {
-    ONNXChecker(onnx_model_, verbose);
+    ONNXChecker(onnx_model_);
   }
   std::string out;
   if (!onnx_model_.SerializeToString(&out)) {
-    P2OLogger(verbose)
-        << "Error happenedd while optimizing the exported ONNX model."
+    P2OLogger()
+        << "[ERROR] Error happenedd while optimizing the exported ONNX model."
         << std::endl;
     return "";
   }
@@ -1136,7 +1118,7 @@ std::string ModelExporter::Run(const PaddleParser& parser,
   // convert fp32 model to fp16
   if (export_fp16_model) {
     P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
-    ConvertFp32ToFp16 convert;
+    ConvertFp32ToFp16 convert(verbose);
     convert.SetCustomOps(custom_ops);
     convert.AddDisabledOpTypes(disable_fp16_op_types);
     convert.Convert(&onnx_model_);
@@ -1159,13 +1141,13 @@ std::string ModelExporter::Run(const PaddleParser& parser,
 
   // check model
   if (enable_onnx_checker) {
-    ONNXChecker(onnx_model_, verbose);
+    ONNXChecker(onnx_model_);
   }
 
   std::string out;
   if (!onnx_model_.SerializeToString(&out)) {
-    P2OLogger(verbose)
-        << "Error happenedd while optimizing the exported ONNX model."
+    P2OLogger()
+        << "[ERROR] Error happenedd while optimizing the exported ONNX model."
         << std::endl;
     return "";
   }

@@ -31,9 +31,8 @@ int32_t DropoutMapper::GetMinOpsetVersion(bool verbose) {
     if (IsAttrVar("dropout_prob") &&
         !IsConstant(GetAttrVar("dropout_prob")[0])) {
       Error() << "While Attribute(dropout_prob)'s type is Tensor, it's not "
-                 "supported "
-                 "unless it's a constant tensor when dropout_implementation is "
-                 "downgrade_in_infer."
+                 "supported unless it's a constant tensor when "
+                 "dropout_implementation is downgrade_in_infer."
               << std::endl;
       return -1;
     }

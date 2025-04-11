@@ -230,10 +230,9 @@ void NMSMapper::Opset10() {
   auto boxes_info = GetInput("BBoxes");
   auto score_info = GetInput("Scores");
   if (boxes_info[0].shape[0] != 1) {
-    Warn()
-        << "[WARNING] Due to the operator multiclass_nms3, the exported ONNX "
-           "model will only supports inference with input batch_size == 1."
-        << std::endl;
+    Warn() << "Due to the operator multiclass_nms3, the exported ONNX model "
+              "will only supports inference with input batch_size == 1."
+           << std::endl;
   }
   int64_t num_classes = score_info[0].shape[1];
   auto score_threshold = helper_->Constant(

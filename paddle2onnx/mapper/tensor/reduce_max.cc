@@ -42,7 +42,6 @@ void ReduceMaxMapper::Opset18() {
   } else {
     if (OpType() == "pd_op.any") {
       GetAttr("axis", &dim_);
-      P2OLogger() << "dim_.size() : " << dim_.size() << std::endl;
     } else {
       TryGetInputValue("axis", &dim_);
     }

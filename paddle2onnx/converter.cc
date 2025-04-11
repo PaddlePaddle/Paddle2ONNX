@@ -56,10 +56,8 @@ PADDLE2ONNX_DECL bool Export(const char *model_filename,
   }
   std::string model_file(model_filename);
   if (model_file.rfind(".json") == model_file.length() - 5) {
-    P2OLogger(verbose)
-        << "Start to parsing Paddle model saved in pir program format..."
-        << std::endl;
-    auto pir_parser = PaddlePirParser();
+    P2OLogger() << "Start parsing the Paddle model file..." << std::endl;
+    auto pir_parser = PaddlePirParser(verbose);
     if (!pir_parser.Init(model_filename, params_filename)) {
       P2OLogger(verbose) << "Paddle pir::model parsing failed." << std::endl;
       return false;
@@ -116,8 +114,8 @@ PADDLE2ONNX_DECL bool Export(const char *model_filename,
     return true;
   } else {
     P2OLogger(verbose)
-        << "Invalid model_filename. It must be a Paddle pir::model file, but got "<< model_file
-        << std::endl;
+        << "Invalid model filename. It must be a json file, but got "
+        << model_file << std::endl;
     return false;
   }
 }
@@ -202,13 +200,14 @@ PADDLE2ONNX_DECL bool Export(
 PADDLE2ONNX_DECL bool ConvertFP32ToFP16(const char *onnx_model,
                                         int model_size,
                                         char **out_model,
-                                        int *out_model_size) {
+                                        int *out_model_size,
+                                        bool verbose) {
   std::string onnx_proto(onnx_model, onnx_model + model_size);
   ONNX_NAMESPACE::ModelProto model;
   model.ParseFromString(onnx_proto);
 
-  P2OLogger(true) << "Convert FP32 ONNX model to FP16." << std::endl;
-  ConvertFp32ToFp16 convert;
+  P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
+  ConvertFp32ToFp16 convert(verbose);
   convert.Convert(&model);
   // save external data file for big model
   std::string external_data_file;
@@ -220,12 +219,12 @@ PADDLE2ONNX_DECL bool ConvertFP32ToFP16(const char *onnx_model,
     me.SaveExternalData(model.mutable_graph(), external_data_file);
   }
   // check model
-  me.ONNXChecker(model, true);
+  me.ONNXChecker(model);
 
   std::string result;
   if (!model.SerializeToString(&result)) {
-    P2OLogger(true)
-        << "Error happenedd while optimizing the exported ONNX model."
+    P2OLogger()
+        << "[ERROR] Error happenedd while optimizing the exported ONNX model."
         << std::endl;
     return false;
   }
