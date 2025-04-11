@@ -24,7 +24,7 @@ class Net(paddle.nn.Layer):
 
     def __init__(self):
         super(Net, self).__init__()
-        self._bn = paddle.nn.Pad2D(padding=1, mode='constant')
+        self._bn = paddle.nn.Pad2D(padding=1, mode="constant")
 
     def forward(self, inputs):
         """
@@ -42,11 +42,11 @@ def test_Pad2D_9():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad2D', [9])
+    obj = APIOnnx(op, "nn_Pad2D", [9])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -58,11 +58,11 @@ def test_Pad2D_10():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad2D', [10])
+    obj = APIOnnx(op, "nn_Pad2D", [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -74,11 +74,11 @@ def test_Pad2D_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad2D', [11])
+    obj = APIOnnx(op, "nn_Pad2D", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -90,9 +90,9 @@ def test_Pad2D_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_Pad2D', [12])
+    obj = APIOnnx(op, "nn_Pad2D", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(
-            randtool("float", -1, 1, [3, 1, 10, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 1, 10, 10]).astype("float32")),
+    )
     obj.run()

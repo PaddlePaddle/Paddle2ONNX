@@ -30,8 +30,8 @@ void ScaleMapper::Opset7() {
   if (!has_scale_tensor && is_scale_1 && is_bias_0) {
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
   } else {
-    auto input = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                   P2ODataType::FP32);
+    auto input = helper_->AutoCast(
+        input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
     std::string out = input;
     if (bias_after_scale_) {
       if (!is_scale_1 || has_scale_tensor) {

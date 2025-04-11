@@ -16,6 +16,7 @@
 #include <variant>
 
 #include "paddle/common/errors.h"
+#include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
 #include "paddle/phi/common/data_type.h"
 #include "paddle/phi/core/enforce.h"
 #include "paddle/pir/include/core/operation_utils.h"
@@ -23,7 +24,6 @@
 #include "paddle/pir/include/core/value.h"
 #include "paddle2onnx/parser/tensor_utils.h"
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
-#include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
 namespace paddle2onnx {
 class PaddlePirParser {
  public:
@@ -67,8 +67,8 @@ class PaddlePirParser {
                   const std::string& input_name,
                   bool if_in_sub_block) const;
   bool OpHasOutput(int64_t op_id,
-                  const std::string& output_name,
-                  bool if_in_sub_block) const;
+                   const std::string& output_name,
+                   bool if_in_sub_block) const;
   void GetOpAttr(const pir::Operation* op,
                  const std::string& name,
                  int64_t* res) const;
@@ -179,8 +179,7 @@ class PaddlePirParser {
       } else if (array_list[0].isa<::pir::Int32Attribute>()) {
         std::vector<int32_t> res;
         for (size_t i = 0; i < array_list.size(); ++i) {
-          res.push_back(
-              array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+          res.push_back(array_list[i].dyn_cast<::pir::Int32Attribute>().data());
         }
         data->assign(res.begin(), res.end());
       } else if (array_list[0].isa<::pir::Int64Attribute>()) {
@@ -273,7 +272,7 @@ class PaddlePirParser {
   std::string GetTensorArrayName(int64_t op_id, bool if_in_sub_block) const;
   std::string GenOpInputOutputName(const std::string& name) const;
   void GetWhileInputValuesAndArgsMappings(
-      paddle::dialect::WhileOp *while_op) const;
+      paddle::dialect::WhileOp* while_op) const;
 
  private:
   bool verbose_;
@@ -282,7 +281,7 @@ class PaddlePirParser {
   bool LoadParams(const std::string& path);
   bool GetParamValueName(std::vector<std::string>* var_names);
   void GetGlobalBlocksOps();
-  void GetAllBlocksOpsSet(pir::Block *block);
+  void GetAllBlocksOpsSet(pir::Block* block);
   void GetGlobalBlockInputOutputInfo();
   void GetGlobalBlockInputValueName();
   void GetGlobalBlockOutputValueName();

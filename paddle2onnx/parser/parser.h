@@ -18,9 +18,9 @@
 #include <numeric>
 #include <type_traits>
 
+#include "paddle2onnx/parser/tensor_utils.h"
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
 #include "paddle2onnx/utils/utils.h"
-#include "paddle2onnx/parser/tensor_utils.h"
 namespace paddle2onnx {
 class PaddleParser {
  public:
@@ -37,8 +37,10 @@ class PaddleParser {
                                     // set is_quantized_model to be true
 
   bool Init(const std::string& _model, const std::string& _params = "");
-  bool Init(const void* model_buffer, int64_t model_size,
-            const void* params_buffer = nullptr, int64_t params_size = 0);
+  bool Init(const void* model_buffer,
+            int64_t model_size,
+            const void* params_buffer = nullptr,
+            int64_t params_size = 0);
   void InitBlock();
 
   int NumOfBlocks() const;
@@ -47,43 +49,58 @@ class PaddleParser {
   const framework::proto::OpDesc& GetOpDesc(int32_t block_idx,
                                             int32_t op_idx) const;
 
-  bool OpHasInput(int64_t block_id, int64_t op_id,
+  bool OpHasInput(int64_t block_id,
+                  int64_t op_id,
                   const std::string& name) const;
-  bool OpHasOutput(int64_t block_id, int64_t op_id,
+  bool OpHasOutput(int64_t block_id,
+                   int64_t op_id,
                    const std::string& name) const;
 
-  std::vector<TensorInfo> GetOpInput(int64_t block_id, int64_t op_id,
+  std::vector<TensorInfo> GetOpInput(int64_t block_id,
+                                     int64_t op_id,
                                      const std::string& name) const;
-  std::vector<TensorInfo> GetOpOutput(int64_t block_id, int64_t op_id,
+  std::vector<TensorInfo> GetOpOutput(int64_t block_id,
+                                      int64_t op_id,
                                       const std::string& name) const;
 
-  bool OpIsAttrVar(int64_t block_id, int64_t op_id,
+  bool OpIsAttrVar(int64_t block_id,
+                   int64_t op_id,
                    const std::string& name) const;
 
-  std::vector<TensorInfo> GetOpAttrVar(int64_t block_id, int64_t op_id,
+  std::vector<TensorInfo> GetOpAttrVar(int64_t block_id,
+                                       int64_t op_id,
                                        const std::string& name) const;
 
   bool OpHasAttr(const paddle2onnx::framework::proto::OpDesc& op,
                  const std::string& name) const;
 
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, int64_t* res) const;
+                 const std::string& name,
+                 int64_t* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, float* res) const;
+                 const std::string& name,
+                 float* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, double* res) const;
+                 const std::string& name,
+                 double* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, bool* res) const;
+                 const std::string& name,
+                 bool* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, std::string* res) const;
+                 const std::string& name,
+                 std::string* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, std::vector<int64_t>* res) const;
+                 const std::string& name,
+                 std::vector<int64_t>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, std::vector<float>* res) const;
+                 const std::string& name,
+                 std::vector<float>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, std::vector<double>* res) const;
+                 const std::string& name,
+                 std::vector<double>* res) const;
   void GetOpAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                 const std::string& name, std::vector<bool>* res) const;
+                 const std::string& name,
+                 std::vector<bool>* res) const;
 
   bool IsConstantTensor(const int64_t& block_idx,
                         const std::string& tensor_name) const;
@@ -94,8 +111,8 @@ class PaddleParser {
 
   template <typename T>
   void GetOpScalarsAttr(const paddle2onnx::framework::proto::OpDesc& op,
-                    const std::string& name,
-                    std::vector<T>* res) const;
+                        const std::string& name,
+                        std::vector<T>* res) const;
 
  private:
   // If the model has same output name in difference operators

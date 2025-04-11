@@ -29,7 +29,8 @@ class RKNNQuantizeProcessor : public BaseQuantizeProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
-      OnnxHelper *helper, const PaddleParser &parser,
+      OnnxHelper *helper,
+      const PaddleParser &parser,
       std::string *calibration_cache = nullptr) override;
 
  private:

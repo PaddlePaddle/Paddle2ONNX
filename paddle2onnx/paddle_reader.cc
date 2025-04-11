@@ -1,8 +1,22 @@
+// Copyright (c) 2025 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <string>
-#include <cstring>
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/parser/parser.h"
@@ -35,7 +49,10 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
   num_inputs = parser.inputs.size();
   num_outputs = parser.outputs.size();
   for (int i = 0; i < num_inputs; ++i) {
-    std::strcpy(inputs[i].name, parser.inputs[i].name.c_str());
+    snprintf(inputs[i].name,
+             sizeof(inputs[i].name),
+             "%s",
+             parser.inputs[i].name.c_str());
     inputs[i].rank = parser.inputs[i].Rank();
     inputs[i].shape = new int64_t[inputs[i].rank];
     for (int j = 0; j < inputs[i].rank; ++j) {
@@ -45,7 +62,10 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
   }
 
   for (int i = 0; i < num_outputs; ++i) {
-    std::strcpy(outputs[i].name, parser.outputs[i].name.c_str());
+    snprintf(outputs[i].name,
+             sizeof(outputs[i].name),
+             "%s",
+             parser.outputs[i].name.c_str());
     outputs[i].rank = parser.outputs[i].Rank();
     outputs[i].shape = new int64_t[outputs[i].rank];
     for (int j = 0; j < outputs[i].rank; ++j) {
@@ -60,7 +80,8 @@ PaddleReader::PaddleReader(const char* model_buffer, int buffer_size) {
     }
   }
   for (size_t i = 0; i < parser.NumOfOps(0); ++i) {
-    if (parser.GetOpDesc(0, i).type().find("multiclass_nms3") != std::string::npos) {
+    if (parser.GetOpDesc(0, i).type().find("multiclass_nms3") !=
+        std::string::npos) {
       has_nms = true;
       auto& op = parser.GetOpDesc(0, i);
       parser.GetOpAttr(op, "background_label", &nms_params.background_label);

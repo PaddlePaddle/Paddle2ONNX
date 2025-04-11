@@ -37,8 +37,7 @@ void RoiAlignMapper::Opset10() {
                         {x_info[0].name, rois_info[0].name, batch_indices},
                         {out_info[0].name});
 
-
-  sampling_ratio_ = sampling_ratio_  <= 0 ? 0 : sampling_ratio_;
+  sampling_ratio_ = sampling_ratio_ <= 0 ? 0 : sampling_ratio_;
   AddAttribute(roi_align_node, "output_height", pooled_height_);
   AddAttribute(roi_align_node, "output_width", pooled_width_);
   AddAttribute(roi_align_node, "sampling_ratio", sampling_ratio_);

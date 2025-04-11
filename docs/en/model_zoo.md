@@ -7,7 +7,7 @@ Due to the differences between frameworks, some models may not be supported. If 
 
 Comprehensive coverage of image classification models，now we support the whole series model in PaddlClas  [release/2.1](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1).
 
-|Models | Source |  
+|Models | Source |
 |---|---|
 | ResNet series| [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#ResNet_and_Vd_series)|
 | Mobile series | [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#Mobile_series)|

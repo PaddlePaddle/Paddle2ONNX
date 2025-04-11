@@ -47,7 +47,6 @@ int32_t Conv2dMapper::GetMinOpsetVersion(bool verbose) {
   return 7;
 }
 
-
 void Conv2dMapper::Opset7() {
   auto input_info = GetInput("Input");
   auto kernel_info = GetInput("Filter");

@@ -21,20 +21,19 @@
 namespace paddle2onnx {
 REGISTER_PIR_MAPPER(select_input, PirSelectInputMapper);
 
-int32_t PirSelectInputMapper::GetMinOpsetVersion(bool verbose) {
-  return 9;
-}
+int32_t PirSelectInputMapper::GetMinOpsetVersion(bool verbose) { return 9; }
 
 void PirSelectInputMapper::Opset9() {
-    auto cond_info = GetInput(0);
-    auto false_info = GetInput(1);
-    auto true_info = GetInput(2);
-    auto out_info =  GetOutput(0);
+  auto cond_info = GetInput(0);
+  auto false_info = GetInput(1);
+  auto true_info = GetInput(2);
+  auto out_info = GetOutput(0);
 
-    std::string cast_cond_info = helper_-> AutoCast(cond_info[0].name, P2ODataType::INT32, P2ODataType::BOOL);
-    helper_->MakeNode("Where",
-                         {cast_cond_info, true_info[0].name, false_info[0].name},
-                        {out_info[0].name});
+  std::string cast_cond_info = helper_->AutoCast(
+      cond_info[0].name, P2ODataType::INT32, P2ODataType::BOOL);
+  helper_->MakeNode("Where",
+                    {cast_cond_info, true_info[0].name, false_info[0].name},
+                    {out_info[0].name});
 }
 
 }  // namespace paddle2onnx

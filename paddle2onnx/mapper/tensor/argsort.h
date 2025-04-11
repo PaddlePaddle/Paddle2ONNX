@@ -19,14 +19,18 @@ namespace paddle2onnx {
 
 class ArgsortMapper : public Mapper {
  public:
-  ArgsortMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ArgsortMapper(const PaddleParser& p,
+                OnnxHelper* helper,
+                int64_t block_id,
                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("descending", &descending_);
     GetAttr("axis", &axis_);
   }
 
-  ArgsortMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id,
+  ArgsortMapper(const PaddlePirParser& p,
+                OnnxHelper* helper,
+                int64_t op_id,
                 bool if_in_cf_block)
       : Mapper(p, helper, op_id, if_in_cf_block) {
     GetAttr("descending", &descending_);

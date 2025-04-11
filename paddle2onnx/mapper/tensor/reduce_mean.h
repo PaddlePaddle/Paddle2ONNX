@@ -22,12 +22,15 @@ namespace paddle2onnx {
 
 class ReduceMeanMapper : public Mapper {
  public:
-  ReduceMeanMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-  }
-  ReduceMeanMapper(const PaddlePirParser& p, OnnxHelper* helper,
-               int64_t op_id, bool c)
+  ReduceMeanMapper(const PaddleParser& p,
+                   OnnxHelper* helper,
+                   int64_t block_id,
+                   int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
+  ReduceMeanMapper(const PaddlePirParser& p,
+                   OnnxHelper* helper,
+                   int64_t op_id,
+                   bool c)
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
   }

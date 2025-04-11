@@ -22,13 +22,17 @@ namespace paddle2onnx {
 
 class IndexSelectMapper : public Mapper {
  public:
-  IndexSelectMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  IndexSelectMapper(const PaddleParser& p,
+                    OnnxHelper* helper,
+                    int64_t block_id,
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("dim", &axis_);
   }
-  IndexSelectMapper(const PaddlePirParser& p, OnnxHelper* helper,
-                    int64_t op_id, bool c)
+  IndexSelectMapper(const PaddlePirParser& p,
+                    OnnxHelper* helper,
+                    int64_t op_id,
+                    bool c)
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
     GetAttr("axis", &axis_);

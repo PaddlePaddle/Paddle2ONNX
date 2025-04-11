@@ -43,10 +43,11 @@ def test_nn_functional_thresholded_relu_10():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_thresholded_relu', [10])
+    obj = APIOnnx(op, "nn_functional_thresholded_relu", [10])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -58,10 +59,11 @@ def test_nn_functional_thresholded_relu_11():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_thresholded_relu', [11])
+    obj = APIOnnx(op, "nn_functional_thresholded_relu", [11])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -73,10 +75,11 @@ def test_nn_functional_thresholded_relu_12():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_thresholded_relu', [12])
+    obj = APIOnnx(op, "nn_functional_thresholded_relu", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()
 
 
@@ -88,8 +91,9 @@ def test_nn_functional_thresholded_relu_threshold():
     op = Net(threshold=2)
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'nn_functional_thresholded_relu', [12])
+    obj = APIOnnx(op, "nn_functional_thresholded_relu", [12])
     obj.set_input_data(
         "input_data",
-        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype('float32')))
+        paddle.to_tensor(randtool("float", -1, 1, [3, 10]).astype("float32")),
+    )
     obj.run()

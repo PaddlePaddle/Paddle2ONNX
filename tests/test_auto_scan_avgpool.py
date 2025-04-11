@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -29,18 +28,19 @@ class NetAvgpool2d(BaseNet):
         """
         forward
         """
-        kernel_size = self.config['kernel_size']
-        stride = self.config['stride']
-        padding = self.config['padding']
-        ceil_mode = self.config['ceil_mode']
-        data_format = self.config['data_format']
+        kernel_size = self.config["kernel_size"]
+        stride = self.config["stride"]
+        padding = self.config["padding"]
+        ceil_mode = self.config["ceil_mode"]
+        data_format = self.config["data_format"]
         x = paddle.nn.functional.avg_pool2d(
             inputs,
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
             ceil_mode=ceil_mode,
-            data_format=data_format)
+            data_format=data_format,
+        )
         return x
 
 
@@ -52,9 +52,8 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=4, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         data_format = draw(st.sampled_from(["NCHW"]))
@@ -69,64 +68,59 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
             kernel_size = draw(st.integers(min_value=7, max_value=10))
         elif kernel_type == "list":
             kernel_size = draw(
-                st.lists(
-                    st.integers(
-                        min_value=7, max_value=10),
-                    min_size=2,
-                    max_size=2))
+                st.lists(st.integers(min_value=7, max_value=10), min_size=2, max_size=2)
+            )
 
         stride_type = draw(st.sampled_from(["None", "int", "list"]))
         if stride_type == "int":
             stride = draw(st.integers(min_value=1, max_value=5))
         elif stride_type == "list":
             stride = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=2,
-                    max_size=2))
+                st.lists(st.integers(min_value=1, max_value=5), min_size=2, max_size=2)
+            )
         else:
             stride = None
 
         padding_type = draw(
-            st.sampled_from(["None", "str", "int", "list2", "list4", "list8"]))
+            st.sampled_from(["None", "str", "int", "list2", "list4", "list8"])
+        )
         if padding_type == "str":
             padding = draw(st.sampled_from(["SAME", "VALID"]))
         elif padding_type == "int":
             padding = draw(st.integers(min_value=1, max_value=5))
         elif padding_type == "list2":
             padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=2,
-                    max_size=2))
+                st.lists(st.integers(min_value=1, max_value=5), min_size=2, max_size=2)
+            )
         elif padding_type == "list4":
             padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=4,
-                    max_size=4))
+                st.lists(st.integers(min_value=1, max_value=5), min_size=4, max_size=4)
+            )
         elif padding_type == "list8":
             padding1 = np.expand_dims(
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             padding2 = np.expand_dims(
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             if data_format == "NCHW":
                 padding = [[0, 0]] + [[0, 0]] + padding1 + padding2
             else:
@@ -147,9 +141,9 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
         if padding == "VALID":
             ceil_mode = False
         if return_mask:
-            op_names = 'max_pool2d_with_index'
+            op_names = "max_pool2d_with_index"
         else:
-            op_names = 'pool2d'
+            op_names = "pool2d"
         config = {
             "op_names": [op_names],
             "test_data_shapes": [input_shape],
@@ -161,7 +155,7 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
             "padding": padding,
             "return_mask": return_mask,
             "ceil_mode": ceil_mode,
-            "data_format": data_format
+            "data_format": data_format,
         }
 
         models = NetAvgpool2d(config)

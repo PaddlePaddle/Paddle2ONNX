@@ -56,10 +56,9 @@ void ConcatMapper::Opset7() {
   int64_t axis = axis_;
   // NOTE(Aurelius84): we need to deprecate this branch in the future.
   if (has_axis_tensor_input) {
-    if(in_pir_mode) {
+    if (in_pir_mode) {
       TryGetInputValue("AxisTensor", &axis);
-    }
-    else {
+    } else {
       auto info = GetInput("AxisTensor");
       parse_axis_value(info[0], axis);
     }
@@ -72,8 +71,8 @@ void ConcatMapper::Opset7() {
   }
   auto node = helper_->MakeNode("Concat", casted_names);
   AddAttribute(node, "axis", axis);
-  helper_->AutoCast(node->output(0), output_info[0].name, casted_dtype,
-                    output_info[0].dtype);
+  helper_->AutoCast(
+      node->output(0), output_info[0].name, casted_dtype, output_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

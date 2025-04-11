@@ -25,8 +25,8 @@
 // After:
 //   C = Identity(Y)
 
-#include <numeric>
 #include <cmath>
+#include <numeric>
 #include "onnx/defs/tensor_util.h"
 #include "onnxoptimizer/pass.h"
 
@@ -35,19 +35,20 @@ namespace optimization {
 
 struct ReplaceMulToIdentity final : public PredicateBasedPass {
   explicit ReplaceMulToIdentity()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
 
-  std::string getPassName() const override {
-    return "replace_mul_to_identity";
-  }
+  std::string getPassName() const override { return "replace_mul_to_identity"; }
 
   bool patternMatchPredicate(Node* node) override {
     return node->kind() == kMul &&
-           (node->inputs()[0]->node()->kind() == kConstant || node->inputs()[1]->node()->kind() == kConstant); 
+           (node->inputs()[0]->node()->kind() == kConstant ||
+            node->inputs()[1]->node()->kind() == kConstant);
   }
 
-  bool runTransform(Node* n, Graph& graph,
+  bool runTransform(Node* n,
+                    Graph& graph,
                     NodeDestroyType& destroy_current) override {
     Node* mul_node = n;
     Node* mul_ipt_0 = n->inputs()[0]->node();
@@ -77,7 +78,8 @@ struct ReplaceMulToIdentity final : public PredicateBasedPass {
       if (int64_data.size() > 0 && int64_data[0] != 1) {
         return false;
       }
-      if (float_data.size() == 0 && double_data.size() == 0 && int32_data.size() == 0 && int64_data.size() == 0) {
+      if (float_data.size() == 0 && double_data.size() == 0 &&
+          int32_data.size() == 0 && int64_data.size() == 0) {
         return false;
       }
       if (!tryReplacingAllUsesWith(mul_node->output(), mul_node->inputs()[1])) {
@@ -107,7 +109,8 @@ struct ReplaceMulToIdentity final : public PredicateBasedPass {
       if (int64_data.size() > 0 && int64_data[0] != 1) {
         return false;
       }
-      if (float_data.size() == 0 && double_data.size() == 0 && int32_data.size() == 0 && int64_data.size() == 0) {
+      if (float_data.size() == 0 && double_data.size() == 0 &&
+          int32_data.size() == 0 && int64_data.size() == 0) {
         return false;
       }
       if (!tryReplacingAllUsesWith(mul_node->output(), mul_node->inputs()[0])) {

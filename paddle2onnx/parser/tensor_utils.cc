@@ -56,8 +56,7 @@ int32_t PaddleDataTypeSize(int32_t paddle_dtype) {
   } else if (paddle_dtype ==
              paddle2onnx::framework::proto::VarType_Type_UINT8) {
     return sizeof(uint8_t);
-  } else if (paddle_dtype ==
-             paddle2onnx::framework::proto::VarType_Type_BF16) {
+  } else if (paddle_dtype == paddle2onnx::framework::proto::VarType_Type_BF16) {
     return sizeof(int16_t);
   } else if (paddle_dtype ==
              paddle2onnx::framework::proto::VarType_Type_COMPLEX64) {

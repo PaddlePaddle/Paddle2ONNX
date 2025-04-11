@@ -33,7 +33,8 @@ namespace optimization {
 
 struct FuseConstantCast final : public PredicateBasedPass {
   explicit FuseConstantCast()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_constant_cast"; }
 
@@ -41,7 +42,8 @@ struct FuseConstantCast final : public PredicateBasedPass {
     return node->kind() == kCast &&
            node->inputs()[0]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
+  bool runTransform(Node* n,
+                    Graph& graph,
                     NodeDestroyType& destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 

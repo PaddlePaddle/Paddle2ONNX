@@ -19,8 +19,8 @@ REGISTER_MAPPER(sign, SignMapper)
 REGISTER_PIR_MAPPER(sign, SignMapper)
 
 int32_t SignMapper::GetMinOpsetVersion(bool verbose) {
-    Logger(verbose, 9) << RequireOpset(9) << std::endl;
-    return 9;
+  Logger(verbose, 9) << RequireOpset(9) << std::endl;
+  return 9;
 }
 
 void SignMapper::Opset9() {
@@ -28,4 +28,4 @@ void SignMapper::Opset9() {
   auto output_info = GetOutput("Out");
   helper_->MakeNode("Sign", {input_info[0].name}, {output_info[0].name});
 }
-}
+}  // namespace paddle2onnx

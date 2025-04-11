@@ -22,13 +22,14 @@ namespace paddle2onnx {
 
 class ConcatMapper : public Mapper {
  public:
-  ConcatMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ConcatMapper(const PaddleParser& p,
+               OnnxHelper* helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("axis", &axis_);
   }
-  ConcatMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
-               bool c)
+  ConcatMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
       : Mapper(p, helper, i, c) {
     in_pir_mode = true;
     // GetAttr("axis", &axis_); axis serves as input in PIR

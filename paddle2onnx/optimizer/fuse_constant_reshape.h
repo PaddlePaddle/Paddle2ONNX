@@ -33,7 +33,8 @@ namespace optimization {
 
 struct FuseConstantReshape final : public PredicateBasedPass {
   explicit FuseConstantReshape()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_constant_reshape"; }
 
@@ -41,7 +42,8 @@ struct FuseConstantReshape final : public PredicateBasedPass {
     return node->kind() == kReshape &&
            node->inputs()[0]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
+  bool runTransform(Node* n,
+                    Graph& graph,
                     NodeDestroyType& destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 
@@ -107,18 +109,19 @@ struct FuseConstantReshape final : public PredicateBasedPass {
     if (count_of_unknown > 1) {
       return false;
     }
-    int64_t numel = std::accumulate(ori_size.begin(), ori_size.end(), 1,
-                                    std::multiplies<int>());
+    int64_t numel = std::accumulate(
+        ori_size.begin(), ori_size.end(), 1, std::multiplies<int>());
     if (index_of_unknown >= 0) {
-      int64_t value_of_unknown = -1 * numel /
-                                std::accumulate(shape.begin(), shape.end(), 1,
-                                                std::multiplies<int>());
+      int64_t value_of_unknown =
+          -1 * numel /
+          std::accumulate(
+              shape.begin(), shape.end(), 1, std::multiplies<int>());
       shape[index_of_unknown] = value_of_unknown;
     }
 
     t.sizes().clear();
-    t.sizes().insert(t.sizes().begin(), shape.begin(),
-                     shape.begin() + shape.size());
+    t.sizes().insert(
+        t.sizes().begin(), shape.begin(), shape.begin() + shape.size());
     constant->t_(kvalue, std::move(t));
 
     // update constant node

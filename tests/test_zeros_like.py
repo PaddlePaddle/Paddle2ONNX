@@ -41,9 +41,11 @@ def test_zeros_like_base():
     op = Net()
     op.eval()
     # net, name, ver_list, delta=1e-6, rtol=1e-5
-    obj = APIOnnx(op, 'zeros_like', [9, 10, 11, 12])
+    obj = APIOnnx(op, "zeros_like", [9, 10, 11, 12])
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            randtool("float", -1, 1, [3, 2, 1, 4, 6, 5]).astype('float32')))
+            randtool("float", -1, 1, [3, 2, 1, 4, 6, 5]).astype("float32")
+        ),
+    )
     obj.run()

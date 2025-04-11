@@ -19,11 +19,16 @@ namespace paddle2onnx {
 
 class LessEqualMapper : public Mapper {
  public:
-  LessEqualMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  LessEqualMapper(const PaddleParser& p,
+                  OnnxHelper* helper,
+                  int64_t block_id,
                   int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  LessEqualMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
+  LessEqualMapper(const PaddlePirParser& p,
+                  OnnxHelper* helper,
+                  int64_t i,
+                  bool c)
       : Mapper(p, helper, i, c) {}
   void Opset7() override;
   void Opset12() override;

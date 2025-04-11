@@ -19,8 +19,7 @@ namespace paddle2onnx {
 
 class PrintMapper : public Mapper {
  public:
-  PrintMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
-              bool c)
+  PrintMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
       : Mapper(p, helper, i, c) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override;

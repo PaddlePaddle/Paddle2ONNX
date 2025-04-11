@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class NMSMapper : public Mapper {
  public:
-  NMSMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  NMSMapper(const PaddleParser& p,
+            OnnxHelper* helper,
+            int64_t block_id,
             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     // NMS is a post process operators for object detection
@@ -43,7 +45,9 @@ class NMSMapper : public Mapper {
     GetAttr("keep_top_k", &keep_top_k_);
   }
 
-  NMSMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id,
+  NMSMapper(const PaddlePirParser& p,
+            OnnxHelper* helper,
+            int64_t op_id,
             bool if_in_cf_block)
       : Mapper(p, helper, op_id, if_in_cf_block) {
     // NMS is a post process operators for object detection

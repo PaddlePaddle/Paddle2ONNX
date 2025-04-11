@@ -207,7 +207,7 @@ std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> MakeValueInfo(
 std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto> OnnxHelper::MakeValueInfo(
     const std::string &name,
     const int32_t &dtype,
-    std::vector<int64_t> &shape) {
+    const std::vector<int64_t> &shape) {
   auto value_info = std::make_shared<ONNX_NAMESPACE::ValueInfoProto>();
   value_info->set_name(name);
   auto type_proto = value_info->mutable_type();

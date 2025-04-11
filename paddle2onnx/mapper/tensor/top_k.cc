@@ -23,8 +23,8 @@ void TopKMapper::Opset11() {
   auto indices_info = GetOutput("Indices");
   if (x_info[0].Rank() == 0) {
     helper_->MakeNode("Identity", {x_info[0].name}, {output_info[0].name});
-    helper_->Constant(indices_info[0].name, {},
-                      ONNX_NAMESPACE::TensorProto::INT64, 0);
+    helper_->Constant(
+        indices_info[0].name, {}, ONNX_NAMESPACE::TensorProto::INT64, 0);
     return;
   }
   std::string k = "";
@@ -40,10 +40,14 @@ void TopKMapper::Opset11() {
     k = helper_->Constant({1}, ONNX_NAMESPACE::TensorProto::INT64, k_value);
   }
   auto out_node = helper_->MakeNode("TopK", {x_info[0].name, k}, 2);
-  helper_->AutoCast(out_node->output(0), output_info[0].name, x_info[0].dtype,
+  helper_->AutoCast(out_node->output(0),
+                    output_info[0].name,
+                    x_info[0].dtype,
                     output_info[0].dtype);
-  helper_->AutoCast(out_node->output(1), indices_info[0].name,
-                    P2ODataType::INT64, indices_info[0].dtype);
+  helper_->AutoCast(out_node->output(1),
+                    indices_info[0].name,
+                    P2ODataType::INT64,
+                    indices_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

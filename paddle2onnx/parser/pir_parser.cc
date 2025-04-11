@@ -323,7 +323,7 @@ int32_t PaddlePirParser::GetOpInputOutputName2Idx(int64_t op_id,
                         : yaml_parser.OutputName2Id().count(name);
   if (!exist) {
     P2OLogger(verbose_) << "[WARNING] Can not find input/output name '" << name
-                << "' in op yaml info of " << op_name << std::endl;
+                        << "' in op yaml info of " << op_name << std::endl;
     return -1;
   }
   // PADDLE_ENFORCE_EQ(
@@ -477,7 +477,7 @@ bool PaddlePirParser::Init(const std::string& _model,
       return false;
     }
     P2OLogger(verbose_) << "Load parameters " << _params << " successfully."
-                << std::endl;
+                        << std::endl;
   }
 
   // InitBlock();

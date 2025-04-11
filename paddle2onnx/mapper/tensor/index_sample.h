@@ -22,11 +22,16 @@ namespace paddle2onnx {
 
 class IndexSampleMapper : public Mapper {
  public:
-  IndexSampleMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  IndexSampleMapper(const PaddleParser& p,
+                    OnnxHelper* helper,
+                    int64_t block_id,
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {}
 
-  IndexSampleMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
+  IndexSampleMapper(const PaddlePirParser& p,
+                    OnnxHelper* helper,
+                    int64_t i,
+                    bool c)
       : Mapper(p, helper, i, c) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override;

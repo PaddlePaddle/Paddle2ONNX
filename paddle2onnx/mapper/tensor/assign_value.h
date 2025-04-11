@@ -75,7 +75,7 @@ class AssignValueMapper : public Mapper {
       }
     }
   }
-  int32_t GetMinOpsetVersion(bool verbose) override {return 7;};
+  int32_t GetMinOpsetVersion(bool verbose) override { return 7; };
   void Opset7() override;
 
  private:

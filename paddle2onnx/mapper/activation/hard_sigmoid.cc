@@ -21,8 +21,8 @@ REGISTER_PIR_MAPPER(hard_sigmoid, HardSigmoidMapper)
 void HardSigmoidMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Out");
-  auto node = helper_->MakeNode("HardSigmoid", {input_info[0].name},
-                                {output_info[0].name});
+  auto node = helper_->MakeNode(
+      "HardSigmoid", {input_info[0].name}, {output_info[0].name});
   AddAttribute(node, "alpha", alpha_);
   AddAttribute(node, "beta", beta_);
 }

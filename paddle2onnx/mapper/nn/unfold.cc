@@ -119,10 +119,10 @@ std::string UnfoldMapper::_get_im2col_indices_along_dim(std::string intput_d,
           ->output(0);
   std::vector<int64_t> kernel_grid_vec =
       arange_(0, kernel_size_d * dialation_d, dialation_d);
-  kernel_grid =
-      helper_->Constant({1, static_cast<int64_t>(kernel_grid_vec.size())},
-                        ONNX_NAMESPACE::TensorProto::INT64,
-                        kernel_grid_vec);
+  kernel_grid = helper_->Constant(
+      std::vector<int64_t>{1, static_cast<int64_t>(kernel_grid_vec.size())},
+      ONNX_NAMESPACE::TensorProto::INT64,
+      kernel_grid_vec);
 
   blocks_d_indices = helper_->Unsqueeze(blocks_d_indices, {0});
   kernel_mask = helper_->Reshape(kernel_grid, {-1, 1});

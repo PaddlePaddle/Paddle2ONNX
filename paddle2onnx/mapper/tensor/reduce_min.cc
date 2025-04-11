@@ -64,8 +64,8 @@ void ReduceMinMapper::Opset18() {
   auto input_node_name = x_info[0].name;
   auto input_tpye = x_info[0].dtype;
   if (x_info[0].dtype == P2ODataType::BOOL) {
-    input_node_name = helper_->AutoCast(x_info[0].name, x_info[0].dtype,
-                                        P2ODataType::INT32);
+    input_node_name =
+        helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
     input_tpye = P2ODataType::INT32;
   }
 
@@ -82,8 +82,8 @@ void ReduceMinMapper::Opset18() {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name,
-                    input_tpye, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 
 void ReduceMinMapper::Opset12() {
@@ -94,7 +94,7 @@ void ReduceMinMapper::Opset12() {
 
 void ReduceMinMapper::Opset11() {
   GetAttr("keep_dim", &keep_dim_);
-if (!in_pir_mode) {
+  if (!in_pir_mode) {
     GetAttr("reduce_all", &reduce_all_);
     GetAttr("in_dtype", &in_dtype_);
     GetAttr("out_dtype", &out_dtype_);
@@ -138,7 +138,7 @@ if (!in_pir_mode) {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name,
-                    input_tpye, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 }  // namespace paddle2onnx

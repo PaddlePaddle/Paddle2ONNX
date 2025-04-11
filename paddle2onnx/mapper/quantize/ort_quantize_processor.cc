@@ -34,14 +34,15 @@ void ORTQuantizeProcessor::AddQDQ() {
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
     auto type_iter = std::find(supported_quantize_type_.begin(),
-                               supported_quantize_type_.end(), node->op_type());
+                               supported_quantize_type_.end(),
+                               node->op_type());
     if (!supported_quantize_type_.empty() &&
         type_iter == supported_quantize_type_.end()) {
       continue;
     }
     if (node->op_type() == "MatMul") {
-      std::vector<std::string> tensor_names = {node->input(0), node->input(1),
-                                               node->output(0)};
+      std::vector<std::string> tensor_names = {
+          node->input(0), node->input(1), node->output(0)};
       for (auto& name : tensor_names) {
         if (helper_->quantize_info.find(name) != helper_->quantize_info.end()) {
           continue;
@@ -57,14 +58,14 @@ void ORTQuantizeProcessor::AddQDQ() {
         int64_t quantize_axis = 1;
         std::vector<float> scale;
         std::vector<int64_t> zeros;
-        GetChannelWiseQuantizeInfo(matmul_weight, matmul_weight_shape,
-                                   quantize_axis, &scale, &zeros);
+        GetChannelWiseQuantizeInfo(
+            matmul_weight, matmul_weight_shape, quantize_axis, &scale, &zeros);
         auto scale_node =
             helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
         auto zero_node =
             helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node,
-                                                 zero_node, quantize_axis);
+        QuantizeInfo matmul_weight_quantize_info(
+            scale, zeros, scale_node, zero_node, quantize_axis);
         helper_->quantize_info[name] = matmul_weight_quantize_info;
       }
       if (!CanBeQuantize(tensor_names)) {
@@ -101,7 +102,8 @@ void ORTQuantizeProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-    OnnxHelper* helper, const PaddleParser& parser,
+    OnnxHelper* helper,
+    const PaddleParser& parser,
     std::string* calibration_cache) {
   BaseQuantizeProcessor::ProcessQuantizeModel(
       parameters, inputs, outputs, nodes, helper, parser, calibration_cache);

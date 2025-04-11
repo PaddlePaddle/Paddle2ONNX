@@ -19,7 +19,9 @@ namespace paddle2onnx {
 
 class InterpolateMapper : public Mapper {
  public:
-  InterpolateMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  InterpolateMapper(const PaddleParser& p,
+                    OnnxHelper* helper,
+                    int64_t block_id,
                     int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("data_layout", &data_layout_);
@@ -37,8 +39,10 @@ class InterpolateMapper : public Mapper {
     resize_mapper_["linear_interp_v2"] = "linear";
     resize_mapper_["trilinear_interp_v2"] = "linear";
   }
-  InterpolateMapper(const PaddlePirParser& p, OnnxHelper* helper,
-                    int64_t op_id, bool c)
+  InterpolateMapper(const PaddlePirParser& p,
+                    OnnxHelper* helper,
+                    int64_t op_id,
+                    bool c)
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
     GetAttr("data_format", &data_layout_);
@@ -55,7 +59,6 @@ class InterpolateMapper : public Mapper {
     resize_mapper_["linear"] = "linear";
     resize_mapper_["trilinear"] = "linear";
   }
-
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset11() override;

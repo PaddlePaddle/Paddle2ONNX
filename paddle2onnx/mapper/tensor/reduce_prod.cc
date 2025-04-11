@@ -27,7 +27,7 @@ int32_t ReduceMapperProd::GetMinOpsetVersion(bool verbose) {
 void ReduceMapperProd::Opset18() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
-if (!in_pir_mode) {
+  if (!in_pir_mode) {
     GetAttr("reduce_all", &reduce_all_);
     GetAttr("in_dtype", &in_dtype_);
     GetAttr("out_dtype", &out_dtype_);
@@ -69,15 +69,14 @@ if (!in_pir_mode) {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name,
-                        x_info[0].dtype, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
 }
-
 
 void ReduceMapperProd::Opset11() {
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
-if (!in_pir_mode) {
+  if (!in_pir_mode) {
     GetAttr("reduce_all", &reduce_all_);
     GetAttr("in_dtype", &in_dtype_);
     GetAttr("out_dtype", &out_dtype_);
@@ -95,9 +94,8 @@ if (!in_pir_mode) {
   auto x_info = GetInput("X");
   std::string input_name = x_info[0].name;
   if (x_info[0].dtype == P2ODataType::FP64) {
-    input_name = helper_->AutoCast(x_info[0].name,
-                                   P2ODataType::FP64,
-                                   P2ODataType::FP32);
+    input_name =
+        helper_->AutoCast(x_info[0].name, P2ODataType::FP64, P2ODataType::FP32);
   }
   auto reduce_node = helper_->MakeNode("ReduceProd", {input_name});
 
@@ -110,9 +108,8 @@ if (!in_pir_mode) {
 
   auto out_node_name = reduce_node->output(0);
   if (x_info[0].dtype == P2ODataType::FP64) {
-    out_node_name = helper_->AutoCast(reduce_node->output(0),
-                                      P2ODataType::FP32,
-                                      P2ODataType::FP64);
+    out_node_name = helper_->AutoCast(
+        reduce_node->output(0), P2ODataType::FP32, P2ODataType::FP64);
   }
 
   bool reduce_all_axes = dim_.size() == x_info[0].Rank();
@@ -123,7 +120,7 @@ if (!in_pir_mode) {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name,
-                        x_info[0].dtype, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, x_info[0].dtype, out_info[0].dtype);
 }
 }  // namespace paddle2onnx

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -42,23 +41,19 @@ class TestScatterNdAddConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=5, max_value=15), min_size=2, max_size=4))
+            st.lists(st.integers(min_value=5, max_value=15), min_size=2, max_size=4)
+        )
 
         index_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=2, max_size=4))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=2, max_size=4)
+        )
 
         if draw(st.booleans()):
-            index_shape[-1] = draw(
-                st.integers(
-                    min_value=1, max_value=len(input_shape)))
+            index_shape[-1] = draw(st.integers(min_value=1, max_value=len(input_shape)))
         else:
             index_shape = [len(input_shape)]
 
-        update_shape = index_shape[:-1] + input_shape[index_shape[-1]:]
+        update_shape = index_shape[:-1] + input_shape[index_shape[-1] :]
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
         index_dtype = draw(st.sampled_from(["int32", "int64"]))

@@ -82,9 +82,9 @@ if sys.platform == "win32":
     kernel32.SetErrorMode(prev_error_mode)
 
 from .version import version
-from .convert import export
-from .convert import dygraph2onnx
-from .convert import load_parameter
-from .convert import save_program
+from .convert import export  # noqa: F401
+from .convert import dygraph2onnx  # noqa: F401
+from .convert import load_parameter  # noqa: F401
+from .convert import save_program  # noqa: F401
 
 __version__ = version

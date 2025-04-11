@@ -53,8 +53,8 @@ void PadMapper::Opset11() {
   }
   auto value =
       helper_->Constant({}, GetOnnxDtype(input_info[0].dtype), pad_value_);
-  auto node = helper_->MakeNode("Pad", {input_info[0].name, paddings, value},
-                                {output_info[0].name});
+  auto node = helper_->MakeNode(
+      "Pad", {input_info[0].name, paddings, value}, {output_info[0].name});
   AddAttribute(node, "mode", "constant");
 }
 

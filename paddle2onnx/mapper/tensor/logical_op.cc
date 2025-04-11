@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle2onnx/mapper/exporter.h"
 #include "paddle2onnx/mapper/tensor/logical_op.h"
+#include "paddle2onnx/mapper/exporter.h"
 
 namespace paddle2onnx {
 REGISTER_MAPPER(logical_and, LogicalOpMapper)
@@ -37,7 +37,8 @@ void LogicalOpMapper::Opset7() {
   if (in_pir_mode) {
     node_name = convert_pir_op_name(node_name);
   }
-  helper_->MakeNode(op_mapper[node_name], {x_info[0].name, y_info[0].name},
+  helper_->MakeNode(op_mapper[node_name],
+                    {x_info[0].name, y_info[0].name},
                     {out_info[0].name});
 }
 

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 from onnxbase import randtool
@@ -30,8 +28,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.scatter(
-            inputs, index, updates, overwrite=self.config['overwrite'])
+        x = paddle.scatter(inputs, index, updates, overwrite=self.config["overwrite"])
         return x
 
 
@@ -43,9 +40,8 @@ class TestScatterConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=4, max_value=10), min_size=1, max_size=5))
+            st.lists(st.integers(min_value=4, max_value=10), min_size=1, max_size=5)
+        )
 
         index_shape = draw(st.integers(min_value=1, max_value=input_shape[0]))
 

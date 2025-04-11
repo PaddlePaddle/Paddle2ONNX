@@ -22,7 +22,7 @@ REGISTER_MAPPER(batch_norm, BatchNormMapper)
 REGISTER_PIR_MAPPER(batch_norm, BatchNormMapper)
 
 int32_t BatchNormMapper::GetMinOpsetVersion(bool verbose) {
-  if(!use_global_stats_) {
+  if (!use_global_stats_) {
     Logger(verbose, 14) << RequireOpset(14) << std::endl;
     return 14;
   }
@@ -113,7 +113,7 @@ void BatchNormMapper::Opset14() {
                                  bias_name,
                                  mean_info[0].name,
                                  variance_info[0].name},
-                                 output_names);
+                                output_names);
   if (helper_->GetOpsetVersion() < 9) {
     int64_t spatial = 1;
     AddAttribute(node, "spatial", spatial);

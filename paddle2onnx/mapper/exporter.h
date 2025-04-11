@@ -125,7 +125,7 @@ class ModelExporter {
                   bool export_fp16_model = false,
                   std::vector<std::string> disable_fp16_op_types = {});
 
-  std::string Run(PaddlePirParser& pir_parser,
+  std::string Run(const PaddlePirParser& pir_parser,
                   int opset_version,
                   bool auto_upgrade_opset,
                   bool verbose,
@@ -147,7 +147,7 @@ class ModelExporter {
   std::string* calibration_cache_ = nullptr;
   int32_t opset_version_ = 7;
 
-  void ExportWhile(PaddlePirParser& pir_parser,
+  void ExportWhile(const PaddlePirParser& pir_parser,
                    OnnxHelper* temp_helper,
                    pir::Operation* op);
   bool IsOpsRegistered(const PaddleParser& parser, bool enable_experimental_op);
@@ -158,10 +158,10 @@ class ModelExporter {
   // Opset Version
 
   int32_t GetCfBlockMinOpsetVersion(const PaddlePirParser& pir_parser,
-                                    pir::Block& block);
+                                    const pir::Block& block);
   int32_t GetMinOpsetVersion(const PaddleParser& parser);
   int32_t GetMinOpsetVersion(const PaddlePirParser& pir_parser,
-                             pir::Block* block,
+                             const pir::Block* block,
                              bool if_in_sublock);
   void SetOpsetVersion(const PaddleParser& parser, bool auto_upgrade_opset);
   void SetOpsetVersion(const PaddlePirParser& pir_parser,
@@ -172,37 +172,36 @@ class ModelExporter {
   //
   void ExportInputOutputs(
       const PaddleParser& parser,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs);
 
   void ExportInputOutputs(
       const PaddlePirParser& pir_parser,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs);
 
   void ExportParameters(
       const PaddleParser& parser,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters);
   void ExportParameters(
       const PaddlePirParser& pir_parser,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters);
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters);
   // Process dumplicate tensor names in paddle model
   std::set<std::string> tensor_names_;
   std::set<std::string> while_tensor_names_;
   void ProcessGraphDumplicateNames(
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& nodes,
-      std::map<std::string, QuantizeInfo>& quantize_info,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
+      std::map<std::string, QuantizeInfo>* quantize_info,
       bool is_while_block = false);
   // Update constant node in parameters. When process quantize model, the weight
   // dtype may be int8, it should be convet to float32 and use this function to
   // update converted params.
   void UpdateParameters(
       const std::map<std::string, Weight>& params,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters);
-  //
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters);
   std::map<std::string, std::pair<int32_t, int32_t>> sub_block_map_;
   ONNX_NAMESPACE::GraphProto ExportConditionalBlock(
       const PaddleParser& parser,
@@ -211,8 +210,8 @@ class ModelExporter {
       int32_t op_id,
       const std::string& output_name);
 
-  ONNX_NAMESPACE::GraphProto ExportIfBlock(PaddlePirParser& pir_parser,
-                                           pir::Block& block);
+  ONNX_NAMESPACE::GraphProto ExportIfBlock(const PaddlePirParser& pir_parser,
+                                           const pir::Block& block);
 
   ONNX_NAMESPACE::GraphProto ExportFillConstant(
       const PaddleParser& parser,
@@ -222,11 +221,11 @@ class ModelExporter {
       const std::string& output_names);
 
   ONNX_NAMESPACE::GraphProto ExportBlock(
-      PaddlePirParser& pir_parser,
-      pir::Block* block,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs,
+      const PaddlePirParser& pir_parser,
+      const pir::Block* block,
+      const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
       bool if_in_subblock,
       bool is_while_block);
   void ExportSelectInput(const PaddleParser& parser,
@@ -240,9 +239,9 @@ class ModelExporter {
   ONNX_NAMESPACE::GraphProto ExportBlock(
       const PaddleParser& parser,
       int32_t block_id,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>& parameters,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& inputs,
-      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>& outputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* parameters,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
+      std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
       OnnxHelper* helper = nullptr,
       bool is_while_block = false);
 
