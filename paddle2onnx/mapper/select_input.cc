@@ -15,8 +15,11 @@
 #include "paddle2onnx/mapper/exporter.h"
 namespace paddle2onnx {
 ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(
-    const PaddleParser &parser, OnnxHelper *temp_helper, int32_t block_id,
-    int32_t op_id, const std::string &output_name) {
+    const PaddleParser &parser,
+    OnnxHelper *temp_helper,
+    int32_t block_id,
+    int32_t op_id,
+    const std::string &output_name) {
   ONNX_NAMESPACE::GraphProto graph;
   graph.set_name("PaddlePaddle fill_constant Graph " + std::to_string(op_id));
 
@@ -40,8 +43,11 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportFillConstant(
 }
 
 ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
-    const PaddleParser &parser, OnnxHelper *temp_helper, int32_t block_id,
-    int32_t op_id, const std::string &output_name) {
+    const PaddleParser &parser,
+    OnnxHelper *temp_helper,
+    int32_t block_id,
+    int32_t op_id,
+    const std::string &output_name) {
   auto op = parser.GetOpDesc(block_id, op_id);
 
   // Get sub_block_idx
@@ -67,12 +73,13 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportConditionalBlock(
     temp_outputs.push_back(std::move(MakeValueInfo(out_info[index])));
   }
 
-  return ExportBlock(parser, sub_block_idx, temp_parameters, temp_inputs,
-                     temp_outputs);
+  return ExportBlock(
+      parser, sub_block_idx, &temp_parameters, &temp_inputs, &temp_outputs);
 }
 
 void ModelExporter::ExportSelectInput(const PaddleParser &parser,
-                                      OnnxHelper *temp_helper, int32_t block_id,
+                                      OnnxHelper *temp_helper,
+                                      int32_t block_id,
                                       int32_t op_id) {
   auto input_info = parser.GetOpInput(block_id, op_id, "X");
 
@@ -90,20 +97,24 @@ void ModelExporter::ExportSelectInput(const PaddleParser &parser,
                                  conditional_block_cood.second);
 
     if (node.type().find("conditional_block") != std::string::npos) {
-      graphs[i] = ExportConditionalBlock(
-          parser, temp_helper, conditional_block_cood.first,
-          conditional_block_cood.second, node_name);
+      graphs[i] = ExportConditionalBlock(parser,
+                                         temp_helper,
+                                         conditional_block_cood.first,
+                                         conditional_block_cood.second,
+                                         node_name);
     } else {
-      graphs[i] =
-          ExportFillConstant(parser, temp_helper, conditional_block_cood.first,
-                             conditional_block_cood.second, node_name);
+      graphs[i] = ExportFillConstant(parser,
+                                     temp_helper,
+                                     conditional_block_cood.first,
+                                     conditional_block_cood.second,
+                                     node_name);
     }
   }
 
   auto cond_info = parser.GetOpInput(block_id, op_id, "Mask");
   auto output_info = parser.GetOpOutput(block_id, op_id, "Out");
-  auto cond_name = temp_helper->AutoCast(cond_info[0].name, cond_info[0].dtype,
-                                         P2ODataType::BOOL);
+  auto cond_name = temp_helper->AutoCast(
+      cond_info[0].name, cond_info[0].dtype, P2ODataType::BOOL);
   auto node = temp_helper->MakeNode("If", {cond_name}, {output_info[0].name});
   AddAttribute(node, "else_branch", graphs[0]);
   AddAttribute(node, "then_branch", graphs[1]);

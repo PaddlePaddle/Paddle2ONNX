@@ -33,11 +33,19 @@ void DataNormMapper::Opset7() {
   auto output_info = GetOutput("Y");
 
   Assert(slot_dim_ <= 0, "slot_dim > 0 is not supported.");
-  auto mean_arr = helper_->MakeNode("Div", {batch_sum_info[0].name, batch_size_info[0].name})->output(0);
-  auto scale_arr = helper_->MakeNode("Div", {batch_size_info[0].name, batch_square_sum_info[0].name})->output(0);
+  auto mean_arr =
+      helper_
+          ->MakeNode("Div", {batch_sum_info[0].name, batch_size_info[0].name})
+          ->output(0);
+  auto scale_arr =
+      helper_
+          ->MakeNode("Div",
+                     {batch_size_info[0].name, batch_square_sum_info[0].name})
+          ->output(0);
   scale_arr = helper_->MakeNode("Sqrt", {scale_arr})->output(0);
-  auto out = helper_->MakeNode("Sub", {input_info[0].name, mean_arr})->output(0);
-  helper_->MakeNode("Mul" ,{out, scale_arr}, {output_info[0].name});
+  auto out =
+      helper_->MakeNode("Sub", {input_info[0].name, mean_arr})->output(0);
+  helper_->MakeNode("Mul", {out, scale_arr}, {output_info[0].name});
 }
 
 }  // namespace paddle2onnx

@@ -16,6 +16,7 @@
 #include <onnx/shape_inference/implementation.h>
 #include <fstream>
 #include "onnxoptimizer/optimize.h"
+#include "paddle2onnx/converter.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
 #include "paddle2onnx/optimizer/fuse_constant_cast.h"
 #include "paddle2onnx/optimizer/fuse_constant_reshape.h"
@@ -26,11 +27,8 @@
 #include "paddle2onnx/optimizer/replace_mul_to_identity.h"
 #include "paddle2onnx/utils/utils.h"
 
-#include "paddle2onnx/converter.h"
-
 namespace ONNX_NAMESPACE {
 namespace optimization {
-using namespace paddle2onnx;
 ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
     const ONNX_NAMESPACE::ModelProto& model_proto) {
   OptimizerOption option;
@@ -52,9 +50,9 @@ ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
   try {
     shape_inference::InferShapes(optimized_model_proto);
   } catch (const std::exception& e) {
-    P2OLogger(true) << "[ERROR] Failed to reinfer shape for this model."
-                    << std::endl;
-    P2OLogger(true) << e.what() << std::endl;
+    paddle2onnx::P2OLogger(true)
+        << "[ERROR] Failed to reinfer shape for this model." << std::endl;
+    paddle2onnx::P2OLogger(true) << e.what() << std::endl;
   }
   return optimized_model_proto;
 }
@@ -64,7 +62,7 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> LoadModelFromFile(
   auto model_proto = std::make_shared<ONNX_NAMESPACE::ModelProto>();
   std::ifstream fin(file_path, std::ios::in | std::ios::binary);
   if (!fin.is_open()) {
-    P2OLogger(true)
+    paddle2onnx::P2OLogger(true)
         << "[ERROR] Failed to read model file: " << file_path
         << ", please make sure your model file or file path is valid."
         << std::endl;
@@ -79,8 +77,8 @@ std::shared_ptr<ONNX_NAMESPACE::ModelProto> LoadModelFromFile(
   fin.close();
 
   if (!model_proto->ParseFromString(contents)) {
-    P2OLogger(true) << "[ERROR] Failed to load ONNX model from file."
-                    << std::endl;
+    paddle2onnx::P2OLogger(true)
+        << "[ERROR] Failed to load ONNX model from file." << std::endl;
     return model_proto;
   }
   return model_proto;
@@ -111,7 +109,7 @@ bool OptimizePaddle2ONNX(const std::string& model_path,
       *(model_proto.get()), option.passes);
   std::string optimized_model_str;
   if (!optimized_model_proto.SerializeToString(&optimized_model_str)) {
-    P2OLogger(true)
+    paddle2onnx::P2OLogger(true)
         << "[ERROR] Failed to serialize the optimized model protobuf."
         << std::endl;
     return false;
@@ -119,8 +117,9 @@ bool OptimizePaddle2ONNX(const std::string& model_path,
 
   std::fstream out(optimized_model_path, std::ios::out | std::ios::binary);
   if (!out) {
-    P2OLogger(true) << "[ERROR] Failed to write the optimized model to disk at "
-                    << optimized_model_path << "." << std::endl;
+    paddle2onnx::P2OLogger(true)
+        << "[ERROR] Failed to write the optimized model to disk at "
+        << optimized_model_path << "." << std::endl;
     return false;
   }
   out << optimized_model_str;
@@ -129,7 +128,8 @@ bool OptimizePaddle2ONNX(const std::string& model_path,
 }
 
 bool OptimizePaddle2ONNX(
-    const std::string& model_path, const std::string& optimized_model_path,
+    const std::string& model_path,
+    const std::string& optimized_model_path,
     const std::map<std::string, std::vector<int>>& shape_infos,
     const OptimizerOption& option) {
   auto model_proto = LoadModelFromFile(model_path);
@@ -160,9 +160,9 @@ bool OptimizePaddle2ONNX(
     try {
       shape_inference::InferShapes(*(model_proto.get()));
     } catch (const std::exception& e) {
-      P2OLogger(true) << "[ERROR] Failed to reinfer shape for this model."
-                      << std::endl;
-      P2OLogger(true) << e.what() << std::endl;
+      paddle2onnx::P2OLogger(true)
+          << "[ERROR] Failed to reinfer shape for this model." << std::endl;
+      paddle2onnx::P2OLogger(true) << e.what() << std::endl;
       return false;
     }
   }
@@ -188,15 +188,17 @@ bool OptimizePaddle2ONNX(
       *(model_proto.get()), option.passes);
   std::string optimized_model_str;
   if (!optimized_model_proto.SerializeToString(&optimized_model_str)) {
-    P2OLogger() << "[ERROR] Failed to serialize the optimized model protobuf."
-                << std::endl;
+    paddle2onnx::P2OLogger()
+        << "[ERROR] Failed to serialize the optimized model protobuf."
+        << std::endl;
     return false;
   }
 
   std::fstream out(optimized_model_path, std::ios::out | std::ios::binary);
   if (!out) {
-    P2OLogger(true) << "[ERROR] Failed to write the optimized model to disk at "
-                    << optimized_model_path << "." << std::endl;
+    paddle2onnx::P2OLogger(true)
+        << "[ERROR] Failed to write the optimized model to disk at "
+        << optimized_model_path << "." << std::endl;
     return false;
   }
   out << optimized_model_str;
@@ -209,7 +211,7 @@ bool Paddle2ONNXFP32ToFP16(const std::string& model_path,
                            bool verbose) {
   std::ifstream fin(model_path, std::ios::in | std::ios::binary);
   if (!fin.is_open()) {
-    P2OLogger(true)
+    paddle2onnx::P2OLogger(true)
         << "[ERROR] Failed to read model file: " << model_path
         << ", please make sure your model file or file path is valid."
         << std::endl;
@@ -225,14 +227,15 @@ bool Paddle2ONNXFP32ToFP16(const std::string& model_path,
 
   char* out_model_ptr = nullptr;
   int size = 0;
-  ConvertFP32ToFP16(
+  paddle2onnx::ConvertFP32ToFP16(
       contents.c_str(), contents.size(), &out_model_ptr, &size, verbose);
   std::string onnx_proto(out_model_ptr, out_model_ptr + size);
 
   std::fstream out(converted_model_path, std::ios::out | std::ios::binary);
   if (!out) {
-    P2OLogger(true) << "[ERROR] Failed to write the optimized model to disk at "
-                    << converted_model_path << "." << std::endl;
+    paddle2onnx::P2OLogger(true)
+        << "[ERROR] Failed to write the optimized model to disk at "
+        << converted_model_path << "." << std::endl;
     return false;
   }
   out << onnx_proto;

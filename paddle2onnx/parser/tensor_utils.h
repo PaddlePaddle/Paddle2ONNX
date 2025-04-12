@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #pragma once
-#include <cstddef>
-#include <cstdint>
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <numeric>
 #include <string>

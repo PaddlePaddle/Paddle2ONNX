@@ -46,8 +46,8 @@ void ClipMapper::Opset7() {
     int32_t dtype = input_info[0].dtype;
     // onnxruntime only supports float input
     if (input_info[0].dtype != P2ODataType::FP32) {
-      input_name = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                     P2ODataType::FP32);
+      input_name = helper_->AutoCast(
+          input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
       dtype_converted = true;
       dtype = P2ODataType::FP32;
     }
@@ -85,11 +85,13 @@ void ClipMapper::Opset7() {
     }
     if (dtype_converted) {
       auto node = helper_->MakeNode("Clip", {input_name, min_name, max_name});
-      helper_->AutoCast(node->output(0), output_info[0].name, P2ODataType::FP32,
+      helper_->AutoCast(node->output(0),
+                        output_info[0].name,
+                        P2ODataType::FP32,
                         output_info[0].dtype);
     } else {
-      helper_->MakeNode("Clip", {input_name, min_name, max_name},
-                        {output_info[0].name});
+      helper_->MakeNode(
+          "Clip", {input_name, min_name, max_name}, {output_info[0].name});
     }
   } else {
     float max_val, min_val;
@@ -100,7 +102,10 @@ void ClipMapper::Opset7() {
       GetAttr("max", &max_val);
       GetAttr("min", &min_val);
     }
-    helper_->Clip(input_info[0].name, output_info[0].name, min_val, max_val,
+    helper_->Clip(input_info[0].name,
+                  output_info[0].name,
+                  min_val,
+                  max_val,
                   input_info[0].dtype);
   }
 }

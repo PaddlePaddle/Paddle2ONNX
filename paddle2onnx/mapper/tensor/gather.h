@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class GatherMapper : public Mapper {
  public:
-  GatherMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  GatherMapper(const PaddleParser& p,
+               OnnxHelper* helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     if (HasAttr("axis")) {
@@ -30,14 +32,16 @@ class GatherMapper : public Mapper {
     }
   }
 
-  GatherMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id,
+  GatherMapper(const PaddlePirParser& p,
+               OnnxHelper* helper,
+               int64_t op_id,
                bool if_in_cf_block)
-      : Mapper(p, helper, op_id, if_in_cf_block) {
-  }
+      : Mapper(p, helper, op_id, if_in_cf_block) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
   void Opset11() override;
+
  private:
   int64_t axis_ = 0;
 };

@@ -30,7 +30,7 @@ import queue
 current_dir = os.path.dirname(os.path.abspath(__file__))
 tests_dir = os.path.join(current_dir, "..", "tests")
 sys.path.insert(0, tests_dir)
-import onnxbase
+import onnxbase  # noqa: E402
 
 SKIP_FORWARD_OP_LIST = ["pd_op.feed", "pd_op.data", "builtin.parameter"]
 SKIP_BACKWARD_OP_LIST = ["pd_op.fetch", "builtin.shadow_output", "cf.yield"]
@@ -249,7 +249,7 @@ with open('{temp_filename}', 'rb') as f:
         log_file = "./print.log"
         with _redirect_paddle_output_to_file(paddle_model_path, log_file, inputs_data):
             pass
-        paddle_model = paddle.jit.load(paddle_model_path)
+        # paddle_model = paddle.jit.load(paddle_model_path)
         # with _redirect_stdout_to_file(log_file):
         #     paddle_model(*inputs_data)
         #     sys.stdout.flush()

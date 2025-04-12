@@ -26,14 +26,20 @@ void AssignValueMapper::Opset7() {
   auto output_info = GetOutput("Out");
   int32_t dtype = static_cast<int32_t>(dtype_);
   if (int64_values_.size() > 0) {
-    helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
-                    shape_, int64_values_);
+    helper_->Assign(output_info[0].name,
+                    GetOnnxDtype(output_info[0].dtype),
+                    shape_,
+                    int64_values_);
   } else if (fp32_values_.size() > 0) {
-    helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
-                    shape_, fp32_values_);
+    helper_->Assign(output_info[0].name,
+                    GetOnnxDtype(output_info[0].dtype),
+                    shape_,
+                    fp32_values_);
   } else if (fp64_values_.size() > 0) {
-    helper_->Assign(output_info[0].name, GetOnnxDtype(output_info[0].dtype),
-                    shape_, fp64_values_);
+    helper_->Assign(output_info[0].name,
+                    GetOnnxDtype(output_info[0].dtype),
+                    shape_,
+                    fp64_values_);
   }
 }
 

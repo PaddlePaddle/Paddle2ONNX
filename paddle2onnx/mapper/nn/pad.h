@@ -22,16 +22,15 @@ namespace paddle2onnx {
 
 class PadMapper : public Mapper {
  public:
-  PadMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  PadMapper(const PaddleParser& p,
+            OnnxHelper* helper,
+            int64_t block_id,
             int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("pad_value", &pad_value_);
     GetAttr("paddings", &paddings_);
   }
-  PadMapper(const PaddlePirParser& p,
-            OnnxHelper* helper,
-            int64_t op_id,
-            bool c)
+  PadMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id, bool c)
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
     GetAttr("paddings", &paddings_);

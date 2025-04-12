@@ -17,9 +17,7 @@
 namespace paddle2onnx {
 REGISTER_PIR_MAPPER(print, PrintMapper)
 
-int32_t PrintMapper::GetMinOpsetVersion(bool verbose) {
-    return 7;
-}
+int32_t PrintMapper::GetMinOpsetVersion(bool verbose) { return 7; }
 
 void PrintMapper::Opset7() {
   auto input_info = GetInput(0);

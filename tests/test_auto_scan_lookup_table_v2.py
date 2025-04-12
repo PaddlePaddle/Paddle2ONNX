@@ -14,9 +14,7 @@
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
 from onnxbase import randtool
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -34,7 +32,8 @@ class Net(BaseNet):
             inputs,
             weight,
             padding_idx=self.config["padding_idx"],
-            sparse=self.config["sparse"])
+            sparse=self.config["sparse"],
+        )
         return x
 
 
@@ -46,14 +45,12 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=30), min_size=2, max_size=2))
+            st.lists(st.integers(min_value=10, max_value=30), min_size=2, max_size=2)
+        )
 
         weight_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=30), min_size=2, max_size=2))
+            st.lists(st.integers(min_value=10, max_value=30), min_size=2, max_size=2)
+        )
 
         def generator_data():
             input_data = randtool("int", 0, weight_shape[0] - 1, input_shape)
@@ -63,8 +60,9 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
         if draw(st.booleans()):
             padding_idx = draw(
                 st.integers(
-                    min_value=-1 * weight_shape[0] + 1,
-                    max_value=weight_shape[0] - 1))
+                    min_value=-1 * weight_shape[0] + 1, max_value=weight_shape[0] - 1
+                )
+            )
 
         sparse = draw(st.booleans())
 
@@ -78,7 +76,7 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
             "opset_version": [7, 9, 11, 15],
             "input_spec_shape": [],
             "padding_idx": padding_idx,
-            "sparse": sparse
+            "sparse": sparse,
         }
 
         models = Net(config)

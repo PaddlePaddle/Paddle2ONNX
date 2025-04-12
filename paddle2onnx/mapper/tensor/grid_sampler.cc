@@ -35,8 +35,8 @@ void GridSamplerMapper::Opset16() {
   AddAttribute(node, "padding_mode", padding_mode_);
   AddAttribute(node, "mode", mode_);
   AddAttribute(node, "align_corners", static_cast<int64_t>(align_corners_));
-  helper_->AutoCast(node->output(0), out_info[0].name, P2ODataType::FP32,
-                    out_info[0].dtype);
+  helper_->AutoCast(
+      node->output(0), out_info[0].name, P2ODataType::FP32, out_info[0].dtype);
 }
 
 }  // namespace paddle2onnx

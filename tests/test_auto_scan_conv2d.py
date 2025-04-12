@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -37,7 +36,8 @@ class Net(BaseNet):
             padding=self.config["padding"],
             dilation=self.config["dilation"],
             groups=self.config["groups"],
-            data_format=self.config["data_format"])
+            data_format=self.config["data_format"],
+        )
         return x
 
 
@@ -51,14 +51,12 @@ class TestConv2dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=20, max_value=30), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=20, max_value=30), min_size=4, max_size=4)
+        )
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=7), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=1, max_value=7), min_size=4, max_size=4)
+        )
 
         data_format = "NCHW"
 
@@ -68,9 +66,8 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         input_shape[1] = kernel_size[1] * groups
 
         strides = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=2)
+        )
         if len(strides) == 1:
             strides = strides[0]
             if strides > kernel_size[2]:
@@ -94,20 +91,26 @@ class TestConv2dConvert(OPConvertAutoScanTest):
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             padding2 = np.expand_dims(
                 np.array(
                     draw(
                         st.lists(
-                            st.integers(
-                                min_value=1, max_value=5),
+                            st.integers(min_value=1, max_value=5),
                             min_size=2,
-                            max_size=2))),
-                axis=0).tolist()
+                            max_size=2,
+                        )
+                    )
+                ),
+                axis=0,
+            ).tolist()
             if data_format == "NCHW":
                 padding = [[0, 0]] + [[0, 0]] + padding1 + padding2
             else:
@@ -116,22 +119,19 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             if draw(st.booleans()):
                 padding = draw(
                     st.lists(
-                        st.integers(
-                            min_value=1, max_value=5),
-                        min_size=2,
-                        max_size=2))
+                        st.integers(min_value=1, max_value=5), min_size=2, max_size=2
+                    )
+                )
             else:
                 padding = draw(
                     st.lists(
-                        st.integers(
-                            min_value=1, max_value=5),
-                        min_size=4,
-                        max_size=4))
+                        st.integers(min_value=1, max_value=5), min_size=4, max_size=4
+                    )
+                )
 
         dilations = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=3), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=3), min_size=1, max_size=2)
+        )
         if len(dilations) == 1:
             dilations = dilations[0]
         if padding == "SAME":
@@ -140,7 +140,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         config = {
             "op_names": ["conv2d"],
             "test_data_shapes": [input_shape, kernel_size],
-            "test_data_types": [['float32'], ['float32']],
+            "test_data_types": [["float32"], ["float32"]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [[-1, input_shape[1], -1, -1], kernel_size],
             "data_format": data_format,
@@ -151,7 +151,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             "input_shape": input_shape,
             "kernel_size": kernel_size,
             "delta": 1e-4,
-            "rtol": 1e-4
+            "rtol": 1e-4,
         }
 
         models = Net(config)
@@ -163,7 +163,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         self.run_and_statis(max_examples=30)
 
 
-#class Net1(BaseNet):
+# class Net1(BaseNet):
 #    """
 #    simple Net
 #    """
@@ -182,7 +182,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
 #        return x
 #
 #
-#class TestConv2dConvert1(OPConvertAutoScanTest):
+# class TestConv2dConvert1(OPConvertAutoScanTest):
 #    """
 #    api: paddle.nn.Conv2d
 #    OPset version: 9

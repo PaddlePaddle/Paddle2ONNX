@@ -22,14 +22,17 @@ namespace paddle2onnx {
 
 class ReduceLogSumExpMapper : public Mapper {
  public:
-  ReduceLogSumExpMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-               int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-  }
+  ReduceLogSumExpMapper(const PaddleParser& p,
+                        OnnxHelper* helper,
+                        int64_t block_id,
+                        int64_t op_id)
+      : Mapper(p, helper, block_id, op_id) {}
 
-  ReduceLogSumExpMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
-      :Mapper(p, helper, i, c) {
-  }
+  ReduceLogSumExpMapper(const PaddlePirParser& p,
+                        OnnxHelper* helper,
+                        int64_t i,
+                        bool c)
+      : Mapper(p, helper, i, c) {}
 
   void Opset18() override;
   void Opset11() override;

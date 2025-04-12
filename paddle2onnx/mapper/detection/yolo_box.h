@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class YoloBoxMapper : public Mapper {
  public:
-  YoloBoxMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  YoloBoxMapper(const PaddleParser& p,
+                OnnxHelper* helper,
+                int64_t block_id,
                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     MarkAsExperimentalOp();
@@ -36,7 +38,9 @@ class YoloBoxMapper : public Mapper {
     GetAttr("anchors", &anchors_);
   }
 
-  YoloBoxMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t op_id,
+  YoloBoxMapper(const PaddlePirParser& p,
+                OnnxHelper* helper,
+                int64_t op_id,
                 bool if_in_cf_block)
       : Mapper(p, helper, op_id, if_in_cf_block) {
     MarkAsExperimentalOp();

@@ -94,8 +94,10 @@ struct ConvertFp32ToFp16 {
   void Convert(ONNX_NAMESPACE::ModelProto* model);
 
   ONNX_NAMESPACE::NodeProto* MakeCastNode(
-      const std::string& op_name, const std::vector<std::string>& inputs,
-      const std::vector<std::string>& outputs, int32_t to_dtype);
+      const std::string& op_name,
+      const std::vector<std::string>& inputs,
+      const std::vector<std::string>& outputs,
+      int32_t to_dtype);
 
   ONNX_NAMESPACE::ValueInfoProto* MakeValueInfoFromTensor(
       const ONNX_NAMESPACE::TensorProto& tensor);
@@ -118,19 +120,21 @@ struct ConvertFp32ToFp16 {
   void ConvertValToFloat16(float val, uint16_t* x);
 
   // return if the next node of name is Cast and its attr type is dtype.
-  bool CastedTo(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
+  bool CastedTo(const std::string& name,
+                ONNX_NAMESPACE::ModelProto* model,
                 int64_t dtype);
   // return if the pre node of name is Cast and its attr type is dtype.
-  bool CastedFrom(const std::string& name, ONNX_NAMESPACE::ModelProto& model,
+  bool CastedFrom(const std::string& name,
+                  ONNX_NAMESPACE::ModelProto* model,
                   int64_t dtype);
   // return if the name is the input of DEFAULT_OP_BLOCK_LIST
   bool IsInputOfOpBlock(const std::string& name,
-                        ONNX_NAMESPACE::ModelProto& model);
+                        ONNX_NAMESPACE::ModelProto* model);
 
   // return if the name is the input of DEFAULT_OP_BLOCK_LIST and
   // fp32_output_op_list
   bool IsOutputOfOpBlockAndFP32Out(const std::string& name,
-                                   ONNX_NAMESPACE::ModelProto& model);
+                                   ONNX_NAMESPACE::ModelProto* model);
 
   void SetCustomOps(const std::map<std::string, std::string>& custom_ops) {
     if (custom_ops.size()) {
@@ -142,8 +146,8 @@ struct ConvertFp32ToFp16 {
   }
 
   void AddDisabledOpTypes(const std::vector<std::string>& disable_fp16_ops) {
-    op_block_list_.insert(op_block_list_.end(), disable_fp16_ops.begin(),
-                          disable_fp16_ops.end());
+    op_block_list_.insert(
+        op_block_list_.end(), disable_fp16_ops.begin(), disable_fp16_ops.end());
   }
   // If the input ONNX model is a FP16 model, return True
   bool IsFP16Model(const ONNX_NAMESPACE::ModelProto& model);

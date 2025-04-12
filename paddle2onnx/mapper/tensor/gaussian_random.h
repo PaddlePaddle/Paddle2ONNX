@@ -19,16 +19,20 @@ namespace paddle2onnx {
 
 class GaussianRandomMapper : public Mapper {
  public:
-  GaussianRandomMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
-            int64_t op_id)
+  GaussianRandomMapper(const PaddleParser& p,
+                       OnnxHelper* helper,
+                       int64_t block_id,
+                       int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("mean", &mean_);
     GetAttr("std", &std_);
     GetAttr("shape", &shape_);
     GetAttr("seed", &seed_);
   }
-  GaussianRandomMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
-             bool c)
+  GaussianRandomMapper(const PaddlePirParser& p,
+                       OnnxHelper* helper,
+                       int64_t i,
+                       bool c)
       : Mapper(p, helper, i, c) {
     GetAttr("mean", &mean_);
     GetAttr("std", &std_);
@@ -36,6 +40,7 @@ class GaussianRandomMapper : public Mapper {
   }
   int32_t GetMinOpsetVersion(bool verbose) override;
   void Opset7() override;
+
  private:
   std::vector<int64_t> shape_;
   float mean_;

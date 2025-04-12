@@ -82,13 +82,13 @@ std::vector<int64_t> SliceMapper::DecreaseAxis() {
 void SliceMapper::Opset7() {
   auto input_info = GetInput("Input");
   auto output_info = GetOutput("Out");
-  if(!in_pir_mode) {
+  if (!in_pir_mode) {
     Assert(!HasInput("StartsTensorList"),
-         "While slice/strided_slice has input StartsTensorList, requires "
-         "opset_version >= 10");
+           "While slice/strided_slice has input StartsTensorList, requires "
+           "opset_version >= 10");
     Assert(!HasInput("EndsTensorList"),
-         "While slice/strided_slice has input EndsTensorList, requires "
-         "opset_version >= 10");
+           "While slice/strided_slice has input EndsTensorList, requires "
+           "opset_version >= 10");
   }
 
   std::vector<int64_t> starts;
@@ -112,8 +112,8 @@ void SliceMapper::Opset7() {
 
   std::vector<int64_t> decrease_axis = DecreaseAxis();
   if (decrease_axis.empty()) {
-    helper_->Slice(input_info[0].name, output_info[0].name, axes_, starts,
-                   ends);
+    helper_->Slice(
+        input_info[0].name, output_info[0].name, axes_, starts, ends);
   } else {
     std::string node = helper_->Slice(input_info[0].name, axes_, starts, ends);
     helper_->Squeeze(node, output_info[0].name, decrease_axis);

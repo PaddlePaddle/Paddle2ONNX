@@ -70,7 +70,8 @@ void RKNNQuantizeProcessor::AddQDQ() {
   for (auto iter = nodes_->begin(); iter < nodes_->end(); iter++) {
     auto node = *iter;
     auto type_iter = std::find(supported_quantize_type_.begin(),
-                               supported_quantize_type_.end(), node->op_type());
+                               supported_quantize_type_.end(),
+                               node->op_type());
     if (type_iter == supported_quantize_type_.end()) {
       continue;
     }
@@ -105,20 +106,20 @@ void RKNNQuantizeProcessor::AddQDQ() {
         std::string scale_node, zero_node;
         if (weight_shape.size() <= 1) {
           GetTensorWiseQuantizeInfo(weight_data, &scale, &zeros);
-          scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                         scale[0]);
-          zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8,
-                                        zeros[0]);
+          scale_node = helper_->Constant(
+              {}, ONNX_NAMESPACE::TensorProto::FLOAT, scale[0]);
+          zero_node = helper_->Constant(
+              {}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
         } else {
-          GetChannelWiseQuantizeInfo(weight_data, weight_shape, quantize_axis,
-                                     &scale, &zeros);
+          GetChannelWiseQuantizeInfo(
+              weight_data, weight_shape, quantize_axis, &scale, &zeros);
           scale_node =
               helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale);
           zero_node =
               helper_->Constant(ONNX_NAMESPACE::TensorProto::INT8, zeros);
         }
-        QuantizeInfo matmul_weight_quantize_info(scale, zeros, scale_node,
-                                                 zero_node, quantize_axis);
+        QuantizeInfo matmul_weight_quantize_info(
+            scale, zeros, scale_node, zero_node, quantize_axis);
         helper_->quantize_info[name] = matmul_weight_quantize_info;
       }
     } else if (node->op_type() == "Add") {
@@ -145,8 +146,8 @@ void RKNNQuantizeProcessor::AddQDQ() {
         zero_node =
             helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8, zeros[0]);
 
-        QuantizeInfo quantize_info(scale, zeros, scale_node, zero_node,
-                                   quantize_axis);
+        QuantizeInfo quantize_info(
+            scale, zeros, scale_node, zero_node, quantize_axis);
         helper_->quantize_info[name] = quantize_info;
       }
     } else if (node->op_type() == "BatchNormalization") {
@@ -211,13 +212,13 @@ void RKNNQuantizeProcessor::PerchannelToPerlayer() {
       std::vector<int64_t> now_zeros = {0};
 
       std::string scale_node, zero_node;
-      scale_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::FLOAT,
-                                     now_scale[0]);
-      zero_node = helper_->Constant({}, ONNX_NAMESPACE::TensorProto::INT8,
-                                    now_zeros[0]);
+      scale_node = helper_->Constant(
+          {}, ONNX_NAMESPACE::TensorProto::FLOAT, now_scale[0]);
+      zero_node = helper_->Constant(
+          {}, ONNX_NAMESPACE::TensorProto::INT8, now_zeros[0]);
 
-      QuantizeInfo now_quantize_info(now_scale, now_zeros, scale_node,
-                                     zero_node, now_quantize_axis);
+      QuantizeInfo now_quantize_info(
+          now_scale, now_zeros, scale_node, zero_node, now_quantize_axis);
       helper_->quantize_info[name] = now_quantize_info;
     }
   }
@@ -228,7 +229,8 @@ void RKNNQuantizeProcessor::ProcessQuantizeModel(
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* outputs,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>* nodes,
-    OnnxHelper* helper, const PaddleParser& parser,
+    OnnxHelper* helper,
+    const PaddleParser& parser,
     std::string* calibration_cache) {
   BaseQuantizeProcessor::ProcessQuantizeModel(
       parameters, inputs, outputs, nodes, helper, parser, calibration_cache);

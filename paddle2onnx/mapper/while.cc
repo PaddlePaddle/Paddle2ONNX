@@ -15,7 +15,7 @@
 #include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
 #include "paddle2onnx/mapper/exporter.h"
 namespace paddle2onnx {
-void ModelExporter::ExportWhile(PaddlePirParser& pir_parser,
+void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
                                 OnnxHelper* temp_helper,
                                 pir::Operation* op) {
   // ================================
@@ -108,7 +108,7 @@ void ModelExporter::ExportWhile(PaddlePirParser& pir_parser,
   }
   pir::Block* blockPtr = &body_block;
   graph = ExportBlock(
-      pir_parser, blockPtr, parameters, inputs, outputs, true, true);
+      pir_parser, blockPtr, parameters, &inputs, &outputs, true, true);
   for (auto& item : extra_nodes) {
     *(graph.add_node()) = (*item.get());
   }
@@ -184,7 +184,7 @@ void ModelExporter::ExportWhile(const PaddleParser& parser,
   }
 
   graph = ExportBlock(
-      parser, sub_block_idx, parameters, inputs, outputs, nullptr, true);
+      parser, sub_block_idx, &parameters, &inputs, &outputs, nullptr, true);
 
   /********************* Creat Body Gragh *********************/
   // Make Fake iter

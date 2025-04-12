@@ -21,8 +21,10 @@ namespace paddle2onnx {
 REGISTER_MAPPER(flatten2, Flatten2Mapper)
 
 int32_t Flatten2Mapper::GetMinOpsetVersion(bool verbose) {
-  if (GetInput("X")[0].dtype != P2ODataType::FP32 || GetInput("X")[0].dtype != P2ODataType::FP64) {
-    Logger(verbose, 9) << "While data type of input is not float32/float64, "<< RequireOpset(9) << std::endl;
+  if (GetInput("X")[0].dtype != P2ODataType::FP32 ||
+      GetInput("X")[0].dtype != P2ODataType::FP64) {
+    Logger(verbose, 9) << "While data type of input is not float32/float64, "
+                       << RequireOpset(9) << std::endl;
     return 9;
   }
   return 7;
@@ -33,7 +35,8 @@ void Flatten2Mapper::Opset7() {
   auto output_info = GetOutput("Out");
 
   int64_t axis = axis_;
-  auto node = helper_->MakeNode("Flatten", {input_info[0].name}, {output_info[0].name});
+  auto node =
+      helper_->MakeNode("Flatten", {input_info[0].name}, {output_info[0].name});
   AddAttribute(node, "axis", axis);
 }
 

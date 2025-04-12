@@ -23,9 +23,9 @@ namespace paddle2onnx {
 class PirSelectInputMapper : public Mapper {
  public:
   PirSelectInputMapper(const PaddlePirParser& p,
-                 OnnxHelper* helper,
-                 int64_t op_id,
-                 bool if_in_cf_block)
+                       OnnxHelper* helper,
+                       int64_t op_id,
+                       bool if_in_cf_block)
       : Mapper(p, helper, op_id, if_in_cf_block) {}
 
   int32_t GetMinOpsetVersion(bool verbose) override;

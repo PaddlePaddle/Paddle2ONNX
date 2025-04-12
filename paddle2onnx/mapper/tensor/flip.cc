@@ -42,8 +42,8 @@ void FlipMapper::Opset7() {
   if (input_info[0].dtype == P2ODataType::BOOL ||
       input_info[0].dtype == P2ODataType::FP64) {
     need_convert = true;
-    input_name = helper_->AutoCast(input_info[0].name, input_info[0].dtype,
-                                   P2ODataType::FP32);
+    input_name = helper_->AutoCast(
+        input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
   }
 
   std::string temp_input = input_name;
@@ -54,8 +54,10 @@ void FlipMapper::Opset7() {
         continue;
       }
       if (need_convert) {
-        input_name = helper_->AutoCast(temp_input, output_info[0].name,
-                                       P2ODataType::FP32, output_info[0].dtype);
+        input_name = helper_->AutoCast(temp_input,
+                                       output_info[0].name,
+                                       P2ODataType::FP32,
+                                       output_info[0].dtype);
       } else {
         auto out_node =
             helper_->MakeNode("Identity", {temp_input}, {output_info[0].name});
@@ -77,11 +79,13 @@ void FlipMapper::Opset7() {
         if (need_convert) {
           auto concat_node = helper_->MakeNode("Concat", reversed_splits);
           AddAttribute(concat_node, "axis", axis);
-          helper_->AutoCast(concat_node->output(0), output_info[0].name,
-                            P2ODataType::FP32, output_info[0].dtype);
+          helper_->AutoCast(concat_node->output(0),
+                            output_info[0].name,
+                            P2ODataType::FP32,
+                            output_info[0].dtype);
         } else {
-          auto concat_node = helper_->MakeNode("Concat", reversed_splits,
-                                               {output_info[0].name});
+          auto concat_node = helper_->MakeNode(
+              "Concat", reversed_splits, {output_info[0].name});
           AddAttribute(concat_node, "axis", axis);
         }
       }

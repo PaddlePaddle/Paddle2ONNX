@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import numpy as np
 import unittest
 import paddle
 
@@ -30,7 +28,7 @@ class Net(BaseNet):
         forward
         """
 
-        condition = paddle.cast(inputs, 'bool')
+        condition = paddle.cast(inputs, "bool")
         x = paddle.nonzero(condition)
         return x
 
@@ -43,9 +41,8 @@ class TestWhereIndexConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20), min_size=2, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
 
@@ -54,7 +51,7 @@ class TestWhereIndexConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
             "opset_version": [9, 15],
-            "input_spec_shape": []
+            "input_spec_shape": [],
         }
 
         models = Net(config)

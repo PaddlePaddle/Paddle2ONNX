@@ -22,15 +22,19 @@ namespace paddle2onnx {
 
 class ArgMaxMapper : public Mapper {
  public:
-  ArgMaxMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  ArgMaxMapper(const PaddleParser& p,
+               OnnxHelper* helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("flatten", &flatten_);
     GetAttr("keepdims", &keepdims_);
     GetAttr("dtype", &dtype_);
   }
-  ArgMaxMapper(const PaddlePirParser& p, OnnxHelper* helper,
-               int64_t op_id, bool c)
+  ArgMaxMapper(const PaddlePirParser& p,
+               OnnxHelper* helper,
+               int64_t op_id,
+               bool c)
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
     GetAttr("flatten", &flatten_);

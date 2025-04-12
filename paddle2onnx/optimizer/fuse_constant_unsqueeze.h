@@ -33,7 +33,8 @@ namespace optimization {
 
 struct FuseConstantUnsqueeze final : public PredicateBasedPass {
   explicit FuseConstantUnsqueeze()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_constant_unsqueeze"; }
 
@@ -41,7 +42,8 @@ struct FuseConstantUnsqueeze final : public PredicateBasedPass {
     return node->kind() == kUnsqueeze &&
            node->inputs()[0]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
+  bool runTransform(Node* n,
+                    Graph& graph,
                     NodeDestroyType& destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 
@@ -86,7 +88,8 @@ struct FuseConstantUnsqueeze final : public PredicateBasedPass {
     }
 
     t.sizes().clear();
-    t.sizes().insert(t.sizes().begin(), new_size.begin(),
+    t.sizes().insert(t.sizes().begin(),
+                     new_size.begin(),
                      new_size.begin() + new_size.size());
     constant->t_(kvalue, std::move(t));
 

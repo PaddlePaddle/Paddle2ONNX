@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
 import numpy as np
 import unittest
@@ -54,9 +53,8 @@ class TestReshapeConvert0(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=0, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32"]))
 
@@ -72,8 +70,7 @@ class TestReshapeConvert0(OPConvertAutoScanTest):
             shape = [1, -1]
 
         # reshape from [1] to []
-        if len(input_shape) == 1 and input_shape[0] == 1 and draw(st.booleans(
-        )):
+        if len(input_shape) == 1 and input_shape[0] == 1 and draw(st.booleans()):
             shape = []
 
         config = {
@@ -82,7 +79,7 @@ class TestReshapeConvert0(OPConvertAutoScanTest):
             "test_data_types": [[dtype]],
             "opset_version": [7, 9, 15],
             "input_spec_shape": [],
-            "shape": shape
+            "shape": shape,
         }
 
         models = Net0(config)
@@ -101,9 +98,8 @@ class TestReshapeConvert1(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=2, max_value=20), min_size=0, max_size=4))
+            st.lists(st.integers(min_value=2, max_value=20), min_size=0, max_size=4)
+        )
 
         dtype = draw(st.sampled_from(["float32"]))
 

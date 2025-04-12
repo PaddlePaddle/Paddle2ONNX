@@ -67,7 +67,7 @@ void ReduceMaxMapper::Opset18() {
     input_name = helper_->AutoCast(input_name, input_tpye, P2ODataType::INT32);
     input_tpye = P2ODataType::INT32;
   }
-  if(x_info[0].Rank() == 0) {
+  if (x_info[0].Rank() == 0) {
     input_name = helper_->Unsqueeze(input_name, {0});
   }
   auto reduce_node = helper_->MakeNode("ReduceMax", {input_name, dims});
@@ -84,8 +84,8 @@ void ReduceMaxMapper::Opset18() {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name,
-                        input_tpye, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 
 void ReduceMaxMapper::Opset12() {
@@ -115,15 +115,14 @@ void ReduceMaxMapper::Opset11() {
   }
 
   auto x_info = GetInput("X");
-  if(x_info[0].Rank() == 0) {
+  if (x_info[0].Rank() == 0) {
     x_info[0].name = helper_->Unsqueeze(x_info[0].name, {0});
   }
   auto input_name = x_info[0].name;
   auto input_tpye = x_info[0].dtype;
   if (x_info[0].dtype == P2ODataType::BOOL) {
-    input_name = helper_->AutoCast(x_info[0].name,
-                                   x_info[0].dtype,
-                                   P2ODataType::INT32);
+    input_name =
+        helper_->AutoCast(x_info[0].name, x_info[0].dtype, P2ODataType::INT32);
     input_tpye = P2ODataType::INT32;
   }
   auto reduce_node = helper_->MakeNode("ReduceMax", {input_name});
@@ -145,7 +144,7 @@ void ReduceMaxMapper::Opset11() {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
   auto out_info = GetOutput("Out");
-  helper_->AutoCast(out_node_name, out_info[0].name,
-                        input_tpye, out_info[0].dtype);
+  helper_->AutoCast(
+      out_node_name, out_info[0].name, input_tpye, out_info[0].dtype);
 }
 }  //  namespace paddle2onnx

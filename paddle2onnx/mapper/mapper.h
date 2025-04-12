@@ -391,7 +391,7 @@ class Mapper {
     return parser_->TryGetTensorValue(block_idx_, info.name, data);
   }
 
-  void SetTensorArrayName(const std::string &arr_name) {
+  void SetTensorArrayName(const std::string& arr_name) {
     pir_parser_->SetTensorArrayName(pir_op_idx_, if_in_cf_block, arr_name);
   }
 

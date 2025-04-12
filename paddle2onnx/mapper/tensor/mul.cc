@@ -40,7 +40,8 @@ void MulMapper::Opset7() {
     auto x_shape = helper_->MakeNode("Shape", {x_info[0].name})->output(0);
     auto y_shape = helper_->MakeNode("Shape", {y_info[0].name})->output(0);
     auto out_shape_0 = helper_->Slice(x_shape, {0}, {0}, {x_num_col_dims_});
-    auto out_shape_1 = helper_->Slice(y_shape, {0}, {y_num_col_dims_}, {y_info[0].Rank()});
+    auto out_shape_1 =
+        helper_->Slice(y_shape, {0}, {y_num_col_dims_}, {y_info[0].Rank()});
     auto out_shape = helper_->Concat({out_shape_0, out_shape_1}, 0);
     out = helper_->MakeNode("Reshape", {out, out_shape})->output(0);
   }

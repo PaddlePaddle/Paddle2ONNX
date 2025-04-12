@@ -31,8 +31,10 @@ void CumsumMapper::Opset11() {
     auto unsqueeze_node = helper_->Unsqueeze(input_info[0].name, {0});
     auto cumsum_node = helper_->MakeNode("CumSum", {unsqueeze_node, axis_node});
     if (flatten_) {
-      helper_->AutoCast(cumsum_node->output(0), output_info[0].name,
-                        input_info[0].dtype, output_info[0].dtype);
+      helper_->AutoCast(cumsum_node->output(0),
+                        output_info[0].name,
+                        input_info[0].dtype,
+                        output_info[0].dtype);
     } else {
       helper_->Squeeze(cumsum_node->output(0), output_info[0].name, {0});
     }
@@ -44,8 +46,8 @@ void CumsumMapper::Opset11() {
           helper_->Constant({}, GetOnnxDtype(P2ODataType::INT64), axis_);
     } else if (IsAttrVar("axis")) {
       auto axis_info = GetAttrVar("axis");
-      axis_node = helper_->AutoCast(axis_info[0].name, axis_info[0].dtype,
-                                    P2ODataType::INT64);
+      axis_node = helper_->AutoCast(
+          axis_info[0].name, axis_info[0].dtype, P2ODataType::INT64);
     } else {
       GetAttr("axis", &axis_);
       axis_node =

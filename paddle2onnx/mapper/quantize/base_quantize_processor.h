@@ -35,7 +35,8 @@ class BaseQuantizeProcessor {
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *inputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>> *outputs,
       std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> *nodes,
-      OnnxHelper *helper, const PaddleParser &parser,
+      OnnxHelper *helper,
+      const PaddleParser &parser,
       std::string *calibration_cache = nullptr);
 
  protected:
@@ -97,7 +98,8 @@ class BaseQuantizeProcessor {
   bool ConnectToOutput(const std::string &output_name);
   void RemoveNodeByName(const std::string &name, const bool &update_io = true);
   void ReplaceInputOfAllNodes(
-      const std::string &old_name, const std::string &new_name,
+      const std::string &old_name,
+      const std::string &new_name,
       const std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>>
           &except_nodes = {});
 };

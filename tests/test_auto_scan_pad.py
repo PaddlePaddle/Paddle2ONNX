@@ -13,10 +13,7 @@
 # limitations under the License.
 
 from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnxbase import randtool
-import numpy as np
 import unittest
 import paddle
 
@@ -27,11 +24,9 @@ class Net(BaseNet):
         mode = self.config["mode"]
         value = self.config["value"]
         data_format = self.config["data_format"]
-        x = paddle.nn.functional.pad(inputs,
-                                     pad=pad,
-                                     mode=mode,
-                                     value=value,
-                                     data_format=data_format)
+        x = paddle.nn.functional.pad(
+            inputs, pad=pad, mode=mode, value=value, data_format=data_format
+        )
         return x
 
 
@@ -43,25 +38,26 @@ class TestPadopsConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=15), min_size=3, max_size=5))
+            st.lists(st.integers(min_value=10, max_value=15), min_size=3, max_size=5)
+        )
 
         dtype = "float32"
 
         pad = draw(
             st.lists(
-                st.integers(
-                    min_value=0, max_value=4),
+                st.integers(min_value=0, max_value=4),
                 min_size=2 * len(input_shape),
-                max_size=2 * len(input_shape)))
+                max_size=2 * len(input_shape),
+            )
+        )
 
         mode = draw(st.sampled_from(["constant"]))
 
         value = draw(st.floats(min_value=10, max_value=20))
 
         data_format = draw(
-            st.sampled_from(["NCL", "NLC", "NCHW", "NHWC", "NCDHW", "NDHWC"]))
+            st.sampled_from(["NCL", "NLC", "NCHW", "NHWC", "NCDHW", "NDHWC"])
+        )
 
         config = {
             "op_names": ["pad"],
@@ -72,7 +68,7 @@ class TestPadopsConvert(OPConvertAutoScanTest):
             "mode": mode,
             "value": value,
             "pad": pad,
-            "data_format": data_format
+            "data_format": data_format,
         }
 
         model = Net(config)

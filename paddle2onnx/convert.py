@@ -20,6 +20,7 @@ from paddle2onnx.utils import logging, paddle_jit_save_configs
 from contextlib import contextmanager
 from paddle.decomposition import decomp
 from paddle.base.executor import global_scope
+import shutil
 
 
 def load_model(model_filename):
@@ -250,31 +251,32 @@ def export(
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
-    # Get PaddleInference model file path
-    dirname = os.path.split(save_file)[0]
-    paddle_model_dir = os.path.join(dirname, "paddle_model_temp_dir")
-    model_file = os.path.join(paddle_model_dir, "model.pdmodel")
-    params_file = os.path.join(paddle_model_dir, "model.pdiparams")
-
-    if os.path.exists(paddle_model_dir):
-        if os.path.isfile(paddle_model_dir):
-            logging.info("File {} exists, will remove it.".format(paddle_model_dir))
-            os.remove(paddle_model_dir)
-        if os.path.isfile(model_file):
-            os.remove(model_file)
-        if os.path.isfile(params_file):
-            os.remove(params_file)
-    save_configs = paddle_jit_save_configs(configs)
-    with get_old_ir_guard()():
-        # In PaddlePaddle 3.0.0b2, PIR becomes the default IR, but PIR export still in development.
-        # So we need to use the old IR to export the model, avoid make users confused.
-        # In the future, we will remove this guard and recommend users to use PIR.
+    paddle_model_dir = tempfile.mkdtemp()
+    try:
+        save_configs = paddle_jit_save_configs(configs)
+        if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
+            model_file = os.path.join(paddle_model_dir, "model.json")
+        else:
+            model_file = os.path.join(paddle_model_dir, "model.pdmodel")
         paddle.jit.save(
             layer, os.path.join(paddle_model_dir, "model"), input_spec, **save_configs
         )
-    logging.info("Static PaddlePaddle model saved in {}.".format(paddle_model_dir))
-    if not os.path.isfile(params_file):
-        params_file = ""
-
-    export(model_file, params_file, save_file, opset_version)
-    logging.info("ONNX model saved in {}.".format(save_file))
+        if not os.path.isfile(model_file):
+            raise ValueError("Failed to save static PaddlePaddle model.")
+        logging.info("Static PaddlePaddle model saved in {}.".format(paddle_model_dir))
+        params_file = os.path.join(paddle_model_dir, "model.pdiparams")
+        if not os.path.isfile(params_file):
+            params_file = ""
+        export(model_file, params_file, save_file, opset_version)
+    except Exception as err:
+        logging.error(f"Failed to convert PaddlePaddle model due to {err}.")
+    finally:
+        if os.environ.get("P2O_KEEP_TEMP_MODEL", "0").lower() not in [
+            "1",
+            "true",
+            "on",
+        ]:
+            logging.warning(
+                "Static PaddlePaddle model will be deleted, if you want to keep it, please set env variable `P2O_KEEP_TEMP_MODEL` to True."
+            )
+            shutil.rmtree(paddle_model_dir, ignore_errors=True)

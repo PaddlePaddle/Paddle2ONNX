@@ -47,8 +47,8 @@ std::string InterpolateMapper::ComputeOutSize() {
   bool has_size_tensor = HasInput("SizeTensor");
   if (has_out_size) {
     auto out_size_info = GetInput("OutSize");
-    return helper_->AutoCast(out_size_info[0].name, out_size_info[0].dtype,
-                             P2ODataType::INT64);
+    return helper_->AutoCast(
+        out_size_info[0].name, out_size_info[0].dtype, P2ODataType::INT64);
   } else {
     auto size_tensor_info = GetInput("SizeTensor");
     return helper_->ConcatIndices(size_tensor_info);
@@ -57,8 +57,8 @@ std::string InterpolateMapper::ComputeOutSize() {
 
 std::string InterpolateMapper::ComputeScale() {
   auto scale_info = GetInput("Scale");
-  auto scale = helper_->AutoCast(scale_info[0].name, scale_info[0].dtype,
-                                 P2ODataType::FP32);
+  auto scale = helper_->AutoCast(
+      scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
   auto padding = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
                                    std::vector<float>(2, 1.0));
   scale = helper_->Concat({padding, scale}, 0);
@@ -114,8 +114,8 @@ void InterpolateMapper::Opset11() {
         scale_vector.emplace_back(scale);
         scale_vector.emplace_back(scale);
       }
-      scale = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
-                                scale_vector);
+      scale =
+          helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT, scale_vector);
     }
   }
   std::string roi = helper_->Constant(ONNX_NAMESPACE::TensorProto::FLOAT,
@@ -132,17 +132,17 @@ void InterpolateMapper::Opset11() {
   }
   std::shared_ptr<ONNX_NAMESPACE::NodeProto> node;
   if (size != "") {
-    node = helper_->MakeNode("Resize", {x_info[0].name, roi, scale, size},
-                             {out_info[0].name});
+    node = helper_->MakeNode(
+        "Resize", {x_info[0].name, roi, scale, size}, {out_info[0].name});
   } else {
-    node = helper_->MakeNode("Resize", {x_info[0].name, roi, scale},
-                             {out_info[0].name});
+    node = helper_->MakeNode(
+        "Resize", {x_info[0].name, roi, scale}, {out_info[0].name});
   }
   Assert(resize_mapper_.find(method_) != resize_mapper_.end(),
          "Cannot find " + method_ + " in resize_mapper.");
   AddAttribute(node, "mode", resize_mapper_[method_]);
-  AddAttribute(node, "coordinate_transformation_mode",
-               coordinate_transformation_mode);
+  AddAttribute(
+      node, "coordinate_transformation_mode", coordinate_transformation_mode);
   if (resize_mapper_[method_] == "nearest" &&
       coordinate_transformation_mode == "asymmetric") {
     AddAttribute(node, "nearest_mode", "floor");

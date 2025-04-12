@@ -33,9 +33,8 @@ void TrilTriuMapper::Opset14() {
 
   std::string diagonal_node_name =
       helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, diagonal_vec);
-  auto output_node = helper_->MakeNode("Trilu",
-                                       {x_info[0].name, diagonal_node_name},
-                                       {out_info[0].name});
+  auto output_node = helper_->MakeNode(
+      "Trilu", {x_info[0].name, diagonal_node_name}, {out_info[0].name});
   int64_t upper = !lower_;
   AddAttribute(output_node, "upper", upper);
 }
@@ -54,9 +53,8 @@ void TrilMapper::Opset14() {
 
   std::string diagonal_node_name =
       helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, diagonal_vec);
-  auto output_node = helper_->MakeNode("Trilu",
-                                       {x_info[0].name, diagonal_node_name},
-                                       {out_info[0].name});
+  auto output_node = helper_->MakeNode(
+      "Trilu", {x_info[0].name, diagonal_node_name}, {out_info[0].name});
   int64_t upper = !lower_;
   AddAttribute(output_node, "upper", upper);
 }
@@ -75,9 +73,8 @@ void TriuMapper::Opset14() {
 
   std::string diagonal_node_name =
       helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, diagonal_vec);
-  auto output_node = helper_->MakeNode("Trilu",
-                                       {x_info[0].name, diagonal_node_name},
-                                       {out_info[0].name});
+  auto output_node = helper_->MakeNode(
+      "Trilu", {x_info[0].name, diagonal_node_name}, {out_info[0].name});
   int64_t upper = !lower_;
   AddAttribute(output_node, "upper", upper);
 }

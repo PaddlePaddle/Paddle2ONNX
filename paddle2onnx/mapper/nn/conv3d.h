@@ -22,7 +22,9 @@ namespace paddle2onnx {
 
 class Conv3dMapper : public Mapper {
  public:
-  Conv3dMapper(const PaddleParser& p, OnnxHelper* helper, int64_t block_id,
+  Conv3dMapper(const PaddleParser& p,
+               OnnxHelper* helper,
+               int64_t block_id,
                int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
     GetAttr("groups", &groups_);
@@ -33,8 +35,7 @@ class Conv3dMapper : public Mapper {
     GetAttr("data_format", &data_format_);
   }
 
-  Conv3dMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i,
-                  bool c)
+  Conv3dMapper(const PaddlePirParser& p, OnnxHelper* helper, int64_t i, bool c)
       : Mapper(p, helper, i, c) {
     GetAttr("groups", &groups_);
     GetAttr("dilations", &dilations_);

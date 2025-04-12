@@ -49,16 +49,16 @@ class UnfoldMapper : public Mapper {
                                             int64_t padding_start_d,
                                             int64_t padding_end_d,
                                             int64_t stride_d);
-  std::string _get_im2col_output_shape(std::string& batch_dim,     // NOLINT
-                                       std::string& channel_dim,   // NOLINT
+  std::string _get_im2col_output_shape(std::string& batch_dim,    // NOLINT
+                                       std::string& channel_dim,  // NOLINT
                                        int64_t kernel_h,
                                        int64_t kernel_w);
-  std::string _get_im2col_padded_input(std::string& input_name,    // NOLINT
+  std::string _get_im2col_padded_input(std::string& input_name,  // NOLINT
                                        int64_t padding_h_start,
                                        int64_t padding_h_end,
                                        int64_t padding_w_start,
                                        int64_t padding_w_end);
-  std::vector<std::string> _get_shape(std::string& x);             // NOLINT
+  std::vector<std::string> _get_shape(std::string& x);  // NOLINT
 
  private:
   std::vector<int64_t> dilations_;

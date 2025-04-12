@@ -30,7 +30,8 @@ namespace optimization {
 
 struct FusePaddleConvBias final : public PredicateBasedPass {
   explicit FusePaddleConvBias()
-      : PredicateBasedPass(PassType::Fuse, PassEfficiency::Complete,
+      : PredicateBasedPass(PassType::Fuse,
+                           PassEfficiency::Complete,
                            PassOptimizationType::Compute) {}
   std::string getPassName() const override { return "fuse_paddle_conv_bias"; }
 
@@ -39,7 +40,8 @@ struct FusePaddleConvBias final : public PredicateBasedPass {
            node->inputs()[1]->node()->kind() == kConstant &&
            node->inputs()[0]->node()->inputs()[1]->node()->kind() == kConstant;
   }
-  bool runTransform(Node* n, Graph& graph,
+  bool runTransform(Node* n,
+                    Graph& graph,
                     NodeDestroyType& destroy_current) override {
     destroy_current = NodeDestroyType::DestroyZero;
 

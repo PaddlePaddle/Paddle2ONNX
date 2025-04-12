@@ -79,9 +79,9 @@ void ConvertFp32ToFp16::SortNodes(ONNX_NAMESPACE::ModelProto* model) {
             if (i2o_mapper.find(input_node->name()) == i2o_mapper.end()) {
               i2o_mapper[input_node->name()] = {node->name()};
             } else {
-              auto iter =
-                  std::find(i2o_mapper[input_node->name()].begin(),
-                            i2o_mapper[input_node->name()].end(), node->name());
+              auto iter = std::find(i2o_mapper[input_node->name()].begin(),
+                                    i2o_mapper[input_node->name()].end(),
+                                    node->name());
               // not been found before
               if (iter == i2o_mapper[input_node->name()].end()) {
                 i2o_mapper[input_node->name()].push_back(node->name());
@@ -119,7 +119,8 @@ void ConvertFp32ToFp16::SortNodes(ONNX_NAMESPACE::ModelProto* model) {
         continue;
       }
       auto in_inter = std::find(output_nodes_name->begin(),
-                                output_nodes_name->end(), current_node_name);
+                                output_nodes_name->end(),
+                                current_node_name);
       // if find the pre node, erase current node name in i2o_mapper
       if (in_inter != output_nodes_name->end()) {
         output_nodes_name->erase(in_inter);
@@ -184,8 +185,10 @@ ONNX_NAMESPACE::ValueInfoProto* ConvertFp32ToFp16::MakeValueInfoFromTensor(
 }
 
 ONNX_NAMESPACE::NodeProto* ConvertFp32ToFp16::MakeCastNode(
-    const std::string& op_name, const std::vector<std::string>& inputs,
-    const std::vector<std::string>& outputs, int32_t to_dtype) {
+    const std::string& op_name,
+    const std::vector<std::string>& inputs,
+    const std::vector<std::string>& outputs,
+    int32_t to_dtype) {
   ONNX_NAMESPACE::NodeProto* node = new ONNX_NAMESPACE::NodeProto();
   node->set_name(op_name);
   node->set_op_type("Cast");
@@ -294,24 +297,24 @@ void ConvertFp32ToFp16::ConvertTensorFloatToFloat16(
         ConvertValToFloat16(fp32_val[i], &fp16_val[i]);
       }
       if (pos_min_val < max_finite_val_ - 1) {
-        P2OLogger(verbose_) << "[Info] The float32 number: " << pos_min_val
-                    << " will be truncated to: " << min_positive_val_
-                    << std::endl;
+        P2OLogger(verbose_)
+            << "[Info] The float32 number: " << pos_min_val
+            << " will be truncated to: " << min_positive_val_ << std::endl;
       }
       if (pos_max_val > min_positive_val_ + 1) {
-        P2OLogger(verbose_) << "[Info] The float32 number: " << pos_max_val
-                    << " will be truncated to: " << max_finite_val_
-                    << std::endl;
+        P2OLogger(verbose_)
+            << "[Info] The float32 number: " << pos_max_val
+            << " will be truncated to: " << max_finite_val_ << std::endl;
       }
       if (neg_min_val > -1 * max_finite_val_ + 1) {
-        P2OLogger(verbose_) << "[Info] The float32 number: " << neg_min_val
-                    << " will be truncated to: " << -1 * min_positive_val_
-                    << std::endl;
+        P2OLogger(verbose_)
+            << "[Info] The float32 number: " << neg_min_val
+            << " will be truncated to: " << -1 * min_positive_val_ << std::endl;
       }
       if (neg_max_val < -1 * min_positive_val_ - 1) {
-        P2OLogger(verbose_) << "[Info] The float32 number: " << neg_max_val
-                    << " will be truncated to: " << -1 * max_finite_val_
-                    << std::endl;
+        P2OLogger(verbose_)
+            << "[Info] The float32 number: " << neg_max_val
+            << " will be truncated to: " << -1 * max_finite_val_ << std::endl;
       }
       tensor->set_raw_data(std::string((const char*)(fp16_val.data()),
                                        fp16_val.size() * sizeof(uint16_t)));
@@ -321,9 +324,9 @@ void ConvertFp32ToFp16::ConvertTensorFloatToFloat16(
 
 // return if the next node of name is Cast and its attr type is dtype.
 bool ConvertFp32ToFp16::CastedTo(const std::string& name,
-                                 ONNX_NAMESPACE::ModelProto& model,
+                                 ONNX_NAMESPACE::ModelProto* model,
                                  int64_t dtype) {
-  auto graph = model.mutable_graph();
+  auto graph = model->mutable_graph();
   std::vector<ONNX_NAMESPACE::NodeProto*> next_nodes;
   for (auto i = 0; i < graph->node_size(); i++) {
     auto n = graph->mutable_node(i);
@@ -352,9 +355,9 @@ bool ConvertFp32ToFp16::CastedTo(const std::string& name,
 
 // return if the pre node of name is Cast and its attr type is dtype.
 bool ConvertFp32ToFp16::CastedFrom(const std::string& name,
-                                   ONNX_NAMESPACE::ModelProto& model,
+                                   ONNX_NAMESPACE::ModelProto* model,
                                    int64_t dtype) {
-  auto graph = model.mutable_graph();
+  auto graph = model->mutable_graph();
   std::vector<ONNX_NAMESPACE::NodeProto*> pre_nodes;
   for (auto i = 0; i < graph->node_size(); i++) {
     auto n = graph->mutable_node(i);
@@ -383,8 +386,8 @@ bool ConvertFp32ToFp16::CastedFrom(const std::string& name,
 
 // return if the name is the input of DEFAULT_OP_BLOCK_LIST
 bool ConvertFp32ToFp16::IsInputOfOpBlock(const std::string& name,
-                                         ONNX_NAMESPACE::ModelProto& model) {
-  auto graph = model.mutable_graph();
+                                         ONNX_NAMESPACE::ModelProto* model) {
+  auto graph = model->mutable_graph();
   for (auto i = 0; i < graph->node_size(); i++) {
     auto n = graph->mutable_node(i);
     if (std::find(op_block_list_.begin(), op_block_list_.end(), n->op_type()) ==
@@ -403,13 +406,14 @@ bool ConvertFp32ToFp16::IsInputOfOpBlock(const std::string& name,
 }
 
 bool ConvertFp32ToFp16::IsOutputOfOpBlockAndFP32Out(
-    const std::string& name, ONNX_NAMESPACE::ModelProto& model) {
-  auto graph = model.mutable_graph();
+    const std::string& name, ONNX_NAMESPACE::ModelProto* model) {
+  auto graph = model->mutable_graph();
   for (auto i = 0; i < graph->node_size(); i++) {
     auto n = graph->mutable_node(i);
     if (std::find(op_block_list_.begin(), op_block_list_.end(), n->op_type()) ==
             op_block_list_.end() &&
-        std::find(fp32_output_op_list.begin(), fp32_output_op_list.end(),
+        std::find(fp32_output_op_list.begin(),
+                  fp32_output_op_list.end(),
                   n->op_type()) == fp32_output_op_list.end()) {
       continue;
     }
@@ -431,7 +435,7 @@ void ConvertFp32ToFp16::KeepIoType(ONNX_NAMESPACE::ModelProto* model) {
         ONNX_NAMESPACE::TensorProto::FLOAT) {
       // if the pre node is cast, and it is cast to float16, we do not need add
       // Cast OP any more
-      if (CastedTo(input.name(), *model, 10)) {
+      if (CastedTo(input.name(), model, 10)) {
         graph_io_to_skip.push_back(input.name());
         continue;
       }
@@ -457,7 +461,7 @@ void ConvertFp32ToFp16::KeepIoType(ONNX_NAMESPACE::ModelProto* model) {
         ONNX_NAMESPACE::TensorProto::FLOAT) {
       // if the next node is cast, and it is cast to float, we do not need add
       // Cast OP any more
-      if (CastedFrom(output.name(), *model, 1)) {
+      if (CastedFrom(output.name(), model, 1)) {
         graph_io_to_skip.push_back(output.name());
         continue;
       }
@@ -529,8 +533,9 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
                     std::find(keep_type_node->input().begin(),
                               keep_type_node->input().end(),
                               n->output()[0]) != keep_type_node->input().end();
-                if (is_pre_node && std::find(node_list.begin(), node_list.end(),
-                                             n) == node_list.end()) {
+                if (is_pre_node &&
+                    std::find(node_list.begin(), node_list.end(), n) ==
+                        node_list.end()) {
                   node_list.push_back(keep_type_node);
                   Assert(
                       n->op_type() == "Constant",
@@ -539,7 +544,8 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
                 }
               }
             }
-          } else if ((std::find(op_block_list_.begin(), op_block_list_.end(),
+          } else if ((std::find(op_block_list_.begin(),
+                                op_block_list_.end(),
                                 n->op_type()) != op_block_list_.end() ||
                       std::find(fp32_output_op_list.begin(),
                                 fp32_output_op_list.end(),
@@ -601,9 +607,9 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
         }
         for (auto i_index = 0; i_index < q.graph->input_size(); i_index++) {
           auto input = q.graph->mutable_input(i_index);
-          bool skip =
-              std::find(graph_io_to_skip.begin(), graph_io_to_skip.end(),
-                        input->name()) != graph_io_to_skip.end();
+          bool skip = std::find(graph_io_to_skip.begin(),
+                                graph_io_to_skip.end(),
+                                input->name()) != graph_io_to_skip.end();
           if (!skip && input->type().tensor_type().elem_type() ==
                            ONNX_NAMESPACE::TensorProto::FLOAT) {
             input->mutable_type()->mutable_tensor_type()->set_elem_type(
@@ -613,9 +619,9 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
         }
         for (auto o_index = 0; o_index < q.graph->output_size(); o_index++) {
           auto output = q.graph->mutable_output(o_index);
-          bool skip =
-              std::find(graph_io_to_skip.begin(), graph_io_to_skip.end(),
-                        output->name()) != graph_io_to_skip.end();
+          bool skip = std::find(graph_io_to_skip.begin(),
+                                graph_io_to_skip.end(),
+                                output->name()) != graph_io_to_skip.end();
           if (!skip && output->type().tensor_type().elem_type() ==
                            ONNX_NAMESPACE::TensorProto::FLOAT) {
             output->mutable_type()->mutable_tensor_type()->set_elem_type(
@@ -626,9 +632,9 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
         for (auto value_index = 0; value_index < q.graph->value_info_size();
              value_index++) {
           auto value = q.graph->mutable_value_info(value_index);
-          bool skip =
-              std::find(graph_io_to_skip.begin(), graph_io_to_skip.end(),
-                        value->name()) != graph_io_to_skip.end();
+          bool skip = std::find(graph_io_to_skip.begin(),
+                                graph_io_to_skip.end(),
+                                value->name()) != graph_io_to_skip.end();
 
           // in Resize op, when the dims of input tensor is zero.
           bool zero_shape_constant = false;
@@ -650,7 +656,8 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
 
           // if it is a tensor that should keep type float
           bool keep_type_tensor =
-              std::find(keep_type_tensors.begin(), keep_type_tensors.end(),
+              std::find(keep_type_tensors.begin(),
+                        keep_type_tensors.end(),
                         value->name()) != keep_type_tensors.end();
           if (!zero_shape_constant && !skip && !keep_type_tensor &&
               value->type().tensor_type().elem_type() ==
@@ -674,7 +681,8 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
   for (auto node : node_list) {
     // Handle the case of fp32_output OPs
     // Add cast op for node output
-    if (std::find(fp32_output_op_list.begin(), fp32_output_op_list.end(),
+    if (std::find(fp32_output_op_list.begin(),
+                  fp32_output_op_list.end(),
                   node->op_type()) != fp32_output_op_list.end()) {
       for (auto o_index = 0; o_index < node->output_size(); o_index++) {
         std::string* output = node->mutable_output(o_index);
@@ -684,7 +692,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
           if (value_info->name() == *output) {
             if (value_info->type().tensor_type().elem_type() ==
                     ONNX_NAMESPACE::TensorProto::FLOAT16 &&
-                !CastedTo(*output, *model, 10)) {
+                !CastedTo(*output, model, 10)) {
               std::string input_name = GenName(node->name() + "_output_cast_");
               std::string node_name = GenName(node->name() + "_output_cast");
               auto new_node =
@@ -712,7 +720,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
           if (value_info->name() == *input) {
             if (value_info->type().tensor_type().elem_type() ==
                     ONNX_NAMESPACE::TensorProto::FLOAT16 &&
-                !CastedFrom(*input, *model, 1)) {
+                !CastedFrom(*input, model, 1)) {
               std::string output_name = GenName(node->name() + "_input_cast_");
               std::string node_name = GenName(node->name() + "_input_cast");
               auto new_node =
@@ -734,7 +742,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
           if (value_info->name() == *output) {
             if (value_info->type().tensor_type().elem_type() ==
                     ONNX_NAMESPACE::TensorProto::FLOAT16 &&
-                !CastedTo(*output, *model, 10)) {
+                !CastedTo(*output, model, 10)) {
               std::string input_name = GenName(node->name() + "_output_cast_");
               std::string node_name = GenName(node->name() + "_output_cast");
               auto new_node =
@@ -759,7 +767,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
              value_index++) {
           auto value_info = value_info_list[value_index];
           if (value_info->has_name() && *input == value_info->name() &&
-              !CastedFrom(*input, *model, 1)) {
+              !CastedFrom(*input, model, 1)) {
             auto new_value_info = model->mutable_graph()->add_value_info();
             new_value_info->CopyFrom(*value_info);
             std::string output_name = GenName(node->name() + "_input_cast_");
@@ -780,7 +788,7 @@ void ConvertFp32ToFp16::ConvertAttribute(ONNX_NAMESPACE::ModelProto* model) {
         for (auto value_index = 0; value_index < value_info_list.size();
              value_index++) {
           if (*output == value_info_list[value_index]->name() &&
-              !CastedTo(*output, *model, 10)) {
+              !CastedTo(*output, model, 10)) {
             auto new_value_info = model->mutable_graph()->add_value_info();
             new_value_info->CopyFrom(*value_info_list[value_index]);
             std::string input_name = GenName(node->name() + "_output_cast_");
@@ -817,11 +825,12 @@ bool ConvertFp32ToFp16::IsFP16Model(const ONNX_NAMESPACE::ModelProto& model) {
 }
 
 void ConvertFp32ToFp16::Convert(ONNX_NAMESPACE::ModelProto* model) {
-  op_block_list_.insert(op_block_list_.end(), DEFAULT_OP_BLOCK_LIST.begin(),
+  op_block_list_.insert(op_block_list_.end(),
+                        DEFAULT_OP_BLOCK_LIST.begin(),
                         DEFAULT_OP_BLOCK_LIST.end());
   if (custom_ops_.size()) {
-    op_block_list_.insert(op_block_list_.end(), custom_ops_.begin(),
-                          custom_ops_.end());
+    op_block_list_.insert(
+        op_block_list_.end(), custom_ops_.begin(), custom_ops_.end());
   }
   ONNX_NAMESPACE::shape_inference::InferShapes(*model);
   // 1 if it is a FP16 model, skip this
