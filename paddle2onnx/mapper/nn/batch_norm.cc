@@ -103,7 +103,7 @@ void BatchNormMapper::Opset14() {
 
   std::vector<std::string> output_names;
   output_names.push_back(output_info[0].name);
-  if (!use_global_stats_) {
+  if (trainable_statistics_) {
     output_names.push_back(mean_out_info[0].name);
     output_names.push_back(variance_out_info[0].name);
   }
@@ -121,7 +121,8 @@ void BatchNormMapper::Opset14() {
 
   AddAttribute(node, "epsilon", epsilon_);
   AddAttribute(node, "momentum", momentum_);
-  AddAttribute(node, "training_mode", static_cast<int64_t>(!use_global_stats_));
+  AddAttribute(
+      node, "training_mode", static_cast<int64_t>(trainable_statistics_));
 }
 
 }  // namespace paddle2onnx
