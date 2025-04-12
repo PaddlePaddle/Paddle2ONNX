@@ -48,7 +48,7 @@ class InterpolateMapper : public Mapper {
     GetAttr("out_d", &out_d_);
     GetAttr("out_h", &out_h_);
     GetAttr("out_w", &out_w_);
-    method_ = OpType();
+    GetAttr("interp_method", &method_);
 
     resize_mapper_["bilinear"] = "linear";
     resize_mapper_["nearest"] = "nearest";
