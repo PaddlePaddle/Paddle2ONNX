@@ -21,16 +21,27 @@ from contextlib import contextmanager
 from paddle.decomposition import decomp
 from paddle.base.executor import global_scope
 import shutil
+import traceback
+
+PADDLE2ONNX_EXPORT_TEMP_DIR = None
 
 
-def load_model(model_filename):
-    """Loads the pir model from json file."""
-    assert os.path.exists(
-        model_filename
-    ), f"Model file {model_filename} does not exist."
-    if model_filename.endswith(".json"):
-        model_filename = model_filename[:-5]
-    return paddle.jit.load(model_filename)
+def get_tmp_dir_and_file(model_filename, suffix=""):
+    global PADDLE2ONNX_EXPORT_TEMP_DIR
+    if PADDLE2ONNX_EXPORT_TEMP_DIR is None:
+        PADDLE2ONNX_EXPORT_TEMP_DIR = tempfile.mkdtemp()
+    model_file_path, _ = os.path.splitext(model_filename)
+    new_model_file_path = os.path.join(
+        PADDLE2ONNX_EXPORT_TEMP_DIR, os.path.basename(model_file_path) + suffix
+    )
+    new_model_file_name = new_model_file_path + ".json"
+    new_params_file_name = new_model_file_path + ".pdiparams"
+    return (
+        model_file_path,
+        new_model_file_path,
+        new_model_file_name,
+        new_params_file_name,
+    )
 
 
 def compare_programs(original_program, new_program):
@@ -40,33 +51,21 @@ def compare_programs(original_program, new_program):
     return original_ops == new_ops
 
 
-def save_program(program, model_file):
-    """Saves the decomposed program to a file."""
+def save_program(program, new_model_file_path):
     place = paddle.CPUPlace()
     exe = paddle.static.Executor(place)
-
-    tmp_dir = tempfile.mkdtemp()
-    filename = os.path.basename(model_file) + "_decompose"
-    filename_without_extension, _ = os.path.splitext(filename)
-    save_dir = os.path.join(tmp_dir, filename_without_extension)
-
     # Find feed and fetch operations
     feed, fetch = [], []
+    # TODO(wangmingkai02): need double check it
     for op in program.global_block().ops:
         if op.name() == "pd_op.feed":
             feed.extend(op.results())
         if op.name() == "pd_op.fetch" or op.name() == "builtin.shadow_output":
             fetch.extend(op.operands_source())
-
     with paddle.pir_utils.IrGuard():
-        paddle.static.save_inference_model(save_dir, feed, fetch, exe, program=program)
-
-    new_model_file = save_dir + ".json"
-    assert os.path.exists(
-        new_model_file
-    ), f"Pir Model file {new_model_file} does not exist."
-    logging.info(f"Decomposed Model file path: {new_model_file}")
-    return new_model_file
+        paddle.static.save_inference_model(
+            new_model_file_path, feed, fetch, exe, program=program
+        )
 
 
 def load_parameter(program):
@@ -79,10 +78,8 @@ def load_parameter(program):
             opts.append(var)
     vars_list = params + opts
     vars = [var for var in vars_list if var.persistable]
-
     if vars is None:
         return
-
     place = paddle.CPUPlace()
     exe = paddle.static.Executor(place)
     paddle.base.libpaddle.pir.create_loaded_parameter(
@@ -92,7 +89,10 @@ def load_parameter(program):
 
 def decompose_program(model_filename):
     """Decomposes the given pir program."""
-    model = load_model(model_filename)
+    model_file_path, new_model_file_path, new_model_file_name, new_params_file_name = (
+        get_tmp_dir_and_file(model_filename, "_decompose")
+    )
+    model = paddle.jit.load(model_file_path)
     new_program = model.program().clone()
     with decomp.prim_guard():
         decomp.decompose_dist_program(new_program)
@@ -101,7 +101,8 @@ def decompose_program(model_filename):
         return model_filename
 
     load_parameter(new_program)
-    return save_program(new_program, model_filename)
+    save_program(new_program, new_model_file_path)
+    return new_model_file_name
 
 
 def get_old_ir_guard():
@@ -136,91 +137,129 @@ def export(
     export_fp16_model=False,
     enable_polygraphy=True,
 ):
+    global PADDLE2ONNX_EXPORT_TEMP_DIR
     # check model_filename
     assert os.path.exists(
         model_filename
     ), f"Model file {model_filename} does not exist."
+    if not os.path.exists(params_filename):
+        logging.warning(
+            f"Params file {params_filename} does not exist, "
+            + "the exported onnx model will not contain weights."
+        )
+        params_filename = ""
 
-    # translate old ir program to pir
-    tmp_dir = tempfile.mkdtemp()
-    dir_and_file, extension = os.path.splitext(model_filename)
-    filename = os.path.basename(model_filename)
-    filename_without_extension, _ = os.path.splitext(filename)
-    save_dir = os.path.join(tmp_dir, filename_without_extension)
-    if model_filename.endswith(".pdmodel"):
-        if os.path.exists(model_filename) and os.path.exists(params_filename):
-            place = paddle.CPUPlace()
-            exe = paddle.static.Executor(place)
-            with paddle.pir_utils.OldIrGuard():
-                [inference_program, feed_target_names, fetch_targets] = (
-                    paddle.static.load_inference_model(dir_and_file, exe)
+    try:
+        if model_filename.endswith(".pdmodel"):
+            # translate old ir program to pir program
+            logging.warning(
+                "The .pdmodel file is deprecated in paddlepaddle 3.0"
+                + " and will be removed in the future."
+                + " Try to convert from .pdmodel file to json file."
+            )
+            (
+                model_file_path,
+                new_model_file_path,
+                new_model_file_name,
+                new_params_file_name,
+            ) = get_tmp_dir_and_file(model_filename, "_pt")
+            if os.path.exists(params_filename):
+                place = paddle.CPUPlace()
+                exe = paddle.static.Executor(place)
+                with paddle.pir_utils.OldIrGuard():
+                    [inference_program, feed_target_names, fetch_targets] = (
+                        paddle.static.load_inference_model(model_file_path, exe)
+                    )
+                program = paddle.pir.translate_to_pir(inference_program.desc)
+                # TODO(wangmingkai02): Do we need to call load_parameter(program) here?
+                load_parameter(program)
+                save_program(program, new_model_file_path)
+                params_filename = new_params_file_name
+                if not os.path.exists(new_params_file_name):
+                    raise RuntimeError(
+                        f"Program Tranlator failed due to params file {new_params_file_name} does not exist."
+                    )
+            else:
+                with paddle.pir_utils.OldIrGuard():
+                    program = paddle.load(model_filename)
+                    pir_program = paddle.pir.translate_to_pir(program.desc)
+                with paddle.pir_utils.IrGuard():
+                    paddle.save(pir_program, new_model_file_name)
+            if not os.path.exists(new_model_file_name):
+                raise RuntimeError(
+                    f"Program Tranlator failed due to json file {new_model_file_name} does not exist."
                 )
-            program = paddle.pir.translate_to_pir(inference_program.desc)
-            for op in program.global_block().ops:
-                if op.name() == "pd_op.feed":
-                    feed = op.results()
-                if op.name() == "pd_op.fetch":
-                    fetch = op.operands_source()
-            with paddle.pir_utils.IrGuard():
-                paddle.static.save_inference_model(
-                    save_dir, feed, fetch, exe, program=program
-                )
-            model_filename = save_dir + ".json"
-            params_filename = save_dir + ".pdiparams"
-            assert os.path.exists(
-                model_filename
-            ), f"Pir Model file {model_filename} does not exist."
-            assert os.path.exists(
-                params_filename
-            ), f"Pir Params file {params_filename} does not exist."
+            model_filename = new_model_file_name
+            if verbose:
+                logging.info("Complete the conversion from .pdmodel to json file.")
+
+        if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
+            if dist_prim_all and auto_upgrade_opset:
+                if verbose:
+                    logging.info("Try to decompose program ...")
+                # TODO(wangmingkai02): Do we need to update params_filename here?
+                model_filename = decompose_program(model_filename)
+                if verbose:
+                    logging.info("Complete the decomposition of combined operators.")
+
+        if verbose and PADDLE2ONNX_EXPORT_TEMP_DIR is not None:
+            logging.info(
+                f"Intermediate model and param files are saved at {PADDLE2ONNX_EXPORT_TEMP_DIR}"
+            )
+
+        deploy_backend = deploy_backend.lower()
+        if custom_op_info is None:
+            onnx_model_str = c_p2o.export(
+                model_filename,
+                params_filename,
+                opset_version,
+                auto_upgrade_opset,
+                verbose,
+                enable_onnx_checker,
+                enable_experimental_op,
+                enable_optimize,
+                {},
+                deploy_backend,
+                calibration_file,
+                external_file,
+                export_fp16_model,
+            )
         else:
-            with paddle.pir_utils.OldIrGuard():
-                program = paddle.load(model_filename)
-                pir_program = paddle.pir.translate_to_pir(program.desc)
-            save_dir = os.path.join(tmp_dir, filename_without_extension)
-            model_filename = save_dir + ".json"
-            with paddle.pir_utils.IrGuard():
-                paddle.save(pir_program, model_filename)
-            assert os.path.exists(
-                model_filename
-            ), f"Pir Model file {model_filename} does not exist."
-    if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
-        if dist_prim_all and auto_upgrade_opset:
-            model_filename = decompose_program(model_filename)
+            onnx_model_str = c_p2o.export(
+                model_filename,
+                params_filename,
+                opset_version,
+                auto_upgrade_opset,
+                verbose,
+                enable_onnx_checker,
+                enable_experimental_op,
+                enable_optimize,
+                custom_op_info,
+                deploy_backend,
+                calibration_file,
+                external_file,
+                export_fp16_model,
+            )
+    except Exception as error:
+        logging.error(f"Failed to convert PaddlePaddle model: {error}.")
+        logging.error(traceback.print_exc())
+    finally:
+        if (
+            os.environ.get("P2O_KEEP_TEMP_MODEL", "0").lower()
+            not in [
+                "1",
+                "true",
+                "on",
+            ]
+            and PADDLE2ONNX_EXPORT_TEMP_DIR is not None
+        ):
+            logging.warning(
+                "Intermediate model and param files will be deleted,"
+                + " if you want to keep them, please set env variable `P2O_KEEP_TEMP_MODEL` to True."
+            )
+            shutil.rmtree(PADDLE2ONNX_EXPORT_TEMP_DIR, ignore_errors=True)
+            PADDLE2ONNX_EXPORT_TEMP_DIR = None
 
-    deploy_backend = deploy_backend.lower()
-    if custom_op_info is None:
-        onnx_model_str = c_p2o.export(
-            model_filename,
-            params_filename,
-            opset_version,
-            auto_upgrade_opset,
-            verbose,
-            enable_onnx_checker,
-            enable_experimental_op,
-            enable_optimize,
-            {},
-            deploy_backend,
-            calibration_file,
-            external_file,
-            export_fp16_model,
-        )
-    else:
-        onnx_model_str = c_p2o.export(
-            model_filename,
-            params_filename,
-            opset_version,
-            auto_upgrade_opset,
-            verbose,
-            enable_onnx_checker,
-            enable_experimental_op,
-            enable_optimize,
-            custom_op_info,
-            deploy_backend,
-            calibration_file,
-            external_file,
-            export_fp16_model,
-        )
     if save_file is not None:
         if enable_polygraphy:
             try:
@@ -277,6 +316,7 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
             "on",
         ]:
             logging.warning(
-                "Static PaddlePaddle model will be deleted, if you want to keep it, please set env variable `P2O_KEEP_TEMP_MODEL` to True."
+                "Static PaddlePaddle model will be deleted, if you want to keep it,"
+                + " please set env variable `P2O_KEEP_TEMP_MODEL` to True."
             )
             shutil.rmtree(paddle_model_dir, ignore_errors=True)

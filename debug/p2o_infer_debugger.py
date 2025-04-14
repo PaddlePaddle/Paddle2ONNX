@@ -26,6 +26,7 @@ from prune_onnx_model import prune_onnx_model
 from contextlib import contextmanager
 import traceback
 import queue
+import tempfile
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 tests_dir = os.path.join(current_dir, "..", "tests")
@@ -165,11 +166,16 @@ def generate_random_inputs(input_shapes: list, input_dtypes: list[str]):
     return tuple(inputs)
 
 
-def save_and_export(program, model_file):
+def save_and_export(program, model_file_path):
+    temp_dir = tempfile.mkdtemp()
+    new_model_file_path = os.path.join(
+        temp_dir, os.path.basename(model_file_path) + "_debug"
+    )
+    new_model_file = new_model_file_path + ".json"
+    new_params_file = new_model_file_path + ".pdiparams"
     paddle2onnx.load_parameter(program)
-    new_model_file = paddle2onnx.save_program(program, model_file)
-    origin_params_file = os.path.splitext(model_file)[0] + ".pdiparams"
-    new_params_file = os.path.splitext(new_model_file)[0] + ".pdiparams"
+    paddle2onnx.save_program(program, new_model_file_path)
+    origin_params_file = os.path.splitext(model_file_path)[0] + ".pdiparams"
     if os.path.exists(origin_params_file):
         shutil.copy(origin_params_file, new_params_file)
     if not os.path.exists(new_params_file):

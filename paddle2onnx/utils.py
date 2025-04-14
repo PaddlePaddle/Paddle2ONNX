@@ -54,6 +54,12 @@ def check_model(onnx_model):
 
 
 levels = {0: "ERROR", 1: "WARNING", 2: "INFO", 3: "DEBUG"}
+level_color = {
+    0: "\033[0;31m",
+    1: "\033[0;33m",
+    2: "\033[0;34m",
+    3: "\033[0;32m",
+}
 
 
 class logging:
@@ -67,8 +73,8 @@ class logging:
         if logging.log_level >= level:
             if use_color:
                 print(
-                    "\033[1;31;40m{} [{}]\t{}\033[0m".format(
-                        current_time, levels[level], message
+                    "{}{} [{}]\t{}\033[0m".format(
+                        level_color[level], current_time, levels[level], message
                     )
                     .encode("utf-8")
                     .decode("latin1")
