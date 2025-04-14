@@ -55,15 +55,12 @@ The adjustable conversion parameters are listed in the following table:
 | --params_filename          | **[Optional]** Configure the name of the file to store model parameters under `--model_dir`                                                                                                                                       |
 | --save_file                | Specify the converted model save directory path                                                                                                                                                                                   |
 | --opset_version            | **[Optional]** Configure the OpSet version converted to ONNX, currently supports multiple versions such as 7~19, the default is 9                                                                                                 |
-| --enable_onnx_checker      | **[Optional]** Configure whether to check the correctness of the exported ONNX model, it is recommended to turn on this switch, the default is True                                                                              |
 | --enable_auto_update_opset | **[Optional]** Whether to enable the opset version automatic upgrade function, when the lower version of the opset cannot be converted, automatically select the higher version of the opset for conversion, the default is True  |
-| --deploy_backend           | **[Optional]** Inference engine for quantitative model deployment, supports onnxruntime/rknn/tensorrt, the default is onnxruntime |
-| --save_calibration_file    | **[Optional]** TensorRT 8.X version deploys the cache file that needs to be read to save the path of the quantitative model, the default is calibration.cache                                                                     |
-| --version                  | **[Optional]** View paddle2onnx version                                                                                                                                                                                           |
-| --external_filename        | **[Optional]** When the exported ONNX model is larger than 2G, you need to set the storage path of external data, the recommended setting is: external_data                                                                       |
-| --export_fp16_model        | **[Optional]** Whether to convert the exported ONNX model to FP16 format, and use ONNXRuntime-GPU to accelerate inference, the default is False                                                                                   |
-| --custom_ops               | **[Optional]** Export Paddle OP as ONNX's Custom OP, for example: --custom_ops '{"paddle_op":"onnx_op"}, default is {}                                                                                                            |
-
+| --enable_onnx_checker      | **[Optional]** Configure whether to check the correctness of the exported ONNX model, it is recommended to turn on this switch, the default is True                                                                              |
+| --enable_dist_prim_all      | **[Optional]** Whether to enable the decomposition of combined operators, the default is False
+| --enable_optimization      | **[Optional]** Whether to enable onnx optimization, the default is True |
+| --enable_verbose           | **[Optional]** Whether to show verbose logs, default False |
+| --version                  | **[Optional]** View paddle2onnx version       |
 ### 4.4 Pruning ONNX
 
 If you need to adjust ONNX models, please refer to [ONNX related tools](./tools/onnx/README.md)

@@ -53,39 +53,20 @@ def arg_parser():
         default=9,
         help="set onnx opset version to export",
     )
-    parser.add_argument(
-        "--deploy_backend",
-        "-d",
-        type=str,
-        default="onnxruntime",
-        choices=["onnxruntime", "tensorrt", "rknn", "others"],
-        help="Quantize model deploy backend, default onnxruntime.",
-    )
-    parser.add_argument(
-        "--save_calibration_file",
-        type=str,
-        default="calibration.cache",
-        help="The calibration cache for TensorRT deploy, default calibration.cache.",
-    )
-    parser.add_argument(
-        "--enable_onnx_checker",
-        type=ast.literal_eval,
-        default=True,
-        help="whether check onnx model validity, default True",
-    )
-    parser.add_argument(
-        "--enable_paddle_fallback",
-        type=ast.literal_eval,
-        default=False,
-        help="whether use PaddleFallback for custom op, default is False",
-    )
-    parser.add_argument(
-        "--version",
-        "-v",
-        action="store_true",
-        default=False,
-        help="get version of paddle2onnx",
-    )
+    # parser.add_argument(
+    #     "--deploy_backend",
+    #     "-d",
+    #     type=str,
+    #     default="onnxruntime",
+    #     choices=["onnxruntime", "tensorrt", "rknn", "others"],
+    #     help="Quantize model deploy backend, default onnxruntime.",
+    # )
+    # parser.add_argument(
+    #     "--save_calibration_file",
+    #     type=str,
+    #     default="calibration.cache",
+    #     help="The calibration cache for TensorRT deploy, default calibration.cache.",
+    # )
     parser.add_argument(
         "--enable_auto_update_opset",
         type=ast.literal_eval,
@@ -93,29 +74,35 @@ def arg_parser():
         help="whether enable auto_update_opset, default is True",
     )
     parser.add_argument(
+        "--enable_onnx_checker",
+        type=ast.literal_eval,
+        default=True,
+        help="whether check onnx model validity, default is True",
+    )
+    parser.add_argument(
         "--enable_dist_prim_all",
         type=ast.literal_eval,
         default=False,
-        help="whether enable dist_prim_all, default is False",
+        help="Whether to enable the decomposition of combined operators, default is False.",
     )
-    parser.add_argument(
-        "--external_filename",
-        type=str,
-        default=None,
-        help="The filename of external_data when the model is bigger than 2G.",
-    )
-    parser.add_argument(
-        "--export_fp16_model",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether export FP16 model for ORT-GPU, default False",
-    )
-    parser.add_argument(
-        "--custom_ops",
-        type=str,
-        default="{}",
-        help='Ops that needs to be converted to custom op, e.g --custom_ops \'{"paddle_op":"onnx_op"}\', default {}',
-    )
+    # parser.add_argument(
+    #     "--external_filename",
+    #     type=str,
+    #     default=None,
+    #     help="The filename of external_data when the model is bigger than 2G.",
+    # )
+    # parser.add_argument(
+    #     "--export_fp16_model",
+    #     type=ast.literal_eval,
+    #     default=False,
+    #     help="Whether export FP16 model for ORT-GPU, default False",
+    # )
+    # parser.add_argument(
+    #     "--custom_ops",
+    #     type=str,
+    #     default="{}",
+    #     help='Ops that needs to be converted to custom op, e.g --custom_ops \'{"paddle_op":"onnx_op"}\', default {}',
+    # )
     parser.add_argument(
         "--enable_optimization",
         type=ast.literal_eval,
@@ -127,6 +114,13 @@ def arg_parser():
         type=ast.literal_eval,
         default=False,
         help="whether show verbose logs, default False",
+    )
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="store_true",
+        default=False,
+        help="get version of paddle2onnx",
     )
     return parser
 
@@ -162,16 +156,14 @@ def main():
     else:
         params_file = os.path.join(args.model_dir, args.params_filename)
 
-    if args.external_filename is None:
-        args.external_filename = "external_data"
+    # if args.external_filename is None:
+    #     args.external_filename = "external_data"
 
     base_path = os.path.dirname(args.save_file)
     if base_path and not os.path.exists(base_path):
         os.mkdir(base_path)
-    external_file = os.path.join(base_path, args.external_filename)
-    custom_ops_dict = eval(args.custom_ops)
-
-    calibration_file = args.save_calibration_file
+    # external_file = os.path.join(base_path, args.external_filename)
+    # custom_ops_dict = eval(args.custom_ops)
     paddle2onnx.export(
         model_filename=model_file,
         params_filename=params_file,
@@ -183,11 +175,11 @@ def main():
         enable_onnx_checker=args.enable_onnx_checker,
         enable_experimental_op=True,
         enable_optimize=True,
-        custom_op_info=custom_ops_dict,
-        deploy_backend=args.deploy_backend,
-        calibration_file=calibration_file,
-        external_file=external_file,
-        export_fp16_model=args.export_fp16_model,
+        custom_op_info=None,
+        deploy_backend="onnxruntime",
+        calibration_file="",
+        external_file="",
+        export_fp16_model=False,
         enable_polygraphy=args.enable_optimization,
     )
 

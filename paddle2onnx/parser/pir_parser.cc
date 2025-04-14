@@ -393,7 +393,7 @@ bool PaddlePirParser::LoadParams(const std::string& path) {
   std::vector<std::string> var_names;
   GetParamValueName(&var_names);
   P2OLogger(verbose_)
-      << "Get param's attribute 'param_namefrom' from pir::program successfully"
+      << "Get param's attribute 'param_name' from pir::program successfully."
       << std::endl;
 
   int64_t read_size = 0;
