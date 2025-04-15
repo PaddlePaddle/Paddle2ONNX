@@ -157,11 +157,11 @@ def require_fixed_shape(op_name=None):
     )
 
 
-def paddle_jit_save_configs(configs):
+def paddle2onnx_export_configs(configs):
     assert isinstance(
         configs, dict
-    ), "create jit.save configs from input, but input data is not dict."
-    supported_configs = {
+    ), "create jit.save and paddle2onnx conversion configs from input, but input data is not dict."
+    jit_save_configs = {
         "output_spec",
         "with_hook",
         "combine_params",
@@ -169,5 +169,16 @@ def paddle_jit_save_configs(configs):
         "skip_forward",
         "input_names_after_prune",
     }
-    retval = {k: v for (k, v) in configs.items() if k in supported_configs}
-    return retval
+
+    onnx_configs = {
+        "enable_auto_update_opset": "auto_upgrade_opset",
+        "enable_onnx_checker": "enable_onnx_checker",
+        "enable_dist_prim_all": "dist_prim_all",
+        "enable_optimization": "enable_polygraphy",
+        "enable_verbose": "verbose",
+    }
+    save_configs = {k: v for (k, v) in configs.items() if k in jit_save_configs}
+    export_configs = {
+        onnx_configs[k]: v for (k, v) in configs.items() if k in onnx_configs
+    }
+    return save_configs, export_configs

@@ -16,7 +16,7 @@ import os
 import paddle
 import tempfile
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-from paddle2onnx.utils import logging, paddle_jit_save_configs
+from paddle2onnx.utils import logging, paddle2onnx_export_configs
 from contextlib import contextmanager
 from paddle.decomposition import decomp
 from paddle.base.executor import global_scope
@@ -292,7 +292,7 @@ def export(
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
     paddle_model_dir = tempfile.mkdtemp()
     try:
-        save_configs = paddle_jit_save_configs(configs)
+        save_configs, export_configs = paddle2onnx_export_configs(configs)
         if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
             model_file = os.path.join(paddle_model_dir, "model.json")
         else:
@@ -306,7 +306,7 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
         params_file = os.path.join(paddle_model_dir, "model.pdiparams")
         if not os.path.isfile(params_file):
             params_file = ""
-        export(model_file, params_file, save_file, opset_version)
+        export(model_file, params_file, save_file, opset_version, **export_configs)
     except Exception as err:
         logging.error(f"Failed to convert PaddlePaddle model due to {err}.")
     finally:
