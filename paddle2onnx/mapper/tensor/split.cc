@@ -99,10 +99,9 @@ std::string SplitMapper::GetSections(int64_t dimension) {
   if (HasInput("SectionsTensorList")) {
     auto info = GetInput("SectionsTensorList");
     splits = helper_->ConcatIndices(info);
-  } else if (HasInput("sections")) {
-    auto info = GetInput("sections");
-    splits = helper_->ConcatIndices(info);
-  } else if (sections_.size() > 0) {
+  } else if (sections_.size() > 0 ||
+             (HasInput("sections") &&
+              TryGetInputValue("sections", &sections_))) {
     int sum_of_known_dim = 0;
     for (size_t i = 0; i < sections_.size(); ++i) {
       if (sections_[i] > 0) {
@@ -118,6 +117,9 @@ std::string SplitMapper::GetSections(int64_t dimension) {
       }
     }
     splits = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, sections_);
+  } else if (HasInput("sections")) {
+    auto info = GetInput("sections");
+    splits = helper_->ConcatIndices(info);
   } else if (HasAttr("num")) {
     GetAttr("num", &num_);
     Assert(dimension > 0,
