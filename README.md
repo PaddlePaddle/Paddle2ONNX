@@ -59,7 +59,7 @@ paddle2onnx --model_dir model_dir \
 | --enable_auto_update_opset | **[可选]** 是否开启opset version自动升级功能，当低版本opset无法转换时，自动选择更高版本的opset进行转换， 默认为 True          |
 | --enable_onnx_checker      | **[可选]** 配置是否检查导出为 ONNX 模型的正确性, 建议打开此开关， 默认为 True                                             |
 | --enable_dist_prim_all     | **[可选]** 是否开启组合算子拆解，默为 False                                                                           |
-| --enable_optimization      | **[可选]** 是否开启模型优化，默认为 True                                                                             |
+| --optimize_tool            | **[可选]** ONNX模型优化工具，可选择onnxoptimizer、polygraphy、None, 默认为 onnxoptimizer                              |
 | --enable_verbose           | **[可选]** 是否打印更更详细的日志信息，默认为 False                                                                    |
 | --version                  | **[可选]** 查看 paddle2onnx 版本                                                                                   |
 

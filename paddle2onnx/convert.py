@@ -135,7 +135,7 @@ def export(
     calibration_file="",
     external_file="",
     export_fp16_model=False,
-    enable_polygraphy=True,
+    optimize_tool="onnxoptimizer",
 ):
     global PADDLE2ONNX_EXPORT_TEMP_DIR
     # check model_filename
@@ -261,7 +261,51 @@ def export(
             PADDLE2ONNX_EXPORT_TEMP_DIR = None
 
     if save_file is not None:
-        if enable_polygraphy:
+        # if optimize_tool == "onnxsim":
+        #     try:
+        #         logging.info(
+        #             "Try to perform optimization on the ONNX model with Onnx Simplifier."
+        #         )
+        #         import io
+        #         import onnx
+        #         from onnxsim import simplify
+        #         model_stream = io.BytesIO(onnx_model_str)
+        #         onnx_model = onnx.load_model(model_stream)
+        #         simplified_model, check = simplify(onnx_model)
+        #         if check:
+        #             onnx.save(simplified_model, save_file)
+        #         else:
+        #             logging.warning(f"Fail to simplify onnx model. Skip simplifying.")
+        #     except Exception as error:
+        #         logging.warning(
+        #             f"Fail to simplify onnx model with error: {error}. Skip simplifying."
+        #         )
+        #         with open(save_file, "wb") as f:
+        #             f.write(onnx_model_str)
+        if optimize_tool == "onnxoptimizer":
+            try:
+                logging.info(
+                    "Try to perform optimization on the ONNX model with onnxoptimizer."
+                )
+                import io
+                import onnx
+                import onnxoptimizer
+
+                model_stream = io.BytesIO(onnx_model_str)
+                onnx_model = onnx.load_model(model_stream)
+                passes = [
+                    "eliminate_deadend",
+                    "eliminate_identity",
+                ]
+                optimized_model = onnxoptimizer.optimize(onnx_model, passes)
+                onnx.save(optimized_model, save_file)
+            except Exception as error:
+                logging.warning(
+                    f"Fail to optimize onnx model with error: {error}. Skip onnxoptimizer."
+                )
+                with open(save_file, "wb") as f:
+                    f.write(onnx_model_str)
+        elif optimize_tool == "polygraphy":
             try:
                 logging.info(
                     "Try to perform constant folding on the ONNX model with Polygraphy."

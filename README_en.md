@@ -57,8 +57,8 @@ The adjustable conversion parameters are listed in the following table:
 | --opset_version            | **[Optional]** Configure the OpSet version converted to ONNX, currently supports multiple versions such as 7~19, the default is 9                                                                                                 |
 | --enable_auto_update_opset | **[Optional]** Whether to enable the opset version automatic upgrade function, when the lower version of the opset cannot be converted, automatically select the higher version of the opset for conversion, the default is True  |
 | --enable_onnx_checker      | **[Optional]** Configure whether to check the correctness of the exported ONNX model, it is recommended to turn on this switch, the default is True                                                                              |
-| --enable_dist_prim_all      | **[Optional]** Whether to enable the decomposition of combined operators, the default is False
-| --enable_optimization      | **[Optional]** Whether to enable onnx optimization, the default is True |
+| --enable_dist_prim_all     | **[Optional]** Whether to enable the decomposition of combined operators, the default is False
+| --optimize_tool            | **[Optional]** ONNX model optimization tool, options: onnxoptimizer, polygraphy, or None, the default is onnxoptimizer.
 | --enable_verbose           | **[Optional]** Whether to show verbose logs, default False |
 | --version                  | **[Optional]** View paddle2onnx version       |
 ### 4.4 Pruning ONNX
