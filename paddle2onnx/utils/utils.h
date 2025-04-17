@@ -23,7 +23,7 @@ namespace paddle2onnx {
 
 inline void Assert(bool condition, const std::string& message) {
   if (!condition) {
-    fprintf(stderr, "[ERROR] %s\n", message.c_str());
+    fprintf(stderr, "[ERROR][Paddle2ONNX] %s\n", message.c_str());
     std::abort();
   }
 }
