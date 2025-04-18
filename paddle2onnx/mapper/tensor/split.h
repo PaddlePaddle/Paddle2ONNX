@@ -43,6 +43,7 @@ class SplitMapper : public Mapper {
   int32_t GetMinOpsetVersion(bool verbose) override;
   int64_t GetAxis(int64_t rank);
   std::string GetSections(int64_t dimension);
+  void ProcessSections(int64_t dimension);
   void Opset7() override;
   void Opset13() override;
   void Opset18() override;

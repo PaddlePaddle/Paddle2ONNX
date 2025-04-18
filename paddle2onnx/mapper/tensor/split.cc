@@ -73,7 +73,7 @@ int32_t SplitMapper::GetMinOpsetVersion(bool verbose) {
 }
 
 int64_t SplitMapper::GetAxis(int64_t rank) {
-  int64_t axis = axis_;  // old IR
+  int64_t axis = axis_;  // Old IR
   if (HasInput("axis") || HasInput("AxisTensor")) {
     if (in_pir_mode) {
       double value = 0;
@@ -90,10 +90,10 @@ int64_t SplitMapper::GetAxis(int64_t rank) {
   }
   if (axis < 0) {
     axis += rank;
-    // input_info[0].Rank();
   }
   return axis;
 }
+
 std::string SplitMapper::GetSections(int64_t dimension) {
   std::string splits = "";
   if (HasInput("SectionsTensorList")) {
@@ -102,20 +102,7 @@ std::string SplitMapper::GetSections(int64_t dimension) {
   } else if (sections_.size() > 0 ||
              (HasInput("sections") &&
               TryGetInputValue("sections", &sections_))) {
-    int sum_of_known_dim = 0;
-    for (size_t i = 0; i < sections_.size(); ++i) {
-      if (sections_[i] > 0) {
-        sum_of_known_dim += sections_[i];
-      }
-    }
-    for (size_t i = 0; i < sections_.size(); ++i) {
-      if (sections_[i] < 0) {
-        Assert(dimension > 0,
-               "Cannot convert split op, while there's -1 in sections and "
-               "cannot be infered by input shape.");
-        sections_[i] = dimension - sum_of_known_dim;
-      }
-    }
+    ProcessSections(dimension);
     splits = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, sections_);
   } else if (HasInput("sections")) {
     auto info = GetInput("sections");
@@ -130,6 +117,29 @@ std::string SplitMapper::GetSections(int64_t dimension) {
   }
   return splits;
 }
+
+void SplitMapper::ProcessSections(int64_t dimension) {
+  int sum_of_known_dim = 0;
+  int cnt_of_unknown_dim = 0;
+  for (size_t i = 0; i < sections_.size(); ++i) {
+    if (sections_[i] > 0) {
+      sum_of_known_dim += sections_[i];
+    } else {
+      cnt_of_unknown_dim++;
+    }
+  }
+  Assert(cnt_of_unknown_dim <= 1,
+         "Cannot convert split op, while there's more than 1 -1 in sections.");
+  for (size_t i = 0; i < sections_.size(); ++i) {
+    if (sections_[i] < 0) {
+      Assert(dimension > 0,
+             "Cannot convert split op, while there's -1 in sections and cannot "
+             "be infered by input shape.");
+      sections_[i] = dimension - sum_of_known_dim;
+    }
+  }
+}
+
 void SplitMapper::Opset7() {
   std::vector<TensorInfo> input_info;
   std::vector<TensorInfo> output_info;
@@ -151,27 +161,7 @@ void SplitMapper::Opset7() {
   }
 
   if (sections_.size() > 0) {
-    int sum_of_known_dim = 0;
-    int cnt_of_unknown_dim = 0;
-    for (size_t i = 0; i < sections_.size(); ++i) {
-      if (sections_[i] > 0) {
-        sum_of_known_dim += sections_[i];
-      } else {
-        cnt_of_unknown_dim++;
-      }
-    }
-    Assert(
-        cnt_of_unknown_dim <= 1,
-        "Cannot convert split op, while there's more than 1 -1 in sections.");
-    for (size_t i = 0; i < sections_.size(); ++i) {
-      if (sections_[i] < 0) {
-        Assert(
-            input_info[0].shape[axis] > 0,
-            "Cannot convert split op, while there's -1 in sections and cannot "
-            "be infered by input shape.");
-        sections_[i] = input_info[0].shape[axis] - sum_of_known_dim;
-      }
-    }
+    ProcessSections(input_info[0].shape[axis]);
   } else if (HasAttr("num")) {
     GetAttr("num", &num_);
     int64_t each_part_size = input_info[0].shape[axis] / num_;

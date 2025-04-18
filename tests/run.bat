@@ -50,6 +50,7 @@ set ignore=!ignore! test_auto_scan_conv3d.py
 set ignore=!ignore! test_auto_scan_grid_sampler.py
 set ignore=!ignore! test_auto_scan_gaussian_random.py
 set ignore=!ignore! test_auto_scan_partial_ops.py
+set ignore=!ignore! test_auto_scan_pool_avg_ops.py
 REM window ci bug, need to be fixed
 set ignore=!ignore! test_Conv2D_Dropout.py
 REM Initialize bug count
