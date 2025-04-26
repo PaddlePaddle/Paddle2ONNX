@@ -144,7 +144,7 @@ def main():
 
     if args.version:
         logging.info(
-            "paddle2onnx-{} with python>=3.8, paddlepaddle>=2.0.0".format(
+            "paddle2onnx-{} with python>=3.8, paddlepaddle>=3.0.0".format(
                 paddle2onnx.__version__
             )
         )

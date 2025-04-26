@@ -89,36 +89,61 @@ else()
   add_subdirectory(third_party/pybind11)
 
   # add glog
+  if(MSVC)
+    set(WITH_GFLAGS
+        OFF
+        CACHE BOOL "Disable gflags support in glog")
+  endif()
   add_subdirectory(third_party/glog)
 
   # find Python site-packages dir
+  set(PYTHON_SITE_PACKAGES "")
   execute_process(
     COMMAND ${PYTHON_EXECUTABLE} -c
-            "import site;print(site.getsitepackages()[0])"
-    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+            "import site; print(';'.join(site.getsitepackages()))"
+    OUTPUT_VARIABLE SITE_PACKAGES_LIST
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-  message(STATUS "Python site-packages directory: ${PYTHON_SITE_PACKAGES}")
-
-  if(MSVC)
-    include(external/paddle)
-    # add paddle include dir
-    set(PADDLE_INCLUDE_DIR ${LIBPADDLE_INCLUDE_DIR})
-    set(PADDLE_LIB ${LIBPADDLE_BASE_LIBRARY})
-    set(COMMON_LIB ${LIBPADDLE_COMMON_LIBRARY})
-  else()
-    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
-    if(EXISTS ${PADDLE_LIB})
-      message(STATUS "Found libpaddle.so : ${PADDLE_LIB}.")
-    else()
-      message(
-        FATAL_ERROR
-          "Can not found libpaddle.so at ${PYTHON_SITE_PACKAGES}/paddle/base!")
+  string(REPLACE ";" " " SITE_PACKAGES_LIST "${SITE_PACKAGES_LIST}")
+  separate_arguments(SITE_PACKAGES_LIST)
+  foreach(SITE_PACKAGES IN LISTS SITE_PACKAGES_LIST)
+    if(EXISTS "${SITE_PACKAGES}" AND SITE_PACKAGES MATCHES "site-packages")
+      string(REPLACE "\\" "/" PYTHON_SITE_PACKAGES "${SITE_PACKAGES}")
+      message(STATUS "Found valid site-packages path: ${PYTHON_SITE_PACKAGES}.")
+      break()
     endif()
-    # add paddle include dir
-    set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
+  endforeach()
+  if(NOT PYTHON_SITE_PACKAGES)
+    message(FATAL_ERROR "No valid site-packages path found.")
   endif()
 
+  if(MSVC)
+    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.lib")
+    set(COMMON_LIB "${PYTHON_SITE_PACKAGES}/paddle/libs/common.lib")
+  else()
+    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
+  endif()
+  if(EXISTS ${PADDLE_LIB})
+    message(STATUS "Found libpaddle: ${PADDLE_LIB}.")
+  else()
+    message(
+      FATAL_ERROR
+        "Can not find libpaddle at ${PYTHON_SITE_PACKAGES}/paddle/base!")
+  endif()
+  # add paddle include dir
+  set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
   include_directories(${PADDLE_INCLUDE_DIR})
+  if(MSVC)
+    # PIR patch
+    add_custom_target(
+      pir_patch ALL
+      COMMAND
+        ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/patch/paddle/interface_support.h
+        ${PADDLE_INCLUDE_DIR}/paddle/pir/include/core/interface_support.h
+      COMMENT
+        "Replace file ${PADDLE_INCLUDE_DIR}/paddle/pir/include/core/interface_support.h with ${CMAKE_SOURCE_DIR}/patch/paddle/interface_support.h"
+    )
+  endif()
   if(APPLE)
     set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS
                                                  "-undefined dynamic_lookup")

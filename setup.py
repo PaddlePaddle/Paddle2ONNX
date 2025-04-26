@@ -27,8 +27,6 @@ import subprocess
 import sys
 import platform
 import multiprocessing
-import glob
-import shutil
 
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
 SRC_DIR = os.path.join(TOP_DIR, "paddle2onnx")
@@ -185,14 +183,6 @@ class build_ext(setuptools.command.build_ext.build_ext):
                     lib_path = debug_lib_dir
                 elif os.path.exists(release_lib_dir):
                     lib_path = release_lib_dir
-                # copy paddle libs
-                os.makedirs(os.path.join(extension_dst_dir, "libs"), exist_ok=True)
-                source_pattern = os.path.join(
-                    CMAKE_BUILD_DIR, "third_party", "paddle", "libpaddle", "*.dll"
-                )
-                dest_dir = os.path.join(extension_dst_dir, "libs")
-                for file_path in glob.glob(source_pattern):
-                    shutil.copy(file_path, dest_dir)
 
             src = os.path.join(lib_path, filename)
             dst = os.path.join(
