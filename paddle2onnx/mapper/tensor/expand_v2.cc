@@ -18,7 +18,12 @@ namespace paddle2onnx {
 REGISTER_MAPPER(expand_v2, ExpandV2Mapper)
 REGISTER_PIR_MAPPER(expand_v2, ExpandV2Mapper)
 
-void ExpandV2Mapper::Opset8() {
+int32_t ExpandV2Mapper::GetMinOpsetVersion(bool verbose) {
+  Logger(verbose, 12) << RequireOpset(12) << std::endl;
+  return 12;
+}
+
+void ExpandV2Mapper::Opset12() {
   auto x_info = GetInput("X");
   auto out_info = GetOutput("Out");
 

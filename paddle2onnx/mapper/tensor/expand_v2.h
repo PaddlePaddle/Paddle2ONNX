@@ -31,11 +31,8 @@ class ExpandV2Mapper : public Mapper {
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
   }
-  int32_t GetMinOpsetVersion(bool verbose) override {
-    Logger(verbose, 8) << RequireOpset(8) << std::endl;
-    return 8;
-  }
-  void Opset8() override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset12() override;
 };
 
 }  // namespace paddle2onnx
