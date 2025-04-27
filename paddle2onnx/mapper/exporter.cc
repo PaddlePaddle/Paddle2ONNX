@@ -749,6 +749,8 @@ void ModelExporter::ExportOp(const PaddlePirParser& pir_parser,
                              int64_t op_id,
                              bool if_in_subblock,
                              bool verbose) {
+  P2OLogger(verbose_) << "Start export " << op->name()
+                      << ", op_id: " << op->id() << std::endl;
   auto mapper =
       MapperHelper::Get()->CreateMapper(convert_pir_op_name(op->name()),
                                         pir_parser,
@@ -758,6 +760,8 @@ void ModelExporter::ExportOp(const PaddlePirParser& pir_parser,
   mapper->deploy_backend = deploy_backend_;
   mapper->Run();
   delete mapper;
+  P2OLogger(verbose_) << "Finish export " << op->name()
+                      << ", op_id: " << op->id() << std::endl;
 }
 
 void ModelExporter::CovertCustomOps(const PaddleParser& parser,
