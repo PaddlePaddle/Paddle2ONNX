@@ -112,8 +112,8 @@ def arg_parser():
     parser.add_argument(
         "--optimize_tool",
         type=str,
-        default="onnxoptimizer",
-        choices=["onnxoptimizer", "polygraphy", "None"],
+        default="polygraphy",
+        choices=["polygraphy", "onnxoptimizer", "None"],
         help="onnx optimization tool, default onnxoptimizer",
     )
     parser.add_argument(

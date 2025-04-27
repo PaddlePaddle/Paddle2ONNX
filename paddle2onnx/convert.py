@@ -135,7 +135,7 @@ def export(
     calibration_file="",
     external_file="",
     export_fp16_model=False,
-    optimize_tool="onnxoptimizer",
+    optimize_tool="polygraphy",
 ):
     global PADDLE2ONNX_EXPORT_TEMP_DIR
     # check model_filename
@@ -295,7 +295,11 @@ def export(
                 onnx_model = onnx.load_model(model_stream)
                 passes = [
                     "eliminate_deadend",
-                    "eliminate_identity",
+                    # "eliminate_identity", # some identity is useful in while block
+                    "extract_constant_to_initializer",
+                    "eliminate_unused_initializer",
+                    "eliminate_duplicate_initializer",
+                    "eliminate_nop_cast ",
                 ]
                 optimized_model = onnxoptimizer.optimize(onnx_model, passes)
                 onnx.save(optimized_model, save_file)
@@ -318,6 +322,27 @@ def export(
                 model_stream = io.BytesIO(onnx_model_str)
                 onnx_model = onnx.load_model(model_stream)
                 folded_model = fold_constants(onnx_model)
+                origin_rank_list = []
+                folded_rank_list = []
+                for output in onnx_model.graph.output:
+                    origin_rank_list.append(
+                        len(output.type.tensor_type.shape.dim)
+                        if output.type.tensor_type.HasField("shape")
+                        else None
+                    )
+                for output in folded_model.graph.output:
+                    folded_rank_list.append(
+                        len(output.type.tensor_type.shape.dim)
+                        if output.type.tensor_type.HasField("shape")
+                        else None
+                    )
+                if len(origin_rank_list) != len(folded_rank_list) or any(
+                    origin_rank_list[i] != folded_rank_list[i]
+                    for i in range(len(origin_rank_list))
+                ):
+                    raise ValueError(
+                        "The ranks of outputs in the original and folded model are inconsistent."
+                    )
                 onnx.save(folded_model, save_file)
             except Exception as error:
                 logging.warning(
