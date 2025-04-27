@@ -302,6 +302,7 @@ def export(
                     "eliminate_nop_cast ",
                 ]
                 optimized_model = onnxoptimizer.optimize(onnx_model, passes)
+                onnx.checker.check_model(optimized_model, full_check=True)
                 onnx.save(optimized_model, save_file)
             except Exception as error:
                 logging.warning(
@@ -322,6 +323,7 @@ def export(
                 model_stream = io.BytesIO(onnx_model_str)
                 onnx_model = onnx.load_model(model_stream)
                 folded_model = fold_constants(onnx_model)
+                onnx.checker.check_model(folded_model, full_check=True)
                 origin_rank_list = []
                 folded_rank_list = []
                 for output in onnx_model.graph.output:
