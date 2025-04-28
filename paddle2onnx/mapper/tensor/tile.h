@@ -31,7 +31,8 @@ class TileMapper : public Mapper {
       : Mapper(p, helper, op_id, c) {
     in_pir_mode = true;
   }
-  void Opset7() override;
+  int32_t GetMinOpsetVersion(bool verbose) override;
+  void Opset10() override;
 };
 
 }  // namespace paddle2onnx

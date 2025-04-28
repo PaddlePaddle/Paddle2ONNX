@@ -15,53 +15,43 @@
 #include "paddle2onnx/mapper/tensor/tile.h"
 
 namespace paddle2onnx {
-REGISTER_MAPPER(tile, TileMapper)
 REGISTER_PIR_MAPPER(tile, TileMapper)
 
-void TileMapper::Opset7() {
-  auto x_info = GetInput("X");
-  auto out_info = GetOutput("Out");
+int32_t TileMapper::GetMinOpsetVersion(bool verbose) {
+  Logger(verbose, 10) << RequireOpset(10) << std::endl;
+  return 10;
+}
 
-  bool has_repeats_tensor = HasInput("RepeatTimes");
-  bool has_repeats_tensor_list = HasInput("repeat_times_tensor");
-  std::string repeats = "";
-  // NOTE(Aurelius84): we need to deprecate this branch in the future.
-  if (has_repeats_tensor) {
-    auto repeats_info = GetInput("RepeatTimes");
-    if (repeats_info.size() != 1) {
-      repeats = helper_->ConcatIndices(repeats_info);
-    } else {
-      Assert(repeats_info[0].shape[0] > 0,
-             "repeats info's shape[0] must be greater than 0.");
-      int32_t need_to_expand = x_info[0].Rank() - repeats_info[0].shape[0];
-      need_to_expand = std::max(0, need_to_expand);
-      auto ones = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
-                                    std::vector<int64_t>(need_to_expand, 1));
-      auto temp_repeats = helper_->AutoCast(
-          repeats_info[0].name, repeats_info[0].dtype, P2ODataType::INT64);
-      repeats = helper_->Concat({ones, temp_repeats}, 0);
-    }
-  } else if (IsAttrVar("repeat_times")) {
-    auto repeats_info = GetAttrVar("repeat_times");
-    if (repeats_info.size() == 1U) {  // repeat_times is a whole Tensor
-      repeats = helper_->AutoCast(
-          repeats_info[0].name, repeats_info[0].dtype, P2ODataType::INT64);
-    } else {  // repeat_times is a tensor list
-      repeats = helper_->ConcatIndices(repeats_info);
-    }
-  } else {
-    std::vector<int64_t> values;
-    GetAttr("repeat_times", &values);
-    int64_t nums = values.size();
-    for (int64_t i = 0; i < x_info[0].Rank() - nums; i++) {
-      values.insert(values.begin(), 1);
-    }
-    repeats = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, values);
-  }
+void TileMapper::Opset10() {
+  Assert(HasInput("repeat_times"),
+         "Tile operator must has repeat_times input.");
+  auto x_info = GetInput("x");
+  auto out_info = GetOutput("out");
+  auto repeats_info = GetInput("repeat_times");
+  auto repeats = helper_->ConcatIndices(repeats_info);
   if (x_info[0].Rank() == 0) {
     auto unsqueeze = helper_->Unsqueeze(x_info[0].name, {0});
     helper_->MakeNode("Tile", {unsqueeze, repeats}, {out_info[0].name});
   } else {
+    auto ones = helper_->Constant(GetOnnxDtype(P2ODataType::INT64),
+                                  std::vector<int64_t>(x_info[0].Rank(), 1));
+    auto x_rank = helper_->Constant(GetOnnxDtype(P2ODataType::INT64),
+                                    std::vector<int64_t>{x_info[0].Rank()});
+    auto repeats_shape = helper_->MakeNode("Shape", {repeats})->output(0);
+    auto diff = helper_->MakeNode("Sub", {x_rank, repeats_shape})->output(0);
+    auto zero = helper_->Constant(GetOnnxDtype(P2ODataType::INT64),
+                                  std::vector<int64_t>{0});
+    auto fp64_diff =
+        helper_->AutoCast(diff, P2ODataType::INT64, P2ODataType::FP64);
+    auto fp64_zero = helper_->Constant(GetOnnxDtype(P2ODataType::FP64),
+                                       std::vector<double>{0.0});
+    auto need_expand =
+        helper_->MakeNode("Max", {fp64_diff, fp64_zero})->output(0);
+    need_expand =
+        helper_->AutoCast(need_expand, P2ODataType::FP64, P2ODataType::INT64);
+    auto expand_repeats =
+        helper_->MakeNode("Slice", {ones, zero, need_expand, zero})->output(0);
+    repeats = helper_->Concat({expand_repeats, repeats}, 0);
     helper_->MakeNode("Tile", {x_info[0].name, repeats}, {out_info[0].name});
   }
 }

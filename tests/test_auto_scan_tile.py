@@ -45,7 +45,7 @@ class Net(BaseNet):
 class TestTileConvert(OPConvertAutoScanTest):
     """
     api: paddle.tile
-    OPset version: 7, 11, 15
+    OPset version: 10, 11, 15
     """
 
     def sample_convert_config(self, draw):
@@ -66,7 +66,7 @@ class TestTileConvert(OPConvertAutoScanTest):
             "op_names": ["tile"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 11, 15],
+            "opset_version": [10, 11, 15],
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": repeat_times,
@@ -104,7 +104,7 @@ class Net1(BaseNet):
 class TestTileConvert1(OPConvertAutoScanTest):
     """
     api: paddle.tile
-    OPset version: 7, 11, 15
+    OPset version: 10, 11, 15
     """
 
     def sample_convert_config(self, draw):
@@ -126,7 +126,7 @@ class TestTileConvert1(OPConvertAutoScanTest):
             "op_names": ["tile"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[dtype]],
-            "opset_version": [7, 11, 15],
+            "opset_version": [10, 11, 15],
             "input_spec_shape": [],
             "repeat_times_dtype": repeat_times_dtype,
             "repeat_times": repeat_times,
