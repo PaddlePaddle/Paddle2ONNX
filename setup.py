@@ -13,12 +13,12 @@
 # limitations under the License.
 # This file referred to github.com/onnx/onnx.git
 
-from distutils.spawn import find_executable
 from distutils import sysconfig, log
 import setuptools
 import setuptools.command.build_py
 import setuptools.command.develop
 import setuptools.command.build_ext
+from shutil import which
 
 from contextlib import contextmanager
 import os
@@ -34,8 +34,8 @@ CMAKE_BUILD_DIR = os.path.join(TOP_DIR, ".setuptools-cmake-build")
 
 WINDOWS = os.name == "nt"
 
-CMAKE = find_executable("cmake3") or find_executable("cmake")
-MAKE = find_executable("make")
+CMAKE = which("cmake3") or which("cmake")
+MAKE = which("make")
 
 ################################################################################
 # Global variables for controlling the build variant
