@@ -22,7 +22,7 @@ REGISTER_MAPPER(batch_norm, BatchNormMapper)
 REGISTER_PIR_MAPPER(batch_norm, BatchNormMapper)
 
 int32_t BatchNormMapper::GetMinOpsetVersion(bool verbose) {
-  if (!use_global_stats_) {
+  if (trainable_statistics_) {
     Logger(verbose, 14) << RequireOpset(14) << std::endl;
     return 14;
   }
