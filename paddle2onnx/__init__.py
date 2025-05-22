@@ -14,6 +14,7 @@
 import sys
 import importlib.metadata
 import packaging.version as pv
+import warnings
 
 try:
     err_msg = (
@@ -27,17 +28,23 @@ try:
         "paddlepaddle-gpu" if paddle.is_compiled_with_cuda() else "paddlepaddle"
     )
     paddle_version = importlib.metadata.version(lib_paddle_name)
-    min_version = "3.0.0.dev20250426"
-    if (
-        sys.platform == "win32"
-        and (
-            pv.parse(paddle_version) < pv.parse(min_version)
-            or paddle_version == "3.0.0"
+    if paddle_version == "0.0.0":
+        warnings.warn(
+            f"You are currently using the development version of {lib_paddle_name}. "
+            f"Please ensure that its commit ID is more recent than the 'fedc65a'."
         )
-    ) or pv.parse(paddle_version) < pv.parse(min_version):
-        raise ValueError(
-            f"The paddlepaddle version should not be less than {min_version}. {err_msg}"
-        )
+    else:
+        min_version = "3.0.0.dev20250426"
+        if (
+            sys.platform == "win32"
+            and (
+                pv.parse(paddle_version) < pv.parse(min_version)
+                or paddle_version == "3.0.0"
+            )
+        ) or pv.parse(paddle_version) < pv.parse(min_version):
+            raise ValueError(
+                f"The paddlepaddle version should not be less than {min_version}. {err_msg}"
+            )
 except ImportError:
     raise ImportError(
         f"Failed to import paddle. Please ensure paddle is installed. {err_msg}"
