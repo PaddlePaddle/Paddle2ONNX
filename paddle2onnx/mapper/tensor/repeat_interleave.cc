@@ -23,9 +23,68 @@ int32_t RepeatInterleaveMapper::GetMinOpsetVersion(bool verbose) {
   return op_version;
 }
 
-void RepeatInterleaveMapper::Opset9() {
-  auto x_info = GetInput("X");  // shape = [1, 2, 3]
-  auto out_info = GetOutput("Out");
+void RepeatInterleaveMapper::DynamicRepeatInterleave(
+    const std::vector<TensorInfo>& x_info,
+    const std::vector<TensorInfo>& out_info) {
+  std::string dim_size_name = "";
+
+  auto shape_node = helper_->MakeNode("Shape", {x_info[0].name}, 1);
+  auto dim_node =
+      helper_->MakeNode("Gather",
+                        {shape_node->output(0),
+                         helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                                           std::vector<int64_t>{dim_})},
+                        1);
+  dim_size_name = dim_node->output(0);
+
+  std::string repeat_info_name = "";
+  int64_t repeat = 0;
+  if (in_pir_mode) {
+    if (OpType() == "pd_op.repeat_interleave") {
+      GetAttr("repeats", &repeat);
+    }
+  } else {
+    GetAttr("Repeats", &repeat);
+  }
+
+  if (HasInput("RepeatTensor")) {
+    auto tmp_info = GetInput("RepeatTensor");
+    repeat_info_name = helper_->AutoCast(
+        tmp_info[0].name, tmp_info[0].dtype, P2ODataType::INT64);
+  } else if (repeat != 0) {
+    auto repeat_node =
+        helper_->MakeNode("Expand",
+                          {helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                                             std::vector<int64_t>{repeat}),
+                           dim_size_name},
+                          1);
+    repeat_info_name = repeat_node->output(0);
+  }
+
+  std::vector<std::string> split_input_names;
+
+  split_input_names.push_back(x_info[0].name);
+
+  std::vector<std::string> output_names;
+  int x_shape_size = x_info[0].shape.size();
+
+  std::string prefix_name = helper_->Constant(
+      ONNX_NAMESPACE::TensorProto::INT64, std::vector<int64_t>(dim_, 1));
+  std::string suffix_name =
+      helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                        std::vector<int64_t>(x_shape_size - dim_ - 1, 1));
+
+  std::string tile_name =
+      helper_->Concat({prefix_name, repeat_info_name, suffix_name}, 0);
+  auto node = helper_->MakeNode("Tile", {x_info[0].name, tile_name}, 1);
+  output_names.push_back(node->output(0));
+
+  helper_->Concat(output_names, out_info[0].name, dim_);
+}
+
+void RepeatInterleaveMapper::StaticRepeatInterleave(
+    const std::vector<TensorInfo>& x_info,
+    const std::vector<TensorInfo>& out_info) {
   int n = x_info[0].shape[dim_];
   int x_shape_size = x_info[0].shape.size();
 
@@ -78,5 +137,24 @@ void RepeatInterleaveMapper::Opset9() {
     output_names.emplace_back(node->output(0));
   }
   helper_->Concat(output_names, out_info[0].name, dim_);
+}
+
+void RepeatInterleaveMapper::Opset9() {
+  auto x_info = GetInput("X");
+  auto out_info = GetOutput("Out");
+
+  bool is_dynamic_shape = false;
+  for (auto dim : x_info[0].shape) {
+    if (dim == -1) {
+      is_dynamic_shape = true;
+      break;
+    }
+  }
+
+  if (is_dynamic_shape) {
+    DynamicRepeatInterleave(x_info, out_info);
+  } else {
+    StaticRepeatInterleave(x_info, out_info);
+  }
 }
 }  // namespace paddle2onnx

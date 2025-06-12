@@ -39,6 +39,10 @@ class RepeatInterleaveMapper : public Mapper {
 
   void Opset9() override;
   int32_t GetMinOpsetVersion(bool verbose) override;
+  void DynamicRepeatInterleave(const std::vector<TensorInfo> &x_info,
+                               const std::vector<TensorInfo> &out_info);
+  void StaticRepeatInterleave(const std::vector<TensorInfo> &x_info,
+                              const std::vector<TensorInfo> &out_info);
 
  private:
   int64_t dim_;
