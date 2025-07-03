@@ -73,3 +73,18 @@ def test_full_with_tensor_2():
     obj = APIOnnx(op, "full_with_tensor", [8])
     obj.set_input_data("input_data", paddle.to_tensor([2, 3]), paddle.to_tensor(3))
     obj.run()
+
+
+@_test_only_pir
+def test_full_with_tensor_3():
+    """
+    op version: 8
+    """
+    op = Net2()
+    op.eval()
+    # net, name, ver_list, delta=1e-6, rtol=1e-5
+    obj = APIOnnx(op, "full_with_tensor", [8])
+    obj.set_input_data(
+        "input_data", paddle.ones(shape=[3, 2]).astype("int32"), paddle.to_tensor(3)
+    )
+    obj.run()

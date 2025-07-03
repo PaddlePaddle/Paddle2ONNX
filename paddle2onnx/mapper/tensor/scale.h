@@ -20,21 +20,11 @@ namespace paddle2onnx {
 
 class ScaleMapper : public Mapper {
  public:
-  ScaleMapper(const PaddleParser& p,
-              OnnxHelper* helper,
-              int64_t block_id,
-              int64_t op_id)
-      : Mapper(p, helper, block_id, op_id) {
-    GetAttr("scale", &scale_);
-    GetAttr("bias", &bias_);
-    GetAttr("bias_after_scale", &bias_after_scale_);
-  }
-
   ScaleMapper(const PaddlePirParser& p,
               OnnxHelper* helper,
               int64_t op_id,
-              bool c)
-      : Mapper(p, helper, op_id, c) {
+              bool if_in_cf_block)
+      : Mapper(p, helper, op_id, if_in_cf_block) {
     GetAttr("bias", &bias_);
     GetAttr("bias_after_scale", &bias_after_scale_);
   }

@@ -170,6 +170,9 @@ def export(
                     [inference_program, feed_target_names, fetch_targets] = (
                         paddle.static.load_inference_model(model_file_path, exe)
                     )
+                if verbose:
+                    logging.info("The original inference program is:\n")
+                    logging.info(f"{inference_program}\n\n")
                 program = paddle.pir.translate_to_pir(inference_program.desc)
                 # TODO(wangmingkai02): Do we need to call load_parameter(program) here?
                 load_parameter(program)

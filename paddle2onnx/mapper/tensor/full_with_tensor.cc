@@ -33,6 +33,8 @@ void FullWithTensorMapper::Opset8() {
 
   if (shape_info[0].Rank() == 0) {
     shape = helper_->Reshape(shape, {1});
+  } else if (shape_info[0].Rank() > 1) {
+    shape = helper_->Reshape(shape, {-1});
   }
 
   auto expand_node = helper_->MakeNode("Expand", {value_info[0].name, shape});

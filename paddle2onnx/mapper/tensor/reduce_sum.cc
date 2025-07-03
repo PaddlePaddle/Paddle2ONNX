@@ -25,6 +25,7 @@ int32_t ReduceMapperSum::GetMinOpsetVersion(bool verbose) {
 }
 
 void ReduceMapperSum::Opset13() {
+  auto out_info = GetOutput("Out");
   auto axis_name_ = "dim";
   GetAttr("keep_dim", &keep_dim_);
   if (!in_pir_mode) {
@@ -39,7 +40,10 @@ void ReduceMapperSum::Opset13() {
     }
   } else {
     TryGetInputValue("axis", &dim_);
-    if (dim_.size() == 0) {
+    // Note: This is a temporary solution. It's needed to be fixed in
+    // ProgramTranslator.
+    if (dim_.size() == 0 || out_info[0].Rank() == 0 ||
+        (out_info[0].Rank() == 1 && out_info[0].shape[0] == 1)) {
       reduce_all_ = true;
     } else {
       reduce_all_ = false;
@@ -79,7 +83,6 @@ void ReduceMapperSum::Opset13() {
   if (!keep_dim_ && reduce_all_axes) {
     out_node_name = helper_->Reshape(out_node_name, {-1});
   }
-  auto out_info = GetOutput("Out");
   helper_->AutoCast(out_node_name, out_info[0].name, x_tpye, out_info[0].dtype);
 }
 }  // namespace paddle2onnx
