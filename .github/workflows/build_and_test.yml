@@ -55,7 +55,7 @@ jobs:
           bash run.sh python
 
   build_on_windows:
-    runs-on: windows-2019
+    runs-on: windows-2025
     strategy:
       matrix:
         python-version: [ '3.10' ]
