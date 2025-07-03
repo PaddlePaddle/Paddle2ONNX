@@ -33,6 +33,7 @@ SRC_DIR = os.path.join(TOP_DIR, "paddle2onnx")
 CMAKE_BUILD_DIR = os.path.join(TOP_DIR, ".setuptools-cmake-build")
 
 WINDOWS = os.name == "nt"
+GENERATOR = os.getenv("CMAKE_GENERATOR", "Visual Studio")
 
 CMAKE = which("cmake3") or which("cmake")
 MAKE = which("make")
@@ -132,11 +133,6 @@ class cmake_build(setuptools.Command):
                         ),
                     ]
                 )
-                if platform.architecture()[0] == "64bit":
-                    cmake_args.extend(["-A", "x64", "-T", "host=x64"])
-                else:
-                    cmake_args.extend(["-A", "Win32", "-T", "host=x86"])
-                cmake_args.extend(["-G", "Visual Studio 16 2019"])
             else:
                 cmake_args.append(
                     "-DPYTHON_LIBRARY={}".format(
@@ -155,7 +151,8 @@ class cmake_build(setuptools.Command):
             build_args = [CMAKE, "--build", os.curdir]
             if WINDOWS:
                 build_args.extend(["--config", build_type])
-                build_args.extend(["--", "/maxcpucount:{}".format(self.jobs)])
+                if "Visual Studio" in GENERATOR:
+                    build_args.extend(["--", "/maxcpucount:{}".format(self.jobs)])
             else:
                 build_args.extend(["--", "-j", str(self.jobs)])
             subprocess.check_call(build_args)

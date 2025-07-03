@@ -92,7 +92,7 @@ jobs:
           git submodule update --init --recursive
           mkdir build
           cd build
-          cmake -G "Visual Studio 16 2019"  -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}\protobuf\protobuf_install\ -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_EXAMPLES=OFF ..
+          cmake -G "Visual Studio 17 2022"  -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}\protobuf\protobuf_install\ -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_EXAMPLES=OFF ..
           cmake --build . --config Release --target install
 
       # Setup Python
