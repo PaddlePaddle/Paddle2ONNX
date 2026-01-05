@@ -66,6 +66,13 @@ std::vector<int64_t> SliceMapper::DecreaseAxis() {
   bool has_attr = HasAttr("decrease_axis");
   if (has_attr) {
     GetAttr("decrease_axis", &decrease_axis);
+
+    // In PIR mode, if decrease_axis is not empty, we should use it directly
+    // The shape comparison logic may fail in PIR mode due to input name differences
+    if (in_pir_mode && !decrease_axis.empty()) {
+      return decrease_axis;
+    }
+
     auto input_info = GetInput("Input");
     auto output_info = GetOutput("Out");
     if (output_info[0].shape.size() == 1 && output_info[0].shape[0] == 0) {
@@ -121,45 +128,72 @@ void SliceMapper::Opset7() {
 }
 
 void SliceMapper::Opset10() {
-  auto input_info = GetInput("Input");
-  auto output_info = GetOutput("Out");
+  std::vector<TensorInfo> input_info;
+  std::vector<TensorInfo> output_info;
+
+  if (in_pir_mode) {
+    // In PIR mode, use index-based access
+    input_info = GetInput(0);  // First input is the tensor to slice
+    output_info = GetOutput(0);
+  } else {
+    input_info = GetInput("Input");
+    output_info = GetOutput("Out");
+  }
 
   std::string starts = "";
-  if (HasInput("StartsTensorList")) {
-    auto info = GetInput("StartsTensorList");
-    starts = helper_->ConcatIndices(info);
-  } else if (HasInput("StartsTensor")) {
-    auto info = GetInput("StartsTensor");
-    starts = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
-  } else {
-    starts = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, starts_);
-  }
-
   std::string ends = "";
-  if (HasInput("EndsTensorList")) {
-    auto info = GetInput("EndsTensorList");
-    ends = helper_->ConcatIndices(info);
-  } else if (HasInput("EndsTensor")) {
-    auto info = GetInput("EndsTensor");
-    ends = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
-  } else {
-    ends = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, ends_);
-  }
-
   std::string strides = "";
-  if (HasInput("StridesTensorList")) {
-    auto info = GetInput("StridesTensorList");
-    strides = helper_->ConcatIndices(info);
-  } else if (HasInput("StridesTensor")) {
-    auto info = GetInput("StridesTensor");
-    strides =
-        helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
-  } else {
+
+  if (in_pir_mode) {
+    // In PIR mode: input(0)=tensor, input(1)=starts, input(2)=ends
+    auto starts_info = GetInput(1);
+    starts = helper_->AutoCast(starts_info[0].name, starts_info[0].dtype, P2ODataType::INT64);
+
+    auto ends_info = GetInput(2);
+    ends = helper_->AutoCast(ends_info[0].name, ends_info[0].dtype, P2ODataType::INT64);
+
+    // strides is optional, use default if not present
     if (strides_.size() == 0) {
       strides = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
                                   std::vector<int64_t>(axes_.size(), 1));
     } else {
       strides = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, strides_);
+    }
+  } else {
+    if (HasInput("StartsTensorList")) {
+      auto info = GetInput("StartsTensorList");
+      starts = helper_->ConcatIndices(info);
+    } else if (HasInput("StartsTensor")) {
+      auto info = GetInput("StartsTensor");
+      starts = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+    } else {
+      starts = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, starts_);
+    }
+
+    if (HasInput("EndsTensorList")) {
+      auto info = GetInput("EndsTensorList");
+      ends = helper_->ConcatIndices(info);
+    } else if (HasInput("EndsTensor")) {
+      auto info = GetInput("EndsTensor");
+      ends = helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+    } else {
+      ends = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, ends_);
+    }
+
+    if (HasInput("StridesTensorList")) {
+      auto info = GetInput("StridesTensorList");
+      strides = helper_->ConcatIndices(info);
+    } else if (HasInput("StridesTensor")) {
+      auto info = GetInput("StridesTensor");
+      strides =
+          helper_->AutoCast(info[0].name, info[0].dtype, P2ODataType::INT64);
+    } else {
+      if (strides_.size() == 0) {
+        strides = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64,
+                                    std::vector<int64_t>(axes_.size(), 1));
+      } else {
+        strides = helper_->Constant(ONNX_NAMESPACE::TensorProto::INT64, strides_);
+      }
     }
   }
 

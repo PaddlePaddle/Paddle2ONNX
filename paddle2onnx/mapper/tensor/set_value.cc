@@ -38,6 +38,17 @@ int32_t SetValueMapper::GetMinOpsetVersion(bool verbose) {
 void SetValueMapper::Opset17() {
   auto input_info = GetInput("Input");
   auto output_info = GetOutput("Out");
+
+  // Special case: if axes is empty, this is a full tensor assignment
+  // Just copy the value to output (for set_value_with_tensor_ with empty axes)
+  std::string op_type = OpType();
+  bool is_set_value_with_tensor = (op_type.find("set_value_with_tensor") != std::string::npos);
+  if (in_pir_mode && is_set_value_with_tensor && axes_.empty()) {
+    auto value_info = GetInput(1);
+    helper_->MakeNode("Identity", {value_info[0].name}, {output_info[0].name});
+    return;
+  }
+
   std::string starts = "";
   if (HasInput("StartsTensorList")) {
     // if negtive value exists, not supported
@@ -91,12 +102,24 @@ void SetValueMapper::Opset17() {
   auto input_tensor = input_info[0].name;
   std::string value = "";
   int64_t value_rank = input_info[0].Rank();
-  if (HasInput("ValueTensor")) {
+
+  // Reuse op_type and is_set_value_with_tensor from earlier in function
+  if (in_pir_mode && is_set_value_with_tensor) {
+    // In PIR mode, set_value_with_tensor_ has value as second input (index 1)
+    auto value_info = GetInput(1);
+    value = value_info[0].name;
+    value_rank = value_info[0].Rank();
+  } else if (HasInput("ValueTensor")) {
     auto value_info = GetInput("ValueTensor");
     value = value_info[0].name;
     value_rank = value_info[0].Rank();
   } else if (HasInput("values")) {
     auto value_info = GetInput("values");
+    value = value_info[0].name;
+    value_rank = value_info[0].Rank();
+  } else if (HasInput("value")) {
+    // PIR mode: set_value_with_tensor_ uses "value" as input name
+    auto value_info = GetInput("value");
     value = value_info[0].name;
     value_rank = value_info[0].Rank();
   } else {

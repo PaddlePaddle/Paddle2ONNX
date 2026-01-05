@@ -25,15 +25,51 @@ void StackMapper::Opset7() {
   int32_t out_dtype = 0;
   std::vector<std::string> aligned_inputs =
       helper_->DtypeAlignment(x_info, &out_dtype);
+
+  // Find the maximum rank among all inputs based on TensorInfo
+  int32_t max_rank = 0;
+  for (size_t i = 0; i < x_info.size(); ++i) {
+    int32_t rank = x_info[i].Rank();
+    if (rank > max_rank) {
+      max_rank = rank;
+    }
+  }
+
+  // Special case: if all inputs are scalars or 1-element tensors (max_rank <= 1),
+  // reshape all of them to scalar [] first to ensure consistent behavior
+  // This handles the case where some inputs are [] and some are [1]
+  if (max_rank <= 1) {
+    for (size_t i = 0; i < aligned_inputs.size(); ++i) {
+      // Reshape to scalar []
+      aligned_inputs[i] = helper_->Reshape(aligned_inputs[i], std::vector<int64_t>{});
+    }
+    max_rank = 0;  // All are now scalars
+  } else {
+    // First, make all inputs have the same rank by unsqueezing lower-rank tensors
+    for (size_t i = 0; i < aligned_inputs.size(); ++i) {
+      int32_t rank_diff = max_rank - x_info[i].Rank();
+      if (rank_diff > 0) {
+        // Unsqueeze to match max_rank
+        std::vector<int64_t> axes_to_add;
+        for (int32_t j = 0; j < rank_diff; ++j) {
+          axes_to_add.push_back(j);
+        }
+        aligned_inputs[i] = helper_->Unsqueeze(aligned_inputs[i], axes_to_add);
+      }
+    }
+  }
+
   auto axis = axis_;
   if (axis < 0) {
-    axis = axis + x_info[0].Rank() + 1;
+    axis = axis + max_rank + 1;
   }
+
+  // Now unsqueeze all inputs at the target axis for stacking
   for (size_t i = 0; i < aligned_inputs.size(); ++i) {
     aligned_inputs[i] =
         helper_->Unsqueeze(aligned_inputs[i], std::vector<int64_t>(1, axis));
   }
-  auto out = helper_->Concat(aligned_inputs, axis_);
+  auto out = helper_->Concat(aligned_inputs, axis);
   helper_->AutoCast(out, y_info[0].name, out_dtype, y_info[0].dtype);
 }
 
