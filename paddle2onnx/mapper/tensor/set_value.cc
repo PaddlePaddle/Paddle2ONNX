@@ -42,7 +42,8 @@ void SetValueMapper::Opset17() {
   // Special case: if axes is empty, this is a full tensor assignment
   // Just copy the value to output (for set_value_with_tensor_ with empty axes)
   std::string op_type = OpType();
-  bool is_set_value_with_tensor = (op_type.find("set_value_with_tensor") != std::string::npos);
+  bool is_set_value_with_tensor =
+      (op_type.find("set_value_with_tensor") != std::string::npos);
   if (in_pir_mode && is_set_value_with_tensor && axes_.empty()) {
     auto value_info = GetInput(1);
     helper_->MakeNode("Identity", {value_info[0].name}, {output_info[0].name});

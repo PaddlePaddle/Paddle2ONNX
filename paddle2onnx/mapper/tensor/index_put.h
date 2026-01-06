@@ -44,6 +44,3 @@ class IndexPutMapper : public Mapper {
 };
 
 }  // namespace paddle2onnx
-
-
-

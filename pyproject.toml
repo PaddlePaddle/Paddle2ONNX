@@ -4,7 +4,7 @@ requires = [
     "wheel",
     "cmake>=3.16",
     "setuptools-scm",
-    "paddlepaddle>=3.0.0",
+    "paddlepaddle==3.0.0",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -24,7 +24,7 @@ classifiers = [
 license = {text = "Apache License v2.0"}
 requires-python = ">=3.8"
 dependencies = [
-    "onnx>=1.16,<=1.17.0",
+    "onnx>=1.16.1,<=1.17.0",
     "onnxoptimizer==0.3.13; python_version < '3.12'",
     "polygraphy>=0.49.20",
 ]

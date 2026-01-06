@@ -77,7 +77,8 @@ void Squeeze2Mapper::Opset7() {
         }
         if (all_dims_not_one) {
           // None of the dimensions to squeeze have size 1, use Identity
-          helper_->MakeNode("Identity", {input_info[0].name}, {output_info[0].name});
+          helper_->MakeNode(
+              "Identity", {input_info[0].name}, {output_info[0].name});
           return;
         }
       }

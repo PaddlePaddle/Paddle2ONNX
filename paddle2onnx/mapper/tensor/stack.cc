@@ -35,17 +35,40 @@ void StackMapper::Opset7() {
     }
   }
 
-  // Special case: if all inputs are scalars or 1-element tensors (max_rank <= 1),
-  // reshape all of them to scalar [] first to ensure consistent behavior
-  // This handles the case where some inputs are [] and some are [1]
-  if (max_rank <= 1) {
+  // Special case: if all inputs are scalars [] or single-element tensors [1]
+  // Check if all inputs have at most 1 element total
+  bool all_single_element = true;
+  for (size_t i = 0; i < x_info.size(); ++i) {
+    if (x_info[i].Rank() == 0) {
+      // Scalar, has 1 element - OK
+      continue;
+    } else if (x_info[i].Rank() == 1) {
+      // Check if it's exactly [1] not [4] or other sizes
+      if (x_info[i].shape.size() > 0 && x_info[i].shape[0] == 1) {
+        // Single element [1] - OK
+        continue;
+      } else {
+        // It's like [4] or [N] where N != 1 - NOT single element
+        all_single_element = false;
+        break;
+      }
+    } else {
+      // Rank > 1, definitely not single element
+      all_single_element = false;
+      break;
+    }
+  }
+
+  if (all_single_element && max_rank <= 1) {
+    // All inputs are scalars or [1], normalize to scalars []
     for (size_t i = 0; i < aligned_inputs.size(); ++i) {
-      // Reshape to scalar []
-      aligned_inputs[i] = helper_->Reshape(aligned_inputs[i], std::vector<int64_t>{});
+      aligned_inputs[i] =
+          helper_->Reshape(aligned_inputs[i], std::vector<int64_t>{});
     }
     max_rank = 0;  // All are now scalars
   } else {
-    // First, make all inputs have the same rank by unsqueezing lower-rank tensors
+    // Normal case: make all inputs have the same rank by unsqueezing lower-rank
+    // tensors
     for (size_t i = 0; i < aligned_inputs.size(); ++i) {
       int32_t rank_diff = max_rank - x_info[i].Rank();
       if (rank_diff > 0) {
@@ -72,5 +95,4 @@ void StackMapper::Opset7() {
   auto out = helper_->Concat(aligned_inputs, axis);
   helper_->AutoCast(out, y_info[0].name, out_dtype, y_info[0].dtype);
 }
-
 }  // namespace paddle2onnx
