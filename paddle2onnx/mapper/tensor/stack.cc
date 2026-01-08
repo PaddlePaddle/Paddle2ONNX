@@ -44,7 +44,7 @@ void StackMapper::Opset7() {
       continue;
     } else if (x_info[i].Rank() == 1) {
       // Check if it's exactly [1] not [4] or other sizes
-      if (x_info[i].shape.size() > 0 && x_info[i].shape[0] == 1) {
+      if (x_info[i].shape[0] == 1) {
         // Single element [1] - OK
         continue;
       } else {
