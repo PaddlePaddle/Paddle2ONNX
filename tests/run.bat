@@ -61,7 +61,7 @@ set PY_CMD=%1
 %PY_CMD% -m pip install tqdm filelock
 %PY_CMD% -m pip install onnx==1.16.0 onnxruntime==1.19.0
 %PY_CMD% -m pip install six hypothesis
-%PY_CMD% -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
+%PY_CMD% -m pip install --pre paddlepaddle==3.0.0.dev20250426 -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
 
 REM Enable development mode and run tests
 set FLAGS_enable_pir_api=0

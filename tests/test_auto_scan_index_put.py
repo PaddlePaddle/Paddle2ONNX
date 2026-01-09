@@ -29,9 +29,12 @@ class Net(BaseNet):
 
     def forward(self, inputs, indices, value):
         accumulate = self.config.get("accumulate", False)
-        indices = list(indices) # index_put() expects a list/tuple of tensors
-        x = paddle.index_put(inputs, indices=indices, value=value, accumulate=accumulate)
+        indices = list(indices)  # index_put() expects a list/tuple of tensors
+        x = paddle.index_put(
+            inputs, indices=indices, value=value, accumulate=accumulate
+        )
         return x
+
 
 class TestIndexPutConvert(OPConvertAutoScanTest):
     """
@@ -58,10 +61,12 @@ class TestIndexPutConvert(OPConvertAutoScanTest):
             return np.array(indices)
 
         # For simplicity, only generate tensors equal to same shape of last axis of input
-        value_shape = [input_shape[-1],]
+        value_shape = [
+            input_shape[-1],
+        ]
+
         def generator_value():
-            return (randtool("float", -5.0, 5.0, shape=value_shape)
-                    .astype(dtype))
+            return randtool("float", -5.0, 5.0, shape=value_shape).astype(dtype)
 
         config = {
             "op_names": ["index_put"],
@@ -79,6 +84,7 @@ class TestIndexPutConvert(OPConvertAutoScanTest):
     @_test_with_pir
     def test(self):
         self.run_and_statis(max_examples=30)
+
 
 if __name__ == "__main__":
     unittest.main()
