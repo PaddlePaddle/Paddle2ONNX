@@ -61,6 +61,8 @@ All supported PaddlePaddle operators are listed as below,
 - hard_shrink
 - hard_sigmoid
 - hard_swish
+- index_put
+- index_select
 - layer_norm
 - leaky_relu
 - less_equal
@@ -110,6 +112,7 @@ All supported PaddlePaddle operators are listed as below,
 - round
 - rsqrt
 - scale
+- scatter
 - selu
 - set_value
 - shape

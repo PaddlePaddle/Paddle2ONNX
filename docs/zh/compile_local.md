@@ -22,6 +22,17 @@ make install
 # 将编译目录加入环境变量
 export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 ```
+### 或者
+
+安装 Protobuf (Linux):
+```bash
+sudo apt install protobuf-compiler
+```
+
+安装 Protobuf (Mac):
+```bash
+brew install protobuf
+```
 
 ### 安装PaddlePaddle
 ```bash
@@ -43,7 +54,7 @@ pip install dist/*.whl
 
 ## Windows编译安装
 
-注意Windows编译安装先验条件是系统中已安装好Visual Studio 2019
+注意Windows编译安装先验条件是系统中已安装好[Visual Studio 2019](https://download.visualstudio.microsoft.com/download/pr/e7ffa30b-43a5-4afc-bf2a-2e3656a842e4/60b26131ac7b8c59f734a1e0c32cc9dc/vs_community.exe)
 
 ### 打开VS命令行工具
 

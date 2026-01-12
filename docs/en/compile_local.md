@@ -22,8 +22,19 @@ make install
 # set the library to environment
 export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
 ```
+### Alternatively:
 
-### 1.2 Install Protobuf
+Install Protobuf via apt (Linux):
+```bash
+sudo apt install protobuf-compiler
+```
+
+Install Protobuf via homebrew (Mac):
+```bash
+brew install protobuf
+```
+
+### 1.2 Install PaddlePaddle
 
 ```bash
 python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
@@ -45,12 +56,17 @@ If you are developing the Paddle2ONNX project locally, you can use `pip install 
 ## 2 Install on Windows
 
 **Note that the prerequisite for compiling and installing Windows is that Visual Studio 2019 is already installed in the system**
+### 2.1 Install Visual Studio 16 2019
+1. Download Visual Studio 16 2019 from [this link](https://download.visualstudio.microsoft.com/download/pr/e7ffa30b-43a5-4afc-bf2a-2e3656a842e4/60b26131ac7b8c59f734a1e0c32cc9dc/vs_community.exe) and run `vs_community.exe`.
+2. Under the **Workloads** tab, select the checkbox for **Desktop development with C++**.
+   - Note: Under Installation Details > Desktop Development with C++ > Optional: **Live Share** and **Intellicode** are unnecessary, feel free to uncheck these boxes.
+3. Click **Install**
 
-### 2.1 Open Visual Studio Command Prompt
+### 2.2 Open Visual Studio Command Prompt
 
 In the system menu, find **x64 Native Tools Command Prompt for VS 2019** and open it.
 
-### 2.2 Install Protobuf
+### 2.3 Install Protobuf
 
 Note that the `-DCMAKE_INSTALL_PREFIX` in the following cmake command specifies your actual set path.
 
@@ -67,7 +83,7 @@ cmake --build . --config Release --target install
 set PATH=%CD%\protobuf_install\bin;%PATH%
 ```
 
-### 2.3 Install Paddle2ONNX
+### 2.4 Install Paddle2ONNX
 
 ```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
