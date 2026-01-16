@@ -54,11 +54,10 @@ bool ModelExporter::IsOpsRegistered(const PaddlePirParser& pir_parser,
   }
   // TODO(wangmingkai02) : judge op whether is experimental op
   if (unsupported_ops.size() != 0) {
-    P2OLogger() << "There are some ops not supported yet, including ";
+    P2OLogger() << "Unsupported tensor operators were found:";
     for (auto& item : unsupported_ops) {
-      P2OLogger() << item << ",";
+      P2OLogger() << "- " << item;
     }
-    P2OLogger() << std::endl;
   }
   return (unsupported_ops.size() == 0);
 }
@@ -133,11 +132,10 @@ bool ModelExporter::IsOpsRegistered(const PaddleParser& parser,
     return true;
   }
 
-  P2OLogger() << "Oops, there are some operators not supported yet, including ";
+  P2OLogger() << "Unsupported tensor operators were found:";
   for (auto& item : unsupported_ops) {
-    P2OLogger() << item << ",";
+    P2OLogger() << "- " << item;
   }
-  P2OLogger() << std::endl;
   return false;
 }
 
@@ -1069,7 +1067,7 @@ std::string ModelExporter::Run(const PaddlePirParser& pir_parser,
   std::string out;
   if (!onnx_model_.SerializeToString(&out)) {
     P2OLogger()
-        << "[ERROR] Error happenedd while optimizing the exported ONNX model."
+        << "[ERROR] Error occurred while optimizing the exported ONNX model."
         << std::endl;
     return "";
   }
@@ -1093,7 +1091,7 @@ std::string ModelExporter::Run(const PaddleParser& parser,
   deploy_backend_ = deploy_backend;
   calibration_cache_ = calibration_cache;
 
-  // Clear name_counter, this use to generate unique name for intermdiate
+  // Clear name_counter, this use to generate unique name for intermediate
   // while converting all the op
   MapperHelper::Get()->ClearNameCounter();
 
@@ -1156,7 +1154,7 @@ std::string ModelExporter::Run(const PaddleParser& parser,
   std::string out;
   if (!onnx_model_.SerializeToString(&out)) {
     P2OLogger()
-        << "[ERROR] Error happenedd while optimizing the exported ONNX model."
+        << "[ERROR] Error occurred while optimizing the exported ONNX model."
         << std::endl;
     return "";
   }

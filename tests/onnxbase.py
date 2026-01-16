@@ -17,6 +17,7 @@ from inspect import isfunction
 import logging
 from onnxruntime import InferenceSession
 import os
+from pathlib import Path
 import numpy as np
 import paddle
 import paddle2onnx
@@ -53,8 +54,8 @@ def compare_data(result_data, expect_data, delta, rtol):
     if res_data is True:
         return res_data
 
-    # 输出错误类型
-    # 输出数据类型错误
+    # 输出错误类型 (Output error type)
+    # 输出数据类型错误 (Output data type error)
     if result_data.dtype != result_data.dtype:
         logging.error(
             "Different output data types! res type is: {}, and expect type is: {}".format(
@@ -63,7 +64,7 @@ def compare_data(result_data, expect_data, delta, rtol):
         )
         return False
 
-    # 输出数据大小错误
+    # 输出数据大小错误 (Output data size error)
     if result_data.dtype == np.bool_:
         diff = abs(result_data.astype("int32") - expect_data.astype("int32"))
     else:
@@ -220,7 +221,7 @@ class APIOnnx(object):
             self.places = ["cpu"]
         self.name = file_name
         self._version = ver_list
-        self.pwd = os.getcwd()
+        self.pwd = Path.cwd()
         self.delta = delta
         self.rtol = rtol
         self.static = False
@@ -308,9 +309,8 @@ class APIOnnx(object):
         """
         make dir to save all
         """
-        save_path = os.path.join(self.pwd, self.name)
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
+        save_path = self.pwd / "test_data" / self.name
+        save_path.mkdir(parents=True, exist_ok=True)
 
     def _mk_dygraph_exp(self, instance):
         """
@@ -322,15 +322,12 @@ class APIOnnx(object):
         """
         paddle dygraph layer to onnx
         """
-        #        paddle.jit.save(instance, "model/model", input_spec=self.input_spec)
-        #        import sys
-        #        sys.exit(0)
         enable_dev_version = True
         if os.getenv("ENABLE_DEV", "OFF") == "OFF":
             enable_dev_version = False
         paddle.onnx.export(
             instance,
-            os.path.join(self.pwd, self.name, self.name + "_" + str(ver)),
+            str(self.pwd / "test_data" / self.name / f"{self.name}_{ver}"),
             input_spec=self.input_spec,
             opset_version=ver,
             enable_onnx_checker=True,
@@ -344,7 +341,7 @@ class APIOnnx(object):
         """
         paddle.jit.save(
             instance,
-            os.path.join(self.pwd, self.name, self.name + "_jit_save"),
+            str(self.pwd / "test_data" / self.name / f"{self.name}_jit_save"),
             input_spec=self.input_spec,
         )
 
@@ -352,12 +349,10 @@ class APIOnnx(object):
         """
         make onnx res
         """
-        model_path = os.path.join(
-            self.pwd, self.name, self.name + "_" + str(ver) + ".onnx"
-        )
-        model = onnx.load(model_path)
+        model_path = self.pwd / "test_data" / self.name / f"{self.name}_{ver}.onnx"
+        model = onnx.load(str(model_path))
         sess = InferenceSession(
-            model_path,
+            str(model_path),
             providers=["CPUExecutionProvider"],
         )
         input_feed = {}
@@ -425,17 +420,17 @@ class APIOnnx(object):
         """
         load inference model(program only) and clip extra op
         Args:
-            orig_program_path(str): input model path
-            clipped_program_path(str): output model path
+            orig_program_path(Path or str): input model path
+            clipped_program_path(Path or str): output model path
         Returns:
             None
         """
         paddle.enable_static()
-        origin_program_bytes = static.io.load_from_file(orig_program_path)
+        origin_program_bytes = static.io.load_from_file(str(orig_program_path))
         origin_program = static.io.deserialize_program(origin_program_bytes)
         clipped_program = origin_program._remove_training_info(clip_extra=True)
         clipped_program_bytes = static.io._serialize_program(clipped_program)
-        static.io.save_to_file(clipped_program_path, clipped_program_bytes)
+        static.io.save_to_file(str(clipped_program_path), clipped_program_bytes)
         paddle.disable_static()
         paddle.set_device("cpu")
 
@@ -456,51 +451,42 @@ class APIOnnx(object):
             ), "Need to make sure the number of ops in config is 1."
 
             # Save Paddle Inference model
-            if os.path.exists(self.name):
-                shutil.rmtree(self.name)
-            paddle.jit.save(
-                self._func, os.path.join(self.name, "model"), self.input_spec
-            )
+            name_path = self.pwd / "test_data" / self.name
+            if name_path.exists():
+                shutil.rmtree(name_path)
+            paddle.jit.save(self._func, str(name_path / "model"), self.input_spec)
 
             # Get PaddleInference model path
             default_model_name = "model.pdmodel"
             if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
                 default_model_name = "model.json"
-            pdmodel_path = os.path.join(self.name, default_model_name)
-            pdiparams_path = os.path.join(self.name, "model.pdiparams")
-            # model = paddle.jit.load(os.path.join(self.name, "model"))
-            # print("program:", model.program())
+            pdmodel_path = name_path / default_model_name
+            pdiparams_path = name_path / "model.pdiparams"
             if len(self.ops) > 0:
                 self.dev_check_ops(self.ops[0], pdmodel_path)
 
             original_model_file = pdmodel_path
             params_file = pdiparams_path
-            if not os.path.exists(params_file):
+            if not params_file.exists():
                 params_file = ""
-            # # clip extra
-            model_file = original_model_file
 
-            # clip extra
-            model_file = None
             if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
                 model_file = original_model_file
             else:
-                model_file = os.path.join(self.name, "cliped_model.pdmodel")
+                model_file = name_path / "cliped_model.pdmodel"
                 self.clip_extra_program_only(original_model_file, model_file)
                 # check if params_file exists and rename it
-                if os.path.exists(params_file):
-                    new_params_file = os.path.join(
-                        os.path.dirname(params_file),
-                        "cliped_" + os.path.basename(params_file),
-                    )
-                    os.rename(params_file, new_params_file)
+                if params_file and Path(params_file).exists():
+                    params_path = Path(params_file)
+                    new_params_file = params_path.parent / f"cliped_{params_path.name}"
+                    params_path.rename(new_params_file)
                     print(f"Renamed '{params_file}' to '{new_params_file}'")
                     params_file = new_params_file
 
             for v in self._version:
                 onnx_model_str = paddle2onnx.export(
-                    model_file,  # model_filename
-                    params_file,  # params_filename
+                    str(model_file),  # model_filename
+                    str(params_file) if params_file else "",  # params_filename
                     None,  # save_file
                     v,  # opset_version
                     False,  # auto_upgrade_opset
@@ -516,10 +502,8 @@ class APIOnnx(object):
                     False,  # export_fp16_model
                     "None",  # optimize_tool
                 )
-                with open(
-                    os.path.join(self.name, self.name + "_" + str(v) + ".onnx"), "wb"
-                ) as f:
-                    f.write(onnx_model_str)
+                onnx_path = name_path / f"{self.name}_{v}.onnx"
+                onnx_path.write_bytes(onnx_model_str)
                 self.res_fict[str(v)] = self._mk_onnx_res(ver=v)
 
             for v in self._version:
