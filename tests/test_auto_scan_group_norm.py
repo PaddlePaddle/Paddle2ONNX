@@ -49,7 +49,7 @@ class Net(BaseNet):
 
 class TestGroupNormConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.nn.group_norm
+    api: paddle.nn.GroupNorm
     OPset version: 7, 9, 15
     """
 

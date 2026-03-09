@@ -26,7 +26,7 @@
 #include <numeric>
 
 #include "onnx/defs/tensor_util.h"
-#include "onnx/optimizer/pass.h"
+#include "onnxoptimizer/pass.h"
 
 namespace ONNX_NAMESPACE {
 namespace optimization {

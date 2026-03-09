@@ -56,7 +56,7 @@ class Net(BaseNet):
 
 class TestReduceAllConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.layers.reduce_max/min/mean/sum/prod/
+    api: paddle.max/min/mean/sum/prod
     OPset version: 7, 9, 15
     """
 

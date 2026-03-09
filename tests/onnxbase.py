@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import logging
 import os
 import shutil
@@ -92,7 +93,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             expect = expect[0]
 
         if isinstance(expect, paddle.Tensor):
-            expect = expect.numpy()
+            expect = np.array(expect)
         else:
             expect = np.array(expect)
 
@@ -116,7 +117,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             if isinstance(result[i], (np.generic, np.ndarray)):
                 compare(result[i], expect[i], delta, rtol)
             else:
-                compare(result[i].numpy(), expect[i], delta, rtol)
+                compare(np.array(result[i]), expect[i], delta, rtol)
     elif len(result) == 1:
         compare(result[0], expect, delta, rtol)
 
@@ -170,14 +171,6 @@ class BuildClass(paddle.nn.Layer):
 
 
 dtype_map = {
-    paddle.base.core.VarDesc.VarType.FP32: np.float32,
-    paddle.base.core.VarDesc.VarType.FP16: np.float16,
-    paddle.base.core.VarDesc.VarType.FP64: np.float64,
-    paddle.base.core.VarDesc.VarType.INT64: np.int64,
-    paddle.base.core.VarDesc.VarType.INT32: np.int32,
-    paddle.base.core.VarDesc.VarType.INT16: np.int16,
-    paddle.base.core.VarDesc.VarType.INT8: np.int8,
-    paddle.base.core.VarDesc.VarType.BOOL: np.bool_,
     paddle.base.core.DataType.FLOAT32: np.float32,
     paddle.base.core.DataType.FLOAT16: np.float16,
     paddle.base.core.DataType.FLOAT64: np.float64,
@@ -187,6 +180,21 @@ dtype_map = {
     paddle.base.core.DataType.INT8: np.int8,
     paddle.base.core.DataType.BOOL: np.bool_,
 }
+
+# VarDesc.VarType is deprecated in PaddlePaddle 3.x but may still exist in older versions
+with contextlib.suppress(AttributeError):
+    dtype_map.update(
+        {
+            paddle.base.core.VarDesc.VarType.FP32: np.float32,
+            paddle.base.core.VarDesc.VarType.FP16: np.float16,
+            paddle.base.core.VarDesc.VarType.FP64: np.float64,
+            paddle.base.core.VarDesc.VarType.INT64: np.int64,
+            paddle.base.core.VarDesc.VarType.INT32: np.int32,
+            paddle.base.core.VarDesc.VarType.INT16: np.int16,
+            paddle.base.core.VarDesc.VarType.INT8: np.int8,
+            paddle.base.core.VarDesc.VarType.BOOL: np.bool_,
+        }
+    )
 
 
 class APIOnnx:
@@ -268,7 +276,7 @@ class APIOnnx:
                             float(in_data), dtype=dtype_map[in_data.dtype]
                         )
                     else:
-                        self.input_feed[str(i)] = tensor_data.numpy()
+                        self.input_feed[str(i)] = np.array(tensor_data)
                     i += 1
             else:
                 if isinstance(in_data, tuple):
@@ -284,7 +292,7 @@ class APIOnnx:
                         float(in_data), dtype=dtype_map[in_data.dtype]
                     )
                 else:
-                    self.input_feed[str(i)] = in_data.numpy()
+                    self.input_feed[str(i)] = np.array(in_data)
 
                 i += 1
 
@@ -430,14 +438,19 @@ class APIOnnx:
         Returns:
             None
         """
-        paddle.enable_static()
-        origin_program_bytes = static.io.load_from_file(orig_program_path)
-        origin_program = static.io.deserialize_program(origin_program_bytes)
-        clipped_program = origin_program._remove_training_info(clip_extra=True)
-        clipped_program_bytes = static.io._serialize_program(clipped_program)
-        static.io.save_to_file(clipped_program_path, clipped_program_bytes)
-        paddle.disable_static()
-        paddle.set_device("cpu")
+        was_static = paddle.in_dynamic_mode() is False
+        if not was_static:
+            paddle.enable_static()
+        try:
+            origin_program_bytes = static.io.load_from_file(orig_program_path)
+            origin_program = static.io.deserialize_program(origin_program_bytes)
+            clipped_program = origin_program._remove_training_info(clip_extra=True)
+            clipped_program_bytes = static.io._serialize_program(clipped_program)
+            static.io.save_to_file(clipped_program_path, clipped_program_bytes)
+        finally:
+            if not was_static:
+                paddle.disable_static()
+                paddle.set_device("cpu")
 
     def run(self):
         """

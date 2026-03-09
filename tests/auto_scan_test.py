@@ -74,7 +74,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         np.random.seed(1024)
-        paddle.enable_static()
         self.num_ran_models = 0
 
     # @_test_with_pir

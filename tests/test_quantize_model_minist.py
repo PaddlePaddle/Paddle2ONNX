@@ -19,7 +19,6 @@ import unittest
 
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from paddle.static.quantization import PostTrainingQuantization
 
 paddle.enable_static()
@@ -45,24 +44,22 @@ class TestPostTrainingQuantization(unittest.TestCase):
         pass
 
     def merge_params(self, input_model_path, output_model_path):
-        import paddle
-        import paddle.fluid as fluid
-
-        paddle.enable_static()
         model_dir = input_model_path
         new_model_dir = output_model_path
-        exe = fluid.Executor(fluid.CPUPlace())
+        exe = paddle.static.Executor(paddle.CPUPlace())
         [inference_program, feed_target_names, fetch_targets] = (
-            fluid.io.load_inference_model(dirname=model_dir, executor=exe)
+            paddle.static.load_inference_model(path_prefix=model_dir, executor=exe)
         )
 
-        fluid.io.save_inference_model(
-            dirname=new_model_dir,
-            feeded_var_names=feed_target_names,
-            target_vars=fetch_targets,
+        feed_vars = [
+            inference_program.global_block().var(name) for name in feed_target_names
+        ]
+        paddle.static.save_inference_model(
+            path_prefix=os.path.join(new_model_dir, "__model__"),
+            feed_vars=feed_vars,
+            fetch_vars=fetch_targets,
             executor=exe,
-            main_program=inference_program,
-            params_filename="__params__",
+            program=inference_program,
         )
 
     def run_program(
@@ -74,8 +71,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         params_filename="",
         use_onnxruntime=False,
     ):
-        place = fluid.CPUPlace()
-        exe = fluid.Executor(place)
+        place = paddle.CPUPlace()
+        exe = paddle.static.Executor(place)
 
         infer_program = None
         feed_dict = None
@@ -114,11 +111,14 @@ class TestPostTrainingQuantization(unittest.TestCase):
                 self.merge_params(model_path, new_model_path)
                 model_filename = "__model__"
                 params_filename = "__params__"
-            [infer_program, feed_dict, fetch_targets] = fluid.io.load_inference_model(
-                new_model_path,
-                exe,
-                model_filename=model_filename,
-                params_filename=params_filename,
+            model_prefix = os.path.join(
+                new_model_path, model_filename.replace(".pdmodel", "")
+            )
+            [infer_program, feed_dict, fetch_targets] = (
+                paddle.static.load_inference_model(
+                    path_prefix=model_prefix,
+                    executor=exe,
+                )
             )
 
         val_reader = paddle.batch(paddle.dataset.mnist.test(), batch_size)
@@ -170,8 +170,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
     ):
         if quantizable_op_type is None:
             quantizable_op_type = ["conv2d"]
-        place = fluid.CPUPlace()
-        exe = fluid.Executor(place)
+        place = paddle.CPUPlace()
+        exe = paddle.static.Executor(place)
         val_reader = paddle.dataset.mnist.train()
         new_model_path = model_path + "_conbined"
         self.merge_params(model_path, new_model_path)

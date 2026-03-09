@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "onnx/optimizer/pass.h"
+#include "onnxoptimizer/pass.h"
 
 namespace ONNX_NAMESPACE {
 namespace optimization {

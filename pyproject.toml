@@ -30,7 +30,7 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "onnx>=1.20.1,<2",
-  "onnxoptimizer>=1.5,<2",
+  "onnxoptimizer>=0.3.13",
   "paddlepaddle>=3.3,<4",
   "polygraphy>=0.49.20,<1",
 ]
@@ -41,6 +41,11 @@ dev = [
   "mypy>=1.15,<2",
   "pytest>=8,<9",
   "ruff>=0.11,<1",
+]
+test = [
+  "hypothesis>=6,<7",
+  "onnxruntime>=1.20,<2",
+  "pytest>=8,<9",
 ]
 
 [tool.setuptools]
@@ -77,6 +82,9 @@ lint.ignore = [
   "SIM108",  # ternary operator - often less readable
   "SIM115",  # open context manager - not always applicable
 ]
+
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
 
 [tool.mypy]
 files = "setup.py"

@@ -16,30 +16,43 @@
 import os
 
 import paddle
-from paddle.fluid.framework import IrGraph
 from paddle.framework import core
-from paddle.static.quantization import (
-    AddQuantDequantPass,
-    AddQuantDequantPassV2,
-    QuantizationFreezePass,
-    QuantizationTransformPass,
-    QuantizationTransformPassV2,
-    QuantWeightPass,
-    utils,
-)
 
 try:
-    from paddle.static.quantization import quant_config
+    from paddle.base.framework import IrGraph
 
-    TRANSFORM_PASS_OP_TYPES = list(
-        quant_config.SUPPORT_WEIGHT_QUANTIZATION_OP_DICT.keys()
+    _HAS_IR_GRAPH = True
+except (ImportError, AttributeError):
+    try:
+        from paddle.fluid.framework import IrGraph
+
+        _HAS_IR_GRAPH = True
+    except (ImportError, AttributeError):
+        _HAS_IR_GRAPH = False
+
+if _HAS_IR_GRAPH:
+    from paddle.static.quantization import (
+        AddQuantDequantPass,
+        AddQuantDequantPassV2,
+        QuantizationFreezePass,
+        QuantizationTransformPass,
+        QuantizationTransformPassV2,
+        QuantWeightPass,
+        utils,
     )
-    QUANT_DEQUANT_PASS_OP_TYPES = list(
-        quant_config.SUPPORT_ACT_QUANTIZATION_OP_DICT.keys()
-    )
-except:  # noqa: E722
-    TRANSFORM_PASS_OP_TYPES = utils._weight_supported_quantizable_op_type
-    QUANT_DEQUANT_PASS_OP_TYPES = utils._act_supported_quantizable_op_type
+
+    try:
+        from paddle.static.quantization import quant_config
+
+        TRANSFORM_PASS_OP_TYPES = list(
+            quant_config.SUPPORT_WEIGHT_QUANTIZATION_OP_DICT.keys()
+        )
+        QUANT_DEQUANT_PASS_OP_TYPES = list(
+            quant_config.SUPPORT_ACT_QUANTIZATION_OP_DICT.keys()
+        )
+    except Exception:
+        TRANSFORM_PASS_OP_TYPES = utils._weight_supported_quantizable_op_type
+        QUANT_DEQUANT_PASS_OP_TYPES = utils._act_supported_quantizable_op_type
 
 from paddle.static import load_inference_model
 
@@ -69,6 +82,11 @@ def post_quant_fake(
             params_filename='params',
             save_model_path='fake_quant')
     """
+    if not _HAS_IR_GRAPH:
+        raise RuntimeError(
+            "post_quant_fake requires paddle.fluid.framework.IrGraph which "
+            "has been removed in PaddlePaddle 3.x"
+        )
     if quantizable_op_type is None:
         quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
     activation_quantize_type = "range_abs_max"

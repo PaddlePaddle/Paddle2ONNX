@@ -16,11 +16,18 @@ import unittest
 
 import hypothesis.strategies as st
 from auto_scan_test import BaseNet, OPConvertAutoScanTest
-from paddle.incubate.layers import partial_concat, partial_sum
+
+try:
+    from paddle.incubate.layers import partial_concat, partial_sum
+
+    _HAS_PARTIAL_OPS = True
+except ImportError:
+    _HAS_PARTIAL_OPS = False
 
 name2fun_dict = {}
-name2fun_dict["partial_sum"] = partial_sum
-name2fun_dict["partial_concat"] = partial_concat
+if _HAS_PARTIAL_OPS:
+    name2fun_dict["partial_sum"] = partial_sum
+    name2fun_dict["partial_concat"] = partial_concat
 
 
 class Net(BaseNet):
@@ -42,9 +49,13 @@ class Net(BaseNet):
         )
 
 
+@unittest.skipUnless(
+    _HAS_PARTIAL_OPS,
+    "Requires paddle.incubate.layers.partial_concat/partial_sum, removed in PaddlePaddle 3.x",
+)
 class TestConcatConvert(OPConvertAutoScanTest):
     """
-    api: paddle.fluid.contrib.layers.partial_*
+    api: paddle.incubate.layers.partial_concat / partial_sum
     OPset version: 7, 9, 15
     """
 

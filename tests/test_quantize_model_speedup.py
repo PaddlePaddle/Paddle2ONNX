@@ -19,7 +19,7 @@ import unittest
 
 import numpy as np
 import paddle
-from fake_quant import post_quant_fake
+from fake_quant import _HAS_IR_GRAPH, post_quant_fake
 
 paddle.enable_static()
 
@@ -147,30 +147,50 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.assertLess(latency_diff, -0.1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingE2eqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_e2eq_onnx_format_full_quant(self):
         model_name = "e2eq"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingFeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_feedasq_onnx_format_full_quant(self):
         model_name = "feedasq"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingFeedasqNohadamaONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_feedasq_nohadama_onnx_format_full_quant(self):
         model_name = "feedasq_nohadama"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingVideofeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_videofeedasq_onnx_format_full_quant(self):
         model_name = "videofeedasq"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingLiminghaoONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_liminghao_onnx_format_full_quant(self):
         model_name = "liminghao"

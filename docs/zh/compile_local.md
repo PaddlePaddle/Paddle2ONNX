@@ -3,38 +3,25 @@
 Paddle2ONNX 的编译安装需要确保环境满足以下需求：
 
 - cmake >= 3.16.0
-- protobuf == 21.12
+- Python >= 3.10
+- protobuf >= 34.0
 
 ## 1 在 Linux/Mac 下安装
 
-### 1.1 安装 Protobuf
+### 1.1 安装系统依赖
+
+通过系统包管理器安装 protobuf、glog 和 pybind11。
+
+通过 homebrew 安装 (Mac):
 
 ```bash
-git clone https://github.com/protocolbuffers/protobuf.git
-cd protobuf
-git checkout v21.12
-git submodule update --init
-mkdir build_source && cd build_source
-cmake ../cmake -DCMAKE_INSTALL_PREFIX=`pwd`/installed_protobuf_lib -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=14
-make -j
-make install
-
-# 将库路径添加到环境变量
-export PATH=${PWD}/installed_protobuf_lib/bin:${PATH}
+brew install protobuf glog pybind11
 ```
 
-### 或者：
-
-通过 apt 安装 Protobuf (Linux):
+通过 apt 安装 (Linux):
 
 ```bash
-sudo apt install protobuf-compiler
-```
-
-通过 homebrew 安装 Protobuf (Mac):
-
-```bash
-brew install protobuf
+sudo apt install protobuf-compiler libprotobuf-dev libgoogle-glog-dev pybind11-dev
 ```
 
 ### 1.2 安装 PaddlePaddle
@@ -48,9 +35,8 @@ python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/pack
 ```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
-git submodule update --init
-export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
-python -m build
+uv sync
+uv run python setup.py build
 pip install dist/*.whl
 ```
 
@@ -78,8 +64,7 @@ pip install dist/*.whl
 ```bash
 git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
-git checkout v21.12
-git submodule update --init --recursive
+git checkout v34.0
 mkdir build
 cd build
 cmake -G "Visual Studio 16 2019"  -DCMAKE_INSTALL_PREFIX=%CD%\protobuf_install -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_EXAMPLES=OFF ..
@@ -93,9 +78,7 @@ set PATH=%CD%\protobuf_install\bin;%PATH%
 ```bash
 git clone https://github.com/PaddlePaddle/Paddle2ONNX.git
 cd Paddle2ONNX
-git submodule update --init
-set PIP_EXTRA_INDEX_URL=https://www.paddlepaddle.org.cn/packages/nightly/cpu/
-pip install setuptools wheel auditwheel auditwheel-symbols build
-python -m build
+uv sync
+uv run python setup.py build
 pip install dist/*.whl
 ```

@@ -15,7 +15,7 @@
 #include "paddle2onnx/optimizer/paddle2onnx_optimizer.h"
 #include <onnx/shape_inference/implementation.h>
 #include <fstream>
-#include "onnx/optimizer/optimize.h"
+#include "onnxoptimizer/optimize.h"
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
 #include "paddle2onnx/optimizer/fuse_constant_cast.h"
@@ -48,7 +48,7 @@ ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
   }
 
   try {
-    shape_inference::InferShapes(optimized_model_proto);
+    shape_inference::InferShapes(optimized_model_proto, OpSchemaRegistry::Instance());
   } catch (const std::exception& e) {
     paddle2onnx::P2OLogger(true)
         << "[ERROR] Failed to reinfer shape for this model." << std::endl;
@@ -158,7 +158,7 @@ bool OptimizePaddle2ONNX(
     }
 
     try {
-      shape_inference::InferShapes(*(model_proto.get()));
+      shape_inference::InferShapes(*(model_proto.get()), OpSchemaRegistry::Instance());
     } catch (const std::exception& e) {
       paddle2onnx::P2OLogger(true)
           << "[ERROR] Failed to reinfer shape for this model." << std::endl;
