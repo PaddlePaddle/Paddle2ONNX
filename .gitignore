@@ -25,6 +25,7 @@ protobuf-*
 __pycache__/
 *.egg-info/
 .hypothesis/
+/paddle
 
 # Temporary files automatically generated when executing Paddle2ONNX unit tests
 *.pdmodel
