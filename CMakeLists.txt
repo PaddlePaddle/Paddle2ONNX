@@ -36,8 +36,11 @@ configure_file(${PROJECT_SOURCE_DIR}/paddle2onnx/mappers_registry.h.in
 
 # --- Dependencies ---
 
-# Protobuf (system-installed, CONFIG mode for proper targets)
-find_package(Protobuf REQUIRED CONFIG)
+# Protobuf (try CONFIG mode first, fall back to module mode)
+find_package(Protobuf CONFIG)
+if(NOT Protobuf_FOUND)
+  find_package(Protobuf REQUIRED)
+endif()
 
 include(FetchContent)
 
@@ -228,7 +231,8 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
             $<INSTALL_INTERFACE:include>
             ${PYTHON_INCLUDE_DIR}
-            ${PADDLE_INCLUDE_DIR})
+            ${PADDLE_INCLUDE_DIR}
+            ${pybind11_INCLUDE_DIRS})
 
   if(APPLE)
     set_target_properties(paddle2onnx_cpp2py_export
