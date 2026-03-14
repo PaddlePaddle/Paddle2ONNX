@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import randtool
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import randtool
+
 import paddle
 
 
@@ -34,7 +36,7 @@ class Net(BaseNet):
         downsample_ratio = self.config["downsample_ratio"]
         clip_bbox = self.config["clip_bbox"]
         scale_x_y = self.config["scale_x_y"]
-        x = paddle.vision.ops.yolo_box(
+        return paddle.vision.ops.yolo_box(
             inputs_1,
             inputs_2,
             anchors=anchors,
@@ -44,7 +46,6 @@ class Net(BaseNet):
             clip_bbox=clip_bbox,
             scale_x_y=scale_x_y,
         )
-        return x
 
 
 class TestYoloBoxConvert(OPConvertAutoScanTest):
@@ -84,8 +85,7 @@ class TestYoloBoxConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator_data():
-            input_data = randtool("int", 320, 640, img_size)
-            return input_data
+            return randtool("int", 320, 640, img_size)
 
         input_shape[1] = num * (5 + class_num)
 

@@ -13,20 +13,23 @@
 # limitations under the License.
 # This file referred to github.com/onnx/onnx.git
 
-from distutils import sysconfig, log
-import setuptools
-import setuptools.command.build_py
-import setuptools.command.develop
-import setuptools.command.build_ext
-from shutil import which
+from __future__ import annotations
 
-from contextlib import contextmanager
+import multiprocessing
 import os
+import platform
 import shlex
 import subprocess
 import sys
-import platform
-import multiprocessing
+from contextlib import contextmanager
+from distutils import log, sysconfig
+from shutil import which
+from typing import ClassVar
+
+import setuptools
+import setuptools.command.build_ext
+import setuptools.command.build_py
+import setuptools.command.develop
 
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
 SRC_DIR = os.path.join(TOP_DIR, "paddle2onnx")
@@ -60,7 +63,7 @@ assert CMAKE, 'Could not find "cmake" executable!'
 @contextmanager
 def cd(path):
     if not os.path.isabs(path):
-        raise RuntimeError("Can only cd to absolute path, got: {}".format(path))
+        raise RuntimeError(f"Can only cd to absolute path, got: {path}")
     orig_path = os.getcwd()
     os.chdir(path)
     try:
@@ -83,8 +86,8 @@ class cmake_build(setuptools.Command):
     to `setup.py build`.  By default all CPUs are used.
     """
 
-    user_options = [
-        (str("jobs="), str("j"), str("Specifies the number of jobs to use with make"))
+    user_options: ClassVar[list[tuple[str, str, str]]] = [
+        ("jobs=", "j", "Specifies the number of jobs to use with make")
     ]
 
     built = False
@@ -93,8 +96,7 @@ class cmake_build(setuptools.Command):
         self.jobs = None
 
     def finalize_options(self):
-        if sys.version_info[0] >= 3:
-            self.set_undefined_options("build", ("parallel", "jobs"))
+        self.set_undefined_options("build", ("parallel", "jobs"))
         if self.jobs is None and os.getenv("MAX_JOBS") is not None:
             self.jobs = os.getenv("MAX_JOBS")
         self.jobs = multiprocessing.cpu_count() if self.jobs is None else int(self.jobs)
@@ -107,11 +109,11 @@ class cmake_build(setuptools.Command):
             # configure
             cmake_args = [
                 CMAKE,
-                "-DPYTHON_INCLUDE_DIR={}".format(sysconfig.get_python_inc()),
-                "-DPYTHON_EXECUTABLE={}".format(sys.executable),
+                f"-DPYTHON_INCLUDE_DIR={sysconfig.get_python_inc()}",
+                f"-DPYTHON_EXECUTABLE={sys.executable}",
                 "-DBUILD_PADDLE2ONNX_PYTHON=ON",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-                "-DONNX_NAMESPACE={}".format(ONNX_NAMESPACE),
+                f"-DONNX_NAMESPACE={ONNX_NAMESPACE}",
                 "-DPY_EXT_SUFFIX={}".format(
                     sysconfig.get_config_var("EXT_SUFFIX") or ""
                 ),
@@ -119,7 +121,7 @@ class cmake_build(setuptools.Command):
                     str(sys.version_info[0]) + "." + str(sys.version_info[1])
                 ),
             ]
-            cmake_args.append("-DCMAKE_BUILD_TYPE=%s" % build_type)
+            cmake_args.append(f"-DCMAKE_BUILD_TYPE={build_type}")
             cmake_args.append("-DCMAKE_POLICY_VERSION_MINIMUM=3.5")
             if WINDOWS:
                 cmake_args.extend(
@@ -127,27 +129,22 @@ class cmake_build(setuptools.Command):
                         # we need to link with libpython on windows, so
                         # passing python version to window in order to
                         # find python in cmake
-                        "-DPY_VERSION={}".format(
-                            "{0}.{1}".format(*sys.version_info[:2])
-                        ),
+                        "-DPY_VERSION={}".format("{}.{}".format(*sys.version_info[:2])),
                     ]
                 )
                 if platform.architecture()[0] == "64bit":
                     cmake_args.extend(["-A", "x64", "-T", "host=x64"])
                 else:
                     cmake_args.extend(["-A", "Win32", "-T", "host=x86"])
-                cmake_args.extend(["-G", "Visual Studio 16 2019"])
             else:
                 cmake_args.append(
-                    "-DPYTHON_LIBRARY={}".format(
-                        sysconfig.get_python_lib(standard_lib=True)
-                    )
+                    f"-DPYTHON_LIBRARY={sysconfig.get_python_lib(standard_lib=True)}"
                 )
             if "CMAKE_ARGS" in os.environ:
                 extra_cmake_args = shlex.split(os.environ["CMAKE_ARGS"])
                 # prevent crossfire with downstream scripts
                 del os.environ["CMAKE_ARGS"]
-                log.info("Extra cmake args: {}".format(extra_cmake_args))
+                log.info(f"Extra cmake args: {extra_cmake_args}")
                 cmake_args.extend(extra_cmake_args)
             cmake_args.append(TOP_DIR)
             subprocess.check_call(cmake_args)
@@ -155,7 +152,7 @@ class cmake_build(setuptools.Command):
             build_args = [CMAKE, "--build", os.curdir]
             if WINDOWS:
                 build_args.extend(["--config", build_type])
-                build_args.extend(["--", "/maxcpucount:{}".format(self.jobs)])
+                build_args.extend(["--", f"/maxcpucount:{self.jobs}"])
             else:
                 build_args.extend(["--", "-j", str(self.jobs)])
             subprocess.check_call(build_args)
@@ -189,14 +186,10 @@ class build_ext(setuptools.command.build_ext.build_ext):
                 os.path.realpath(self.build_lib), "paddle2onnx", filename
             )
             if platform.system() == "Darwin":
-                command = "install_name_tool -change @loader_path/../libs/ @loader_path/../paddle/base/libpaddle.so {}".format(
-                    src
-                )
+                command = f"install_name_tool -change @loader_path/../libs/ @loader_path/../paddle/base/libpaddle.so {src}"
                 if os.system(command) != 0:
                     raise Exception(
-                        "Failed to change library paths using command: '{}'".format(
-                            command
-                        )
+                        f"Failed to change library paths using command: '{command}'"
                     )
             self.copy_file(src, dst)
 
@@ -211,7 +204,7 @@ cmdclass = {
 ################################################################################
 
 ext_modules = [
-    setuptools.Extension(name=str("paddle2onnx.paddle2onnx_cpp2py_export"), sources=[])
+    setuptools.Extension(name="paddle2onnx.paddle2onnx_cpp2py_export", sources=[])
 ]
 
 ################################################################################

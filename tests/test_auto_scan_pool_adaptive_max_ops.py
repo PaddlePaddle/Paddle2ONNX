@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class NetAvgPool1d(BaseNet):
@@ -29,10 +31,9 @@ class NetAvgPool1d(BaseNet):
         forward
         """
         output_size = self.config["output_size"]
-        x = paddle.nn.functional.adaptive_max_pool1d(
+        return paddle.nn.functional.adaptive_max_pool1d(
             inputs, output_size=output_size, return_mask=False
         )
-        return x
 
 
 class TestAdaptiveAvgPool1dConvert(OPConvertAutoScanTest):
@@ -82,10 +83,9 @@ class NetAvgPool2d(BaseNet):
         forward
         """
         output_size = self.config["output_size"]
-        x = paddle.nn.functional.adaptive_max_pool2d(
+        return paddle.nn.functional.adaptive_max_pool2d(
             inputs, output_size, return_mask=False
         )
-        return x
 
 
 class TestAdaptiveAvgPool2dConvert(OPConvertAutoScanTest):
@@ -144,10 +144,9 @@ class NetAvgPool3d(BaseNet):
         forward
         """
         output_size = self.config["output_size"]
-        x = paddle.nn.functional.adaptive_max_pool3d(
+        return paddle.nn.functional.adaptive_max_pool3d(
             inputs, output_size=output_size, return_mask=False
         )
-        return x
 
 
 class TestAdaptiveAvgPool3dConvert(OPConvertAutoScanTest):

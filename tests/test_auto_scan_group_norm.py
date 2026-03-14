@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
 import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
 
 
@@ -25,7 +26,7 @@ class Net(BaseNet):
     """
 
     def __init__(self, config=None):
-        super(Net, self).__init__(config)
+        super().__init__(config)
         groups = self.config["groups"]
         epsilon = self.config["epsilon"]
         num_channels = self.config["num_channels"]
@@ -43,8 +44,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = self.group_norm(inputs)
-        return x
+        return self.group_norm(inputs)
 
 
 class TestGroupNormConvert(OPConvertAutoScanTest):

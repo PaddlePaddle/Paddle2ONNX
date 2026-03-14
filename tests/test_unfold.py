@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
 import paddle.nn.functional as F
-from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -25,14 +24,13 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
 
     def forward(self, x):
         """
         forward
         """
-        x = F.unfold(x, [3, 3], 1, 1, 1)
-        return x
+        return F.unfold(x, [3, 3], 1, 1, 1)
 
 
 @_test_with_pir

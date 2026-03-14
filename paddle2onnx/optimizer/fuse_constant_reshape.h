@@ -26,7 +26,7 @@
 #include <numeric>
 
 #include "onnx/defs/tensor_util.h"
-#include "onnxoptimizer/pass.h"
+#include "onnx/optimizer/pass.h"
 
 namespace ONNX_NAMESPACE {
 namespace optimization {
@@ -127,11 +127,7 @@ struct FuseConstantReshape final : public PredicateBasedPass {
     // update constant node
     constant->output()->setSizes(reshape->output()->sizes());
     constant->output()->setElemType(reshape->output()->elemType());
-    const bool replacing_success =
-        tryReplacingAllUsesWith(reshape->output(), reshape->inputs()[0]);
-    if (!replacing_success) {
-      return false;
-    }
+    reshape->output()->replaceAllUsesWith(reshape->inputs()[0]);
     destroy_current = NodeDestroyType::DestroyOne;
     return true;
   }

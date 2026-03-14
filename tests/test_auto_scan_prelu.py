@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,8 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.prelu(inputs, weight=weights)
-        return x
+        return paddle.nn.functional.prelu(inputs, weight=weights)
 
 
 class TestPreluConvert(OPConvertAutoScanTest):
@@ -42,10 +43,7 @@ class TestPreluConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(st.integers(min_value=5, max_value=20), min_size=0, max_size=4)
         )
-        if len(input_shape) == 0:
-            weight_shape = []
-        else:
-            weight_shape = [1]
+        weight_shape = [] if len(input_shape) == 0 else [1]
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 

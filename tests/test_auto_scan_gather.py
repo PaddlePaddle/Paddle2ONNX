@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+from random import sample
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
-from random import sample
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net0(BaseNet):
@@ -30,8 +32,7 @@ class Net0(BaseNet):
         """
         forward
         """
-        x = paddle.gather(x, index, axis=self.config["axis"])
-        return x
+        return paddle.gather(x, index, axis=self.config["axis"])
 
 
 class Net1(BaseNet):
@@ -47,8 +48,7 @@ class Net1(BaseNet):
         axis = paddle.to_tensor(axis, dtype="int64")
         x = paddle.gather(x, index, axis=axis)
         shape = paddle.shape(x)
-        x = paddle.reshape(x, shape)
-        return x
+        return paddle.reshape(x, shape)
 
 
 class TestGatherConvert0(OPConvertAutoScanTest):
@@ -68,7 +68,7 @@ class TestGatherConvert0(OPConvertAutoScanTest):
         axis = draw(st.integers(min_value=0, max_value=len(input_shape) - 1))
 
         def generator_index():
-            index_list = [i for i in range(input_shape[axis])]
+            index_list = list(range(input_shape[axis]))
             index_select = sample(index_list, 2)
             return np.array(index_select)
 
@@ -107,7 +107,7 @@ class TestGatherConvert1(OPConvertAutoScanTest):
         axis = draw(st.integers(min_value=0, max_value=len(input_shape) - 1))
 
         def generator_index():
-            index_list = [i for i in range(input_shape[axis])]
+            index_list = list(range(input_shape[axis]))
             index_select = sample(index_list, 2)
             return np.array(index_select)
 

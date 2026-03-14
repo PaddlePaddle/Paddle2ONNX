@@ -1,15 +1,15 @@
 [submodule "third_party/onnx"]
 	path = third_party/onnx
 	url = https://github.com/onnx/onnx.git
-	branch = 990217f043af7222348ca8f0301e17fa7b841781
+	branch = d3f6b795aedb48eaecc881bf5e8f5dd6efbe25b3
 [submodule "third_party/optimizer"]
 	path = third_party/optimizer
 	url = https://github.com/onnx/optimizer.git
-	branch = b3a4611861734e0731bbcc2bed1f080139e4988b
+	branch = 94d238d96e3fb3a7ba34f03c284b9ad3516163be
 [submodule "third_party/pybind11"]
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
-	branch = 3e9dfa2866941655c56877882565e7577de6fc7b
+	branch = 45fab4087eaaff234227a10cf7845e8b07f28a98
 [submodule "third_party/glog"]
 	path = third_party/glog
 	url = https://github.com/google/glog.git

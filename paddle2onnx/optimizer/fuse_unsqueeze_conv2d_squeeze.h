@@ -29,7 +29,7 @@
 #include <numeric>
 
 #include "onnx/defs/tensor_util.h"
-#include "onnxoptimizer/pass.h"
+#include "onnx/optimizer/pass.h"
 
 namespace ONNX_NAMESPACE {
 namespace optimization {
@@ -153,14 +153,8 @@ struct FuseUnsqueezeConv2dSqueeze final : public PredicateBasedPass {
     }
 
     conv_node->replaceInput(0, unsqueeze_node->inputs()[0]);
-    if (!tryReplacingAllUsesWith(unsqueeze_node->output(),
-                                 unsqueeze_node->inputs()[0])) {
-      return false;
-    }
-    if (!tryReplacingAllUsesWith(squeeze_node->output(),
-                                 squeeze_node->inputs()[0])) {
-      return false;
-    }
+    unsqueeze_node->output()->replaceAllUsesWith(unsqueeze_node->inputs()[0]);
+    squeeze_node->output()->replaceAllUsesWith(squeeze_node->inputs()[0]);
     //    unsqueeze_node->destroy();
     //    squeeze_node->destroy();
     //    destroy_current = NodeDestroyType::DestroyZero;

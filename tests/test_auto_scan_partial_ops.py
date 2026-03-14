@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddle.incubate.layers import partial_sum, partial_concat
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from paddle.incubate.layers import partial_concat, partial_sum
 
 name2fun_dict = {}
 name2fun_dict["partial_sum"] = partial_sum
@@ -32,14 +33,13 @@ class Net(BaseNet):
         forward
         """
         inputs_list = [inputs1]
-        for i in range(self.config["repeat_times"]):
+        for _i in range(self.config["repeat_times"]):
             inputs_list.append(inputs2)
-        x = name2fun_dict[self.config["op_names"][0]](
+        return name2fun_dict[self.config["op_names"][0]](
             inputs_list,
             start_index=self.config["start_index"],
             length=self.config["length"],
         )
-        return x
 
 
 class TestConcatConvert(OPConvertAutoScanTest):

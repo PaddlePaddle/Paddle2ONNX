@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle
 from onnxbase import APIOnnx
+
+import paddle
 
 
 class Net(paddle.nn.Layer):
@@ -22,15 +23,14 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self, overwrite=True):
-        super(Net, self).__init__()
+        super().__init__()
         self.overwrite = overwrite
 
     def forward(self, inputs, _index, _updates):
         """
         forward
         """
-        x = paddle.scatter(inputs, _index, _updates, overwrite=self.overwrite)
-        return x
+        return paddle.scatter(inputs, _index, _updates, overwrite=self.overwrite)
 
 
 def test_scatter_11():

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(paddle2onnx C CXX)
-# ONNX 1.16 requires C++ 17
+# ONNX 1.20 requires C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Build the libraries with - fPIC
@@ -24,7 +24,7 @@ endif()
 
 # Set max opset version for onnx if you build from other version of onnx this
 # should be modified.
-add_definitions(-DMAX_ONNX_OPSET_VERSION=23)
+add_definitions(-DMAX_ONNX_OPSET_VERSION=25)
 add_definitions(-DPADDLE2ONNX_LIB)
 
 # Internal flags for convert.h.in
@@ -57,10 +57,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/third_party/optimizer)
 
 file(GLOB_RECURSE ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/*.cc
-     ${PROJECT_SOURCE_DIR}/third_party/optimizer/onnxoptimizer/*.cc)
+     ${PROJECT_SOURCE_DIR}/third_party/optimizer/onnx/optimizer/*.cc)
 list(REMOVE_ITEM ALL_SRCS ${PROJECT_SOURCE_DIR}/paddle2onnx/cpp2py_export.cc)
-list(REMOVE_ITEM ALL_SRCS
-     ${PROJECT_SOURCE_DIR}/third_party/optimizer/onnxoptimizer/cpp2py_export.cc)
 
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
 string(STRIP "${PADDLE2ONNX_VERSION}" PADDLE2ONNX_VERSION)

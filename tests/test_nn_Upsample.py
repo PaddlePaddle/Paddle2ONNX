@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir, randtool
+
 import paddle
-from onnxbase import APIOnnx, randtool, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -30,7 +31,7 @@ class Net(paddle.nn.Layer):
         align_mode=0,
         data_format="NCHW",
     ):
-        super(Net, self).__init__()
+        super().__init__()
         self.size = size
         self.scale_factor = scale_factor
         self.mode = mode
@@ -42,7 +43,7 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = paddle.nn.functional.upsample(
+        return paddle.nn.functional.upsample(
             x=inputs,
             size=self.size,
             scale_factor=self.scale_factor,
@@ -51,7 +52,6 @@ class Net(paddle.nn.Layer):
             align_mode=self.align_mode,
             data_format=self.data_format,
         )
-        return x
 
 
 @_test_with_pir

@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import importlib
-import time
 import sys
+import time
+
 import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 
 
@@ -32,23 +32,22 @@ def try_import(module_name):
     """Try importing a module, with an informative error message on failure."""
     install_name = module_name
     try:
-        mod = importlib.import_module(module_name)
-        return mod
-    except ImportError:
+        return importlib.import_module(module_name)
+    except ImportError as exc:
         err_msg = (
-            "Failed importing {}. This likely means that some modules "
+            f"Failed importing {module_name}. This likely means that some modules "
             "requires additional dependencies that have to be "
-            "manually installed (usually with `pip install {}`). "
-        ).format(module_name, install_name)
-        raise ImportError(err_msg)
+            f"manually installed (usually with `pip install {install_name}`). "
+        )
+        raise ImportError(err_msg) from exc
 
 
 def check_model(onnx_model):
     onnx = try_import("onnx")
     try:
         onnx.checker.check_model(onnx_model)
-    except Exception:
-        raise Exception("ONNX model is not valid.")
+    except Exception as exc:
+        raise Exception("ONNX model is not valid.") from exc
     finally:
         logging.info("ONNX model generated is valid.")
 
@@ -73,17 +72,15 @@ class logging:
         if logging.log_level >= level:
             if use_color:
                 print(
-                    "{}{} [{}]\t{}\033[0m".format(
-                        level_color[level], current_time, levels[level], message
+                    f"{level_color[level]}{current_time} [{levels[level]}]\t{message}\033[0m".encode().decode(
+                        "latin1"
                     )
-                    .encode("utf-8")
-                    .decode("latin1")
                 )
             else:
                 print(
-                    "{} [{}]\t{}".format(current_time, levels[level], message)
-                    .encode("utf-8")
-                    .decode("latin1")
+                    f"{current_time} [{levels[level]}]\t{message}".encode().decode(
+                        "latin1"
+                    )
                 )
             sys.stdout.flush()
 
@@ -108,59 +105,42 @@ class logging:
 
 def compare_value(a, b, cond):
     if cond == "equal":
-        if a != b:
-            return False
-        return True
+        return a == b
     if cond == "greater_than":
-        if a <= b:
-            return False
-        return True
+        return not a <= b
     if cond == "greater_equal":
-        if a < b:
-            return False
-        return True
+        return not a < b
     if cond == "less_equal":
-        if a > b:
-            return False
-        return True
+        return not a > b
     if cond == "less_than":
-        if a >= b:
-            return False
-        return True
+        return not a >= b
+    return None
 
 
 def compare_attr(actual_value, target_value, attr_name, cond="equal"):
     if not compare_value(actual_value, target_value, cond):
         raise ValueError(
-            "Support {} {} {}, actually got {}=={}.".format(
-                attr_name, cond, target_value, attr_name, actual_value
-            )
+            f"Support {attr_name} {cond} {target_value}, actually got {attr_name}=={actual_value}."
         )
 
 
 def compare_attr_between_dims(attr, dims, attr_name, cond="equal"):
     if not compare_value(attr[dims[0]], attr[dims[1]], cond):
-        expect_info = "Support {}[{}] {} {}[{}], ".format(
-            attr_name, dims[0], cond, attr_name, dims[1]
-        )
-        actual_info = "actually got {}[{}]=={}, not {} {}[{}]=={}.".format(
-            attr_name, dims[0], attr[dims[0]], cond, attr_name, dims[1], attr[dims[1]]
-        )
+        expect_info = f"Support {attr_name}[{dims[0]}] {cond} {attr_name}[{dims[1]}], "
+        actual_info = f"actually got {attr_name}[{dims[0]}]=={attr[dims[0]]}, not {cond} {attr_name}[{dims[1]}]=={attr[dims[1]]}."
         raise ValueError(expect_info + actual_info)
 
 
 def require_fixed_shape(op_name=None):
     logging.error(
-        "[{}]Fixed shape is required, refer this doc for more information: https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/FAQ.md".format(
-            op_name
-        )
+        f"[{op_name}]Fixed shape is required, refer this doc for more information: https://github.com/PaddlePaddle/Paddle2ONNX/blob/develop/docs/zh/FAQ.md"
     )
 
 
 def paddle2onnx_export_configs(configs):
-    assert isinstance(
-        configs, dict
-    ), "create jit.save and paddle2onnx conversion configs from input, but input data is not dict."
+    assert isinstance(configs, dict), (
+        "create jit.save and paddle2onnx conversion configs from input, but input data is not dict."
+    )
     jit_save_configs = {
         "output_spec",
         "with_hook",

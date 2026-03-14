@@ -16,7 +16,7 @@
 #include <google/protobuf/message.h>
 #include <onnx/checker.h>
 #include <array>
-#include "onnxoptimizer/optimize.h"
+#include "onnx/optimizer/optimize.h"
 #include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
 #include "paddle/phi/core/enforce.h"
 #include "paddle2onnx/mapper/quantize/ort_quantize_processor.h"

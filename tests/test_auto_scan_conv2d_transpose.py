@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -33,7 +35,7 @@ class Net(BaseNet):
             output_size = self.config["output_size"]
         else:
             output_size = self.config["output_size"]
-        x = paddle.nn.functional.conv2d_transpose(
+        return paddle.nn.functional.conv2d_transpose(
             inputs,
             weight,
             stride=self.config["stride"],
@@ -43,7 +45,6 @@ class Net(BaseNet):
             output_size=output_size,
             data_format=self.config["data_format"],
         )
-        return x
 
 
 class TestConv2dTransposeConvert(OPConvertAutoScanTest):
@@ -133,9 +134,9 @@ class TestConv2dTransposeConvert(OPConvertAutoScanTest):
                 axis=0,
             ).tolist()
             if data_format == "NCHW":
-                padding = [[0, 0]] + [[0, 0]] + padding1 + padding2
+                padding = [[0, 0], [0, 0], *padding1, *padding2]
             else:
-                padding = [[0, 0]] + padding1 + padding2 + [[0, 0]]
+                padding = [[0, 0], *padding1, *padding2, [0, 0]]
             padding_1_1 = padding[2][0]
             padding_1_2 = padding[2][1]
             padding_2_1 = padding[3][0]

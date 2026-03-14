@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -31,8 +33,7 @@ class Net(BaseNet):
         axis = self.config["axis"]
         if self.config["isTensor"]:
             axis = paddle.to_tensor(axis, dtype=self.config["axis_dtype"])
-        x = paddle.concat([inputs1, inputs2], axis=axis)
-        return x
+        return paddle.concat([inputs1, inputs2], axis=axis)
 
 
 class TestConcatConvert(OPConvertAutoScanTest):
@@ -45,7 +46,7 @@ class TestConcatConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(st.integers(min_value=4, max_value=8), min_size=2, max_size=5)
         )
-        axis_dtype = "int64"  # 只能设置为INT64，设置为INT32时会在axis_tensor后增加cast导致取不到constant数值
+        axis_dtype = "int64"  # 只能设置为INT64,设置为INT32时会在axis_tensor后增加cast导致取不到constant数值
         dtype = draw(
             st.sampled_from(["float16", "float32", "float64", "int32", "int64"])
         )

@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import randtool
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir, randtool
+
 import paddle
-from onnxbase import _test_with_pir
 
 op_api_map = {"elementwise_floordiv": paddle.floor_divide}
 
@@ -28,8 +29,7 @@ opset_version_map = {
 
 class Net(BaseNet):
     def forward(self, inputs1, inputs2):
-        x = op_api_map[self.config["op_names"]](inputs1, inputs2)
-        return x
+        return op_api_map[self.config["op_names"]](inputs1, inputs2)
 
 
 class TestfloordivConvert(OPConvertAutoScanTest):
@@ -68,8 +68,7 @@ class TestfloordivConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
         def generator_data():
-            input_data = randtool("int", 1.0, 20.0, input2_shape)
-            return input_data
+            return randtool("int", 1.0, 20.0, input2_shape)
 
         config = {
             "op_names": ["elementwise_floordiv"],
@@ -79,14 +78,14 @@ class TestfloordivConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
         }
 
-        models = list()
-        op_names = list()
-        opset_versions = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        opset_versions = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)
-        for op_name, i in op_api_map.items():
+        for op_name in op_api_map:
             opset_versions.append(opset_version_map[op_name])
         config["op_names"] = op_names
         config["opset_version"] = opset_versions

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_only_pir
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import _test_only_pir
 
 
 class Net1(paddle.nn.Layer):
@@ -23,14 +23,13 @@ class Net1(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net1, self).__init__()
+        super().__init__()
 
     def forward(self, shape):
         """
         forward
         """
-        x = paddle.full(shape, fill_value=3)
-        return x
+        return paddle.full(shape, fill_value=3)
 
 
 @_test_only_pir
@@ -52,14 +51,13 @@ class Net2(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net2, self).__init__()
+        super().__init__()
 
     def forward(self, shape, fill_value):
         """
         forward
         """
-        x = paddle.full(shape, fill_value)
-        return x
+        return paddle.full(shape, fill_value)
 
 
 @_test_only_pir

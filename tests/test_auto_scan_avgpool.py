@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -33,7 +35,7 @@ class NetAvgpool2d(BaseNet):
         padding = self.config["padding"]
         ceil_mode = self.config["ceil_mode"]
         data_format = self.config["data_format"]
-        x = paddle.nn.functional.avg_pool2d(
+        return paddle.nn.functional.avg_pool2d(
             inputs,
             kernel_size=kernel_size,
             stride=stride,
@@ -41,7 +43,6 @@ class NetAvgpool2d(BaseNet):
             ceil_mode=ceil_mode,
             data_format=data_format,
         )
-        return x
 
 
 class TestMaxpool2dConvert(OPConvertAutoScanTest):
@@ -122,28 +123,22 @@ class TestMaxpool2dConvert(OPConvertAutoScanTest):
                 axis=0,
             ).tolist()
             if data_format == "NCHW":
-                padding = [[0, 0]] + [[0, 0]] + padding1 + padding2
+                padding = [[0, 0], [0, 0], *padding1, *padding2]
             else:
-                padding = [[0, 0]] + padding1 + padding2 + [[0, 0]]
+                padding = [[0, 0], *padding1, *padding2, [0, 0]]
         else:
             padding = 0
 
         if return_mask and padding_type in ["list2", "list4", "list8"]:
             padding = draw(st.integers(min_value=1, max_value=5))
 
-        if return_mask:
-            opset_version = [[9, 15]]
-        else:
-            opset_version = [[7, 9, 15]]
+        opset_version = [[9, 15]] if return_mask else [[7, 9, 15]]
         if ceil_mode:
             opset_version = [10, 15]
 
         if padding == "VALID":
             ceil_mode = False
-        if return_mask:
-            op_names = "max_pool2d_with_index"
-        else:
-            op_names = "pool2d"
+        op_names = "max_pool2d_with_index" if return_mask else "pool2d"
         config = {
             "op_names": [op_names],
             "test_data_shapes": [input_shape],

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -29,7 +31,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.conv2d(
+        return paddle.nn.functional.conv2d(
             inputs,
             weight,
             stride=self.config["stride"],
@@ -38,7 +40,6 @@ class Net(BaseNet):
             groups=self.config["groups"],
             data_format=self.config["data_format"],
         )
-        return x
 
 
 class TestConv2dConvert(OPConvertAutoScanTest):
@@ -112,9 +113,9 @@ class TestConv2dConvert(OPConvertAutoScanTest):
                 axis=0,
             ).tolist()
             if data_format == "NCHW":
-                padding = [[0, 0]] + [[0, 0]] + padding1 + padding2
+                padding = [[0, 0], [0, 0], *padding1, *padding2]
             else:
-                padding = [[0, 0]] + padding1 + padding2 + [[0, 0]]
+                padding = [[0, 0], *padding1, *padding2, [0, 0]]
         elif padding_type == "list":
             if draw(st.booleans()):
                 padding = draw(

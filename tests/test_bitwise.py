@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import _test_with_pir
 
 
 class BitwiseAndNet(paddle.nn.Layer):
     def __init__(self):
-        super(BitwiseAndNet, self).__init__()
+        super().__init__()
 
     def forward(self, x, y):
-        x = paddle.bitwise_and(x, y)
-        return x
+        return paddle.bitwise_and(x, y)
 
 
 @_test_with_pir
@@ -80,11 +79,10 @@ def test_bitwise_and_bool_type_18():
 
 class BitwiseNotNet(paddle.nn.Layer):
     def __init__(self):
-        super(BitwiseNotNet, self).__init__()
+        super().__init__()
 
     def forward(self, x):
-        x = paddle.bitwise_not(x)
-        return x
+        return paddle.bitwise_not(x)
 
 
 @_test_with_pir
@@ -131,11 +129,10 @@ def test_bitwise_not_bool_type_18():
 
 class BitwiseOrNet(paddle.nn.Layer):
     def __init__(self):
-        super(BitwiseOrNet, self).__init__()
+        super().__init__()
 
     def forward(self, x, y):
-        x = paddle.bitwise_or(x, y)
-        return x
+        return paddle.bitwise_or(x, y)
 
 
 @_test_with_pir
@@ -192,11 +189,10 @@ def test_bitwise_or_bool_type_18():
 
 class BitwiseXorNet(paddle.nn.Layer):
     def __init__(self):
-        super(BitwiseXorNet, self).__init__()
+        super().__init__()
 
     def forward(self, x, y):
-        x = paddle.bitwise_xor(x, y)
-        return x
+        return paddle.bitwise_xor(x, y)
 
 
 @_test_with_pir

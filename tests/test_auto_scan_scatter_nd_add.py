@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import randtool
+
+import paddle
 
 
 class Net(BaseNet):
@@ -29,8 +31,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.scatter_nd_add(inputs, index, updates)
-        return x
+        return paddle.scatter_nd_add(inputs, index, updates)
 
 
 class TestScatterNdAddConvert(OPConvertAutoScanTest):
@@ -60,8 +61,7 @@ class TestScatterNdAddConvert(OPConvertAutoScanTest):
 
         def generator_index():
             min_val = np.min(input_shape)
-            index_list = randtool("int", 0, min_val, index_shape)
-            return index_list
+            return randtool("int", 0, min_val, index_shape)
 
         config = {
             "op_names": ["scatter_nd_add"],

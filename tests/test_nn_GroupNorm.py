@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir, randtool
+
 import paddle
-from onnxbase import APIOnnx, randtool, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -22,15 +23,14 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self._group_norm = paddle.nn.GroupNorm(num_groups=5, num_channels=10)
 
     def forward(self, inputs):
         """
         forward
         """
-        x = self._group_norm(inputs)
-        return x
+        return self._group_norm(inputs)
 
 
 @_test_with_pir

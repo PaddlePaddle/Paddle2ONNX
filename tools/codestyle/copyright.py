@@ -67,20 +67,16 @@ RE_SHEBANG = re.compile(r"^[ \t\v]*#[ \t]?\!")
 def _check_copyright(path):
     head = []
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             head = [next(f) for x in range(4)]
     except StopIteration:
         pass
 
-    for idx, line in enumerate(head):
-        if RE_COPYRIGHT.search(line) is not None:
-            return True
-
-    return False
+    return any(RE_COPYRIGHT.search(line) is not None for idx, line in enumerate(head))
 
 
 def generate_copyright(path, comment_mark):
-    original_contents = open(path, "r", encoding="utf-8").readlines()
+    original_contents = open(path, encoding="utf-8").readlines()
     head = original_contents[0:4]
 
     insert_line_no = 0

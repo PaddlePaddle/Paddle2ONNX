@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_only_pir
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import _test_only_pir
 
 
 class Net(paddle.nn.Layer):
@@ -23,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """
@@ -31,8 +31,7 @@ class Net(paddle.nn.Layer):
         """
 
         # repeats = paddle.to_tensor([3,2,1], dtype='int32')
-        x = paddle.repeat_interleave(inputs, repeats=2, axis=0)
-        return x
+        return paddle.repeat_interleave(inputs, repeats=2, axis=0)
 
 
 @_test_only_pir
@@ -58,7 +57,7 @@ class Net2(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net2, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """
@@ -66,8 +65,7 @@ class Net2(paddle.nn.Layer):
         """
 
         repeats = paddle.to_tensor([3, 2, 1], dtype="int32")
-        x = paddle.repeat_interleave(inputs, repeats=repeats, axis=1)
-        return x
+        return paddle.repeat_interleave(inputs, repeats=repeats, axis=1)
 
 
 @_test_only_pir

@@ -11,11 +11,12 @@
 # without warranties or conditions of any kind, either express or implied.
 # see the license for the specific language governing permissions and
 # limitations under the license.
-import unittest
 import os
-import time
-import sys
 import random
+import sys
+import time
+import unittest
+
 import numpy as np
 import paddle
 import paddle.fluid as fluid
@@ -37,15 +38,15 @@ class TestPostTrainingQuantization(unittest.TestCase):
         try:
             os.system("mkdir -p " + self.int8_model_path)
         except Exception as e:
-            print("Failed to create {} due to {}".format(self.int8_model_path, str(e)))
+            print(f"Failed to create {self.int8_model_path} due to {e!s}")
             sys.exit(-1)
 
     def tearDown(self):
         pass
 
     def merge_params(self, input_model_path, output_model_path):
-        import paddle.fluid as fluid
         import paddle
+        import paddle.fluid as fluid
 
         paddle.enable_static()
         model_dir = input_model_path
@@ -83,6 +84,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         sess = None
         if use_onnxruntime:
             import onnxruntime as rt
+
             import paddle2onnx
 
             new_model_path = model_path
@@ -157,7 +159,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self,
         model_path,
         algo="KL",
-        quantizable_op_type=["conv2d"],
+        quantizable_op_type=None,
         is_full_quantize=False,
         is_use_cache_file=False,
         is_optimize_model=False,
@@ -166,7 +168,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         onnx_format=False,
         skip_tensor_list=None,
     ):
-
+        if quantizable_op_type is None:
+            quantizable_op_type = ["conv2d"]
         place = fluid.CPUPlace()
         exe = fluid.Executor(place)
         val_reader = paddle.dataset.mnist.train()
@@ -213,27 +216,21 @@ class TestPostTrainingQuantization(unittest.TestCase):
         origin_model_path = os.path.join(self.cache_folder, model_name)
 
         print(
-            "Start FP32 inference for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start FP32 inference for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (fp32_throughput, fp32_latency, fp32_acc1) = self.run_program(
             origin_model_path, batch_size, infer_iterations
         )
 
         print(
-            "Start FP32 inference on onnxruntime for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start FP32 inference on onnxruntime for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (onnx_fp32_throughput, onnx_fp32_latency, onnx_fp32_acc1) = self.run_program(
             origin_model_path, batch_size, infer_iterations, use_onnxruntime=True
         )
 
         print(
-            "Start INT8 post training quantization for {0} on {1} images ...".format(
-                model_name, quant_iterations * batch_size
-            )
+            f"Start INT8 post training quantization for {model_name} on {quant_iterations * batch_size} images ..."
         )
         self.generate_quantized_model(
             origin_model_path,
@@ -249,9 +246,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start INT8 inference for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start INT8 inference for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
             self.int8_model_path,
@@ -262,9 +257,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start INT8 inference on onnxruntime for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start INT8 inference on onnxruntime for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (onnx_int8_throughput, onnx_int8_latency, onnx_int8_acc1) = self.run_program(
             self.int8_model_path,
@@ -275,34 +268,18 @@ class TestPostTrainingQuantization(unittest.TestCase):
             use_onnxruntime=True,
         )
 
-        print("---Post training quantization of {} method---".format(algo))
+        print(f"---Post training quantization of {algo} method---")
         print(
-            "FP32 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.".format(
-                model_name, batch_size, fp32_throughput, fp32_latency, fp32_acc1
-            )
+            f"FP32 {model_name}: batch_size {batch_size}, throughput {fp32_throughput} img/s, latency {fp32_latency} s, acc1 {fp32_acc1}."
         )
         print(
-            "ONNXRuntime FP32 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.".format(
-                model_name,
-                batch_size,
-                onnx_fp32_throughput,
-                onnx_fp32_latency,
-                onnx_fp32_acc1,
-            )
+            f"ONNXRuntime FP32 {model_name}: batch_size {batch_size}, throughput {onnx_fp32_throughput} img/s, latency {onnx_fp32_latency} s, acc1 {onnx_fp32_acc1}."
         )
         print(
-            "INT8 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.\n".format(
-                model_name, batch_size, int8_throughput, int8_latency, int8_acc1
-            )
+            f"INT8 {model_name}: batch_size {batch_size}, throughput {int8_throughput} img/s, latency {int8_latency} s, acc1 {int8_acc1}.\n"
         )
         print(
-            "ONNXRuntime INT8 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.\n".format(
-                model_name,
-                batch_size,
-                onnx_int8_throughput,
-                onnx_int8_latency,
-                onnx_int8_acc1,
-            )
+            f"ONNXRuntime INT8 {model_name}: batch_size {batch_size}, throughput {onnx_int8_throughput} img/s, latency {onnx_int8_latency} s, acc1 {onnx_int8_acc1}.\n"
         )
         sys.stdout.flush()
 

@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import onnx
-from inspect import isfunction
 import logging
-from onnxruntime import InferenceSession
 import os
-import numpy as np
-import paddle
-import paddle2onnx
-import paddle.static as static
-from paddle2onnx.convert import dygraph2onnx
 import shutil
 from functools import wraps
+from inspect import isfunction
+
+import numpy as np
+import onnx
+import paddle
+import paddle.static as static
+from onnxruntime import InferenceSession
+
+import paddle2onnx
+from paddle2onnx.convert import dygraph2onnx
 
 
 def _test_with_pir(func):
@@ -57,9 +59,7 @@ def compare_data(result_data, expect_data, delta, rtol):
     # 输出数据类型错误
     if result_data.dtype != result_data.dtype:
         logging.error(
-            "Different output data types! res type is: {}, and expect type is: {}".format(
-                result_data.dtype, expect_data.dtype
-            )
+            f"Different output data types! res type is: {result_data.dtype}, and expect type is: {expect_data.dtype}"
         )
         return False
 
@@ -68,7 +68,7 @@ def compare_data(result_data, expect_data, delta, rtol):
         diff = abs(result_data.astype("int32") - expect_data.astype("int32"))
     else:
         diff = abs(result_data - expect_data)
-    logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
+    logging.error(f"Output has diff! max diff: {np.amax(diff)}")
     return False
 
 
@@ -104,13 +104,13 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
         # Compare the actual shape with the expected shape and determine if the output results are correct.
         res_shape = compare_shape(result, expect)
 
-        assert res_data, "result: {} != expect: {}".format(result, expect)
-        assert res_shape, "result.shape: {} != expect.shape: {}".format(
-            result.shape, expect.shape
+        assert res_data, f"result: {result} != expect: {expect}"
+        assert res_shape, (
+            f"result.shape: {result.shape} != expect.shape: {expect.shape}"
         )
-        assert (
-            result.dtype == expect.dtype
-        ), "result.dtype: {} != expect.dtype: {}".format(result.dtype, expect.dtype)
+        assert result.dtype == expect.dtype, (
+            f"result.dtype: {result.dtype} != expect.dtype: {expect.dtype}"
+        )
     elif isinstance(result, list) and len(result) > 1:
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
@@ -128,11 +128,12 @@ def randtool(dtype, low, high, shape):
     if dtype == "int":
         return np.random.randint(low, high, shape)
 
-    elif dtype == "float":
+    if dtype == "float":
         return low + (high - low) * np.random.random(shape)
 
-    elif dtype == "bool":
+    if dtype == "bool":
         return np.random.randint(low, high, shape).astype("bool")
+    return None
 
 
 class BuildFunc(paddle.nn.Layer):
@@ -141,7 +142,7 @@ class BuildFunc(paddle.nn.Layer):
     """
 
     def __init__(self, inner_func, **super_param):
-        super(BuildFunc, self).__init__()
+        super().__init__()
         self.inner_func = inner_func
         self._super_param = super_param
 
@@ -149,8 +150,7 @@ class BuildFunc(paddle.nn.Layer):
         """
         forward
         """
-        x = self.inner_func(inputs, **self._super_param)
-        return x
+        return self.inner_func(inputs, **self._super_param)
 
 
 class BuildClass(paddle.nn.Layer):
@@ -159,15 +159,14 @@ class BuildClass(paddle.nn.Layer):
     """
 
     def __init__(self, inner_class, **super_param):
-        super(BuildClass, self).__init__()
+        super().__init__()
         self.inner_class = inner_class(**super_param)
 
     def forward(self, inputs):
         """
         forward
         """
-        x = self.inner_class(inputs)
-        return x
+        return self.inner_class(inputs)
 
 
 dtype_map = {
@@ -190,7 +189,7 @@ dtype_map = {
 }
 
 
-class APIOnnx(object):
+class APIOnnx:
     """
     paddle API transfer to onnx
     """
@@ -200,13 +199,17 @@ class APIOnnx(object):
         func,
         file_name,
         ver_list,
-        ops=[],
-        input_spec_shape=[],
+        ops=None,
+        input_spec_shape=None,
         delta=1e-5,
         rtol=1e-5,
         use_gpu=False,
         **sup_params,
     ):
+        if input_spec_shape is None:
+            input_spec_shape = []
+        if ops is None:
+            ops = []
         self.ops = ops
         if isinstance(self.ops, str):
             self.ops = [self.ops]
@@ -295,14 +298,12 @@ class APIOnnx(object):
         if len(self.input_spec_shape) == 0:
             return
         self.input_spec.clear()
-        i = 0
-        for shape in self.input_spec_shape:
+        for i, shape in enumerate(self.input_spec_shape):
             self.input_spec.append(
                 paddle.static.InputSpec(
                     shape=shape, dtype=self.input_dtype[i], name=str(i)
                 )
             )
-            i += 1
 
     def _mkdir(self):
         """
@@ -363,8 +364,7 @@ class APIOnnx(object):
         input_feed = {}
         if len(model.graph.input) == 0:
             return sess.run(output_names=None, input_feed=input_feed)
-        ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
-        return ort_outs
+        return sess.run(output_names=None, input_feed=self.input_feed)
 
     def add_kwargs_to_dict(self, group_name, **kwargs):
         """
@@ -387,7 +387,7 @@ class APIOnnx(object):
         included = False
         paddle_op_list = []
         assert len(self.ops) == 1, "You have to set one op name"
-        for key, node in paddle_graph.node_map.items():
+        for node in paddle_graph.node_map.values():
             op_type = node.type
             op_type = op_type.replace("depthwise_", "")
             if op_type == self.ops[0]:
@@ -396,8 +396,8 @@ class APIOnnx(object):
         if len(paddle_graph.node_map.keys()) == 0 and self.ops[0] == "":
             included = True
 
-        assert included is True, "{} op in not in convert OPs, all OPs :{}".format(
-            self.ops, paddle_op_list
+        assert included is True, (
+            f"{self.ops} op in not in convert OPs, all OPs :{paddle_op_list}"
         )
 
     # TODO: PaddlePaddle 2.6 has modified the ParseFromString API, and it cannot be simply replaced with
@@ -451,9 +451,9 @@ class APIOnnx(object):
         for place in self.places:
             paddle.set_device(place)
             exp = self._mk_dygraph_exp(self._func)
-            assert (
-                len(self.ops) <= 1
-            ), "Need to make sure the number of ops in config is 1."
+            assert len(self.ops) <= 1, (
+                "Need to make sure the number of ops in config is 1."
+            )
 
             # Save Paddle Inference model
             if os.path.exists(self.name):

@@ -15,7 +15,7 @@
 #include "paddle2onnx/optimizer/paddle2onnx_optimizer.h"
 #include <onnx/shape_inference/implementation.h>
 #include <fstream>
-#include "onnxoptimizer/optimize.h"
+#include "onnx/optimizer/optimize.h"
 #include "paddle2onnx/converter.h"
 #include "paddle2onnx/optimizer/eliminate_non_transpose.h"
 #include "paddle2onnx/optimizer/fuse_constant_cast.h"

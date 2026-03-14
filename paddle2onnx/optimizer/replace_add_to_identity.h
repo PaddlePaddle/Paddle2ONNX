@@ -28,7 +28,7 @@
 #include <cmath>
 #include <numeric>
 #include "onnx/defs/tensor_util.h"
-#include "onnxoptimizer/pass.h"
+#include "onnx/optimizer/pass.h"
 
 namespace ONNX_NAMESPACE {
 namespace optimization {
@@ -82,9 +82,7 @@ struct ReplaceAddToIdentity final : public PredicateBasedPass {
           int32_data.size() == 0 && int64_data.size() == 0) {
         return false;
       }
-      if (!tryReplacingAllUsesWith(add_node->output(), add_node->inputs()[1])) {
-        return false;
-      }
+      add_node->output()->replaceAllUsesWith(add_node->inputs()[1]);
     } else {
       auto bias = add_ipt_1->t(kvalue);
       if (bias.sizes().size() == 1 && bias.sizes()[0] != 1) {
@@ -113,9 +111,7 @@ struct ReplaceAddToIdentity final : public PredicateBasedPass {
           int32_data.size() == 0 && int64_data.size() == 0) {
         return false;
       }
-      if (!tryReplacingAllUsesWith(add_node->output(), add_node->inputs()[0])) {
-        return false;
-      }
+      add_node->output()->replaceAllUsesWith(add_node->inputs()[0]);
     }
     return true;
   }

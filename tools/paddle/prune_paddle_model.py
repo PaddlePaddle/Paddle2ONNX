@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import argparse
+import os
 import sys
+
 import paddle
 import paddle.base.core as core
 import paddle.static as static
-import os
 
 
 def prepend_feed_ops(program, feed_target_names):
@@ -32,9 +33,7 @@ def prepend_feed_ops(program, feed_target_names):
     for i, name in enumerate(feed_target_names):
         if not global_block.has_var(name):
             print(
-                "The input[{i}]: '{name}' doesn't exist in pruned inference program, which will be ignored in new saved model.".format(
-                    i=i, name=name
-                )
+                f"The input[{i}]: '{name}' doesn't exist in pruned inference program, which will be ignored in new saved model."
             )
             continue
         out = global_block.var(name)
@@ -54,7 +53,7 @@ def append_fetch_ops(program, fetch_target_names):
     fetch_var = global_block.create_var(
         name="fetch", type=core.VarDesc.VarType.FETCH_LIST, persistable=True
     )
-    print("the len of fetch_target_names:%d" % (len(fetch_target_names)))
+    print(f"the len of fetch_target_names:{len(fetch_target_names)}")
     for i, name in enumerate(fetch_target_names):
         global_block.append_op(
             type="fetch",
@@ -66,7 +65,7 @@ def append_fetch_ops(program, fetch_target_names):
 
 def insert_by_op_type(program, op_names, op_type):
     global_block = program.global_block()
-    need_to_remove_op_index = list()
+    need_to_remove_op_index = []
     for i, op in enumerate(global_block.ops):
         if op.type == op_type:
             need_to_remove_op_index.append(i)
@@ -133,7 +132,7 @@ if __name__ == "__main__":
             program.global_block().var(out_name) for out_name in args.output_names
         ]
     else:
-        fetch_vars = [out_var for out_var in fetch_targets]
+        fetch_vars = list(fetch_targets)
 
     model_name = args.model_filename.split(".")[0]
     path_prefix = os.path.join(args.save_dir, model_name)

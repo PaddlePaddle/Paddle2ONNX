@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -35,8 +37,7 @@ class Net(BaseNet):
                 axis = paddle.to_tensor(self.config["axis"])
         else:
             axis = self.config["axis"]
-        x = paddle.squeeze(inputs, axis=axis)
-        return x
+        return paddle.squeeze(inputs, axis=axis)
 
 
 class TestSqueezeConvert(OPConvertAutoScanTest):
@@ -55,19 +56,13 @@ class TestSqueezeConvert(OPConvertAutoScanTest):
         axis = draw(
             st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1)
         )
-        if axis == 0:
-            axis = [0, -1]
-        else:
-            axis = [0, axis]
+        axis = [0, -1] if axis == 0 else [0, axis]
         input_shape[axis[0]] = 1
         input_shape[axis[1]] = 1
 
         tensor_attr = draw(st.booleans())
 
-        if draw(st.booleans()):
-            input_spec_shape = []
-        else:
-            input_spec_shape = [len(input_shape) * [-1]]
+        input_spec_shape = [] if draw(st.booleans()) else [len(input_shape) * [-1]]
 
         config = {
             "op_names": ["squeeze2"],

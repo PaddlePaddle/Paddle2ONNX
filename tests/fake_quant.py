@@ -14,18 +14,19 @@
 
 # come from: https://github.com/PaddlePaddle/PaddleSlim/blob/develop/paddleslim/auto_compression/utils/fake_ptq.py
 import os
+
 import paddle
 from paddle.fluid.framework import IrGraph
 from paddle.framework import core
 from paddle.static.quantization import (
-    QuantizationTransformPass,
-    QuantizationTransformPassV2,
     AddQuantDequantPass,
     AddQuantDequantPassV2,
     QuantizationFreezePass,
+    QuantizationTransformPass,
+    QuantizationTransformPassV2,
     QuantWeightPass,
+    utils,
 )
-from paddle.static.quantization import utils
 
 try:
     from paddle.static.quantization import quant_config
@@ -49,7 +50,7 @@ def post_quant_fake(
     model_filename=None,
     params_filename=None,
     save_model_path=None,
-    quantizable_op_type=["conv2d", "depthwise_conv2d", "mul"],
+    quantizable_op_type=None,
     is_full_quantize=False,
     activation_bits=8,
     weight_bits=8,
@@ -68,6 +69,8 @@ def post_quant_fake(
             params_filename='params',
             save_model_path='fake_quant')
     """
+    if quantizable_op_type is None:
+        quantizable_op_type = ["conv2d", "depthwise_conv2d", "mul"]
     activation_quantize_type = "range_abs_max"
     weight_quantize_type = "channel_wise_abs_max"
     _dynamic_quantize_op_type = ["lstm"]

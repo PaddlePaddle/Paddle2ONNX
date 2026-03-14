@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "onnxoptimizer/pass.h"
+#include "onnx/optimizer/pass.h"
 
 namespace ONNX_NAMESPACE {
 namespace optimization {
@@ -48,11 +48,7 @@ struct EliminateNonTranspose final : public PredicateBasedPass {
         }
       }
     }
-    const bool replacing_success =
-        tryReplacingAllUsesWith(node->output(), node->input());
-    if (!replacing_success) {
-      return false;
-    }
+    node->output()->replaceAllUsesWith(node->input());
     destroy_current = NodeDestroyType::DestroyOne;
     return true;
   }

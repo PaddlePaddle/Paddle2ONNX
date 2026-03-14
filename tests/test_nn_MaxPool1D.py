@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -23,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self._max_pool = paddle.nn.MaxPool1D(
             kernel_size=2,
             stride=None,
@@ -37,8 +37,7 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = self._max_pool(inputs)
-        return x
+        return self._max_pool(inputs)
 
 
 def test_MaxPool1D_base():

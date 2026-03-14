@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
 
 import argparse
+
 from paddle2onnx.utils import logging
 
 
@@ -43,4 +43,4 @@ if __name__ == "__main__":
     if args.input_shape_dict != "":
         shape_dict = eval(args.input_shape_dict)
     c_p2o.optimize(args.input_model, args.output_model, shape_dict)
-    logging.info("Model optmized, saved in {}.".format(args.output_model))
+    logging.info(f"Model optmized, saved in {args.output_model}.")

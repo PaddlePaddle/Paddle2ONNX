@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,8 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.meshgrid([inputs1, inputs2])
-        return x
+        return paddle.meshgrid([inputs1, inputs2])
 
 
 class TestMeshgridConvert(OPConvertAutoScanTest):
@@ -75,8 +76,7 @@ class Net1(BaseNet):
         """
         forward
         """
-        x = paddle.meshgrid([inputs1, inputs2, inputs3])
-        return x
+        return paddle.meshgrid([inputs1, inputs2, inputs3])
 
 
 class TestMeshgridConvert1(OPConvertAutoScanTest):
@@ -126,8 +126,7 @@ class Net2(BaseNet):
         """
         forward
         """
-        x = paddle.meshgrid([inputs1, inputs2, inputs3, inputs4, inputs5])
-        return x
+        return paddle.meshgrid([inputs1, inputs2, inputs3, inputs4, inputs5])
 
 
 class TestMeshgridConvert2(OPConvertAutoScanTest):

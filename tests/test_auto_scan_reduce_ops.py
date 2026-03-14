@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-import unittest
-import paddle
 import random
+import unittest
+
+import hypothesis.strategies as st
+import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
 
 op_api_map = {
@@ -50,8 +51,7 @@ class Net(BaseNet):
         x = op_api_map[self.config["op_names"]](
             inputs, axis=axis, keepdim=self.config["keep_dim"]
         )
-        x = paddle.unsqueeze(x, axis=[0])
-        return x
+        return paddle.unsqueeze(x, axis=[0])
 
 
 class TestReduceAllConvert(OPConvertAutoScanTest):
@@ -104,10 +104,10 @@ class TestReduceAllConvert(OPConvertAutoScanTest):
             "axis_dtype": axis_dtype,
         }
 
-        models = list()
-        op_names = list()
-        opset_versions = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        opset_versions = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             if op_name == "reduce_mean":
                 dtype_mean = draw(st.sampled_from(["float32", "float64"]))

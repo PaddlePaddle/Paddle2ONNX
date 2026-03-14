@@ -13,13 +13,14 @@
 # limitations under the License.
 
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
 import numpy as np
-from onnxbase import randtool
-from onnxbase import _test_with_pir
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir, randtool
+
+import paddle
 
 
 class Net(BaseNet):
@@ -30,10 +31,9 @@ class Net(BaseNet):
     def forward(self, inputs, indices, value):
         accumulate = self.config.get("accumulate", False)
         indices = list(indices)  # index_put() expects a list/tuple of tensors
-        x = paddle.index_put(
+        return paddle.index_put(
             inputs, indices=indices, value=value, accumulate=accumulate
         )
-        return x
 
 
 class TestIndexPutConvert(OPConvertAutoScanTest):

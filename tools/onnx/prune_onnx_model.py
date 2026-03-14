@@ -43,9 +43,7 @@ if __name__ == "__main__":
     for output_name in args.output_names:
         if output_name not in output_tensor_names:
             print(
-                "[ERROR] Cannot find output tensor name '{}' in onnx model graph.".format(
-                    output_name
-                )
+                f"[ERROR] Cannot find output tensor name '{output_name}' in onnx model graph."
             )
             sys.exit(-1)
     if len(set(args.output_names)) < len(args.output_names):
@@ -55,7 +53,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     output_node_indices = set()
-    output_to_node = dict()
+    output_to_node = {}
     for i, node in enumerate(model.graph.node):
         for out in node.output:
             output_to_node[out] = i
@@ -91,7 +89,7 @@ if __name__ == "__main__":
             del model.graph.input[idx]
     for out in args.output_names:
         model.graph.output.extend([onnx.ValueInfoProto(name=out)])
-    for i in range(num_outputs):
+    for _i in range(num_outputs):
         del model.graph.output[0]
 
     from onnx_infer_shape import SymbolicShapeInference
@@ -99,14 +97,10 @@ if __name__ == "__main__":
     model = SymbolicShapeInference.infer_shapes(model, 2**31 - 1, True, False, 1)
     onnx.checker.check_model(model)
     onnx.save(model, args.save_file)
-    print("[Finished] The new model saved in {}.".format(args.save_file))
+    print(f"[Finished] The new model saved in {args.save_file}.")
     print(
-        "[DEBUG INFO] The inputs of new model: {}".format(
-            [x.name for x in model.graph.input]
-        )
+        f"[DEBUG INFO] The inputs of new model: {[x.name for x in model.graph.input]}"
     )
     print(
-        "[DEBUG INFO] The outputs of new model: {}".format(
-            [x.name for x in model.graph.output]
-        )
+        f"[DEBUG INFO] The outputs of new model: {[x.name for x in model.graph.output]}"
     )

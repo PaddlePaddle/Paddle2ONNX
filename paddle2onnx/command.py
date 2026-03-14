@@ -14,8 +14,9 @@
 
 import argparse
 import ast
-import sys
 import os
+import sys
+
 import paddle2onnx
 from paddle2onnx.utils import logging
 
@@ -144,18 +145,16 @@ def main():
 
     if args.version:
         logging.info(
-            "paddle2onnx-{} with python>=3.8, paddlepaddle>=3.0.0".format(
-                paddle2onnx.__version__
-            )
+            f"paddle2onnx-{paddle2onnx.__version__} with python>=3.8, paddlepaddle>=3.0.0"
         )
         return
 
-    assert (
-        args.model_dir is not None
-    ), "--model_dir should be defined while translating paddle model to onnx"
-    assert (
-        args.save_file is not None
-    ), "--save_file should be defined while translating paddle model to onnx"
+    assert args.model_dir is not None, (
+        "--model_dir should be defined while translating paddle model to onnx"
+    )
+    assert args.save_file is not None, (
+        "--save_file should be defined while translating paddle model to onnx"
+    )
 
     model_file = os.path.join(args.model_dir, args.model_filename)
     if args.params_filename is None:

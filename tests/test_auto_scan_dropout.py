@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-import unittest
-import paddle
 import random
+import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -34,10 +36,9 @@ class Net(BaseNet):
         else:
             p = self.config["p"]
         # when training is true, has diff
-        x = paddle.nn.functional.dropout(
+        return paddle.nn.functional.dropout(
             x, training=False, p=p, axis=self.config["axis"], mode=self.config["mode"]
         )
-        return x
 
 
 class TestDropoutConvert(OPConvertAutoScanTest):
@@ -81,7 +82,7 @@ class TestDropoutConvert(OPConvertAutoScanTest):
             "tensor_attr": tensor_attr,
         }
         if axis is not None:
-            if mode in ["upscale_in_train"]:
+            if mode == "upscale_in_train":
                 config["op_names"] = [""]
             else:
                 config["op_names"] = ["scale"]

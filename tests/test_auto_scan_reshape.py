@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -28,8 +30,7 @@ class Net0(BaseNet):
         """
         forward
         """
-        x = paddle.reshape(inputs, self.config["shape"])
-        return x
+        return paddle.reshape(inputs, self.config["shape"])
 
 
 class Net1(BaseNet):
@@ -41,8 +42,7 @@ class Net1(BaseNet):
         """
         forward
         """
-        x = paddle.reshape(inputs, shape)
-        return x
+        return paddle.reshape(inputs, shape)
 
 
 class TestReshapeConvert0(OPConvertAutoScanTest):

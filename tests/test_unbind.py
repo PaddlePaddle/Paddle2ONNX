@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle
 from onnxbase import APIOnnx, _test_with_pir
+
+import paddle
 
 
 class Net(paddle.nn.Layer):
@@ -22,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
 
     def forward(self, inputs, axis=1):
         """

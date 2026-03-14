@@ -18,9 +18,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Callable, Sequence
-
-import numpy as np
+from typing import TYPE_CHECKING, Any
 
 import onnx
 from onnx.onnx_pb import (
@@ -32,6 +30,11 @@ from onnx.onnx_pb import (
     TensorProto,
     TypeProto,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    import numpy as np
 
 _NodeTestCases = []
 _TargetOpType = None
@@ -76,11 +79,11 @@ def _rename_edges_helper(
                 for sparse_init_desc in new_graph.sparse_initializer:
                     sg_rename[sparse_init_desc.values.name] = (
                         sparse_init_desc.values.name
-                    ) = (prefix + sparse_init_desc.values.name)
+                    ) = prefix + sparse_init_desc.values.name
                 for sparse_init_desc in new_graph.sparse_initializer:
                     sg_rename[sparse_init_desc.indices.name] = (
                         sparse_init_desc.indices.name
-                    ) = (prefix + sparse_init_desc.indices.name)
+                    ) = prefix + sparse_init_desc.indices.name
 
                 def subgraph_rename_helper(name: str) -> Any:
                     if name in sg_rename:  # noqa: B023
@@ -124,15 +127,14 @@ def function_expand_helper(
     def rename_helper(internal_name: str) -> Any:
         if internal_name in io_names_map:
             return io_names_map[internal_name]
-        elif internal_name == "":
+        if internal_name == "":
             return ""
         return op_prefix + internal_name
 
-    new_node_list = [
+    return [
         _rename_edges_helper(internal_node, rename_helper, attribute_map, op_prefix)
         for internal_node in function_proto.node
     ]
-    return new_node_list
 
 
 def function_testcase_helper(
@@ -186,7 +188,7 @@ def _extract_value_info(
             raise NotImplementedError(
                 "_extract_value_info: both input and type_proto arguments cannot be None."
             )
-        elif isinstance(input, list):
+        if isinstance(input, list):
             elem_type = onnx.helper.np_dtype_to_tensor_dtype(input[0].dtype)
             shape = None
             tensor_type_proto = onnx.helper.make_tensor_type_proto(elem_type, shape)
@@ -208,9 +210,7 @@ def _make_test_model_gen_version(graph: GraphProto, **kwargs: Any) -> ModelProto
         latest_onnx_version,
         latest_ml_version,
         latest_training_version,
-    ) = onnx.helper.VERSION_TABLE[-1][
-        2:5
-    ]  # type: ignore
+    ) = onnx.helper.VERSION_TABLE[-1][2:5]  # type: ignore
     if "opset_imports" in kwargs:
         for opset in kwargs["opset_imports"]:
             # If the test model uses an unreleased opset version (latest_version+1),
@@ -280,12 +280,14 @@ def expect(
         del kwargs["output_type_protos"]
     inputs_vi = [
         _extract_value_info(arr, arr_name, input_type)
-        for arr, arr_name, input_type in zip(inputs, present_inputs, input_type_protos)
+        for arr, arr_name, input_type in zip(
+            inputs, present_inputs, input_type_protos, strict=False
+        )
     ]
     outputs_vi = [
         _extract_value_info(arr, arr_name, output_type)
         for arr, arr_name, output_type in zip(
-            outputs, present_outputs, output_type_protos
+            outputs, present_outputs, output_type_protos, strict=False
         )
     ]
     graph = onnx.helper.make_graph(
