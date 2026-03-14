@@ -29,10 +29,10 @@ PYTHON_COMMAND="/opt/python/${PY_VER}/bin/python"
 
 # Update pip and install build tools
 $PIP_INSTALL_COMMAND --upgrade pip
-$PIP_INSTALL_COMMAND cmake setuptools wheel build
+$PIP_INSTALL_COMMAND cmake setuptools wheel build pybind11
 
 # Install system protobuf (CONFIG mode compatible)
-yum install -y protobuf-devel protobuf-compiler glog-devel pybind11-devel 2>/dev/null || {
+yum install -y protobuf-devel protobuf-compiler glog-devel 2>/dev/null || {
     # Fallback: build protobuf from source if yum packages unavailable
     original_dir=$(pwd)
     git clone --depth 1 --branch v28.3 https://github.com/protocolbuffers/protobuf.git /tmp/protobuf

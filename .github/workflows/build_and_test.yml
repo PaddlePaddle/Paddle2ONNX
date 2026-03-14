@@ -67,9 +67,9 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git merge origin/${{ github.event.pull_request.base.ref }}
 
-      - name: Install protobuf via vcpkg
+      - name: Install C++ dependencies via vcpkg
         run: |
-          vcpkg install protobuf:x64-windows
+          vcpkg install protobuf:x64-windows pybind11:x64-windows glog:x64-windows
           echo "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" >> $env:GITHUB_ENV
 
       - name: Set up Python ${{ matrix.python-version }}
