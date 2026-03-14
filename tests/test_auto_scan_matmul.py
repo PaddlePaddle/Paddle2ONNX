@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,13 +30,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.matmul(
+        return paddle.matmul(
             x,
             y,
             transpose_x=self.config["transpose_x"],
             transpose_y=self.config["transpose_y"],
         )
-        return x
 
 
 class TestMatmulConvert(OPConvertAutoScanTest):

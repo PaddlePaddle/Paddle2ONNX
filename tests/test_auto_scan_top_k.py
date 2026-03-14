@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import random
+import unittest
+from random import shuffle
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
-import random
-from random import shuffle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -34,14 +36,13 @@ class Net(BaseNet):
         k = self.config["k"]
         if self.config["isTensor"]:
             k = paddle.to_tensor(k, dtype=self.config["k_dtype"])
-        x = paddle.topk(
+        return paddle.topk(
             input,
             k=k,
             axis=self.config["axis"],
             largest=self.config["largest"],
             sorted=self.config["sorted"],
         )
-        return x
 
 
 class TestTopkv2Convert(OPConvertAutoScanTest):
@@ -70,10 +71,9 @@ class TestTopkv2Convert(OPConvertAutoScanTest):
             if len(input_shape) == 0:
                 return np.array(10, dtype="float32")
             prod = np.prod(input_shape)
-            input_data = np.array(list(range(0, prod)))
+            input_data = np.array(list(range(prod)))
             shuffle(input_data)
-            input_data = input_data.reshape(input_shape)
-            return input_data
+            return input_data.reshape(input_shape)
 
         if len(input_shape) > 0:
             if axis is not None:

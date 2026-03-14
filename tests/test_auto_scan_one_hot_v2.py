@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-from onnxbase import randtool
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_only_pir, randtool
+
 import paddle
-from onnxbase import _test_only_pir
 
 
 class Net(BaseNet):
@@ -32,8 +33,7 @@ class Net(BaseNet):
         num_classes = self.config["num_classes"]
         if self.config["is_tensor"]:
             num_classes = paddle.to_tensor([num_classes])
-        x = paddle.nn.functional.one_hot(inputs, num_classes)
-        return x
+        return paddle.nn.functional.one_hot(inputs, num_classes)
 
 
 class TestOneHotV2Convert(OPConvertAutoScanTest):
@@ -50,8 +50,7 @@ class TestOneHotV2Convert(OPConvertAutoScanTest):
         num_classes = draw(st.integers(min_value=10, max_value=20))
 
         def generator_data():
-            input_data = randtool("int", 0, num_classes - 1, input_shape)
-            return input_data
+            return randtool("int", 0, num_classes - 1, input_shape)
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 

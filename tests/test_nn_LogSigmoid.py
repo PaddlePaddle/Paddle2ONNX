@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -23,15 +23,14 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self._Log_Sigmoid = paddle.nn.LogSigmoid()
 
     def forward(self, inputs):
         """
         forward
         """
-        x = self._Log_Sigmoid(inputs)
-        return x
+        return self._Log_Sigmoid(inputs)
 
 
 def test_nn_LogSigmoid_9():

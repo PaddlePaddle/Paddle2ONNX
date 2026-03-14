@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,8 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.transpose(x, perm=self.config["perm"])
-        return x
+        return paddle.transpose(x, perm=self.config["perm"])
 
 
 class TestTransposeConvert(OPConvertAutoScanTest):
@@ -46,7 +47,7 @@ class TestTransposeConvert(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["int32", "int64", "float32", "float64"]))
 
         if len(input_shape) >= 2:
-            perm = [i for i in range(len(input_shape))]
+            perm = list(range(len(input_shape)))
             perm[0], perm[1] = perm[1], perm[0]
         elif len(input_shape) == 1:
             perm = [0]

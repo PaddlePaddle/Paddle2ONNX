@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -32,13 +34,12 @@ class Net(BaseNet):
         scale = self.config["scale"]
         if self.config["isTensor"]:
             scale = paddle.to_tensor(np.array(scale).astype("float32"))
-        x = paddle.scale(
+        return paddle.scale(
             x,
             scale=scale,
             bias=self.config["bias"],
             bias_after_scale=self.config["bias_after_scale"],
         )
-        return x
 
 
 class TestScaleConvert(OPConvertAutoScanTest):

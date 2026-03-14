@@ -54,9 +54,7 @@ if __name__ == "__main__":
     for origin_name in args.origin_names:
         if origin_name not in output_tensor_names:
             print(
-                "[ERROR] Cannot find tensor name '{}' in onnx model graph.".format(
-                    origin_name
-                )
+                f"[ERROR] Cannot find tensor name '{origin_name}' in onnx model graph."
             )
             sys.exit(-1)
     if len(set(args.origin_names)) < len(args.origin_names):
@@ -101,14 +99,10 @@ if __name__ == "__main__":
 
     onnx.checker.check_model(model)
     onnx.save(model, args.save_file)
-    print("[Finished] The new model saved in {}.".format(args.save_file))
+    print(f"[Finished] The new model saved in {args.save_file}.")
     print(
-        "[DEBUG INFO] The inputs of new model: {}".format(
-            [x.name for x in model.graph.input]
-        )
+        f"[DEBUG INFO] The inputs of new model: {[x.name for x in model.graph.input]}"
     )
     print(
-        "[DEBUG INFO] The outputs of new model: {}".format(
-            [x.name for x in model.graph.output]
-        )
+        f"[DEBUG INFO] The outputs of new model: {[x.name for x in model.graph.output]}"
     )

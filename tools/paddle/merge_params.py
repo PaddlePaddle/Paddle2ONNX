@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle.fluid as fluid
 import sys
+
+import paddle.fluid as fluid
+
 import paddle
 
 paddle.enable_static()

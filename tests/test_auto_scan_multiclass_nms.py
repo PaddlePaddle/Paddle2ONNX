@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from multiprocessing import Process
-from multiprocessing import Queue
+from multiprocessing import Process, Queue
+
 import numpy as np
 from detection_ops.nms import multiclass_nms
 
@@ -51,7 +51,7 @@ def gen_paddle_nms(q):
             return_index,
             return_rois_num,
         ):
-            super(Model, self).__init__()
+            super().__init__()
             self.score_threshold = score_threshold
             self.nms_top_k = nms_top_k
             self.keep_top_k = keep_top_k
@@ -135,7 +135,7 @@ def gen_onnx_export(q):
     for opset in range(10, 16):
         import paddle2onnx
 
-        onnx_file_path = "nms/nms_{}.onnx".format(opset)
+        onnx_file_path = f"nms/nms_{opset}.onnx"
         paddle2onnx.export(
             "nms/model.pdmodel",
             "",
@@ -150,39 +150,39 @@ def gen_onnx_export(q):
 
         sess = ort.InferenceSession(onnx_file_path)
         result1 = sess.run(None, {"x0": data[0], "x1": data[1]})
-        assert len(result0) == len(
-            result1
-        ), "multiclass_nms3: Length of result is not same"
+        assert len(result0) == len(result1), (
+            "multiclass_nms3: Length of result is not same"
+        )
         diff = np.fabs(all_sort(result0[0]) - all_sort(result1[0]))
         print("Max diff of BBoxes:", result0[0].shape, result1[0].shape, diff.max())
-        assert diff.max() < 1e-05, "Difference={} of bbox is exceed 1e-05".format(
-            diff.max()
-        )
+        assert diff.max() < 1e-05, f"Difference={diff.max()} of bbox is exceed 1e-05"
         for i in range(1, len(result0)):
             diff = np.fabs(result0[i] - result1[i])
             print(result0[i], result1[i])
-            assert (
-                diff.max() < 1e-05
-            ), "Difference={} of output {}(shape is {}) is exceed 1e-05".format(
-                diff.max(), i, result0[i].shape
+            assert diff.max() < 1e-05, (
+                f"Difference={diff.max()} of output {i}(shape is {result0[i].shape}) is exceed 1e-05"
             )
         q.put(True)
 
 
 def test_nms():
-    for i in range(100):
+    for _i in range(100):
         q0 = Queue()
         p0 = Process(target=gen_paddle_nms, args=(q0,))
         p0.start()
         p0.join()
         if not q0.get(timeout=1):
-            assert False, "Test failed for multiclass_nms as gen paddle model step."
+            raise AssertionError(
+                "Test failed for multiclass_nms as gen paddle model step."
+            )
         q1 = Queue()
         p1 = Process(target=gen_onnx_export, args=(q1,))
         p1.start()
         p1.join()
         if not q1.get(timeout=1):
-            assert False, "Test failed for multiclass_nms at gen_onnx_export step."
+            raise AssertionError(
+                "Test failed for multiclass_nms at gen_onnx_export step."
+            )
 
 
 if __name__ == "__main__":

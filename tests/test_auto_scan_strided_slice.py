@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -39,10 +41,9 @@ class Net(BaseNet):
             ends = paddle.to_tensor(np.array(ends).astype("int32"))
         if self.config["isStridesTensor"]:
             strides = paddle.to_tensor(np.array(strides).astype("int32"))
-        x = paddle.strided_slice(
+        return paddle.strided_slice(
             inputs, axes=axes, starts=starts, ends=ends, strides=strides
         )
-        return x
 
 
 class TestStridedsliceConvert(OPConvertAutoScanTest):
@@ -67,15 +68,9 @@ class TestStridedsliceConvert(OPConvertAutoScanTest):
         else:
             starts = [-input_shape[axes[0]], 0, -input_shape[axes[2]] - 22]
 
-        if draw(st.booleans()):
-            ends = [3, 2, 40000]
-        else:
-            ends = [-1, 2, 4]
+        ends = [3, 2, 40000] if draw(st.booleans()) else [-1, 2, 4]
 
-        if draw(st.booleans()):
-            strides = [2, 1, 2]
-        else:
-            strides = [1, 1, 1]
+        strides = [2, 1, 2] if draw(st.booleans()) else [1, 1, 1]
 
         tmp = [i for i, val in enumerate(strides) if val == 1]
         if len(tmp) == len(strides) and isStridesTensor is False:
@@ -123,10 +118,9 @@ class Net1(BaseNet):
         # strides = [1, paddle.to_tensor(1).astype('int32'), 1]
         # strides = [1, paddle.to_tensor(1, dtype='int32'), 1]
         # strides = [1, paddle.to_tensor(np.array(1).astype("int32")), 1]
-        x = paddle.strided_slice(
+        return paddle.strided_slice(
             inputs, axes=axes, starts=starts, ends=ends, strides=strides
         )
-        return x
 
 
 class TestStridedsliceConvert1(OPConvertAutoScanTest):
@@ -151,10 +145,7 @@ class TestStridedsliceConvert1(OPConvertAutoScanTest):
         else:
             starts = [-input_shape[axes[0]], 0, -input_shape[axes[2]] - 22]
 
-        if draw(st.booleans()):
-            ends = [3, 2, 40000]
-        else:
-            ends = [-1, 2, 4]
+        ends = [3, 2, 40000] if draw(st.booleans()) else [-1, 2, 4]
 
         # if draw(st.booleans()):
         #     strides = [2, 1, 2]

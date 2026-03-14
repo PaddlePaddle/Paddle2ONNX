@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import os
+
 import numpy as np
 import onnxruntime
 
 import paddle
 import paddle2onnx
-from paddle.inference import PrecisionType, PlaceType, convert_to_mixed_precision
+from paddle.inference import PlaceType, PrecisionType, convert_to_mixed_precision
 
 
 def test_resnet_fp16_convert():

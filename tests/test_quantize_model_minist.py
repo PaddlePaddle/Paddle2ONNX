@@ -11,14 +11,14 @@
 # without warranties or conditions of any kind, either express or implied.
 # see the license for the specific language governing permissions and
 # limitations under the license.
-import unittest
 import os
-import time
-import sys
 import random
+import sys
+import time
+import unittest
+
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from paddle.static.quantization import PostTrainingQuantization
 
 paddle.enable_static()
@@ -37,31 +37,29 @@ class TestPostTrainingQuantization(unittest.TestCase):
         try:
             os.system("mkdir -p " + self.int8_model_path)
         except Exception as e:
-            print("Failed to create {} due to {}".format(self.int8_model_path, str(e)))
+            print(f"Failed to create {self.int8_model_path} due to {e!s}")
             sys.exit(-1)
 
     def tearDown(self):
         pass
 
     def merge_params(self, input_model_path, output_model_path):
-        import paddle.fluid as fluid
-        import paddle
-
-        paddle.enable_static()
         model_dir = input_model_path
         new_model_dir = output_model_path
-        exe = fluid.Executor(fluid.CPUPlace())
+        exe = paddle.static.Executor(paddle.CPUPlace())
         [inference_program, feed_target_names, fetch_targets] = (
-            fluid.io.load_inference_model(dirname=model_dir, executor=exe)
+            paddle.static.load_inference_model(path_prefix=model_dir, executor=exe)
         )
 
-        fluid.io.save_inference_model(
-            dirname=new_model_dir,
-            feeded_var_names=feed_target_names,
-            target_vars=fetch_targets,
+        feed_vars = [
+            inference_program.global_block().var(name) for name in feed_target_names
+        ]
+        paddle.static.save_inference_model(
+            path_prefix=os.path.join(new_model_dir, "__model__"),
+            feed_vars=feed_vars,
+            fetch_vars=fetch_targets,
             executor=exe,
-            main_program=inference_program,
-            params_filename="__params__",
+            program=inference_program,
         )
 
     def run_program(
@@ -73,8 +71,8 @@ class TestPostTrainingQuantization(unittest.TestCase):
         params_filename="",
         use_onnxruntime=False,
     ):
-        place = fluid.CPUPlace()
-        exe = fluid.Executor(place)
+        place = paddle.CPUPlace()
+        exe = paddle.static.Executor(place)
 
         infer_program = None
         feed_dict = None
@@ -83,6 +81,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         sess = None
         if use_onnxruntime:
             import onnxruntime as rt
+
             import paddle2onnx
 
             new_model_path = model_path
@@ -112,11 +111,14 @@ class TestPostTrainingQuantization(unittest.TestCase):
                 self.merge_params(model_path, new_model_path)
                 model_filename = "__model__"
                 params_filename = "__params__"
-            [infer_program, feed_dict, fetch_targets] = fluid.io.load_inference_model(
-                new_model_path,
-                exe,
-                model_filename=model_filename,
-                params_filename=params_filename,
+            model_prefix = os.path.join(
+                new_model_path, model_filename.replace(".pdmodel", "")
+            )
+            [infer_program, feed_dict, fetch_targets] = (
+                paddle.static.load_inference_model(
+                    path_prefix=model_prefix,
+                    executor=exe,
+                )
             )
 
         val_reader = paddle.batch(paddle.dataset.mnist.test(), batch_size)
@@ -157,7 +159,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self,
         model_path,
         algo="KL",
-        quantizable_op_type=["conv2d"],
+        quantizable_op_type=None,
         is_full_quantize=False,
         is_use_cache_file=False,
         is_optimize_model=False,
@@ -166,9 +168,10 @@ class TestPostTrainingQuantization(unittest.TestCase):
         onnx_format=False,
         skip_tensor_list=None,
     ):
-
-        place = fluid.CPUPlace()
-        exe = fluid.Executor(place)
+        if quantizable_op_type is None:
+            quantizable_op_type = ["conv2d"]
+        place = paddle.CPUPlace()
+        exe = paddle.static.Executor(place)
         val_reader = paddle.dataset.mnist.train()
         new_model_path = model_path + "_conbined"
         self.merge_params(model_path, new_model_path)
@@ -213,27 +216,21 @@ class TestPostTrainingQuantization(unittest.TestCase):
         origin_model_path = os.path.join(self.cache_folder, model_name)
 
         print(
-            "Start FP32 inference for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start FP32 inference for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (fp32_throughput, fp32_latency, fp32_acc1) = self.run_program(
             origin_model_path, batch_size, infer_iterations
         )
 
         print(
-            "Start FP32 inference on onnxruntime for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start FP32 inference on onnxruntime for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (onnx_fp32_throughput, onnx_fp32_latency, onnx_fp32_acc1) = self.run_program(
             origin_model_path, batch_size, infer_iterations, use_onnxruntime=True
         )
 
         print(
-            "Start INT8 post training quantization for {0} on {1} images ...".format(
-                model_name, quant_iterations * batch_size
-            )
+            f"Start INT8 post training quantization for {model_name} on {quant_iterations * batch_size} images ..."
         )
         self.generate_quantized_model(
             origin_model_path,
@@ -249,9 +246,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start INT8 inference for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start INT8 inference for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
             self.int8_model_path,
@@ -262,9 +257,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start INT8 inference on onnxruntime for {0} on {1} images ...".format(
-                model_name, infer_iterations * batch_size
-            )
+            f"Start INT8 inference on onnxruntime for {model_name} on {infer_iterations * batch_size} images ..."
         )
         (onnx_int8_throughput, onnx_int8_latency, onnx_int8_acc1) = self.run_program(
             self.int8_model_path,
@@ -275,34 +268,18 @@ class TestPostTrainingQuantization(unittest.TestCase):
             use_onnxruntime=True,
         )
 
-        print("---Post training quantization of {} method---".format(algo))
+        print(f"---Post training quantization of {algo} method---")
         print(
-            "FP32 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.".format(
-                model_name, batch_size, fp32_throughput, fp32_latency, fp32_acc1
-            )
+            f"FP32 {model_name}: batch_size {batch_size}, throughput {fp32_throughput} img/s, latency {fp32_latency} s, acc1 {fp32_acc1}."
         )
         print(
-            "ONNXRuntime FP32 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.".format(
-                model_name,
-                batch_size,
-                onnx_fp32_throughput,
-                onnx_fp32_latency,
-                onnx_fp32_acc1,
-            )
+            f"ONNXRuntime FP32 {model_name}: batch_size {batch_size}, throughput {onnx_fp32_throughput} img/s, latency {onnx_fp32_latency} s, acc1 {onnx_fp32_acc1}."
         )
         print(
-            "INT8 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.\n".format(
-                model_name, batch_size, int8_throughput, int8_latency, int8_acc1
-            )
+            f"INT8 {model_name}: batch_size {batch_size}, throughput {int8_throughput} img/s, latency {int8_latency} s, acc1 {int8_acc1}.\n"
         )
         print(
-            "ONNXRuntime INT8 {0}: batch_size {1}, throughput {2} img/s, latency {3} s, acc1 {4}.\n".format(
-                model_name,
-                batch_size,
-                onnx_int8_throughput,
-                onnx_int8_latency,
-                onnx_int8_acc1,
-            )
+            f"ONNXRuntime INT8 {model_name}: batch_size {batch_size}, throughput {onnx_int8_throughput} img/s, latency {onnx_int8_latency} s, acc1 {onnx_int8_acc1}.\n"
         )
         sys.stdout.flush()
 

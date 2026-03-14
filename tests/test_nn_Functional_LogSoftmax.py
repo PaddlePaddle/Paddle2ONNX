@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, randtool
+
 import paddle
 import paddle.nn as nn
-from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -24,7 +24,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self, axis=-1, dtype=None):
-        super(Net, self).__init__()
+        super().__init__()
         self.axis = axis
         self.dtype = dtype
 
@@ -32,8 +32,7 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = nn.functional.log_softmax(inputs, axis=self.axis, dtype=self.dtype)
-        return x
+        return nn.functional.log_softmax(inputs, axis=self.axis, dtype=self.dtype)
 
 
 def test_nn_functional_LogSigmoid_9():

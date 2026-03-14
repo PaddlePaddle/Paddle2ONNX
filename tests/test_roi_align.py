@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_only_pir
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import _test_only_pir
 
 
 class BaseNet(paddle.nn.Layer):
     def __init__(self):
-        super(BaseNet, self).__init__()
+        super().__init__()
         self.output_size = 3
         self.spatial_scale = 1.0
         self.sampling_ratio = -1

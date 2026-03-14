@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import randtool, _test_with_pir
-import numpy as np
 import unittest
+
+import hypothesis.strategies as st
+import numpy as np
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir, randtool
+
 import paddle
 
 
@@ -26,10 +28,9 @@ class Net(BaseNet):
         mode = self.config["mode"]
         pad_value = self.config["pad_value"]
         data_format = self.config["data_format"]
-        x = paddle.nn.functional.pad(
+        return paddle.nn.functional.pad(
             inputs, pad=paddings, mode=mode, value=pad_value, data_format=data_format
         )
-        return x
 
 
 class TestPadopsConvert(OPConvertAutoScanTest):
@@ -83,10 +84,9 @@ class Net2(BaseNet):
         mode = self.config["mode"]
         pad_value = self.config["pad_value"]
         data_format = self.config["data_format"]
-        x = paddle.nn.functional.pad(
+        return paddle.nn.functional.pad(
             inputs, pad=padding, mode=mode, value=pad_value, data_format=data_format
         )
-        return x
 
 
 class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
@@ -111,8 +111,7 @@ class TestPadopsConvert_Paddingtensor(OPConvertAutoScanTest):
         data_format = draw(st.sampled_from(["NCHW", "NHWC"]))
 
         def generator_data():
-            input_data = randtool("int", 1, 10, paddings)
-            return input_data
+            return randtool("int", 1, 10, paddings)
 
         config = {
             "op_names": ["pad2d"],
@@ -144,10 +143,9 @@ class Net3(BaseNet):
         mode = self.config["mode"]
         pad_value = self.config["pad_value"]
         data_format = self.config["data_format"]
-        x = paddle.nn.functional.pad(
+        return paddle.nn.functional.pad(
             inputs, pad=padding, mode=mode, value=pad_value, data_format=data_format
         )
-        return x
 
 
 class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):

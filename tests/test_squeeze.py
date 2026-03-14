@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -23,15 +23,14 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self, axis=0):
-        super(Net, self).__init__()
+        super().__init__()
         self.axis = axis
 
     def forward(self, inputs):
         """
         forward
         """
-        x = paddle.squeeze(inputs, axis=self.axis)
-        return x
+        return paddle.squeeze(inputs, axis=self.axis)
 
 
 def test_squeeze_9():

@@ -8,9 +8,12 @@ Paddle2ONNX supports the conversion of PaddlePaddle model format to ONNX model f
 
 ## 2 Paddle2ONNX Environment Dependencies
 
-Paddle2ONNX depends on paddle3.0, we recommend using Paddle2ONNX in the following environments:
+Paddle2ONNX depends on PaddlePaddle 3.3+, we recommend using Paddle2ONNX in the following environments:
 
-- PaddlePaddle == 3.0.0b2
+- Python >= 3.10
+- PaddlePaddle >= 3.3
+- ONNX >= 1.20.1
+- protobuf >= 34.0
 - onnxruntime >= 1.10.0
 
 ## 3 Install Paddle2ONNX

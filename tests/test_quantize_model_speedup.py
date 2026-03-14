@@ -11,14 +11,15 @@
 # without warranties or conditions of any kind, either express or implied.
 # see the license for the specific language governing permissions and
 # limitations under the license.
-import unittest
 import os
-import time
-import sys
 import random
+import sys
+import time
+import unittest
+
 import numpy as np
 import paddle
-from fake_quant import post_quant_fake
+from fake_quant import _HAS_IR_GRAPH, post_quant_fake
 
 paddle.enable_static()
 
@@ -40,6 +41,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
     ):
         print("test model path:" + model_path)
         import onnxruntime as rt
+
         import paddle2onnx
 
         onnx_model = paddle2onnx.command.c_paddle_to_onnx(
@@ -78,8 +80,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         period = t2 - t1
         periods.append(period)
 
-        latency = np.average(periods)
-        return latency
+        return np.average(periods)
 
     def generate_quantized_model(
         self,
@@ -111,12 +112,12 @@ class TestPostTrainingQuantization(unittest.TestCase):
         self.model_name = model_name
         origin_model_path = os.path.join(self.quantize_model_dir, model_name)
 
-        print("Start FP32 inference for {0}  ...".format(model_name))
+        print(f"Start FP32 inference for {model_name}  ...")
         fp32_latency = self.run_program(
             origin_model_path, model_filename, params_filename, threads_num
         )
 
-        print("Start INT8 post training quantization for {0} ...".format(model_name))
+        print(f"Start INT8 post training quantization for {model_name} ...")
         quantize_model_path = os.path.join(
             self.quantize_model_dir, model_name + "_quantized"
         )
@@ -124,7 +125,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
             origin_model_path, quantize_model_path, model_filename, params_filename
         )
 
-        print("Start INT8 inference for {0}  ...".format(model_name))
+        print(f"Start INT8 inference for {model_name}  ...")
         if ".pdmodel" in model_filename:
             int8_latency = self.run_program(
                 quantize_model_path, model_filename, params_filename, threads_num
@@ -138,38 +139,58 @@ class TestPostTrainingQuantization(unittest.TestCase):
             )
 
         print("---Post training quantization---")
-        print("FP32 lentency {0}: latency {1} s.".format(model_name, fp32_latency))
-        print("INT8 {0}: latency {1} s.\n".format(model_name, int8_latency))
+        print(f"FP32 lentency {model_name}: latency {fp32_latency} s.")
+        print(f"INT8 {model_name}: latency {int8_latency} s.\n")
         sys.stdout.flush()
 
         latency_diff = int8_latency - fp32_latency
         self.assertLess(latency_diff, -0.1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingE2eqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_e2eq_onnx_format_full_quant(self):
         model_name = "e2eq"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingFeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_feedasq_onnx_format_full_quant(self):
         model_name = "feedasq"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingFeedasqNohadamaONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_feedasq_nohadama_onnx_format_full_quant(self):
         model_name = "feedasq_nohadama"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingVideofeedasqONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_videofeedasq_onnx_format_full_quant(self):
         model_name = "videofeedasq"
         self.run_test(model_name, threads_num=1)
 
 
+@unittest.skipUnless(
+    _HAS_IR_GRAPH,
+    "Requires paddle.fluid.framework.IrGraph, removed in PaddlePaddle 3.x",
+)
 class TestPostTrainingLiminghaoONNXFormatFullQuant(TestPostTrainingQuantization):
     def test_post_training_liminghao_onnx_format_full_quant(self):
         model_name = "liminghao"

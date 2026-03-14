@@ -5,18 +5,18 @@ Due to the differences between frameworks, some models may not be supported. If 
 
 ## Image classification
 
-Comprehensive coverage of image classification models，now we support the whole series model in PaddlClas  [release/2.1](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1).
+Comprehensive coverage of image classification models，now we support the whole series model in PaddlClas  [develop](https://github.com/PaddlePaddle/PaddleClas/tree/develop).
 
 |Models | Source |
 |---|---|
-| ResNet series| [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#ResNet_and_Vd_series)|
-| Mobile series | [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#Mobile_series)|
-| SEResNeXt and Res2Net series | [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#SEResNeXt_and_Res2Net_series)|
-| DPN and DenseNet series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#DPN_and_DenseNet_series)|
-| HRNet series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#HRNet_series)|
-| Inception series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#Inception_series)|
-| EfficientNet and ResNeXt101_wsl series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#EfficientNet_and_ResNeXt101_wsl_series)|
-| ResNeSt and RegNet series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/release/2.1#ResNeSt_and_RegNet_series)|
+| ResNet series| [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#ResNet_and_Vd_series)|
+| Mobile series | [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#Mobile_series)|
+| SEResNeXt and Res2Net series | [PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#SEResNeXt_and_Res2Net_series)|
+| DPN and DenseNet series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#DPN_and_DenseNet_series)|
+| HRNet series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#HRNet_series)|
+| Inception series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#Inception_series)|
+| EfficientNet and ResNeXt101_wsl series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#EfficientNet_and_ResNeXt101_wsl_series)|
+| ResNeSt and RegNet series |[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/tree/develop#ResNeSt_and_RegNet_series)|
 
 
 ## OCR
@@ -32,17 +32,17 @@ Support UNet, HRNet, DeepLab and so on. Test models are from PaddleSeg [release/
 
 | Models | Source |
 |-------|--------|
-|BiSeNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.1/configs/bisenet) |
-|DANet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/danet) |
-|DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/deeplabv3) |
-|Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/deeplabv3p) |
-|FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/fcn) |
-|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/gcnet) |
-|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/ocrnet) |
-|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.1/configs/unet) |
+|BiSeNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/develop/configs/bisenet) |
+|DANet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/danet) |
+|DeepLabv3|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/deeplabv3) |
+|Deeplabv3P |[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/deeplabv3p) |
+|FCN|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/fcn) |
+|GCNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/gcnet) |
+|OCRNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/ocrnet) |
+|UNet|[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/configs/unet) |
 
 ## object detection
-Support 8 object detection archtectures. Test models are from PaddleDetection [release/2.1](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
+Support 8 object detection archtectures. Test models are from PaddleDetection [develop](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)
 | Models      | Source                                                       |
 | ----------- | ------------------------------------------------------------ |
 | YOLO-V3     | https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/ |

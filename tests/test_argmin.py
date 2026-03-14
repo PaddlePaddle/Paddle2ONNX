@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -23,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self, axis=None, keepdim=False):
-        super(Net, self).__init__()
+        super().__init__()
         self.axis = axis
         self.keepdim = keepdim
 
@@ -31,8 +31,7 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = paddle.argmin(inputs, axis=self.axis, keepdim=self.keepdim)
-        return x
+        return paddle.argmin(inputs, axis=self.axis, keepdim=self.keepdim)
 
 
 def test_argmin_9():

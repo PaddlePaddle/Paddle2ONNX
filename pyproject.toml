@@ -1,53 +1,96 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "cmake>=3.16",
-    "setuptools-scm",
-    "paddlepaddle==3.0.0.dev20250426",
-]
 build-backend = "setuptools.build_meta"
+requires = [
+  "cmake>=3.16",
+  "paddlepaddle>=3.3,<4",
+  "setuptools>=42",
+  "setuptools-scm",
+  "wheel",
+]
 
 [project]
 name = "paddle2onnx"
-dynamic = ["version"]
 description = "Export PaddlePaddle to ONNX"
 readme = "README.md"
+license = { text = "Apache License v2.0" }
 authors = [
-    {name = "paddle-infer", email = "paddle-infer@baidu.com"},
+  { name = "paddle-infer", email = "paddle-infer@baidu.com" },
 ]
+requires-python = ">=3.10"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
-license = {text = "Apache License v2.0"}
-requires-python = ">=3.8"
+dynamic = [ "version" ]
 dependencies = [
-    "onnx>=1.16.1,<=1.17.0",
-    "onnxoptimizer==0.3.13; python_version < '3.12'",
-    "polygraphy>=0.49.20",
+  "onnx>=1.20.1,<2",
+  "onnxoptimizer>=0.3.13",
+  "paddlepaddle>=3.3,<4",
+  "polygraphy>=0.49.20,<1",
+]
+scripts.paddle2onnx = "paddle2onnx.command:main"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.15,<2",
+  "pytest>=8,<9",
+  "ruff>=0.11,<1",
+]
+test = [
+  "hypothesis>=6,<7",
+  "onnxruntime>=1.20,<2",
+  "pytest>=8,<9",
 ]
 
-[project.scripts]
-paddle2onnx = "paddle2onnx.command:main"
-
-[tool.setuptools.dynamic]
-version = {file = "VERSION_NUMBER"}
-
-[tool.setuptools.packages.find]
-include = ["paddle2onnx*"]
-
-[tool.setuptools.exclude-package-data]
-"*" = ["*.h", "*.cc", "*.bak", "*.in"]
+[tool.setuptools]
+dynamic.version = { file = "VERSION_NUMBER" }
+exclude-package-data."*" = [ "*.h", "*.cc", "*.bak", "*.in" ]
+packages.find.include = [ "paddle2onnx*" ]
 
 [tool.setuptools_scm]
 write_to = "paddle2onnx/version.py"
 
+[tool.ruff]
+target-version = "py310"
+lint.select = [
+  "B",    # flake8-bugbear
+  "C4",   # flake8-comprehensions
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "FURB", # refurb
+  "I",    # isort
+  "PERF", # perflint
+  "PIE",  # flake8-pie
+  "RET",  # flake8-return
+  "RUF",  # ruff-specific rules
+  "SIM",  # flake8-simplify
+  "TCH",  # flake8-type-checking
+  "UP",   # pyupgrade
+  "W",    # pycodestyle warnings
+]
+lint.ignore = [
+  "E501",    # line too long (handled by formatter)
+  "E721",    # type comparison - sometimes intentional
+  "PERF401", # manual list comprehension - often less readable
+  "RET504",  # unnecessary assignment before return - often clearer with assignment
+  "SIM108",  # ternary operator - often less readable
+  "SIM112",  # capitalized env vars - PaddlePaddle uses lowercase FLAGS_* convention
+  "SIM115",  # open context manager - not always applicable
+]
+
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+
 [tool.mypy]
 files = "setup.py"
-python_version = "3.8"
+python_version = "3.10"
 strict = true
 show_error_codes = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 warn_unreachable = true

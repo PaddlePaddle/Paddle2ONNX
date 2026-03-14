@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import onnx
-from onnx import helper, TensorProto
-import os
-import math
 import logging
+import math
+import os
+
+import onnx
+from onnx import TensorProto, helper
 
 logger = logging.getLogger("p2o-logger")
 
@@ -24,9 +25,11 @@ logger = logging.getLogger("p2o-logger")
 def prune_onnx_model(
     onnx_model_file,
     target_node_name="p2o.print",
-    target_dims=[1],
+    target_dims=None,
     target_dtype="float32",
 ):
+    if target_dims is None:
+        target_dims = [1]
     dtype_map = {
         "bool": (TensorProto.BOOL, bool),
         "float32": (TensorProto.FLOAT, float),

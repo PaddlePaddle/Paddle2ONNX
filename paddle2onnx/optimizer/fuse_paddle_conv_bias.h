@@ -84,11 +84,7 @@ struct FusePaddleConvBias final : public PredicateBasedPass {
     conv->addInput(bias->outputs()[0]);
     conv->output()->setSizes(add->output()->sizes());
     conv->output()->setElemType(add->output()->elemType());
-    const bool replacing_success =
-        tryReplacingAllUsesWith(add->output(), add->inputs()[0]);
-    if (!replacing_success) {
-      return false;
-    }
+    add->output()->replaceAllUsesWith(add->inputs()[0]);
     destroy_current = NodeDestroyType::DestroyOne;
     return true;
   }

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -29,8 +31,7 @@ class Net(BaseNet):
         """
 
         condition = paddle.cast(inputs, "bool")
-        x = paddle.nonzero(condition)
-        return x
+        return paddle.nonzero(condition)
 
 
 class TestWhereIndexConvert(OPConvertAutoScanTest):

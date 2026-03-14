@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -36,8 +38,7 @@ class Net(BaseNet):
             starts = paddle.to_tensor(starts)
         if self.config["isEndsTensor"]:
             ends = paddle.to_tensor(ends)
-        x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
-        return x
+        return paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
 
 
 class TestSliceConvert(OPConvertAutoScanTest):
@@ -99,8 +100,7 @@ class Net1(BaseNet):
             starts = paddle.to_tensor(starts)
         if self.config["isEndsTensor"]:
             ends = paddle.to_tensor(ends)
-        x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
-        return x
+        return paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
 
 
 class TestSliceConvert1(OPConvertAutoScanTest):
@@ -169,8 +169,7 @@ class Net2(BaseNet):
         starts = [1, 0, paddle.to_tensor(0), 0]
         ends = self.config["ends"]
         ends = [10, 10, paddle.to_tensor(10), 10]
-        x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
-        return x
+        return paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
 
 
 class TestSliceConvert2(OPConvertAutoScanTest):
@@ -238,8 +237,7 @@ class Net3(BaseNet):
             paddle.to_tensor(np.array(10).astype("int64")),
             paddle.to_tensor(np.array(10).astype("int64")),
         ]
-        x = paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
-        return x
+        return paddle.slice(inputs, axes=axes, starts=starts, ends=ends)
 
 
 class TestSliceConvert3(OPConvertAutoScanTest):
@@ -291,8 +289,7 @@ class Net4(BaseNet):
         """
         forward
         """
-        x = inputs[1:2, 2, :]
-        return x
+        return inputs[1:2, 2, :]
 
 
 class TestSliceConvert4(OPConvertAutoScanTest):

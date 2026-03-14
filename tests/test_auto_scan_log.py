@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 op_api_map = {"log1p": paddle.log1p, "log10": paddle.log10}
 
@@ -47,9 +49,9 @@ class TestLogConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
         }
 
-        models = list()
-        op_names = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)

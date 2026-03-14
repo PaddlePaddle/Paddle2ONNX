@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir, randtool
+
 import paddle
-from onnxbase import APIOnnx, randtool
-from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -23,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """
@@ -67,7 +67,7 @@ def test_isinf_10():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            ([float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")])
+            [float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")]
         ),
     )
     obj.run()
@@ -86,7 +86,7 @@ def test_isinf_11():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            ([float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")])
+            [float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")]
         ),
     )
     obj.run()
@@ -105,7 +105,7 @@ def test_isinf_12():
     obj.set_input_data(
         "input_data",
         paddle.to_tensor(
-            ([float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")])
+            [float("-inf"), -2, 3.6, float("inf"), 0, float("-nan"), float("nan")]
         ),
     )
     obj.run()
