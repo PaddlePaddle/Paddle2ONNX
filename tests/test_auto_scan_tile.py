@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -38,8 +40,7 @@ class Net(BaseNet):
             )
         elif self.config["repeat_times_dtype"] == "int":
             repeat_times = [repeat_times[0]]
-        x = paddle.tile(inputs, repeat_times=repeat_times)
-        return x
+        return paddle.tile(inputs, repeat_times=repeat_times)
 
 
 class TestTileConvert(OPConvertAutoScanTest):
@@ -58,10 +59,7 @@ class TestTileConvert(OPConvertAutoScanTest):
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor", "int"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
-        if len(input_shape) == 0:
-            repeat_times = [10]
-        else:
-            repeat_times = input_shape
+        repeat_times = [10] if len(input_shape) == 0 else input_shape
         config = {
             "op_names": ["tile"],
             "test_data_shapes": [input_shape],
@@ -97,8 +95,7 @@ class Net1(BaseNet):
         #                     np.array([4, 3, 2, 1]).astype('int32'))
         # not work
         # repeat_times = [4, 3, paddle.to_tensor(np.array(2).astype("int64")), 1]
-        x = paddle.tile(inputs, repeat_times=repeat_times)
-        return x
+        return paddle.tile(inputs, repeat_times=repeat_times)
 
 
 class TestTileConvert1(OPConvertAutoScanTest):
@@ -115,10 +112,7 @@ class TestTileConvert1(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64", "int32", "int64"]))
         shape_dtype = draw(st.sampled_from(["int32", "int64"]))
 
-        if len(input_shape) == 0:
-            repeat_times = [10]
-        else:
-            repeat_times = input_shape
+        repeat_times = [10] if len(input_shape) == 0 else input_shape
 
         # when repeat_times_dtype is tensor has a bug
         repeat_times_dtype = draw(st.sampled_from(["list", "Tensor"]))

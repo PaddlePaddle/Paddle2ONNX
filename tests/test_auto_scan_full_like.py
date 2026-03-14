@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_only_pir, randtool
+
 import paddle
-from onnxbase import randtool, _test_only_pir
 
 op_api_map = {
     "fill_any_like": paddle.ones_like,
@@ -34,8 +36,7 @@ class Net(BaseNet):
         forward
         """
         x = op_api_map[self.config["op_names"]](x)
-        x = x.astype("int32")
-        return x
+        return x.astype("int32")
 
 
 class TestFullLikeConvert(OPConvertAutoScanTest):
@@ -59,9 +60,9 @@ class TestFullLikeConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
         }
 
-        models = list()
-        op_names = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)
@@ -84,8 +85,7 @@ class Net2(BaseNet):
         forward
         """
         x = paddle.full_like(x, fill_value)
-        x = x.astype("int32")
-        return x
+        return x.astype("int32")
 
 
 class TestFullLikeConvert2(OPConvertAutoScanTest):

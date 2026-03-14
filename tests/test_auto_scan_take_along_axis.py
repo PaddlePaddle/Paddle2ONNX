@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from onnxbase import randtool
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import randtool
+
 import paddle
 
 
@@ -28,8 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.take_along_axis(input1, input2, axis=self.config["axis"])
-        return x
+        return paddle.take_along_axis(input1, input2, axis=self.config["axis"])
 
 
 class TestGatherNDConvert(OPConvertAutoScanTest):
@@ -58,8 +59,7 @@ class TestGatherNDConvert(OPConvertAutoScanTest):
             input2_shape[axis] = 1
 
         def generator_data():
-            input_data = randtool("int", 0, input_shape[axis], input2_shape)
-            return input_data
+            return randtool("int", 0, input_shape[axis], input2_shape)
 
         config = {
             "op_names": ["take_along_axis"],

@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import _test_with_pir
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir
+
 import paddle
 
 
@@ -29,8 +31,7 @@ class Net(BaseNet):
         if self.config["is_shape_tensor"]:
             shape = paddle.to_tensor(shape).astype(self.config["shape_dtype"])
         dtype = self.config["dtype"]
-        x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
-        return x
+        return paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
 
 
 class TestFullConvert(OPConvertAutoScanTest):
@@ -50,10 +51,7 @@ class TestFullConvert(OPConvertAutoScanTest):
         # todo tensor is not supported
         is_tensor = False  # draw(st.booleans())
         is_shape_tensor = draw(st.booleans())
-        if is_shape_tensor:
-            opset_version = [9, 11, 15]
-        else:
-            opset_version = [7, 9, 15]
+        opset_version = [9, 11, 15] if is_shape_tensor else [7, 9, 15]
 
         config = {
             "op_names": ["fill_constant"],
@@ -85,8 +83,7 @@ class Net1(BaseNet):
         # TODO not supported
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), 2, 3, 2, 2]
         dtype = self.config["dtype"]
-        x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
-        return x
+        return paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
 
 
 class TestFullConvert1(OPConvertAutoScanTest):
@@ -105,10 +102,7 @@ class TestFullConvert1(OPConvertAutoScanTest):
         fill_value = draw(st.integers(min_value=1, max_value=5))
         # todo tensor is not supported
         is_shape_tensor = True  # draw(st.booleans())
-        if is_shape_tensor:
-            opset_version = [9, 15]
-        else:
-            opset_version = [7, 9, 15]
+        opset_version = [9, 15] if is_shape_tensor else [7, 9, 15]
         config = {
             "op_names": ["fill_constant"],
             "test_data_shapes": [],
@@ -139,8 +133,7 @@ class Net2(BaseNet):
         # TODO not supported
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), 2, 3, 2, 2]
         dtype = self.config["dtype"]
-        x = paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
-        return x
+        return paddle.full(shape=shape, fill_value=fill_value, dtype=dtype)
 
 
 class TestFullConvert2(OPConvertAutoScanTest):
@@ -160,10 +153,7 @@ class TestFullConvert2(OPConvertAutoScanTest):
         # todo tensor is not supported
         is_tensor = draw(st.booleans())
         is_shape_tensor = True  # draw(st.booleans())
-        if is_shape_tensor:
-            opset_version = [9, 11, 15]
-        else:
-            opset_version = [7, 9, 15]
+        opset_version = [9, 11, 15] if is_shape_tensor else [7, 9, 15]
         config = {
             "op_names": ["fill_constant"],
             "test_data_shapes": [],

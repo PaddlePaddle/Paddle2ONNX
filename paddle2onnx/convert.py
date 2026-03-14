@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import os
-import paddle
-import tempfile
-import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
-from paddle2onnx.utils import logging, paddle2onnx_export_configs
-from contextlib import contextmanager
-from paddle.decomposition import decomp
-from paddle.base.executor import global_scope
 import shutil
+import tempfile
 import traceback
+from contextlib import contextmanager
+
+import paddle
+import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
+from paddle.base.executor import global_scope
+from paddle.decomposition import decomp
+from paddle2onnx.utils import logging, paddle2onnx_export_configs
 
 PADDLE2ONNX_EXPORT_TEMP_DIR = None
 
@@ -89,7 +90,7 @@ def load_parameter(program):
 
 def decompose_program(model_filename):
     """Decomposes the given pir program."""
-    model_file_path, new_model_file_path, new_model_file_name, new_params_file_name = (
+    model_file_path, new_model_file_path, new_model_file_name, _new_params_file_name = (
         get_tmp_dir_and_file(model_filename, "_decompose")
     )
     model = paddle.jit.load(model_file_path)
@@ -139,9 +140,9 @@ def export(
 ):
     global PADDLE2ONNX_EXPORT_TEMP_DIR
     # check model_filename
-    assert os.path.exists(
-        model_filename
-    ), f"Model file {model_filename} does not exist."
+    assert os.path.exists(model_filename), (
+        f"Model file {model_filename} does not exist."
+    )
     if not os.path.exists(params_filename):
         logging.warning(
             f"Params file {params_filename} does not exist, "
@@ -167,7 +168,7 @@ def export(
                 place = paddle.CPUPlace()
                 exe = paddle.static.Executor(place)
                 with paddle.pir_utils.OldIrGuard():
-                    [inference_program, feed_target_names, fetch_targets] = (
+                    [inference_program, _feed_target_names, _fetch_targets] = (
                         paddle.static.load_inference_model(model_file_path, exe)
                     )
                 if verbose:
@@ -196,14 +197,17 @@ def export(
             if verbose:
                 logging.info("Complete the conversion from .pdmodel to json file.")
 
-        if paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]:
-            if dist_prim_all and auto_upgrade_opset:
-                if verbose:
-                    logging.info("Try to decompose program ...")
-                # TODO(wangmingkai02): Do we need to update params_filename here?
-                model_filename = decompose_program(model_filename)
-                if verbose:
-                    logging.info("Complete the decomposition of combined operators.")
+        if (
+            paddle.get_flags("FLAGS_enable_pir_api")["FLAGS_enable_pir_api"]
+            and dist_prim_all
+            and auto_upgrade_opset
+        ):
+            if verbose:
+                logging.info("Try to decompose program ...")
+            # TODO(wangmingkai02): Do we need to update params_filename here?
+            model_filename = decompose_program(model_filename)
+            if verbose:
+                logging.info("Complete the decomposition of combined operators.")
 
         if verbose and PADDLE2ONNX_EXPORT_TEMP_DIR is not None:
             logging.info(
@@ -291,6 +295,7 @@ def export(
                     "Try to perform optimization on the ONNX model with onnxoptimizer."
                 )
                 import io
+
                 import onnx
                 import onnxoptimizer
 
@@ -320,6 +325,7 @@ def export(
                 )
                 os.environ["POLYGRAPHY_AUTOINSTALL_DEPS"] = "1"
                 import io
+
                 import onnx
                 from polygraphy.backend.onnx import fold_constants
 
@@ -358,9 +364,10 @@ def export(
         else:
             with open(save_file, "wb") as f:
                 f.write(onnx_model_str)
-        logging.info("ONNX model saved in {}.".format(save_file))
+        logging.info(f"ONNX model saved in {save_file}.")
     else:
         return onnx_model_str
+    return None
 
 
 def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
@@ -376,7 +383,7 @@ def dygraph2onnx(layer, save_file, input_spec=None, opset_version=9, **configs):
         )
         if not os.path.isfile(model_file):
             raise ValueError("Failed to save static PaddlePaddle model.")
-        logging.info("Static PaddlePaddle model saved in {}.".format(paddle_model_dir))
+        logging.info(f"Static PaddlePaddle model saved in {paddle_model_dir}.")
         params_file = os.path.join(paddle_model_dir, "model.pdiparams")
         if not os.path.isfile(params_file):
             params_file = ""

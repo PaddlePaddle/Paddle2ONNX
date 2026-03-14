@@ -57,9 +57,7 @@ struct FuseConstantCast final : public PredicateBasedPass {
     auto dtype = cast->i(kto);
     t.elem_type() = dtype;
     constant->t_(kvalue, std::move(t));
-    if (!tryReplacingAllUsesWith(cast->output(), cast->inputs()[0])) {
-      return false;
-    }
+    cast->output()->replaceAllUsesWith(cast->inputs()[0]);
     destroy_current = NodeDestroyType::DestroyOne;
     return true;
   }

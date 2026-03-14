@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,14 +30,13 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.unfold(
+        return paddle.nn.functional.unfold(
             inputs,
             self.config["kernel_size"],
             strides=self.config["strides"],
             paddings=self.config["paddings"],
             dilations=self.config["dilations"],
         )
-        return x
 
 
 class TestUnfoldConvert(OPConvertAutoScanTest):

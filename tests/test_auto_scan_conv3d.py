@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -28,7 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.conv3d(
+        return paddle.nn.functional.conv3d(
             inputs,
             weight,
             stride=self.config["stride"],
@@ -37,7 +39,6 @@ class Net(BaseNet):
             groups=self.config["groups"],
             data_format=self.config["data_format"],
         )
-        return x
 
 
 class TestConv3dConvert(OPConvertAutoScanTest):
@@ -129,7 +130,7 @@ class TestConv3dConvert(OPConvertAutoScanTest):
                 ),
                 axis=0,
             ).tolist()
-            padding = [[0, 0]] + [[0, 0]] + padding1 + padding2 + padding3
+            padding = [[0, 0], [0, 0], *padding1, *padding2, *padding3]
         elif padding_type == "list":
             if draw(st.booleans()):
                 padding = draw(

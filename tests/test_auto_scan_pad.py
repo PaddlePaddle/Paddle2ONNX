@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -24,10 +26,9 @@ class Net(BaseNet):
         mode = self.config["mode"]
         value = self.config["value"]
         data_format = self.config["data_format"]
-        x = paddle.nn.functional.pad(
+        return paddle.nn.functional.pad(
             inputs, pad=pad, mode=mode, value=value, data_format=data_format
         )
-        return x
 
 
 class TestPadopsConvert(OPConvertAutoScanTest):

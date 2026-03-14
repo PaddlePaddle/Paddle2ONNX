@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir, randtool
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,10 +30,9 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.put_along_axis(
+        return paddle.put_along_axis(
             arr, indices, values, axis=self.config["axis"], reduce=self.config["reduce"]
         )
-        return x
 
 
 class TestPutAlongAxisConvert(OPConvertAutoScanTest):

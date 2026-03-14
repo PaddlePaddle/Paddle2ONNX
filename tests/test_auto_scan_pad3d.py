@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import _test_with_pir
-import numpy as np
 import unittest
+
+import hypothesis.strategies as st
+import numpy as np
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir
+
 import paddle
 
 
@@ -30,9 +32,7 @@ class Net(BaseNet):
             inputs, pad=pad, mode=mode, value=value, data_format=data_format
         )
         shape = paddle.shape(x)
-        x = paddle.reshape(x, shape)
-
-        return x
+        return paddle.reshape(x, shape)
 
 
 class TestPadopsConvert(OPConvertAutoScanTest):
@@ -108,9 +108,7 @@ class Net2(BaseNet):
             inputs, pad, mode=mode, value=value, data_format=data_format
         )
         shape = paddle.shape(x)
-        x = paddle.reshape(x, shape)
-
-        return x
+        return paddle.reshape(x, shape)
 
 
 class TestPadopsConvert_Constanttensor(OPConvertAutoScanTest):

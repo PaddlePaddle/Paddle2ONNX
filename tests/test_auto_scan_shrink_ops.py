@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 op_api_map = {
@@ -32,7 +34,7 @@ opset_version_map = {
 
 class Net(BaseNet):
     def forward(self, inputs):
-        if self.config["op_names"] in ["tanh_shrink"]:
+        if self.config["op_names"] == "tanh_shrink":
             x = op_api_map[self.config["op_names"]](inputs)
         else:
             x = op_api_map[self.config["op_names"]](
@@ -65,10 +67,10 @@ class TestShrinkopsConvert(OPConvertAutoScanTest):
             "threshold": threshold,
         }
 
-        models = list()
-        op_names = list()
-        opset_versions = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        opset_versions = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)

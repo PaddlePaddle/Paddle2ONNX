@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool, _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -23,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self, axis=-1, descending=False):
-        super(Net, self).__init__()
+        super().__init__()
         self.axis = axis
         self.descending = descending
 
@@ -31,8 +31,7 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = paddle.argsort(inputs, axis=self.axis, descending=self.descending)
-        return x
+        return paddle.argsort(inputs, axis=self.axis, descending=self.descending)
 
 
 @_test_with_pir

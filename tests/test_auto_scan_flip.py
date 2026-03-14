@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -28,8 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.flip(x, axis=self.config["axis"])
-        return x
+        return paddle.flip(x, axis=self.config["axis"])
 
 
 class TestFlattenConvert(OPConvertAutoScanTest):

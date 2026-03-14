@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from onnxbase import randtool
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import randtool
+
 import paddle
 
 
@@ -28,13 +30,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.embedding(
+        return paddle.nn.functional.embedding(
             inputs,
             weight,
             padding_idx=self.config["padding_idx"],
             sparse=self.config["sparse"],
         )
-        return x
 
 
 class TestKookuptablev2Convert(OPConvertAutoScanTest):
@@ -53,8 +54,7 @@ class TestKookuptablev2Convert(OPConvertAutoScanTest):
         )
 
         def generator_data():
-            input_data = randtool("int", 0, weight_shape[0] - 1, input_shape)
-            return input_data
+            return randtool("int", 0, weight_shape[0] - 1, input_shape)
 
         padding_idx = None
         if draw(st.booleans()):

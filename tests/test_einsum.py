@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import _test_with_pir
 
 
 @_test_with_pir
@@ -30,14 +30,13 @@ def test_einsum_sum():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, input):
             """
             forward
             """
-            x = paddle.einsum("i->", input)
-            return x
+            return paddle.einsum("i->", input)
 
     op = Net()
     op.eval()
@@ -60,14 +59,13 @@ def test_einsum_dot():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, x, y):
             """
             forward
             """
-            x = paddle.einsum("i,i->", x, y)
-            return x
+            return paddle.einsum("i,i->", x, y)
 
     op = Net()
     op.eval()
@@ -91,14 +89,13 @@ def test_einsum_outer():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, x, y):
             """
             forward
             """
-            x = paddle.einsum("i,j->ij", x, y)
-            return x
+            return paddle.einsum("i,j->ij", x, y)
 
     op = Net()
     op.eval()
@@ -123,14 +120,13 @@ def test_einsum_transpose():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, x):
             """
             forward
             """
-            x = paddle.einsum("ijk->kji", x)
-            return x
+            return paddle.einsum("ijk->kji", x)
 
     op = Net()
     op.eval()
@@ -154,14 +150,13 @@ def test_einsum_batch_matrix_multiplication():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, x, y):
             """
             forward
             """
-            x = paddle.einsum("ijk, ikl->ijl", x, y)
-            return x
+            return paddle.einsum("ijk, ikl->ijl", x, y)
 
     op = Net()
     op.eval()
@@ -186,14 +181,13 @@ def test_einsum_ellipsis_transpose():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, x):
             """
             forward
             """
-            x = paddle.einsum("...jk->...kj", x)
-            return x
+            return paddle.einsum("...jk->...kj", x)
 
     op = Net()
     op.eval()
@@ -217,14 +211,13 @@ def test_einsum_ellipsis_batch_matrix_multiplication():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
 
         def forward(self, x, y):
             """
             forward
             """
-            x = paddle.einsum("...jk, ...kl->...jl", x, y)
-            return x
+            return paddle.einsum("...jk, ...kl->...jl", x, y)
 
     op = Net()
     op.eval()

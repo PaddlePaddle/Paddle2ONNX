@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 op_api_map = {
     "arg_min": paddle.argmin,
@@ -42,13 +44,12 @@ class Net(BaseNet):
             axis = paddle.assign(self.config["axis"])
         else:
             axis = self.config["axis"]
-        x = op_api_map[self.config["op_names"]](
+        return op_api_map[self.config["op_names"]](
             inputs,
             axis=axis,
             keepdim=self.config["keep_dim"],
             dtype=self.config["out_dtype"],
         )
-        return x
 
 
 class TestArgMinMaxConvert(OPConvertAutoScanTest):
@@ -88,10 +89,10 @@ class TestArgMinMaxConvert(OPConvertAutoScanTest):
             "rtol": 1e-4,
         }
 
-        models = list()
-        op_names = list()
-        opset_versions = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        opset_versions = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)

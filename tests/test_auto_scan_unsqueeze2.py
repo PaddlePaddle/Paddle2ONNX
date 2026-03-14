@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -33,8 +35,7 @@ class Net(BaseNet):
             axis = paddle.to_tensor(axis)
             if self.config["isTensor13"]:
                 axis = axis * 1
-        x = paddle.unsqueeze(inputs, axis=axis)
-        return x
+        return paddle.unsqueeze(inputs, axis=axis)
 
 
 class TestUnsqueezeConvert(OPConvertAutoScanTest):
@@ -65,10 +66,7 @@ class TestUnsqueezeConvert(OPConvertAutoScanTest):
             if len(input_shape) == 3:
                 axis = [1, 2, 3]
             if len(input_shape) == 2:
-                if draw(st.booleans()):
-                    axis = [0, 1, 2]
-                else:
-                    axis = [1, 3]
+                axis = [0, 1, 2] if draw(st.booleans()) else [1, 3]
         isTensor13 = draw(st.booleans())
         opset_version = [7, 9, 10, 11, 12, 13, 14, 15]
         if isTensor13 or isTensor:

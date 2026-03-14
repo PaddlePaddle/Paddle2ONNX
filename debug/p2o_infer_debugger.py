@@ -13,20 +13,22 @@
 # limitations under the License.
 
 import argparse
-import os
-import re
-import sys
 import logging
+import os
+import queue
+import re
 import shutil
+import sys
+import tempfile
+import traceback
+from contextlib import contextmanager
+
 import numpy as np
 from onnxruntime import InferenceSession
+from prune_onnx_model import prune_onnx_model
+
 import paddle
 import paddle2onnx
-from prune_onnx_model import prune_onnx_model
-from contextlib import contextmanager
-import traceback
-import queue
-import tempfile
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 tests_dir = os.path.join(current_dir, "..", "tests")
@@ -202,8 +204,8 @@ def check_operator_with_print(
     def _redirect_paddle_output_to_file(
         paddle_model_file, log_file, inputs_data: tuple
     ):
-        import subprocess
         import pickle
+        import subprocess
         import tempfile
 
         temp_filename = None
@@ -266,7 +268,7 @@ with open('{temp_filename}', 'rb') as f:
         # TODO(wangmingkai02): adjust n according to the number of print op
         n = 8
         shape_list, dtype, data_list = [], None, []
-        with open(log_file, "r", encoding="utf-8") as f:
+        with open(log_file, encoding="utf-8") as f:
             lines = []
             for _ in range(n):
                 line = f.readline()
@@ -291,7 +293,7 @@ with open('{temp_filename}', 'rb') as f:
             providers=["CPUExecutionProvider"],
         )
         input_names = session.get_inputs()
-        input_feed = dict()
+        input_feed = {}
         for idx, input_name in enumerate(input_names):
             input_feed[input_name.name] = inputs_data[idx]
         result = session.run(output_names=None, input_feed=input_feed)
@@ -359,10 +361,7 @@ with open('{temp_filename}', 'rb') as f:
             idx = (left + right) // 2 + offset
             op = block.ops[idx]
             op_name = op.name()
-            if idx < left:
-                left = idx - offset + 1
-                offset = 0
-            elif op_name in SKIP_FORWARD_OP_LIST:
+            if idx < left or op_name in SKIP_FORWARD_OP_LIST:
                 left = idx - offset + 1
                 offset = 0
             elif op_name in SKIP_BACKWARD_OP_LIST:
@@ -533,7 +532,7 @@ def check_operator_with_shadow_output(
             providers=["CPUExecutionProvider"],
         )
         input_names = session.get_inputs()
-        input_feed = dict()
+        input_feed = {}
         for idx, input_name in enumerate(input_names):
             input_feed[input_name.name] = inputs_data[idx]
         result = session.run(output_names=None, input_feed=input_feed)
@@ -606,10 +605,7 @@ def check_operator_with_shadow_output(
             clone_program = program.clone()
             idx = (left + right) // 2 + offset
             op = clone_program.blocks[0].ops[idx]
-            if idx < left:
-                left = idx - offset + 1
-                offset = 0
-            elif op.name() in SKIP_FORWARD_OP_LIST:
+            if idx < left or op.name() in SKIP_FORWARD_OP_LIST:
                 left = idx - offset + 1
                 offset = 0
             elif op.name() in SKIP_BACKWARD_OP_LIST:
@@ -654,7 +650,7 @@ def locate_issue(
     model_file,
     input_shapes,
     input_dtypes,
-    candidates: list[int] = None,
+    candidates: list[int] | None = None,
     has_cf=False,
     binary_search=False,
     output_num=1,
@@ -705,7 +701,7 @@ def get_op_statistics(program):
         index_mapping = {}
         ops = set()
         global_ops = set()
-        global_res = list()
+        global_res = []
         shadow_output_op_num = 0
         for block in program.blocks:
             ops |= _dfs(block, index_mapping)

@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import random
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
-import random
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -35,8 +37,7 @@ class Net(BaseNet):
             shape = paddle.to_tensor(np.array(shape).astype(self.config["shape_dtype"]))
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
-        x = paddle.reshape(x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
-        return x
+        return paddle.reshape(x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
 
 
 class TestExpandConvert(OPConvertAutoScanTest):
@@ -90,8 +91,7 @@ class Net1(BaseNet):
         # shape = [paddle.to_tensor(2), paddle.to_tensor(np.array(1).astype("int64")), paddle.to_tensor(2), paddle.to_tensor(3), paddle.to_tensor(2), paddle.to_tensor(2)]
         x = paddle.expand(inputs, shape=shape)
         # TODO there's bug with expand operator
-        x = paddle.reshape(x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
-        return x
+        return paddle.reshape(x, shape=paddle.to_tensor(np.array([-1]).astype("int32")))
 
 
 class TestExpandConvert1(OPConvertAutoScanTest):

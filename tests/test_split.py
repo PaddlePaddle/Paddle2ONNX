@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
-from onnxbase import _test_with_pir
 
 
 class Net(paddle.nn.Layer):
@@ -24,14 +23,13 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """
         forward
         """
-        x = paddle.split(inputs, num_or_sections=5, axis=1)
-        return x
+        return paddle.split(inputs, num_or_sections=5, axis=1)
 
 
 class Net2(paddle.nn.Layer):
@@ -40,14 +38,13 @@ class Net2(paddle.nn.Layer):
     """
 
     def __init__(self):
-        super(Net2, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """
         forward
         """
-        x = paddle.split(inputs, num_or_sections=[2, 3, 5], axis=-1)
-        return x
+        return paddle.split(inputs, num_or_sections=[2, 3, 5], axis=-1)
 
 
 # @_test_with_pir

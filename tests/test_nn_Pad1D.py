@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, randtool
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import randtool
 
 
 class Net(paddle.nn.Layer):
@@ -23,7 +23,7 @@ class Net(paddle.nn.Layer):
     """
 
     def __init__(self, mode="constant", padding=1):
-        super(Net, self).__init__()
+        super().__init__()
         self.mode = mode
         self.padding = padding
         self._pad = paddle.nn.Pad1D(padding=self.padding, mode=self.mode)
@@ -32,8 +32,7 @@ class Net(paddle.nn.Layer):
         """
         forward
         """
-        x = self._pad(inputs)
-        return x
+        return self._pad(inputs)
 
 
 def test_Pad1D_9():

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -26,7 +28,7 @@ class Net(BaseNet):
     """
 
     def __init__(self, config=None):
-        super(Net, self).__init__(config)
+        super().__init__(config)
         param_shape = [np.prod(self.config["normalized_shape"])]
         self.weight = self.create_parameter(
             attr=None,
@@ -40,14 +42,13 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.layer_norm(
+        return paddle.nn.functional.layer_norm(
             inputs,
             weight=self.weight if self.config["has_weight_bias"] else None,
             bias=self.bias if self.config["has_weight_bias"] else None,
             normalized_shape=self.config["normalized_shape"],
             epsilon=self.config["epsilon"],
         )
-        return x
 
 
 class TestLayerNormConvert(OPConvertAutoScanTest):
@@ -60,7 +61,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(st.integers(min_value=2, max_value=8), min_size=2, max_size=5)
         )
-        input_spec = [-1] * len(input_shape)
+        [-1] * len(input_shape)
 
         # When the dims is 5 and the last dimension is too small, an error will be reported due to the optimization of ONNXRuntime
         if len(input_shape) == 5:
@@ -68,10 +69,7 @@ class TestLayerNormConvert(OPConvertAutoScanTest):
         axis = draw(st.integers(min_value=1, max_value=len(input_shape) - 1))
 
         axis_type = draw(st.sampled_from(["int", "list"]))
-        if axis_type == "int":
-            normalized_shape = input_shape[-1]
-        else:
-            normalized_shape = input_shape[axis:]
+        normalized_shape = input_shape[-1] if axis_type == "int" else input_shape[axis:]
 
         dtype = draw(st.sampled_from(["float32"]))
         epsilon = draw(st.floats(min_value=1e-12, max_value=1e-5))

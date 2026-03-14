@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from onnxbase import APIOnnx, _test_with_pir
+
 import paddle
-from onnxbase import APIOnnx
-from onnxbase import _test_with_pir
 
 
 class BaseNet1(paddle.nn.Layer):
     def __init__(self):
-        super(BaseNet1, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         i = 0
@@ -40,7 +40,7 @@ def test_while_1():
 
 class BaseNet2(paddle.nn.Layer):
     def __init__(self):
-        super(BaseNet2, self).__init__()
+        super().__init__()
 
     def forward(self, i, inputs):
         while i <= 3:
@@ -60,7 +60,7 @@ def test_while_2():
 
 class BaseNet3(paddle.nn.Layer):
     def __init__(self):
-        super(BaseNet3, self).__init__()
+        super().__init__()
 
     def forward(self, i, j, k):
         while i <= 3:
@@ -83,7 +83,7 @@ def test_while_3():
 
 class BaseNet4(paddle.nn.Layer):
     def __init__(self):
-        super(BaseNet4, self).__init__()
+        super().__init__()
 
     def forward(self, i, j, k):
         while i <= 3:
@@ -108,7 +108,7 @@ def test_while_4():
 
 class BaseNet5(paddle.nn.Layer):
     def __init__(self):
-        super(BaseNet5, self).__init__()
+        super().__init__()
 
     def forward(self, i, j, k):
         while i <= 3:

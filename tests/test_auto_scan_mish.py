@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import randtool
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import randtool
+
 import paddle
 
 
@@ -28,8 +30,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.mish(inputs)
-        return x
+        return paddle.nn.functional.mish(inputs)
 
 
 class TestMishConvert(OPConvertAutoScanTest):
@@ -44,8 +45,7 @@ class TestMishConvert(OPConvertAutoScanTest):
         )
 
         def generator_data():
-            input_data = randtool("float", -100, 100, input_shape)
-            return input_data
+            return randtool("float", -100, 100, input_shape)
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 

@@ -20,6 +20,12 @@ paddle2onnx/*.so
 paddle2onnx/__pycache_*
 protobuf-*
 
+# Python / uv
+.venv
+__pycache__/
+*.egg-info/
+.hypothesis/
+
 # Temporary files automatically generated when executing Paddle2ONNX unit tests
 *.pdmodel
 *.pdiparams

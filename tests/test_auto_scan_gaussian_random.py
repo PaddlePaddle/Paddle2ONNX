@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-from onnxbase import randtool, _test_with_pir
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir, randtool
+
 import paddle
 
 
@@ -29,13 +31,12 @@ class Net_tensorlist(BaseNet):
         forward
         """
         inputs = [input_1, input_2, input_3]
-        x = paddle.tensor.random.gaussian(
+        return paddle.tensor.random.gaussian(
             inputs,
             mean=self.config["mean"],
             std=self.config["std"],
             dtype=self.config["out_dtype"],
         )
-        return x
 
 
 class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
@@ -56,16 +57,13 @@ class TestGaussianRandomConvert_tensorlist(OPConvertAutoScanTest):
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator1_data():
-            input_data1 = randtool("int", 1, 10, input_shape[0])
-            return input_data1
+            return randtool("int", 1, 10, input_shape[0])
 
         def generator2_data():
-            input_data2 = randtool("int", 1, 10, input_shape[1])
-            return input_data2
+            return randtool("int", 1, 10, input_shape[1])
 
         def generator3_data():
-            input_data3 = randtool("int", 1, 10, input_shape[2])
-            return input_data3
+            return randtool("int", 1, 10, input_shape[2])
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
@@ -101,13 +99,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.tensor.random.gaussian(
+        return paddle.tensor.random.gaussian(
             inputs,
             mean=self.config["mean"],
             std=self.config["std"],
             dtype=self.config["out_dtype"],
         )
-        return x
 
 
 class TestGaussianRandomConvert(OPConvertAutoScanTest):
@@ -128,8 +125,7 @@ class TestGaussianRandomConvert(OPConvertAutoScanTest):
         out_dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator_data():
-            input_data = randtool("int", 1, 10, input_shape)
-            return input_data
+            return randtool("int", 1, 10, input_shape)
 
         dtype = draw(st.sampled_from(["int32", "int64"]))
 
@@ -165,13 +161,12 @@ class Net_list(BaseNet):
         """
         forward
         """
-        x = paddle.tensor.random.gaussian(
+        return paddle.tensor.random.gaussian(
             shape=self.config["shape"],
             mean=self.config["mean"],
             std=self.config["std"],
             dtype=self.config["out_dtype"],
         )
-        return x
 
 
 class TestGaussianRandomConvert_list(OPConvertAutoScanTest):

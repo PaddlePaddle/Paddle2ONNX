@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import randtool
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir, randtool
+
 import paddle
-from onnxbase import _test_with_pir
 
 
 class Net0(BaseNet):
@@ -29,8 +30,7 @@ class Net0(BaseNet):
         """
         forward
         """
-        x = paddle.clip(inputs, min=self.config["min"], max=self.config["max"])
-        return x
+        return paddle.clip(inputs, min=self.config["min"], max=self.config["max"])
 
 
 class Net1(BaseNet):
@@ -42,8 +42,7 @@ class Net1(BaseNet):
         """
         forward
         """
-        x = paddle.clip(inputs, min=self.config["min"], max=max_value)
-        return x
+        return paddle.clip(inputs, min=self.config["min"], max=max_value)
 
 
 class Net2(BaseNet):
@@ -55,8 +54,7 @@ class Net2(BaseNet):
         """
         forward
         """
-        x = paddle.clip(inputs, min=min_value, max=self.config["max"])
-        return x
+        return paddle.clip(inputs, min=min_value, max=self.config["max"])
 
 
 class Net3(BaseNet):
@@ -68,8 +66,7 @@ class Net3(BaseNet):
         """
         forward
         """
-        x = paddle.clip(inputs, min=min_value, max=max_value)
-        return x
+        return paddle.clip(inputs, min=min_value, max=max_value)
 
 
 class Net4(BaseNet):
@@ -81,8 +78,7 @@ class Net4(BaseNet):
         """
         forward
         """
-        x = paddle.clip(inputs)
-        return x
+        return paddle.clip(inputs)
 
 
 class TestClipConvert0(OPConvertAutoScanTest):
@@ -101,7 +97,7 @@ class TestClipConvert0(OPConvertAutoScanTest):
         min_num = draw(st.integers(min_value=-4.0, max_value=-1.0))
         max_num = draw(st.floats(min_value=0, max_value=4.0))
 
-        models = list()
+        models = []
         config0 = {
             "op_names": ["clip"],
             "test_data_shapes": [input_shape],
@@ -137,10 +133,9 @@ class TestClipConvert1(OPConvertAutoScanTest):
         min_num = draw(st.floats(min_value=-4.0, max_value=-2.0))
 
         def generator_max():
-            input_data = randtool("int", 0, 10, [1])
-            return input_data
+            return randtool("int", 0, 10, [1])
 
-        models = list()
+        models = []
         config1 = {
             "op_names": ["clip"],
             "test_data_shapes": [input_shape, generator_max],
@@ -173,7 +168,7 @@ class TestClipConvert2(OPConvertAutoScanTest):
 
         max_num = draw(st.floats(min_value=2.0, max_value=4.0))
 
-        models = list()
+        models = []
         config2 = {
             "op_names": ["clip"],
             "test_data_shapes": [input_shape, [1]],
@@ -205,14 +200,12 @@ class TestClipConvert3(OPConvertAutoScanTest):
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
         def generator_min():
-            input_data = randtool("float", -10, -1, [1])
-            return input_data
+            return randtool("float", -10, -1, [1])
 
         def generator_max():
-            input_data = randtool("int", 0, 10, [1])
-            return input_data
+            return randtool("int", 0, 10, [1])
 
-        models = list()
+        models = []
         config3 = {
             "op_names": ["clip"],
             "test_data_shapes": [input_shape, generator_min, generator_max],
@@ -242,7 +235,7 @@ class TestClipConvert4(OPConvertAutoScanTest):
 
         dtype = draw(st.sampled_from(["float32", "float64"]))
 
-        models = list()
+        models = []
         config0 = {
             "op_names": ["clip"],
             "test_data_shapes": [input_shape],

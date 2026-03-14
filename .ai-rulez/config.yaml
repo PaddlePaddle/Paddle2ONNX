@@ -1,0 +1,22 @@
+$schema: https://raw.githubusercontent.com/Goldziher/ai-rulez/main/schema/ai-rules-v3.schema.json
+description: Convert PaddlePaddle models to ONNX format
+gitignore: true
+name: Paddle2ONNX
+
+builtins:
+  - python
+  - security
+  - git-workflow
+  - code-quality
+  - testing
+  - token-efficiency
+  - default-commands
+
+presets:
+  - claude
+  - gemini
+  - codex
+
+compression:
+  level: moderate
+version: "3.0"

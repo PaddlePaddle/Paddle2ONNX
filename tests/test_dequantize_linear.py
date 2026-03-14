@@ -13,13 +13,15 @@
 # limitations under the License.
 
 import os
-import paddle
-import numpy as np
-import paddle2onnx
 import unittest
+
+import numpy as np
 import onnxruntime as ort
-from paddle.base import unique_name
 from onnxbase import _test_only_pir
+
+import paddle
+import paddle2onnx
+from paddle.base import unique_name
 
 
 def convert_scale_to_paddle(onnx_scale, qmax):
@@ -50,19 +52,21 @@ def build_static_net(input_shape, quant_axis, scale_shape, qmin, qmax, type):
             stop_gradient=True,
         )
 
-        dequant_out, out_state, out_accum, out_scale = paddle._C_ops.dequantize_linear(
-            x,
-            scale,
-            zero_points,
-            accum,
-            state,
-            quant_axis,
-            8,  # bit_length
-            qmin,  # qmin
-            qmax,  # qmax
-            0,  # rounding_type
-            True,  # is_test
-            False,  # only_observer
+        dequant_out, _out_state, _out_accum, _out_scale = (
+            paddle._C_ops.dequantize_linear(
+                x,
+                scale,
+                zero_points,
+                accum,
+                state,
+                quant_axis,
+                8,  # bit_length
+                qmin,  # qmin
+                qmax,  # qmax
+                0,  # rounding_type
+                True,  # is_test
+                False,  # only_observer
+            )
         )
 
         model_dir = f"./dequantize_linear_model_{type}"

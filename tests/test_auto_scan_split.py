@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-import unittest
-import paddle
 import random
+import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_only_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -32,10 +34,9 @@ class Net(BaseNet):
         axis = self.config["axis"]
         if self.config["isAxisTensor"]:
             axis = paddle.to_tensor(axis, dtype=self.config["axis_dtype"])
-        x = paddle.split(
+        return paddle.split(
             inputs, num_or_sections=self.config["num_or_sections"], axis=axis
         )
-        return x
 
 
 class TestSplitConvert(OPConvertAutoScanTest):
@@ -50,7 +51,7 @@ class TestSplitConvert(OPConvertAutoScanTest):
         )
         # float64 not supported
         dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
-        axis_dtype = "int64"  # 只能设置为INT64，设置为INT32时会在axis_tensor后增加cast导致取不到constant数值
+        axis_dtype = "int64"  # 只能设置为INT64,设置为INT32时会在axis_tensor后增加cast导致取不到constant数值
         isAxisTensor = draw(st.booleans())
         # when axis is negtive, paddle has bug
         axis = draw(st.integers(min_value=0, max_value=len(input_shape) - 1))

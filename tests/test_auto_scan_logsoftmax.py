@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -27,8 +29,7 @@ class Net(BaseNet):
         """
         forward
         """
-        x = paddle.nn.functional.log_softmax(inputs, axis=self.config["axis"])
-        return x
+        return paddle.nn.functional.log_softmax(inputs, axis=self.config["axis"])
 
 
 class TestLogSoftmaxConvert(OPConvertAutoScanTest):

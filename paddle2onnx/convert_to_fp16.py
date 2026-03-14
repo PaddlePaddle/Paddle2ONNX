@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
 
 import argparse
+
 from paddle2onnx.utils import logging
 
 
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     import paddle2onnx.paddle2onnx_cpp2py_export as c_p2o
 
     c_p2o.convert_to_fp16(args.input_model_path, args.output_model_path)
-    logging.info("FP16 model saved in {}.".format(args.output_model_path))
+    logging.info(f"FP16 model saved in {args.output_model_path}.")

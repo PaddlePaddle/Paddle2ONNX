@@ -48,7 +48,7 @@ ONNX_NAMESPACE::ModelProto OptimizeOnnxModel(
   }
 
   try {
-    shape_inference::InferShapes(optimized_model_proto);
+    shape_inference::InferShapes(optimized_model_proto, OpSchemaRegistry::Instance());
   } catch (const std::exception& e) {
     paddle2onnx::P2OLogger(true)
         << "[ERROR] Failed to reinfer shape for this model." << std::endl;
@@ -158,7 +158,7 @@ bool OptimizePaddle2ONNX(
     }
 
     try {
-      shape_inference::InferShapes(*(model_proto.get()));
+      shape_inference::InferShapes(*(model_proto.get()), OpSchemaRegistry::Instance());
     } catch (const std::exception& e) {
       paddle2onnx::P2OLogger(true)
           << "[ERROR] Failed to reinfer shape for this model." << std::endl;

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
-from onnxbase import _test_with_pir
-import numpy as np
 import unittest
+
+import hypothesis.strategies as st
+import numpy as np
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+from onnxbase import _test_with_pir
+
 import paddle
 
 op_api_map = {
@@ -75,8 +77,7 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
             minus_nan_data = np.ones(shape=input_shape)
             minus_nan_data[:] = float("-nan")
             minus_nan_condition = np.random.randint(-2, 2, input_shape).astype("bool")
-            input_data = np.where(minus_nan_condition, input_data, minus_nan_data)
-            return input_data
+            return np.where(minus_nan_condition, input_data, minus_nan_data)
 
         config = {
             "op_names": ["isX"],
@@ -86,10 +87,10 @@ class TestLogicopsConvert(OPConvertAutoScanTest):
             "input_spec_shape": [],
         }
 
-        models = list()
-        op_names = list()
-        opset_versions = list()
-        for op_name, i in op_api_map.items():
+        models = []
+        op_names = []
+        opset_versions = []
+        for op_name in op_api_map:
             config["op_names"] = op_name
             models.append(Net(config))
             op_names.append(op_name)

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
-import paddle
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -29,8 +31,7 @@ class Net(BaseNet):
         forward
         """
         inputs = [inputs1, inputs2]
-        x = paddle.add_n(inputs)
-        return x
+        return paddle.add_n(inputs)
 
 
 class TestSumConvert(OPConvertAutoScanTest):

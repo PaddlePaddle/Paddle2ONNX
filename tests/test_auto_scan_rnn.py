@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
-import hypothesis.strategies as st
 import unittest
+
+import hypothesis.strategies as st
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
+
 import paddle
 
 
@@ -24,7 +26,7 @@ class Net0(BaseNet):
     """
 
     def __init__(self, config=None):
-        super(Net0, self).__init__(config)
+        super().__init__(config)
         self.lstm = paddle.nn.LSTM(
             input_size=self.config["input_size"],
             hidden_size=self.config["hidden_size"],
@@ -37,7 +39,7 @@ class Net0(BaseNet):
         """
         forward
         """
-        y, (h, c) = self.lstm(inputs, (prev_h, prev_c))
+        y, (_h, _c) = self.lstm(inputs, (prev_h, prev_c))
         return y
 
 
@@ -47,7 +49,7 @@ class Net1(BaseNet):
     """
 
     def __init__(self, config=None):
-        super(Net1, self).__init__(config)
+        super().__init__(config)
         self.gru = paddle.nn.GRU(
             input_size=self.config["input_size"],
             hidden_size=self.config["hidden_size"],
@@ -60,7 +62,7 @@ class Net1(BaseNet):
         """
         forward
         """
-        y, h = self.gru(inputs, prev_h)
+        y, _h = self.gru(inputs, prev_h)
         return y
 
 
@@ -80,14 +82,11 @@ class TestRNNConvert0(OPConvertAutoScanTest):
         num_layers = 2
         time_major = draw(st.booleans())
         if time_major:
-            t, b, input_size = input_shape
+            _t, b, input_size = input_shape
         else:
-            b, t, input_size = input_shape
+            b, _t, input_size = input_shape
         direction = draw(st.sampled_from(["forward", "bidirect"]))
-        if direction == "forward":
-            num_directions = 1
-        else:
-            num_directions = 2
+        num_directions = 1 if direction == "forward" else 2
 
         prev_h_shape = [num_layers * num_directions, b, hidden_size]
 
@@ -130,14 +129,11 @@ class TestRNNConvert1(OPConvertAutoScanTest):
         num_layers = 2
         time_major = draw(st.booleans())
         if time_major:
-            t, b, input_size = input_shape
+            _t, b, input_size = input_shape
         else:
-            b, t, input_size = input_shape
+            b, _t, input_size = input_shape
         direction = draw(st.sampled_from(["forward", "bidirect"]))
-        if direction == "forward":
-            num_directions = 1
-        else:
-            num_directions = 2
+        num_directions = 1 if direction == "forward" else 2
 
         prev_h_shape = [num_layers * num_directions, b, hidden_size]
 

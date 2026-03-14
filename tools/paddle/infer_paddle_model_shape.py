@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+
 import paddle
 import paddle.base as base
 import paddle.static as static
@@ -20,9 +21,10 @@ import paddle.static as static
 
 def process_old_ops_desc(program):
     for i in range(len(program.blocks[0].ops)):
-        if program.blocks[0].ops[i].type == "matmul":
-            if not program.blocks[0].ops[i].has_attr("head_number"):
-                program.blocks[0].ops[i]._set_attr("head_number", 1)
+        if program.blocks[0].ops[i].type == "matmul" and not program.blocks[0].ops[
+            i
+        ].has_attr("head_number"):
+            program.blocks[0].ops[i]._set_attr("head_number", 1)
 
 
 def infer_shape(program, input_shape_dict):
@@ -65,12 +67,10 @@ def infer_shape(program, input_shape_dict):
     major_ver = model_version // 1000000
     minor_ver = (model_version - major_ver * 1000000) // 1000
     patch_ver = model_version - major_ver * 1000000 - minor_ver * 1000
-    model_version = "{}.{}.{}".format(major_ver, minor_ver, patch_ver)
+    model_version = f"{major_ver}.{minor_ver}.{patch_ver}"
     if model_version != paddle_version:
         print(
-            "[WARNING] The model is saved by paddlepaddle v{}, but now your paddlepaddle is version of {}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model".format(
-                model_version, paddle_version
-            )
+            f"[WARNING] The model is saved by paddlepaddle v{model_version}, but now your paddlepaddle is version of {paddle_version}, this difference may cause error, it is recommend you reinstall a same version of paddlepaddle for this model"
         )
     for k, v in input_shape_dict.items():
         program.blocks[0].var(k).desc.set_shape(v)

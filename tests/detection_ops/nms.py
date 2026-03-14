@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import paddle
-from paddle.base.framework import in_dygraph_mode
 from paddle.base import core
+from paddle.base.framework import in_dygraph_mode
 from paddle.base.layer_helper import LayerHelper
 
 
@@ -149,42 +149,41 @@ def multiclass_nms(
             index = None
         return output, nms_rois_num, index
 
-    else:
-        output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-        index = helper.create_variable_for_type_inference(dtype="int32")
+    output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+    index = helper.create_variable_for_type_inference(dtype="int32")
 
-        inputs = {"BBoxes": bboxes, "Scores": scores}
-        outputs = {"Out": output, "Index": index}
+    inputs = {"BBoxes": bboxes, "Scores": scores}
+    outputs = {"Out": output, "Index": index}
 
-        if rois_num is not None:
-            inputs["RoisNum"] = rois_num
+    if rois_num is not None:
+        inputs["RoisNum"] = rois_num
 
-        if return_rois_num:
-            nms_rois_num = helper.create_variable_for_type_inference(dtype="int32")
-            outputs["NmsRoisNum"] = nms_rois_num
+    if return_rois_num:
+        nms_rois_num = helper.create_variable_for_type_inference(dtype="int32")
+        outputs["NmsRoisNum"] = nms_rois_num
 
-        helper.append_op(
-            type="multiclass_nms3",
-            inputs=inputs,
-            attrs={
-                "background_label": background_label,
-                "score_threshold": score_threshold,
-                "nms_top_k": nms_top_k,
-                "nms_threshold": nms_threshold,
-                "keep_top_k": keep_top_k,
-                "nms_eta": nms_eta,
-                "normalized": normalized,
-            },
-            outputs=outputs,
-        )
-        output.stop_gradient = True
-        index.stop_gradient = True
-        if not return_index:
-            index = None
-        if not return_rois_num:
-            nms_rois_num = None
+    helper.append_op(
+        type="multiclass_nms3",
+        inputs=inputs,
+        attrs={
+            "background_label": background_label,
+            "score_threshold": score_threshold,
+            "nms_top_k": nms_top_k,
+            "nms_threshold": nms_threshold,
+            "keep_top_k": keep_top_k,
+            "nms_eta": nms_eta,
+            "normalized": normalized,
+        },
+        outputs=outputs,
+    )
+    output.stop_gradient = True
+    index.stop_gradient = True
+    if not return_index:
+        index = None
+    if not return_rois_num:
+        nms_rois_num = None
 
-        return (
-            output,
-            nms_rois_num,
-        )
+    return (
+        output,
+        nms_rois_num,
+    )

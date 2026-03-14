@@ -11,19 +11,21 @@
 # without warranties or conditions of any kind, either express or implied.
 # see the license for the specific language governing permissions and
 # limitations under the license.
-import unittest
-import os
-import time
-import sys
-import random
 import functools
+import os
+import platform
+import random
+import sys
+import time
+import unittest
+
 import numpy as np
-from paddle.static.io import load_inference_model
 from PIL import Image
+
 import paddle
 from paddle.dataset.common import download
+from paddle.static.io import load_inference_model
 from paddle.static.quantization import PostTrainingQuantization
-import platform
 
 if platform.system() == "Windows":
     os.system("set no_proxy=bcebos.com")
@@ -46,10 +48,9 @@ img_std = np.array([0.229, 0.224, 0.225]).reshape((3, 1, 1))
 
 def resize_short(img, target_size):
     percent = float(target_size) / min(img.size[0], img.size[1])
-    resized_width = int(round(img.size[0] * percent))
-    resized_height = int(round(img.size[1] * percent))
-    img = img.resize((resized_width, resized_height), Image.LANCZOS)
-    return img
+    resized_width = round(img.size[0] * percent)
+    resized_height = round(img.size[1] * percent)
+    return img.resize((resized_width, resized_height), Image.LANCZOS)
 
 
 def crop_image(img, target_size, center):
@@ -63,8 +64,7 @@ def crop_image(img, target_size, center):
         h_start = np.random.randint(0, height - size + 1)
     w_end = w_start + size
     h_end = h_start + size
-    img = img.crop((w_start, h_start, w_end, h_end))
-    return img
+    return img.crop((w_start, h_start, w_end, h_end))
 
 
 def process_image(sample, mode, color_jitter, rotate):
@@ -155,7 +155,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
 
     def cache_unzipping(self, target_folder, zip_path):
         if not os.path.exists(target_folder):
-            cmd = "mkdir {0} && tar xf {1} -C {0}".format(target_folder, zip_path)
+            cmd = f"mkdir {target_folder} && tar xf {zip_path} -C {target_folder}"
             os.system(cmd)
 
     def download_data(self, data_urls, data_md5s, folder_name, is_model=True):
@@ -163,7 +163,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         zip_path = ""
         if os.environ.get("DATASET") == "full":
             file_names = []
-            for i in range(0, len(data_urls)):
+            for i in range(len(data_urls)):
                 download(data_urls[i], self.int8_download, data_md5s[i])
                 file_names.append(data_urls[i].split("/")[-1])
 
@@ -180,7 +180,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
             file_name = data_urls[0].split("/")[-1]
             zip_path = os.path.join(self.cache_folder, file_name)
 
-        print("Data is downloaded at {0}".format(zip_path))
+        print(f"Data is downloaded at {zip_path}")
         self.cache_unzipping(data_cache_folder, zip_path)
         return data_cache_folder
 
@@ -205,6 +205,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         sess = None
         if run_onnxruntime:
             import onnxruntime as rt
+
             import paddle2onnx
 
             onnx_model = paddle2onnx.command.c_paddle_to_onnx(
@@ -266,12 +267,12 @@ class TestPostTrainingQuantization(unittest.TestCase):
             cnt += len(data)
 
             if (batch_id + 1) % 100 == 0:
-                print("{0} images,".format(batch_id + 1))
+                print(f"{batch_id + 1} images,")
                 sys.stdout.flush()
             if (batch_id + 1) == iterations:
                 break
         result = np.mean(np.array(results), axis=0)
-        print("top1_acc = {}".format(result))
+        print(f"top1_acc = {result}")
         throughput = cnt / np.sum(periods)
         latency = np.average(periods)
         acc1 = result
@@ -292,7 +293,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         try:
             os.system("mkdir " + self.int8_model)
         except Exception as e:
-            print("Failed to create {} due to {}".format(self.int8_model, str(e)))
+            print(f"Failed to create {self.int8_model} due to {e!s}")
             sys.exit(-1)
 
         place = paddle.CPUPlace()
@@ -337,9 +338,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         model_cache_folder = os.path.join(self.cache_folder, model)
 
         print(
-            "Start FP32 inference for {0} on {1} images ...".format(
-                model, infer_iterations * batch_size
-            )
+            f"Start FP32 inference for {model} on {infer_iterations * batch_size} images ..."
         )
         (fp32_throughput, fp32_latency, fp32_acc1) = self.run_program(
             model_cache_folder,
@@ -350,9 +349,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start INT8 post training quantization for {0} on {1} images ...".format(
-                model, sample_iterations * batch_size
-            )
+            f"Start INT8 post training quantization for {model} on {sample_iterations * batch_size} images ..."
         )
         self.generate_quantized_model(
             model_cache_folder,
@@ -367,9 +364,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start INT8 inference for {0} on {1} images ...".format(
-                model, infer_iterations * batch_size
-            )
+            f"Start INT8 inference for {model} on {infer_iterations * batch_size} images ..."
         )
         (int8_throughput, int8_latency, int8_acc1) = self.run_program(
             self.int8_model,
@@ -380,9 +375,7 @@ class TestPostTrainingQuantization(unittest.TestCase):
         )
 
         print(
-            "Start use ONNXRuntime inference for {0} on {1} images ...".format(
-                model, infer_iterations * batch_size
-            )
+            f"Start use ONNXRuntime inference for {model} on {infer_iterations * batch_size} images ..."
         )
         (onnx_int8_throughput, onnx_int8_latency, onnx_int8_acc1) = self.run_program(
             self.int8_model,
@@ -393,25 +386,15 @@ class TestPostTrainingQuantization(unittest.TestCase):
             run_onnxruntime=True,
         )
 
-        print("---Post training quantization of {} method---".format(algo))
+        print(f"---Post training quantization of {algo} method---")
         print(
-            "FP32 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.".format(
-                model, batch_size, fp32_throughput, fp32_latency, fp32_acc1
-            )
+            f"FP32 {model}: batch_size {batch_size}, throughput {fp32_throughput} images/second, latency {fp32_latency} second, accuracy {fp32_acc1}."
         )
         print(
-            "INT8 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.".format(
-                model, batch_size, int8_throughput, int8_latency, int8_acc1
-            )
+            f"INT8 {model}: batch_size {batch_size}, throughput {int8_throughput} images/second, latency {int8_latency} second, accuracy {int8_acc1}."
         )
         print(
-            "ONNXRuntime INT8 {0}: batch_size {1}, throughput {2} images/second, latency {3} second, accuracy {4}.\n".format(
-                model,
-                batch_size,
-                onnx_int8_throughput,
-                onnx_int8_latency,
-                onnx_int8_acc1,
-            )
+            f"ONNXRuntime INT8 {model}: batch_size {batch_size}, throughput {onnx_int8_throughput} images/second, latency {onnx_int8_latency} second, accuracy {onnx_int8_acc1}.\n"
         )
         sys.stdout.flush()
 

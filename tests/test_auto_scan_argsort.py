@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from auto_scan_test import OPConvertAutoScanTest, BaseNet
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
-import unittest
-import paddle
+from auto_scan_test import BaseNet, OPConvertAutoScanTest
 from onnxbase import _test_with_pir
+
+import paddle
 
 
 class Net(BaseNet):
@@ -30,10 +32,9 @@ class Net(BaseNet):
         forward
         """
 
-        x = paddle.argsort(
+        return paddle.argsort(
             input, axis=self.config["axis"], descending=self.config["descending"]
         )
-        return x
 
 
 class TestArgsortConvert(OPConvertAutoScanTest):
@@ -61,13 +62,9 @@ class TestArgsortConvert(OPConvertAutoScanTest):
             for i in range(len(input_shape)):
                 t = t * input_shape[i]
             input_data = np.array(random.sample(range(-5000, 5000), t))
-            input_data = input_data.reshape(input_shape)
-            return input_data
+            return input_data.reshape(input_shape)
 
-        if descending:
-            opset_version = [7, 10, 11, 15]
-        else:
-            opset_version = [11, 15]
+        opset_version = [7, 10, 11, 15] if descending else [11, 15]
         config = {
             "op_names": ["argsort"],
             "test_data_shapes": [generator_data],
