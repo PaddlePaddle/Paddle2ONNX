@@ -35,46 +35,47 @@ inline const std::string RequireOpset(const int32_t& opset_version) {
 
 class P2OLogger {
  public:
-  P2OLogger() {
-    line_ = "";
-    prefix_ = "[Paddle2ONNX]";
-    verbose_ = true;
-  }
-  explicit P2OLogger(bool verbose,
-                     const std::string& prefix = "[Paddle2ONNX]") {
-    verbose_ = verbose;
-    line_ = "";
-    prefix_ = prefix;
+  explicit P2OLogger(bool verbose = true, std::string prefix = "[Paddle2ONNX]")
+      : verbose_(verbose), prefix_(std::move(prefix)) {}
+
+  // Stream anything
+  template <typename T>
+  P2OLogger& operator<<(const T& value) {
+    if (verbose_) {
+      stream_ << value;
+    }
+    return *this;
   }
 
-  template <typename T>
-  P2OLogger& operator<<(const T& val) {
-    if (!verbose_) {
-      return *this;
+  // Support std::endl / manipulators (optional)
+  P2OLogger& operator<<(std::ostream& (*manip)(std::ostream&)) {
+    if (verbose_) {
+      manip(stream_);
     }
-    std::stringstream ss;
-    ss << val;
-    line_ += ss.str();
     return *this;
   }
-  P2OLogger& operator<<(std::ostream& (*os)(std::ostream&)) {
-    if (!verbose_) {
-      return *this;
-    }
-    std::cout << prefix_ << " " << line_ << std::endl;
-    line_ = "";
-    return *this;
-  }
+
+  // RAII: print on scope exit
   ~P2OLogger() {
-    if (!verbose_ && line_ != "") {
-      std::cout << line_ << std::endl;
+    if (!verbose_) return;
+
+    const std::string msg = stream_.str();
+    if (!msg.empty()) {
+      std::cout << prefix_ << " " << msg << std::endl;
     }
   }
+
+  // Non-copyable (avoid double-print)
+  P2OLogger(const P2OLogger&) = delete;
+  P2OLogger& operator=(const P2OLogger&) = delete;
+
+  // Movable (allows temporaries)
+  P2OLogger(P2OLogger&&) = default;
+  P2OLogger& operator=(P2OLogger&&) = default;
 
  private:
-  std::string line_;
+  bool verbose_;
   std::string prefix_;
-  bool verbose_ = true;
+  std::ostringstream stream_;
 };
-
 }  // namespace paddle2onnx

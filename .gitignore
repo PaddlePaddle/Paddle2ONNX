@@ -31,3 +31,5 @@ tests/__pycache_*
 tests/*/__pycache_*
 tests/*/*.info
 tools/onnx/__pycache__*
+test_data/
+.hypothesis/
