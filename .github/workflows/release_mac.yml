@@ -1,0 +1,75 @@
+name: MacRelease
+
+on:
+  release:
+    types: [published]
+
+# Use MACOSX_DEPLOYMENT_TARGET=12.0 to produce compatible wheel
+env:
+  MACOSX_DEPLOYMENT_TARGET: "12.0"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        architecture: [ 'arm64' ]
+
+    steps:
+      # Checkout the latest branch of Paddle2ONNX.
+      - name: Checkout Paddle2ONNX
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Setup Python
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Clone protobuf repository and checkout to v21.12
+      - name: Clone protobuf
+        run: |
+          git clone https://github.com/protocolbuffers/protobuf.git
+          cd protobuf
+          git checkout v21.12
+
+      # Build and install protobuf
+      - name: Build and install protobuf
+        run: |
+          cd protobuf
+          git submodule update --init --recursive
+          mkdir build
+          cd build
+          cmake ../cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/installed_protobuf -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=14
+          cmake --build . --target install
+
+      # Install Python dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install -q --upgrade pip
+          python -m pip install setuptools wheel build twine
+
+      # Build package
+      - name: Build package
+        run: |
+          export PATH="${{ github.workspace }}/installed_protobuf/bin:$PATH"
+          export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
+          python -m build --wheel
+
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6
+        with:
+          name: MacRelease_${{ matrix.architecture }}_py${{ matrix.python-version }}
+          path: dist
+
+      - name: Publish package
+        run: |
+          python -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PADDLE2ONNX_API_TOKEN }}

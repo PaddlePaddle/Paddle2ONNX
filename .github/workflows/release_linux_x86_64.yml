@@ -1,0 +1,40 @@
+name: LinuxRelease_x86_64
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12']
+        architecture: [ 'x86_64' ]
+
+    steps:
+      # Checkout the latest branch of Paddle2ONNX.
+      - name: Checkout Paddle2ONNX
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Build on manylinux_2_28_x86_64
+        uses: docker://quay.io/pypa/manylinux_2_28_x86_64:latest
+        with:
+          entrypoint: bash
+          args: .github/workflows/scripts/entrypoint.sh ${{ matrix.python-version }}
+
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6
+        with:
+          name: LinuxRelease_${{ matrix.architecture }}_py${{ matrix.python-version }}
+          path: dist
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        with:
+          user: __token__
+          password: ${{ secrets.PADDLE2ONNX_API_TOKEN }}
