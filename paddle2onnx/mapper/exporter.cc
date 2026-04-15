@@ -1061,6 +1061,35 @@ std::string ModelExporter::Run(const PaddlePirParser& pir_parser,
                                  false,
                                  false);
   *onnx_model_.mutable_graph() = share_graph;
+
+  if (enable_optimize) {
+    onnx_model_ = Optimize(onnx_model_);
+  }
+
+  // convert fp32 model to fp16
+  if (export_fp16_model) {
+    P2OLogger(verbose) << "Convert FP32 ONNX model to FP16." << std::endl;
+    ConvertFp32ToFp16 convert(verbose);
+    convert.SetCustomOps(custom_ops);
+    convert.AddDisabledOpTypes(disable_fp16_op_types);
+    convert.Convert(&onnx_model_);
+  }
+
+  // save external data file for big model
+  std::string external_data_file;
+  if (onnx_model_.ByteSizeLong() > INT_MAX) {
+    if (external_file.empty()) {
+      external_data_file = "external_data";
+    } else {
+      external_data_file = external_file;
+    }
+  }
+
+  if (external_data_file.size()) {
+    SaveExternalData(
+        onnx_model_.mutable_graph(), external_data_file, save_external);
+  }
+
   if (enable_onnx_checker) {
     ONNXChecker(onnx_model_);
   }
