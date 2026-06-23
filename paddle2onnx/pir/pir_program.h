@@ -27,6 +27,7 @@
 
 #include "nlohmann/json.hpp"
 
+namespace paddle2onnx {
 namespace pir {
 
 // ---------------------------------------------------------------------------
@@ -466,3 +467,4 @@ class DialectIdMap {
 };
 
 }  // namespace pir
+}  // namespace paddle2onnx

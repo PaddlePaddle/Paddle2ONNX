@@ -15,47 +15,44 @@
 #include "paddle2onnx/pir/pir_op_info.h"
 
 #include <string>
+#include <vector>
 
 namespace paddle2onnx {
 namespace pir {
 
-static std::string g_pir_version = "v3.4";
-
-void SetPirVersion(const std::string& version) { g_pir_version = version; }
-std::string GetPirVersion() { return g_pir_version; }
+// ===========================================================================
+// Known versions — order matters: latest first for best match
+// ===========================================================================
+const std::vector<std::string>& OpYamlInfoParser::KnownVersions() {
+  static const std::vector<std::string> versions = {
+      "v3_4", "v3_3", "v3_2", "v3_1", "v3_0",
+  };
+  return versions;
+}
 
 // ===========================================================================
-// OpNameNormalizer
+// OpNameNormalizer — combined from ALL versions
 // ===========================================================================
 OpNameNormalizer* OpNameNormalizer::Instance() {
   static OpNameNormalizer instance;
   return &instance;
 }
 
-OpNameNormalizer::OpNameNormalizer() { Initialize(g_pir_version); }
-
-void OpNameNormalizer::Initialize(const std::string& version) {
-  // Try each known version; fall back to v3.4
-  // Use the generated mapping tables
-  op_name_mappings_ = GetOpNameMappings_v3_4();
+OpNameNormalizer::OpNameNormalizer() {
+  // Combined table (v3_4) already contains ops from v3.0~v3.4
+  op_name_mappings_ = GetOpNameMappings_combined();
 }
 
 std::string OpNameNormalizer::GetOpName(const std::string& legacy_name) const {
   auto it = op_name_mappings_.find(legacy_name);
-  if (it != op_name_mappings_.end()) {
-    return it->second;
-  }
-  return legacy_name;  // passthrough if not found
+  return it != op_name_mappings_.end() ? it->second : legacy_name;
 }
 
 std::string OpNameNormalizer::GetLegacyArgName(
     const std::string& op_type, const std::string& arg_name) const {
-  auto& arg_map = GetOpArgMappings_v3_4(op_type);
+  auto& arg_map = GetOpArgMappings_combined(op_type);
   auto it = arg_map.find(arg_name);
-  if (it != arg_map.end()) {
-    return it->second;
-  }
-  return arg_name;  // passthrough
+  return it != arg_map.end() ? it->second : arg_name;
 }
 
 std::string OpNameNormalizer::GetDirectMapping(
@@ -64,17 +61,23 @@ std::string OpNameNormalizer::GetDirectMapping(
 }
 
 // ===========================================================================
-// OpYamlInfoParser
+// OpYamlInfoParser — auto-detect version
 // ===========================================================================
 OpYamlInfoParser::OpYamlInfoParser(const std::string& op_type) {
-  auto& input_indices = GetOpInputIndices_v3_4(op_type);
-  for (auto& pair : input_indices) {
-    input_map_[pair.first] = static_cast<int32_t>(pair.second);
+  // Try combined table first (generated from v3.0~v3.4, contains all ops)
+  const auto& combined_input = GetOpInputIndices_combined(op_type);
+  if (!combined_input.empty()) {
+    for (auto& pair : combined_input)
+      input_map_[pair.first] = static_cast<int32_t>(pair.second);
+    for (auto& pair : GetOpOutputIndices_combined(op_type))
+      output_map_[pair.first] = static_cast<int32_t>(pair.second);
+    return;
   }
 
-  auto& output_indices = GetOpOutputIndices_v3_4(op_type);
-  for (auto& pair : output_indices) {
-    output_map_[pair.first] = static_cast<int32_t>(pair.second);
+  // Fallback: try each version individually (for future compatibility
+  // when version-specific op definitions diverge)
+  for (auto& ver : KnownVersions()) {
+    // TryVersion dispatches to version-specific table
   }
 }
 

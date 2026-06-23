@@ -1,4 +1,4 @@
-// Auto-generated from ops.yaml + op_compat.yaml (version v3.4)
+// Auto-generated from ops.yaml + op_compat.yaml (version combined)
 // DO NOT EDIT — regenerate via gen_op_info.py
 #pragma once
 #include <string>
@@ -10,7 +10,7 @@ namespace pir {
 
 // Op name mappings: fluid/legacy_name → phi/normalized_name
 inline const std::unordered_map<std::string, std::string>&
-GetOpNameMappings_v3.4() {
+GetOpNameMappings_combined() {
   static const std::unordered_map<std::string, std::string> m = {
     {"adadelta", "adadelta_"},
     {"adagrad", "adagrad_"},
@@ -119,7 +119,7 @@ GetOpNameMappings_v3.4() {
 
 // Input name → positional index
 inline const std::unordered_map<std::string, int>&
-GetOpInputIndices_v3.4(const std::string& op_name) {
+GetOpInputIndices_combined(const std::string& op_name) {
   static const std::unordered_map<std::string, std::unordered_map<std::string, int>> all = {
     {"abs", {
       {"x", 0},
@@ -1551,6 +1551,19 @@ GetOpInputIndices_v3.4(const std::string& op_name) {
       {"combine_weight", 1},
       {"scatter_index", 2},
     }},
+    {"moe_dispatch", {
+      {"X", 0},
+      {"gating_output", 1},
+    }},
+    {"moe_ffn", {
+      {"permute_input", 0},
+      {"token_nums_per_expert", 1},
+      {"ffn1_weight", 2},
+      {"ffn2_weight", 3},
+      {"ffn1_bias", 4},
+      {"ffn1_scale", 5},
+      {"ffn2_scale", 6},
+    }},
     {"moe_gate_dispatch", {
       {"x", 0},
       {"gate_logits", 1},
@@ -1581,6 +1594,13 @@ GetOpInputIndices_v3.4(const std::string& op_name) {
       {"scale", 1},
       {"expert_routemap_topk", 2},
       {"expert_prob_topk", 3},
+    }},
+    {"moe_reduce", {
+      {"ffn_out", 0},
+      {"expert_scales_float", 1},
+      {"permute_indices_per_token", 2},
+      {"top_k_indices", 3},
+      {"ffn2_bias", 4},
     }},
     {"moe_unpermute", {
       {"hidden_states_unzipped", 0},
@@ -2341,7 +2361,7 @@ GetOpInputIndices_v3.4(const std::string& op_name) {
 
 // Output name → positional index
 inline const std::unordered_map<std::string, int>&
-GetOpOutputIndices_v3.4(const std::string& op_name) {
+GetOpOutputIndices_combined(const std::string& op_name) {
   static const std::unordered_map<std::string, std::unordered_map<std::string, int>> all = {
     {"abs", {
       {"out", 0},
@@ -3294,6 +3314,16 @@ GetOpOutputIndices_v3.4(const std::string& op_name) {
     {"moe_combine_no_weight", {
       {"y", 0},
     }},
+    {"moe_dispatch", {
+      {"permute_input", 0},
+      {"token_nums_per_expert", 1},
+      {"permute_indices_per_token", 2},
+      {"expert_scales_float", 3},
+      {"top_k_indices", 4},
+    }},
+    {"moe_ffn", {
+      {"ffn_out", 0},
+    }},
     {"moe_gate_dispatch", {
       {"y", 0},
       {"combine_weights", 1},
@@ -3337,6 +3367,9 @@ GetOpOutputIndices_v3.4(const std::string& op_name) {
       {"token_prob_unzipped", 2},
       {"scale_unzipped", 3},
       {"expert_indices", 4},
+    }},
+    {"moe_reduce", {
+      {"output", 0},
     }},
     {"moe_unpermute", {
       {"hidden_states", 0},
@@ -3822,7 +3855,7 @@ GetOpOutputIndices_v3.4(const std::string& op_name) {
 
 // Op arg name mappings: phi_arg_name → fluid/legacy_arg_name
 inline const std::unordered_map<std::string, std::string>&
-GetOpArgMappings_v3.4(const std::string& op_name) {
+GetOpArgMappings_combined(const std::string& op_name) {
   static const std::unordered_map<std::string, std::unordered_map<std::string, std::string>> all = {
     {"abs", {
       {"out", "Out"},
@@ -4547,6 +4580,17 @@ GetOpArgMappings_v3.4(const std::string& op_name) {
       {"param_order", "ParamOrder"},
       {"param_out", "ParamOut"},
       {"step", "Step"},
+    }},
+    {"distributed_lookup_table", {
+      {"ids", "Ids"},
+      {"outputs", "Outputs"},
+      {"w", "W"},
+    }},
+    {"distributed_push_sparse", {
+      {"clicks", "Clicks"},
+      {"ids", "Ids"},
+      {"output", "Outputs"},
+      {"shows", "Shows"},
     }},
     {"div_scale", {
       {"out", "Out"},
@@ -6088,6 +6132,33 @@ GetOpArgMappings_v3.4(const std::string& op_name) {
       {"out", "Out"},
       {"x", "X"},
     }},
+    {"pull_box_sparse", {
+      {"ids", "Ids"},
+      {"out", "Out"},
+      {"w", "W"},
+    }},
+    {"pull_gpups_sparse", {
+      {"ids", "Ids"},
+      {"out", "Out"},
+      {"w", "W"},
+    }},
+    {"pull_sparse_v2", {
+      {"ids", "Ids"},
+      {"out", "Out"},
+      {"w", "W"},
+    }},
+    {"push_box_sparse", {
+      {"ids", "Ids"},
+      {"out", "Out"},
+    }},
+    {"push_dense", {
+      {"ids", "Ids"},
+    }},
+    {"push_sparse_v2", {
+      {"W", "w"},
+      {"out", "Out"},
+      {"x", "Ids"},
+    }},
     {"put_along_axis", {
       {"arr", "Input"},
       {"indices", "Index"},
@@ -6378,6 +6449,10 @@ GetOpArgMappings_v3.4(const std::string& op_name) {
       {"x", "X"},
     }},
     {"selu", {
+      {"out", "Out"},
+      {"x", "X"},
+    }},
+    {"send_and_recv", {
       {"out", "Out"},
       {"x", "X"},
     }},

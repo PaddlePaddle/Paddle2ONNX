@@ -65,65 +65,67 @@ def is_tensor_type(t):
 
 def generate_cpp(ops_yaml_path, compat_yaml_path, output_path, version):
     """Generate C++ lookup tables from YAML files."""
-    with open(ops_yaml_path) as f:
-        ops_data = yaml.safe_load(f)
-    with open(compat_yaml_path) as f:
-        compat_data = yaml.safe_load(f)
+    # Support multiple YAML pairs (combined from all versions)
+    if not isinstance(ops_yaml_path, list):
+        ops_yaml_paths = [ops_yaml_path]
+        compat_yaml_paths = [compat_yaml_path]
+    else:
+        ops_yaml_paths = ops_yaml_path
+        compat_yaml_paths = compat_yaml_path
 
-    # Build op info maps: op_name → (input_names, output_names)
-    op_inputs = {}   # op_name → [input_name, ...]
-    op_outputs = {}  # op_name → [output_name, ...]
+    op_inputs = {}
+    op_outputs = {}
+    op_name_map = {}
+    op_arg_map = {}
 
-    for item in ops_data or []:
-        op_name = item.get('op', '')
-        if not op_name:
-            continue
+    for ops_path, compat_path in zip(ops_yaml_paths, compat_yaml_paths):
+        with open(ops_path) as f:
+            ops_data = yaml.safe_load(f)
+        with open(compat_path) as f:
+            compat_data = yaml.safe_load(f)
 
-        # Parse inputs from 'args' field
-        args_str = item.get('args', '')
-        parsed_args = parse_args(args_str)
-        input_names = [name for (t, name, default) in parsed_args if is_tensor_type(t)]
-        # Also include non-tensor if no tensors found (some ops have only non-tensor args)
-        if not input_names:
-            input_names = [name for (t, name, default) in parsed_args]
+        for item in ops_data or []:
+            op_name = item.get('op', '')
+            if not op_name:
+                continue
+            if op_name in op_inputs:
+                continue  # first version wins (oldest definition is canonical)
 
-        # Parse outputs
-        output_str = item.get('output', '')
-        parsed_outputs = parse_outputs(output_str)
-        output_names = [name for (t, name) in parsed_outputs]
+            args_str = item.get('args', '')
+            parsed_args = parse_args(args_str)
+            input_names = [name for (t, name, default) in parsed_args if is_tensor_type(t)]
+            if not input_names:
+                input_names = [name for (t, name, default) in parsed_args]
 
-        op_inputs[op_name] = input_names
-        op_outputs[op_name] = output_names
+            output_str = item.get('output', '')
+            parsed_outputs = parse_outputs(output_str)
+            output_names = [name for (t, name) in parsed_outputs]
 
-    # Build op name mapping: phi_name → {fluid_name, ...}
-    # op_compat format: "- op : abs" / "- op : adadelta_ (adadelta)"
-    op_name_map = {}  # new_name → set of old_names
-    op_arg_map = {}   # op_name → {phi_arg → fluid_arg}
+            op_inputs[op_name] = input_names
+            op_outputs[op_name] = output_names
 
-    for item in compat_data or []:
-        op_entry = item.get('op', '')
-        if not op_entry:
-            continue
-        # Parse "phi_name (fluid_name)" or just "phi_name"
-        m = re.match(r'(\w+)\s*\((\w+)\)', op_entry)
-        if m:
-            phi_name = m.group(1)
-            fluid_name = m.group(2)
-        else:
-            phi_name = op_entry.strip()
-            fluid_name = phi_name
+        for item in compat_data or []:
+            op_entry = item.get('op', '')
+            if not op_entry:
+                continue
+            m = re.match(r'(\w+)\s*\((\w+)\)', op_entry)
+            if m:
+                phi_name = m.group(1)
+                fluid_name = m.group(2)
+            else:
+                phi_name = op_entry.strip()
+                fluid_name = phi_name
 
-        if phi_name not in op_name_map:
-            op_name_map[phi_name] = set()
-        op_name_map[phi_name].add(fluid_name)
+            if phi_name not in op_name_map:
+                op_name_map[phi_name] = set()
+            op_name_map[phi_name].add(fluid_name)
 
-        # Parse input/output arg mappings
-        for section in ('inputs', 'outputs'):
-            mapping = item.get(section, {})
-            if isinstance(mapping, dict):
-                for phi_arg, fluid_arg in mapping.items():
-                    key = f"{phi_name}/{section}/{phi_arg}"
-                    op_arg_map[key] = fluid_arg
+            for section in ('inputs', 'outputs'):
+                mapping = item.get(section, {})
+                if isinstance(mapping, dict):
+                    for phi_arg, fluid_arg in mapping.items():
+                        key = f"{phi_name}/{section}/{phi_arg}"
+                        op_arg_map[key] = fluid_arg
 
     # --- Generate C++ ---
     lines = []
@@ -229,9 +231,11 @@ def generate_cpp(ops_yaml_path, compat_yaml_path, output_path, version):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ops_yaml', required=True)
-    parser.add_argument('--compat_yaml', required=True)
+    parser.add_argument('--ops_yaml', nargs='+', required=True,
+                        help='One or more ops.yaml files (combined, first wins)')
+    parser.add_argument('--compat_yaml', nargs='+', required=True,
+                        help='One or more op_compat.yaml files (paired with --ops_yaml)')
     parser.add_argument('--output', required=True)
-    parser.add_argument('--version', default='3.4')
+    parser.add_argument('--version', default='combined')
     args = parser.parse_args()
     generate_cpp(args.ops_yaml, args.compat_yaml, args.output, args.version)

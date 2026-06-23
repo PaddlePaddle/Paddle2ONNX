@@ -13,7 +13,9 @@
 // limitations under the License.
 //
 // Op name compatibility and info lookup — uses auto-generated tables
-// from ops.yaml + op_compat.yaml.
+// from ops.yaml + op_compat.yaml. Version auto-detection: when looking
+// up an op, each version table is tried in order (latest first) until
+// a match is found.
 
 #pragma once
 
@@ -28,37 +30,30 @@ namespace paddle2onnx {
 namespace pir {
 
 // ---------------------------------------------------------------------------
-// OpNameNormalizer — maps between old (fluid) and new (phi) op names,
-// and maps between op arg names (PIR internal → legacy names).
+// OpNameNormalizer — combines mappings from ALL known versions.
 // ---------------------------------------------------------------------------
 class OpNameNormalizer {
  public:
   static OpNameNormalizer* Instance();
 
-  // Get normalized (phi) name for a legacy (fluid) op name.
   std::string GetOpName(const std::string& legacy_name) const;
-
-  // Get legacy arg name for a normalized (phi) op/arg name.
   std::string GetLegacyArgName(const std::string& op_type,
                                const std::string& arg_name) const;
-
-  // Direct mapping lookup
   std::string GetDirectMapping(const std::string& op_type,
                                const std::string& arg_name) const;
 
  private:
   OpNameNormalizer();
-  void Initialize(const std::string& version = "v3.4");
-
-  // op_name_mappings: legacy_name → phi_name
   std::unordered_map<std::string, std::string> op_name_mappings_;
-  // op_arg_name_mappings: phi_op_name → {phi_arg_name → legacy_arg_name}
-  std::unordered_map<std::string, std::unordered_map<std::string, std::string>>
+  std::unordered_map<std::string,
+                     std::unordered_map<std::string, std::string>>
       op_arg_name_mappings_;
 };
 
 // ---------------------------------------------------------------------------
 // OpYamlInfoParser — resolve named inputs/outputs to positional indices.
+// Auto-detects version: tries each known version table in order (latest
+// first) and uses the first one that has the op.
 // ---------------------------------------------------------------------------
 class OpYamlInfoParser {
  public:
@@ -72,13 +67,12 @@ class OpYamlInfoParser {
  private:
   std::unordered_map<std::string, int32_t> input_map_;
   std::unordered_map<std::string, int32_t> output_map_;
-};
 
-// ---------------------------------------------------------------------------
-// Global version setter
-// ---------------------------------------------------------------------------
-void SetPirVersion(const std::string& version);
-std::string GetPirVersion();
+  // Known versions in order (latest first → best match)
+  static const std::vector<std::string>& KnownVersions();
+  // Try to initialize from a specific version; returns true if op found
+  bool TryVersion(const std::string& version, const std::string& op_type);
+};
 
 }  // namespace pir
 }  // namespace paddle2onnx

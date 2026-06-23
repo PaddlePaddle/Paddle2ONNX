@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 
+namespace paddle2onnx {
 namespace pir {
 
 // ===========================================================================
@@ -637,3 +638,4 @@ void Program::ResolveValues() {
 }
 
 }  // namespace pir
+}  // namespace paddle2onnx
