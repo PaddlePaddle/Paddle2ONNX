@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Op name compatibility and info lookup — standalone YAML-backed.
-// No dependency on libpaddle.so or OpRegistry.
+// Op name compatibility and info lookup — uses auto-generated tables
+// from ops.yaml + op_compat.yaml.
 
 #pragma once
 
@@ -22,13 +22,14 @@
 #include <unordered_map>
 #include <vector>
 
+#include "paddle2onnx/pir/pir_op_info_generated.h"
+
 namespace paddle2onnx {
 namespace pir {
 
 // ---------------------------------------------------------------------------
 // OpNameNormalizer — maps between old (fluid) and new (phi) op names,
 // and maps between op arg names (PIR internal → legacy names).
-// Data extracted from PaddlePaddle's op_compat.yaml.
 // ---------------------------------------------------------------------------
 class OpNameNormalizer {
  public:
@@ -41,8 +42,13 @@ class OpNameNormalizer {
   std::string GetLegacyArgName(const std::string& op_type,
                                const std::string& arg_name) const;
 
+  // Direct mapping lookup
+  std::string GetDirectMapping(const std::string& op_type,
+                               const std::string& arg_name) const;
+
  private:
   OpNameNormalizer();
+  void Initialize(const std::string& version = "v3.4");
 
   // op_name_mappings: legacy_name → phi_name
   std::unordered_map<std::string, std::string> op_name_mappings_;
@@ -53,19 +59,13 @@ class OpNameNormalizer {
 
 // ---------------------------------------------------------------------------
 // OpYamlInfoParser — resolve named inputs/outputs to positional indices.
-// Data extracted from PaddlePaddle's ops.yaml.
 // ---------------------------------------------------------------------------
 class OpYamlInfoParser {
  public:
-  // Create for a specific op type.
   explicit OpYamlInfoParser(const std::string& op_type);
 
-  // Map named input to positional index.
   int32_t InputNameToIndex(const std::string& name) const;
-
-  // Map named output to positional index.
   int32_t OutputNameToIndex(const std::string& name) const;
-
   bool HasInput(const std::string& name) const;
   bool HasOutput(const std::string& name) const;
 
@@ -75,9 +75,8 @@ class OpYamlInfoParser {
 };
 
 // ---------------------------------------------------------------------------
-// Global info — load from built-in data
+// Global version setter
 // ---------------------------------------------------------------------------
-// Set the PIR version to use for lookups (e.g., "3.4", "3.3", etc.)
 void SetPirVersion(const std::string& version);
 std::string GetPirVersion();
 

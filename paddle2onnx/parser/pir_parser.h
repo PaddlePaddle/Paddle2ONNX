@@ -25,6 +25,7 @@
 #include <variant>
 #include <vector>
 
+#include "paddle2onnx/pir/pir_op_info.h"
 #include "paddle2onnx/pir/pir_program.h"
 #include "paddle2onnx/parser/tensor_utils.h"
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
@@ -236,8 +237,12 @@ class PaddlePirParser {
 };
 
 inline std::string convert_pir_op_name(const std::string& pir_name) {
+  // Strip "pd_op." prefix and "builtin." prefix for YAML table lookup
   if (pir_name.find("pd_op.") == 0) {
     return pir_name.substr(6);
+  }
+  if (pir_name.find("builtin.") == 0) {
+    return pir_name.substr(8);
   }
   return pir_name;
 }

@@ -96,38 +96,8 @@ else()
   endif()
   add_subdirectory(third_party/glog)
 
-  # find Python site-packages dir
-  set(PYTHON_SITE_PACKAGES "")
-  execute_process(
-    COMMAND ${PYTHON_EXECUTABLE} -c
-            "import site; print(';'.join(site.getsitepackages()))"
-    OUTPUT_VARIABLE SITE_PACKAGES_LIST
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  string(REPLACE ";" " " SITE_PACKAGES_LIST "${SITE_PACKAGES_LIST}")
-  separate_arguments(SITE_PACKAGES_LIST)
-  foreach(SITE_PACKAGES IN LISTS SITE_PACKAGES_LIST)
-    if(EXISTS "${SITE_PACKAGES}" AND SITE_PACKAGES MATCHES "site-packages")
-      string(REPLACE "\\" "/" PYTHON_SITE_PACKAGES "${SITE_PACKAGES}")
-      message(STATUS "Found valid site-packages path: ${PYTHON_SITE_PACKAGES}.")
-      break()
-    endif()
-  endforeach()
-  if(NOT PYTHON_SITE_PACKAGES)
-    message(FATAL_ERROR "No valid site-packages path found.")
-  endif()
-
-  if(MSVC)
-    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.lib")
-    set(COMMON_LIB "${PYTHON_SITE_PACKAGES}/paddle/libs/common.lib")
-  else()
-    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
-  endif()
   # libpaddle.so is no longer required — PIR parsing is now standalone.
-  # Keep the check as optional; warn instead of fatal.
-  if(NOT EXISTS ${PADDLE_LIB})
-    message(WARNING "libpaddle.so not found — PIR standalone mode (no old-format support).")
-  endif()
-  # add nlohmann/json include path
+  # nlohmann/json is used for PIR model deserialization.
   include_directories(${PROJECT_SOURCE_DIR}/third_party)
   if(MSVC)
     # PIR patch

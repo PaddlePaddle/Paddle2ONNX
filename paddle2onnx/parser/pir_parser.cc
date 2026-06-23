@@ -443,16 +443,20 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
 bool PaddlePirParser::OpHasInput(int64_t op_id,
                                  const std::string& input_name,
                                  bool if_in_sub_block) const {
-  // In standalone PIR, inputs are positional. Named lookup is best-effort.
-  // Return true if the named input exists in the op's operand list.
-  return true;  // default to true for safety; PIR ops always have positional
-                // inputs
+  pir::Operation* op =
+      if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
+  // Look up the named input in the op's YAML definition
+  pir::OpYamlInfoParser yaml_parser(convert_pir_op_name(op->name()));
+  return yaml_parser.HasInput(input_name);
 }
 
 bool PaddlePirParser::OpHasOutput(int64_t op_id,
                                   const std::string& output_name,
                                   bool if_in_sub_block) const {
-  return true;  // same reasoning as OpHasInput
+  pir::Operation* op =
+      if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
+  pir::OpYamlInfoParser yaml_parser(convert_pir_op_name(op->name()));
+  return yaml_parser.HasOutput(output_name);
 }
 
 int32_t PaddlePirParser::GetOpInputOutputName2Idx(
@@ -460,14 +464,25 @@ int32_t PaddlePirParser::GetOpInputOutputName2Idx(
     std::string name,
     bool is_input,
     bool if_in_subblock) const {
-  // Named input/output lookup not needed for PIR ops (they use positional
-  // indices). Return -1 to signal "not found by name".
-  return -1;
+  pir::Operation* op =
+      if_in_subblock ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
+  pir::OpYamlInfoParser yaml_parser(convert_pir_op_name(op->name()));
+  // Apply arg name normalizer
+  auto* normalizer = pir::OpNameNormalizer::Instance();
+  name = normalizer->GetDirectMapping(convert_pir_op_name(op->name()), name);
+  if (is_input) {
+    return yaml_parser.InputNameToIndex(name);
+  } else {
+    return yaml_parser.OutputNameToIndex(name);
+  }
 }
 
 std::string PaddlePirParser::GetOpArgName(
     int64_t op_id, std::string name, bool if_in_sub_block) const {
-  return name;  // passthrough
+  pir::Operation* op =
+      if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
+  auto* normalizer = pir::OpNameNormalizer::Instance();
+  return normalizer->GetDirectMapping(convert_pir_op_name(op->name()), name);
 }
 
 std::vector<TensorInfo> PaddlePirParser::GetOpInput(
