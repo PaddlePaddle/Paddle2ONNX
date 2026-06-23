@@ -62,12 +62,11 @@ class SetValueMapper : public Mapper {
       pir::Operation* op = if_in_cf_block ? p.sub_blocks_ops[pir_op_idx_]
                                           : p.global_blocks_ops[pir_op_idx_];
 
-      PADDLE_ENFORCE_EQ(
-          op->attribute("values").isa<::pir::ArrayAttribute>(),
-          true,
-          ::common::errors::InvalidArgument(
-              "The type of attribute 'values' in %s op is not ArrayAttribute.",
-              op->name()));
+      if (!op->attribute("values").isa<::pir::ArrayAttribute>()) {
+        throw std::runtime_error(
+            "The type of attribute 'values' in " + op->name() +
+            " op is not ArrayAttribute.");
+      }
       auto array_list =
           op->attribute("values").dyn_cast<::pir::ArrayAttribute>().AsVector();
 

@@ -614,4 +614,31 @@ std::string PaddlePirParser::GetTensorArrayName(
   return "";
 }
 
+void PaddlePirParser::GetWhileInputValuesAndArgsMappings(
+    const pir::Operation* while_op) const {
+  // Map body block argument value IDs to their corresponding operand value IDs
+  if (while_op->num_regions() == 0) return;
+  const auto& body_block = while_op->region(0);
+  
+  // Operands: index 0 = cond, index 1+ = loop vars
+  std::vector<int64_t> operand_value_ids;
+  for (int index = 1; index < static_cast<int>(while_op->num_operands()); index++) {
+    operand_value_ids.push_back(while_op->operand(index).source().id());
+  }
+  
+  // Block args: the body block's arguments
+  std::vector<int64_t> arg_value_ids;
+  for (const auto& arg : body_block.args()) {
+    arg_value_ids.push_back(arg.id());
+  }
+  
+  // Build mapping: block_arg_id → operand_value_id
+  for (size_t index = 0; index < operand_value_ids.size() && index < arg_value_ids.size(); index++) {
+    auto arg_id = arg_value_ids[index];
+    if (while_op_values_args_map.count(arg_id)) continue;
+    auto value_id = operand_value_ids[index];
+    while_op_values_args_map[arg_id] = value_id;
+  }
+}
+
 }  // namespace paddle2onnx

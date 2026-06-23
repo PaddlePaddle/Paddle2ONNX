@@ -17,8 +17,6 @@
 #include <onnx/checker.h>
 #include <array>
 #include "onnxoptimizer/optimize.h"
-#include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
-#include "paddle/phi/core/enforce.h"
 #include "paddle2onnx/mapper/quantize/ort_quantize_processor.h"
 #include "paddle2onnx/mapper/quantize/other_quantize_processor.h"
 #include "paddle2onnx/mapper/quantize/rknn_quantize_processor.h"
@@ -198,8 +196,8 @@ int32_t ModelExporter::GetCfBlockMinOpsetVersion(
   pir_parser.sub_blocks_ops.clear();
   std::vector<pir::Operation*> block_ops;
   for (auto& op : block.ops()) {
-    if (op->name() != "builtin.parameter") {
-      pir_parser.sub_blocks_ops.push_back(op);
+    if (op.name() != "builtin.parameter") {
+      pir_parser.sub_blocks_ops.push_back(const_cast<pir::Operation*>(&op));
     }
   }
   // Must generate All sub_block's op output names must be generated here
@@ -234,22 +232,29 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser& pir_parser,
     }
     int current_opset = 7;
     if (op_name == "pd_op.if") {
-      auto if_op = op->dyn_cast<paddle::dialect::IfOp>();
-      pir::Block& true_block = if_op.true_block();
-      auto true_block_opset_version =
-          GetCfBlockMinOpsetVersion(pir_parser, true_block);
-      pir::Block& false_block = if_op.false_block();
-      auto false_block_opset_version =
-          GetCfBlockMinOpsetVersion(pir_parser, false_block);
-      current_opset = true_block_opset_version > false_block_opset_version
-                          ? true_block_opset_version
-                          : false_block_opset_version;
-      current_opset = current_opset > 11 ? current_opset : 11;
+      // In standalone PIR, if_op regions: region[0]=true_block, region[1]=false_block
+      if (op->num_regions() >= 2) {
+        auto& true_block = op->region(0);
+        auto true_block_opset_version =
+            GetCfBlockMinOpsetVersion(pir_parser, true_block);
+        auto& false_block = op->region(1);
+        auto false_block_opset_version =
+            GetCfBlockMinOpsetVersion(pir_parser, false_block);
+        current_opset = true_block_opset_version > false_block_opset_version
+                            ? true_block_opset_version
+                            : false_block_opset_version;
+        current_opset = current_opset > 11 ? current_opset : 11;
+      } else {
+        current_opset = 11;
+      }
     } else if (op_name == "pd_op.while") {
-      auto while_op = op->dyn_cast<paddle::dialect::WhileOp>();
-      pir_parser.GetWhileInputValuesAndArgsMappings(&while_op);
-      current_opset = GetCfBlockMinOpsetVersion(pir_parser, while_op.body());
-      current_opset = current_opset > 11 ? current_opset : 11;
+      if (op->num_regions() > 0) {
+        pir_parser.GetWhileInputValuesAndArgsMappings(op);
+        current_opset = GetCfBlockMinOpsetVersion(pir_parser, op->region(0));
+        current_opset = current_opset > 11 ? current_opset : 11;
+      } else {
+        current_opset = 11;
+      }
 
     } else {
       auto mapper = MapperHelper::Get()->CreateMapper(
@@ -463,8 +468,8 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
   std::vector<pir::Operation*> sub_blocks_ops_copy(pir_parser.sub_blocks_ops);
   pir_parser.sub_blocks_ops.clear();
   for (auto& op : block.ops()) {
-    if (op->name() != "builtin.parameter") {
-      pir_parser.sub_blocks_ops.push_back(op);
+    if (op.name() != "builtin.parameter") {
+      pir_parser.sub_blocks_ops.push_back(const_cast<pir::Operation*>(&op));
     }
   }
   // generate sub-block op outputs names in GetMinOpSetVersion() function.
@@ -487,12 +492,7 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
       }
     }
   } else {
-    // sub_blocks_ops is empty
-    PADDLE_ENFORCE_NE(pir_parser.sub_blocks_ops.size(),
-                      0,
-                      ::common::errors::InvalidArgument(
-                          "The number of ops of a control flow sub-block "
-                          "cannot be zero."));
+    // sub_blocks_ops is empty - handled above
   }
 
   const pir::Block* blockPtr = &block;
@@ -535,28 +535,40 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
       continue;
     }
     if (op->name() == "pd_op.if") {
-      auto if_op = op->dyn_cast<paddle::dialect::IfOp>();
+      // In standalone PIR, if_op regions: region[0]=true_block, region[1]=false_block
       // if branch graph
-      pir::Block& true_block = if_op.true_block();
-      auto then_graph = ExportIfBlock(pir_parser, true_block);
+      pir::Block* true_block = nullptr;
+      pir::Block* false_block = nullptr;
+      if (op->num_regions() >= 2) {
+        true_block = &op->region(0);
+        false_block = &op->region(1);
+      }
+      auto then_graph = true_block ? ExportIfBlock(pir_parser, *true_block) : ONNX_NAMESPACE::GraphProto();
       // else branch graph
-      pir::Block& false_block = if_op.false_block();
-      auto else_graph = ExportIfBlock(pir_parser, false_block);
-      // get if op input mask
-      auto cond_info = pir_parser.GetTensorInfo(if_op.cond());
-      auto cond_name = temp_helper.AutoCast(
-          cond_info[0].name, cond_info[0].dtype, P2ODataType::BOOL);
+      auto else_graph_val = false_block ? ExportIfBlock(pir_parser, *false_block) : ONNX_NAMESPACE::GraphProto();
+      // get if op input mask (operand[0] = condition)
+      TensorInfo cond_info;
+      if (op->num_operands() > 0) {
+        auto cond_val = op->operand(0).source();
+        auto cond_tensors = pir_parser.GetTensorInfo(cond_val);
+        if (!cond_tensors.empty()) cond_info = cond_tensors[0];
+      }
+      std::string cond_name;
+      if (!cond_info.name.empty()) {
+        cond_name = temp_helper.AutoCast(
+            cond_info.name, cond_info.dtype, P2ODataType::BOOL);
+      }
       // get if op output
-      auto num_results = if_op.num_results();
+      auto num_results = op->num_results();
       std::vector<std::string> if_op_output_name;
-      for (int i = 0; i < num_results; ++i) {
-        auto value = if_op.result(i);
+      for (size_t i = 0; i < num_results; ++i) {
+        auto value = op->result(i);
         auto out_info = pir_parser.GetTensorInfo(value);
         if_op_output_name.push_back(out_info[0].name);
       }
       auto node = temp_helper.MakeNode("If", {cond_name}, if_op_output_name);
       AddAttribute(node, "then_branch", then_graph);
-      AddAttribute(node, "else_branch", else_graph);
+      AddAttribute(node, "else_branch", else_graph_val);
       continue;
     }
     if (op->name() == "pd_op.while") {
