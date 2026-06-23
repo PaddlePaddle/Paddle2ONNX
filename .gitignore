@@ -33,3 +33,5 @@ tests/*/*.info
 tools/onnx/__pycache__*
 test_data/
 .hypothesis/
+build/
+protobuf/
