@@ -686,8 +686,11 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
       found = true;
       if (pair.second.isa<pir::FloatAttribute>()) {
         *res = pair.second.dyn_cast<::pir::FloatAttribute>().data();
-        break;
+      } else if (pair.second.isa<pir::DoubleAttribute>()) {
+        *res = static_cast<float>(
+            pair.second.dyn_cast<::pir::DoubleAttribute>().data());
       }
+      break;
     }
   }
   PADDLE_ENFORCE_EQ(
