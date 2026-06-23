@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "paddle2onnx/mapper/tensor/builtin_combine.h"
-#include "paddle/common/enforce.h"
-#include "paddle/pir/include/core/builtin_op.h"
-#include "paddle/pir/include/core/operation.h"
+
+#include <cassert>
+#include <stdexcept>
 
 namespace paddle2onnx {
 REGISTER_PIR_MAPPER(builtin_combine, BuiltinCombineMapper)
@@ -23,26 +23,25 @@ REGISTER_PIR_MAPPER(builtin_combine, BuiltinCombineMapper)
 int64_t BuiltinCombineMapper::GetInputNum() {
   auto& op = if_in_cf_block ? pir_parser_->sub_blocks_ops[pir_op_idx_]
                             : pir_parser_->global_blocks_ops[pir_op_idx_];
-  PADDLE_ENFORCE_EQ(op->isa<pir::CombineOp>(),
-                    true,
-                    common::errors::InvalidArgument(
-                        "The operator type must be builtin.combine, but the "
-                        "actual operator type is %s.",
-                        op->name()));
-  return op->dyn_cast<pir::CombineOp>().inputs().size();
+  if (op->name() != "builtin.combine") {
+    throw std::runtime_error(
+        "The operator type must be builtin.combine, but the actual "
+        "operator type is " +
+        op->name());
+  }
+  return op->num_operands();
 }
 
 void BuiltinCombineMapper::Opset7() {
   auto output_info = GetOutput(0);
   int64_t input_num = GetInputNum();
-  PADDLE_ENFORCE_EQ(
-      input_num == output_info.size(),
-      true,
-      common::errors::InvalidArgument(
-          "The number of inputs and outputs must be the same, but the actual "
-          "input number is %d and output number is %d.",
-          input_num,
-          output_info.size()));
+  if (input_num != static_cast<int64_t>(output_info.size())) {
+    throw std::runtime_error(
+        "The number of inputs and outputs must be the same, but the actual "
+        "input number is " +
+        std::to_string(input_num) + " and output number is " +
+        std::to_string(output_info.size()));
+  }
   for (int64_t i = 0; i < input_num; ++i) {
     auto input_info = GetInput(i);
     helper_->MakeNode("Identity", {input_info[0].name}, {output_info[i].name});

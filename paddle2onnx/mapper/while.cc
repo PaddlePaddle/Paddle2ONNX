@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle/fluid/pir/dialect/operator/ir/control_flow_op.h"
 #include "paddle2onnx/mapper/exporter.h"
+
+#include <unordered_set>
+
 namespace paddle2onnx {
 void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
                                 OnnxHelper* temp_helper,
@@ -24,46 +26,57 @@ void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
   std::vector<TensorInfo> inputs_info;
   std::vector<TensorInfo> outputs_info;
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> extra_nodes;
-  auto while_op = op->dyn_cast<paddle::dialect::WhileOp>();
-  auto cond_info = pir_parser.GetTensorInfo(while_op.cond());
+
+  // For standalone PIR, "while" op has:
+  //   operand[0] = cond
+  //   operand[1+] = loop vars
+  //   region[0].block[0] = body block
+  //     block.args[0+] = block arguments (corresponding to operands[1+])
+  auto cond_value = op->num_operands() > 0 ? op->operand(0).source() : pir::Value();
+  auto cond_info = cond_value.defining_op()
+      ? pir_parser.GetTensorInfo(cond_value)
+      : std::vector<TensorInfo>();
+
   std::unordered_set<std::string> names;
-  for (int index = 1; index < while_op.num_operands(); index++) {
-    const pir::Value& value = while_op.operand_source(index);
+  for (size_t index = 1; index < op->num_operands(); index++) {
+    const pir::Value& value = op->operand(index).source();
     std::string name = pir_parser.GetSubBlockOpOutputName(value);
     if (names.count(name)) {
-      // there are duplicated varianble names in while op's operands.
+      // there are duplicated variable names in while op's operands.
       name = temp_helper->MakeNode("Identity", {name})->output(0);
-      pir_parser.while_op_args_name_map[&(
-          *((while_op.block_args()[index - 1]).impl()))] = name;
+      pir_parser.while_op_args_name_map[value.id()] = name;
     } else {
       names.insert(name);
     }
     inputs_info.push_back(pir_parser.GetTensorInfo(name, value.type()));
   }
-  pir_parser.GetWhileInputValuesAndArgsMappings(&while_op);
+  pir_parser.GetWhileInputValuesAndArgsMappings(op);
 
   std::vector<pir::Operation*> sub_blocks_ops_copy(pir_parser.sub_blocks_ops);
   pir_parser.sub_blocks_ops.clear();
-  auto& body_block = while_op.body();
-  for (auto& op : body_block.ops()) {
-    if (op->name() != "builtin.parameter") {
-      pir_parser.sub_blocks_ops.push_back(op);
+
+  // The body block is in region[0], block[0]
+  if (op->num_regions() > 0) {
+    auto& body_block = op->region(0);
+    for (auto& body_op : body_block.ops()) {
+      if (body_op.name() != "builtin.parameter") {
+        pir_parser.sub_blocks_ops.push_back(&body_op);
+      }
     }
   }
 
-  // generate sub-block op outputs names in GetMinOpSetVersion() function.
-  // pir_parser.GetSubBlockOpOutputName(pir_parser.sub_blocks_ops);
   if (!pir_parser.sub_blocks_ops.empty()) {
-    // get cf.yeild op input
+    // get cf.yield op input (last op in sub-block)
     pir::Operation* cf_yield_op = pir_parser.sub_blocks_ops.back();
-    PADDLE_ENFORCE_EQ(
-        cf_yield_op->name(),
-        "cf.yield",
-        ::common::errors::InvalidArgument(
-            "The last op of a control flow sub-block must be cf.yield"));
-    for (auto oprand : cf_yield_op->operands()) {
-      pir::Value value = oprand.source();
-      if (value.defining_op()->GetParent() != cf_yield_op->GetParent()) {
+    if (cf_yield_op->name() != "cf.yield") {
+      throw std::runtime_error(
+          "The last op of a control flow sub-block must be cf.yield, but got " +
+          cf_yield_op->name());
+    }
+    for (size_t oi = 0; oi < cf_yield_op->num_operands(); oi++) {
+      pir::Value value = cf_yield_op->operand(oi).source();
+      auto* def_op = value.defining_op();
+      if (def_op && def_op->GetParent() != cf_yield_op->GetParent()) {
         std::string name = pir_parser.GetSubBlockOpOutputName(value);
         auto node = std::make_shared<ONNX_NAMESPACE::NodeProto>();
         auto node_name = MapperHelper::Get()->GenName("Identity");
@@ -81,12 +94,8 @@ void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
       }
     }
   } else {
-    // sub_blocks_ops is empty
-    PADDLE_ENFORCE_NE(pir_parser.sub_blocks_ops.size(),
-                      0,
-                      ::common::errors::InvalidArgument(
-                          "The number of ops of a control flow sub-block "
-                          "cannot be zero."));
+    throw std::runtime_error(
+        "The number of ops of a control flow sub-block cannot be zero.");
   }
 
   ONNX_NAMESPACE::GraphProto graph;
@@ -98,7 +107,8 @@ void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
       iter_name, std::vector<int64_t>(1, 1), P2ODataType::INT64);
   // inputs
   inputs.push_back(std::move(MakeValueInfo(iter_info)));
-  inputs.push_back(std::move(MakeValueInfo(cond_info[0])));
+  if (!cond_info.empty())
+    inputs.push_back(std::move(MakeValueInfo(cond_info[0])));
   for (size_t i = 0; i < inputs_info.size(); ++i) {
     inputs.push_back(std::move(MakeValueInfo(inputs_info[i])));
   }
@@ -106,9 +116,14 @@ void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
   for (size_t i = 0; i < outputs_info.size(); ++i) {
     outputs.push_back(std::move(MakeValueInfo(outputs_info[i])));
   }
-  pir::Block* blockPtr = &body_block;
-  graph = ExportBlock(
-      pir_parser, blockPtr, parameters, &inputs, &outputs, true, true);
+
+  // Export the body block
+  if (op->num_regions() > 0) {
+    auto& body_block = op->region(0);
+    // We need to pass a Block* to ExportBlock
+    graph = ExportBlock(pir_parser, &body_block, &parameters, &inputs, &outputs, true, true);
+  }
+
   for (auto& item : extra_nodes) {
     *(graph.add_node()) = (*item.get());
   }
@@ -122,7 +137,8 @@ void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
   std::vector<std::string> input_names;
   std::vector<std::string> output_names;
   input_names.push_back("");  // skip max loop iter
-  input_names.push_back(cond_info[0].name);
+  if (!cond_info.empty())
+    input_names.push_back(cond_info[0].name);
   for (size_t i = 0; i < inputs_info.size(); ++i) {
     input_names.push_back(inputs_info[i].name);
   }

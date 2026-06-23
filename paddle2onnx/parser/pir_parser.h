@@ -48,6 +48,10 @@ class PaddlePirParser {
   mutable std::vector<pir::Operation*> sub_blocks_ops;
   std::set<pir::Operation*> total_blocks_ops;
 
+  // While op value mappings (keyed by value ID instead of ValueImpl*)
+  mutable std::map<int64_t, int64_t> while_op_values_args_map;
+  mutable std::map<int64_t, std::string> while_op_args_name_map;
+
   explicit PaddlePirParser(bool verbose) : verbose_(verbose) {}
 
   int NumOfBlocks() const;
@@ -198,6 +202,8 @@ class PaddlePirParser {
                           std::string tensor_arr_name) const;
   std::string GetTensorArrayName(int64_t op_id, bool if_in_sub_block) const;
   std::string GenOpInputOutputName(const std::string& name) const;
+  void GetWhileInputValuesAndArgsMappings(
+      const pir::Operation* while_op) const;
 
  private:
   bool verbose_;
