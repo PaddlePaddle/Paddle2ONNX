@@ -100,7 +100,7 @@ else()
   set(PYTHON_SITE_PACKAGES "")
   execute_process(
     COMMAND ${PYTHON_EXECUTABLE} -c
-            "import site; print(';'.join(site.getsitepackages()))"
+            "import site; sp = site.getsitepackages() + [site.getusersitepackages()]; print(';'.join(sp))"
     OUTPUT_VARIABLE SITE_PACKAGES_LIST
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REPLACE ";" " " SITE_PACKAGES_LIST "${SITE_PACKAGES_LIST}")
