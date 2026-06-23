@@ -26,6 +26,10 @@ REGISTER_PIR_MAPPER(layer_norm, LayerNormMapper)
 void LayerNormMapper::Opset17() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Y");
+  if (in_pir_mode) {
+    input_info = GetInput(0);
+    output_info = GetOutput(0);
+  }
 
   constexpr std::array<P2ODataType, 3> T = {
       P2ODataType::FP16, P2ODataType::FP32, P2ODataType::FP64};
@@ -41,6 +45,14 @@ void LayerNormMapper::Opset17() {
 
   bool has_input_Bias = HasInput("Bias");
   bool has_input_Scale = HasInput("Scale");
+  if (in_pir_mode) {
+    // PIR mode: inputs are positional (no named mapping in OpNameNormalizer)
+    // Input[0]=X, Input[1]=NormalizedShapeWeight, Input[2]=NormalizedShapeBias
+    auto s_info = GetInput(1);
+    has_input_Scale = (s_info.size() > 0 && s_info[0].name.size() > 0);
+    auto b_info = GetInput(2);
+    has_input_Bias = (b_info.size() > 0 && b_info[0].name.size() > 0);
+  }
   if (has_input_Bias && has_input_Scale) {
     auto scale_info = GetInput("Scale");
     auto scale_name = scale_info[0].name;
@@ -123,6 +135,10 @@ void LayerNormMapper::Opset17() {
 void LayerNormMapper::Opset7() {
   auto input_info = GetInput("X");
   auto output_info = GetOutput("Y");
+  if (in_pir_mode) {
+    input_info = GetInput(0);
+    output_info = GetOutput(0);
+  }
 
   std::string input_name = helper_->AutoCast(
       input_info[0].name, input_info[0].dtype, P2ODataType::FP32);
@@ -169,6 +185,14 @@ void LayerNormMapper::Opset7() {
 
   bool has_input_Bias = HasInput("Bias");
   bool has_input_Scale = HasInput("Scale");
+  // PIR mode: inputs are positional (no named mapping in OpNameNormalizer)
+  // Input[0]=X, Input[1]=NormalizedShapeWeight, Input[2]=NormalizedShapeBias
+  if (in_pir_mode) {
+    auto s_info = GetInput(1);
+    has_input_Scale = (s_info.size() > 0 && s_info[0].name.size() > 0);
+    auto b_info = GetInput(2);
+    has_input_Bias = (b_info.size() > 0 && b_info[0].name.size() > 0);
+  }
 
   if (has_input_Bias && has_input_Scale) {
     auto scale_info = GetInput("Scale");

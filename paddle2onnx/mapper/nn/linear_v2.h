@@ -20,31 +20,28 @@
 
 namespace paddle2onnx {
 
-class GroupNormMapper : public Mapper {
+class LinearV2Mapper : public Mapper {
  public:
-  GroupNormMapper(const PaddleParser& p,
-                  OnnxHelper* helper,
-                  int64_t block_id,
-                  int64_t op_id)
+  LinearV2Mapper(const PaddleParser& p,
+                 OnnxHelper* helper,
+                 int64_t block_id,
+                 int64_t op_id)
       : Mapper(p, helper, block_id, op_id) {
-    GetAttr("groups", &groups_);
-    GetAttr("epsilon", &epsilon_);
-  }
-  GroupNormMapper(const PaddlePirParser& p,
-                  OnnxHelper* helper,
-                  int64_t op_id,
-                  bool c)
-      : Mapper(p, helper, op_id, c) {
-    GetAttr("groups", &groups_);
-    GetAttr("epsilon", &epsilon_);
+    GetAttr("transpose_weight", &transpose_weight_);
   }
 
-  int32_t GetMinOpsetVersion(bool verbose) override;
+  LinearV2Mapper(const PaddlePirParser& p,
+                 OnnxHelper* helper,
+                 int64_t op_id,
+                 bool c)
+      : Mapper(p, helper, op_id, c) {
+    GetAttr("transpose_weight", &transpose_weight_);
+  }
+
   void Opset7() override;
 
  private:
-  int64_t groups_;
-  float epsilon_;
+  bool transpose_weight_ = false;
 };
 
 }  // namespace paddle2onnx
