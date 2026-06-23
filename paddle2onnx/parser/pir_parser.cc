@@ -39,31 +39,31 @@ using Json = nlohmann::json;
 P2ODataType PaddlePirParser::PirTypeToOldIrDataType(pir::DataType dtype) const {
   switch (dtype) {
     case pir::DataType::FLOAT32:
-      return P2ODataType::FLOAT32;
+      return FP32;
     case pir::DataType::FLOAT64:
-      return P2ODataType::FLOAT64;
+      return FP64;
     case pir::DataType::FLOAT16:
-      return P2ODataType::FLOAT16;
+      return FP16;
     case pir::DataType::BFLOAT16:
-      return P2ODataType::BFLOAT16;
+      return BF16;
     case pir::DataType::INT32:
-      return P2ODataType::INT32;
+      return INT32;
     case pir::DataType::INT64:
-      return P2ODataType::INT64;
+      return INT64;
     case pir::DataType::INT16:
-      return P2ODataType::INT16;
+      return INT16;
     case pir::DataType::INT8:
-      return P2ODataType::INT8;
+      return INT8;
     case pir::DataType::UINT8:
-      return P2ODataType::UINT8;
+      return UINT8;
     case pir::DataType::BOOL:
-      return P2ODataType::BOOL;
+      return BOOL;
     case pir::DataType::COMPLEX64:
-      return P2ODataType::COMPLEX64;
+      return COMPLEX64;
     case pir::DataType::COMPLEX128:
-      return P2ODataType::COMPLEX128;
+      return COMPLEX128;
     default:
-      return P2ODataType::UNDEFINED;
+      return UNDEFINED;
   }
 }
 
