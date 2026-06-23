@@ -347,9 +347,7 @@ class Operation {
 
   bool HasAttribute(const std::string& name) const;
   Attribute attribute(const std::string& name) const;
-  const std::map<std::string, Attribute>& attributes() const {
-    return attrs_;
-  }
+  const std::map<std::string, Attribute>& attributes() const { return attrs_; }
   void add_attribute(const std::string& name, const Attribute& attr);
 
   size_t num_regions() const { return sub_blocks_.size(); }
