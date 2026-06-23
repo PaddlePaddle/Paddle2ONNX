@@ -217,9 +217,10 @@ int32_t ModelExporter::GetMinOpsetVersion(const PaddlePirParser& pir_parser,
   OnnxHelper helper(verbose_);
   std::vector<pir::Operation*> block_ops;
   // it's  necessary to be same with global/sub_blocks_ops
-  for (auto& op : block->ops()) {
-    if (op->name() != "builtin.parameter") {
-      block_ops.push_back(op);
+  pir::Block* mutable_block = const_cast<pir::Block*>(block);
+  for (auto& op : mutable_block->ops()) {
+    if (op.name() != "builtin.parameter") {
+      block_ops.push_back(&op);
     }
   }
   for (auto i = 0; i < block_ops.size(); ++i) {
@@ -484,10 +485,13 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportIfBlock(
       // sub_block_outpus.push_back(cond_info[0].name);
       temp_outputs.push_back(std::move(MakeValueInfo(cond_info[0])));
       if (value.defining_op() == nullptr) {
-        value =
-            pir::Value(pir_parser.while_op_values_args_map[&(*(value.impl()))]);
+        // Block argument — resolved via while_op mapping in standalone PIR
+        int64_t mapped_id = pir_parser.while_op_values_args_map.count(value.id())
+                                ? pir_parser.while_op_values_args_map.at(value.id())
+                                : value.id();
+        value = pir::Value(mapped_id);
       }
-      if (value.defining_op()->GetParent() != &block) {
+      if (value.defining_op() && value.defining_op()->GetParent() != &block) {
         temp_inputs.push_back(std::move(MakeValueInfo(cond_info[0])));
       }
     }
@@ -520,9 +524,10 @@ ONNX_NAMESPACE::GraphProto ModelExporter::ExportBlock(
   graph.set_name("PaddlePaddle Graph in PIR mode");
   OnnxHelper temp_helper(verbose_);
   std::vector<pir::Operation*> block_ops;
-  for (auto& op : block->ops()) {
-    if (op->name() != "builtin.parameter") {
-      block_ops.push_back(op);
+  pir::Block* mutable_block = const_cast<pir::Block*>(block);
+  for (auto& op : mutable_block->ops()) {
+    if (op.name() != "builtin.parameter") {
+      block_ops.push_back(&op);
     }
   }
   auto num_ops = block_ops.size();

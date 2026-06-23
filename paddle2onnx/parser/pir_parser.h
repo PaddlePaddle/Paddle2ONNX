@@ -140,8 +140,10 @@ class PaddlePirParser {
         if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
     if (input_idx < 0 || input_idx >= static_cast<int64_t>(temp_op->num_operands()))
       return false;
-    TensorInfo tensor_info =
+    auto tensor_infos =
         GetTensorInfo(temp_op->operand(input_idx).source());
+    if (tensor_infos.empty()) return false;
+    TensorInfo tensor_info = tensor_infos[0];
     auto iter = params.find(tensor_info.name);
     if (iter != params.end()) {
       (iter->second).get(data);
@@ -179,8 +181,9 @@ class PaddlePirParser {
         if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
     if (input_idx < 0 || input_idx >= static_cast<int64_t>(temp_op->num_operands()))
       return false;
-    TensorInfo tensor_info =
+    auto tensor_infos =
         GetTensorInfo(temp_op->operand(input_idx).source());
+    if (tensor_infos.empty()) return false;
     pir::Operation* op = FindDefiningOp(op_id, input_idx, if_in_sub_block);
     if (!op) return false;
 
