@@ -122,16 +122,13 @@ else()
   else()
     set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
   endif()
-  if(EXISTS ${PADDLE_LIB})
-    message(STATUS "Found libpaddle: ${PADDLE_LIB}.")
-  else()
-    message(
-      FATAL_ERROR
-        "Can not find libpaddle at ${PYTHON_SITE_PACKAGES}/paddle/base!")
+  # libpaddle.so is no longer required — PIR parsing is now standalone.
+  # Keep the check as optional; warn instead of fatal.
+  if(NOT EXISTS ${PADDLE_LIB})
+    message(WARNING "libpaddle.so not found — PIR standalone mode (no old-format support).")
   endif()
-  # add paddle include dir
-  set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
-  include_directories(${PADDLE_INCLUDE_DIR})
+  # add nlohmann/json include path
+  include_directories(${PROJECT_SOURCE_DIR}/third_party)
   if(MSVC)
     # PIR patch
     add_custom_target(
@@ -161,8 +158,6 @@ else()
   set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
   target_link_libraries(
     paddle2onnx
-    ${PADDLE_LIB}
-    ${COMMON_LIB}
     p2o_paddle_proto
     onnx
     pybind11::embed
