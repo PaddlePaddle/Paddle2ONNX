@@ -119,9 +119,8 @@ void ModelExporter::ExportWhile(const PaddlePirParser& pir_parser,
 
   // Export the body block
   if (op->num_regions() > 0) {
-    auto& body_block = op->region(0);
-    // We need to pass a Block* to ExportBlock
-    graph = ExportBlock(pir_parser, &body_block, &parameters, &inputs, &outputs, true, true);
+    const auto& const_body_block = op->region(0);
+    graph = ExportBlock(pir_parser, &const_body_block, parameters, &inputs, &outputs, true, true);
   }
 
   for (auto& item : extra_nodes) {
