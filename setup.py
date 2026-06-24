@@ -105,11 +105,18 @@ class cmake_build(setuptools.Command):
         with cd(CMAKE_BUILD_DIR):
             build_type = "Release"
             # configure
+            build_python = "ON"
+            try:
+                # Check if paddle is importable for the Python C++ bindings
+                import paddle  # noqa: F401
+            except ImportError:
+                build_python = "OFF"
+                log.warn("Paddle not found; building without Python C++ bindings.")
             cmake_args = [
                 CMAKE,
                 "-DPYTHON_INCLUDE_DIR={}".format(sysconfig.get_python_inc()),
                 "-DPYTHON_EXECUTABLE={}".format(sys.executable),
-                "-DBUILD_PADDLE2ONNX_PYTHON=ON",
+                "-DBUILD_PADDLE2ONNX_PYTHON={}".format(build_python),
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
                 "-DONNX_NAMESPACE={}".format(ONNX_NAMESPACE),
                 "-DPY_EXT_SUFFIX={}".format(
