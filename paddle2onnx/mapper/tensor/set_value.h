@@ -62,39 +62,38 @@ class SetValueMapper : public Mapper {
       pir::Operation* op = if_in_cf_block ? p.sub_blocks_ops[pir_op_idx_]
                                           : p.global_blocks_ops[pir_op_idx_];
 
-      PADDLE_ENFORCE_EQ(
-          op->attribute("values").isa<::pir::ArrayAttribute>(),
-          true,
-          ::common::errors::InvalidArgument(
-              "The type of attribute 'values' in %s op is not ArrayAttribute.",
-              op->name()));
+      if (!op->attribute("values").isa<paddle2onnx::pir::ArrayAttribute>()) {
+        throw std::runtime_error(
+            "The type of attribute 'values' in " + op->name() +
+            " op is not ArrayAttribute.");
+      }
       auto array_list =
-          op->attribute("values").dyn_cast<::pir::ArrayAttribute>().AsVector();
+          op->attribute("values").dyn_cast<paddle2onnx::pir::ArrayAttribute>().AsVector();
 
       if (array_list.size() > 0) {
-        if (array_list[0].isa<::pir::FloatAttribute>()) {
+        if (array_list[0].isa<paddle2onnx::pir::FloatAttribute>()) {
           auto res = &fp32_values_;
           for (size_t i = 0; i < array_list.size(); ++i) {
             res->push_back(
-                array_list[i].dyn_cast<::pir::FloatAttribute>().data());
+                array_list[i].dyn_cast<paddle2onnx::pir::FloatAttribute>().data());
           }
-        } else if (array_list[0].isa<::pir::DoubleAttribute>()) {
+        } else if (array_list[0].isa<paddle2onnx::pir::DoubleAttribute>()) {
           auto res = &fp64_values_;
           for (size_t i = 0; i < array_list.size(); ++i) {
             res->push_back(
-                array_list[i].dyn_cast<::pir::DoubleAttribute>().data());
+                array_list[i].dyn_cast<paddle2onnx::pir::DoubleAttribute>().data());
           }
-        } else if (array_list[0].isa<::pir::Int32Attribute>()) {
+        } else if (array_list[0].isa<paddle2onnx::pir::Int32Attribute>()) {
           auto res = &int_values_;
           for (size_t i = 0; i < array_list.size(); ++i) {
             res->push_back(
-                array_list[i].dyn_cast<::pir::Int32Attribute>().data());
+                array_list[i].dyn_cast<paddle2onnx::pir::Int32Attribute>().data());
           }
-        } else if (array_list[0].isa<::pir::Int64Attribute>()) {
+        } else if (array_list[0].isa<paddle2onnx::pir::Int64Attribute>()) {
           auto res = &int_values_;
           for (size_t i = 0; i < array_list.size(); ++i) {
             res->push_back(
-                array_list[i].dyn_cast<::pir::Int64Attribute>().data());
+                array_list[i].dyn_cast<paddle2onnx::pir::Int64Attribute>().data());
           }
         }
       }

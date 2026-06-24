@@ -14,25 +14,29 @@
 
 #include "paddle2onnx/mapper/tensor/builtin_split.h"
 
+#include <stdexcept>
+
 namespace paddle2onnx {
 REGISTER_PIR_MAPPER(builtin_split, BuiltinSplitMapper)
 
 int64_t BuiltinSplitMapper::GetOutputNum() {
   auto& op = if_in_cf_block ? pir_parser_->sub_blocks_ops[pir_op_idx_]
                             : pir_parser_->global_blocks_ops[pir_op_idx_];
-  return op->dyn_cast<pir::SplitOp>().outputs().size();
+  return op->num_results();
 }
 
 bool BuiltinSplitMapper::IsEinsumOut() {
   auto& op = if_in_cf_block ? pir_parser_->sub_blocks_ops[pir_op_idx_]
                             : pir_parser_->global_blocks_ops[pir_op_idx_];
-  PADDLE_ENFORCE_EQ(op->isa<pir::SplitOp>(),
-                    true,
-                    common::errors::InvalidArgument(
-                        "The operator type must be builtin.split, but the "
-                        "actual operator type is %s.",
-                        op->name()));
-  if (op->operand_source(0).defining_op()->name() == "pd_op.einsum") {
+  if (op->name() != "builtin.split") {
+    throw std::runtime_error(
+        "The operator type must be builtin.split, but the actual "
+        "operator type is " +
+        op->name());
+  }
+  if (op->num_operands() > 0 &&
+      op->operand_source(0).defining_op() &&
+      op->operand_source(0).defining_op()->name() == "pd_op.einsum") {
     Warn() << "Skip builtin.split." << std::endl;
     return true;
   }
@@ -43,14 +47,13 @@ void BuiltinSplitMapper::Opset7() {
   if (IsEinsumOut()) return;
   auto input_info = GetInput(0);
   int64_t output_num = GetOutputNum();
-  PADDLE_ENFORCE_EQ(
-      output_num == input_info.size(),
-      true,
-      common::errors::InvalidArgument(
-          "The number of inputs and outputs must be the same, but the actual "
-          "input number is %d and output number is %d.",
-          input_info.size(),
-          output_num));
+  if (output_num != static_cast<int64_t>(input_info.size())) {
+    throw std::runtime_error(
+        "The number of inputs and outputs must be the same, but the actual "
+        "input number is " +
+        std::to_string(input_info.size()) + " and output number is " +
+        std::to_string(output_num));
+  }
   for (int64_t i = 0; i < output_num; ++i) {
     auto output_info = GetOutput(i);
     helper_->MakeNode("Identity", {input_info[i].name}, {output_info[0].name});

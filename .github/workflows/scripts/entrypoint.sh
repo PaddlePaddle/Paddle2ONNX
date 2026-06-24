@@ -27,46 +27,31 @@ SYSTEM_NAME=$3
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
+# Use system protobuf (much faster than compiling from source)
+yum install -y protobuf-compiler protobuf-devel cmake python3-pip 2>/dev/null || \
+  dnf install -y protobuf-compiler protobuf-devel cmake python3-pip 2>/dev/null || true
+
 # Compile wheels
 # Need to be updated if there is a new Python Version
-declare -A python_map=( ["3.8"]="cp38-cp38" ["3.9"]="cp39-cp39" ["3.10"]="cp310-cp310" ["3.11"]="cp311-cp311" ["3.12"]="cp312-cp312")
+declare -A python_map=( ["3.9"]="cp39-cp39" ["3.10"]="cp310-cp310" ["3.11"]="cp311-cp311" ["3.12"]="cp312-cp312")
 PY_VER=${python_map[$PY_VERSION]}
 PIP_INSTALL_COMMAND="/opt/python/${PY_VER}/bin/pip install --no-cache-dir -q"
 PYTHON_COMMAND="/opt/python/${PY_VER}/bin/python"
 
-# Update pip and install cmake
+# Update pip and install build deps
 $PIP_INSTALL_COMMAND --upgrade pip
-$PIP_INSTALL_COMMAND cmake
-
-# Build and install protobuf
-original_dir=$(pwd)
-git clone https://github.com/protocolbuffers/protobuf.git
-cd protobuf
-git checkout v21.12
-git submodule update --init
-mkdir build_source && cd build_source
-cmake ../cmake -DCMAKE_INSTALL_PREFIX=`pwd`/installed_protobuf_lib -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target install
-export PATH=`pwd`/installed_protobuf_lib/bin:${PATH}
-cd $original_dir
-
-export PIP_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/nightly/cpu/"
+$PIP_INSTALL_COMMAND cmake pybind11
 
 # Build Paddle2ONNX wheels
 $PYTHON_COMMAND -m build --wheel || { echo "Building wheels failed."; exit 1; }
 
-#  ============================================================================
-#   Due to libpaddle’s limitations, it can only maintain a restricted platform tag of ‘linux_x86_64’.
-#  ============================================================================
 # Bundle external shared libraries into the wheels
-# find -exec does not preserve failed exit codes, so use an output file for failures
-failed_wheels=$PWD/failed-wheels
-rm -f "$failed_wheels"
-find . -type f -iname "*-linux*.whl" -exec sh -c "auditwheel repair '{}' -w \$(dirname '{}') --exclude libpaddle.so || { echo 'Repairing wheels failed.'; auditwheel show '{}' >> '$failed_wheels'; }" \;
+# libpaddle.so is no longer required — PIR parsing is now standalone.
+find . -type f -iname "*-linux*.whl" -exec sh -c "auditwheel repair '{}' -w \$(dirname '{}') || { echo 'Repairing wheels failed.'; auditwheel show '{}' >> /tmp/failed-wheels; }" \;
 
-if [[ -f "$failed_wheels" ]]; then
+if [[ -f /tmp/failed-wheels ]]; then
     echo "Repairing wheels failed:"
-    cat failed-wheels
+    cat /tmp/failed-wheels
     exit 1
 fi
 

@@ -96,54 +96,12 @@ else()
   endif()
   add_subdirectory(third_party/glog)
 
-  # find Python site-packages dir
-  set(PYTHON_SITE_PACKAGES "")
-  execute_process(
-    COMMAND ${PYTHON_EXECUTABLE} -c
-            "import site; print(';'.join(site.getsitepackages()))"
-    OUTPUT_VARIABLE SITE_PACKAGES_LIST
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  string(REPLACE ";" " " SITE_PACKAGES_LIST "${SITE_PACKAGES_LIST}")
-  separate_arguments(SITE_PACKAGES_LIST)
-  foreach(SITE_PACKAGES IN LISTS SITE_PACKAGES_LIST)
-    if(EXISTS "${SITE_PACKAGES}" AND SITE_PACKAGES MATCHES "site-packages")
-      string(REPLACE "\\" "/" PYTHON_SITE_PACKAGES "${SITE_PACKAGES}")
-      message(STATUS "Found valid site-packages path: ${PYTHON_SITE_PACKAGES}.")
-      break()
-    endif()
-  endforeach()
-  if(NOT PYTHON_SITE_PACKAGES)
-    message(FATAL_ERROR "No valid site-packages path found.")
-  endif()
+  # nlohmann/json for standalone PIR model deserialization
+  include_directories(${PROJECT_SOURCE_DIR}/third_party)
 
-  if(MSVC)
-    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.lib")
-    set(COMMON_LIB "${PYTHON_SITE_PACKAGES}/paddle/libs/common.lib")
-  else()
-    set(PADDLE_LIB "${PYTHON_SITE_PACKAGES}/paddle/base/libpaddle.so")
-  endif()
-  if(EXISTS ${PADDLE_LIB})
-    message(STATUS "Found libpaddle: ${PADDLE_LIB}.")
-  else()
-    message(
-      FATAL_ERROR
-        "Can not find libpaddle at ${PYTHON_SITE_PACKAGES}/paddle/base!")
-  endif()
-  # add paddle include dir
-  set(PADDLE_INCLUDE_DIR ${PYTHON_SITE_PACKAGES}/paddle/include/)
-  include_directories(${PADDLE_INCLUDE_DIR})
-  if(MSVC)
-    # PIR patch
-    add_custom_target(
-      pir_patch ALL
-      COMMAND
-        ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/patch/paddle/interface_support.h
-        ${PADDLE_INCLUDE_DIR}/paddle/pir/include/core/interface_support.h
-      COMMENT
-        "Replace file ${PADDLE_INCLUDE_DIR}/paddle/pir/include/core/interface_support.h with ${CMAKE_SOURCE_DIR}/patch/paddle/interface_support.h"
-    )
-  endif()
+  # PIR parsing is now standalone — no libpaddle.so dependency.
+  # The pir_patch target (MSVC-only) is removed since paddle is no longer
+  # a build dependency.
   if(APPLE)
     set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS
                                                  "-undefined dynamic_lookup")
@@ -161,8 +119,6 @@ else()
   set_target_properties(paddle2onnx PROPERTIES VERSION ${PADDLE2ONNX_VERSION})
   target_link_libraries(
     paddle2onnx
-    ${PADDLE_LIB}
-    ${COMMON_LIB}
     p2o_paddle_proto
     onnx
     pybind11::embed
@@ -216,8 +172,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     PRIVATE $<BUILD_INTERFACE:${ONNX_ROOT}>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
             $<INSTALL_INTERFACE:include>
-            ${PYTHON_INCLUDE_DIR}
-            ${PADDLE_INCLUDE_DIR})
+            ${PYTHON_INCLUDE_DIR})
 
   if(EXISTS
      ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
@@ -248,8 +203,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
   endif()
 
   target_link_libraries(
-    paddle2onnx_cpp2py_export PRIVATE ${PADDLE_LIB} ${COMMON_LIB}
-                                      p2o_paddle_proto onnx glog::glog)
+    paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx glog::glog)
 
   if(MSVC)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})
