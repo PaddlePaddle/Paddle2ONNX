@@ -25,9 +25,9 @@
 #include <variant>
 #include <vector>
 
+#include "paddle2onnx/parser/tensor_utils.h"
 #include "paddle2onnx/pir/pir_op_info.h"
 #include "paddle2onnx/pir/pir_program.h"
-#include "paddle2onnx/parser/tensor_utils.h"
 #include "paddle2onnx/proto/p2o_paddle.pb.h"
 
 namespace paddle2onnx {
@@ -139,10 +139,10 @@ class PaddlePirParser {
                          bool if_in_sub_block = false) const {
     pir::Operation* temp_op =
         if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
-    if (input_idx < 0 || input_idx >= static_cast<int64_t>(temp_op->num_operands()))
+    if (input_idx < 0 ||
+        input_idx >= static_cast<int64_t>(temp_op->num_operands()))
       return false;
-    auto tensor_infos =
-        GetTensorInfo(temp_op->operand(input_idx).source());
+    auto tensor_infos = GetTensorInfo(temp_op->operand(input_idx).source());
     if (tensor_infos.empty()) return false;
     TensorInfo tensor_info = tensor_infos[0];
     auto iter = params.find(tensor_info.name);
@@ -159,7 +159,8 @@ class PaddlePirParser {
     if (!op->HasAttribute(attr_value) && !op->HasAttribute(attr_values))
       return false;
 
-    std::string attr_name = op->HasAttribute(attr_value) ? attr_value : attr_values;
+    std::string attr_name =
+        op->HasAttribute(attr_value) ? attr_value : attr_values;
     auto attr = op->attribute(attr_name);
     if (!attr.valid()) return false;
 
@@ -180,10 +181,10 @@ class PaddlePirParser {
                          bool if_in_sub_block = false) const {
     pir::Operation* temp_op =
         if_in_sub_block ? sub_blocks_ops[op_id] : global_blocks_ops[op_id];
-    if (input_idx < 0 || input_idx >= static_cast<int64_t>(temp_op->num_operands()))
+    if (input_idx < 0 ||
+        input_idx >= static_cast<int64_t>(temp_op->num_operands()))
       return false;
-    auto tensor_infos =
-        GetTensorInfo(temp_op->operand(input_idx).source());
+    auto tensor_infos = GetTensorInfo(temp_op->operand(input_idx).source());
     if (tensor_infos.empty()) return false;
     pir::Operation* op = FindDefiningOp(op_id, input_idx, if_in_sub_block);
     if (!op) return false;
@@ -193,7 +194,8 @@ class PaddlePirParser {
     if (!op->HasAttribute(attr_value) && !op->HasAttribute(attr_values))
       return false;
 
-    std::string attr_name = op->HasAttribute(attr_value) ? attr_value : attr_values;
+    std::string attr_name =
+        op->HasAttribute(attr_value) ? attr_value : attr_values;
     auto attr = op->attribute(attr_name);
     if (!attr.valid()) return false;
 
@@ -206,8 +208,7 @@ class PaddlePirParser {
                           std::string tensor_arr_name) const;
   std::string GetTensorArrayName(int64_t op_id, bool if_in_sub_block) const;
   std::string GenOpInputOutputName(const std::string& name) const;
-  void GetWhileInputValuesAndArgsMappings(
-      const pir::Operation* while_op) const;
+  void GetWhileInputValuesAndArgsMappings(const pir::Operation* while_op) const;
 
  private:
   bool verbose_;
@@ -232,8 +233,7 @@ class PaddlePirParser {
   mutable std::unordered_map<std::string, int64_t> _name_counter;
   mutable std::unordered_map<pir::Operation*, std::vector<std::string>>
       _op_outputs;
-  mutable std::unordered_map<pir::Operation*, std::string>
-      _tensor_arr_mappings;
+  mutable std::unordered_map<pir::Operation*, std::string> _tensor_arr_mappings;
 };
 
 inline std::string convert_pir_op_name(const std::string& pir_name) {

@@ -268,8 +268,7 @@ class OpResult;
 class Value {
  public:
   Value() = default;
-  Value(int64_t id, const Type& type = Type())
-      : id_(id), type_(type) {}
+  Value(int64_t id, const Type& type = Type()) : id_(id), type_(type) {}
 
   int64_t id() const { return id_; }
   const Type& type() const { return type_; }
@@ -308,7 +307,9 @@ struct OpOperand {
 class OpResult : public Value {
  public:
   OpResult() = default;
-  OpResult(int64_t id, const Type& type, Operation* defining_op = nullptr,
+  OpResult(int64_t id,
+           const Type& type,
+           Operation* defining_op = nullptr,
            int64_t index = 0)
       : Value(id, type) {
     set_defining_op(defining_op, index);
@@ -351,7 +352,9 @@ class Operation {
   void add_attribute(const std::string& name, const Attribute& attr);
 
   size_t num_regions() const { return sub_blocks_.size(); }
-  class Block& region(size_t i) { return sub_blocks_[i]; }
+  class Block& region(size_t i) {
+    return sub_blocks_[i];
+  }
   const class Block& region(size_t i) const { return sub_blocks_[i]; }
   void add_region(const class Block& b) { sub_blocks_.push_back(b); }
 

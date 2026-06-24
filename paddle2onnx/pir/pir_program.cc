@@ -73,13 +73,15 @@ std::string DataTypeToString(DataType dt) {
 void Type::Parse(const Json& j) {
   if (j.is_null() || j.empty()) return;
 
-  // PIR type JSON can be: {"#": "builtin.tensor<3x4xf32>"} or {"TT": "f32", "D": [3,4]}
+  // PIR type JSON can be: {"#": "builtin.tensor<3x4xf32>"} or {"TT": "f32",
+  // "D": [3,4]} Note: "#" in block arg context is a value ID (number), not a
+  // type string.
   std::string type_str;
   if (j.is_string()) {
     type_str = j.get<std::string>();
-  } else if (j.contains("TT")) {
+  } else if (j.contains("TT") && j["TT"].is_string()) {
     type_str = j["TT"].get<std::string>();
-  } else if (j.contains("#")) {
+  } else if (j.contains("#") && j["#"].is_string()) {
     type_str = j["#"].get<std::string>();
   }
 
@@ -153,22 +155,29 @@ void Attribute::DetectType() {
   auto& j = *json_;
   if (!j.contains("AT") && !j.contains("N")) {
     // For simple values without type annotation, guess from content
-    if (j.is_boolean()) type_ = AttrType::kBool;
-    else if (j.is_number_integer()) type_ = AttrType::kInt64;
-    else if (j.is_number_float()) type_ = AttrType::kDouble;
-    else if (j.is_string()) type_ = AttrType::kString;
+    if (j.is_boolean())
+      type_ = AttrType::kBool;
+    else if (j.is_number_integer())
+      type_ = AttrType::kInt64;
+    else if (j.is_number_float())
+      type_ = AttrType::kDouble;
+    else if (j.is_string())
+      type_ = AttrType::kString;
     return;
   }
 
   std::string at;
   if (j.contains("AT")) {
-    if (j["AT"].is_string()) at = j["AT"].get<std::string>();
+    if (j["AT"].is_string())
+      at = j["AT"].get<std::string>();
     else if (j["AT"].is_array() && !j["AT"].empty() && j["AT"][0].is_string())
       at = j["AT"][0].get<std::string>();
   }
 
-  if (at.find("Int32") != std::string::npos) type_ = AttrType::kInt32;
-  else if (at.find("Int64") != std::string::npos) type_ = AttrType::kInt64;
+  if (at.find("Int32") != std::string::npos)
+    type_ = AttrType::kInt32;
+  else if (at.find("Int64") != std::string::npos)
+    type_ = AttrType::kInt64;
   else if (at.find("Float") != std::string::npos ||
            at.find("float") != std::string::npos) {
     if (at.find("64") != std::string::npos ||
@@ -176,9 +185,10 @@ void Attribute::DetectType() {
       type_ = AttrType::kDouble;
     else
       type_ = AttrType::kFloat;
-  }
-  else if (at.find("Bool") != std::string::npos) type_ = AttrType::kBool;
-  else if (at.find("Str") != std::string::npos) type_ = AttrType::kString;
+  } else if (at.find("Bool") != std::string::npos)
+    type_ = AttrType::kBool;
+  else if (at.find("Str") != std::string::npos)
+    type_ = AttrType::kString;
   else if (at.find("Array") != std::string::npos ||
            at.find("array") != std::string::npos) {
     type_ = AttrType::kArray;
@@ -196,8 +206,8 @@ void Attribute::DetectType() {
 // ===========================================================================
 // Attribute — typed accessors for JSON-backed attributes
 // ===========================================================================
-// Attribute JSON format: {"N": "attr_name", "AT": "type_descriptor", "D": [...]}
-// or simpler: ["attr_name", value]
+// Attribute JSON format: {"N": "attr_name", "AT": "type_descriptor", "D":
+// [...]} or simpler: ["attr_name", value]
 int32_t Attribute::AsInt32() const {
   if (!json_) return 0;
   auto& j = *json_;
@@ -315,8 +325,10 @@ std::vector<double> Attribute::AsDoubleArray() const {
   auto& j = *json_;
   if (j.contains("D") && j["D"].is_array()) {
     for (auto& v : j["D"]) {
-      if (v.is_number_float()) result.push_back(v.get<double>());
-      else result.push_back(static_cast<double>(v.get<float>()));
+      if (v.is_number_float())
+        result.push_back(v.get<double>());
+      else
+        result.push_back(static_cast<double>(v.get<float>()));
     }
   }
   return result;
@@ -328,8 +340,10 @@ std::vector<bool> Attribute::AsBoolArray() const {
   auto& j = *json_;
   if (j.contains("D") && j["D"].is_array()) {
     for (auto& v : j["D"]) {
-      if (v.is_boolean()) result.push_back(v.get<bool>());
-      else result.push_back(v.get<int32_t>() != 0);
+      if (v.is_boolean())
+        result.push_back(v.get<bool>());
+      else
+        result.push_back(v.get<int32_t>() != 0);
     }
   }
   return result;
@@ -381,7 +395,8 @@ bool Program::LoadFromJson(const std::string& json_str) {
   }
 
   // PIR JSON structure:
-  // { "program": { "regions": [{ "blocks": [{ "args": [...], "ops": [...] }] }] }
+  // { "program": { "regions": [{ "blocks": [{ "args": [...], "ops": [...] }] }]
+  // }
   //     or  { "regions": [...] } (no "program" wrapper)
   Json* prog_root = root_.get();
   Json* program_json = nullptr;
@@ -450,9 +465,9 @@ bool Program::ParseBlock(Block* block, const Json& block_j) {
 bool Program::ParseOp(Operation* op, const Json& op_j) {
   // Op name — stored in "#" field (compressed or full)
   std::string op_name;
-  if (op_j.contains("#")) {
+  if (op_j.contains("#") && op_j["#"].is_string()) {
     op_name = op_j["#"].get<std::string>();
-  } else if (op_j.contains("op_type")) {
+  } else if (op_j.contains("op_type") && op_j["op_type"].is_string()) {
     op_name = op_j["op_type"].get<std::string>();
   }
   DecompressOpName(&op_name);
@@ -514,7 +529,8 @@ bool Program::ParseOp(Operation* op, const Json& op_j) {
       if (a_arr.size() >= 5 && a_arr[4].is_number()) {
         Json persistable_j;
         persistable_j["D"] = Json::array({a_arr[4]});
-        op->add_attribute("persistable", Attribute(persistable_j, "persistable"));
+        op->add_attribute("persistable",
+                          Attribute(persistable_j, "persistable"));
       }
       // Index 5 = stop_gradient
       if (a_arr.size() >= 6 && a_arr[5].is_number()) {
@@ -579,7 +595,8 @@ DialectIdMap::DialectIdMap() {
   decompress_map_["g"] = "builtin.get_parameter";
 }
 
-std::string DialectIdMap::DecompressOpName(const std::string& compressed) const {
+std::string DialectIdMap::DecompressOpName(
+    const std::string& compressed) const {
   // Check if it's a compressed single-char op (like "p" = "builtin.parameter")
   auto it = decompress_map_.find(compressed);
   if (it != decompress_map_.end()) {
