@@ -96,21 +96,12 @@ else()
   endif()
   add_subdirectory(third_party/glog)
 
-  # libpaddle.so is no longer required — PIR parsing is now standalone.
-  # nlohmann/json is used for PIR model deserialization.
+  # nlohmann/json for standalone PIR model deserialization
   include_directories(${PROJECT_SOURCE_DIR}/third_party)
-  if(MSVC)
-    # PIR patch
-    add_custom_target(
-      pir_patch ALL
-      COMMAND
-        ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/patch/paddle/interface_support.h
-        ${PADDLE_INCLUDE_DIR}/paddle/pir/include/core/interface_support.h
-      COMMENT
-        "Replace file ${PADDLE_INCLUDE_DIR}/paddle/pir/include/core/interface_support.h with ${CMAKE_SOURCE_DIR}/patch/paddle/interface_support.h"
-    )
-  endif()
+
+  # PIR parsing is now standalone — no libpaddle.so dependency.
+  # The pir_patch target (MSVC-only) is removed since paddle is no longer
+  # a build dependency.
   if(APPLE)
     set_target_properties(paddle2onnx PROPERTIES LINK_FLAGS
                                                  "-undefined dynamic_lookup")
@@ -181,8 +172,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
     PRIVATE $<BUILD_INTERFACE:${ONNX_ROOT}>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
             $<INSTALL_INTERFACE:include>
-            ${PYTHON_INCLUDE_DIR}
-            ${PADDLE_INCLUDE_DIR})
+            ${PYTHON_INCLUDE_DIR})
 
   if(EXISTS
      ${PROJECT_SOURCE_DIR}/third_party/pybind11/include/pybind11/pybind11.h)
@@ -213,8 +203,7 @@ if(BUILD_PADDLE2ONNX_PYTHON)
   endif()
 
   target_link_libraries(
-    paddle2onnx_cpp2py_export PRIVATE ${PADDLE_LIB} ${COMMON_LIB}
-                                      p2o_paddle_proto onnx glog::glog)
+    paddle2onnx_cpp2py_export PRIVATE p2o_paddle_proto onnx glog::glog)
 
   if(MSVC)
     target_link_libraries(paddle2onnx_cpp2py_export PRIVATE ${PYTHON_LIBRARIES})
