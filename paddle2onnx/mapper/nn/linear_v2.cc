@@ -73,9 +73,7 @@ void LinearV2Mapper::Opset7() {
   auto matmul = helper_->MakeNode("MatMul", {input_x, input_w});
 
   if (has_bias) {
-    helper_->MakeNode("Add",
-                      {matmul->output(0), input_b},
-                      {output_name});
+    helper_->MakeNode("Add", {matmul->output(0), input_b}, {output_name});
   } else {
     helper_->MakeNode("Identity", {matmul->output(0)}, {output_name});
   }

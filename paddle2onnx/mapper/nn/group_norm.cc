@@ -37,9 +37,11 @@ void GroupNormMapper::Opset7() {
   std::string input_name, scale_name, bias_name, output_name;
   bool has_scale = false, has_bias = false;
 
+  P2ODataType input_dtype;
   if (in_pir_mode) {
     auto x_info = GetInput(0);
     input_name = x_info[0].name;
+    input_dtype = x_info[0].dtype;
 
     auto s_info = GetInput(1);
     has_scale = (s_info.size() > 0 && s_info[0].name.size() > 0);
@@ -54,6 +56,7 @@ void GroupNormMapper::Opset7() {
   } else {
     auto input_info = GetInput("X");
     input_name = input_info[0].name;
+    input_dtype = input_info[0].dtype;
 
     if (HasInput("Scale")) {
       scale_name = GetInput("Scale")[0].name;
@@ -67,16 +70,6 @@ void GroupNormMapper::Opset7() {
     output_name = output_info[0].name;
   }
 
-  // Fallback: create dummy scale/bias if not provided
-  if (!has_scale) {
-    scale_name = helper_->Constant(GetOnnxDtype(P2ODataType::FP32),
-                                   std::vector<float>(groups_, 1.0));
-  }
-  if (!has_bias) {
-    bias_name = helper_->Constant(GetOnnxDtype(P2ODataType::FP32),
-                                  std::vector<float>(groups_, 0.0));
-  }
-
   // PIR mode: 3D input [N, C, L] -> unsqueeze to 4D [N, C, L, 1]
   if (in_pir_mode) {
     input_name = helper_->Unsqueeze(input_name, {3});
@@ -84,24 +77,28 @@ void GroupNormMapper::Opset7() {
 
   // Reshape: [N, C, H, W] -> [N, groups, -1]
   std::vector<int64_t> shape_val = {0, groups_, -1};
-  std::string shape = helper_->Constant(GetOnnxDtype(P2ODataType::INT64), shape_val);
+  std::string shape =
+      helper_->Constant(GetOnnxDtype(P2ODataType::INT64), shape_val);
   auto reshape_in = helper_->MakeNode("Reshape", {input_name, shape});
 
   // InstanceNormalization with dummy scale/bias (size=groups)
-  // Real scale/bias applied afterwards
-  std::string dummy_scale = helper_->Constant(
-      GetOnnxDtype(P2ODataType::FP32), std::vector<float>(groups_, 1.0));
-  std::string dummy_bias = helper_->Constant(
-      GetOnnxDtype(P2ODataType::FP32), std::vector<float>(groups_, 0.0));
+  // Real scale/bias applied afterwards.
+  // Use input dtype to avoid type mismatch when input is FP16/FP64.
+  auto onnx_dtype = GetOnnxDtype(input_dtype);
+  std::string dummy_scale =
+      helper_->Constant(onnx_dtype, std::vector<float>(groups_, 1.0));
+  std::string dummy_bias =
+      helper_->Constant(onnx_dtype, std::vector<float>(groups_, 0.0));
 
-  auto inst_norm = helper_->MakeNode(
-      "InstanceNormalization", {reshape_in->output(0), dummy_scale, dummy_bias});
+  auto inst_norm =
+      helper_->MakeNode("InstanceNormalization",
+                        {reshape_in->output(0), dummy_scale, dummy_bias});
   AddAttribute(inst_norm, "epsilon", epsilon_);
 
   // Reshape back: [N, groups, -1] -> [N, C, H, W]
   auto origin_shape = helper_->MakeNode("Shape", {input_name})->output(0);
-  auto reshape_out = helper_->MakeNode("Reshape",
-      {inst_norm->output(0), origin_shape});
+  auto reshape_out =
+      helper_->MakeNode("Reshape", {inst_norm->output(0), origin_shape});
 
   std::string output = reshape_out->output(0);
 

@@ -29,10 +29,10 @@
 #define UNUSED __attribute__((unused))
 #endif
 
-#define USE_P2O_MAPPER(op_name, class_name)                           \
-  namespace paddle2onnx {                                             \
-    extern int Touch##op_name##class_name();                          \
-    int op_name##__registry__ UNUSED = Touch##op_name##class_name();  \
+#define USE_P2O_MAPPER(op_name, class_name)                        \
+  namespace paddle2onnx {                                          \
+  extern int Touch##op_name##class_name();                         \
+  int op_name##__registry__ UNUSED = Touch##op_name##class_name(); \
   }
 
 USE_P2O_MAPPER(quantize_linear, QuantizeLinearMapper)
@@ -219,5 +219,5 @@ USE_P2O_MAPPER(masked_select, MaskedSelectMapper)
 USE_P2O_MAPPER(uniform, UniformMapper)
 USE_P2O_MAPPER(conv3d_transpose, Conv3dTransposeMapper)
 USE_P2O_MAPPER(hardtanh, HardtanhMapper)
-#endif // WITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING
-#endif // WITH_PADDLE2ONNX_STATIC_INTERNAL
+#endif  // WITH_PADDLE2ONNX_STATIC_INTERNAL_AT_COMPILING
+#endif  // WITH_PADDLE2ONNX_STATIC_INTERNAL

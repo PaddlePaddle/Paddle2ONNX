@@ -53,18 +53,25 @@ void LayerNormMapper::Opset17() {
     auto b_info = GetInput(2);
     has_input_Bias = (b_info.size() > 0 && b_info[0].name.size() > 0);
   }
+
+  // Helper to fetch scale/bias TensorInfo by name in legacy mode or by
+  // positional index in PIR mode.
+  auto get_tensor = [&](const std::string& name, int pir_idx) {
+    return in_pir_mode ? GetInput(pir_idx) : GetInput(name);
+  };
+
   if (has_input_Bias && has_input_Scale) {
-    auto scale_info = GetInput("Scale");
-    auto scale_name = scale_info[0].name;
-    auto scale_type = scale_info[0].dtype;
+    auto scale_info_vec = get_tensor("Scale", 1);
+    auto scale_name = scale_info_vec[0].name;
+    auto scale_type = scale_info_vec[0].dtype;
     if (std::find(T.begin(), T.end(), scale_type) == T.end()) {
       scale_name = helper_->AutoCast(scale_name, scale_type, P2ODataType::FP32);
       scale_type = P2ODataType::FP32;
     }
 
-    auto bias_info = GetInput("Bias");
-    auto bias_name = bias_info[0].name;
-    auto bias_type = bias_info[0].dtype;
+    auto bias_info_vec = get_tensor("Bias", 2);
+    auto bias_name = bias_info_vec[0].name;
+    auto bias_type = bias_info_vec[0].dtype;
     if (std::find(T.begin(), T.end(), bias_type) == T.end()) {
       bias_name = helper_->AutoCast(bias_name, bias_type, P2ODataType::FP32);
       bias_type = P2ODataType::FP32;
@@ -80,9 +87,9 @@ void LayerNormMapper::Opset17() {
   }
 
   if (has_input_Scale) {
-    auto scale_info = GetInput("Scale");
-    auto scale_name = scale_info[0].name;
-    auto scale_type = scale_info[0].dtype;
+    auto scale_info_vec = get_tensor("Scale", 1);
+    auto scale_name = scale_info_vec[0].name;
+    auto scale_type = scale_info_vec[0].dtype;
     if (std::find(T.begin(), T.end(), scale_type) == T.end()) {
       scale_name = helper_->AutoCast(scale_name, scale_type, P2ODataType::FP32);
       scale_type = P2ODataType::FP32;
@@ -101,9 +108,9 @@ void LayerNormMapper::Opset17() {
   }
 
   if (has_input_Bias) {
-    auto bias_info = GetInput("Bias");
-    auto bias_name = bias_info[0].name;
-    auto bias_type = bias_info[0].dtype;
+    auto bias_info_vec = get_tensor("Bias", 2);
+    auto bias_name = bias_info_vec[0].name;
+    auto bias_type = bias_info_vec[0].dtype;
     if (std::find(T.begin(), T.end(), bias_type) == T.end()) {
       bias_name = helper_->AutoCast(bias_name, bias_type, P2ODataType::FP32);
       bias_type = P2ODataType::FP32;
@@ -194,13 +201,19 @@ void LayerNormMapper::Opset7() {
     has_input_Bias = (b_info.size() > 0 && b_info[0].name.size() > 0);
   }
 
+  // Helper to fetch scale/bias TensorInfo by name in legacy mode or by
+  // positional index in PIR mode.
+  auto get_tensor = [&](const std::string& name, int pir_idx) {
+    return in_pir_mode ? GetInput(pir_idx) : GetInput(name);
+  };
+
   if (has_input_Bias && has_input_Scale) {
-    auto scale_info = GetInput("Scale");
-    auto bias_info = GetInput("Bias");
+    auto scale_info_vec = get_tensor("Scale", 1);
+    auto bias_info_vec = get_tensor("Bias", 2);
     std::string scale_name = helper_->AutoCast(
-        scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+        scale_info_vec[0].name, scale_info_vec[0].dtype, P2ODataType::FP32);
     std::string bias_name = helper_->AutoCast(
-        bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
+        bias_info_vec[0].name, bias_info_vec[0].dtype, P2ODataType::FP32);
     std::string scale_node = "";
     std::string bias_node = "";
     if (begin_norm_axis_ == input_shape.size() - 1) {
@@ -225,9 +238,9 @@ void LayerNormMapper::Opset7() {
     return;
   }
   if (has_input_Bias) {
-    auto bias_info = GetInput("Bias");
+    auto bias_info_vec = get_tensor("Bias", 2);
     std::string bias_name = helper_->AutoCast(
-        bias_info[0].name, bias_info[0].dtype, P2ODataType::FP32);
+        bias_info_vec[0].name, bias_info_vec[0].dtype, P2ODataType::FP32);
     std::string bias_node = "";
     if (begin_norm_axis_ == input_shape.size() - 1) {
       bias_node = helper_->Reshape(bias_name, {-1});
@@ -246,9 +259,9 @@ void LayerNormMapper::Opset7() {
     return;
   }
   if (has_input_Scale) {
-    auto scale_info = GetInput("Scale");
+    auto scale_info_vec = get_tensor("Scale", 1);
     std::string scale_name = helper_->AutoCast(
-        scale_info[0].name, scale_info[0].dtype, P2ODataType::FP32);
+        scale_info_vec[0].name, scale_info_vec[0].dtype, P2ODataType::FP32);
     std::string scale_node = "";
     if (begin_norm_axis_ == input_shape.size() - 1) {
       scale_node = helper_->Reshape(scale_name, {-1});
