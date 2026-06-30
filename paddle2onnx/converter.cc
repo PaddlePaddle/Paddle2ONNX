@@ -98,7 +98,8 @@ PADDLE2ONNX_DECL bool Export(const char *model_filename,
                                 &calibration_str,
                                 external_file,
                                 save_external,
-                                export_fp16_model);
+                                export_fp16_model,
+                                disable_op_types);
     if (result.empty()) {
       P2OLogger(verbose) << "The exported ONNX model is invalid!" << std::endl;
       return false;
