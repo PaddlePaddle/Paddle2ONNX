@@ -811,14 +811,24 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
-          PADDLE_ENFORCE_EQ(
-              array_list[0].isa<::pir::FloatAttribute>(),
-              true,
-              ::common::errors::Unimplemented("the 0th elementwise MUST be "
-                                              "ir::FloatAttribute"));
-          for (size_t i = 0; i < array_list.size(); ++i) {
-            res->push_back(
-                array_list[i].dyn_cast<::pir::FloatAttribute>().data());
+          // Paddle 3.3 stores some float-typed array attributes (e.g. the
+          // values of `full_int_array`) as integer attributes. Accept those
+          // too instead of asserting, casting to float.
+          if (array_list[0].isa<::pir::FloatAttribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(array_list[i].dyn_cast<::pir::FloatAttribute>().data());
+          } else if (array_list[0].isa<::pir::Int64Attribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(static_cast<float>(
+                  array_list[i].dyn_cast<::pir::Int64Attribute>().data()));
+          } else if (array_list[0].isa<::pir::Int32Attribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(static_cast<float>(
+                  array_list[i].dyn_cast<::pir::Int32Attribute>().data()));
+          } else if (array_list[0].isa<::pir::DoubleAttribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(static_cast<float>(
+                  array_list[i].dyn_cast<::pir::DoubleAttribute>().data()));
           }
         }
 
