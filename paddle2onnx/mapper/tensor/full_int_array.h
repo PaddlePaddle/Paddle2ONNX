@@ -28,14 +28,14 @@ class FullIntArrayMapper : public Mapper {
                      int64_t op_id,
                      bool c)
       : Mapper(p, helper, op_id, c) {
-    GetAttr("dtype", &dtype_);
+    // The op's `dtype` attribute is a DataTypeAttribute, not a string, so it
+    // was never actually read; Opset7 takes the type from the output anyway.
     GetAttr("value", &shape_values_);
   }
 
   void Opset7() override;
 
  private:
-  std::string dtype_;
   std::vector<int64_t> shape_values_;
 };
 
