@@ -651,120 +651,148 @@ bool PaddlePirParser::OpHasAttr(pir::Operation* op,
   return op->HasAttribute(name);
 }
 
+// Matching the attribute's *name* is not enough. When the attribute exists but
+// holds a type the overload does not read, the caller's variable is left
+// exactly as it was -- uninitialised, for the `float alpha_;` members mappers
+// declare -- and that garbage is then written into the ONNX graph as if it were
+// the model's own value. pd_op.leaky_relu is one such case: PIR stores its
+// negative_slope as a double, the mapper asks for a float, and the exported
+// LeakyRelu got alpha = 2.5e-43 instead of 0.1, turning it into a plain ReLU in
+// a model that converted, loaded and ran. So a type that is not read must fail
+// as loudly as an attribute that is not there.
+static void EnforceAttrRead(const pir::Operation* op,
+                            const std::string& name,
+                            bool found,
+                            bool assigned) {
+  PADDLE_ENFORCE_EQ(
+      found,
+      true,
+      common::errors::InvalidArgument(
+          "Cannot found attribute %s in op %s", name, op->name()));
+  PADDLE_ENFORCE_EQ(
+      assigned,
+      true,
+      common::errors::InvalidArgument(
+          "Attribute %s of op %s exists but holds a type this accessor does "
+          "not read; reading it would have exported an uninitialised value",
+          name,
+          op->name()));
+}
+
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 int64_t* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::Int32Attribute>()) {
         *res = pair.second.dyn_cast<::pir::Int32Attribute>().data();
+        assigned = true;
       } else if (pair.second.isa<pir::Int64Attribute>()) {
         *res = pair.second.dyn_cast<::pir::Int64Attribute>().data();
+        assigned = true;
       } else if (pair.second.isa<paddle::dialect::DataTypeAttribute>()) {
         phi::DataType data_type =
             pair.second.dyn_cast<paddle::dialect::DataTypeAttribute>().data();
         *res = TransPirDataType2OldIrDataType(data_type);
+        assigned = true;
+      } else if (pair.second.isa<pir::BoolAttribute>()) {
+        *res = pair.second.dyn_cast<::pir::BoolAttribute>().data();
+        assigned = true;
       }
       break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 float* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
+      // PIR stores as a double several attributes the legacy IR stored as a
+      // float -- leaky_relu's negative_slope among them -- so read either.
       if (pair.second.isa<pir::FloatAttribute>()) {
         *res = pair.second.dyn_cast<::pir::FloatAttribute>().data();
-        break;
+        assigned = true;
+      } else if (pair.second.isa<pir::DoubleAttribute>()) {
+        *res = static_cast<float>(
+            pair.second.dyn_cast<::pir::DoubleAttribute>().data());
+        assigned = true;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 double* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::DoubleAttribute>()) {
         *res = pair.second.dyn_cast<::pir::DoubleAttribute>().data();
-        break;
+        assigned = true;
+      } else if (pair.second.isa<pir::FloatAttribute>()) {
+        *res = pair.second.dyn_cast<::pir::FloatAttribute>().data();
+        assigned = true;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 bool* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::BoolAttribute>()) {
         *res = pair.second.dyn_cast<::pir::BoolAttribute>().data();
-        break;
+        assigned = true;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 std::string* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::StrAttribute>()) {
         *res = pair.second.dyn_cast<::pir::StrAttribute>().AsString();
-        break;
+        assigned = true;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 std::vector<int64_t>* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::ArrayAttribute>()) {
+        assigned = true;
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
@@ -789,58 +817,62 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
         *res = pair.second.dyn_cast<paddle::dialect::IntArrayAttribute>()
                    .data()
                    .GetData();
+        assigned = true;
       }
       break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 std::vector<float>* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::ArrayAttribute>()) {
+        assigned = true;
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
-          PADDLE_ENFORCE_EQ(
-              array_list[0].isa<::pir::FloatAttribute>(),
-              true,
-              ::common::errors::Unimplemented("the 0th elementwise MUST be "
-                                              "ir::FloatAttribute"));
-          for (size_t i = 0; i < array_list.size(); ++i) {
-            res->push_back(
-                array_list[i].dyn_cast<::pir::FloatAttribute>().data());
+          // Paddle 3.3 stores some float-typed array attributes (e.g. the
+          // values of `full_int_array`) as integer attributes. Accept those
+          // too instead of asserting, casting to float.
+          if (array_list[0].isa<::pir::FloatAttribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(array_list[i].dyn_cast<::pir::FloatAttribute>().data());
+          } else if (array_list[0].isa<::pir::Int64Attribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(static_cast<float>(
+                  array_list[i].dyn_cast<::pir::Int64Attribute>().data()));
+          } else if (array_list[0].isa<::pir::Int32Attribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(static_cast<float>(
+                  array_list[i].dyn_cast<::pir::Int32Attribute>().data()));
+          } else if (array_list[0].isa<::pir::DoubleAttribute>()) {
+            for (size_t i = 0; i < array_list.size(); ++i)
+              res->push_back(static_cast<float>(
+                  array_list[i].dyn_cast<::pir::DoubleAttribute>().data()));
           }
         }
-
-        break;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 std::vector<double>* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::ArrayAttribute>()) {
+        assigned = true;
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
@@ -854,26 +886,22 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                 array_list[i].dyn_cast<::pir::DoubleAttribute>().data());
           }
         }
-
-        break;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                                 const std::string& name,
                                 std::vector<bool>* res) const {
-  bool found = false;
+  bool found = false, assigned = false;
   for (auto& pair : op->attributes()) {
     if (pair.first == name) {
       found = true;
       if (pair.second.isa<pir::ArrayAttribute>()) {
+        assigned = true;
         auto array_list =
             pair.second.dyn_cast<::pir::ArrayAttribute>().AsVector();
         if (array_list.size() > 0) {
@@ -887,16 +915,11 @@ void PaddlePirParser::GetOpAttr(const pir::Operation* op,
                 array_list[i].dyn_cast<::pir::BoolAttribute>().data());
           }
         }
-
-        break;
       }
+      break;
     }
   }
-  PADDLE_ENFORCE_EQ(
-      found,
-      true,
-      common::errors::InvalidArgument(
-          "Cannot found attribute %s in op %s", name, op->name()));
+  EnforceAttrRead(op, name, found, assigned);
 }
 
 void PaddlePirParser::GetOpScalarValue(int64_t op_id,
