@@ -64,6 +64,8 @@ list(REMOVE_ITEM ALL_SRCS
 
 file(READ "${PROJECT_SOURCE_DIR}/VERSION_NUMBER" PADDLE2ONNX_VERSION)
 string(STRIP "${PADDLE2ONNX_VERSION}" PADDLE2ONNX_VERSION)
+# Written into ModelProto.producer_version by the exporter
+add_definitions(-DPADDLE2ONNX_VERSION_STRING="${PADDLE2ONNX_VERSION}")
 
 if(WITH_STATIC)
   # Here, we use a dummy target (paddle2onnx_dummy) to form a build dependency

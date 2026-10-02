@@ -401,6 +401,13 @@ void ModelExporter::SetIRVersion() {
   onnx_model_.set_ir_version(GetIRVersion());
 }
 
+void ModelExporter::SetProducer() {
+  onnx_model_.set_producer_name("paddle2onnx");
+#ifdef PADDLE2ONNX_VERSION_STRING
+  onnx_model_.set_producer_version(PADDLE2ONNX_VERSION_STRING);
+#endif
+}
+
 void ModelExporter::ExportInputOutputs(
     const PaddleParser& parser,
     std::vector<std::shared_ptr<ONNX_NAMESPACE::ValueInfoProto>>* inputs,
@@ -1045,6 +1052,8 @@ std::string ModelExporter::Run(const PaddlePirParser& pir_parser,
   SetOpsetVersion(pir_parser, auto_upgrade_opset);
   // Set ONNX IR Version
   SetIRVersion();
+  // Set producer name and version
+  SetProducer();
   // Export Parser Parameters
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;
   ExportParameters(pir_parser, &parameters);
@@ -1106,6 +1115,8 @@ std::string ModelExporter::Run(const PaddleParser& parser,
 
   // Set ONNX IR Version
   SetIRVersion();
+  // Set producer name and version
+  SetProducer();
 
   // Export Parser Parameters
   std::vector<std::shared_ptr<ONNX_NAMESPACE::NodeProto>> parameters;

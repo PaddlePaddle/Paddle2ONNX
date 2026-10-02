@@ -169,6 +169,8 @@ class ModelExporter {
   // IR Version
   inline ONNX_NAMESPACE::Version GetIRVersion() const;
   void SetIRVersion();
+  // Producer info (ModelProto.producer_name / producer_version)
+  void SetProducer();
   //
   void ExportInputOutputs(
       const PaddleParser& parser,
