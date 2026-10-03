@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 # Detect the operating system
 OS=$(uname -s)
 ARCH=$(uname -m)
@@ -42,10 +44,22 @@ elif [ "$OS" = "Darwin" ]; then
     protobuf_url="https://bj.bcebos.com/fastdeploy/third_libs/$protobuf_tgz_name"
 else
    echo "The system only supports (Linux and Darwin), but the current system is $OS."
+   exit 1
+fi
+wget -q --https-only -O "$protobuf_tgz_name" "$protobuf_url"
+wget -q --https-only -O "$protobuf_tgz_name" "$protobuf_url"
+
+if tar -tzf "$protobuf_tgz_name" | awk '$0 ~ /^\// || $0 ~ /(^|\/)\.\.(\/|$)/ { found=1 } END { exit !found }'; then
+  echo "The protobuf archive contains an unsafe path."
+  exit 1
 fi
 
-wget $protobuf_url
+if tar -tvzf "$protobuf_tgz_name" | awk 'substr($1, 1, 1) !~ /[-d]/ { found=1 } END { exit !found }'; then
+  echo "The protobuf archive contains an unsupported entry type."
+  exit 1
+fi
+
 protobuf_save_dir="$PWD/installed_protobuf"
-mkdir -p $protobuf_save_dir
-tar -zxf $protobuf_tgz_name -C $protobuf_save_dir
-export PATH=$protobuf_save_dir/bin:${PATH}
+mkdir -p "$protobuf_save_dir"
+tar --no-same-owner -zxf "$protobuf_tgz_name" -C "$protobuf_save_dir"
+export PATH="$protobuf_save_dir/bin:${PATH}"

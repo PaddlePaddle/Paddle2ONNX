@@ -34,9 +34,8 @@ PY_VER=${python_map[$PY_VERSION]}
 PIP_INSTALL_COMMAND="/opt/python/${PY_VER}/bin/pip install --no-cache-dir -q"
 PYTHON_COMMAND="/opt/python/${PY_VER}/bin/python"
 
-# Update pip and install cmake
-$PIP_INSTALL_COMMAND --upgrade pip
-$PIP_INSTALL_COMMAND cmake
+# Install pinned build tooling
+$PIP_INSTALL_COMMAND "build==1.2.2.post1" "cmake==3.31.6"
 
 # Build and install protobuf
 original_dir=$(pwd)
